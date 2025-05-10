@@ -177,7 +177,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_layout:
+  /meshes/{mesh}/dataplanes/{name}/_networking-layout:
     get:
       operationId: get-dataplanes-layout
       summary: Get networking layout for this dataplane
@@ -199,7 +199,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/DataplaneLayoutResponse'
+          $ref: '#/components/responses/DataplaneNetworkingLayoutResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -226,7 +226,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/ProxyRulesResponse'
+          $ref: '#/components/responses/ProxyPolicyConfResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -259,7 +259,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/InboundRulesResponse'
+          $ref: '#/components/responses/InboundPolicyConfResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -292,7 +292,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/OutboundRulesResponse'
+          $ref: '#/components/responses/OutboundPolicyConfResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -3784,7 +3784,7 @@ components:
         name:
           type: string
           example: east
-    DataplaneLayout:
+    DataplaneNetworkingLayout:
       type: object
       title: DataplaneLayout
       description: >-
@@ -4088,6 +4088,8 @@ components:
         - conf
         - origin
       properties:
+        policyType:
+          type: string
         conf:
           description: >-
             The final computed configuration for the data plane proxy, derived
@@ -5124,13 +5126,32 @@ components:
       properties:
         kri:
           type: string
+        name:
+          type: string
         port:
           type: integer
-        address:
-          type: string
         protocol:
           type: string
-    DataplaneProxyRules:
+    ProxyPolicyConf:
+      description: a rule that affects the entire proxy
+      type: object
+      required:
+        - policyType
+        - conf
+        - origin
+      properties:
+        policyType:
+          type: string
+        conf:
+          description: The actual conf generated
+          type: object
+          additionalProperties: true
+          x-go-type: interface{}
+        origin:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
+    DataplaneProxyConf:
       type: object
       required:
         - rules
@@ -5146,8 +5167,39 @@ components:
             applied (e.g., custom namespace, system, or global control plane),
             policy role, and targetRef specificity.
           items:
-            $ref: '#/components/schemas/ProxyRule'
-    DataplaneInboundRules:
+            $ref: '#/components/schemas/ProxyPolicyConf'
+    PolicyConf:
+      type: object
+      required:
+        - policyType
+        - conf
+        - origin
+      properties:
+        policyType:
+          type: string
+        conf:
+          description: >-
+            The final computed configuration for the data plane proxy, derived
+            by merging all policies whose 'targetRef' field matches the proxy.
+            The merging process follows [RFC 7396 (JSON Merge
+            Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the
+            order of merging influenced by factors such as where the policy was
+            applied (e.g., custom namespace, system, or global control plane),
+            policy role, and targetRef specificity.
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: interface{}
+        origin:
+          type: array
+          description: >-
+            The list of policies that contributed to the 'conf'. The order is
+            important as it reflects in what order confs were merged to get the
+            resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/ResourceRuleOrigin'
+    DataplaneInboundPolicyConf:
       type: object
       required:
         - inbound
@@ -5155,7 +5207,7 @@ components:
       properties:
         inbound:
           $ref: '#/components/schemas/DataplaneInbound'
-        rules:
+        policyConf:
           type: array
           description: >-
             The final computed configuration for the inbound, derived by merging
@@ -5166,8 +5218,8 @@ components:
             applied (e.g., custom namespace, system, or global control plane),
             policy role, and targetRef specificity.
           items:
-            $ref: '#/components/schemas/InboundRule'
-    DataplaneOutboundRules:
+            $ref: '#/components/schemas/PolicyConf'
+    DataplaneOutboundPolicyConf:
       type: object
       required:
         - outbound
@@ -5186,7 +5238,7 @@ components:
             applied (e.g., custom namespace, system, or global control plane),
             policy role, and targetRef specificity.
           items:
-            $ref: '#/components/schemas/ResourceRule'
+            $ref: '#/components/schemas/PolicyConf'
     NotFoundError:
       allOf:
         - $ref: '#/components/schemas/Error'
@@ -17197,30 +17249,30 @@ components:
           examples:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
-    DataplaneLayoutResponse:
+    DataplaneNetworkingLayoutResponse:
       description: A response containing dataplane networking layout.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/DataplaneLayout'
-    ProxyRulesResponse:
+            $ref: '#/components/schemas/DataplaneNetworkingLayout'
+    ProxyPolicyConfResponse:
       description: A response containing policies configuration for selected dataplane
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/DataplaneProxyRules'
-    InboundRulesResponse:
+            $ref: '#/components/schemas/DataplaneProxyConf'
+    InboundPolicyConfResponse:
       description: A response containing policies configuration for selected inbound
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/DataplaneInboundRules'
-    OutboundRulesResponse:
+            $ref: '#/components/schemas/DataplaneInboundPolicyConf'
+    OutboundPolicyConfResponse:
       description: A response containing policies configuration for selected outbound
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/DataplaneOutboundRules'
+            $ref: '#/components/schemas/DataplaneOutboundPolicyConf'
     BadRequest:
       description: Bad Request
       content:

@@ -28,34 +28,34 @@ type DataplaneInbound struct {
 // DataplaneInboundStatus defines model for DataplaneInbound.Status.
 type DataplaneInboundStatus string
 
-// DataplaneInboundRules defines model for DataplaneInboundRules.
-type DataplaneInboundRules struct {
+// DataplaneInboundPolicyConf defines model for DataplaneInboundPolicyConf.
+type DataplaneInboundPolicyConf struct {
 	Inbound DataplaneInbound `json:"inbound"`
 
-	// Rules The final computed configuration for the inbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
-	Rules []InboundRule `json:"rules"`
+	// PolicyConf The final computed configuration for the inbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	PolicyConf *[]PolicyConf `json:"policyConf,omitempty"`
 }
 
 // DataplaneOutbound defines model for DataplaneOutbound.
 type DataplaneOutbound struct {
-	Address  *string `json:"address,omitempty"`
 	Kri      string  `json:"kri"`
+	Name     *string `json:"name,omitempty"`
 	Port     *int    `json:"port,omitempty"`
 	Protocol string  `json:"protocol"`
 }
 
-// DataplaneOutboundRules defines model for DataplaneOutboundRules.
-type DataplaneOutboundRules struct {
+// DataplaneOutboundPolicyConf defines model for DataplaneOutboundPolicyConf.
+type DataplaneOutboundPolicyConf struct {
 	Outbound DataplaneOutbound `json:"outbound"`
 
 	// Rules The final computed configuration for the outbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
-	Rules []ResourceRule `json:"rules"`
+	Rules []PolicyConf `json:"rules"`
 }
 
-// DataplaneProxyRules defines model for DataplaneProxyRules.
-type DataplaneProxyRules struct {
+// DataplaneProxyConf defines model for DataplaneProxyConf.
+type DataplaneProxyConf struct {
 	// Rules The final computed configuration for the dataplane, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
-	Rules []ProxyRule `json:"rules"`
+	Rules []ProxyPolicyConf `json:"rules"`
 }
 
 // FromRule defines model for FromRule.
@@ -83,7 +83,8 @@ type InboundRule struct {
 	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin []ResourceRuleOrigin `json:"origin"`
+	Origin     []ResourceRuleOrigin `json:"origin"`
+	PolicyType *string              `json:"policyType,omitempty"`
 }
 
 // InboundRulesEntry defines model for InboundRulesEntry.
@@ -133,6 +134,16 @@ type Meta struct {
 	Type string `json:"type"`
 }
 
+// PolicyConf defines model for PolicyConf.
+type PolicyConf struct {
+	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Conf []interface{} `json:"conf"`
+
+	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin     []ResourceRuleOrigin `json:"origin"`
+	PolicyType string               `json:"policyType"`
+}
+
 // PolicyDescription information about a policy
 type PolicyDescription struct {
 	// HasFromTargetRef indicates that this policy can be used as an inbound policy
@@ -146,6 +157,14 @@ type PolicyDescription struct {
 
 	// IsTargetRef whether this policy uses targetRef matching
 	IsTargetRef bool `json:"isTargetRef"`
+}
+
+// ProxyPolicyConf a rule that affects the entire proxy
+type ProxyPolicyConf struct {
+	// Conf The actual conf generated
+	Conf       interface{} `json:"conf"`
+	Origin     []Meta      `json:"origin"`
+	PolicyType string      `json:"policyType"`
 }
 
 // ProxyRule a rule that affects the entire proxy

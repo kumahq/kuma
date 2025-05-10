@@ -161,7 +161,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_layout:
+  /meshes/{mesh}/dataplanes/{name}/_networking-layout:
     get:
       operationId: get-dataplanes-layout
       summary: Get networking layout for this dataplane 
@@ -181,7 +181,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/DataplaneLayoutResponse'
+          $ref: '#/components/responses/DataplaneNetworkingLayoutResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -206,7 +206,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/ProxyRulesResponse'
+          $ref: '#/components/responses/ProxyPolicyConfResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -237,7 +237,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/InboundRulesResponse'
+          $ref: '#/components/responses/InboundPolicyConfResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -268,7 +268,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/OutboundRulesResponse'
+          $ref: '#/components/responses/OutboundPolicyConfResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -668,7 +668,7 @@ components:
         name:
           type: string
           example: east
-    DataplaneLayout:
+    DataplaneNetworkingLayout:
       type: object
       title: DataplaneLayout
       description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
@@ -768,30 +768,30 @@ components:
           examples:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
-    DataplaneLayoutResponse:
+    DataplaneNetworkingLayoutResponse:
       description: A response containing dataplane networking layout.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/DataplaneLayout'
-    ProxyRulesResponse:
+            $ref: '#/components/schemas/DataplaneNetworkingLayout'
+    ProxyPolicyConfResponse:
       description: A response containing policies configuration for selected dataplane
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/DataplaneProxyRules'
-    InboundRulesResponse:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneProxyConf'
+    InboundPolicyConfResponse:
       description: A response containing policies configuration for selected inbound
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/DataplaneInboundRules'
-    OutboundRulesResponse:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneInboundPolicyConf'
+    OutboundPolicyConfResponse:
       description: A response containing policies configuration for selected outbound
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/DataplaneOutboundRules'
+            $ref: './common/resource.yaml#/components/schemas/DataplaneOutboundPolicyConf'
     BadRequest:
       description: Bad Request
       content:

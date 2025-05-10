@@ -129,6 +129,8 @@ components:
       type: object
       required: [conf, origin]
       properties:
+        policyType:
+          type: string
         conf:
           description: The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           type: array
@@ -175,13 +177,13 @@ components:
       properties:
         kri:
           type: string
+        name:
+          type: string
         port:
           type: integer
-        address:
-          type: string
         protocol:
           type: string
-    DataplaneProxyRules:
+    DataplaneProxyConf:
       type: object
       required: [ rules ]
       properties:
@@ -189,19 +191,19 @@ components:
           type: array
           description: The final computed configuration for the dataplane, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           items:
-            $ref: '#/components/schemas/ProxyRule'
-    DataplaneInboundRules:
+            $ref: '#/components/schemas/ProxyPolicyConf'
+    DataplaneInboundPolicyConf:
       type: object
       required: [ inbound, rules ]
       properties:
         inbound:
           $ref: '#/components/schemas/DataplaneInbound'
-        rules:
+        policyConf:
           type: array
           description: The final computed configuration for the inbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           items:
-            $ref: '#/components/schemas/InboundRule'
-    DataplaneOutboundRules:
+            $ref: '#/components/schemas/PolicyConf'
+    DataplaneOutboundPolicyConf:
       type: object
       required: [ outbound, rules ]
       properties:
@@ -211,7 +213,41 @@ components:
           type: array
           description: The final computed configuration for the outbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           items:
-            $ref: '#/components/schemas/ResourceRule'
+            $ref: '#/components/schemas/PolicyConf'
+    ProxyPolicyConf:
+      description: a rule that affects the entire proxy
+      type: object
+      required: [ policyType, conf, origin ]
+      properties:
+        policyType:
+          type: string
+        conf:
+          description: The actual conf generated
+          type: object
+          additionalProperties: true
+          x-go-type: 'interface{}'
+        origin:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
+    PolicyConf:
+      type: object
+      required: [ policyType, conf, origin ]
+      properties:
+        policyType:
+          type: string
+        conf:
+          description: The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: 'interface{}'
+        origin:
+          type: array
+          description: The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/ResourceRuleOrigin'
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object
