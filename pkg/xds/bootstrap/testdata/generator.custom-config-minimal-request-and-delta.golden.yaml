@@ -48,7 +48,8 @@ node:
     dataplane.admin.address: 192.168.0.1
     dataplane.admin.port: "9902"
     dataplane.proxyType: dataplane
-    features: []
+    features:
+    - feature-delta-grpc
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""

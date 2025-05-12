@@ -28,7 +28,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -61,7 +60,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 
 	features := []interface{}{}
-	for _, feature := range parameters.Features {
+	for feature := range parameters.Features {
 		features = append(features, feature)
 	}
 
@@ -105,8 +104,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		})
 	}
 	configType := envoy_core_v3.ApiConfigSource_GRPC
-	switch parameters.XdsTransportProtocolVariant {
-	case types.DELTA_GRPC:
+	if parameters.UseDeltaXds {
 		configType = envoy_core_v3.ApiConfigSource_DELTA_GRPC
 	}
 

@@ -1,0 +1,96 @@
+# Multiple MeshTimeout policies targeting the same resources
+type: MeshHTTPRoute
+name: http-route-1
+mesh: mesh-1
+labels:
+  kuma.io/display-name: http-route-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /api
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: backend
+                weight: 100
+---
+# First MeshTimeout policy targeting the MeshHTTPRoute
+type: MeshTimeout
+name: matched-for-rules-first
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: http-route-1
+      default:
+        connectionTimeout: 1s
+        http:
+          requestTimeout: 20s
+---
+# Second MeshTimeout policy targeting the same MeshHTTPRoute
+type: MeshTimeout
+name: matched-for-rules-second
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: my-app
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: http-route-1
+      default:
+        connectionTimeout: 2s
+        idleTimeout: 30s
+---
+# Third MeshTimeout policy targeting the MeshHTTPRoute using labels
+type: MeshTimeout
+name: matched-for-rules-third
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        labels:
+          kuma.io/display-name: http-route-1
+      default:
+        connectionTimeout: 3s
+        http:
+          maxStreamDuration: 60s
+---
+# Forth MeshTimeout policy targeting the MeshService referenced by the MeshHTTPRoute
+type: MeshTimeout
+name: matched-for-rules-forth
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        connectionTimeout: 5s
+        http:
+          requestTimeout: 10s
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: Mesh
+name: mesh-1
