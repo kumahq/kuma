@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -29,7 +29,7 @@ type SubscriptionStatusAccessor interface {
 	GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription)
 }
 
-type DataplaneInsightSinkFactoryFunc = func(core_model.ResourceType, SubscriptionStatusAccessor) DataplaneInsightSink
+type DataplaneInsightSinkFactoryFunc = func(*structpb.Struct, SubscriptionStatusAccessor) DataplaneInsightSink
 
 func NewDataplaneStatusTracker(
 	runtimeInfo core_runtime.RuntimeInfo,
@@ -159,22 +159,7 @@ func (c *dataplaneStatusTracker) onStreamRequest(
 		// Infer the Dataplane ID.
 		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 			state.dataplaneId = proxyId.ToResourceKey()
-			var dpType core_model.ResourceType
 			md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-
-			// If the dataplane was started with a resource YAML, then it
-			// will be serialized in the node metadata and we would know
-			// the underlying type directly. Since that is optional, we
-			// can't depend on it here, so we map from the proxy type,
-			// which is guaranteed.
-			switch md.GetProxyType() {
-			case mesh_proto.IngressProxyType:
-				dpType = core_mesh.ZoneIngressType
-			case mesh_proto.DataplaneProxyType:
-				dpType = core_mesh.DataplaneType
-			case mesh_proto.EgressProxyType:
-				dpType = core_mesh.ZoneEgressType
-			}
 
 			log := statusTrackerLog.WithValues(
 				"proxyName", state.dataplaneId.Name,
@@ -196,7 +181,7 @@ func (c *dataplaneStatusTracker) onStreamRequest(
 				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "mode", mode, "metadata", req.Metadata())
 			}
 			// Kick off the async Dataplane status flusher.
-			go c.createStatusSink(dpType, state).Start(state.stop)
+			go c.createStatusSink(req.Metadata(), state).Start(state.stop)
 		} else {
 			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "mode", mode, "req", req)
 		}
