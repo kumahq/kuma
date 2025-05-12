@@ -73,6 +73,7 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 				common_api.MeshService,
 				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
+				common_api.MeshHTTPRoute,
 			}
 		}
 

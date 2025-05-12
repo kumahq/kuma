@@ -3,8 +3,6 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -19,6 +17,13 @@ import (
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -50,7 +55,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh)
+	err := applyToRealResources(util_slices.Filter(rs.List(), core_xds.HasResourceOrigin), policies.ToRules.ResourceRules, ctx.Mesh.Resources)
 	if err != nil {
 		return err
 	}
@@ -104,7 +109,7 @@ func applyToGateway(
 			continue
 		}
 
-		toRules := rules.ToRules.ByListener[listenerKey]
+		toRules, ok := rules.ToRules.ByListener[listenerKey]
 		if !ok {
 			continue
 		}
@@ -141,18 +146,36 @@ func applyToGateway(
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext) error {
-	for uri, resType := range rs.IndexByOrigin() {
-		conf := rules.Compute(uri, meshCtx.Resources)
-		if conf == nil {
+func applyToRealResources(
+	rs []*core_xds.Resource,
+	rules outbound.ResourceRules,
+	reader kri.ResourceReader,
+) error {
+	for _, r := range rs {
+		switch r.ResourceOrigin.ResourceType {
+		case meshservice_api.MeshServiceType:
+		case meshexternalservice_api.MeshExternalServiceType:
+		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+		default:
 			continue
 		}
 
-		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ListenerType:
-				err := configureListeners(resources, conf.Conf[0].(api.Conf))
-				if err != nil {
+		var conf api.Conf
+		if rr := rules.Compute(*r.ResourceOrigin, reader); rr != nil {
+			conf = rr.Conf[0].(api.Conf)
+		}
+
+		switch envoyResource := r.Resource.(type) {
+		case *envoy_listener.Listener:
+			configurer := plugin_xds.Configurer{Conf: conf, Protocol: r.Protocol}
+			if err := configurer.ConfigureListener(envoyResource); err != nil {
+				return err
+			}
+
+			for _, fc := range envoyResource.FilterChains {
+				if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+					return configureRoutes(hcm.GetRouteConfig(), rules, reader, r.Protocol)
+				}); err != nil {
 					return err
 				}
 			}
@@ -161,16 +184,40 @@ func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules
 	return nil
 }
 
-func configureListeners(resources []*core_xds.Resource, conf api.Conf) error {
-	for _, resource := range resources {
-		configurer := plugin_xds.Configurer{
-			Conf:     conf,
-			Protocol: resource.Protocol,
-		}
+func configureRoutes(
+	rc *envoy_route.RouteConfiguration,
+	rules outbound.ResourceRules,
+	reader kri.ResourceReader,
+	protocol core_mesh.Protocol,
+) error {
+	for _, vh := range rc.VirtualHosts {
+		for _, route := range vh.Routes {
+			if !kri.IsValid(route.Name) {
+				continue
+			}
 
-		err := configurer.ConfigureListener(resource.Resource.(*envoy_listener.Listener))
-		if err != nil {
-			return err
+			id, err := kri.FromString(route.Name)
+			if err != nil {
+				return err
+			}
+
+			var conf api.Conf
+			if rr := rules.Compute(id, reader); rr != nil {
+				conf = rr.Conf[0].(api.Conf)
+			}
+
+			policy, err := plugin_xds.GetRouteRetryConfig(&conf, protocol)
+			if err != nil {
+				return err
+			}
+			if policy == nil {
+				return nil
+			}
+
+			switch a := route.GetAction().(type) {
+			case *envoy_route.Route_Route:
+				a.Route.RetryPolicy = policy
+			}
 		}
 	}
 	return nil

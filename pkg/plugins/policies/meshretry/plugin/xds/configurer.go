@@ -68,14 +68,14 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 		return nil
 	}
 
-	defaultPolicy, err := getRouteRetryConfig(c.getConf(c.Element), c.Protocol)
+	defaultPolicy, err := GetRouteRetryConfig(c.getConf(c.Element), c.Protocol)
 	if err != nil {
 		return err
 	}
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
 			routeConfig := c.getConf(c.Element.WithKeyValue(core_rules.RuleMatchesHashTag, route.Name))
-			policy, err := getRouteRetryConfig(routeConfig, c.Protocol)
+			policy, err := GetRouteRetryConfig(routeConfig, c.Protocol)
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 	return nil
 }
 
-func getRouteRetryConfig(conf *api.Conf, protocol core_mesh.Protocol) (*envoy_route.RetryPolicy, error) {
+func GetRouteRetryConfig(conf *api.Conf, protocol core_mesh.Protocol) (*envoy_route.RetryPolicy, error) {
 	if conf == nil {
 		return nil, nil
 	}
@@ -458,7 +458,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 		return nil
 	}
 
-	policy, err := getRouteRetryConfig(&c.Conf, c.Protocol)
+	policy, err := GetRouteRetryConfig(&c.Conf, c.Protocol)
 	if err != nil {
 		return err
 	}

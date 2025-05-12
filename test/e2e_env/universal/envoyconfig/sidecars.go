@@ -21,6 +21,8 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
+	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 )
 
 func Sidecars() {
@@ -74,6 +76,8 @@ func Sidecars() {
 			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
 			meshtls.MeshTLSResourceTypeDescriptor,
+			meshhealthcheck.MeshHealthCheckResourceTypeDescriptor,
+			meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
 			meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
 		)).To(Succeed())
 	})
@@ -101,5 +105,6 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshretry"), "envoyconfig"),
 	)
 }

@@ -45,11 +45,11 @@ filterChains:
               timeout: 88s
           - match:
               prefix: /
-            name: kri_mhttpr_mesh-1___test-route-1_
+            name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
             route:
               cluster: test-service-1
-              idleTimeout: 888s
-              timeout: 88s
+              idleTimeout: 999s
+              timeout: 99s
       statPrefix: outbound_127_0_0_1_10001
 name: outbound:127.0.0.1:10001
 trafficDirection: OUTBOUND
