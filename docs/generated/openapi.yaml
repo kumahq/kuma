@@ -4739,6 +4739,17 @@ components:
                     type: string
                   type: array
               type: object
+            metadata:
+              properties:
+                fields:
+                  additionalProperties:
+                    properties:
+                      Kind: true
+                    required:
+                    - Kind
+                    type: object
+                  type: object
+              type: object
             subscriptions:
               description: List of ADS subscriptions created by a given Dataplane.
               items:
