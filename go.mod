@@ -68,7 +68,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.39.0
-	golang.org/x/sync v0.13.0
+	golang.org/x/sync v0.14.0
 	golang.org/x/sys v0.32.0
 	golang.org/x/text v0.24.0
 	gonum.org/v1/gonum v0.16.0
