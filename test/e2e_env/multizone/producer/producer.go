@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -60,7 +61,11 @@ func ProducerPolicyFlow() {
 
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshtimeout_api.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone1, mesh, meshtimeout_api.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone2, mesh, meshtimeout_api.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone1, mesh, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone2, mesh, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
@@ -141,5 +146,84 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
 		}).Should(Succeed())
+	})
+
+	It("should sync producer policy that targets producer route to other clusters", func() {
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: add-response-delay-header
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  add:
+                    - name: x-set-response-delay-ms
+                      value: "3000"
+`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+
+		// check that MeshHTTPRoute 'add-response-delay-header' makes response time more than 3s
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			g.Expect(framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithMaxTime(10), // we don't want 'curl' to return early
+			)).Should(HaveField("Instance", ContainSubstring("test-server")))
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*3))
+		}, "30s", "1s").Should(Succeed())
+
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-http-route
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: add-response-delay-header
+      default:
+        http:
+          requestTimeout: 2s
+`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+
+		// check 'timeout-on-http-route' synced to test-client's zone
+		Eventually(func(g Gomega) {
+			out, err := k8s.RunKubectlAndGetOutputE(
+				multizone.KubeZone1.GetTesting(),
+				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
+				"get", "meshtimeouts")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "timeout-on-http-route", Kuma2, k8sZoneNamespace)))
+		}).Should(Succeed())
+
+		// check 'timeout-on-http-route' is applied
+		Eventually(func(g Gomega) {
+			response, err := framework_client.CollectFailure(
+				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithMaxTime(10), // we don't want 'curl' to return early
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(504))
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 }

@@ -206,7 +206,6 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			Mode:                rt.Config().Mode,
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
-			DeltaXds:            rt.Config().Experimental.DeltaXds,
 		},
 		ResourceConverter:            converter,
 		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,

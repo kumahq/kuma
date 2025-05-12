@@ -669,17 +669,15 @@ func universalZoneProxyRelatedResource(
 
 		app, err := NewUniversalApp(
 			cluster.GetTesting(),
-			uniCluster.GetDockerBackend(),
 			uniCluster.name,
 			dpName,
 			"",
 			appType,
-			Config.IPV6,
-			false,
-			[]string{},
-			[]string{},
-			"",
-			concurrency,
+			UniversalAppRunOptions{
+				DockerBackend: uniCluster.GetDockerBackend(),
+				DPConcurrency: concurrency,
+				EnableIPv6:    Config.IPV6,
+			},
 		)
 		if err != nil {
 			return err

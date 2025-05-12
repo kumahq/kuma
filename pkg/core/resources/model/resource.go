@@ -645,8 +645,17 @@ func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
+	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
+		return pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value
+	}
+
 	isProducerItem := func(tr common_api.TargetRef) bool {
-		return tr.Kind == common_api.MeshService && pointer.Deref(tr.Name) != "" && (pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value)
+		switch tr.Kind {
+		case common_api.MeshService, common_api.MeshHTTPRoute:
+			return pointer.Deref(tr.Name) != "" && hasSameOrOmittedNamespace(tr)
+		default:
+			return false
+		}
 	}
 
 	producerItems := 0
