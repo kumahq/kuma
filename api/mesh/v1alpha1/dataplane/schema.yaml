@@ -1,11 +1,4 @@
 properties:
-  envoy:
-    properties:
-      xdsTransportProtocolVariant:
-        oneOf:
-        - type: string
-        - type: integer
-    type: object
   labels:
     additionalProperties:
       type: string
