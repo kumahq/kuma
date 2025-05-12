@@ -163,6 +163,27 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	return nil
 }
 
+func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef {
+	var result []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef
+
+	for _, ref := range refs.Refs {
+		backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+			Kind:      ref.Kind,
+			Name:      pointer.Deref(ref.Name),
+			Namespace: pointer.Deref(ref.Namespace),
+			Labels:    ref.Labels,
+		}
+
+		if ref.Port != nil {
+			backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
+		}
+
+		result = append(result, backendRef)
+	}
+
+	return result
+}
+
 func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
@@ -202,22 +223,8 @@ func (p *PodConverter) dataplaneFor(
 				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 			}
 
-			if len(refs.Refs) > 0 {
-				tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
-			}
-
-			for _, ref := range refs.Refs {
-				backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-					Kind:      ref.Kind,
-					Name:      pointer.Deref(ref.Name),
-					Namespace: pointer.Deref(ref.Namespace),
-					Labels:    ref.Labels,
-				}
-				if ref.Port != nil {
-					backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
-				}
-
-				tp.ReachableBackends.Refs = append(tp.ReachableBackends.Refs, backendRef)
+			tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: processReachableBackendRefs(refs),
 			}
 		}
 	}

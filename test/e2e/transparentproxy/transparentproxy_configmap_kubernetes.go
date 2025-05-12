@@ -2,7 +2,6 @@ package transparentproxy
 
 import (
 	"fmt"
-	"slices"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,31 +18,24 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func TransparentProxyConfigmap() {
-	meshName := "transparentproxy-configmap"
-	namespace := "transparentproxy-configmap"
-	namespaceExternal := "transparentproxy-configmap-external"
+func TransparentProxyConfigMap() {
+	const meshName = "transparentproxy-configmap"
+	const namespace = "transparentproxy-configmap"
+	const namespaceExternal = "transparentproxy-configmap-external"
 
 	var cluster *K8sCluster
 	var demoClientPod kube_core.Pod
 
 	BeforeAll(func() {
-		cluster = NewK8sCluster(NewTestingT(), Kuma2, Silent)
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		Eventually(func() error {
-			return cluster.Install(Kuma(config_core.Zone, slices.Concat(
-				[]KumaDeploymentOption{
-					// Occasionally CP will lose a leader in the E2E test just because of this deadline,
-					// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
-					// 100 s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
-					WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
-					WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
-					WithCtlOpts(map[string]string{
-						"--set": fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix),
-					}),
-				},
-				KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Standalone.Kubernetes),
-			)...))
+			return cluster.Install(Kuma(
+				config_core.Zone,
+				WithCtlOpts(map[string]string{
+					"--set": fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix),
+				}),
+			))
 		}, "90s", "3s").Should(Succeed())
 
 		Expect(NewClusterSetup().
@@ -80,13 +72,14 @@ func TransparentProxyConfigmap() {
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(cluster, meshName, namespace)
+		DebugKube(cluster, meshName, namespace, namespaceExternal)
 	})
 
 	E2EAfterAll(func() {
-		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(namespaceExternal)).To(Succeed())
+		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should contain transparent proxy in configmap feature flag in the xds metadata", func() {
