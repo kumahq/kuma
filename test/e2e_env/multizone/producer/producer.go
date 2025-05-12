@@ -9,15 +9,15 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	framework_client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 func ProducerPolicyFlow() {
@@ -115,15 +115,6 @@ spec:
 			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
 		}).Should(Succeed())
 
-		//Eventually(func(g Gomega) {
-		//	out, err := k8s.RunKubectlAndGetOutputE(
-		//		multizone.KubeZone1.GetTesting(),
-		//		multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
-		//		"get", "meshservices")
-		//	g.Expect(err).ToNot(HaveOccurred())
-		//	g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "test-server", Kuma2, k8sZoneNamespace)))
-		//}).Should(Succeed())
-		//
 		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
@@ -294,19 +285,6 @@ spec:
                 name: test-server
                 port: 80
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
-
-		//Eventually(func(g Gomega) {
-		//	framework_client.CollectResponsesAndFailures()
-		//	response, err := framework_client.CollectFailure(
-		//		multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
-		//		framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
-		//		framework_client.NoFail(),
-		//		framework_client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
-		//	)
-		//
-		//	g.Expect(err).ToNot(HaveOccurred())
-		//	g.Expect(response.ResponseCode).To(Equal(500))
-		//}, "30s", "100ms").Should(Succeed())
 
 		Eventually(func(g Gomega) {
 			responses, err := framework_client.CollectResponsesAndFailures(

@@ -4,6 +4,13 @@ components:
       properties:
         dataplane:
           properties:
+            envoy:
+              properties:
+                xdsTransportProtocolVariant:
+                  oneOf:
+                  - type: string
+                  - type: integer
+              type: object
             metrics:
               description: |-
                 Configuration for metrics that should be collected and exposed by the
@@ -413,17 +420,6 @@ components:
                   items:
                     type: string
                   type: array
-              type: object
-            metadata:
-              properties:
-                fields:
-                  additionalProperties:
-                    properties:
-                      Kind: true
-                    required:
-                    - Kind
-                    type: object
-                  type: object
               type: object
             subscriptions:
               description: List of ADS subscriptions created by a given Dataplane.
