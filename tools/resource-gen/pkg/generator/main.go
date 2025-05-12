@@ -552,7 +552,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 
 		wrapped := map[string]interface{}{
-			"openapi": "3.0.3",
+			"openapi": "3.1.0",
 			"info": map[string]string{
 				"x-ref-schema-name": tpe.Name(),
 			},
