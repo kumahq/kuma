@@ -2,6 +2,9 @@ package kri
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -45,8 +48,43 @@ func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.Resour
 	}
 }
 
+func FromString(s string) (Identifier, error) {
+	parts := strings.Split(s, "_")
+	if len(parts) != 7 {
+		return Identifier{}, errors.Errorf("invalid identifier string: %q", s)
+	}
+	if parts[0] != "kri" {
+		return Identifier{}, errors.Errorf("identifier must start with 'kri': %q", s)
+	}
+	ds := registry.Global().ObjectDescriptors(core_model.TypeFilterFn(func(d core_model.ResourceTypeDescriptor) bool {
+		return d.ShortName == parts[1]
+	}))
+	if len(ds) == 0 {
+		return Identifier{}, errors.Errorf("unknown short name of resource type: %q", parts[1])
+	}
+	return Identifier{
+		ResourceType: ds[0].Name,
+		Mesh:         parts[2],
+		Zone:         parts[3],
+		Namespace:    parts[4],
+		Name:         parts[5],
+		SectionName:  parts[6],
+	}, nil
+}
+
 func NoSectionName(id Identifier) Identifier {
 	idCopy := id
 	idCopy.SectionName = ""
 	return idCopy
+}
+
+func IsValid(s string) bool {
+	parts := strings.Split(s, "_")
+	if len(parts) != 7 {
+		return false
+	}
+	if parts[0] != "kri" {
+		return false
+	}
+	return true
 }
