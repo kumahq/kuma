@@ -67,7 +67,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.6.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.39.0
+	golang.org/x/net v0.40.0
 	golang.org/x/sync v0.14.0
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.25.0
