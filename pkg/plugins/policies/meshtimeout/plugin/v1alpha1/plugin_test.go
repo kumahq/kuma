@@ -512,6 +512,7 @@ var _ = Describe("MeshTimeout", func() {
 					Origin:         generator.OriginOutbound,
 					Resource:       httpListenerWithSeveralMeshHTTPRoutes("test-service-1", kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, "")),
 					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, "")),
+					Protocol:       core_mesh.ProtocolHTTP,
 				},
 			},
 			toRules: core_rules.ToRules{

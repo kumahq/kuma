@@ -296,12 +296,11 @@ func applyToRealResources(
 			}
 
 			for _, fc := range envoyResource.FilterChains {
-				_ = listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
-					if err := configureRoutes(hcm.GetRouteConfig(), rules, reader); err != nil {
-						return err
-					}
-					return nil
-				})
+				if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+					return configureRoutes(hcm.GetRouteConfig(), rules, reader)
+				}); err != nil {
+					return err
+				}
 			}
 
 		case *envoy_cluster.Cluster:
