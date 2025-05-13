@@ -291,7 +291,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 			return nil, err
 		}
 		// this part of validation works only for Universal scenarios with TransparentProxying
-		if dp.Spec.Networking.TransparentProxying != nil && len(dp.Spec.Networking.Outbound) != 0 {
+		if request.TransparentProxy.Enabled() && len(dp.Spec.GetNetworking().GetOutbound()) > 0 {
 			var err validators.ValidationError
 			err.AddViolation("outbound", "should be empty since dataplane is in Transparent Proxying mode")
 			return nil, err.OrNil()
