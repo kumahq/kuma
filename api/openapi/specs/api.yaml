@@ -161,7 +161,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_networking-layout:
+  /meshes/{mesh}/dataplanes/{name}/_layout:
     get:
       operationId: get-dataplanes-layout
       summary: Get networking layout for this dataplane 
@@ -186,10 +186,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_policy-conf:
+  /meshes/{mesh}/dataplanes/{name}/_policies:
     get:
       operationId: get-proxy-policy-conf
-      summary: Get policies configuration for this dataplane
+      summary: Get policies for this dataplane
       description: Returns proxy level policy configuration derived from combining all policies selecting this dataplane 
       parameters:
         - in: path
@@ -211,10 +211,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_policy-conf:
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_policies:
     get:
       operationId: get-inbound-policy-conf
-      summary: Get policies configuration for this inbound
+      summary: Get policies for this inbound
       description: Returns inbound policy configuration derived from combining all policies selecting this dataplane
       parameters:
         - in: path
@@ -242,10 +242,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policy-conf:
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policies:
     get:
       operationId: get-outbound-policy-conf
-      summary: Get policies configuration for this outbound
+      summary: Get policies for this outbound
       description: Returns outbound policy configuration derived from combining all policies selecting this dataplane
       parameters:
         - in: path
@@ -779,19 +779,19 @@ components:
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/DataplaneProxyConf'
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
     InboundPolicyConfResponse:
       description: A response containing policies configuration for selected inbound
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/DataplaneInboundPolicyConf'
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
     OutboundPolicyConfResponse:
       description: A response containing policies configuration for selected outbound
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/DataplaneOutboundPolicyConf'
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
     BadRequest:
       description: Bad Request
       content:
