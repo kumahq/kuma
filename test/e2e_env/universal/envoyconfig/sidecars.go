@@ -31,9 +31,7 @@ const meshName = "envoyconfig"
 func Sidecars() {
 	BeforeAll(SetupSidecarCluster)
 
-	AfterEachFailure(func() {
-		DebugUniversal(universal.Cluster, meshName)
-	})
+	AfterEachFailure(AfterSidecarFailure)
 
 	E2EAfterAll(CleanupAfterSidecarSuite)
 
@@ -108,10 +106,14 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(mesh, policies...)
+	return cleanupAfterTest(meshName, policies...)
 }
 
 func CleanupAfterSidecarSuite() {
 	Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 	Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+}
+
+func AfterSidecarFailure() {
+	DebugUniversal(universal.Cluster, meshName)
 }
