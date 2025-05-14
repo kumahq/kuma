@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -94,4 +95,10 @@ var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
 
 func redactStatPrefixes(jsonStr string) string {
 	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
+}
+
+func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
+	return func() {
+		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
+	}
 }
