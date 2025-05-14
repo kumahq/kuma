@@ -417,9 +417,7 @@ func MeshMetric() {
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-			if Config.KumaExperimentalDPDNS {
-				g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
-			}
+			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
 		}).Should(Succeed())
 	})
 
