@@ -114,5 +114,11 @@ default:
       description: "2.11.x release"
     - title: 2.12.x
       description: "2.12.x release"
+    - title: 2.13.x
+      description: "2.13.x release"
+    - title: 2.14.x
+      description: "2.14.x release"
+    - title: 2.15.x
+      description: "2.15.x release"
     - title: 3.0.x
       description: "3.0.x release"

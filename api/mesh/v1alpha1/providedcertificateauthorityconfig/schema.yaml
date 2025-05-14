@@ -19,4 +19,4 @@ components:
       type: object
 info:
   x-ref-schema-name: ProvidedCertificateAuthorityConfig
-openapi: 3.0.3
+openapi: 3.1.0

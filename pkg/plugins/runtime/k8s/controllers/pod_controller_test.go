@@ -845,9 +845,6 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
-				Envoy: &mesh_proto.EnvoyConfiguration{
-					XdsTransportProtocolVariant: mesh_proto.EnvoyConfiguration_GRPC,
-				},
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Admin: &mesh_proto.EnvoyAdmin{

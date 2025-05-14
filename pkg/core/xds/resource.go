@@ -181,6 +181,10 @@ func NonGatewayResources(r *Resource) bool {
 	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.Origin != "gateway")
 }
 
+func HasResourceOrigin(r *Resource) bool {
+	return r.ResourceOrigin != nil
+}
+
 type ResourcesByType map[string][]*Resource
 
 func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[kri.Identifier]ResourcesByType {

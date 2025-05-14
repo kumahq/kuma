@@ -30,7 +30,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	var ctx context.Context
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		tracker = NewDataplaneStatusTracker(runtimeInfo, func(_ *structpb.Struct, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
 		callbacks = v3.AdaptCallbacks(tracker)

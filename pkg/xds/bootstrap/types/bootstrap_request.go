@@ -28,14 +28,6 @@ type BootstrapRequest struct {
 	TransparentProxy     *tproxy_dp.DataplaneConfig `json:"dataplaneConfig,omitempty"`
 }
 
-type XdsTransportProtocolVariant string
-
-const (
-	DEFAULT    XdsTransportProtocolVariant = "DEFAULT"
-	DELTA_GRPC XdsTransportProtocolVariant = "DELTA_GRPC"
-	GRPC       XdsTransportProtocolVariant = "GRPC"
-)
-
 type Version struct {
 	KumaDp KumaDpVersion `json:"kumaDp"`
 	Envoy  EnvoyVersion  `json:"envoy"`

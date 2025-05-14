@@ -131,9 +131,13 @@ func NewApiServer(
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.
 	// because go-restful detects it as a clash (you cannot register 2 WebServices with path /meshes/)
+	apiBasePath := cfg.ApiServer.BasePath
+	if !strings.HasPrefix(apiBasePath, "/") {
+		apiBasePath = "/" + apiBasePath
+	}
 	ws := new(restful.WebService)
 	ws.
-		Path(cfg.ApiServer.BasePath).
+		Path(apiBasePath).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 

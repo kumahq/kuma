@@ -2,11 +2,11 @@ package kubernetes
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"sigs.k8s.io/yaml"
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -487,63 +487,17 @@ func ConfigToAnnotations(
 	defaultAdminPort uint32,
 ) (map[string]string, error) {
 	result := map[string]string{
-		k8s_metadata.KumaSidecarInjectedAnnotation:                 k8s_metadata.AnnotationTrue,
-		k8s_metadata.KumaTransparentProxyingAnnotation:             k8s_metadata.AnnotationEnabled,
-		k8s_metadata.KumaSidecarUID:                                cfg.KumaDPUser,
-		k8s_metadata.KumaTransparentProxyingOutboundPortAnnotation: cfg.Redirect.Outbound.Port.String(),
-		k8s_metadata.KumaTransparentProxyingInboundPortAnnotation:  cfg.Redirect.Inbound.Port.String(),
-		k8s_metadata.KumaTransparentProxyingIPFamilyMode:           cfg.IPFamilyMode.String(),
+		k8s_metadata.KumaSidecarInjectedAnnotation: k8s_metadata.AnnotationTrue,
+	}
+
+	if bs, err := yaml.Marshal(cfg); err != nil {
+		return nil, err
+	} else {
+		result[k8s_metadata.KumaTrafficTransparentProxyConfig] = string(bs)
 	}
 
 	if cfg.CNIMode {
 		result[k8s_metadata.CNCFNetworkAnnotation] = k8s_metadata.KumaCNI
-	}
-
-	if cfg.DropInvalidPackets {
-		result[k8s_metadata.KumaTrafficDropInvalidPackets] = k8s_metadata.AnnotationTrue
-	}
-
-	if cfg.Log.Enabled {
-		result[k8s_metadata.KumaTrafficIptablesLogs] = k8s_metadata.AnnotationTrue
-	}
-
-	if cfg.Ebpf.Enabled {
-		result[k8s_metadata.KumaTransparentProxyingEbpf] = k8s_metadata.AnnotationEnabled
-		result[k8s_metadata.KumaTransparentProxyingEbpfBPFFSPath] = cfg.Ebpf.BPFFSPath
-		result[k8s_metadata.KumaTransparentProxyingEbpfCgroupPath] = cfg.Ebpf.CgroupPath
-		result[k8s_metadata.KumaTransparentProxyingEbpfTCAttachIface] = cfg.Ebpf.TCAttachIface
-		result[k8s_metadata.KumaTransparentProxyingEbpfProgramsSourcePath] = cfg.Ebpf.ProgramsSourcePath
-		result[k8s_metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = cfg.Ebpf.InstanceIPEnvVarName
-	}
-
-	if len(cfg.Redirect.Outbound.ExcludePorts) > 0 {
-		result[k8s_metadata.KumaTrafficExcludeOutboundPorts] = cfg.Redirect.Outbound.ExcludePorts.String()
-	}
-
-	if len(cfg.Redirect.Outbound.ExcludePortsForIPs) > 0 {
-		result[k8s_metadata.KumaTrafficExcludeOutboundIPs] = strings.Join(cfg.Redirect.Outbound.ExcludePortsForIPs, ",")
-	}
-
-	if len(cfg.Redirect.Inbound.ExcludePorts) > 0 {
-		result[k8s_metadata.KumaTrafficExcludeInboundPorts] = cfg.Redirect.Inbound.ExcludePorts.String()
-	}
-
-	if len(cfg.Redirect.Inbound.ExcludePortsForIPs) > 0 {
-		result[k8s_metadata.KumaTrafficExcludeInboundIPs] = strings.Join(cfg.Redirect.Inbound.ExcludePortsForIPs, ",")
-	}
-
-	if cfg.Redirect.DNS.Enabled {
-		result[k8s_metadata.KumaBuiltinDNS] = k8s_metadata.AnnotationEnabled
-		result[k8s_metadata.KumaBuiltinDNSPort] = cfg.Redirect.DNS.Port.String()
-
-		if v, _, err := k8s_metadata.Annotations(result).GetEnabledWithDefault(
-			runtimeCfg.BuiltinDNS.Logging,
-			k8s_metadata.KumaBuiltinDNSLogging,
-		); err != nil {
-			return nil, err
-		} else {
-			result[k8s_metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(v)
-		}
 	}
 
 	if err := k8s_probes.SetVirtualProbesEnabledAnnotation(

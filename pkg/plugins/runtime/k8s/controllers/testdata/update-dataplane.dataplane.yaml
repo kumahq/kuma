@@ -13,8 +13,6 @@ metadata:
   name: test-app-8646b8bbc8-5qbl2
   namespace: playground
 spec:
-  envoy:
-    xdsTransportProtocolVariant: GRPC
   networking:
     address: 192.168.0.1
     inbound:

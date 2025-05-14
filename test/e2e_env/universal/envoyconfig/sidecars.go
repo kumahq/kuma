@@ -10,7 +10,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtls "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
@@ -73,6 +76,9 @@ func Sidecars() {
 			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
 			meshtls.MeshTLSResourceTypeDescriptor,
+			meshhealthcheck.MeshHealthCheckResourceTypeDescriptor,
+			meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
+			meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
@@ -99,5 +105,6 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshretry"), "envoyconfig"),
 	)
 }

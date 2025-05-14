@@ -25,6 +25,7 @@ import (
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/tls"
+	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 type InstallFunc func(cluster Cluster) error
@@ -520,6 +521,32 @@ func YamlUniversal(yaml string) InstallFunc {
 	}
 }
 
+func ConfigMapKubernetes(name, namespace string, labels, data map[string]string) InstallFunc {
+	return YamlK8sObject(&corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Data: data,
+	})
+}
+
+func ConfigMapTProxyKubernetes(name, namespace, cfg string) InstallFunc {
+	return ConfigMapKubernetes(
+		name,
+		namespace,
+		nil,
+		map[string]string{
+			tproxy_consts.KubernetesConfigMapDataKey: cfg,
+		},
+	)
+}
+
 type builder interface {
 	KubeYaml() string
 	UniYaml() string
@@ -642,17 +669,15 @@ func universalZoneProxyRelatedResource(
 
 		app, err := NewUniversalApp(
 			cluster.GetTesting(),
-			uniCluster.GetDockerBackend(),
 			uniCluster.name,
 			dpName,
 			"",
 			appType,
-			Config.IPV6,
-			false,
-			[]string{},
-			[]string{},
-			"",
-			concurrency,
+			UniversalAppRunOptions{
+				DockerBackend: uniCluster.GetDockerBackend(),
+				DPConcurrency: concurrency,
+				EnableIPv6:    Config.IPV6,
+			},
 		)
 		if err != nil {
 			return err

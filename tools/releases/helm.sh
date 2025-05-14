@@ -7,7 +7,6 @@ source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
-CHARTS_REPO_URL="https://$GH_OWNER.github.io/$GH_REPO"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
@@ -100,28 +99,31 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+  CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}/*.tgz" -type f)
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
+
+  pushd ${GH_REPO}
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
-    --package-path "${CHARTS_PACKAGE_PATH}"
+    --package-path "../${CHARTS_PACKAGE_PATH}"
 
   # Then build and upload the index file to github pages
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
-    --charts-repo "${CHARTS_REPO_URL}" \
-    --package-path "${CHARTS_PACKAGE_PATH}" \
-    --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
-
-  pushd ${GH_REPO}
+    --package-path "../${CHARTS_PACKAGE_PATH}" \
+    --index-path "${CHARTS_INDEX_FILE}"
 
   git config user.name "${GH_USER}"
   git config user.email "${GH_EMAIL}"
 
   git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm): publish charts"
+  git commit -m "ci(helm): publish chart version ${CHART_VERSION}"
   git push
 
   popd
