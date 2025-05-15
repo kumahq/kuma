@@ -48,6 +48,7 @@ func BindToLoopbackAddresses() {
 
 	AfterEachFailure(func() {
 		DebugUniversal(universal, mesh)
+		DebugUniversal(universal, meshMs)
 	})
 
 	E2EAfterEach(func() {
