@@ -170,13 +170,13 @@ paths:
         - in: path
           name: mesh
           required: true
-          description: The mesh of the DPP to get the diff for.
+          description: The mesh of the DPP to get the layout for.
           schema:
             type: string
         - in: path
           name: name
           required: true
-          description: The name of the DPP within the mesh to get the diff for.
+          description: The name of the DPP within the mesh to get the layout for.
           schema:
             type: string
       responses:
@@ -190,7 +190,7 @@ paths:
     get:
       operationId: get-proxy-policy-conf
       summary: Get policies for this dataplane
-      description: Returns proxy level policy configuration derived from combining all policies selecting this dataplane 
+      description: Returns proxy level policy configuration derived from combining all proxy policies selecting this dataplane 
       parameters:
         - in: path
           name: mesh
@@ -211,7 +211,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_policies:
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-name}/_policies:
     get:
       operationId: get-inbound-policy-conf
       summary: Get policies for this inbound
@@ -220,19 +220,19 @@ paths:
         - in: path
           name: mesh
           required: true
-          description: The mesh of the DPP to get the diff for.
+          description: The mesh of the DPP to get the policies for.
           schema:
             type: string
         - in: path
           name: name
           required: true
-          description: The name of the DPP within the mesh to get the diff for.
+          description: The name of the DPP within the mesh to get the policies for.
           schema:
             type: string
         - in: path
-          name: kri
+          name: inbound-name
           required: true
-          description: TODO
+          description: The name of the Inbound from DPP to get the policies for.
           schema:
             type: string
       responses:
@@ -251,19 +251,19 @@ paths:
         - in: path
           name: mesh
           required: true
-          description: The mesh of the DPP to get the diff for.
+          description: The mesh of the DPP to get the policies for.
           schema:
             type: string
         - in: path
           name: name
           required: true
-          description: The name of the DPP within the mesh to get the diff for.
+          description: The name of the DPP within the mesh to get the policies for.
           schema:
             type: string
         - in: path
           name: kri
           required: true
-          description: TODO
+          description: The KRI of the Outbound to get the policies for.
           schema:
             type: string
       responses:
