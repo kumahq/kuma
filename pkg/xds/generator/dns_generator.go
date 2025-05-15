@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"slices"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/dpapi"
@@ -41,6 +42,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 		}
 		addresses := []string{dnsOutbound.Address}
 		v6 := util_net.ToV6(dnsOutbound.Address)
+		core.Log.Info("IS V6", "dnsOutbound", dnsOutbound, "tp.EnabledIPv6()", tp.EnabledIPv6(), "v6", v6)
 		if v6 != dnsOutbound.Address && tp.EnabledIPv6() {
 			addresses = append(addresses, v6)
 		}
@@ -49,6 +51,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 			vips[domain] = addresses
 		}
 	}
+	core.Log.Info("vips", "vips", vips)
 	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
 		// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
 		// https://github.com/kumahq/kuma/issues/13463
