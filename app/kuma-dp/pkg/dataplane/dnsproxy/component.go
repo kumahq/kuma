@@ -39,6 +39,7 @@ func NewServer(address string) (*Server, error) {
 		return nil, fmt.Errorf("no server found in /etc/resolv.conf")
 	}
 	etcResolveHostPort := net.JoinHostPort(config.Servers[0], config.Port)
+	core.Log.Info("TEST, show config from resolve", "resolv", config, "etcResolveHostPort", etcResolveHostPort)
 	handler := func(msg *dns.Msg) (*dns.Msg, error) {
 		client := new(dns.Client)
 		response, _, err := client.Exchange(msg, etcResolveHostPort)
@@ -102,7 +103,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 			dnsMap := s.dnsMap.Load()
 			dnsEntry = dnsMap.AAAARecords[req.Question[0].Name]
 		}
-		log.V(1).Info("got request", "type", req.Question[0].Qtype, "name", req.Question[0].Name, "entry", dnsEntry)
+		log.Info("got request", "type", req.Question[0].Qtype, "name", req.Question[0].Name, "entry", dnsEntry)
 	}
 	if dnsEntry != nil {
 		response = new(dns.Msg)
