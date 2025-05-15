@@ -117,6 +117,7 @@ type appDeploymentOptions struct {
 	serviceAddress        string
 	dpEnvs                map[string]string
 	additionalTags        map[string]string
+	bindOutbounds         bool
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -539,6 +540,12 @@ func WithDpEnvs(envs map[string]string) AppDeploymentOption {
 func WithBuiltinDNS(builtindns bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.builtindns = &builtindns
+	})
+}
+
+func WithBindOutbounds() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.bindOutbounds = true
 	})
 }
 

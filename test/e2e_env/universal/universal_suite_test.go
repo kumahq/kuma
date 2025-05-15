@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/universal/api"
 	"github.com/kumahq/kuma/test/e2e_env/universal/auth"
+	"github.com/kumahq/kuma/test/e2e_env/universal/bindoutbounds"
 	"github.com/kumahq/kuma/test/e2e_env/universal/compatibility"
 	"github.com/kumahq/kuma/test/e2e_env/universal/envoyconfig"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
@@ -111,4 +112,5 @@ var (
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
 	_ = Describe("Envoy Config – Sidecars", envoyconfig.Sidecars, Ordered)
 	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
+	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 )

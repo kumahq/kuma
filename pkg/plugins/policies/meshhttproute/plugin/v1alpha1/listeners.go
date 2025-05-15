@@ -40,7 +40,7 @@ func generateFromService(
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)))
 
-	if !proxy.Metadata.HasFeature(xds_types.FeatureDynamicLoopbackOutbounds) {
+	if !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		listenerBuilder.Configure(envoy_listeners.TransparentProxying(proxy))
 	}
 

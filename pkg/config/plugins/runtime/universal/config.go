@@ -30,8 +30,6 @@ type UniversalRuntimeConfig struct {
 	ZoneResourceCleanupAge config_types.Duration `json:"zoneResourceCleanupAge" envconfig:"kuma_runtime_universal_zone_resource_cleanup_age"`
 	// VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
 	VIPRefreshInterval config_types.Duration `json:"vipRefreshInterval" envconfig:"kuma_runtime_universal_vip_refresh_interval"`
-	// DynamicLoopbackOutbounds defines if dataplanes should bind outbounds to real loopback addresses
-	DynamicLoopbackOutbounds bool `json:"dynamicLoopbackOutbounds" envconfig:"kuma_runtime_universal_dynamic_loopback_outbounds"`
 }
 
 func (u *UniversalRuntimeConfig) Validate() error {

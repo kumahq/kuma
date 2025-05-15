@@ -144,6 +144,21 @@ networking:
       kuma.io/service: external-service
 `
 
+	DemoClientDataplaneBindOutbounds = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    tags:
+      kuma.io/service: %s
+      team: client-owners
+%s
+`
+
 	DemoClientDataplaneWithServiceProbe = `
 type: Dataplane
 mesh: %s

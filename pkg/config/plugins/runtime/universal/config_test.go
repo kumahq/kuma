@@ -26,7 +26,6 @@ var _ = Describe("Config", func() {
 		Expect(cfg.DataplaneCleanupAge.Duration).To(Equal(5 * time.Hour))
 		Expect(cfg.ZoneResourceCleanupAge.Duration).To(Equal(5 * time.Hour))
 		Expect(cfg.VIPRefreshInterval.Duration).To(Equal(5 * time.Second))
-		Expect(cfg.DynamicLoopbackOutbounds).To(BeTrue())
 	})
 
 	It("should have consistent defaults", func() {
