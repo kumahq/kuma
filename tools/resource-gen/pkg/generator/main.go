@@ -19,6 +19,7 @@ import (
 	"golang.org/x/text/language"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
@@ -464,6 +465,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		ExpandedStruct:            true,
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
+		IgnoredTypes:              []any{structpb.Struct{}},
 		KeyNamer: func(key string) string {
 			if key == "RSAbits" {
 				return "rsaBits"
@@ -552,7 +554,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 
 		wrapped := map[string]interface{}{
-			"openapi": "3.0.3",
+			"openapi": "3.1.0",
 			"info": map[string]string{
 				"x-ref-schema-name": tpe.Name(),
 			},

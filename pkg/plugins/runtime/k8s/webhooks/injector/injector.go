@@ -17,7 +17,6 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_podcmd "k8s.io/kubectl/pkg/cmd/util/podcmd"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -37,6 +36,60 @@ import (
 const (
 	// serviceAccountTokenMountPath is a well-known location where Kubernetes mounts a ServiceAccount token.
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" // #nosec G101 -- this isn't a secret
+	mountPathTPBase              = "/tmp/transparent-proxy/base"
+	mountPathTPCustom            = "/tmp/transparent-proxy/custom"
+	volumeNameTPCustom           = "transparent-proxy-custom"
+)
+
+var (
+	volumeInitTmp = kube_core.Volume{
+		Name: "kuma-init-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
+	}
+	volumeSidecarTmp = kube_core.Volume{
+		Name: "kuma-sidecar-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
+	}
+	volumeTPBase = kube_core.Volume{
+		Name: "transparent-proxy-base",
+		VolumeSource: kube_core.VolumeSource{
+			DownwardAPI: &kube_core.DownwardAPIVolumeSource{
+				Items: []kube_core.DownwardAPIVolumeFile{
+					{
+						Path: tproxy_consts.KubernetesConfigMapDataKey,
+						FieldRef: &kube_core.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf(
+								"metadata.annotations['%s']",
+								metadata.KumaTrafficTransparentProxyConfig,
+							),
+						},
+					},
+				},
+			},
+		},
+	}
+)
+
+var (
+	mountSidecarTmp = kube_core.VolumeMount{Name: volumeSidecarTmp.Name, MountPath: "/tmp"}
+	mountInitTmp    = kube_core.VolumeMount{Name: volumeInitTmp.Name, MountPath: "/tmp"}
+	mountTPBase     = kube_core.VolumeMount{Name: volumeTPBase.Name, MountPath: mountPathTPBase, ReadOnly: true}
+	mountTPCustom   = kube_core.VolumeMount{Name: volumeNameTPCustom, MountPath: mountPathTPCustom, ReadOnly: true}
+)
+
+var (
+	flagTPConfigBase   = fmt.Sprintf("--transparent-proxy-config=%s/%s", mountPathTPBase, tproxy_consts.KubernetesConfigMapDataKey)
+	flagConfigBase     = fmt.Sprintf("--config=%s/%s", mountPathTPBase, tproxy_consts.KubernetesConfigMapDataKey)
+	flagTPConfigCustom = fmt.Sprintf("--transparent-proxy-config=%s/%s", mountPathTPCustom, tproxy_consts.KubernetesConfigMapDataKey)
+	flagConfigCustom   = fmt.Sprintf("--config=%s/%s", mountPathTPCustom, tproxy_consts.KubernetesConfigMapDataKey)
 )
 
 var log = core.Log.WithName("injector")
@@ -93,6 +146,15 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	logger.Info("injecting Kuma")
 
+	// annotations
+	if pod.Annotations == nil {
+		pod.Annotations = map[string]string{}
+	}
+
+	if _, ok := pod.Annotations[kube_podcmd.DefaultContainerAnnotationName]; len(pod.Spec.Containers) == 1 && !ok {
+		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
+	}
+
 	sidecarPatches, initPatches, err := i.loadContainerPatches(ctx, logger, pod)
 	if err != nil {
 		return err
@@ -101,72 +163,47 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
-	initTmp := kube_core.Volume{
-		Name: "kuma-init-tmp",
-		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{
-				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
-			},
-		},
-	}
-	sidecarTmp := kube_core.Volume{
-		Name: "kuma-sidecar-tmp",
-		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{
-				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
-			},
-		},
-	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, initTmp, sidecarTmp)
 
-	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
-		Name:      sidecarTmp.Name,
-		MountPath: "/tmp",
-		ReadOnly:  false,
-	})
-	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
-	container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volumeInitTmp, volumeSidecarTmp)
 
 	patchedContainer, err := i.applyCustomPatches(logger, container, sidecarPatches)
 	if err != nil {
 		return err
 	}
 
-	// annotations
-	if pod.Annotations == nil {
-		pod.Annotations = map[string]string{}
-	}
-
-	if _, hasDefaultContainer := pod.Annotations[kube_podcmd.DefaultContainerAnnotationName]; len(pod.Spec.Containers) == 1 && !hasDefaultContainer {
-		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
-	}
-
-	var annotations map[string]string
 	var injectedInitContainer *kube_core.Container
 
 	if i.cfg.TransparentProxyConfigMapName != "" {
-		tproxyCfgConfigMap, err := i.getTransparentProxyConfig(ctx, logger, pod)
+		tpCfgBase, err := i.getTransparentProxyConfigMap(ctx, i.cfg.TransparentProxyConfigMapName, i.systemNamespace, logger)
 		if err != nil {
 			return errors.Wrap(err, "could not retrieve transparent proxy configuration")
 		}
 
-		tproxyCfg, err := tproxy_k8s.ConfigForKubernetes(tproxyCfgConfigMap, i.cfg, pod.Annotations, logger)
+		tpCfg, err := tproxy_k8s.ConfigForKubernetes(tpCfgBase, i.cfg, pod.Annotations, logger)
 		if err != nil {
 			return err
 		}
 
-		tproxyCfgYAMLBytes, err := yaml.Marshal(tproxyCfg)
-		if err != nil {
-			return err
-		}
-		tproxyCfgYAML := string(tproxyCfgYAMLBytes)
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeTPBase)
 
-		if annotations, err = tproxy_k8s.ConfigToAnnotations(
-			tproxyCfg,
-			i.cfg,
-			pod.Annotations,
-			i.defaultAdminPort,
-		); err != nil {
+		if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+			pod.Spec.Volumes = append(
+				pod.Spec.Volumes,
+				kube_core.Volume{
+					Name: volumeNameTPCustom,
+					VolumeSource: kube_core.VolumeSource{
+						ConfigMap: &kube_core.ConfigMapVolumeSource{
+							LocalObjectReference: kube_core.LocalObjectReference{
+								Name: v,
+							},
+						},
+					},
+				},
+			)
+		}
+
+		annotations, err := tproxy_k8s.ConfigToAnnotations(tpCfg, i.cfg, pod.Annotations, i.defaultAdminPort)
+		if err != nil {
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
@@ -180,28 +217,23 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Labels[metadata.KumaMeshLabel] = meshName
 
 		switch {
-		case !tproxyCfg.CNIMode:
-			initContainer := i.NewInitContainer([]string{"--config", tproxyCfgYAML})
+		case !tpCfg.CNIMode:
+			initContainer := i.NewInitContainer(nil, pod.Annotations)
 			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
 			if err != nil {
 				return err
 			}
 			injectedInitContainer = &injected
-		case tproxyCfg.Redirect.Inbound.Enabled:
-			ipFamilyMode := tproxyCfg.IPFamilyMode.String()
-			inboundPort := tproxyCfg.Redirect.Inbound.Port.String()
-			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
-			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
+		case tpCfg.Redirect.Inbound.Enabled:
+			injected, err := i.applyCustomPatches(logger, i.NewValidationContainer(pod), initPatches)
 			if err != nil {
 				return err
 			}
 			injectedInitContainer = &injected
-			fallthrough
-		default:
-			pod.Annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
 		}
 	} else { // this is legacy and deprecated - will be removed soon
-		if annotations, err = i.NewAnnotations(pod, logger); err != nil {
+		annotations, err := i.NewAnnotations(pod, logger)
+		if err != nil {
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
@@ -220,17 +252,14 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		}
 
 		if !i.cfg.CNIEnabled {
-			initContainer := i.NewInitContainer(podRedirect.AsKumactlCommandLine())
+			initContainer := i.NewInitContainer(podRedirect.AsKumactlCommandLine(), pod.Annotations)
 			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
 			if err != nil {
 				return err
 			}
 			injectedInitContainer = &injected
 		} else if podRedirect.RedirectInbound {
-			ipFamilyMode := podRedirect.IpFamilyMode
-			inboundPort := fmt.Sprintf("%d", podRedirect.RedirectPortInbound)
-			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
-			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
+			injected, err := i.applyCustomPatches(logger, i.NewValidationContainer(pod), initPatches)
 			if err != nil {
 				return err
 			}
@@ -368,46 +397,11 @@ func (i *KumaInjector) loadContainerPatches(
 	return sidecarPatches, initPatches, nil
 }
 
-func (i *KumaInjector) getTransparentProxyConfig(
-	ctx context.Context,
-	logger logr.Logger,
-	pod *kube_core.Pod,
-) (tproxy_config.Config, error) {
-	if i.cfg.TransparentProxyConfigMapName == "" {
-		return tproxy_config.DefaultConfig(), nil
-	}
-
-	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
-		if c, err := i.getTransparentProxyConfigMap(ctx, v, pod.Namespace, logger, "annotation"); err == nil {
-			return c, nil
-		}
-
-		if c, err := i.getTransparentProxyConfigMap(ctx, v, i.systemNamespace, logger, "annotation"); err == nil {
-			return c, nil
-		}
-
-		return tproxy_config.Config{}, errors.Errorf("ConfigMap %q not found in namespace %q or system namespace %q", v, pod.Namespace, i.systemNamespace)
-	}
-
-	if c, err := i.getTransparentProxyConfigMap(
-		ctx,
-		i.cfg.TransparentProxyConfigMapName,
-		i.systemNamespace,
-		logger,
-		"controlPlaneRuntimeConfig",
-	); err == nil {
-		return c, nil
-	}
-
-	return tproxy_config.DefaultConfig(), nil
-}
-
 func (i *KumaInjector) getTransparentProxyConfigMap(
 	ctx context.Context,
 	name string,
 	namespace string,
 	logger logr.Logger,
-	source string,
 ) (tproxy_config.Config, error) {
 	var err error
 	defer func() {
@@ -416,7 +410,6 @@ func (i *KumaInjector) getTransparentProxyConfigMap(
 				"[WARNING]: unable to retrieve transparent proxy configuration from ConfigMap; applying default configuration",
 				"configMapName", name,
 				"configMapNamespace", namespace,
-				"configMapSource", source,
 				"error", err,
 			)
 		}
@@ -510,32 +503,56 @@ func (i *KumaInjector) NewSidecarContainer(
 		return container, err
 	}
 
+	if i.cfg.TransparentProxyConfigMapName != "" {
+		container.Args = append(container.Args, flagTPConfigBase)
+		if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+			container.Args = append(container.Args, flagTPConfigCustom)
+		}
+	}
+
 	container.Name = k8s_util.KumaSidecarContainerName
+	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
+	container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
+
 	return container, nil
 }
 
 func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMount, error) {
+	out := []kube_core.VolumeMount{mountSidecarTmp}
+
+	if i.cfg.TransparentProxyConfigMapName != "" {
+		out = append(out, mountTPBase)
+		if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+			out = append(out, mountTPCustom)
+		}
+	}
+
 	// If the user specifies a volume containing a service account token, we will mount and use that.
 	if volumeName, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarTokenVolumeAnnotation); exists {
 		// Ensure the volume specified exists on the pod spec, otherwise error.
 		for _, v := range pod.Spec.Volumes {
 			if v.Name == volumeName {
-				return []kube_core.VolumeMount{{
-					Name:      volumeName,
-					ReadOnly:  true,
-					MountPath: serviceAccountTokenMountPath,
-				}}, nil
+				return append(
+					out,
+					kube_core.VolumeMount{
+						Name:      volumeName,
+						MountPath: serviceAccountTokenMountPath,
+						ReadOnly:  true,
+					},
+				), nil
 			}
 		}
+
 		return nil, errors.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
 	}
 
 	// If not specified with the above annotation, instead query each container in the pod to find a
 	// service account token to mount.
 	if tokenVolumeMount := i.FindServiceAccountToken(&pod.Spec); tokenVolumeMount != nil {
-		return []kube_core.VolumeMount{*tokenVolumeMount}, nil
+		return append(out, *tokenVolumeMount), nil
 	}
-	return nil, nil
+
+	return out, nil
 }
 
 func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube_core.VolumeMount {
@@ -553,7 +570,18 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 	return nil
 }
 
-func (i *KumaInjector) NewInitContainer(args []string) kube_core.Container {
+func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]string) kube_core.Container {
+	mounts := []kube_core.VolumeMount{mountInitTmp}
+
+	if i.cfg.TransparentProxyConfigMapName != "" {
+		mounts = append(mounts, mountTPBase)
+		args = append(args, flagConfigBase)
+		if v := annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+			mounts = append(mounts, mountTPCustom)
+			args = append(args, flagConfigCustom)
+		}
+	}
+
 	container := kube_core.Container{
 		Name:            k8s_util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
@@ -592,9 +620,7 @@ func (i *KumaInjector) NewInitContainer(args []string) kube_core.Container {
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
 		},
-		VolumeMounts: []kube_core.VolumeMount{
-			{Name: "kuma-init-tmp", MountPath: "/tmp", ReadOnly: false},
-		},
+		VolumeMounts: mounts,
 	}
 
 	if i.cfg.EBPF.Enabled {
@@ -628,17 +654,42 @@ func (i *KumaInjector) NewInitContainer(args []string) kube_core.Container {
 	return container
 }
 
-func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort string, tmpVolumeName string) kube_core.Container {
-	container := kube_core.Container{
+func (i *KumaInjector) NewValidationContainer(pod *kube_core.Pod) kube_core.Container {
+	annotations := metadata.Annotations(pod.Annotations)
+	mounts := []kube_core.VolumeMount{mountSidecarTmp}
+	args := []string{"--config-file=/tmp/.kumactl"}
+
+	if i.cfg.TransparentProxyConfigMapName != "" {
+		mounts = append(mounts, mountTPBase)
+		args = append(args, flagTPConfigBase)
+		if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+			mounts = append(mounts, mountTPCustom)
+			args = append(args, flagTPConfigCustom)
+		}
+	} else {
+		ipFamilyMode := metadata.IpFamilyModeDualStack
+		if v, _ := annotations.GetString(metadata.KumaTransparentProxyingIPFamilyMode); v != "" {
+			ipFamilyMode = v
+		}
+
+		port := fmt.Sprintf("%d", tproxy_config.DefaultConfig().Redirect.Inbound.Port)
+		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); ok && err == nil {
+			port = fmt.Sprintf("%d", v)
+		}
+
+		args = append(
+			args,
+			fmt.Sprintf("--ip-family-mode=%s", ipFamilyMode),
+			fmt.Sprintf("--validation-server-port=%s", port),
+		)
+	}
+
+	return kube_core.Container{
 		Name:            k8s_util.KumaCniValidationContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy-validator"},
-		Args: []string{
-			"--config-file", "/tmp/.kumactl",
-			"--ip-family-mode", ipFamilyMode,
-			"--validation-server-port", inboundRedirectPort,
-		},
+		Args:            args,
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
 			RunAsGroup: &i.cfg.SidecarContainer.GID,
@@ -660,14 +711,8 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
 		},
+		VolumeMounts: mounts,
 	}
-	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
-		Name:      tmpVolumeName,
-		MountPath: "/tmp",
-		ReadOnly:  false,
-	})
-
-	return container
 }
 
 // Deprecated

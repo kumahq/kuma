@@ -9,8 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -23,83 +26,94 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
+const meshName = "envoyconfig"
+
 func Sidecars() {
-	meshName := "envoyconfig"
+	BeforeAll(SetupSidecarCluster)
 
-	BeforeAll(func() {
-		err := NewClusterSetup().
-			Install(
-				Yaml(
-					builders.Mesh().
-						WithName(meshName).
-						WithoutInitialPolicies().
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
-				),
-			).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(DemoClientUniversal("demo-client", meshName,
-				WithTransparentProxy(true)),
-			).
-			Install(TestServerUniversal("test-server", meshName,
-				WithArgs([]string{"echo", "--instance", "universal-1"})),
-			).
-			Setup(universal.Cluster)
-		Expect(err).ToNot(HaveOccurred())
+	AfterEachFailure(AfterSidecarFailure)
 
-		waitMeshServiceReady(meshName, "demo-client")
-		waitMeshServiceReady(meshName, "test-server")
+	E2EAfterAll(CleanupAfterSidecarSuite)
 
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
-			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
-	})
-
-	AfterEachFailure(func() {
-		DebugUniversal(universal.Cluster, meshName)
-	})
-
-	E2EAfterAll(func() {
-		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
-	})
-
-	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(
-			universal.Cluster,
-			meshName,
-			meshtimeout.MeshTimeoutResourceTypeDescriptor,
-			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
-			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
-			meshratelimit.MeshRateLimitResourceTypeDescriptor,
-			meshtls.MeshTLSResourceTypeDescriptor,
-			meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
-		)).To(Succeed())
-	})
+	E2EAfterEach(CleanupAfterSidecarTest(
+		meshtimeout.MeshTimeoutResourceTypeDescriptor,
+		meshaccesslog.MeshAccessLogResourceTypeDescriptor,
+		meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
+		meshratelimit.MeshRateLimitResourceTypeDescriptor,
+		meshtls.MeshTLSResourceTypeDescriptor,
+		meshhealthcheck.MeshHealthCheckResourceTypeDescriptor,
+		meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
+		meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
+	))
 
 	DescribeTable("should generate proper Envoy config",
-		func(inputFile string) {
-			// given
-			input, err := os.ReadFile(inputFile)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			if len(input) > 0 {
-				Expect(universal.Cluster.Install(YamlUniversal(string(input)))).To(Succeed())
-			}
-
-			// then
-			Eventually(func(g Gomega) {
-				g.Expect(getConfig(meshName, "demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
-				g.Expect(getConfig(meshName, "test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
-			}).Should(Succeed())
-		},
+		TestSidecarConfig,
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtimeout"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshaccesslog"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshfaultinjection"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshretry"), "envoyconfig"),
 	)
+}
+
+func TestSidecarConfig(inputFile string) {
+	// given
+	input, err := os.ReadFile(inputFile)
+	Expect(err).ToNot(HaveOccurred())
+
+	// when
+	if len(input) > 0 {
+		Expect(universal.Cluster.Install(YamlUniversal(string(input)))).To(Succeed())
+	}
+
+	// then
+	Eventually(func(g Gomega) {
+		g.Expect(getConfig(meshName, "demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
+		g.Expect(getConfig(meshName, "test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
+	}).Should(Succeed())
+}
+
+func SetupSidecarCluster() {
+	err := NewClusterSetup().
+		Install(
+			Yaml(
+				builders.Mesh().
+					WithName(meshName).
+					WithoutInitialPolicies().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+			),
+		).
+		Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+		Install(DemoClientUniversal("demo-client", meshName,
+			WithTransparentProxy(true)),
+		).
+		Install(TestServerUniversal("test-server", meshName,
+			WithArgs([]string{"echo", "--instance", "universal-1"})),
+		).
+		Setup(universal.Cluster)
+	Expect(err).ToNot(HaveOccurred())
+
+	waitMeshServiceReady(meshName, "demo-client")
+	waitMeshServiceReady(meshName, "test-server")
+
+	Eventually(func(g Gomega) {
+		_, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
+		g.Expect(err).ToNot(HaveOccurred())
+	}).Should(Succeed())
+}
+
+func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
+	return cleanupAfterTest(meshName, policies...)
+}
+
+func CleanupAfterSidecarSuite() {
+	Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+	Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+}
+
+func AfterSidecarFailure() {
+	DebugUniversal(universal.Cluster, meshName)
 }

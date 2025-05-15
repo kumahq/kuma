@@ -21,6 +21,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -41,7 +42,8 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
 
-	routing, destinations, outbounds := p.resolveRouting(ctx, meshContext, dp, meta.HasFeature(xds_types.FeatureBindOutbounds))
+	tpEnabled := tproxy_dp.GetDataplaneConfig(dp, meta).Enabled()
+	routing, destinations, outbounds := p.resolveRouting(ctx, meshContext, dp, tpEnabled, meta.HasFeature(xds_types.FeatureBindOutbounds))
 
 	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
 	if err != nil {
@@ -85,11 +87,12 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
+	tpEnabled bool,
 	bindOutbounds bool,
 ) (*core_xds.Routing, core_xds.DestinationMap, []*xds_types.Outbound) {
 	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 
-	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, bindOutbounds)
+	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, tpEnabled, bindOutbounds)
 
 	// pick a single the most specific route for each outbound interface
 	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
@@ -112,14 +115,19 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	return routing, destinations, outbounds
 }
 
-func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, bindOutbounds bool) []*xds_types.Outbound {
-	if dataplane.Spec.Networking.GetTransparentProxying() == nil && !bindOutbounds {
+func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
+	meshContext xds_context.MeshContext,
+	dataplane *core_mesh.DataplaneResource,
+	tpEnabled bool,
+	bindOutbounds bool,
+) []*xds_types.Outbound {
+	if !tpEnabled || bindOutbounds {
 		return dataplane.AsOutbounds(meshContext.ResolveResourceIdentifier)
 	}
 	reachableServices := map[string]bool{}
 	var reachableBackends *xds_context.ReachableBackends
-	if dataplane.Spec.Networking.GetTransparentProxying() != nil {
-		for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
+	if dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
+		for _, reachableService := range dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableServices() {
 			reachableServices[reachableService] = true
 		}
 		reachableBackends = meshContext.GetReachableBackends(dataplane)

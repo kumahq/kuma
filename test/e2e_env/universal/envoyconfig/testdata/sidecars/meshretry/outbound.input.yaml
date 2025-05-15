@@ -1,0 +1,18 @@
+type: MeshRetry
+name: mr-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          numRetries: 2
+          backOff:
+            baseInterval: 3s
+            maxInterval: 4m
+          retryOn:
+            - 5xx

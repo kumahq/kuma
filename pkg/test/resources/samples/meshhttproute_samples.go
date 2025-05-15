@@ -78,7 +78,7 @@ func RealMeshHTTPRouteOutboundRoutes(serviceName string, meshHTTPRoute kri.Ident
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
 				},
 				Match: rootPrefixMatch,
-				Name:  meshHTTPRoute.String(),
+				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch})),
 			},
 		},
 		DpTags: map[string]map[string]bool{

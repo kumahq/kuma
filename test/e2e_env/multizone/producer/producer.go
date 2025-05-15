@@ -9,9 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	framework_client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -25,7 +27,15 @@ func ProducerPolicyFlow() {
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(mesh, "Exclusive")).
+			Install(
+				Yaml(
+					builders.Mesh().
+						WithName(mesh).
+						WithoutInitialPolicies().
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+				),
+			).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
@@ -148,7 +158,7 @@ spec:
 		}).Should(Succeed())
 	})
 
-	It("should sync producer policy that targets producer route to other clusters", func() {
+	It("should sync producer MeshTimeout that targets producer route to other clusters", func() {
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -225,5 +235,102 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+	})
+
+	XIt("should sync producer MeshRetry that targets producer route to other clusters", func() {
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshFaultInjection
+metadata:
+  name: mesh-fault-injecton
+  namespace: %s
+  labels:
+    kuma.io/mesh: "%s"
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: test-server
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 500
+              percentage: "50.0"
+`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).Should(Succeed())
+
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: to-test-server
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-server
+                port: 80
+`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			responses, err := framework_client.CollectResponsesAndFailures(
+				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithNumberOfRequests(100),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(responses).To(And(
+				HaveLen(100),
+				WithTransform(framework_client.CountResponseCodes(500), BeNumerically("~", 50, 15)),
+				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 50, 15)),
+			))
+		}, "30s", "5s").Should(Succeed())
+
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshRetry
+metadata:
+  name: retry-on-5xx
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: to-test-server
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"
+`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			responses, err := framework_client.CollectResponsesAndFailures(
+				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithNumberOfRequests(100),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(responses).To(And(
+				HaveLen(100),
+				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 100, 5)),
+			))
+		}, "30s", "5s").Should(Succeed())
 	})
 }

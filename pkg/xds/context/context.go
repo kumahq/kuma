@@ -151,20 +151,21 @@ func (mc *MeshContext) GetMeshMultiZoneServiceByKRI(id kri.Identifier) *meshmzse
 }
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
-	if dataplane.Spec.Networking.TransparentProxying.GetReachableBackends() == nil {
+	reachableBackends := dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends()
+	if reachableBackends == nil {
 		if mc.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
 			return &ReachableBackends{}
 		}
 		return nil
 	}
-	reachableBackends := ReachableBackends{}
-	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.GetReachableBackends().GetRefs() {
+	out := ReachableBackends{}
+	for _, reachableBackend := range reachableBackends.GetRefs() {
 		if len(reachableBackend.Labels) > 0 {
 			for _, tri := range mc.resolveResourceIdentifiersForLabels(reachableBackend.Kind, reachableBackend.Labels) {
 				if port := reachableBackend.Port; port != nil {
 					tri.SectionName = mc.getSectionName(tri.ResourceType, tri, reachableBackend.Port.GetValue())
 				}
-				reachableBackends[tri] = true
+				out[tri] = true
 			}
 		} else {
 			key := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
@@ -175,10 +176,10 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 			if port := reachableBackend.Port; port != nil {
 				key.SectionName = mc.getSectionName(key.ResourceType, key, reachableBackend.Port.GetValue())
 			}
-			reachableBackends[key] = true
+			out[key] = true
 		}
 	}
-	return &reachableBackends
+	return &out
 }
 
 func (mc *MeshContext) resolveResourceIdentifiersForLabels(kind string, labels map[string]string) []kri.Identifier {

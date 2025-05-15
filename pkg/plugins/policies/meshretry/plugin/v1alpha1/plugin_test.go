@@ -15,6 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -137,84 +139,7 @@ var _ = Describe("MeshRetry", func() {
 				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							HTTP: &api.HTTP{
-								NumRetries:    pointer.To[uint32](1),
-								PerTryTimeout: test.ParseDuration("2s"),
-								BackOff: &api.BackOff{
-									BaseInterval: test.ParseDuration("3s"),
-									MaxInterval:  test.ParseDuration("4s"),
-								},
-								RateLimitedBackOff: &api.RateLimitedBackOff{
-									MaxInterval: test.ParseDuration("5s"),
-									ResetHeaders: &[]api.ResetHeader{
-										{
-											Name:   "retry-after-http",
-											Format: "Seconds",
-										},
-										{
-											Name:   "x-retry-after-http",
-											Format: "UnixTimestamp",
-										},
-									},
-								},
-								RetryOn: &[]api.HTTPRetryOn{
-									api.All5xx,
-									api.GatewayError,
-									api.Reset,
-									api.Retriable4xx,
-									api.ConnectFailure,
-									api.EnvoyRatelimited,
-									api.RefusedStream,
-									api.Http3PostConnectFailure,
-									api.HttpMethodConnect,
-									api.HttpMethodDelete,
-									api.HttpMethodGet,
-									api.HttpMethodHead,
-									api.HttpMethodOptions,
-									api.HttpMethodPatch,
-									api.HttpMethodPost,
-									api.HttpMethodPut,
-									api.HttpMethodTrace,
-									"429",
-								},
-								RetriableResponseHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-										Name:  "x-retry-regex",
-										Value: ".*",
-									},
-									{
-										Type:  pointer.To(common_api.HeaderMatchExact),
-										Name:  "x-retry-exact",
-										Value: "exact-value",
-									},
-								},
-								RetriableRequestHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchPrefix),
-										Name:  "x-retry-prefix",
-										Value: "prefix-",
-									},
-								},
-								HostSelection: &[]api.Predicate{
-									{
-										PredicateType: "OmitPreviousHosts",
-									},
-									{
-										PredicateType:   "OmitPreviousPriorities",
-										UpdateFrequency: 2,
-									},
-									{
-										PredicateType: "OmitHostsWithTags",
-										Tags: &map[string]string{
-											"test": "test",
-										},
-									},
-								},
-								HostSelectionMaxAttempts: pointer.To(int64(2)),
-							},
-						},
+						Conf:   testFirstHTTPRetryConf(),
 					},
 				},
 			},
@@ -354,84 +279,7 @@ var _ = Describe("MeshRetry", func() {
 								Value: "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
 							},
 						},
-						Conf: api.Conf{
-							HTTP: &api.HTTP{
-								NumRetries:    pointer.To[uint32](1),
-								PerTryTimeout: test.ParseDuration("2s"),
-								BackOff: &api.BackOff{
-									BaseInterval: test.ParseDuration("3s"),
-									MaxInterval:  test.ParseDuration("4s"),
-								},
-								RateLimitedBackOff: &api.RateLimitedBackOff{
-									MaxInterval: test.ParseDuration("5s"),
-									ResetHeaders: &[]api.ResetHeader{
-										{
-											Name:   "retry-after-http",
-											Format: "Seconds",
-										},
-										{
-											Name:   "x-retry-after-http",
-											Format: "UnixTimestamp",
-										},
-									},
-								},
-								RetryOn: &[]api.HTTPRetryOn{
-									api.All5xx,
-									api.GatewayError,
-									api.Reset,
-									api.Retriable4xx,
-									api.ConnectFailure,
-									api.EnvoyRatelimited,
-									api.RefusedStream,
-									api.Http3PostConnectFailure,
-									api.HttpMethodConnect,
-									api.HttpMethodDelete,
-									api.HttpMethodGet,
-									api.HttpMethodHead,
-									api.HttpMethodOptions,
-									api.HttpMethodPatch,
-									api.HttpMethodPost,
-									api.HttpMethodPut,
-									api.HttpMethodTrace,
-									"429",
-								},
-								RetriableResponseHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-										Name:  "x-retry-regex",
-										Value: ".*",
-									},
-									{
-										Type:  pointer.To(common_api.HeaderMatchExact),
-										Name:  "x-retry-exact",
-										Value: "exact-value",
-									},
-								},
-								RetriableRequestHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchPrefix),
-										Name:  "x-retry-prefix",
-										Value: "prefix-",
-									},
-								},
-								HostSelection: &[]api.Predicate{
-									{
-										PredicateType: "OmitPreviousHosts",
-									},
-									{
-										PredicateType:   "OmitPreviousPriorities",
-										UpdateFrequency: 2,
-									},
-									{
-										PredicateType: "OmitHostsWithTags",
-										Tags: &map[string]string{
-											"test": "test",
-										},
-									},
-								},
-								HostSelectionMaxAttempts: pointer.To(int64(2)),
-							},
-						},
+						Conf: testFirstHTTPRetryConf(),
 					},
 					{
 						Subset: subsetutils.Subset{
@@ -501,6 +349,34 @@ var _ = Describe("MeshRetry", func() {
 			},
 			goldenFilePrefix: "retry_per_http_route",
 		}),
+		Entry("retry per MeshHTTPRoute with resource rules", testCase{
+			resources: []core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, "")),
+					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, "")),
+					Protocol:       core_mesh.ProtocolHTTP,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, ""): {
+						Resource: testMeshHTTPRouteMeta(),
+						Conf: []interface{}{
+							testFirstHTTPRetryConf(),
+						},
+					},
+					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, ""): {
+						Resource: testMeshServiceMeta(),
+						Conf: []interface{}{
+							testSecondHTTPRetryConf(),
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "http-real-meshhttproute",
+		}),
 		Entry("http retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
@@ -513,84 +389,7 @@ var _ = Describe("MeshRetry", func() {
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
-							api.Conf{
-								HTTP: &api.HTTP{
-									NumRetries:    pointer.To[uint32](1),
-									PerTryTimeout: test.ParseDuration("2s"),
-									BackOff: &api.BackOff{
-										BaseInterval: test.ParseDuration("3s"),
-										MaxInterval:  test.ParseDuration("4s"),
-									},
-									RateLimitedBackOff: &api.RateLimitedBackOff{
-										MaxInterval: test.ParseDuration("5s"),
-										ResetHeaders: &[]api.ResetHeader{
-											{
-												Name:   "retry-after-http",
-												Format: "Seconds",
-											},
-											{
-												Name:   "x-retry-after-http",
-												Format: "UnixTimestamp",
-											},
-										},
-									},
-									RetryOn: &[]api.HTTPRetryOn{
-										api.All5xx,
-										api.GatewayError,
-										api.Reset,
-										api.Retriable4xx,
-										api.ConnectFailure,
-										api.EnvoyRatelimited,
-										api.RefusedStream,
-										api.Http3PostConnectFailure,
-										api.HttpMethodConnect,
-										api.HttpMethodDelete,
-										api.HttpMethodGet,
-										api.HttpMethodHead,
-										api.HttpMethodOptions,
-										api.HttpMethodPatch,
-										api.HttpMethodPost,
-										api.HttpMethodPut,
-										api.HttpMethodTrace,
-										"429",
-									},
-									RetriableResponseHeaders: &[]common_api.HeaderMatch{
-										{
-											Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-											Name:  "x-retry-regex",
-											Value: ".*",
-										},
-										{
-											Type:  pointer.To(common_api.HeaderMatchExact),
-											Name:  "x-retry-exact",
-											Value: "exact-value",
-										},
-									},
-									RetriableRequestHeaders: &[]common_api.HeaderMatch{
-										{
-											Type:  pointer.To(common_api.HeaderMatchPrefix),
-											Name:  "x-retry-prefix",
-											Value: "prefix-",
-										},
-									},
-									HostSelection: &[]api.Predicate{
-										{
-											PredicateType: "OmitPreviousHosts",
-										},
-										{
-											PredicateType:   "OmitPreviousPriorities",
-											UpdateFrequency: 2,
-										},
-										{
-											PredicateType: "OmitHostsWithTags",
-											Tags: &map[string]string{
-												"test": "test",
-											},
-										},
-									},
-									HostSelectionMaxAttempts: pointer.To(int64(2)),
-								},
-							},
+							testFirstHTTPRetryConf(),
 						},
 					},
 				},
@@ -609,84 +408,7 @@ var _ = Describe("MeshRetry", func() {
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
-							api.Conf{
-								HTTP: &api.HTTP{
-									NumRetries:    pointer.To[uint32](1),
-									PerTryTimeout: test.ParseDuration("2s"),
-									BackOff: &api.BackOff{
-										BaseInterval: test.ParseDuration("3s"),
-										MaxInterval:  test.ParseDuration("4s"),
-									},
-									RateLimitedBackOff: &api.RateLimitedBackOff{
-										MaxInterval: test.ParseDuration("5s"),
-										ResetHeaders: &[]api.ResetHeader{
-											{
-												Name:   "retry-after-http",
-												Format: "Seconds",
-											},
-											{
-												Name:   "x-retry-after-http",
-												Format: "UnixTimestamp",
-											},
-										},
-									},
-									RetryOn: &[]api.HTTPRetryOn{
-										api.All5xx,
-										api.GatewayError,
-										api.Reset,
-										api.Retriable4xx,
-										api.ConnectFailure,
-										api.EnvoyRatelimited,
-										api.RefusedStream,
-										api.Http3PostConnectFailure,
-										api.HttpMethodConnect,
-										api.HttpMethodDelete,
-										api.HttpMethodGet,
-										api.HttpMethodHead,
-										api.HttpMethodOptions,
-										api.HttpMethodPatch,
-										api.HttpMethodPost,
-										api.HttpMethodPut,
-										api.HttpMethodTrace,
-										"429",
-									},
-									RetriableResponseHeaders: &[]common_api.HeaderMatch{
-										{
-											Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-											Name:  "x-retry-regex",
-											Value: ".*",
-										},
-										{
-											Type:  pointer.To(common_api.HeaderMatchExact),
-											Name:  "x-retry-exact",
-											Value: "exact-value",
-										},
-									},
-									RetriableRequestHeaders: &[]common_api.HeaderMatch{
-										{
-											Type:  pointer.To(common_api.HeaderMatchPrefix),
-											Name:  "x-retry-prefix",
-											Value: "prefix-",
-										},
-									},
-									HostSelection: &[]api.Predicate{
-										{
-											PredicateType: "OmitPreviousHosts",
-										},
-										{
-											PredicateType:   "OmitPreviousPriorities",
-											UpdateFrequency: 2,
-										},
-										{
-											PredicateType: "OmitHostsWithTags",
-											Tags: &map[string]string{
-												"test": "test",
-											},
-										},
-									},
-									HostSelectionMaxAttempts: pointer.To(int64(2)),
-								},
-							},
+							testFirstHTTPRetryConf(),
 						},
 					},
 				},
@@ -1061,6 +783,10 @@ func httpListenerWithSeveralRoutes(port uint32) envoy_common.NamedResource {
 	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundWithSeveralRoutes("http-service")))
 }
 
+func httpListenerWithSeveralMeshHTTPRoutes(port uint32, meshHTTPRoute kri.Identifier) envoy_common.NamedResource {
+	return httpListener(port, AddFilterChainConfigurer(samples.RealMeshHTTPRouteOutboundRoutes("http-service", meshHTTPRoute)))
+}
+
 func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
 	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
 }
@@ -1085,4 +811,154 @@ func tcpListener(port uint32) envoy_common.NamedResource {
 			)),
 		)).
 		MustBuild()
+}
+
+func testMeshHTTPRouteMeta() core_model.ResourceMeta {
+	return &test_model.ResourceMeta{
+		Mesh: "mesh-1",
+		Name: "test-route-1",
+	}
+}
+
+func testMeshServiceMeta() core_model.ResourceMeta {
+	return &test_model.ResourceMeta{
+		Mesh: "mesh-1",
+		Name: "test-service-1",
+	}
+}
+
+func testFirstHTTPRetryConf() api.Conf {
+	return api.Conf{
+		HTTP: &api.HTTP{
+			NumRetries:    pointer.To[uint32](1),
+			PerTryTimeout: test.ParseDuration("2s"),
+			BackOff: &api.BackOff{
+				BaseInterval: test.ParseDuration("3s"),
+				MaxInterval:  test.ParseDuration("4s"),
+			},
+			RateLimitedBackOff: &api.RateLimitedBackOff{
+				MaxInterval: test.ParseDuration("5s"),
+				ResetHeaders: &[]api.ResetHeader{
+					{
+						Name:   "retry-after-http",
+						Format: "Seconds",
+					},
+					{
+						Name:   "x-retry-after-http",
+						Format: "UnixTimestamp",
+					},
+				},
+			},
+			RetryOn: &[]api.HTTPRetryOn{
+				api.All5xx,
+				api.GatewayError,
+				api.Reset,
+				api.Retriable4xx,
+				api.ConnectFailure,
+				api.EnvoyRatelimited,
+				api.RefusedStream,
+				api.Http3PostConnectFailure,
+				api.HttpMethodConnect,
+				api.HttpMethodDelete,
+				api.HttpMethodGet,
+				api.HttpMethodHead,
+				api.HttpMethodOptions,
+				api.HttpMethodPatch,
+				api.HttpMethodPost,
+				api.HttpMethodPut,
+				api.HttpMethodTrace,
+				"429",
+			},
+			RetriableResponseHeaders: &[]common_api.HeaderMatch{
+				{
+					Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+					Name:  "x-retry-regex",
+					Value: ".*",
+				},
+				{
+					Type:  pointer.To(common_api.HeaderMatchExact),
+					Name:  "x-retry-exact",
+					Value: "exact-value",
+				},
+			},
+			RetriableRequestHeaders: &[]common_api.HeaderMatch{
+				{
+					Type:  pointer.To(common_api.HeaderMatchPrefix),
+					Name:  "x-retry-prefix",
+					Value: "prefix-",
+				},
+			},
+			HostSelection: &[]api.Predicate{
+				{
+					PredicateType: "OmitPreviousHosts",
+				},
+				{
+					PredicateType:   "OmitPreviousPriorities",
+					UpdateFrequency: 2,
+				},
+				{
+					PredicateType: "OmitHostsWithTags",
+					Tags: &map[string]string{
+						"test": "test",
+					},
+				},
+			},
+			HostSelectionMaxAttempts: pointer.To(int64(2)),
+		},
+	}
+}
+
+func testSecondHTTPRetryConf() api.Conf {
+	return api.Conf{
+		HTTP: &api.HTTP{
+			NumRetries:    pointer.To[uint32](6),
+			PerTryTimeout: test.ParseDuration("77s"),
+			BackOff: &api.BackOff{
+				BaseInterval: test.ParseDuration("88s"),
+				MaxInterval:  test.ParseDuration("999s"),
+			},
+			RateLimitedBackOff: &api.RateLimitedBackOff{
+				MaxInterval: test.ParseDuration("11s"),
+				ResetHeaders: &[]api.ResetHeader{
+					{
+						Name:   "x-retry-after-http",
+						Format: "UnixTimestamp",
+					},
+				},
+			},
+			RetryOn: &[]api.HTTPRetryOn{
+				"499",
+			},
+			RetriableResponseHeaders: &[]common_api.HeaderMatch{
+				{
+					Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+					Name:  "x-retry-regex",
+					Value: ".*",
+				},
+			},
+			RetriableRequestHeaders: &[]common_api.HeaderMatch{
+				{
+					Type:  pointer.To(common_api.HeaderMatchPrefix),
+					Name:  "x-retry-prefix",
+					Value: "prefix-another",
+				},
+			},
+			HostSelection: &[]api.Predicate{
+				{
+					PredicateType: "OmitPreviousHosts",
+				},
+				{
+					PredicateType:   "OmitPreviousPriorities",
+					UpdateFrequency: 5,
+				},
+				{
+					PredicateType: "OmitHostsWithTags",
+					Tags: &map[string]string{
+						"another-test": "another-test",
+					},
+				},
+			},
+			HostSelectionMaxAttempts: pointer.To(int64(99)),
+		},
+	}
 }
