@@ -1,0 +1,55 @@
+type: MeshHTTPRoute
+name: test-route
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test
+          default:
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  add:
+                    - name: x-test-header
+                      value: added-by-policy
+---
+type: MeshRetry
+name: mr-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          numRetries: 6
+          retryOn:
+            - 5xx
+---
+type: MeshRetry
+name: global
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 3
+          retryOn:
+            - Retriable4xx
