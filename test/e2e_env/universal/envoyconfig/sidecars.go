@@ -16,6 +16,7 @@ import (
 	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtls "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
@@ -24,7 +25,6 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 )
 
 const meshName = "envoyconfig"

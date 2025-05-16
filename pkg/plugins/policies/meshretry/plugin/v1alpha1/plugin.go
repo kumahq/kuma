@@ -22,10 +22,10 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
