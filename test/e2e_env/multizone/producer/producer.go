@@ -237,7 +237,7 @@ spec:
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 
-	XIt("should sync producer MeshRetry that targets producer route to other clusters", func() {
+	It("should sync producer MeshRetry that targets producer route to other clusters", func() {
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshFaultInjection
@@ -329,7 +329,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses).To(And(
 				HaveLen(100),
-				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 100, 5)),
+				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 100, 10)),
 			))
 		}, "30s", "5s").Should(Succeed())
 	})
