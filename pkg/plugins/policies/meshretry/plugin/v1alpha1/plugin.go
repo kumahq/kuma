@@ -25,6 +25,7 @@ import (
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -56,11 +57,24 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	err := applyToRealResources(util_slices.Filter(rs.List(), core_xds.HasResourceOrigin), policies.ToRules.ResourceRules, ctx.Mesh.Resources)
-	if err != nil {
-		return err
-	}
+	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
+	for _, r := range util_slices.Filter(rs.List(), core_xds.HasResourceOrigin) {
+		switch r.ResourceOrigin.ResourceType {
+		case meshservice_api.MeshServiceType:
+		case meshexternalservice_api.MeshExternalServiceType:
+		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+		default:
+			continue
+		}
 
+		svcCtx := rctx.
+			WithID(kri.NoSectionName(*r.ResourceOrigin)).
+			WithID(*r.ResourceOrigin)
+
+		if err := applyToRealResource(svcCtx, r); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -147,79 +161,55 @@ func applyToGateway(
 	return nil
 }
 
-func applyToRealResources(
-	rs []*core_xds.Resource,
-	rules outbound.ResourceRules,
-	reader kri.ResourceReader,
-) error {
-	for _, r := range rs {
-		switch r.ResourceOrigin.ResourceType {
-		case meshservice_api.MeshServiceType:
-		case meshexternalservice_api.MeshExternalServiceType:
-		case meshmultizoneservice_api.MeshMultiZoneServiceType:
-		default:
-			continue
+func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
+	switch envoyResource := r.Resource.(type) {
+	case *envoy_listener.Listener:
+		configurer := plugin_xds.Configurer{Conf: rctx.Conf(), Protocol: r.Protocol}
+		if err := configurer.ConfigureListener(envoyResource); err != nil {
+			return err
 		}
 
-		var conf api.Conf
-		if rr := rules.Compute(*r.ResourceOrigin, reader); rr != nil {
-			conf = rr.Conf[0].(api.Conf)
-		}
+		for _, fc := range envoyResource.FilterChains {
+			if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+				for _, vh := range hcm.GetRouteConfig().VirtualHosts {
+					for _, route := range vh.Routes {
+						if !kri.IsValid(route.Name) {
+							continue
+						}
 
-		switch envoyResource := r.Resource.(type) {
-		case *envoy_listener.Listener:
-			configurer := plugin_xds.Configurer{Conf: conf, Protocol: r.Protocol}
-			if err := configurer.ConfigureListener(envoyResource); err != nil {
-				return err
-			}
+						id, err := kri.FromString(route.Name)
+						if err != nil {
+							return err
+						}
 
-			for _, fc := range envoyResource.FilterChains {
-				if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
-					return configureRoutes(hcm.GetRouteConfig(), rules, reader, r.Protocol)
-				}); err != nil {
-					return err
+						if err := configureRoute(rctx.WithID(id), route, r.Protocol); err != nil {
+							return err
+						}
+					}
 				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func configureRoutes(
-	rc *envoy_route.RouteConfiguration,
-	rules outbound.ResourceRules,
-	reader kri.ResourceReader,
-	protocol core_mesh.Protocol,
-) error {
-	for _, vh := range rc.VirtualHosts {
-		for _, route := range vh.Routes {
-			if !kri.IsValid(route.Name) {
-				continue
-			}
-
-			id, err := kri.FromString(route.Name)
-			if err != nil {
-				return err
-			}
-
-			var conf api.Conf
-			if rr := rules.Compute(id, reader); rr != nil {
-				conf = rr.Conf[0].(api.Conf)
-			}
-
-			policy, err := plugin_xds.GetRouteRetryConfig(&conf, protocol)
-			if err != nil {
-				return err
-			}
-			if policy == nil {
-				return nil
-			}
-
-			switch a := route.GetAction().(type) {
-			case *envoy_route.Route_Route:
-				a.Route.RetryPolicy = policy
-			}
-		}
+func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route.Route, protocol core_mesh.Protocol) error {
+	policy, err := plugin_xds.GetRouteRetryConfig(pointer.To(rctx.Conf()), protocol)
+	if err != nil {
+		return err
 	}
+	if policy == nil {
+		return nil
+	}
+
+	switch a := route.GetAction().(type) {
+	case *envoy_route.Route_Route:
+		a.Route.RetryPolicy = policy
+	}
+
 	return nil
 }

@@ -24,6 +24,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
+	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 )
 
 const meshName = "envoyconfig"
@@ -44,6 +45,7 @@ func Sidecars() {
 		meshhealthcheck.MeshHealthCheckResourceTypeDescriptor,
 		meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
 		meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
+		meshretry.MeshRetryResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config",
