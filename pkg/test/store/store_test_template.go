@@ -657,7 +657,7 @@ func ExecuteStoreTests(
 
 					// then
 					Expect(list.Pagination.Total).To(Equal(uint32(0)))
-					Expect(err).To(Equal(store.ErrorInvalidOffset))
+					Expect(store.IsInvalidOffset(err)).To(BeTrue())
 				})
 			})
 		})
