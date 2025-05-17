@@ -23,3 +23,6 @@ const FeatureEmbeddedDNS string = "feature-embedded-dns"
 const FeatureDeltaGRPC string = "feature-delta-grpc"
 
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
+
+// FeatureBindOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses
+const FeatureBindOutbounds string = "feature-bind-outbounds"

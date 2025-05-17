@@ -25,10 +25,9 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	tp := proxy.GetTransparentProxy()
 
 	// DNS only makes sense when transparent proxy is used
-	if !tp.Enabled() || !tp.Redirect.DNS.Enabled {
+	if !tp.Enabled() || !tp.Redirect.DNS.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		return nil, nil
 	}
-
 	outboundIPs := map[string]bool{}
 	for _, outbound := range proxy.Outbounds {
 		outboundIPs[outbound.GetAddress()] = true
