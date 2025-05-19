@@ -19,7 +19,7 @@ require (
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	github.com/evanphx/json-patch/v5 v5.9.11
-	github.com/exaring/otelpgx v0.9.1
+	github.com/exaring/otelpgx v0.9.3
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
@@ -31,7 +31,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.48.2
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.7.5
 	github.com/josephburnett/jd/v2 v2.2.3
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.63.0
+	github.com/prometheus/common v0.64.0
 	github.com/sethvargo/go-retry v0.3.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.13.0
@@ -74,17 +74,17 @@ require (
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250428153025-10db94c68c34
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34
-	google.golang.org/grpc v1.72.0
+	google.golang.org/grpc v1.72.1
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.17.3
-	k8s.io/api v0.33.0
-	k8s.io/apiextensions-apiserver v0.33.0
-	k8s.io/apimachinery v0.33.0
-	k8s.io/client-go v0.33.0
+	k8s.io/api v0.33.1
+	k8s.io/apiextensions-apiserver v0.33.1
+	k8s.io/apimachinery v0.33.1
+	k8s.io/client-go v0.33.1
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
-	k8s.io/kubectl v0.33.0
+	k8s.io/kubectl v0.33.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/controller-tools v0.17.3
@@ -254,10 +254,10 @@ require (
 	golang.org/x/crypto v0.38.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/oauth2 v0.27.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	golang.org/x/tools v0.32.0
+	golang.org/x/tools v0.33.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -276,8 +276,8 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
-	k8s.io/apiserver v0.33.0 // indirect
-	k8s.io/component-base v0.33.0 // indirect
+	k8s.io/apiserver v0.33.1 // indirect
+	k8s.io/component-base v0.33.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 )
 

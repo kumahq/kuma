@@ -8,6 +8,36 @@ does not have any particular instructions.
 
 ## Upgrade to `2.11.x`
 
+### Embedded Proxy DNS is Enabled by Default
+
+In version `2.11.x`, we reimplemented how mesh DNS queries are resolved by replacing CoreDNS with our Embedded DNS Server. This server is built into `kuma-dp`. After a pod restart (in Kubernetes) or an upgrade of `kuma-dp` (in Universal mode) to `2.11.x`, the embedded DNS proxy is enabled by default.
+
+If you encounter any issues, you can disable it as follows:
+
+**Kubernetes**
+Disable it by setting the environment variable when deploying `kuma-cp`:
+```bash
+KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY=false
+```
+
+Or via configuration:
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+      builtinDns:
+        experimentalProxy: false
+```
+
+**Universal**
+
+Disable it by running `kuma-dp` with the following environment variable:
+
+```bash
+KUMA_DNS_PROXY_PORT=0
+```
+
 ### Introduce an option to skip RBAC creation
 
 By default, we create all RBAC resources required for the mesh to function properly. Since `2.11.x`, it's possible to skip the creation of `ClusterRole`, `ClusterRoleBinding`, `Role`, and `RoleBinding`. We introduced two flags:

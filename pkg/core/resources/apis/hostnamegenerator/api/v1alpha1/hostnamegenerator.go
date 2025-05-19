@@ -2,6 +2,7 @@
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,6 +38,15 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 type HostnameGenerator struct {
 	Selector Selector `json:"selector,omitempty"`
 	Template string   `json:"template,omitempty"`
+	// Extension struct for a plugin configuration
+	Extension *Extension `json:"extension,omitempty"`
+}
+
+type Extension struct {
+	// Type of the extension.
+	Type string `json:"type"`
+	// Config freeform configuration for the extension.
+	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 
 type Origin string
