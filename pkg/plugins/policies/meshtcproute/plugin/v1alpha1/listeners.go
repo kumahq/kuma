@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
@@ -12,7 +13,6 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 )
 
@@ -29,7 +29,6 @@ func GenerateOutboundListener(
 			ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(svc.ServiceName)).
 			Configure(envoy_listeners.TCPProxy(svc.ServiceName, splits...)))).
 		Build()
-
 	if err != nil {
 		return nil, err
 	}

@@ -14,15 +14,23 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
+	meshtcproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -35,18 +43,10 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	meshtcproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 var _ = Describe("MeshAccessLog", func() {
-	var otherMeshExternalServiceHTTP = &kri.Identifier{
+	otherMeshExternalServiceHTTP := &kri.Identifier{
 		ResourceType: "MeshExternalService",
 		Mesh:         "default",
 		Zone:         "",
@@ -54,7 +54,7 @@ var _ = Describe("MeshAccessLog", func() {
 		Name:         "other-meshexternalservice-http",
 	}
 
-	var otherMeshServiceHTTP = &kri.Identifier{
+	otherMeshServiceHTTP := &kri.Identifier{
 		ResourceType: meshservice_api.MeshServiceType,
 		Mesh:         "default",
 		Zone:         "zone-1",

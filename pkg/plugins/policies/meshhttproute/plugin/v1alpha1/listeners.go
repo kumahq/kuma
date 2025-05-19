@@ -55,7 +55,6 @@ func GenerateOutboundListener(
 			})).
 			ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
 		Build()
-
 	if err != nil {
 		return nil, err
 	}

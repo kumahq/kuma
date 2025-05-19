@@ -5,11 +5,11 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 )
 
 var _ core_vip.ResourceHoldingVIPs = &MeshMultiZoneServiceResource{}
