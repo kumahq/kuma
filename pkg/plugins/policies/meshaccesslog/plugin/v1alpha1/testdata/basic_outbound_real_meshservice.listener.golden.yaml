@@ -14,7 +14,7 @@ filterChains:
           logFormat:
             textFormatSource:
               inlineString: |
-                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "backend" "127.0.0.1" "%UPSTREAM_HOST%"
+                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "other-meshservice-http" "127.0.0.1" "%UPSTREAM_HOST%"
           path: /tmp/log
       httpFilters:
       - name: envoy.filters.http.router
@@ -26,23 +26,26 @@ filterChains:
           prefixLen: 32
         - addressPrefix: ::1
           prefixLen: 128
+      normalizePath: true
       routeConfig:
-        name: outbound:backend
+        name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
-            value: '&kuma.io/service=web&'
+            value: '&kuma.io/service=backend&'
         validateClusters: false
         virtualHosts:
         - domains:
           - '*'
-          name: backend
+          name: default_other-meshservice-http_other-ns_zone-1_msvc_27777
           routes:
-          - match:
-              prefix: /
+          - match: {}
             route:
-              cluster: backend
+              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
               timeout: 0s
-      statPrefix: "127_0_0_1_27777"
+      statPrefix: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+metadata:
+  filterMetadata:
+    io.kuma.tags: {}
 name: outbound:127.0.0.1:27777
 trafficDirection: OUTBOUND

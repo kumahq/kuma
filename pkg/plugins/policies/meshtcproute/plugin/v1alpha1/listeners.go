@@ -1,12 +1,9 @@
 package v1alpha1
 
 import (
-	"github.com/pkg/errors"
-
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -15,7 +12,36 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 )
+
+func GenerateOutboundListener(
+	apiVersion core_xds.APIVersion,
+	svc meshroute_xds.DestinationService,
+	isTransparent bool,
+	splits []envoy_common.Split,
+) (*core_xds.Resource, error) {
+	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TransparentProxying(isTransparent)).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+			ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(svc.ServiceName)).
+			Configure(envoy_listeners.TCPProxy(svc.ServiceName, splits...)))).
+		Build()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &core_xds.Resource{
+		Name:           listener.GetName(),
+		Origin:         generator.OriginOutbound,
+		Resource:       listener,
+		ResourceOrigin: svc.Outbound.Resource,
+		Protocol:       svc.Protocol,
+	}, nil
+}
 
 func generateFromService(
 	meshCtx xds_context.MeshContext,
@@ -27,32 +53,20 @@ func generateFromService(
 ) (*core_xds.ResourceSet, error) {
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules
 
-	resources := core_xds.NewResourceSet()
-
-	serviceName := svc.ServiceName
-	protocol := svc.Protocol
-
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, meshCtx)
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, meshCtx)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
 
 	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
-	filterChain := buildFilterChain(proxy, serviceName, splits, protocol)
 
-	listener, err := buildOutboundListener(proxy, svc, filterChain)
+	isTransparent := !proxy.Metadata.HasFeature(types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
+
+	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, splits)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot build listener")
+		return nil, err
 	}
-
-	resources.Add(&core_xds.Resource{
-		Name:           listener.GetName(),
-		Origin:         generator.OriginOutbound,
-		Resource:       listener,
-		ResourceOrigin: svc.Outbound.Resource,
-		Protocol:       protocol,
-	})
-	return resources, nil
+	return core_xds.NewResourceSet().Add(listener), nil
 }
 
 func generateListeners(
@@ -82,29 +96,4 @@ func generateListeners(
 	}
 
 	return resources, nil
-}
-
-func buildOutboundListener(
-	proxy *core_xds.Proxy,
-	svc meshroute_xds.DestinationService,
-	opts ...envoy_listeners.ListenerBuilderOpt,
-) (envoy_common.NamedResource, error) {
-	// build listener name in format: "outbound:[IP]:[Port]"
-	// i.e. "outbound:240.0.0.0:80"
-	builder := envoy_listeners.NewOutboundListenerBuilder(
-		proxy.APIVersion,
-		svc.Outbound.GetAddress(),
-		svc.Outbound.GetPort(),
-		core_xds.SocketAddressProtocolTCP,
-	)
-	configurers := []envoy_listeners.ListenerBuilderOpt{}
-	if !proxy.Metadata.HasFeature(types.FeatureBindOutbounds) {
-		configurers = append(configurers, envoy_listeners.TransparentProxying(proxy))
-	}
-
-	configurers = append(configurers, envoy_listeners.TagsMetadata(
-		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
-	))
-
-	return builder.Configure(configurers...).Configure(opts...).Build()
 }
