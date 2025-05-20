@@ -184,10 +184,17 @@ func NonGatewayResources(r *Resource) bool {
 }
 
 func HasAssociatedServiceResource(r *Resource) bool {
-	return r.ResourceOrigin != nil &&
-		(r.ResourceOrigin.ResourceType == meshservice_api.MeshServiceType ||
-			r.ResourceOrigin.ResourceType == meshexternalservice_api.MeshExternalServiceType ||
-			r.ResourceOrigin.ResourceType == meshmultizoneservice_api.MeshMultiZoneServiceType)
+	if r.ResourceOrigin == nil {
+		return false
+	}
+	switch r.ResourceOrigin.ResourceType {
+	case
+		meshservice_api.MeshServiceType,
+		meshexternalservice_api.MeshExternalServiceType,
+		meshmultizoneservice_api.MeshMultiZoneServiceType:
+		return true
+	}
+	return false
 }
 
 type ResourcesByType map[string][]*Resource
