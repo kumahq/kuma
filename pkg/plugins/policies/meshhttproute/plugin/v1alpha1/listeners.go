@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -37,8 +38,11 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)))
+
+	if !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
+		listenerBuilder.Configure(envoy_listeners.TransparentProxying(proxy))
+	}
 
 	resourceName := svc.ServiceName
 
