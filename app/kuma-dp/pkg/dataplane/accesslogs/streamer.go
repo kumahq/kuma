@@ -134,8 +134,6 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) error {
 					continue
 				}
 			}
-
-			accessLogMsg = append(accessLogMsg, '\n')
 		}
 
 		s.RLock()
