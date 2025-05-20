@@ -35,7 +35,7 @@ docs/generated/raw/rbac.yaml:
 	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
 	$(YQ) eval-all 'select((.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding") and (.metadata.annotations["helm.sh/hook"] == null)) | del(.metadata.labels)' - | \
 	grep -Ev '^\s*#' | \
-	sed 's/\s*#.*$$//' > $@
+	sed 's/[[:space:]]*#.*$$//' > $@
 
 OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
 API_DIRS="$(TOP)/api/openapi/specs:base"

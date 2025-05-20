@@ -39,7 +39,7 @@ rules:
       - get
       - list
       - watch
-  - apiGroups: 
+  - apiGroups:
       - gateway.networking.k8s.io
     resources:
       - gateways
@@ -52,7 +52,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses 
+      - gatewayclasses
     verbs:
       - create
       - delete
@@ -64,7 +64,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses/status 
+      - gatewayclasses/status
     verbs:
       - get
       - patch
