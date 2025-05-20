@@ -1,32 +1,8 @@
-{{- if or .Values.skipRBAC .Values.controlPlane.skipClusterRoleCreation }}
-{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for control-plane manually.\n" }}
-{{- end }}
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
-{{- with .Values.controlPlane.serviceAccountAnnotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-{{- end }}
-{{- with .Values.global.imagePullSecrets }}
-imagePullSecrets:
-  {{- range . }}
-  - name: {{ . | quote }}
-  {{- end }}
-{{- end }}
-{{- if and (eq .Values.controlPlane.environment "kubernetes") (not .Values.skipRBAC) }}
-{{- if not .Values.controlPlane.skipClusterRoleCreation }}
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  name: kuma-control-plane
 rules:
-  # Kubernetes resources
   - apiGroups:
       - ""
     resources:
@@ -34,9 +10,6 @@ rules:
       - pods
       - nodes
       - services
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-      - secrets
-{{- end }}
     verbs:
       - get
       - list
@@ -66,7 +39,7 @@ rules:
       - get
       - list
       - watch
-  - apiGroups: # Gateway API
+  - apiGroups:
       - gateway.networking.k8s.io
     resources:
       - gateways
@@ -79,7 +52,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses # ClusterScope
+      - gatewayclasses
     verbs:
       - create
       - delete
@@ -91,7 +64,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses/status # ClusterScope
+      - gatewayclasses/status
     verbs:
       - get
       - patch
@@ -128,16 +101,26 @@ rules:
       - meshgatewayroutes
       - meshgatewayinstances
       - meshgatewayconfigs
-  {{- range $policy, $v := .Values.plugins.policies }}
-  {{- if $v }}
-      - {{ $policy }}
-  {{- end}}
-  {{- end}}
-  {{- range $policy, $v := .Values.plugins.resources }}
-  {{- if $v }}
-      - {{ $policy }}
-  {{- end}}
-  {{- end}}
+      - meshaccesslogs
+      - meshcircuitbreakers
+      - meshfaultinjections
+      - meshhealthchecks
+      - meshhttproutes
+      - meshloadbalancingstrategies
+      - meshmetrics
+      - meshpassthroughs
+      - meshproxypatches
+      - meshratelimits
+      - meshretries
+      - meshtcproutes
+      - meshtimeouts
+      - meshtlses
+      - meshtraces
+      - meshtrafficpermissions
+      - hostnamegenerators
+      - meshexternalservices
+      - meshmultizoneservices
+      - meshservices
     verbs:
       - get
       - list
@@ -157,33 +140,6 @@ rules:
       - get
       - patch
       - update
-  {{- if .Values.cni.enabled }}
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
-    verbs:
-      - get
-      - list
-      - watch
-  {{- if .Values.cni.taintController.enabled }}
-  - apiGroups: # required for taint controller
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - update
-  {{- end }}
-  {{- end }}
-  # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
     resources:
@@ -192,24 +148,9 @@ rules:
       - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ include "kuma.name" . }}-control-plane
-subjects:
-  - kind: ServiceAccount
-    name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{ .Release.Namespace }}
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane-writer
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  name: kuma-control-plane-writer
 rules:
   - apiGroups:
       - ""
@@ -219,7 +160,6 @@ rules:
       - create
       - patch
   - apiGroups:
-    # required by MeshGateway
       - "apps"
     resources:
       - deployments
@@ -241,7 +181,6 @@ rules:
       - list
       - watch
   - apiGroups:
-    # required by MeshGateway
       - ""
     resources:
       - services
@@ -262,7 +201,6 @@ rules:
       - patch
       - update
   - apiGroups:
-    # Gateway API
       - gateway.networking.k8s.io
     resources:
       - gateways
@@ -285,59 +223,38 @@ rules:
       - get
       - patch
       - update
-  {{- if .Values.cni.enabled }}
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - create
-      - delete
-  {{- end }}
-{{- end }}
-{{- if gt (len .Values.namespaceAllowList) 0 }}
-{{- $root := . }}
-{{- range $element := .Values.namespaceAllowList }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ include "kuma.name" $root }}-control-plane-writer
-  labels: {{ include "kuma.cpLabels" $root | nindent 4 }}
-  namespace: {{ $element }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ include "kuma.name" $root }}-control-plane-writer
-subjects:
-  - kind: ServiceAccount
-    name: {{ include "kuma.name" $root }}-control-plane
-    namespace: {{ $root.Release.Namespace }}
-{{- end }}
-{{- end }}
-{{- if and (eq (len .Values.namespaceAllowList) 0) (not .Values.controlPlane.skipClusterRoleCreation) }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane-writer
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  name: kuma-control-plane
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma.name" . }}-control-plane-writer
+  name: kuma-control-plane
 subjects:
   - kind: ServiceAccount
-    name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{ .Release.Namespace }}
-{{- end }}
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane-writer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-writer
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  name: kuma-control-plane
+  namespace: kuma-system
 rules:
   - apiGroups:
       - coordination.k8s.io
@@ -371,7 +288,6 @@ rules:
     verbs:
       - create
       - patch
-  # leader-for-life election deletes Pods in some circumstances
   - apiGroups:
       - ""
     resources:
@@ -401,31 +317,17 @@ rules:
       - get
       - patch
       - update
-  {{- if .Values.cni.enabled }}
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  name: kuma-control-plane
+  namespace: kuma-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "kuma.name" . }}-control-plane
+  name: kuma-control-plane
 subjects:
   - kind: ServiceAccount
-    name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{ .Release.Namespace }}
-{{- end }}
+    name: kuma-control-plane
+    namespace: kuma-system
