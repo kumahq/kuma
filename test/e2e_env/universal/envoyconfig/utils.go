@@ -35,7 +35,11 @@ func getConfig(mesh, dpp string) string {
 	output, err := universal.Cluster.GetKumactlOptions().
 		RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", mesh, "--shadow", "--include=diff")
 	Expect(err).ToNot(HaveOccurred())
-	redacted := redactStatPrefixes(redactIPs(output))
+	redacted := redactDnsLookupFamily(
+		redactStatPrefixes(
+			redactIPs(output),
+		),
+	)
 
 	response := types.GetDataplaneXDSConfigResponse{}
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
@@ -95,6 +99,12 @@ var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
 
 func redactStatPrefixes(jsonStr string) string {
 	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
+}
+
+// This needs to be removed as we run tests on ipv4 and ipv6. In ipv4 dnslookupFamily is set to V4_ONLY,
+// and in the case of ipv6 this field is default, so it is missing in the config.
+func redactDnsLookupFamily(jsonStr string) string {
+	return strings.ReplaceAll(jsonStr, "\"dnsLookupFamily\": \"V4_ONLY\",", "")
 }
 
 func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
