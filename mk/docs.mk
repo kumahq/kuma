@@ -31,8 +31,8 @@ docs/generated/raw: docs/generated/raw/rbac.yaml
 
 docs/generated/raw/rbac.yaml:
 	@mkdir -p docs/generated/raw
-	@helm template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
-	yq eval-all ' \
+	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
+	$(YQ) eval-all ' \
 	  select(\
 	    (.kind == "ClusterRole" or \
 	     .kind == "ClusterRoleBinding" or \
