@@ -1,6 +1,7 @@
 package v3_test
 
 import (
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -18,7 +19,7 @@ var _ = Describe("DirectResponseConfigurer", func() {
 				Path:       "/",
 				StatusCode: 200,
 				Response:   "test",
-			}})).
+			}}, core_xds.LocalHostAddresses)).
 			Build()
 
 		// then
@@ -36,6 +37,12 @@ filters:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      internalAddressConfig:
+        cidrRanges:
+        - addressPrefix: 127.0.0.1
+          prefixLen: 32
+        - addressPrefix: ::1
+          prefixLen: 128
       routeConfig:
           virtualHosts:
               - domains:

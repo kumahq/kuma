@@ -6,6 +6,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_dresp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/direct_response/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -14,8 +15,9 @@ import (
 )
 
 type DirectResponseConfigurer struct {
-	VirtualHostName string
-	Endpoints       []DirectResponseEndpoints
+	VirtualHostName   string
+	Endpoints         []DirectResponseEndpoints
+	InternalAddresses []core_xds.InternalAddress
 }
 
 type DirectResponseEndpoints struct {
@@ -71,6 +73,13 @@ func (c *DirectResponseConfigurer) Configure(filterChain *envoy_listener.FilterC
 				}},
 			},
 		},
+	}
+	if len(c.InternalAddresses) == 0 {
+		c.InternalAddresses = core_xds.LocalHostAddresses
+	}
+	config.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
+		UnixSockets: false,
+		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.InternalAddresses),
 	}
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
 	if err != nil {
