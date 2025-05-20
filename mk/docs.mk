@@ -29,18 +29,11 @@ docs/generated/raw: docs/generated/raw/rbac.yaml
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
 
+.PHONY: docs/generated/raw/rbac.yaml
 docs/generated/raw/rbac.yaml:
 	@mkdir -p docs/generated/raw
 	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
-	$(YQ) eval-all ' \
-	  select(\
-	    (.kind == "ClusterRole" or \
-	     .kind == "ClusterRoleBinding" or \
-	     .kind == "Role" or \
-	     .kind == "RoleBinding") and \
-	    (.metadata.annotations["helm.sh/hook"] == null) \
-	  ) | \
-	  del(.metadata.labels)' - | \
+	$(YQ) eval-all 'select((.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding") and (.metadata.annotations["helm.sh/hook"] == null)) | del(.metadata.labels)' - | \
 	grep -Ev '^\s*#' | \
 	sed 's/\s*#.*$$//' > $@
 
