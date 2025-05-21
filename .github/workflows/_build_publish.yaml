@@ -42,7 +42,7 @@ env:
   GH_REPO: "charts"
 jobs:
   build-binaries:
-    timeout-minutes: 50
+    timeout-minutes: 70
     runs-on: ubuntu-24.04
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
