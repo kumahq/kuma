@@ -245,7 +245,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
+			stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "tail", "-1", "/nc.out")
 			g.Expect(err).ToNot(HaveOccurred())
 
 			g.Expect(json.Unmarshal([]byte(stdout), &log)).To(Succeed())
