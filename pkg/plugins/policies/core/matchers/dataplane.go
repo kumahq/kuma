@@ -32,7 +32,7 @@ func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResourc
 	if !ok {
 		return false, errors.New("resource is not a targetRef policy")
 	}
-	selectedInbounds, selectedGatewayListener, delegatedGateway, err := dppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, referencableResources)
+	selectedInbounds, selectedGatewayListener, delegatedGateway, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, referencableResources)
 	return len(selectedInbounds) != 0 || len(selectedGatewayListener) != 0 || delegatedGateway, err
 }
 
@@ -63,7 +63,7 @@ func MatchedPolicies(
 		}
 
 		refPolicy := policy.GetSpec().(core_model.Policy)
-		selectedInbounds, matchedGatewayListeners, delegatedGatewaySelected, err := dppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
+		selectedInbounds, matchedGatewayListeners, delegatedGatewaySelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
 		if err != nil {
 			warnings = append(warnings,
 				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
@@ -164,9 +164,9 @@ func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_m
 	return filtered
 }
 
-// dppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
+// DppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
 // and whether a delegated gateway is selected
-func dppSelectedByPolicy(
+func DppSelectedByPolicy(
 	meta core_model.ResourceMeta,
 	ref common_api.TargetRef,
 	dpp *core_mesh.DataplaneResource,
@@ -226,7 +226,7 @@ func dppSelectedByPolicy(
 		if mhr == nil {
 			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
 		}
-		return dppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
+		return DppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
 	default:
 		return nil, nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}

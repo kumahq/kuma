@@ -103,6 +103,10 @@ func (d *DataplaneBuilder) WithoutInbounds() *DataplaneBuilder {
 	return d
 }
 
+func (d *DataplaneBuilder) WithInboundOfName(name string) *DataplaneBuilder {
+	return d.WithoutInbounds().AddInboundWithName(name)
+}
+
 func (d *DataplaneBuilder) WithInboundOfTags(tagsKV ...string) *DataplaneBuilder {
 	return d.WithInboundOfTagsMap(TagsKVToMap(tagsKV))
 }
@@ -129,6 +133,15 @@ func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *Dataplan
 			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
 			WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound))).
 			WithTags(tags),
+	)
+}
+
+func (d *DataplaneBuilder) AddInboundWithName(name string) *DataplaneBuilder {
+	return d.AddInbound(
+		Inbound().
+			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
+			WithName(name).
+			WithService(name),
 	)
 }
 
