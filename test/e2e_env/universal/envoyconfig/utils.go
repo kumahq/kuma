@@ -95,16 +95,18 @@ func redactIPs(jsonStr string) string {
 }
 
 // TODO this should be removed after fixing: https://github.com/kumahq/kuma/issues/12733
-var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
+var statsPrefixRegex = regexp.MustCompile(`"statPrefix":[[:space:]]*"[^"]*"`)
 
 func redactStatPrefixes(jsonStr string) string {
 	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
 }
 
+var dnsLookupRegex = regexp.MustCompile(`,[[:space:]]*"dnsLookupFamily":[[:space:]]*"[^"]*"`)
+
 // This needs to be removed as we run tests on ipv4 and ipv6. In ipv4 dnslookupFamily is set to V4_ONLY,
 // and in the case of ipv6 this field is default, so it is missing in the config.
 func redactDnsLookupFamily(jsonStr string) string {
-	return strings.ReplaceAll(jsonStr, "\"dnsLookupFamily\": \"V4_ONLY\",", "")
+	return dnsLookupRegex.ReplaceAllString(jsonStr, "")
 }
 
 func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
