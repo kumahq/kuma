@@ -208,7 +208,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane-writer
+  name: {{ include "kuma.name" . }}-control-plane-workloads
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 rules:
   - apiGroups:
@@ -302,13 +302,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "kuma.name" $root }}-control-plane-writer
+  name: {{ include "kuma.name" $root }}-control-plane-workloads
   labels: {{ include "kuma.cpLabels" $root | nindent 4 }}
   namespace: {{ $element }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma.name" $root }}-control-plane-writer
+  name: {{ include "kuma.name" $root }}-control-plane-workloads
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" $root }}-control-plane
@@ -320,12 +320,12 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}-control-plane-writer
+  name: {{ include "kuma.name" . }}-control-plane-workloads
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma.name" . }}-control-plane-writer
+  name: {{ include "kuma.name" . }}-control-plane-workloads
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane

@@ -10605,7 +10605,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kuma-control-plane-writer
+  name: kuma-control-plane-workloads
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -10706,7 +10706,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kuma-control-plane-writer
+  name: kuma-control-plane-workloads
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -10714,7 +10714,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kuma-control-plane-writer
+  name: kuma-control-plane-workloads
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
