@@ -212,6 +212,56 @@
           }
         }
       },
+      "kuma:envoy:admin": {
+        "altStatName": "kuma_envoy_admin",
+        "connectTimeout": "5s",
+        "loadAssignment": {
+          "clusterName": "kuma:envoy:admin",
+          "endpoints": [
+            {
+              "lbEndpoints": [
+                {
+                  "endpoint": {
+                    "address": {
+                      "socketAddress": {
+                        "address": "IP_REDACTED",
+                        "portValue": 9901
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "name": "kuma:envoy:admin",
+        "type": "STATIC"
+      },
+      "kuma:readiness": {
+        "altStatName": "kuma_readiness",
+        "connectTimeout": "5s",
+        "loadAssignment": {
+          "clusterName": "kuma:readiness",
+          "endpoints": [
+            {
+              "lbEndpoints": [
+                {
+                  "endpoint": {
+                    "address": {
+                      "socketAddress": {
+                        "address": "IP_REDACTED",
+                        "portValue": 9902
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "name": "kuma:readiness",
+        "type": "STATIC"
+      },
       "localhost:8080": {
         "altStatName": "localhost_8080",
         "connectTimeout": "5s",
@@ -350,6 +400,83 @@
       }
     },
     "type.googleapis.com/envoy.config.listener.v3.Listener": {
+      "_kuma:dynamicconfig": {
+        "address": {
+          "pipe": {
+            "path": "/tmp/kuma-dp-2838761427/kuma-mesh-metric-config.sock"
+          }
+        },
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "routeConfig": {
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "_kuma:dynamicconfig",
+                        "routes": [
+                          {
+                            "directResponse": {
+                              "status": 304
+                            },
+                            "match": {
+                              "headers": [
+                                {
+                                  "name": "If-None-Match",
+                                  "stringMatch": {
+                                    "exact": "840995ce590e92fd34a978b1b65f1d88f9787e4fd8e1b51d7fdaeeb02da459db"
+                                  }
+                                }
+                              ],
+                              "path": "/dns"
+                            }
+                          },
+                          {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": "{\"records\":[{\"name\":\"demo-client.svc.mesh.local\",\"ips\":[\"IP_REDACTED\",\"IP_REDACTED\"]},{\"name\":\"test-server.svc.mesh.local\",\"ips\":[\"IP_REDACTED\",\"IP_REDACTED\"]}],\"ttl\":30}"
+                              },
+                              "status": 200
+                            },
+                            "match": {
+                              "path": "/dns"
+                            },
+                            "name": "_kuma:dynamicconfig:/dns",
+                            "responseHeadersToAdd": [
+                              {
+                                "header": {
+                                  "key": "Etag",
+                                  "value": "840995ce590e92fd34a978b1b65f1d88f9787e4fd8e1b51d7fdaeeb02da459db"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ]
+          }
+        ],
+        "name": "_kuma:dynamicconfig"
+      },
       "inbound:IP_REDACTED:80": {
         "address": {
           "socketAddress": {
@@ -573,6 +700,177 @@
         "name": "inbound:passthrough:ipv6",
         "trafficDirection": "INBOUND",
         "useOriginalDst": true
+      },
+      "kuma:envoy:admin": {
+        "address": {
+          "socketAddress": {
+            "address": "IP_REDACTED",
+            "portValue": 9901
+          }
+        },
+        "enableReusePort": false,
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 128
+                      }
+                    ]
+                  },
+                  "routeConfig": {
+                    "validateClusters": false,
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "kuma:envoy:admin",
+                        "routes": [
+                          {
+                            "match": {
+                              "prefix": "/ready"
+                            },
+                            "route": {
+                              "cluster": "kuma:readiness",
+                              "prefixRewrite": "/ready"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ]
+          },
+          {
+            "filterChainMatch": {
+              "transportProtocol": "tls"
+            },
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 128
+                      }
+                    ]
+                  },
+                  "routeConfig": {
+                    "validateClusters": false,
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "kuma:envoy:admin",
+                        "routes": [
+                          {
+                            "match": {
+                              "prefix": "/ready"
+                            },
+                            "route": {
+                              "cluster": "kuma:readiness",
+                              "prefixRewrite": "/ready"
+                            }
+                          },
+                          {
+                            "match": {
+                              "prefix": "/"
+                            },
+                            "route": {
+                              "cluster": "kuma:envoy:admin",
+                              "prefixRewrite": "/"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ],
+            "transportSocket": {
+              "name": "envoy.transport_sockets.tls",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
+                "commonTlsContext": {
+                  "tlsCertificates": [
+                    {
+                      "certificateChain": {
+                        "inlineBytes": ""
+                      },
+                      "privateKey": {
+                        "inlineBytes": ""
+                      }
+                    }
+                  ],
+                  "validationContext": {
+                    "matchTypedSubjectAltNames": [
+                      {
+                        "matcher": {
+                          "exact": "kuma-cp"
+                        },
+                        "sanType": "DNS"
+                      }
+                    ],
+                    "trustedCa": {
+                      "inlineBytes": ""
+                    }
+                  }
+                },
+                "requireClientCertificate": true
+              }
+            }
+          }
+        ],
+        "listenerFilters": [
+          {
+            "name": "envoy.filters.listener.tls_inspector",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
+            }
+          }
+        ],
+        "name": "kuma:envoy:admin",
+        "trafficDirection": "INBOUND"
       },
       "outbound:IP_REDACTED:3000": {
         "address": {

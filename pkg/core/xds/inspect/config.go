@@ -32,9 +32,10 @@ type ProxyConfigInspector struct {
 	meshContext            xds_context.MeshContext
 	snapshotGenerator      *v3.TemplateSnapshotGenerator
 	knownInternalAddresses []string
+	dataplaneInsight       *core_mesh.DataplaneInsightResource
 }
 
-func NewProxyConfigInspector(meshContext xds_context.MeshContext, zone string, knownInternalAddresses []string, hooks ...xds_hooks.ResourceSetHook) (*ProxyConfigInspector, error) {
+func NewProxyConfigInspector(meshContext xds_context.MeshContext, dataplaneInsight *core_mesh.DataplaneInsightResource, zone string, knownInternalAddresses []string, hooks ...xds_hooks.ResourceSetHook) (*ProxyConfigInspector, error) {
 	return &ProxyConfigInspector{
 		zone:        zone,
 		meshContext: meshContext,
@@ -43,6 +44,7 @@ func NewProxyConfigInspector(meshContext xds_context.MeshContext, zone string, k
 			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		},
 		knownInternalAddresses: knownInternalAddresses,
+		dataplaneInsight:       dataplaneInsight,
 	}, nil
 }
 
@@ -54,7 +56,7 @@ func (p *ProxyConfigInspector) Get(ctx context.Context, name string, shadow bool
 		InternalAddresses: core_xds.InternalAddressesFromCIDRs(p.knownInternalAddresses),
 	}
 
-	proxy, err := proxyBuilder.Build(ctx, model.ResourceKey{Name: name, Mesh: p.mesh()}, &core_xds.DataplaneMetadata{}, p.meshContext)
+	proxy, err := proxyBuilder.Build(ctx, model.ResourceKey{Name: name, Mesh: p.mesh()}, core_xds.DataplaneMetadataFromXdsMetadata(p.dataplaneInsight.Spec.Metadata), p.meshContext)
 	if err != nil {
 		return nil, err
 	}
