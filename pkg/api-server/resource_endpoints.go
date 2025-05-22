@@ -783,7 +783,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, dataplaneInsight, r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
+		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata), r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
 			return
