@@ -28,7 +28,7 @@ import (
 var _ = Describe("Validating Webhook", func() {
 	DescribeTableSubtree("Handle",
 		func(inputFile string) {
-			FIt("should validate requests on Global", func() {
+			It("should validate requests on Global", func() {
 				// given
 				wh := newValidatingWebhook(core.Global, false)
 				req := webhookRequest(inputFile)
