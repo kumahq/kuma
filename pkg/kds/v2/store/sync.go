@@ -53,6 +53,7 @@ type ResourceSyncer interface {
 type SyncOption struct {
 	Predicate            func(r core_model.Resource) bool
 	SkipConflictResource bool
+	IgnoreStatusChange   bool
 	Zone                 string
 }
 
@@ -75,6 +76,12 @@ func Zone(name string) SyncOptionFunc {
 func SkipConflictResource() SyncOptionFunc {
 	return func(opts *SyncOption) {
 		opts.SkipConflictResource = true
+	}
+}
+
+func IgnoreStatusChange() SyncOptionFunc {
+	return func(opts *SyncOption) {
+		opts.IgnoreStatusChange = true
 	}
 }
 
@@ -222,10 +229,17 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		newLabels := r.GetMeta().GetLabels()
 		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) ||
 			!maps.Equal(existing.GetMeta().GetLabels(), newLabels) ||
-			!core_model.Equal(existing.GetStatus(), r.GetStatus()) {
+			(!opts.IgnoreStatusChange && !core_model.Equal(existing.GetStatus(), r.GetStatus())) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
+			// we should preserve Status of the resource
+			if r.Descriptor().HasStatus {
+				if err = r.SetStatus(existing.GetStatus()); err != nil {
+					log.Error(err, "failed to set status", "resource", r.GetMeta())
+					continue
+				}
+			}
 			onUpdate = append(onUpdate, OnUpdate{r: r, opts: []store.UpdateOptionsFunc{store.UpdateWithLabels(newLabels)}})
 		}
 	}
@@ -320,6 +334,7 @@ func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool,
 					}
 					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
 				}),
+				IgnoreStatusChange(),
 			}
 			// When there is no KDS hash suffix, we can have conflicts in resources so we simply skip them
 			if tDesc.SkipKDSHash {
