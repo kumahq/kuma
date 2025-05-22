@@ -50,8 +50,8 @@ func ComputeMtpRulesForTags(
 }
 
 // TODO Currently autoreachable services functionality is based on tags. When MTP selects dataplanes by Dataplane kind
-// we don't have tags to work with. We should rethink how to implement autoreachable services with Dataplane kind and new spec.rules
-// This should be covered by: https://github.com/kumahq/kuma/issues/12403
+// we don't have tags to work with. We should rethink how to implement autoreachable services with new workload identity
+// after we design it
 func filterMTPsWithKindDataplane(mtps []*mtp_api.MeshTrafficPermissionResource) []*mtp_api.MeshTrafficPermissionResource {
 	var filteredMtps []*mtp_api.MeshTrafficPermissionResource
 	for _, mtp := range mtps {
