@@ -17,23 +17,26 @@ filterChains:
           prefixLen: 32
         - addressPrefix: ::1
           prefixLen: 128
+      normalizePath: true
       routeConfig:
-        name: outbound:backend
+        name: outbound:other-service-http
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
-            value: '&kuma.io/service=web&'
+            value: '&kuma.io/service=backend&'
         validateClusters: false
         virtualHosts:
         - domains:
           - '*'
-          name: backend
+          name: other-service-http
           routes:
-          - match:
-              prefix: /
+          - match: {}
             route:
-              cluster: backend
+              cluster: other-service-http
               timeout: 0s
-      statPrefix: "127_0_0_1_27777"
+      statPrefix: other-service-http
+metadata:
+  filterMetadata:
+    io.kuma.tags: {}
 name: outbound:127.0.0.1:27777
 trafficDirection: OUTBOUND

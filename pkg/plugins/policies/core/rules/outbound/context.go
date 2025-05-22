@@ -55,3 +55,13 @@ func (rc *ResourceContext[T]) Conf() T {
 	var conf T
 	return conf
 }
+
+func (rc *ResourceContext[T]) DirectConf() (T, bool) {
+	if len(rc.ids) != 0 {
+		if rule, ok := rc.rules[rc.ids[0]]; ok {
+			return rule.Conf[0].(T), true
+		}
+	}
+	var zero T
+	return zero, false
+}

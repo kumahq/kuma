@@ -1,21 +1,19 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
-	id := kri.From(m, "")
 	if port == 0 {
 		port = uint32(m.Spec.Match.Port)
 	}
-	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshExternalServiceResourceTypeDescriptor.ShortName, port)
+	return destinationname.LegacyName(kri.From(m, ""), MeshExternalServiceResourceTypeDescriptor.ShortName, port)
 }
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {

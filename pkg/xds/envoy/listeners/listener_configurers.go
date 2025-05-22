@@ -39,7 +39,7 @@ func PipeListener(socketPath string) ListenerBuilderOpt {
 	})
 }
 
-func TransparentProxying[T *tproxy_dp.DataplaneConfig | *core_xds.Proxy](value T) ListenerBuilderOpt {
+func TransparentProxying[T *tproxy_dp.DataplaneConfig | *core_xds.Proxy | bool](value T) ListenerBuilderOpt {
 	var enabled bool
 
 	switch v := any(value).(type) {
@@ -47,6 +47,8 @@ func TransparentProxying[T *tproxy_dp.DataplaneConfig | *core_xds.Proxy](value T
 		enabled = v.Enabled()
 	case *core_xds.Proxy:
 		enabled = v.GetTransparentProxy().Enabled()
+	case bool:
+		enabled = v
 	}
 
 	if enabled {

@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -35,20 +34,21 @@ type AccessLogConfigurer struct {
 	Proxy              *core_xds.Proxy
 }
 
-func InterpolateKumaValues(
-	format string,
-	sourceService string,
-	destinationService string,
-	mesh string,
-	trafficDirection envoy.TrafficDirection,
-	dpp *mesh.DataplaneResource,
-) string {
-	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS, net.JoinHostPort(dpp.GetIP(), "0"))
-	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT, dpp.GetIP())
-	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_SERVICE, sourceService)
-	format = strings.ReplaceAll(format, CMD_KUMA_DESTINATION_SERVICE, destinationService)
-	format = strings.ReplaceAll(format, CMD_KUMA_MESH, mesh)
-	format = strings.ReplaceAll(format, CMD_KUMA_TRAFFIC_DIRECTION, string(trafficDirection))
+type KumaValues struct {
+	SourceService      string
+	SourceIP           string
+	DestinationService string
+	Mesh               string
+	TrafficDirection   envoy.TrafficDirection
+}
+
+func InterpolateKumaValues(format string, values KumaValues) string {
+	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS, net.JoinHostPort(values.SourceIP, "0"))
+	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT, values.SourceIP)
+	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_SERVICE, values.SourceService)
+	format = strings.ReplaceAll(format, CMD_KUMA_DESTINATION_SERVICE, values.DestinationService)
+	format = strings.ReplaceAll(format, CMD_KUMA_MESH, values.Mesh)
+	format = strings.ReplaceAll(format, CMD_KUMA_TRAFFIC_DIRECTION, string(values.TrafficDirection))
 	return format
 }
 
@@ -60,7 +60,14 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 	if backend.Format != "" {
 		format = backend.Format
 	}
-	format = InterpolateKumaValues(format, sourceService, destinationService, mesh, trafficDirection, proxy.Dataplane)
+	values := KumaValues{
+		SourceService:      sourceService,
+		SourceIP:           proxy.Dataplane.GetIP(),
+		DestinationService: destinationService,
+		Mesh:               mesh,
+		TrafficDirection:   trafficDirection,
+	}
+	format = InterpolateKumaValues(format, values)
 	format += "\n"
 
 	switch backend.GetType() {
