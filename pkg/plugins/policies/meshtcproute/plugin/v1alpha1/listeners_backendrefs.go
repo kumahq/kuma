@@ -55,7 +55,6 @@ func getBackendRefs(
 	toRulesTCP core_xds.ToRules,
 	toRulesHTTP core_xds.ToRules,
 	svc meshroute_xds.DestinationService,
-	protocol core_mesh.Protocol,
 	meshCtx xds_context.MeshContext,
 ) []resolve.ResolvedBackendRef {
 	tcpConf, origin := computeConf(toRulesTCP, svc, meshCtx)
@@ -63,7 +62,7 @@ func getBackendRefs(
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
 	// precedence over the latter
-	switch protocol {
+	switch svc.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		// If we have an >= HTTP service, don't manage routing with
 		// MeshTCPRoutes if we either don't have any MeshTCPRoutes or we have

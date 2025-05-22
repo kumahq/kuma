@@ -5,6 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -56,8 +57,7 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) 
 }
 
 func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
-	id := kri.From(m, "")
-	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
+	return destinationname.LegacyName(kri.From(m, ""), MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
 }
 
 func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {

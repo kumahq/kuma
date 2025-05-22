@@ -1,7 +1,7 @@
 address:
   socketAddress:
     address: 127.0.0.1
-    portValue: 27778
+    portValue: 37778
 filterChains:
 - filters:
   - name: envoy.filters.network.tcp_proxy
@@ -21,6 +21,9 @@ filterChains:
             logName: MeshAccessLog
             transportApiVersion: V3
       cluster: foo-service
-      statPrefix: "127_0_0_1_27778"
-name: outbound:127.0.0.1:27778
+      statPrefix: foo-service
+metadata:
+  filterMetadata:
+    io.kuma.tags: {}
+name: outbound:127.0.0.1:37778
 trafficDirection: OUTBOUND

@@ -1,7 +1,7 @@
 address:
   socketAddress:
     address: 127.0.0.1
-    portValue: 27777
+    portValue: 37777
 filterChains:
 - filters:
   - name: envoy.filters.network.tcp_proxy
@@ -18,7 +18,10 @@ filterChains:
                 duration: '%DURATION%'
                 protocol: '%PROTOCOL%'
           path: /tmp/kuma-al-backend-default.sock
-      cluster: backend
-      statPrefix: "127_0_0_1_27777"
-name: outbound:127.0.0.1:27777
+      cluster: other-service-tcp
+      statPrefix: other-service-tcp
+metadata:
+  filterMetadata:
+    io.kuma.tags: {}
+name: outbound:127.0.0.1:37777
 trafficDirection: OUTBOUND

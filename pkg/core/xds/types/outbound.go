@@ -42,6 +42,15 @@ func (o *Outbound) TagsOrNil() map[string]string {
 	return nil
 }
 
+// NameOrEmpty returns Outbound's name based on KRI if the Outbound has an associated service resource.
+// Otherwise, it returns an empty string.
+func (o *Outbound) NameOrEmpty() string {
+	if id, ok := o.AssociatedServiceResource(); ok {
+		return id.String()
+	}
+	return ""
+}
+
 func (o *Outbound) GetPort() uint32 {
 	if o.LegacyOutbound != nil {
 		return o.LegacyOutbound.Port
