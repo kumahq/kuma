@@ -1,7 +1,7 @@
 address:
   socketAddress:
     address: 127.0.0.1
-    portValue: 27777
+    portValue: 47777
 filterChains:
 - filters:
   - name: envoy.filters.network.http_connection_manager
@@ -45,15 +45,15 @@ filterChains:
         virtualHosts:
         - domains:
           - '*'
-          name: default_other-meshexternalservice-http___extsvc_27777
+          name: default_other-meshexternalservice-http___extsvc_47777
           routes:
           - match: {}
             route:
-              cluster: default_other-meshexternalservice-http___extsvc_27777
+              cluster: default_other-meshexternalservice-http___extsvc_47777
               timeout: 0s
-      statPrefix: default_other-meshexternalservice-http___extsvc_27777
+      statPrefix: default_other-meshexternalservice-http___extsvc_47777
 metadata:
   filterMetadata:
     io.kuma.tags: {}
-name: outbound:127.0.0.1:27777
+name: outbound:127.0.0.1:47777
 trafficDirection: OUTBOUND

@@ -28,6 +28,7 @@ import (
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	meshtcproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
@@ -43,7 +44,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -317,9 +317,9 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("basic outbound route from real MeshExternalService", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundRealServiceHTTPListener(*otherMeshExternalServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
+				outboundRealServiceHTTPListener(*otherMeshExternalServiceHTTP, 47777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshExternalServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshExternalServiceHTTP, 47777)).Build(),
 					},
 				}}),
 			},

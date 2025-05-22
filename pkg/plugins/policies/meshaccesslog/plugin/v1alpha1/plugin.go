@@ -1,12 +1,14 @@
 package v1alpha1
 
 import (
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	luav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
@@ -26,6 +28,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -33,12 +36,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	luav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"google.golang.org/protobuf/types/known/structpb"
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -174,8 +171,8 @@ var luaFilter = util_proto.MustMarshalAny(&luav3.Lua{
 		Specifier: &envoy_core.DataSource_InlineString{
 			InlineString: code,
 		},
-	}},
-)
+	},
+})
 
 func setRouteMetadata(r *routev3.Route, key, value string) {
 	if r.Metadata == nil {
