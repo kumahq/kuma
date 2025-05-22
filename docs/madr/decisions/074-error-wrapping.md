@@ -7,12 +7,12 @@ Technical Story: https://github.com/kumahq/kuma/issues/2604
 ## Context and Problem Statement
 
 There are some inappropriate golang error usages in Kuma due to early golang standard library deficiency, 
-such as golang error assertion by relying on string prefixes matching, and error target checking by using reflect.
-These error handling solutions are fragile since [golang's error wrapping](https://go.dev/blog/go1.13-errors) capabilities were introduced in golang 1.13. 
+such as golang error assertion by relying on string prefixes matching, and error target checking by using `reflect` package.
+These error handling solutions are improper, and it is recommended to use [golang's error wrapping](https://go.dev/blog/go1.13-errors) capabilities instead.
 
-For example these are patterns that should be avoided:
+For example, these are patterns that should be avoided:
 
-```go
+```text
 func IsResourceNotFound(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "resource not found")
 }
@@ -40,7 +40,7 @@ Extracted from the issue, we have the following goals:
 Define a struct that implements the `error` interface by providing an `Error()` method. Create a function `Is***` uses `errors.Is` to check 
 if the error is of the pointer type. 
 
-```go
+```text
 type ResourceAlreadyExistsError struct {
 	msg string
 }
@@ -54,7 +54,7 @@ func ErrorResourceAlreadyExists(rt, name, mesh string) error {
 }
 
 func IsResourceAlreadyExists(err error) bool {
-	return err != nil && errors.Is(err, &ResourceAlreadyExistsError{})
+	return errors.Is(err, &ResourceAlreadyExistsError{})
 }
 ```
 
@@ -75,7 +75,7 @@ Define a singleton error using `errors.New` which serves as a unique identifier(
 and use `fmt.Errorf` with the `%w` verb that includes additional context. Create a function `Is***` uses `errors.Is` to check
 if the error is in the wrapped error chain.
 
-```go
+```text
 var ErrIsConflict = errors.New("conflict")
 
 func ErrorResourceConflict(rt, name, mesh string) error {
@@ -83,7 +83,7 @@ func ErrorResourceConflict(rt, name, mesh string) error {
 }
 
 func IsResourceConflict(err error) bool {
-	return err != nil && errors.Is(err, ErrIsConflict)
+	return errors.Is(err, ErrIsConflict)
 }
 ```
 
@@ -105,3 +105,22 @@ None
 
 * Option 2 - Sentinel Error with Wrapping. We will define multiple singleton error by using `errors.New`, 
 and create new errors using `fmt.Errorf` with the `%w` verb that includes additional context.
+
+### Convention
+
+1. return error with the defined function.
+    ```text
+    return ErrorResourceConflict(core_mesh.DataplaneType, objName, model.DefaultMesh)
+    ```
+
+2. return error with customized wrapping.
+    ```text
+    return fmt.Errorf("%w: %v", ErrIsConflict, err)
+   ```
+
+3. error assertion by the existing function.
+   ```text
+   if IsResourceConflict(err){
+      ...
+   }
+   ```
