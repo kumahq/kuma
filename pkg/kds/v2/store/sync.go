@@ -229,7 +229,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		newLabels := r.GetMeta().GetLabels()
 		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) ||
 			!maps.Equal(existing.GetMeta().GetLabels(), newLabels) ||
-   			(!opts.IgnoreStatusChange && !core_model.Equal(existing.GetStatus(), r.GetStatus())) {
+			(!opts.IgnoreStatusChange && !core_model.Equal(existing.GetStatus(), r.GetStatus())) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
