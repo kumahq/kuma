@@ -96,20 +96,12 @@ filterChains:
           routes:
           - match:
               path: /route-1
-            metadata:
-              filterMetadata:
-                envoy.filters.http.lua:
-                  route_kri: kri_mhttpr_default___route-1_
             name: kri_mhttpr_default___route-1_
             route:
               cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
               timeout: 0s
           - match:
               prefix: /route-1/
-            metadata:
-              filterMetadata:
-                envoy.filters.http.lua:
-                  route_kri: kri_mhttpr_default___route-1_
             name: kri_mhttpr_default___route-1_
             route:
               cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777

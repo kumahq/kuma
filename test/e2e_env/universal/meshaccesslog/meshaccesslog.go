@@ -109,7 +109,7 @@ spec:
 		if err != nil {
 			return "", err
 		}
-		return stdout, nil
+		return strings.TrimSpace(stdout), nil
 	}
 
 	expectTrafficLogged := func(makeRequest func(g Gomega)) (string, string) {
@@ -203,7 +203,7 @@ spec:
 		Expect(dst).To(Equal("test-server"))
 	})
 
-	It("should log outgoing traffic to MeshHTTPRoute", func() {
+	FIt("should log outgoing traffic to MeshHTTPRoute", func() {
 		// given some common way to log traffic
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshAccessLog
@@ -221,7 +221,7 @@ spec:
                 type: Plain
                 plain: '%s'
               address: "%s:9999"
-`, meshName, "common,%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%", tcpSinkDockerName))(universal.Cluster)).To(Succeed())
+`, meshName, "common,%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%,%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%", tcpSinkDockerName))(universal.Cluster)).To(Succeed())
 
 		By("checking traffic is logged by the 'common' MeshAccessLog")
 		Eventually(func(g Gomega) {
@@ -232,12 +232,13 @@ spec:
 			log, err := readLastLog()
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(log).To(HavePrefix("common"))
+			g.Expect(log).To(HaveSuffix("/test-prefix"))
 		}).Should(Succeed())
 
 		// when we apply MeshHTTPRoute and per-route MeshAccessLog
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
-name: to-test-server
+name: to-test-server-route-1
 mesh: %s
 spec:
  to:
@@ -257,6 +258,27 @@ spec:
 `, meshName))(universal.Cluster)).To(Succeed())
 
 		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: to-test-server-route-2
+mesh: %s
+spec:
+ to:
+   - targetRef:
+       kind: MeshService
+       name: test-server
+     rules:
+       - matches:
+           - path:
+               type: PathPrefix
+               value: /other-prefix
+         default:
+           backendRefs:
+             - kind: MeshService
+               name: test-server
+               port: 80
+`, meshName))(universal.Cluster)).To(Succeed())
+
+		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshAccessLog
 name: per-route
 mesh: %s
@@ -264,7 +286,7 @@ spec:
  to:
    - targetRef:
        kind: MeshHTTPRoute
-       name: to-test-server
+       name: to-test-server-route-1
      default:
        backends:
          - type: Tcp
@@ -273,8 +295,12 @@ spec:
                type: Plain
                plain: '%s'
              address: "%s:9999"
-`, meshName, "per-route,%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%", tcpSinkDockerName))(universal.Cluster)).To(Succeed())
+`, meshName, "per-route,%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%,%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%", tcpSinkDockerName))(universal.Cluster)).To(Succeed())
 
+		//for {
+		//	time.Sleep(1 * time.Hour)
+		//}
+		// then
 		By("checking traffic is logged by the 'per-route' MeshAccessLog")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
@@ -284,8 +310,10 @@ spec:
 			log, err := readLastLog()
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(log).To(HavePrefix("per-route"))
+			g.Expect(log).To(HaveSuffix("/test-prefix"))
 		}).Should(Succeed())
 
+		// and then
 		By("checking traffic to other routes is logged by the 'common' MeshAccessLog")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
@@ -295,6 +323,20 @@ spec:
 			log, err := readLastLog()
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(log).To(HavePrefix("common"))
+			g.Expect(log).To(HaveSuffix("/other-prefix"))
+		}).Should(Succeed())
+
+		// and then
+		By("checking traffic to non-existent route is also logged by the 'common' MeshAccessLog")
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, AppModeDemoClient, "test-server.universal.ms/other-prefix",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			log, err := readLastLog()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(log).To(HavePrefix("common"))
+			g.Expect(log).To(HaveSuffix("/other-prefix"))
 		}).Should(Succeed())
 	})
 

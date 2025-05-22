@@ -38,6 +38,7 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -113,24 +114,18 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 								return err
 							}
 
-							if route.Metadata == nil {
-								route.Metadata = &envoy_core.Metadata{}
-							}
-							if route.Metadata.FilterMetadata == nil {
-								route.Metadata.FilterMetadata = map[string]*structpb.Struct{}
-							}
-							route.Metadata.FilterMetadata[envoy_wellknown.Lua] = &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"route_kri": {Kind: &structpb.Value_StringValue{StringValue: route.Name}},
-								},
+							if _, accessLogExists := routeSet[id]; accessLogExists {
+								setRouteMetadata(route, routeMetadataKey, route.Name)
+								continue
 							}
 
 							routeConf, isDirectConf := svcCtx.WithID(id).DirectConf()
-							if _, alExists := routeSet[id]; alExists || !isDirectConf {
+							if !isDirectConf {
 								continue
 							}
 
 							routeSet[id] = struct{}{}
+							setRouteMetadata(route, routeMetadataKey, route.Name)
 
 							for _, backend := range pointer.Deref(routeConf.Backends) {
 								accessLog, err := plugin_xds.EnvoyAccessLog(backend, endpoints, r.Protocol, kumaValues, accessLogSocketPath, &id)
@@ -165,6 +160,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
+const routeMetadataKey = "route_kri"
+
 var code = `function envoy_on_request(handle)
   local meta = handle:metadata():get("route_kri")
   if meta ~= nil then
@@ -179,6 +176,20 @@ var luaFilter = util_proto.MustMarshalAny(&luav3.Lua{
 		},
 	}},
 )
+
+func setRouteMetadata(r *routev3.Route, key, value string) {
+	if r.Metadata == nil {
+		r.Metadata = &envoy_core.Metadata{}
+	}
+	if r.Metadata.FilterMetadata == nil {
+		r.Metadata.FilterMetadata = map[string]*structpb.Struct{}
+	}
+	r.Metadata.FilterMetadata[envoy_wellknown.Lua] = &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			key: {Kind: &structpb.Value_StringValue{StringValue: value}},
+		},
+	}
+}
 
 func applyToInbounds(
 	rules core_rules.FromRules,
