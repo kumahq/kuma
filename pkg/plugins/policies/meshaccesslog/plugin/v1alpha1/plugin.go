@@ -33,6 +33,11 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	luav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -94,6 +99,62 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			if err := configureListener(svcCtx.Conf(), envoyResource, endpoints, r.Protocol, kumaValues, accessLogSocketPath); err != nil {
 				return err
 			}
+			for _, fc := range envoyResource.FilterChains {
+				err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+					for _, vh := range hcm.GetRouteConfig().VirtualHosts {
+						routeSet := map[kri.Identifier]struct{}{}
+						for _, route := range vh.Routes {
+							if !kri.IsValid(route.Name) {
+								continue
+							}
+
+							id, err := kri.FromString(route.Name)
+							if err != nil {
+								return err
+							}
+
+							if route.Metadata == nil {
+								route.Metadata = &envoy_core.Metadata{}
+							}
+							if route.Metadata.FilterMetadata == nil {
+								route.Metadata.FilterMetadata = map[string]*structpb.Struct{}
+							}
+							route.Metadata.FilterMetadata[envoy_wellknown.Lua] = &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"route_kri": {Kind: &structpb.Value_StringValue{StringValue: route.Name}},
+								},
+							}
+
+							routeConf, isDirectConf := svcCtx.WithID(id).DirectConf()
+							if _, alExists := routeSet[id]; alExists || !isDirectConf {
+								continue
+							}
+
+							routeSet[id] = struct{}{}
+
+							for _, backend := range pointer.Deref(routeConf.Backends) {
+								accessLog, err := plugin_xds.EnvoyAccessLog(backend, endpoints, r.Protocol, kumaValues, accessLogSocketPath, &id)
+								if err != nil {
+									return err
+								}
+								hcm.AccessLog = append(hcm.AccessLog, accessLog)
+							}
+						}
+						if len(routeSet) > 0 {
+							hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{{
+								Name: envoy_wellknown.Lua,
+								ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+									TypedConfig: luaFilter,
+								},
+							}}, hcm.HttpFilters...)
+						}
+					}
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -103,6 +164,21 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	return nil
 }
+
+var code = `function envoy_on_request(handle)
+  local meta = handle:metadata():get("route_kri")
+  if meta ~= nil then
+    handle:streamInfo():dynamicMetadata():set("envoy.access_loggers.file", "route_kri", meta)
+  end
+end`
+
+var luaFilter = util_proto.MustMarshalAny(&luav3.Lua{
+	DefaultSourceCode: &envoy_core.DataSource{
+		Specifier: &envoy_core.DataSource_InlineString{
+			InlineString: code,
+		},
+	}},
+)
 
 func applyToInbounds(
 	rules core_rules.FromRules,
