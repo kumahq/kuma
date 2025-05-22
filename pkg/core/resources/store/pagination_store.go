@@ -89,7 +89,7 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 		if opts.PageOffset != "" {
 			o, err := strconv.Atoi(opts.PageOffset)
 			if err != nil {
-				return ErrorInvalidOffset
+				return ErrInvalidOffset
 			}
 			offset = o
 		}
