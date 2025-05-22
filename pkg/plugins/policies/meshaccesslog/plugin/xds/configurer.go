@@ -20,6 +20,9 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -74,6 +77,72 @@ func endpointForOtel(endpoint string) LoggingEndpoint {
 }
 
 func EnvoyAccessLog(
+	backend api.Backend,
+	endpoints *EndpointAccumulator,
+	protocol core_mesh.Protocol,
+	values listeners_v3.KumaValues,
+	accessLogSocketPath string,
+	route *kri.Identifier,
+) (*envoy_accesslog.AccessLog, error) {
+	accessLog, err := envoyAccessLog(backend, endpoints, protocol, values, accessLogSocketPath)
+	if err != nil {
+		return nil, err
+	}
+	if route != nil {
+		accessLog.Filter = &envoy_accesslog.AccessLogFilter{
+			FilterSpecifier: &envoy_accesslog.AccessLogFilter_MetadataFilter{
+				MetadataFilter: &envoy_accesslog.MetadataFilter{
+					MatchIfKeyNotFound: &wrapperspb.BoolValue{Value: false},
+					Matcher: &matcherv3.MetadataMatcher{
+						Filter: "envoy.access_loggers.file",
+						Path: []*matcherv3.MetadataMatcher_PathSegment{
+							{
+								Segment: &matcherv3.MetadataMatcher_PathSegment_Key{
+									Key: "route_kri",
+								},
+							},
+						},
+						Value: &matcherv3.ValueMatcher{
+							MatchPattern: &matcherv3.ValueMatcher_StringMatch{
+								StringMatch: &matcherv3.StringMatcher{
+									MatchPattern: &matcherv3.StringMatcher_Exact{
+										Exact: route.String(),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	} else {
+		accessLog.Filter = &envoy_accesslog.AccessLogFilter{
+			FilterSpecifier: &envoy_accesslog.AccessLogFilter_MetadataFilter{
+				MetadataFilter: &envoy_accesslog.MetadataFilter{
+					//MatchIfKeyNotFound: &wrapperspb.BoolValue{Value: false},
+					Matcher: &matcherv3.MetadataMatcher{
+						Filter: "envoy.access_loggers.file",
+						Path: []*matcherv3.MetadataMatcher_PathSegment{
+							{
+								Segment: &matcherv3.MetadataMatcher_PathSegment_Key{
+									Key: "route_kri",
+								},
+							},
+						},
+						Value: &matcherv3.ValueMatcher{
+							MatchPattern: &matcherv3.ValueMatcher_NullMatch_{
+								NullMatch: &matcherv3.ValueMatcher_NullMatch{},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+	return accessLog, nil
+}
+
+func envoyAccessLog(
 	backend api.Backend,
 	endpoints *EndpointAccumulator,
 	protocol core_mesh.Protocol,

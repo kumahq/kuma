@@ -92,6 +92,7 @@ func validateTo(topLevelKind common_api.TargetRefKind, to []To) validators.Valid
 				common_api.MeshService,
 				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
+				common_api.MeshHTTPRoute,
 			}
 		}
 		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{

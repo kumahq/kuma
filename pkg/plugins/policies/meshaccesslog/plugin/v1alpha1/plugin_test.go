@@ -43,6 +43,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -164,7 +165,11 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("basic outbound route from real MeshService", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777),
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
+					Split: []envoy_common.Split{
+						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+					},
+				}}),
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
@@ -183,9 +188,140 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"basic_outbound_real_meshservice.listener.golden.yaml"},
 		}),
+		Entry("basic outbound with MeshHTTPRoute", sidecarTestCase{
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{
+					{
+						Name: routeKRI("route-1").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+					{
+						Name: routeKRI("route-2").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+					{
+						Name: routeKRI("route-3").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+				}),
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceHTTP: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/meshservice/log",
+									},
+								}},
+							},
+						},
+					},
+					routeKRI("route-2"): {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/route-2/log",
+									},
+								}},
+							},
+						},
+					},
+					routeKRI("route-3"): {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/route-3/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_meshhttproute.listener.golden.yaml"},
+		}),
+		Entry("disable MAL for MeshHTTPRoute", sidecarTestCase{
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{
+					{
+						Name: routeKRI("route-1").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+					{
+						Name: routeKRI("route-2").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+					{
+						Name: routeKRI("route-3").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+				}),
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceHTTP: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/meshservice/log",
+									},
+								}},
+							},
+						},
+					},
+					routeKRI("route-2"): {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"disable_mal_for_meshhttproute.listener.golden.yaml"},
+		}),
 		Entry("basic outbound route from real MeshExternalService", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundRealServiceHTTPListener(*otherMeshExternalServiceHTTP, 27777),
+				outboundRealServiceHTTPListener(*otherMeshExternalServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
+					Split: []envoy_common.Split{
+						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshExternalServiceHTTP, 27777)).Build(),
+					},
+				}}),
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
@@ -671,11 +807,7 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 	return *listener
 }
 
-func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port uint32) core_xds.Resource {
-	desc, err := registry.Global().DescriptorFor(serviceResourceKRI.ResourceType)
-	Expect(err).ToNot(HaveOccurred())
-
-	serviceName := destinationname.LegacyName(serviceResourceKRI, desc.ShortName, port)
+func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port uint32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
 		envoy_common.APIV3,
 		meshroute_xds.DestinationService{
@@ -685,17 +817,23 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port uin
 				Resource: &serviceResourceKRI,
 			},
 			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: serviceName,
+			ServiceName: serviceName(serviceResourceKRI, port),
 		},
 		false,
 		[]core_xds.InternalAddress{},
-		[]meshhttproute_xds.OutboundRoute{{
-			Split: []envoy_common.Split{
-				xds.NewSplitBuilder().WithClusterName(serviceName).Build(),
-			},
-		}},
+		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
+}
+
+func serviceName(id kri.Identifier, port uint32) string {
+	desc, err := registry.Global().DescriptorFor(id.ResourceType)
+	Expect(err).ToNot(HaveOccurred())
+	return destinationname.LegacyName(id, desc.ShortName, port)
+}
+
+func routeKRI(name string) kri.Identifier {
+	return kri.Identifier{ResourceType: meshhttproute_api.MeshHTTPRouteType, Name: name, Mesh: "default"}
 }
