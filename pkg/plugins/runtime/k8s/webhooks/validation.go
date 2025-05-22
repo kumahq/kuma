@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -119,6 +120,12 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 	if origin, ok := core_model.ResourceOrigin(rm); ok {
 		if err := origin.IsValid(); err != nil {
 			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
+		}
+		if h.Mode == core.Global && origin != mesh_proto.GlobalResourceOrigin {
+			verr.AddViolationAt(
+				labelsPath.Key(mesh_proto.ResourceOriginLabel),
+				labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(origin)),
+			)
 		}
 	}
 	return verr

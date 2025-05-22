@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
@@ -43,6 +44,15 @@ const (
 	formatUniversal  = "universal"
 	formatKubernetes = "kubernetes"
 )
+
+var excludedLabelsPerProfile map[string]map[string]struct{} = map[string]map[string]struct{}{
+	profileFederation: {
+		mesh_proto.ResourceOriginLabel: struct{}{},
+	},
+	profileFederationWithPolicies: {
+		mesh_proto.ResourceOriginLabel: struct{}{},
+	},
+}
 
 var allProfiles = []string{
 	profileAll, profileFederation, profileFederationWithPolicies, profileNoDataplanes,
@@ -149,6 +159,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			switch ctx.args.format {
 			case formatUniversal:
 				for _, res := range allResources {
+					meta := ResourceMetaWithFilteredLabels{
+						ResourceMeta:   res.GetMeta(),
+						excludedLabels: excludedLabelsPerProfile[ctx.args.profile],
+					}
+					res.SetMeta(meta)
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
@@ -172,6 +187,8 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					}
 
 					cleanKubeObject(obj)
+					// we don't want to export `kuma.io/origin: zone` in federation since the point is to import in global
+					removeExcludedLabels(excludedLabelsPerProfile[ctx.args.profile], obj)
 					switch res.Descriptor().Name {
 					// only for the mesh we edit object by changing mtls backend from builtin to provided and adding skip initial resources
 					case core_mesh.MeshType:
@@ -225,6 +242,39 @@ func cleanKubeObject(obj map[string]interface{}) {
 	delete(meta, "uid")
 	delete(meta, "generation")
 	delete(meta, "managedFields")
+}
+
+// cleans kubernetes object, so it can be applied on any other cluster
+func removeExcludedLabels(excludedLabels map[string]struct{}, obj map[string]interface{}) {
+	metadata, ok := obj["metadata"]
+	if !ok {
+		return
+	}
+	meta := metadata.(map[string]interface{})
+	if labels, found := meta["labels"]; found {
+		labelsMap, ok := labels.(map[string]interface{})
+		if ok {
+			filtered := map[string]interface{}{}
+			for key, value := range labelsMap {
+				if _, found := excludedLabels[key]; !found {
+					filtered[key] = value
+				}
+			}
+			meta["labels"] = filtered
+		}
+	}
+	if annotations, found := meta["annotations"]; found {
+		annotationsMap, ok := annotations.(map[string]interface{})
+		if ok {
+			filtered := map[string]interface{}{}
+			for key, value := range annotationsMap {
+				if _, found := excludedLabels[key]; !found {
+					filtered[key] = value
+				}
+			}
+			meta["annotations"] = filtered
+		}
+	}
 }
 
 func changeBuiltinBackendsToProvided(res *core_mesh.MeshResource) error {
@@ -326,4 +376,22 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 		cmd.PrintErrf("WARNING: %s. Are you using a compatible version of kumactl?\n", msg)
 	}
 	return resDescList, nil
+}
+
+type ResourceMetaWithFilteredLabels struct {
+	model.ResourceMeta
+	excludedLabels map[string]struct{}
+}
+
+func (r ResourceMetaWithFilteredLabels) GetLabels() map[string]string {
+	if len(r.excludedLabels) == 0 {
+		return r.ResourceMeta.GetLabels()
+	}
+	filtered := map[string]string{}
+	for key, value := range r.ResourceMeta.GetLabels() {
+		if _, found := r.excludedLabels[key]; !found {
+			filtered[key] = value
+		}
+	}
+	return filtered
 }

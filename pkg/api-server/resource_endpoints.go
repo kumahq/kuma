@@ -555,6 +555,12 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 		}
 	}
 
+	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
+		if ok && origin != mesh_proto.GlobalResourceOrigin {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
+		}
+	}
+
 	if !r.disableOriginLabelValidation && r.federatedZone && r.descriptor.IsPluginOriginated {
 		if !ok || origin != mesh_proto.ZoneResourceOrigin {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
