@@ -10,19 +10,19 @@ import (
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 	otlp "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -119,7 +119,6 @@ func EnvoyAccessLog(
 		accessLog.Filter = &envoy_accesslog.AccessLogFilter{
 			FilterSpecifier: &envoy_accesslog.AccessLogFilter_MetadataFilter{
 				MetadataFilter: &envoy_accesslog.MetadataFilter{
-					//MatchIfKeyNotFound: &wrapperspb.BoolValue{Value: false},
 					Matcher: &matcherv3.MetadataMatcher{
 						Filter: "envoy.access_loggers.file",
 						Path: []*matcherv3.MetadataMatcher_PathSegment{

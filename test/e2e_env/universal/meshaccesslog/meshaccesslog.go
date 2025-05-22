@@ -203,7 +203,7 @@ spec:
 		Expect(dst).To(Equal("test-server"))
 	})
 
-	FIt("should log outgoing traffic to MeshHTTPRoute", func() {
+	It("should log outgoing traffic to MeshHTTPRoute", func() {
 		// given some common way to log traffic
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshAccessLog
@@ -297,7 +297,7 @@ spec:
              address: "%s:9999"
 `, meshName, "per-route,%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%,%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%", tcpSinkDockerName))(universal.Cluster)).To(Succeed())
 
-		//for {
+		// for {
 		//	time.Sleep(1 * time.Hour)
 		//}
 		// then
