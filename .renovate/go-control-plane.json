@@ -14,7 +14,7 @@
       ],
       "datasourceTemplate": "go",
       "depTypeTemplate": "replace",
-      "extractVersionTemplate": "^(?:{{{depName}}}\\/)?(?<version>v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>.+))",
+      "extractVersionTemplate": "^(?:{{{depName}}}\\/)?(?<version>v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>kong-.+))",
       "autoReplaceStringTemplate": "{{{packageName}}} {{{newVersion}}}",
       "versioningTemplate": "loose"
     }
