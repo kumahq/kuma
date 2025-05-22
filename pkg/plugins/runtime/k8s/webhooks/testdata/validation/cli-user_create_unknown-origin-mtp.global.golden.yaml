@@ -7,9 +7,14 @@ status:
     - field: labels["kuma.io/origin"]
       message: unknown resource origin "unknownvalue"
       reason: FieldValueInvalid
+    - field: labels["kuma.io/origin"]
+      message: Operation not allowed. kuma.io/origin label should have global value,
+        got unknownvalue
+      reason: FieldValueInvalid
     kind: MeshTrafficPermission
     name: mtp-es
-  message: 'labels["kuma.io/origin"]: unknown resource origin "unknownvalue"'
+  message: 'labels["kuma.io/origin"]: unknown resource origin "unknownvalue"; labels["kuma.io/origin"]:
+    Operation not allowed. kuma.io/origin label should have global value, got unknownvalue'
   metadata: {}
   reason: Invalid
   status: Failure
