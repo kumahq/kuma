@@ -78,7 +78,7 @@ func MeshPassthrough() {
 		// given
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				kubernetes.Cluster, "demo-client", "external-service.mesh-passthrough-mes.svc.cluster.local:80",
+				kubernetes.Cluster, "demo-client", "ipu",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

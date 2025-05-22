@@ -64,6 +64,33 @@ spec:
 type: MeshAccessLog
 ---
 creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/origin: zone
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: mal-with-origin
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+  to:
+  - default:
+      backends:
+      - file:
+          path: /tmp/access.logs
+        type: File
+    targetRef:
+      kind: Mesh
+  - default:
+      backends:
+      - file:
+          path: /tmp/access.logs
+        type: File
+    targetRef:
+      kind: Mesh
+type: MeshAccessLog
+---
+creationTime: "0001-01-01T00:00:00Z"
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: mt-in-namespace-kuma-test
