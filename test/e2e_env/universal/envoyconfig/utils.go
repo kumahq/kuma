@@ -2,11 +2,11 @@ package envoyconfig
 
 import (
 	"encoding/json"
-	jsonpatch "github.com/evanphx/json-patch/v5"
 	"regexp"
 	"slices"
 	"strings"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/openapi/types"
