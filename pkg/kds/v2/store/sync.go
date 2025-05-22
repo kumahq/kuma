@@ -221,11 +221,17 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 		newLabels := r.GetMeta().GetLabels()
 		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) ||
-			!maps.Equal(existing.GetMeta().GetLabels(), newLabels) ||
-			!core_model.Equal(existing.GetStatus(), r.GetStatus()) {
+			!maps.Equal(existing.GetMeta().GetLabels(), newLabels) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
+			// we should preserve Status of the resource
+			if r.Descriptor().HasStatus {
+				if err = r.SetStatus(existing.GetStatus()); err != nil {
+					log.Error(err, "failed to set status", "resource", r.GetMeta())
+					continue
+				}
+			}
 			onUpdate = append(onUpdate, OnUpdate{r: r, opts: []store.UpdateOptionsFunc{store.UpdateWithLabels(newLabels)}})
 		}
 	}
