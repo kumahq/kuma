@@ -10,7 +10,7 @@ There are some inappropriate golang error usages in Kuma due to early golang sta
 such as golang error assertion by relying on string prefixes matching, and error target checking by using reflect.
 These error handling solutions are fragile since [golang's error wrapping](https://go.dev/blog/go1.13-errors) capabilities were introduced in golang 1.13. 
 
-For example:
+For example these are patterns that should be avoided:
 
 ```go
 func IsResourceNotFound(err error) bool {
@@ -26,7 +26,7 @@ func (a *PreconditionError) Is(err error) bool {
 }
 ```
 
-This document proposes removing the above error handling solutions. Instead of using golang native error wrapping API.
+This document proposes replacing the above error handling solutions with golang native error wrapping API.
 
 ## Design
 
