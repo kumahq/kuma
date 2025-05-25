@@ -54,7 +54,7 @@ func Inspect() {
 	It("should return bad request on invalid name(#4985)", func() {
 		_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "-m", meshName, "dummy-name", "--type=config-dump")
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring(`Bad Request (bad request: name "dummy-name" must include namespace after the dot, ex. "name.namespace")`))
+		Expect(err.Error()).To(ContainSubstring(`Bad Request (invalid: name "dummy-name" must include namespace after the dot, ex. "name.namespace")`))
 	})
 
 	It("should return envoy config_dump", func() {
