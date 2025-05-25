@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -89,7 +90,7 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 		if opts.PageOffset != "" {
 			o, err := strconv.Atoi(opts.PageOffset)
 			if err != nil {
-				return ErrInvalidOffset
+				return ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
 			}
 			offset = o
 		}

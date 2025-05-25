@@ -99,7 +99,7 @@ func DeleteAllResources(manager ResourceManager, ctx context.Context, list model
 		return err
 	}
 	for _, item := range list.GetItems() {
-		if err := manager.Delete(ctx, item, store.DeleteBy(model.MetaToResourceKey(item.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
+		if err := manager.Delete(ctx, item, store.DeleteBy(model.MetaToResourceKey(item.GetMeta()))); err != nil && !store.IsNotFound(err) {
 			return err
 		}
 	}
@@ -171,7 +171,7 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 			create := false
 			err := manager.Get(ctx, resource, store.GetBy(key), store.GetConsistent())
 			if err != nil {
-				if store.IsResourceNotFound(err) {
+				if store.IsNotFound(err) {
 					create = true
 				} else {
 					return err
@@ -205,7 +205,7 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 			return err
 		}
 		err := upsert(ctx)
-		if store.IsResourceAlreadyExists(err) || store.IsResourceConflict(err) {
+		if store.IsAlreadyExists(err) || store.IsConflict(err) {
 			return retry.RetryableError(err)
 		}
 		return err

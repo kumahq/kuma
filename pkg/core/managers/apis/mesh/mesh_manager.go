@@ -126,7 +126,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	// even if removal of secrets fails later on, delete operation can be safely tried again.
 	var notFoundErr error
 	if err := m.store.Delete(ctx, mesh, fs...); err != nil {
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			notFoundErr = err
 		} else { // ignore other errors so we can retry removing other resources
 			return err

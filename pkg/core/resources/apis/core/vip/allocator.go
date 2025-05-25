@@ -150,7 +150,7 @@ func (a *Allocator) allocateVIPs(ctx context.Context, typeDesc model.ResourceTyp
 
 			if err := a.resManager.Update(ctx, resource); err != nil {
 				msg := "could not update the resource with allocated Kuma VIP. Will try to update in the next allocation window"
-				if store.IsResourceConflict(err) {
+				if store.IsConflict(err) {
 					log.Info(msg, "cause", "conflict", "interval", a.interval)
 				} else {
 					log.Error(err, msg, "interval", a.interval)

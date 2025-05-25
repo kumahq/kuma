@@ -77,7 +77,7 @@ func (m *Persistence) GetByMesh(ctx context.Context, mesh string) (*VirtualOutbo
 	resource := config_model.NewConfigResource()
 	err := m.configManager.Get(ctx, resource, store.GetByKey(name, ""))
 	if err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return NewEmptyVirtualOutboundView(), nil
 		}
 		return nil, err
@@ -91,7 +91,7 @@ func (m *Persistence) Set(ctx context.Context, mesh string, vips *VirtualOutboun
 	resource := config_model.NewConfigResource()
 	create := false
 	if err := m.configManager.Get(ctx, resource, store.GetByKey(name, model.NoMesh)); err != nil {
-		if !store.IsResourceNotFound(err) {
+		if !store.IsNotFound(err) {
 			return err
 		}
 		create = true

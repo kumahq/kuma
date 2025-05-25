@@ -30,7 +30,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 			switch desc.Scope {
 			case core_model.ScopeGlobal:
 				if err := rs.Get(cmd.Context(), resource, store.GetByKey(name, "")); err != nil {
-					if store.IsResourceNotFound(err) {
+					if store.IsNotFound(err) {
 						return errors.New("No resources found")
 					}
 					return errors.Wrapf(err, "failed to get %s", name)
@@ -38,7 +38,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 			case core_model.ScopeMesh:
 				currentMesh := pctx.CurrentMesh()
 				if err := rs.Get(cmd.Context(), resource, store.GetByKey(name, currentMesh)); err != nil {
-					if store.IsResourceNotFound(err) {
+					if store.IsNotFound(err) {
 						return errors.Errorf("No resources found in %s mesh", currentMesh)
 					}
 					return errors.Wrapf(err, "failed to get %s in mesh %s", name, currentMesh)

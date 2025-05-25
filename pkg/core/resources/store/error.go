@@ -8,54 +8,40 @@ import (
 )
 
 var (
-	ErrInvalidOffset   = errors.New("invalid offset")
 	ErrIsAlreadyExists = errors.New("already exists")
 	ErrConflict        = errors.New("conflict")
 	ErrNotFound        = errors.New("not found")
 	ErrInvalid         = errors.New("invalid")
-	ErrBadRequest      = errors.New("bad request")
 )
-
-func IsInvalidOffset(err error) bool {
-	return err != nil && errors.Is(err, ErrInvalidOffset)
-}
 
 func ErrorResourceAlreadyExists(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("resource %w: type=%q name=%q mesh=%q", ErrIsAlreadyExists, rt, name, mesh)
 }
 
-func IsResourceAlreadyExists(err error) bool {
-	return err != nil && errors.Is(err, ErrIsAlreadyExists)
+func IsAlreadyExists(err error) bool {
+	return errors.Is(err, ErrIsAlreadyExists)
 }
 
 func ErrorResourceConflict(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("resource %w: type=%q name=%q mesh=%q", ErrConflict, rt, name, mesh)
 }
 
-func IsResourceConflict(err error) bool {
-	return err != nil && errors.Is(err, ErrConflict)
+func IsConflict(err error) bool {
+	return errors.Is(err, ErrConflict)
 }
 
 func ErrorResourceNotFound(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("resource %w: type=%q name=%q mesh=%q", ErrNotFound, rt, name, mesh)
 }
 
-func IsResourceNotFound(err error) bool {
-	return err != nil && errors.Is(err, ErrNotFound)
+func IsNotFound(err error) bool {
+	return errors.Is(err, ErrNotFound)
 }
 
-func ErrorResourceInvalid(rt model.ResourceType, name, mesh string) error {
-	return fmt.Errorf("resource %w: type=%q name=%q mesh=%q", ErrInvalid, rt, name, mesh)
+func ErrorInvalid(reason string) error {
+	return fmt.Errorf("%w: %s", ErrInvalid, reason)
 }
 
-func IsResourceInvalid(err error) bool {
-	return err != nil && errors.Is(err, ErrInvalid)
-}
-
-func ErrorBadRequest(msg string) error {
-	return fmt.Errorf("%w: %s", ErrBadRequest, msg)
-}
-
-func IsBadRequest(err error) bool {
-	return err != nil && errors.Is(err, ErrBadRequest)
+func IsInvalid(err error) bool {
+	return errors.Is(err, ErrInvalid)
 }

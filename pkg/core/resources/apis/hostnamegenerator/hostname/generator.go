@@ -252,7 +252,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 				continue
 			}
 			if err := generatorType.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
-				if store.IsResourceConflict(err) {
+				if store.IsConflict(err) {
 					logger.Info("couldn't update status, because it was modified in another place. Will try again in the next interval", "interval", g.interval)
 				} else {
 					g.logger.Error(err, "couldn't update status", "type", resourceList.GetItemType())

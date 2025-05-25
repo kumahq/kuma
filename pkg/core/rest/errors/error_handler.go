@@ -29,13 +29,13 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 
 	var kumaErr *types.Error
 	switch {
-	case store.IsResourceNotFound(err) || errors.Is(err, &NotFound{}):
+	case store.IsNotFound(err) || errors.Is(err, &NotFound{}):
 		kumaErr = &types.Error{
 			Status: 404,
 			Title:  title,
 			Detail: "Not found",
 		}
-	case errors.Is(err, &rest.InvalidResourceError{}), errors.Is(err, &registry.InvalidResourceTypeError{}), store.IsBadRequest(err), errors.Is(err, &BadRequest{}):
+	case errors.Is(err, &rest.InvalidResourceError{}), errors.Is(err, &registry.InvalidResourceTypeError{}), errors.Is(err, &BadRequest{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
@@ -65,17 +65,11 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 				Reason: violation.Message,
 			})
 		}
-	case store.IsInvalidOffset(err):
+	case store.IsInvalid(err):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
-			Detail: "Invalid offset",
-			InvalidParameters: []types.InvalidParameter{
-				{
-					Field:  "offset",
-					Reason: "Invalid format",
-				},
-			},
+			Detail: err.Error(),
 		}
 	case errors.Is(err, &api_server_types.InvalidPageSizeError{}):
 		kumaErr = &types.Error{
@@ -101,7 +95,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  "Method not Allowed",
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &Conflict{}) || store.IsResourceAlreadyExists(err) || store.IsResourceConflict(err):
+	case errors.Is(err, &Conflict{}) || store.IsAlreadyExists(err) || store.IsConflict(err):
 		kumaErr = &types.Error{
 			Status: 409,
 			Title:  "Conflict",

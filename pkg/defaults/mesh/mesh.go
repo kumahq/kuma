@@ -108,7 +108,7 @@ func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManag
 	if err == nil {
 		return nil, false
 	}
-	if !store.IsResourceNotFound(err) {
+	if !store.IsNotFound(err) {
 		return errors.Wrap(err, "could not retrieve a resource"), false
 	}
 	if err := resManager.Create(ctx, res, store.CreateBy(resourceKey)); err != nil {

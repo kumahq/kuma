@@ -175,7 +175,7 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 	if page.offset != "" {
 		o, err := strconv.Atoi(page.offset)
 		if err != nil {
-			return store.ErrInvalidOffset
+			return store.ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
 		}
 		offset = o
 	}

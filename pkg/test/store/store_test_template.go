@@ -332,7 +332,7 @@ func ExecuteStoreTests(
 
 				// then
 				Expect(err).To(HaveOccurred())
-				Expect(store.IsResourceNotFound(err)).To(BeTrue())
+				Expect(store.IsNotFound(err)).To(BeTrue())
 
 				// and when getting the given resource
 				getResource := core_mesh.NewTrafficRouteResource()
@@ -657,7 +657,7 @@ func ExecuteStoreTests(
 
 					// then
 					Expect(list.Pagination.Total).To(Equal(uint32(0)))
-					Expect(store.IsInvalidOffset(err)).To(BeTrue())
+					Expect(store.IsInvalid(err)).To(BeTrue())
 				})
 			})
 		})

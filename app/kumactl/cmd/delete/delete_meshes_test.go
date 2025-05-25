@@ -129,7 +129,7 @@ var _ = Describe("kumactl delete mesh", func() {
 			// when
 			err = store.Get(context.Background(), mesh.NewMeshResource(), core_store.GetBy(core_model.ResourceKey{Name: "mesh2"}))
 			// then
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(core_store.IsNotFound(err)).To(BeTrue())
 
 			By("verifying that another mesh wasn't affected")
 			// when
