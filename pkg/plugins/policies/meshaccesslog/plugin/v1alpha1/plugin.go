@@ -1,9 +1,11 @@
 package v1alpha1
 
 import (
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -12,6 +14,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
+	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
@@ -29,10 +33,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -330,7 +330,6 @@ func configureListener(
 				)
 			}).
 			Build()
-
 		if err != nil {
 			return err
 		}

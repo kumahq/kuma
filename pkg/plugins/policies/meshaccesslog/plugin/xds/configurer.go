@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
+	"github.com/pkg/errors"
 	otlp "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/pkg/errors"
 )
 
 const (
