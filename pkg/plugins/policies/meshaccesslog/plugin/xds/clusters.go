@@ -23,7 +23,7 @@ func AddLogBackendConf(backendEndpoints EndpointAccumulator, rs *core_xds.Resour
 	for backendEndpoint := range backendEndpoints.endpoints {
 		endpoint := xdsEndpoint(backendEndpoint)
 
-		clusterName := backendEndpoints.clusterForEndpoint(backendEndpoint)
+		clusterName := backendEndpoints.ClusterForEndpoint(backendEndpoint)
 		res, err := clusters.NewClusterBuilder(proxy.APIVersion, string(clusterName)).
 			Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), endpoint)).
 			Configure(clusters.ClientSideTLS([]core_xds.Endpoint{endpoint})).

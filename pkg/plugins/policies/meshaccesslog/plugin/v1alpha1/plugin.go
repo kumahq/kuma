@@ -19,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
+	. "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
@@ -29,6 +29,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
+	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -49,7 +53,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	endpoints := &plugin_xds.EndpointAccumulator{}
+	endpoints := &EndpointAccumulator{}
 
 	listeners := policies_xds.GatherListeners(rs)
 
@@ -93,14 +97,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		}
 	}
 
-	if err := plugin_xds.AddLogBackendConf(*endpoints, rs, proxy); err != nil {
+	if err := AddLogBackendConf(*endpoints, rs, proxy); err != nil {
 		return errors.Wrap(err, "unable to add configuration for MeshAccessLog backends")
 	}
 
 	return nil
 }
 
-func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
+func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *EndpointAccumulator, path string) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -133,7 +137,7 @@ func applyToOutbounds(
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
 	outbounds xds_types.Outbounds,
 	dataplane *core_mesh.DataplaneResource,
-	backendsAcc *plugin_xds.EndpointAccumulator,
+	backendsAcc *EndpointAccumulator,
 	accessLogSocketPath string,
 	meshCtx xds_context.MeshContext,
 ) error {
@@ -171,7 +175,7 @@ func applyToOutbounds(
 
 func applyToTransparentProxyListeners(
 	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator, path string,
+	backends *EndpointAccumulator, path string,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.MeshServiceElement(core_mesh.PassThroughService))
 	if conf == nil {
@@ -201,7 +205,7 @@ func applyToTransparentProxyListeners(
 
 func applyToDirectAccess(
 	rules core_rules.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator, path string,
+	backends *EndpointAccumulator, path string,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.MeshServiceElement(core_mesh.PassThroughService))
 	if conf == nil {
@@ -227,7 +231,7 @@ func applyToGateway(
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	resources xds_context.ResourceMap,
 	proxy *core_xds.Proxy,
-	backends *plugin_xds.EndpointAccumulator,
+	backends *EndpointAccumulator,
 	path string,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
@@ -297,13 +301,36 @@ func applyToGateway(
 func configureListener(
 	conf api.Conf,
 	listener *envoy_listener.Listener,
-	backendsAcc *plugin_xds.EndpointAccumulator,
+	backendsAcc *EndpointAccumulator,
 	protocol core_mesh.Protocol,
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) error {
+	defaultFmt := DefaultFormat(protocol)
+
 	for _, backend := range pointer.Deref(conf.Backends) {
-		accessLog, err := plugin_xds.EnvoyAccessLog(backend, backendsAcc, protocol, values, accessLogSocketPath)
+		accessLog, err := accesslog.NewBuilder().
+			ConfigureIf(backend.Tcp != nil, func() Configurer[envoy_accesslog.AccessLog] {
+				return accesslog.Config(envoy_wellknown.FileAccessLog, accesslog.NewFileBuilder().
+					Configure(TCPBackendSFS(backend.Tcp, defaultFmt, values)).
+					Configure(accesslog.Path(accessLogSocketPath)))
+			}).
+			ConfigureIf(backend.File != nil, func() Configurer[envoy_accesslog.AccessLog] {
+				return accesslog.Config(envoy_wellknown.FileAccessLog, accesslog.NewFileBuilder().
+					Configure(FileBackendSFS(backend.File, defaultFmt, values)).
+					Configure(accesslog.Path(backend.File.Path)))
+			}).
+			ConfigureIf(backend.OpenTelemetry != nil, func() Configurer[envoy_accesslog.AccessLog] {
+				return accesslog.Config("envoy.access_loggers.open_telemetry", accesslog.NewOtelBuilder().
+					Configure(OtelBody(backend.OpenTelemetry, defaultFmt, values)).
+					Configure(OtelAttributes(backend.OpenTelemetry)).
+					Configure(accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
+						EndpointForOtel(backend.OpenTelemetry.Endpoint),
+					)))),
+				)
+			}).
+			Build()
+
 		if err != nil {
 			return err
 		}
