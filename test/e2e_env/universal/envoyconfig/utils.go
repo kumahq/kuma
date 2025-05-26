@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/openapi/types"
@@ -37,7 +38,9 @@ func getConfig(mesh, dpp string) string {
 	Expect(err).ToNot(HaveOccurred())
 	redacted := redactDnsLookupFamily(
 		redactStatPrefixes(
-			redactIPs(output),
+			redactIPs(
+				redactKumaDynamicConfig(output),
+			),
 		),
 	)
 
@@ -107,6 +110,25 @@ var dnsLookupRegex = regexp.MustCompile(`,[[:space:]]*"dnsLookupFamily":[[:space
 // and in the case of ipv6 this field is default, so it is missing in the config.
 func redactDnsLookupFamily(jsonStr string) string {
 	return dnsLookupRegex.ReplaceAllString(jsonStr, "")
+}
+
+var dynamicConfigJsonPatch = []byte(`[{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" }]`)
+
+// We can remove dynamic config as this contains dns config which changes in multiple places making it hard to mask
+func redactKumaDynamicConfig(jsonStr string) string {
+	patch, err := jsonpatch.DecodePatch(dynamicConfigJsonPatch)
+	if err != nil {
+		panic(err)
+	}
+
+	options := jsonpatch.NewApplyOptions()
+	options.AllowMissingPathOnRemove = true
+	modified, err := patch.ApplyWithOptions([]byte(jsonStr), options)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(modified)
 }
 
 func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {

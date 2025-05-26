@@ -776,7 +776,14 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
+		dataplaneInsight := core_mesh.NewDataplaneInsightResource()
+		err = r.resManager.Get(ctx, dataplaneInsight, store.GetByKey(name, mesh))
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to fetch dataplane insight")
+			return
+		}
+
+		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata), r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
 			return

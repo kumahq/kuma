@@ -238,6 +238,25 @@ spec:
 	})
 
 	It("should sync producer MeshRetry that targets producer route to other clusters", func() {
+		// Function CollectResponsesAndFailures sends requests concurrently. If we want to accurately check
+		// that MeshRetry works we need to increase 'maxRetries' using MeshCircuitBreaker policy.
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: increased-max-retries
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+  - targetRef:
+      kind: MeshService
+      name: test-server
+    default:
+      connectionLimits:
+        maxRetries: 20`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).Should(Succeed())
+
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshFaultInjection
