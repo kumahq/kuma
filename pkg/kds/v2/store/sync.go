@@ -233,8 +233,9 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
-			// we should preserve Status of the resource
-			if r.Descriptor().HasStatus {
+			// we should preserve Status of the resource on the Zone but update on global
+			// and `IgnoreStatusChange` is set only on the Zone
+			if r.Descriptor().HasStatus && !opts.IgnoreStatusChange {
 				if err = r.SetStatus(existing.GetStatus()); err != nil {
 					log.Error(err, "failed to set status", "resource", r.GetMeta())
 					continue
