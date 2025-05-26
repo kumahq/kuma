@@ -194,7 +194,7 @@ networking:
 	// This site requires renegotiation because the server asks for the client certs as a second step
 	// We want to run this only on demand because we've got bad experience tying up E2E to external service available on the internet
 	// It's hard to rebuild this as a local service in the cluster because many servers dropped support for renegotiation.
-	It("should check allow negotiation", func() {
+	PIt("should check allow negotiation", func() {
 		// given
 		es := fmt.Sprintf(`
 type: ExternalService
