@@ -1,0 +1,44 @@
+type: MeshHTTPRoute
+name: test-route
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test
+          default:
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  add:
+                    - name: x-test-header
+                      value: added-by-policy
+---
+type: MeshTimeout
+name: mt-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          requestTimeout: 32s
+          streamIdleTimeout: 33s
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: test-route
+      default:
+        http:
+          requestTimeout: 42s
+          streamIdleTimeout: 43s

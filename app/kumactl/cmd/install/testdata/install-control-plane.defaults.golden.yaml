@@ -8632,6 +8632,18 @@ spec:
           spec:
             description: Spec is the specification of the Kuma HostnameGenerator resource.
             properties:
+              extension:
+                description: Extension struct for a plugin configuration
+                properties:
+                  config:
+                    description: Config freeform configuration for the extension.
+                    x-kubernetes-preserve-unknown-fields: true
+                  type:
+                    description: Type of the extension.
+                    type: string
+                required:
+                - type
+                type: object
               selector:
                 properties:
                   meshExternalService:
@@ -10593,7 +10605,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kuma-control-plane-writer
+  name: kuma-control-plane-workloads
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -10694,7 +10706,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kuma-control-plane-writer
+  name: kuma-control-plane-workloads
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -10702,7 +10714,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kuma-control-plane-writer
+  name: kuma-control-plane-workloads
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane

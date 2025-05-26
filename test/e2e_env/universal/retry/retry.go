@@ -37,18 +37,6 @@ func Policy() {
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	countResponseCodes := func(statusCode int) func(responses []client.FailureResponse) int {
-		return func(responses []client.FailureResponse) int {
-			count := 0
-			for _, r := range responses {
-				if r.ResponseCode == statusCode {
-					count++
-				}
-			}
-			return count
-		}
-	}
-
 	It("should retry on HTTP connection failure", func() {
 		fiPolicy := fmt.Sprintf(`
 type: FaultInjection
@@ -91,7 +79,7 @@ conf:
 			)
 		}, "30s", "5s").Should(And(
 			HaveLen(100),
-			WithTransform(countResponseCodes(200), BeNumerically("==", 100)),
+			WithTransform(client.CountResponseCodes(200), BeNumerically("==", 100)),
 		))
 
 		By("Adding a fault injection")
@@ -107,8 +95,8 @@ conf:
 			)
 		}, "30s", "5s").Should(And(
 			HaveLen(100),
-			WithTransform(countResponseCodes(500), BeNumerically("~", 50, 15)),
-			WithTransform(countResponseCodes(200), BeNumerically("~", 50, 15)),
+			WithTransform(client.CountResponseCodes(500), BeNumerically("~", 50, 15)),
+			WithTransform(client.CountResponseCodes(200), BeNumerically("~", 50, 15)),
 		))
 
 		By("Apply a retry policy")

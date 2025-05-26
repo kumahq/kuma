@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/dpapi"
@@ -22,16 +21,13 @@ const OriginDNS = "dns"
 
 type DNSGenerator struct{}
 
-func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	dnsPort := proxy.Metadata.GetDNSPort()
-	if dnsPort == 0 {
+func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	tp := proxy.GetTransparentProxy()
+
+	// DNS only makes sense when transparent proxy is used
+	if !tp.Enabled() || !tp.Redirect.DNS.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		return nil, nil
 	}
-	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
-		return nil, nil // DNS only makes sense when transparent proxy is used
-	}
-	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().IpFamilyMode != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-
 	outboundIPs := map[string]bool{}
 	for _, outbound := range proxy.Outbounds {
 		outboundIPs[outbound.GetAddress()] = true
@@ -44,7 +40,7 @@ func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xd
 		}
 		addresses := []string{dnsOutbound.Address}
 		v6 := util_net.ToV6(dnsOutbound.Address)
-		if v6 != dnsOutbound.Address && ipV6Enabled {
+		if v6 != dnsOutbound.Address && tp.EnabledIPv6() {
 			addresses = append(addresses, v6)
 		}
 
@@ -77,7 +73,13 @@ func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xd
 		return nil, nil
 	}
 
-	listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP).
+	listener, err := envoy_listeners.
+		NewInboundListenerBuilder(
+			proxy.APIVersion,
+			"127.0.0.1",
+			uint32(tp.Redirect.DNS.Port),
+			core_xds.SocketAddressProtocolUDP,
+		).
 		WithOverwriteName(names.GetDNSListenerName()).
 		Configure(envoy_listeners.DNS(vips)).
 		Build()
