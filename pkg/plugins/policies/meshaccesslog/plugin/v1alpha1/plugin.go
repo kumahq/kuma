@@ -104,7 +104,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *EndpointAccumulator, path string) error {
+func applyToInbounds(
+	rules core_rules.FromRules,
+	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator,
+	accessLogSocketPath string,
+) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -125,7 +131,7 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
-		if err := configureListener(conf, listener, backends, protocol, kumaValues, path); err != nil {
+		if err := configureListener(conf, listener, backends, protocol, kumaValues, accessLogSocketPath); err != nil {
 			return err
 		}
 	}
