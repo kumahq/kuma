@@ -348,7 +348,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor)
+	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor, rest.DisallowStatus())
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return

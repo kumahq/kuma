@@ -29,6 +29,26 @@ var JSON = &unmarshaler{
 	marshalFn:   json.Marshal,
 }
 
+type UnmarshalOption struct {
+	DisallowStatus bool
+}
+
+type UnmarshalOptionFunc func(*UnmarshalOption)
+
+func NewUnmarshalOptions(fs ...UnmarshalOptionFunc) *UnmarshalOption {
+	opts := &UnmarshalOption{}
+	for _, f := range fs {
+		f(opts)
+	}
+	return opts
+}
+
+func DisallowStatus() UnmarshalOptionFunc {
+	return func(opts *UnmarshalOption) {
+		opts.DisallowStatus = true
+	}
+}
+
 type unmarshaler struct {
 	unmarshalFn func([]byte, interface{}) error
 	marshalFn   func(v any) ([]byte, error)
@@ -70,9 +90,10 @@ func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 	return coreRes, nil
 }
 
-func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor) (Resource, error) {
+func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor, fs ...UnmarshalOptionFunc) (Resource, error) {
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
+	opts := NewUnmarshalOptions(fs...)
 	defaultedBytes := bytes
 	if desc.Validator != nil && desc.StructuralSchema != nil {
 		var err error
@@ -81,6 +102,9 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		// Unfortunately to validate new policies we must first unmarshal into a rawObj
 		if err = u.unmarshalFn(bytes, &rawObj); err != nil {
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
+		}
+		if _, found := rawObj["status"]; opts.DisallowStatus && found {
+			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: status field cannot be modified", desc.Name)}
 		}
 
 		// Apply defaulting
