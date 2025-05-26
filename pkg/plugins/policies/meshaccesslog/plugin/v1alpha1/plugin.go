@@ -126,7 +126,7 @@ func applyToInbounds(
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? It doesn't seem correct for the incoming traffic
+			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
 			DestinationService: dataplane.Spec.GetIdentifyingService(),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionInbound,
@@ -290,7 +290,7 @@ func applyToGateway(
 			conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromListenerRules)
 			kumaValues := listeners_v3.KumaValues{
 				SourceService:      mesh_proto.ServiceUnknown,
-				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? It doesn't seem correct for the incoming traffic
+				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
 				DestinationService: proxy.Dataplane.Spec.GetIdentifyingService(),
 				Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
 				TrafficDirection:   envoy.TrafficDirectionInbound,
