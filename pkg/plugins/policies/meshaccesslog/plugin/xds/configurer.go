@@ -30,10 +30,9 @@ const (
 )
 
 func DefaultFormat(protocol core_mesh.Protocol) string {
-	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	if protocol.IsHTTPBased() {
 		return defaultHttpAccessLogFormat
-	default:
+	} else {
 		return defaultNetworkAccessLogFormat
 	}
 }
@@ -45,8 +44,7 @@ func BaseAccessLogBuilder(
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) *Builder[envoy_accesslog.AccessLog] {
-	builder := bldrs_al.NewBuilder()
-	builder.
+	return bldrs_al.NewBuilder().
 		ConfigureIf(backend.Tcp != nil, func() Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_al.Config(envoy_wellknown.FileAccessLog, bldrs_al.NewFileBuilder().
 				Configure(TCPBackendSFS(backend.Tcp, defaultFormat, values)).
@@ -66,7 +64,6 @@ func BaseAccessLogBuilder(
 				)))),
 			)
 		})
-	return builder
 }
 
 type EndpointAccumulator struct {

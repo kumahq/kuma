@@ -1,7 +1,6 @@
 package hcm
 
 import (
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	luav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -10,17 +9,6 @@ import (
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-func AccessLog(builder *Builder[envoy_accesslog.AccessLog]) Configurer[envoy_hcm.HttpConnectionManager] {
-	return func(hcm *envoy_hcm.HttpConnectionManager) error {
-		accessLog, err := builder.Build()
-		if err != nil {
-			return err
-		}
-		hcm.AccessLog = append(hcm.AccessLog, accessLog)
-		return nil
-	}
-}
 
 func LuaFilterAddFirst(code string) Configurer[envoy_hcm.HttpConnectionManager] {
 	return func(hcm *envoy_hcm.HttpConnectionManager) error {

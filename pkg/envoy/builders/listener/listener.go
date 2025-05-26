@@ -12,21 +12,25 @@ import (
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-func AccessLog(builder *Builder[envoy_accesslog.AccessLog]) Configurer[envoy_listener.Listener] {
+func AccessLogs(builders []*Builder[envoy_accesslog.AccessLog]) Configurer[envoy_listener.Listener] {
 	return func(l *envoy_listener.Listener) error {
-		accessLog, err := builder.Build()
-		if err != nil {
-			return err
+		accessLogs := []*envoy_accesslog.AccessLog{}
+		for _, b := range builders {
+			al, err := b.Build()
+			if err != nil {
+				return err
+			}
+			accessLogs = append(accessLogs, al)
 		}
 		for _, chain := range l.FilterChains {
 			if err := listeners_v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-				hcm.AccessLog = append(hcm.AccessLog, accessLog)
+				hcm.AccessLog = append(hcm.AccessLog, accessLogs...)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := listeners_v3.UpdateTCPProxy(chain, func(tcpProxy *envoy_tcp.TcpProxy) error {
-				tcpProxy.AccessLog = append(tcpProxy.AccessLog, accessLog)
+				tcpProxy.AccessLog = append(tcpProxy.AccessLog, accessLogs...)
 				return nil
 			}); err != nil {
 				return err
@@ -36,7 +40,20 @@ func AccessLog(builder *Builder[envoy_accesslog.AccessLog]) Configurer[envoy_lis
 	}
 }
 
-func ForEachRoute(fn func(hcm *envoy_hcm.HttpConnectionManager, route *routev3.Route, id kri.Identifier) error) Configurer[envoy_listener.Listener] {
+func HCM(hcmConfigurer Configurer[envoy_hcm.HttpConnectionManager]) Configurer[envoy_listener.Listener] {
+	return func(l *envoy_listener.Listener) error {
+		for _, chain := range l.FilterChains {
+			if err := listeners_v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+				return NewModifier(hcm).Configure(hcmConfigurer).Modify()
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func Routes(configurers map[kri.Identifier]Configurer[routev3.Route]) Configurer[envoy_listener.Listener] {
 	return func(l *envoy_listener.Listener) error {
 		for _, fc := range l.FilterChains {
 			err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
@@ -50,7 +67,13 @@ func ForEachRoute(fn func(hcm *envoy_hcm.HttpConnectionManager, route *routev3.R
 						if err != nil {
 							return err
 						}
-						if err := fn(hcm, route, id); err != nil {
+
+						cfgurer, ok := configurers[id]
+						if !ok {
+							continue
+						}
+
+						if err := NewModifier(route).Configure(cfgurer).Modify(); err != nil {
 							return err
 						}
 					}
@@ -63,4 +86,21 @@ func ForEachRoute(fn func(hcm *envoy_hcm.HttpConnectionManager, route *routev3.R
 		}
 		return nil
 	}
+}
+
+func TraverseRoutes(l *envoy_listener.Listener, visitFn func(route *routev3.Route)) error {
+	for _, fc := range l.FilterChains {
+		err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			for _, vh := range hcm.GetRouteConfig().VirtualHosts {
+				for _, route := range vh.Routes {
+					visitFn(route)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

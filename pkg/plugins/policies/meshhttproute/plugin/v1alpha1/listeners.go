@@ -164,7 +164,7 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 		resourceConf := toRules.ResourceRules.Compute(r, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
-			originByMatches = util_maps.MapValues(resourceConf.OriginByMatches, func(o common.Origin) core_model.ResourceMeta {
+			originByMatches = util_maps.MapValues(resourceConf.OriginByMatches, func(_ common_api.MatchesHash, o common.Origin) core_model.ResourceMeta {
 				return o.Resource
 			})
 		}

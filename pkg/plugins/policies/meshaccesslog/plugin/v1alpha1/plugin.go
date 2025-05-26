@@ -1,14 +1,10 @@
 package v1alpha1
 
 import (
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/structpb"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -17,7 +13,6 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_al "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	bldrs_hcm "github.com/kumahq/kuma/pkg/envoy/builders/filter/network/hcm"
 	bldrs_listener "github.com/kumahq/kuma/pkg/envoy/builders/listener"
 	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -37,6 +32,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/envoy/builders/filter/network/hcm"
+	bldrs_route "github.com/kumahq/kuma/pkg/envoy/builders/route"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -81,66 +80,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
-		defaultFormat := DefaultFormat(r.Protocol)
-
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(*r.ResourceOrigin)).
 			WithID(*r.ResourceOrigin)
-
-		kumaValues := listeners_v3.KumaValues{
-			SourceService:      proxy.Dataplane.Spec.GetIdentifyingService(),
-			SourceIP:           proxy.Dataplane.GetIP(),
-			DestinationService: r.ResourceOrigin.Name,
-			Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
-			TrafficDirection:   envoy.TrafficDirectionOutbound,
-		}
-
-		switch envoyResource := r.Resource.(type) {
-		case *envoy_listener.Listener:
-			routeSet := map[kri.Identifier]struct{}{}
-
-			listenerModifer := NewModifier(envoyResource)
-			for _, backend := range pointer.Deref(svcCtx.Conf().Backends) {
-				listenerModifer.Configure(bldrs_listener.AccessLog(
-					BaseAccessLogBuilder(backend, defaultFormat, endpoints, kumaValues, accessLogSocketPath).
-						Configure(bldrs_al.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
-							Configure(bldrs_matcher.Key(envoy_wellknown.FileAccessLog, routeMetadataKey)).
-							Configure(bldrs_matcher.NullValue())))))
-			}
-
-			listenerModifer.Configure(bldrs_listener.ForEachRoute(func(hcm *envoy_hcm.HttpConnectionManager, route *routev3.Route, id kri.Identifier) error {
-				routeConf, isDirectConf := svcCtx.WithID(id).DirectConf()
-				if !isDirectConf {
-					return nil
-				}
-
-				setRouteMetadata(route, routeMetadataKey, route.Name)
-
-				if _, routeProcessed := routeSet[id]; routeProcessed {
-					return nil
-				}
-
-				hcmModifier := NewModifier(hcm)
-				for _, backend := range pointer.Deref(routeConf.Backends) {
-					hcmModifier.Configure(bldrs_hcm.AccessLog(
-						BaseAccessLogBuilder(backend, defaultFormat, endpoints, kumaValues, accessLogSocketPath).
-							Configure(bldrs_al.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
-								Configure(bldrs_matcher.Key(envoy_wellknown.FileAccessLog, routeMetadataKey)).
-								Configure(bldrs_matcher.ExactValue(id.String())))))).
-						ConfigureIf(len(routeSet) == 0, func() Configurer[envoy_hcm.HttpConnectionManager] {
-							return bldrs_hcm.LuaFilterAddFirst(luaFilter)
-						})
-				}
-				if err := hcmModifier.Modify(); err != nil {
-					return err
-				}
-				routeSet[id] = struct{}{}
-				return nil
-			}))
-
-			if err := listenerModifer.Modify(); err != nil {
-				return err
-			}
+		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath); err != nil {
+			return err
 		}
 	}
 
@@ -149,29 +93,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	return nil
-}
-
-const routeMetadataKey = "route_kri"
-
-var luaFilter = `function envoy_on_request(handle)
-  local meta = handle:metadata():get("route_kri")
-  if meta ~= nil then
-    handle:streamInfo():dynamicMetadata():set("envoy.access_loggers.file", "route_kri", meta)
-  end
-end`
-
-func setRouteMetadata(r *routev3.Route, key, value string) {
-	if r.Metadata == nil {
-		r.Metadata = &envoy_core.Metadata{}
-	}
-	if r.Metadata.FilterMetadata == nil {
-		r.Metadata.FilterMetadata = map[string]*structpb.Struct{}
-	}
-	r.Metadata.FilterMetadata[envoy_wellknown.Lua] = &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			key: {Kind: &structpb.Value_StringValue{StringValue: value}},
-		},
-	}
 }
 
 func applyToInbounds(
@@ -384,8 +305,109 @@ func configureListener(
 ) error {
 	listenerModifier := NewModifier(listener)
 	for _, backend := range pointer.Deref(conf.Backends) {
-		listenerModifier.Configure(bldrs_listener.AccessLog(
-			BaseAccessLogBuilder(backend, defaultFormat, backendsAcc, values, accessLogSocketPath)))
+		listenerModifier.Configure(bldrs_listener.AccessLogs([]*Builder[envoy_accesslog.AccessLog]{
+			BaseAccessLogBuilder(backend, defaultFormat, backendsAcc, values, accessLogSocketPath),
+		}))
 	}
 	return listenerModifier.Modify()
 }
+
+func applyToRealResource(
+	rctx *outbound.ResourceContext[api.Conf],
+	r *core_xds.Resource,
+	proxy *core_xds.Proxy,
+	backendsAcc *EndpointAccumulator,
+	accessLogSocketPath string,
+) error {
+	listener, ok := r.Resource.(*envoy_listener.Listener)
+	if !ok {
+		return nil
+	}
+
+	defaultFormat := DefaultFormat(r.Protocol)
+
+	kumaValues := listeners_v3.KumaValues{
+		SourceService:      proxy.Dataplane.Spec.GetIdentifyingService(),
+		SourceIP:           proxy.Dataplane.GetIP(),
+		DestinationService: r.ResourceOrigin.Name,
+		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
+		TrafficDirection:   envoy.TrafficDirectionOutbound,
+	}
+
+	backends := pointer.Deref(rctx.Conf().Backends)
+
+	routesConfs, err := buildRoutesMap(listener, rctx)
+	if err != nil {
+		return err
+	}
+
+	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesConfs), func(conf api.Conf) bool {
+		return len(pointer.Deref(conf.Backends)) > 0
+	})) > 0
+
+	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+			ConfigureIf(r.Protocol.IsHTTPBased(), func() Configurer[envoy_accesslog.AccessLog] {
+				return bldrs_al.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
+					Configure(bldrs_matcher.Key(envoy_wellknown.FileAccessLog, routeMetadataKey)).
+					Configure(bldrs_matcher.NullValue()))
+			})
+	}
+
+	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+				Configure(bldrs_al.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
+					Configure(bldrs_matcher.Key(envoy_wellknown.FileAccessLog, routeMetadataKey)).
+					Configure(bldrs_matcher.ExactValue(routeID.String()))))
+		}
+	}
+
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(util_slices.Map(backends, builderForSharedBackend))).
+		Configure(bldrs_listener.Routes(
+			util_maps.MapValues(
+				routesConfs,
+				func(id kri.Identifier, _ api.Conf) Configurer[routev3.Route] {
+					return bldrs_route.Metadata(routeMetadataKey, id.String())
+				}))).
+		Configure(bldrs_listener.AccessLogs(
+			util_maps.FlatMapKV(
+				routesConfs,
+				func(id kri.Identifier, conf api.Conf) []*Builder[envoy_accesslog.AccessLog] {
+					return util_slices.Map(
+						pointer.Deref(conf.Backends),
+						builderForRouteBackend(id),
+					)
+				}))).
+		ConfigureIf(hasAtLeastOneBackend, func() Configurer[envoy_listener.Listener] {
+			return bldrs_listener.HCM(hcm.LuaFilterAddFirst(luaFilter))
+		}).
+		Modify()
+}
+
+func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext[api.Conf]) (map[kri.Identifier]api.Conf, error) {
+	routes := map[kri.Identifier]api.Conf{}
+	if err := bldrs_listener.TraverseRoutes(l, func(route *routev3.Route) {
+		if !kri.IsValid(route.Name) {
+			return
+		}
+		id, _ := kri.FromString(route.Name)
+		if conf, isDirect := svcCtx.WithID(id).DirectConf(); isDirect {
+			routes[id] = conf
+		}
+
+	}); err != nil {
+		return nil, err
+	}
+	return routes, nil
+}
+
+const routeMetadataKey = "route_kri"
+
+var luaFilter = `function envoy_on_request(handle)
+  local meta = handle:metadata():get("route_kri")
+  if meta ~= nil then
+    handle:streamInfo():dynamicMetadata():set("envoy.access_loggers.file", "route_kri", meta)
+  end
+end`
