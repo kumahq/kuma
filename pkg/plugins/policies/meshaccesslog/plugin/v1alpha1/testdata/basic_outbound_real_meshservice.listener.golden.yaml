@@ -10,6 +10,7 @@ filterChains:
       accessLog:
       - filter:
           metadataFilter:
+            matchIfKeyNotFound: true
             matcher:
               filter: envoy.access_loggers.file
               path:

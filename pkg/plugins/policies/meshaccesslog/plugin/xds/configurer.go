@@ -19,6 +19,9 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	bldrs_al "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 )
 
 const (
@@ -33,6 +36,37 @@ func DefaultFormat(protocol core_mesh.Protocol) string {
 	default:
 		return defaultNetworkAccessLogFormat
 	}
+}
+
+func BaseAccessLogBuilder(
+	backend api.Backend,
+	defaultFormat string,
+	backendsAcc *EndpointAccumulator,
+	values listeners_v3.KumaValues,
+	accessLogSocketPath string,
+) *Builder[envoy_accesslog.AccessLog] {
+	builder := bldrs_al.NewBuilder()
+	builder.
+		ConfigureIf(backend.Tcp != nil, func() Configurer[envoy_accesslog.AccessLog] {
+			return bldrs_al.Config(envoy_wellknown.FileAccessLog, bldrs_al.NewFileBuilder().
+				Configure(TCPBackendSFS(backend.Tcp, defaultFormat, values)).
+				Configure(bldrs_al.Path(accessLogSocketPath)))
+		}).
+		ConfigureIf(backend.File != nil, func() Configurer[envoy_accesslog.AccessLog] {
+			return bldrs_al.Config(envoy_wellknown.FileAccessLog, bldrs_al.NewFileBuilder().
+				Configure(FileBackendSFS(backend.File, defaultFormat, values)).
+				Configure(bldrs_al.Path(backend.File.Path)))
+		}).
+		ConfigureIf(backend.OpenTelemetry != nil, func() Configurer[envoy_accesslog.AccessLog] {
+			return bldrs_al.Config("envoy.access_loggers.open_telemetry", bldrs_al.NewOtelBuilder().
+				Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
+				Configure(OtelAttributes(backend.OpenTelemetry)).
+				Configure(bldrs_al.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
+					EndpointForOtel(backend.OpenTelemetry.Endpoint),
+				)))),
+			)
+		})
+	return builder
 }
 
 type EndpointAccumulator struct {

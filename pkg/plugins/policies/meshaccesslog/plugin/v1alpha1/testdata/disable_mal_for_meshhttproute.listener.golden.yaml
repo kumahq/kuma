@@ -10,6 +10,7 @@ filterChains:
       accessLog:
       - filter:
           metadataFilter:
+            matchIfKeyNotFound: true
             matcher:
               filter: envoy.access_loggers.file
               path:
@@ -25,17 +26,6 @@ filterChains:
                 [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "other-meshservice-http" "127.0.0.1" "%UPSTREAM_HOST%"
           path: /tmp/meshservice/log
       httpFilters:
-      - name: envoy.filters.http.lua
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-          defaultSourceCode:
-            inlineString: |-
-              function envoy_on_request(handle)
-                local meta = handle:metadata():get("route_kri")
-                if meta ~= nil then
-                  handle:streamInfo():dynamicMetadata():set("envoy.access_loggers.file", "route_kri", meta)
-                end
-              end
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

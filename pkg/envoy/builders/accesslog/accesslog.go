@@ -11,6 +11,8 @@ import (
 
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 func NewBuilder() *Builder[envoy_accesslog.AccessLog] {
@@ -34,6 +36,24 @@ func Config[R any](name string, builder *Builder[R]) Configurer[envoy_accesslog.
 		accessLog.Name = name
 		accessLog.ConfigType = &envoy_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshaled,
+		}
+		return nil
+	}
+}
+
+func MetadataFilter(matchIfKeyNotFound bool, matcherBuilder *Builder[matcherv3.MetadataMatcher]) Configurer[envoy_accesslog.AccessLog] {
+	return func(accessLog *envoy_accesslog.AccessLog) error {
+		matcher, err := matcherBuilder.Build()
+		if err != nil {
+			return err
+		}
+		accessLog.Filter = &envoy_accesslog.AccessLogFilter{
+			FilterSpecifier: &envoy_accesslog.AccessLogFilter_MetadataFilter{
+				MetadataFilter: &envoy_accesslog.MetadataFilter{
+					MatchIfKeyNotFound: &wrapperspb.BoolValue{Value: matchIfKeyNotFound},
+					Matcher:            matcher,
+				},
+			},
 		}
 		return nil
 	}
