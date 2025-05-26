@@ -13,9 +13,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -83,7 +84,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		meshContext, err := meshContextBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
-		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone, knownInternalAddr)
+		inspector, err := inspect.NewProxyConfigInspector(meshContext, &core_xds.DataplaneMetadata{}, zone, knownInternalAddr)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -102,7 +103,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		meshContext, err := meshContextBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
-		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone, knownInternalAddr)
+		inspector, err := inspect.NewProxyConfigInspector(meshContext, &core_xds.DataplaneMetadata{}, zone, knownInternalAddr)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -129,7 +130,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		meshContext, err := meshContextBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
-		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone, knownInternalAddr)
+		inspector, err := inspect.NewProxyConfigInspector(meshContext, &core_xds.DataplaneMetadata{}, zone, knownInternalAddr)
 		Expect(err).ToNot(HaveOccurred())
 
 		noShadow, err := inspector.Get(context.Background(), "test-dpp", false)

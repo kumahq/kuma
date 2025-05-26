@@ -6,16 +6,21 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -33,8 +38,11 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)))
+
+	if !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
+		listenerBuilder.Configure(envoy_listeners.TransparentProxying(proxy))
+	}
 
 	resourceName := svc.ServiceName
 
@@ -63,7 +71,7 @@ func generateFromService(
 			}
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Hash:                    route.Hash,
+			Name:                    route.Name,
 			Match:                   route.Match,
 			Filters:                 route.Filters,
 			Split:                   split,
@@ -76,8 +84,8 @@ func generateFromService(
 	}
 
 	var outboundRouteName string
-	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
-		outboundRouteName = resourceName
+	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
+		outboundRouteName = r.String()
 	}
 	var dpTags mesh_proto.MultiValueTagSet
 	if meshCtx.IsXKumaTagsUsed() {
@@ -149,35 +157,29 @@ func generateListeners(
 func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[common_api.MatchesHash]core_model.ResourceMeta) {
 	// compute for old MeshService
 	var conf *api.PolicyDefault
-	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
+	originByMatches := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
 	ruleHTTP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
-		for hash := range ruleHTTP.BackendRefOriginIndex {
-			if origin, ok := ruleHTTP.GetBackendRefOrigin(hash); ok {
-				backendRefOrigin[hash] = origin
-			}
-		}
+		originByMatches = ruleHTTP.OriginByMatches
 	}
 	// check if there is configuration for real MeshService and prioritize it
-	if svc.Outbound.Resource != nil {
-		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
+	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
+		resourceConf := toRules.ResourceRules.Compute(r, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
-			for hash := range resourceConf.BackendRefOriginIndex {
-				if origin, ok := resourceConf.GetBackendRefOrigin(hash); ok {
-					backendRefOrigin[hash] = origin
-				}
-			}
+			originByMatches = util_maps.MapValues(resourceConf.OriginByMatches, func(o common.Origin) core_model.ResourceMeta {
+				return o.Resource
+			})
 		}
 	}
-	return conf, backendRefOrigin
+	return conf, originByMatches
 }
 
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
-	conf, backendRefToOrigin := ComputeHTTPRouteConf(toRules, svc, meshCtx)
+	conf, originByMatches := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
 	if conf != nil {
@@ -192,8 +194,36 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 		}
 	}
 
+	getOrigin := func(ms []api.Match) core_model.ResourceMeta {
+		return originByMatches[api.HashMatches(ms)]
+	}
+
+	getRouteName := func(ms []api.Match) string {
+		if _, ok := svc.Outbound.AssociatedServiceResource(); ok {
+			return kri.FromResourceMeta(getOrigin(ms), api.MeshHTTPRouteType, "").String()
+		}
+		return string(api.HashMatches(ms))
+	}
+
+	routes := util_slices.FlatMap(apiRules, func(rule api.Rule) []api.Route {
+		var routes []api.Route
+		for _, match := range rule.Matches {
+			routes = append(routes, api.Route{
+				Name:    getRouteName(rule.Matches),
+				Match:   match,
+				Filters: pointer.Deref(rule.Default.Filters),
+				BackendRefs: util_slices.FilterMap(pointer.Deref(rule.Default.BackendRefs), func(br common_api.BackendRef) (resolve.ResolvedBackendRef, bool) {
+					return resolve.BackendRef(getOrigin(rule.Matches), br, meshCtx.ResolveResourceIdentifier)
+				}),
+			})
+		}
+		return routes
+	})
+
 	// sort rules before we add default prefix matches etc
-	routes := api.SortRules(apiRules, backendRefToOrigin, meshCtx.ResolveResourceIdentifier)
+	slices.SortStableFunc(routes, func(i, j api.Route) int {
+		return api.CompareMatch(i.Match, j.Match)
+	})
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
 	catchAllMatch := api.Match{
@@ -207,7 +237,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	if noCatchAll {
 		routes = append(routes, api.Route{
 			Match: catchAllMatch,
-			Hash:  api.HashMatches([]api.Match{catchAllMatch}),
+			Name:  string(api.HashMatches([]api.Match{catchAllMatch})),
 		})
 	}
 

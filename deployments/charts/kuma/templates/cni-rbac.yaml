@@ -1,4 +1,7 @@
 {{- if .Values.cni.enabled }}
+{{- if .Values.skipRBAC }}
+{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for kuma-cni manually.\n" }}
+{{- end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -11,6 +14,7 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
+{{- if not .Values.skipRBAC }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -21,11 +25,6 @@ metadata:
 rules:
   - apiGroups: [""]
     resources:
-      - nodes
-    verbs:
-      - get
-  - apiGroups: [""]
-    resources:
       - pods
     verbs:
       - get
@@ -33,6 +32,26 @@ rules:
       - list
       - watch
       {{- end }}
+{{- if gt (len .Values.namespaceAllowList) 0 }}
+{{- $root := . }}
+{{- range $element := .Values.namespaceAllowList }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" $root }}-cni
+  labels: {{ include "kuma.cpLabels" $root | nindent 4 }}
+  namespace: {{ $element }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" $root }}-cni
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" $root }}-cni
+    namespace: {{ $root.Release.Namespace }}
+{{- end }}
+{{- else }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -48,4 +67,6 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-cni
     namespace: {{ .Values.cni.namespace }}
-  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

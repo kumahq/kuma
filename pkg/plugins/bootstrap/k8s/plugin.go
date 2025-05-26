@@ -55,17 +55,17 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
 	cacheOpts := cache.Options{
-		ByObject: map[kube_client.Object]cache.ByObject{},
-	}
-	if b.Config().Runtime.Kubernetes.Injector.TransparentProxyConfigMapName == "" {
-		// We don't want to watch all namespaces for configuration because when
-		// transparent proxy config maps are not used, the configuration is only in the system namespace.
-		cacheOpts.ByObject[&kube_core.ConfigMap{}] = cache.ByObject{
-			Namespaces: map[string]cache.Config{
-				systemNamespace: {},
+		ByObject: map[kube_client.Object]cache.ByObject{
+			// We don't want to watch all namespaces for configuration because the configuration
+			// is only in the system namespace.
+			&kube_core.ConfigMap{}: {
+				Namespaces: map[string]cache.Config{
+					systemNamespace: {},
+				},
 			},
-		}
+		},
 	}
+
 	if !b.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces {
 		// we don't want to react on events about secrets from other namespaces
 		cacheOpts.ByObject[&kube_core.Secret{}] = cache.ByObject{

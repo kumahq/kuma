@@ -91,7 +91,7 @@ destinations:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
+				stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "tail", "-1", "/nc.out")
 				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
 				g.Expect(parts).To(HaveLen(3))
@@ -103,10 +103,7 @@ destinations:
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)
 
-			// Just testing that it is a timestamp, not accuracy. If it's
-			// an int that would represent Unix time within an hour of now
-			// it's probably a timestamp substitution.
-			Expect(startTime).To(BeTemporally("~", time.Now(), time.Hour))
+			Expect(startTime).To(BeTemporally("~", time.Now(), time.Minute))
 
 			Expect(src).To(Equal(AppModeDemoClient))
 			Expect(strings.TrimSpace(dst)).To(Equal("test-server"))

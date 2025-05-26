@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -34,7 +35,7 @@ const (
 )
 
 func newInstallTransparentProxy() *cobra.Command {
-	var configValue string
+	var configValues []string
 	var configFile string
 
 	cfg := config.DefaultConfig()
@@ -148,14 +149,6 @@ runuser -u kuma-dp -- \
 				fmt.Fprintln(cfg.RuntimeStderr, WarningDryRunRunningAsNonRoot)
 			}
 
-			if configValue == "-" && configFile == "" {
-				return errors.Errorf(
-					"provided value '-' via flag '--%s' is invalid; to provide config via stdin, use '--%s -'",
-					flagTransparentProxyConfig,
-					flagTransparentProxyConfigFile,
-				)
-			}
-
 			if cfg.Redirect.DNS.Enabled && cfg.Redirect.DNS.CaptureAll {
 				return errors.Errorf(
 					"only one of '--%s' or '--%s' should be specified",
@@ -166,7 +159,7 @@ runuser -u kuma-dp -- \
 
 			// After parsing the config flags, we load the configuration, which involves parsing
 			// the provided YAML or JSON, and including environment variables if present
-			if err := cfgLoader.Load(cmd.InOrStdin(), configFile, configValue); err != nil {
+			if err := cfgLoader.Load(cmd.InOrStdin(), slices.Concat([]string{configFile}, configValues)...); err != nil {
 				return errors.Wrap(err, "failed to load configuration from provided input")
 			}
 
@@ -301,8 +294,19 @@ runuser -u kuma-dp -- \
 		),
 	)
 
-	cmd.Flags().StringVar(&configValue, flagTransparentProxyConfig, configValue, "transparent proxy configuration provided in YAML or JSON format")
+	cmd.Flags().StringArrayVar(
+		&configValues,
+		flagTransparentProxyConfig,
+		configValues,
+		"Transparent proxy configuration. This flag can be repeated. Each value can be:\n"+
+			"- a comma-separated list of file paths\n"+
+			"- a dash '-' to read from STDIN\n"+
+			"Later values override earlier ones when merging. "+
+			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
+	)
 	cmd.Flags().StringVar(&configFile, flagTransparentProxyConfigFile, configFile, "path to the file containing the transparent proxy configuration in YAML or JSON format")
+
+	_ = cmd.Flags().MarkDeprecated(flagTransparentProxyConfigFile, fmt.Sprintf("please use --%s", flagTransparentProxyConfig))
 
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
 

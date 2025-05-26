@@ -72,7 +72,7 @@ func buildMeshServiceDestinations(
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
 				SNI:             sni,
-				Resource: resolve.BackendRef(
+				Resource: resolve.BackendRefOrNil(
 					ms.Meta,
 					resourceToBackendRef(ms, meshservice_api.MeshServiceType, port.Port),
 					resolveResourceIdentifier,
@@ -112,7 +112,7 @@ func buildMeshExternalServiceDestinations(
 			Mesh:            mes.GetMeta().GetMesh(),
 			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 			SNI:             sni,
-			Resource: resolve.BackendRef(
+			Resource: resolve.BackendRefOrNil(
 				mes.Meta,
 				resourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, uint32(mes.Spec.Match.Port)),
 				resolveResourceIdentifier,
@@ -132,7 +132,7 @@ func buildMeshMultiZoneServiceDestinations(
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
-				Resource: resolve.BackendRef(
+				Resource: resolve.BackendRefOrNil(
 					ms.Meta,
 					resourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
 					resolveResourceIdentifier,

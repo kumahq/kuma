@@ -78,11 +78,6 @@ metadata:
 rules:
   - apiGroups: [""]
     resources:
-      - nodes
-    verbs:
-      - get
-  - apiGroups: [""]
-    resources:
       - pods
     verbs:
       - get
@@ -96,36 +91,34 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
+  # Kubernetes resources
   - apiGroups:
       - ""
     resources:
       - namespaces
       - pods
       - nodes
+      - services
     verbs:
       - get
       - list
       - watch
   - apiGroups:
-    - "discovery.k8s.io"
+      - "discovery.k8s.io"
     resources:
       - endpointslices
     verbs:
-    - get
-    - list
-    - watch
+      - get
+      - list
+      - watch
   - apiGroups:
       - "apps"
     resources:
       - deployments
       - replicasets
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - "batch"
@@ -135,14 +128,21 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
+  - apiGroups: # Gateway API
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses
       - gateways
       - referencegrants
       - httproutes
     verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses # ClusterScope
+    verbs:
       - create
       - delete
       - get
@@ -153,52 +153,11 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses/status
-      - gateways/status
-      - httproutes/status
+      - gatewayclasses/status # ClusterScope
     verbs:
       - get
       - patch
       - update
-  - apiGroups:
-      - coordination.k8s.io
-    resources:
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - services
-    verbs:
-      - get
-      - delete
-      - list
-      - watch
-      - create
-      - update
-      - patch
-  - apiGroups:
-    - "discovery.k8s.io"
-    resources:
-    - endpointslices
-    verbs:
-    - get
-    - list
-    - watch
   - apiGroups:
       - kuma.io
     resources:
@@ -271,9 +230,114 @@ rules:
       - patch
       - update
   - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups: # required for taint controller
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  # validate k8s token before issuing mTLS cert
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-control-plane-workloads
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+    # required by MeshGateway
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    # required by MeshGateway
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
       - ""
     resources:
       - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+    # Gateway API
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
     verbs:
       - get
       - patch
@@ -283,38 +347,8 @@ rules:
     resources:
       - network-attachment-definitions
     verbs:
-      - get
-      - list
-      - watch
       - create
       - delete
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - update
-  - apiGroups:
-      - "pods"
-    resources:
-      - pods
-    verbs:
-      - list
-  # validate k8s token before issuing mTLS cert
-  - apiGroups:
-      - authentication.k8s.io
-    resources:
-      - tokenreviews
-    verbs:
-      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -352,6 +386,23 @@ subjects:
     namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane-workloads
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-workloads
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kuma-control-plane
@@ -362,9 +413,9 @@ metadata:
     app.kubernetes.io/instance: kuma
 rules:
   - apiGroups:
-      - ""
+      - coordination.k8s.io
     resources:
-      - secrets
+      - leases
     verbs:
       - get
       - list
@@ -377,20 +428,61 @@ rules:
       - ""
     resources:
       - configmaps
+      - secrets
     verbs:
       - get
+      - delete
       - list
       - watch
       - create
       - update
       - patch
-      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
   # leader-for-life election deletes Pods in some circumstances
   - apiGroups:
       - ""
     resources:
       - pods
     verbs:
+      - delete
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
       - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -608,7 +700,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: d95caa5d7f340792bdf7442a6e6471e06db4f03129af1b84fb8baa4e9b82abcb
+        checksum/tls-secrets: dd07006d086abef5b112a0f450a4969e01fcadcf605cdf25ad749b4099d111ec
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -786,7 +878,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ
@@ -844,7 +936,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ
@@ -903,15 +995,16 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: 
-          - kube-system
         - key: kuma.io/sidecar-injection
           operator: In
-          values: 
+          values:
           - enabled
           - "true"
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+          - kuma-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -979,7 +1072,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ

@@ -144,9 +144,15 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "route-2",
 					},
 				},
-				BackendRefOriginIndex: map[common_api.MatchesHash]int{
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 1,
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}}}): 1,
+				OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "route-2",
+					},
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "route-2",
+					},
 				},
 			},
 		},
@@ -241,8 +247,11 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "a-route",
 					},
 				},
-				BackendRefOriginIndex: map[common_api.MatchesHash]int{
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 1,
+				OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "a-route",
+					},
 				},
 			},
 		},
@@ -493,13 +502,31 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "a-route",
 					},
 				},
-				BackendRefOriginIndex: map[common_api.MatchesHash]int{
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-first-prefix"}}}):                 1,
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-second-prefix"}}}):                1,
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-first-prefix"}}}):                 0,
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-second-prefix"}}}):                0,
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-first-shared-prefix"}}}):  1,
-					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-second-shared-prefix"}}}): 1,
+				OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-first-prefix"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "a-route",
+					},
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-second-prefix"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "a-route",
+					},
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-first-prefix"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "b-route",
+					},
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-second-prefix"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "b-route",
+					},
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-first-shared-prefix"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "a-route",
+					},
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-second-shared-prefix"}}}): &test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "a-route",
+					},
 				},
 			},
 		},

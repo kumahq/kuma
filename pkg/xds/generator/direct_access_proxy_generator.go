@@ -33,9 +33,9 @@ func DirectAccessEndpointName(endpoint Endpoint) string {
 	return fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 }
 
-func (DirectAccessProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	directAccessServices := proxy.Dataplane.Spec.GetNetworking().TransparentProxying.GetDirectAccessServices()
+	directAccessServices := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetDirectAccessServices()
 	if !proxy.GetTransparentProxy().Enabled() || len(directAccessServices) == 0 {
 		return resources, nil
 	}
@@ -95,7 +95,7 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 	takenEndpoints := takenEndpoints(dataplane)
 
 	services := map[string]bool{}
-	for _, service := range dataplane.Spec.Networking.TransparentProxying.DirectAccessServices {
+	for _, service := range dataplane.Spec.GetNetworking().GetTransparentProxying().GetDirectAccessServices() {
 		services[service] = true
 	}
 

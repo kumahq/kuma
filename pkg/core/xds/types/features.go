@@ -18,4 +18,11 @@ const FeatureTCPAccessLogViaNamedPipe string = "feature-tcp-accesslog-via-named-
 // FeatureEmbeddedDNS indicates that the DP runs with the embedded DNS instead of the buddy coreDNS
 const FeatureEmbeddedDNS string = "feature-embedded-dns"
 
+// FeatureDeltaGRPC indicates that the Envoy sidecar uses incremental xDS for configuration exchange.
+// https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol-delta
+const FeatureDeltaGRPC string = "feature-delta-grpc"
+
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
+
+// FeatureBindOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses
+const FeatureBindOutbounds string = "feature-bind-outbounds"

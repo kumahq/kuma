@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 import "validate/validate.proto";
 
 // DataplaneInsight defines the observed state of a Dataplane.
@@ -43,6 +44,8 @@ message DataplaneInsight {
     // Supported backends (CA).
     repeated string supportedBackends = 5;
   }
+
+  google.protobuf.Struct metadata = 3;
 }
 
 // DiscoverySubscription describes a single ADS subscription

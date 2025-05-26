@@ -1,5 +1,4 @@
 kri_msvc_mesh-1___backend_:
-  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 1m51s
     idleTimeout: 9s
@@ -15,6 +14,7 @@ kri_msvc_mesh-1___backend_:
       NameExtensions: null
       Version: ""
     RuleIndex: 0
+  OriginByMatches: {}
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:
@@ -27,7 +27,6 @@ kri_msvc_mesh-1___backend_:
     Version: ""
   ResourceSectionName: ""
 kri_msvc_mesh-1___backend_http-port:
-  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
     http:
@@ -56,6 +55,7 @@ kri_msvc_mesh-1___backend_http-port:
       NameExtensions: null
       Version: ""
     RuleIndex: 1
+  OriginByMatches: {}
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:

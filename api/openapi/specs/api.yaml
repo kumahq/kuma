@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Kuma API
   description: Kuma API
@@ -75,6 +75,46 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/InspectRulesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_overview:
+    get:
+      operationId: getDataplaneOverview
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/_overview:
+    get:
+      operationId: getDataplaneOverviewList
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -265,6 +305,10 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: './common/resource.yaml#/components/schemas/Meta'
+        - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
     DataplaneXDSConfig:
       type: object
       title: DataplaneXDSConfig
@@ -549,6 +593,28 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneXDSConfig'
+    GetDataplaneOverviewResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+    GetDataplaneOverviewListResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataplaneOverviewWithMeta'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:

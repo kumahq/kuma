@@ -1,5 +1,4 @@
 kri_msvc_mesh-1_zone-k8s_ns-k8s_backend-dev_http-port:
-  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 12s
     http:
@@ -38,6 +37,7 @@ kri_msvc_mesh-1_zone-k8s_ns-k8s_backend-dev_http-port:
         k8s.kuma.io/namespace: ns-k8s
       Version: ""
     RuleIndex: 2
+  OriginByMatches: {}
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:
@@ -57,7 +57,6 @@ kri_msvc_mesh-1_zone-k8s_ns-k8s_backend-dev_http-port:
     Version: ""
   ResourceSectionName: http-port
 kri_msvc_mesh-1_zone-k8s_ns-k8s_backend-prod_http-port:
-  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 31s
     http:
@@ -79,6 +78,7 @@ kri_msvc_mesh-1_zone-k8s_ns-k8s_backend-prod_http-port:
         k8s.kuma.io/namespace: ns-k8s
       Version: ""
     RuleIndex: 0
+  OriginByMatches: {}
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:
