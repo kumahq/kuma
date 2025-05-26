@@ -276,7 +276,7 @@ spec:
       default:
         http:
           - abort:
-              httpStatus: 500
+              httpStatus: 429
               percentage: "50.0"
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).Should(Succeed())
 
@@ -310,13 +310,12 @@ spec:
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithNumberOfRequests(100),
-				framework_client.WithMaxConcurrentRequests(1),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses).To(And(
 				HaveLen(100),
-				WithTransform(framework_client.CountResponseCodes(500), BeNumerically("~", 50, 15)),
-				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 50, 15)),
+				WithTransform(framework_client.IndexByResponseCode, HaveKeyWithValue(429, BeNumerically("~", 50, 15))),
+				WithTransform(framework_client.IndexByResponseCode, HaveKeyWithValue(200, BeNumerically("~", 50, 15))),
 			))
 		}, "30s", "5s").Should(Succeed())
 
@@ -337,7 +336,7 @@ spec:
         http:
           numRetries: 5
           retryOn:
-            - "5xx"
+            - "429"
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -345,12 +344,11 @@ spec:
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithNumberOfRequests(100),
-				framework_client.WithMaxConcurrentRequests(1),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses).To(And(
 				HaveLen(100),
-				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 100, 10)),
+				WithTransform(framework_client.IndexByResponseCode, HaveKeyWithValue(200, BeNumerically("~", 100, 10))),
 			))
 		}, "30s", "5s").Should(Succeed())
 	})
