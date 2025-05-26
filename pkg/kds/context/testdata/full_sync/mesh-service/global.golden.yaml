@@ -67,8 +67,15 @@ spec:
       k8s.kuma.io/namespace: kuma-demo
   state: Unavailable
 status:
+  addresses:
+  - hostname: redis.mesh
+    hostnameGeneratorRef:
+      coreName: kmy-hostname-generator
+    origin: HostnameGenerator
   dataplaneProxies: {}
   tls: {}
+  vips:
+  - ip: 10.0.2.1
 type: MeshService
 
 # Zone
