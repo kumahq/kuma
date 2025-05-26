@@ -184,6 +184,6 @@ jobs:
           delete-branch: true
           draft: ${{ contains(env.LABELS, 'conflict') }}
           labels: ${{ env.LABELS }}
-          token: ${{ secrets.APP_ID != '' && steps.github-app-token.outputs.token || steps.github-context-token.outputs.token }}
+          token: ${{env.USE_APP_TOKEN == 'true' && steps.github-app-token.outputs.token || steps.github-context-token.outputs.token }}
           committer: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}
           author: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}
