@@ -6,13 +6,13 @@ import (
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 func NewBuilder() *Builder[envoy_accesslog.AccessLog] {

@@ -1,8 +1,9 @@
 package matcher
 
 import (
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
+	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 )
 
 func NewMetadataBuilder() *Builder[matcherv3.MetadataMatcher] {
