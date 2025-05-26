@@ -310,6 +310,7 @@ spec:
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithNumberOfRequests(100),
+				framework_client.WithMaxConcurrentRequests(1),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses).To(And(
@@ -344,6 +345,7 @@ spec:
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithNumberOfRequests(100),
+				framework_client.WithMaxConcurrentRequests(1),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses).To(And(
