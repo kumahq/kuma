@@ -334,6 +334,11 @@ func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool,
 					}
 					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
 				}),
+				// When syncing a resource from the Global to a Zone, we always remove the status field.
+				// See pkg/kds/context/context.go#88–90.
+				// As a result, the Zone control plane detects a change and updates the status field with an empty object,
+				// which triggers reconciliation of the VIP and a status update.
+				// Therefore, we should ignore status field comparison, since the status is always synced as empty from the Global.
 				IgnoreStatusChange(),
 			}
 			// When there is no KDS hash suffix, we can have conflicts in resources so we simply skip them

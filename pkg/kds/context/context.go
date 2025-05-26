@@ -85,7 +85,7 @@ func DefaultContext(
 			reconcile_v2.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile_v2.If(
-			// we don't want status field on the global
+			// we don't want status field from global to be synced to the zone
 			reconcile_v2.HasStatus(),
 			RemoveStatus()),
 		reconcile_v2.If(func(resource core_model.Resource) bool {
