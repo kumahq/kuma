@@ -351,6 +351,8 @@ runtime:
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
         # Enable coredns query logging if true
         logging: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
+        # Use the embedded DNS instead (This is an experimental feature)
+        experimentalProxy: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY
       # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
       # installed using ebpf instead of iptables
       ebpf:

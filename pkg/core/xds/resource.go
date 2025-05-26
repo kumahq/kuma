@@ -10,6 +10,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -181,8 +183,18 @@ func NonGatewayResources(r *Resource) bool {
 	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.Origin != "gateway")
 }
 
-func HasResourceOrigin(r *Resource) bool {
-	return r.ResourceOrigin != nil
+func HasAssociatedServiceResource(r *Resource) bool {
+	if r.ResourceOrigin == nil {
+		return false
+	}
+	switch r.ResourceOrigin.ResourceType {
+	case
+		meshservice_api.MeshServiceType,
+		meshexternalservice_api.MeshExternalServiceType,
+		meshmultizoneservice_api.MeshMultiZoneServiceType:
+		return true
+	}
+	return false
 }
 
 type ResourcesByType map[string][]*Resource

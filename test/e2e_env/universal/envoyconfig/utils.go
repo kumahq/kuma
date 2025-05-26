@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/openapi/types"
@@ -35,7 +36,13 @@ func getConfig(mesh, dpp string) string {
 	output, err := universal.Cluster.GetKumactlOptions().
 		RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", mesh, "--shadow", "--include=diff")
 	Expect(err).ToNot(HaveOccurred())
-	redacted := redactStatPrefixes(redactIPs(output))
+	redacted := redactDnsLookupFamily(
+		redactStatPrefixes(
+			redactIPs(
+				redactKumaDynamicConfig(output),
+			),
+		),
+	)
 
 	response := types.GetDataplaneXDSConfigResponse{}
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
@@ -91,10 +98,37 @@ func redactIPs(jsonStr string) string {
 }
 
 // TODO this should be removed after fixing: https://github.com/kumahq/kuma/issues/12733
-var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
+var statsPrefixRegex = regexp.MustCompile(`"statPrefix":[[:space:]]*"[^"]*"`)
 
 func redactStatPrefixes(jsonStr string) string {
 	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
+}
+
+var dnsLookupRegex = regexp.MustCompile(`,[[:space:]]*"dnsLookupFamily":[[:space:]]*"[^"]*"`)
+
+// This needs to be removed as we run tests on ipv4 and ipv6. In ipv4 dnslookupFamily is set to V4_ONLY,
+// and in the case of ipv6 this field is default, so it is missing in the config.
+func redactDnsLookupFamily(jsonStr string) string {
+	return dnsLookupRegex.ReplaceAllString(jsonStr, "")
+}
+
+var dynamicConfigJsonPatch = []byte(`[{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" }]`)
+
+// We can remove dynamic config as this contains dns config which changes in multiple places making it hard to mask
+func redactKumaDynamicConfig(jsonStr string) string {
+	patch, err := jsonpatch.DecodePatch(dynamicConfigJsonPatch)
+	if err != nil {
+		panic(err)
+	}
+
+	options := jsonpatch.NewApplyOptions()
+	options.AllowMissingPathOnRemove = true
+	modified, err := patch.ApplyWithOptions([]byte(jsonStr), options)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(modified)
 }
 
 func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {

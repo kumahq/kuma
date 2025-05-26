@@ -1,0 +1,333 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-control-plane
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - pods
+      - nodes
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
+      - meshgatewayconfigs
+      - meshaccesslogs
+      - meshcircuitbreakers
+      - meshfaultinjections
+      - meshhealthchecks
+      - meshhttproutes
+      - meshloadbalancingstrategies
+      - meshmetrics
+      - meshpassthroughs
+      - meshproxypatches
+      - meshratelimits
+      - meshretries
+      - meshtcproutes
+      - meshtimeouts
+      - meshtlses
+      - meshtraces
+      - meshtrafficpermissions
+      - hostnamegenerators
+      - meshexternalservices
+      - meshmultizoneservices
+      - meshservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-control-plane-workloads
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane-workloads
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-workloads
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+rules:
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kuma-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system

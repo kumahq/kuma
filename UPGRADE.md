@@ -8,6 +8,36 @@ does not have any particular instructions.
 
 ## Upgrade to `2.11.x`
 
+### Embedded Proxy DNS is Enabled by Default
+
+In version `2.11.x`, we reimplemented how mesh DNS queries are resolved by replacing CoreDNS with our Embedded DNS Server. This server is built into `kuma-dp`. After a pod restart (in Kubernetes) or an upgrade of `kuma-dp` (in Universal mode) to `2.11.x`, the embedded DNS proxy is enabled by default.
+
+If you encounter any issues, you can disable it as follows:
+
+**Kubernetes**
+Disable it by setting the environment variable when deploying `kuma-cp`:
+```bash
+KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY=false
+```
+
+Or via configuration:
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+      builtinDns:
+        experimentalProxy: false
+```
+
+**Universal**
+
+Disable it by running `kuma-dp` with the following environment variable:
+
+```bash
+KUMA_DNS_PROXY_PORT=0
+```
+
 ### Introduce an option to skip RBAC creation
 
 By default, we create all RBAC resources required for the mesh to function properly. Since `2.11.x`, it's possible to skip the creation of `ClusterRole`, `ClusterRoleBinding`, `Role`, and `RoleBinding`. We introduced two flags:
@@ -68,6 +98,43 @@ You can later patch namespaces with the following command:
 ```bash
 kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
 ```
+
+### Fixed: Extra Newlines in MeshAccessLog with TCP Backends
+
+This fix affects users of MeshAccessLog policies that send logs to a TCP backend using the `plain` format 
+(or where the format type was not explicitly set):
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp # <--- backend type is 'Tcp'
+            tcp:
+              format:
+                type: Plain 
+                plain: '...' # <--- the format is 'plain' or unspecified
+              address: "%s:9999"
+```
+
+In previous versions of Kuma, logs sent with this setup included **an unintended double newline** between entries, producing output like:
+
+```
+[2025-05-20T14:03:17.123Z] "GET /api/v1/users HTTP/1.1" 200 - "-" "curl/8.1.2" 0 123 45 44 "192.168.1.10" "service-backend" "cluster-backend" "10.0.0.15:8080" "envoy-router" - default
+
+[2025-05-20T14:03:18.456Z] "POST /auth/login HTTP/1.1" 401 - "-" "Mozilla/5.0" 0 98 56 55 "192.168.1.11" "auth-service" "cluster-auth" "10.0.0.20:9090" "envoy-router" - default
+
+[2025-05-20T14:03:19.789Z] "GET /metrics HTTP/1.1" 200 - "-" "Prometheus/2.47.0" 0 6789 12 12 "127.0.0.1" "metrics-service" "cluster-metrics" "127.0.0.1:9100" "envoy-router" - default
+
+```
+This has now been corrected—each log line will end with a single newline `\n`, as intended.
+
+> **Note:** If your logging backend or tooling relied on the previous double-newline behavior (e.g. for framing or parsing), 
+> you can preserve it by manually adding `\n` at the end of your `plain` format string.
 
 ## Upgrade to `2.10.x`
 

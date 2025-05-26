@@ -10,9 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -74,11 +71,16 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		}
 	}
 
-	err := applyToRealResources(util_slices.Filter(rs.List(), core_xds.HasResourceOrigin), policies.ToRules.ResourceRules, ctx.Mesh.Resources)
-	if err != nil {
-		return err
-	}
+	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 
+	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
+		svcCtx := rctx.
+			WithID(kri.NoSectionName(*r.ResourceOrigin)).
+			WithID(*r.ResourceOrigin)
+		if err := applyToRealResource(svcCtx, r); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -269,78 +271,46 @@ func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
 	}
 }
 
-func applyToRealResources(
-	rs []*core_xds.Resource,
-	rules outbound.ResourceRules,
-	reader kri.ResourceReader,
-) error {
-	for _, r := range rs {
-		switch r.ResourceOrigin.ResourceType {
-		case meshservice_api.MeshServiceType:
-		case meshexternalservice_api.MeshExternalServiceType:
-		case meshmultizoneservice_api.MeshMultiZoneServiceType:
-		default:
-			continue
+func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
+	switch envoyResource := r.Resource.(type) {
+	case *envoy_listener.Listener:
+		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf(), Protocol: r.Protocol}
+		if err := configurer.ConfigureListener(envoyResource); err != nil {
+			return err
 		}
 
-		var conf api.Conf
-		if rr := rules.Compute(*r.ResourceOrigin, reader); rr != nil {
-			conf = rr.Conf[0].(api.Conf)
-		}
+		for _, fc := range envoyResource.FilterChains {
+			if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+				for _, vh := range hcm.GetRouteConfig().VirtualHosts {
+					for _, route := range vh.Routes {
+						if !kri.IsValid(route.Name) {
+							continue
+						}
 
-		switch envoyResource := r.Resource.(type) {
-		case *envoy_listener.Listener:
-			configurer := plugin_xds.ListenerConfigurer{Conf: conf, Protocol: r.Protocol}
-			if err := configurer.ConfigureListener(envoyResource); err != nil {
-				return err
-			}
+						id, err := kri.FromString(route.Name)
+						if err != nil {
+							return err
+						}
 
-			for _, fc := range envoyResource.FilterChains {
-				if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
-					return configureRoutes(hcm.GetRouteConfig(), rules, reader)
-				}); err != nil {
-					return err
+						routeCtx := rctx.WithID(id)
+
+						plugin_xds.ConfigureRouteAction(
+							route.GetRoute(),
+							pointer.Deref(routeCtx.Conf().Http).RequestTimeout,
+							pointer.Deref(routeCtx.Conf().Http).StreamIdleTimeout,
+						)
+					}
 				}
-			}
-
-		case *envoy_cluster.Cluster:
-			configurer := plugin_xds.ClusterConfigurerFromConf(conf, r.Protocol)
-			if err := configurer.Configure(envoyResource); err != nil {
+				return nil
+			}); err != nil {
 				return err
 			}
 		}
-	}
-	return nil
-}
 
-func configureRoutes(
-	rc *envoy_route.RouteConfiguration,
-	rules outbound.ResourceRules,
-	reader kri.ResourceReader,
-) error {
-	for _, vh := range rc.VirtualHosts {
-		for _, route := range vh.Routes {
-			if !kri.IsValid(route.Name) {
-				continue
-			}
-
-			id, err := kri.FromString(route.Name)
-			if err != nil {
-				return err
-			}
-
-			rr := rules.Compute(id, reader)
-			if rr == nil {
-				continue
-			}
-
-			conf := rr.Conf[0].(api.Conf)
-
-			plugin_xds.ConfigureRouteAction(
-				route.GetRoute(),
-				pointer.Deref(conf.Http).RequestTimeout,
-				pointer.Deref(conf.Http).StreamIdleTimeout,
-			)
+	case *envoy_cluster.Cluster:
+		configurer := plugin_xds.ClusterConfigurerFromConf(rctx.Conf(), r.Protocol)
+		if err := configurer.Configure(envoyResource); err != nil {
+			return err
 		}
 	}
 	return nil

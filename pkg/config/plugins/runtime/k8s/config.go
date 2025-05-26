@@ -87,9 +87,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				},
 			},
 			BuiltinDNS: BuiltinDNS{
-				Enabled: true,
-				Port:    15053,
-				Logging: false,
+				Enabled:           true,
+				Port:              15053,
+				Logging:           false,
+				ExperimentalProxy: true,
 			},
 			EBPF: EBPF{
 				Enabled:              false,
