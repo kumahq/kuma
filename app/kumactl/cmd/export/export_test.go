@@ -67,7 +67,7 @@ var _ = Describe("kumactl export", func() {
 	DescribeTable("should succeed",
 		func(given testCase) {
 			for _, res := range given.resources {
-				err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
+				err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()), core_store.CreateWithLabels(res.GetMeta().GetLabels()))
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -122,6 +122,7 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshAccessLogWithFileBackend(),
 				samples.Retry(),
 				samples.MeshTimeoutInCustomNamespace(),
+				samples.MeshAccessLogWithZoneOriginLabel(),
 				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
 				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinCertSecretName("mesh-with-mtls", "ca-1")).Build(),
 				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinKeySecretName("mesh-with-mtls", "ca-1")).Build(),
@@ -159,7 +160,22 @@ var _ = Describe("kumactl export", func() {
 				"--profile", "federation-with-policies",
 				"--format=kubernetes",
 			},
-			goldenFile: "export-federation-with-policies.golden.yaml",
+			goldenFile: "export-kube-federation-with-policies.golden.yaml",
+		}),
+		Entry("universal profile=federation-with-policies", testCase{
+			resources: []model.Resource{
+				samples.MeshDefault(),
+				samples.SampleSigningKeyGlobalSecret(),
+				samples.MeshAccessLogWithFileBackend(),
+				samples.Retry(),
+				samples.DataplaneBackend(),
+				samples.MeshAccessLogWithZoneOriginLabel(),
+			},
+			args: []string{
+				"--profile", "federation-with-policies",
+				"--format=universal",
+			},
+			goldenFile: "export-uni-federation-with-policies.golden.yaml",
 		}),
 	)
 
