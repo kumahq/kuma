@@ -322,6 +322,13 @@ func addResourcesEndpoints(
 			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+			if definition.AlternativeWsPath != "" {
+				ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				ep.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
+			}
 		default:
 			switch definition.Scope {
 			case model.ScopeMesh:
@@ -330,11 +337,24 @@ func addResourcesEndpoints(
 				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 				endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+				if definition.AlternativeWsPath != "" {
+					endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+					endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+					endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+					endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+					endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
+				}
 			case model.ScopeGlobal:
 				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
 				endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
 				endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
 				endpoints.addListEndpoint(ws, "/"+definition.WsPath)
+				if definition.AlternativeWsPath != "" {
+					endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
+					endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
+					endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
+					endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
+				}
 			}
 		}
 	}

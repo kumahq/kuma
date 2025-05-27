@@ -20,8 +20,10 @@ message ZoneIngress {
   // zones.
   option (kuma.mesh.resource).kds =
       "model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag";
-  option (kuma.mesh.resource).ws.name = "zone-ingress";
-  option (kuma.mesh.resource).ws.plural = "zone-ingresses";
+  option (kuma.mesh.resource).ws.name = "zoneingress";
+  option (kuma.mesh.resource).ws.plural = "zoneingresses";
+  option (kuma.mesh.resource).ws.alias_name = "zone-ingress";
+  option (kuma.mesh.resource).ws.alias_plural = "zone-ingresses";
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
   option (kuma.mesh.resource).short_name = "zi";
