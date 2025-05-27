@@ -117,6 +117,7 @@ func GetGatewayListenerName(gatewayName string, protoName string, port uint32) s
 	return Join(gatewayName, protoName, formatPort(port))
 }
 
+// ParseGatewayListenerName returns gateway name, protocol and port
 func ParseGatewayListenerName(listenerName string) (string, string, uint32, error) {
 	parts := strings.Split(listenerName, Separator)
 	if len(parts) != 3 {
