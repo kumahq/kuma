@@ -12,7 +12,7 @@ filterChains:
           metadataFilter:
             matchIfKeyNotFound: true
             matcher:
-              filter: envoy.access_loggers.file
+              filter: kuma.routes
               path:
               - key: route_kri
               value:
@@ -29,7 +29,7 @@ filterChains:
           metadataFilter:
             matchIfKeyNotFound: false
             matcher:
-              filter: envoy.access_loggers.file
+              filter: kuma.routes
               path:
               - key: route_kri
               value:
@@ -47,7 +47,7 @@ filterChains:
           metadataFilter:
             matchIfKeyNotFound: false
             matcher:
-              filter: envoy.access_loggers.file
+              filter: kuma.routes
               path:
               - key: route_kri
               value:
@@ -66,11 +66,11 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
           defaultSourceCode:
-            inlineString: |-
+            inlineString: |
               function envoy_on_request(handle)
                 local meta = handle:metadata():get("route_kri")
                 if meta ~= nil then
-                  handle:streamInfo():dynamicMetadata():set("envoy.access_loggers.file", "route_kri", meta)
+                  handle:streamInfo():dynamicMetadata():set("kuma.routes", "route_kri", meta)
                 end
               end
       - name: envoy.filters.http.router

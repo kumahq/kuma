@@ -4,7 +4,6 @@ import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -37,6 +36,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"bytes"
+	"text/template"
+	"slices"
+	"maps"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -343,6 +346,8 @@ func applyToRealResource(
 		return err
 	}
 
+	routesIds := slices.SortedStableFunc(maps.Keys(routesConfs), kri.Compare)
+
 	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesConfs), func(conf api.Conf) bool {
 		return len(pointer.Deref(conf.Backends)) > 0
 	})) > 0
@@ -351,7 +356,7 @@ func applyToRealResource(
 		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 			ConfigureIf(r.Protocol.IsHTTPBased(), func() Configurer[envoy_accesslog.AccessLog] {
 				return bldrs_al.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
-					Configure(bldrs_matcher.Key(envoy_wellknown.FileAccessLog, routeMetadataKey)).
+					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.NullValue()))
 			})
 	}
@@ -360,7 +365,7 @@ func applyToRealResource(
 		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 				Configure(bldrs_al.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
-					Configure(bldrs_matcher.Key(envoy_wellknown.FileAccessLog, routeMetadataKey)).
+					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.ExactValue(routeID.String()))))
 		}
 	}
@@ -374,16 +379,16 @@ func applyToRealResource(
 					return bldrs_route.Metadata(routeMetadataKey, id.String())
 				}))).
 		Configure(bldrs_listener.AccessLogs(
-			util_maps.FlatMapKV(
-				routesConfs,
-				func(id kri.Identifier, conf api.Conf) []*Builder[envoy_accesslog.AccessLog] {
+			util_slices.FlatMap(
+				routesIds,
+				func(id kri.Identifier) []*Builder[envoy_accesslog.AccessLog] {
 					return util_slices.Map(
-						pointer.Deref(conf.Backends),
+						pointer.Deref(routesConfs[id].Backends),
 						builderForRouteBackend(id),
 					)
 				}))).
 		ConfigureIf(hasAtLeastOneBackend, func() Configurer[envoy_listener.Listener] {
-			return bldrs_listener.HCM(hcm.LuaFilterAddFirst(luaFilter))
+			return bldrs_listener.HCM(hcm.LuaFilterAddFirst(setFilterMetadataAsDynamicLuaFilter(namespace, routeMetadataKey)))
 		}).
 		Modify()
 }
@@ -405,10 +410,26 @@ func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext
 }
 
 const routeMetadataKey = "route_kri"
+const namespace = "kuma.routes"
 
-var luaFilter = `function envoy_on_request(handle)
-  local meta = handle:metadata():get("route_kri")
+var luaTemplate = template.Must(template.New("luaFilter").Parse(`function envoy_on_request(handle)
+  local meta = handle:metadata():get("{{ .Key }}")
   if meta ~= nil then
-    handle:streamInfo():dynamicMetadata():set("envoy.access_loggers.file", "route_kri", meta)
+    handle:streamInfo():dynamicMetadata():set("{{ .Namespace }}", "{{ .Key }}", meta)
   end
-end`
+end
+`))
+
+// setFilterMetadataAsDynamicLuaFilter returns a Lua filter that takes filter's metadata (set by the route)
+// and set's this as a dynamic metadata (used by the AccessLog filter)
+func setFilterMetadataAsDynamicLuaFilter(namespace, key string) string {
+	var buf bytes.Buffer
+	_ = luaTemplate.Execute(&buf, struct {
+		Namespace string
+		Key       string
+	}{
+		Namespace: namespace,
+		Key:       key,
+	})
+	return buf.String()
+}

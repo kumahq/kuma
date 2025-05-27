@@ -16,7 +16,7 @@ func Key(filter, key string) Configurer[matcherv3.MetadataMatcher] {
 		m.Path = []*matcherv3.MetadataMatcher_PathSegment{
 			{
 				Segment: &matcherv3.MetadataMatcher_PathSegment_Key{
-					Key: "route_kri",
+					Key: key,
 				},
 			},
 		}

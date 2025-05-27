@@ -28,11 +28,3 @@ func MapValues[K comparable, V any, R any](input map[K]V, f func(K, V) R) map[K]
 	}
 	return output
 }
-
-func FlatMapKV[K comparable, V any, R any](m map[K]V, f func(K, V) []R) []R {
-	var result []R
-	for k, v := range m {
-		result = append(result, f(k, v)...)
-	}
-	return result
-}

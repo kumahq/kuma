@@ -12,7 +12,7 @@ filterChains:
           metadataFilter:
             matchIfKeyNotFound: true
             matcher:
-              filter: envoy.access_loggers.file
+              filter: kuma.routes
               path:
               - key: route_kri
               value:
