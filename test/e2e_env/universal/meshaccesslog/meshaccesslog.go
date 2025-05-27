@@ -297,9 +297,6 @@ spec:
              address: "%s:9999"
 `, meshName, "per-route,%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%,%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%", tcpSinkDockerName))(universal.Cluster)).To(Succeed())
 
-		// for {
-		//	time.Sleep(1 * time.Hour)
-		//}
 		// then
 		By("checking traffic is logged by the 'per-route' MeshAccessLog")
 		Eventually(func(g Gomega) {
