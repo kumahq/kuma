@@ -1,11 +1,12 @@
 package route
 
 import (
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/kumahq/kuma/pkg/envoy/builders/common"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/kumahq/kuma/pkg/envoy/builders/common"
 )
 
 func Metadata(key, value string) common.Configurer[routev3.Route] {

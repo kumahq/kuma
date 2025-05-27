@@ -1,10 +1,12 @@
 package v1alpha1
 
 import (
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -13,8 +15,10 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_al "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/pkg/envoy/builders/filter/network/hcm"
 	bldrs_listener "github.com/kumahq/kuma/pkg/envoy/builders/listener"
 	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
+	bldrs_route "github.com/kumahq/kuma/pkg/envoy/builders/route"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
@@ -24,6 +28,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -32,10 +37,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/envoy/builders/filter/network/hcm"
-	bldrs_route "github.com/kumahq/kuma/pkg/envoy/builders/route"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -396,7 +397,6 @@ func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext
 		if conf, isDirect := svcCtx.WithID(id).DirectConf(); isDirect {
 			routes[id] = conf
 		}
-
 	}); err != nil {
 		return nil, err
 	}
