@@ -17,7 +17,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	bldrs_al "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
+	bldrs_accesslog "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	"github.com/kumahq/kuma/pkg/envoy/builders/filter/network/hcm"
 	bldrs_listener "github.com/kumahq/kuma/pkg/envoy/builders/listener"
@@ -356,7 +356,7 @@ func applyToRealResource(
 	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 			ConfigureIf(r.Protocol.IsHTTPBased(), func() Configurer[envoy_accesslog.AccessLog] {
-				return bldrs_al.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
+				return bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
 					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.NullValue()))
 			})
@@ -365,7 +365,7 @@ func applyToRealResource(
 	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
-				Configure(bldrs_al.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
+				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
 					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.ExactValue(routeID.String()))))
 		}

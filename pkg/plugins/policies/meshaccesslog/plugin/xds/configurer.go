@@ -16,7 +16,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	bldrs_al "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
+	bldrs_accesslog "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -44,22 +44,22 @@ func BaseAccessLogBuilder(
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) *Builder[envoy_accesslog.AccessLog] {
-	return bldrs_al.NewBuilder().
+	return bldrs_accesslog.NewBuilder().
 		ConfigureIf(backend.Tcp != nil, func() Configurer[envoy_accesslog.AccessLog] {
-			return bldrs_al.Config(envoy_wellknown.FileAccessLog, bldrs_al.NewFileBuilder().
+			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
 				Configure(TCPBackendSFS(backend.Tcp, defaultFormat, values)).
-				Configure(bldrs_al.Path(accessLogSocketPath)))
+				Configure(bldrs_accesslog.Path(accessLogSocketPath)))
 		}).
 		ConfigureIf(backend.File != nil, func() Configurer[envoy_accesslog.AccessLog] {
-			return bldrs_al.Config(envoy_wellknown.FileAccessLog, bldrs_al.NewFileBuilder().
+			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
 				Configure(FileBackendSFS(backend.File, defaultFormat, values)).
-				Configure(bldrs_al.Path(backend.File.Path)))
+				Configure(bldrs_accesslog.Path(backend.File.Path)))
 		}).
 		ConfigureIf(backend.OpenTelemetry != nil, func() Configurer[envoy_accesslog.AccessLog] {
-			return bldrs_al.Config("envoy.access_loggers.open_telemetry", bldrs_al.NewOtelBuilder().
+			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
 				Configure(OtelAttributes(backend.OpenTelemetry)).
-				Configure(bldrs_al.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
+				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
 					EndpointForOtel(backend.OpenTelemetry.Endpoint),
 				)))),
 			)
