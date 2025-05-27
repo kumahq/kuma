@@ -1,6 +1,11 @@
 package v1alpha1
 
 import (
+	"bytes"
+	"maps"
+	"slices"
+	"text/template"
+
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -36,10 +41,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	"bytes"
-	"text/template"
-	"slices"
-	"maps"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -409,8 +410,10 @@ func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext
 	return routes, nil
 }
 
-const routeMetadataKey = "route_kri"
-const namespace = "kuma.routes"
+const (
+	routeMetadataKey = "route_kri"
+	namespace        = "kuma.routes"
+)
 
 var luaTemplate = template.Must(template.New("luaFilter").Parse(`function envoy_on_request(handle)
   local meta = handle:metadata():get("{{ .Key }}")
