@@ -304,13 +304,14 @@ func configureListener(
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) error {
-	listenerModifier := NewModifier(listener)
-	for _, backend := range pointer.Deref(conf.Backends) {
-		listenerModifier.Configure(bldrs_listener.AccessLogs([]*Builder[envoy_accesslog.AccessLog]{
-			BaseAccessLogBuilder(backend, defaultFormat, backendsAcc, values, accessLogSocketPath),
-		}))
-	}
-	return listenerModifier.Modify()
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(
+			util_slices.Map(
+				pointer.Deref(conf.Backends),
+				func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+					return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, values, accessLogSocketPath)
+				}))).
+		Modify()
 }
 
 func applyToRealResource(
