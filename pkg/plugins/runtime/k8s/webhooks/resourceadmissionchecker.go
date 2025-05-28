@@ -107,9 +107,8 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 				return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ZoneTag, c.ZoneName, zoneTag))
 			}
 		}
-
 	}
-	
+
 	return nil
 }
 
