@@ -2,7 +2,7 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. 'kuma.io/origin' label should have global value,
+  message: Operation not allowed. 'kuma.io/origin' label should have 'global' value,
     got 'zone'
   metadata: {}
   reason: Forbidden
