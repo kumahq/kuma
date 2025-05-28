@@ -86,7 +86,7 @@ func DefaultContext(
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile_v2.If(
 			// we don't want status field from global to be synced to the zone
-			reconcile_v2.HasStatus(),
+			reconcile_v2.HasStatus,
 			RemoveStatus()),
 		reconcile_v2.If(func(resource core_model.Resource) bool {
 			// There's a handful of resource types for which we keep the name unchanged

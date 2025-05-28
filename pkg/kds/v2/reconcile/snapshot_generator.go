@@ -47,10 +47,8 @@ func IsKubernetes(storeType config_store.StoreType) func(model.Resource) bool {
 	}
 }
 
-func HasStatus() func(model.Resource) bool {
-	return func(r model.Resource) bool {
-		return r.Descriptor().HasStatus
-	}
+func HasStatus(r model.Resource) bool {
+	return r.Descriptor().HasStatus
 }
 
 func NameHasPrefix(prefix string) func(model.Resource) bool {
