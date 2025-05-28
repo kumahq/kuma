@@ -9,7 +9,7 @@
             "metadataFilter": {
               "matchIfKeyNotFound": false,
               "matcher": {
-                "filter": "envoy.access_loggers.file",
+                "filter": "kuma.routes",
                 "path": [
                   {
                     "key": "route_kri"
@@ -49,7 +49,7 @@
         "typedConfig": {
           "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
           "defaultSourceCode": {
-            "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"envoy.access_loggers.file\", \"route_kri\", meta)\n  end\nend"
+            "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"kuma.routes\", \"route_kri\", meta)\n  end\nend\n"
           }
         }
       }
@@ -812,7 +812,7 @@
                         "metadataFilter": {
                           "matchIfKeyNotFound": false,
                           "matcher": {
-                            "filter": "envoy.access_loggers.file",
+                            "filter": "kuma.routes",
                             "path": [
                               {
                                 "key": "route_kri"
@@ -852,7 +852,7 @@
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
                         "defaultSourceCode": {
-                          "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"envoy.access_loggers.file\", \"route_kri\", meta)\n  end\nend"
+                          "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"kuma.routes\", \"route_kri\", meta)\n  end\nend\n"
                         }
                       }
                     },
