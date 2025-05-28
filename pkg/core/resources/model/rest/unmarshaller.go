@@ -105,7 +105,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		}
 
 		if _, found := rawObj["status"]; opts.SkipStatus && found {
-			rawObj["status"] = struct{}{}
+			delete(rawObj, "status")
 		}
 
 		// Apply defaulting
