@@ -85,19 +85,16 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 			return forbiddenResponse(err.Error())
 		}
 	}
-	if c.DisableOriginLabelValidation {
-		return nil
-	}
 	switch c.Mode {
 	case core.Global:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
+		if !c.DisableOriginLabelValidation && originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
 			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
 		}
 	// nolint:staticcheck
 	case core.Zone, core.Standalone:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if ns == c.SystemNamespace {
+		if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
 			if !originPresent || resourceOrigin != mesh_proto.ZoneResourceOrigin {
 				return c.resourceIsNotAllowedResponse()
 			}
