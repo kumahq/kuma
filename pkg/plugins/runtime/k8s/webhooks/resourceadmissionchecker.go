@@ -63,7 +63,7 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 }
 
 func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {
-	// we don't need to validate fedarated zone and legacy policies
+	// we don't need to validate non fedarated zone and legacy policies
 	if (c.Mode != core.Global && !c.FederatedZone) || !r.Descriptor().IsPluginOriginated {
 		return nil
 	}
@@ -80,33 +80,36 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 }
 
 func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
-	if !c.DisableOriginLabelValidation {
-		switch c.Mode {
-		case core.Global:
-			resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-			if !c.DisableOriginLabelValidation && originPresent && resourceOrigin != mesh_proto.GlobalResourceOrigin {
-				return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, "global", string(resourceOrigin)))
-			}
-		default:
-			resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-			if ns == c.SystemNamespace {
-				if !originPresent || resourceOrigin != mesh_proto.ZoneResourceOrigin {
-					return c.resourceIsNotAllowedResponse()
-				}
-			}
-			if originPresent && resourceOrigin != mesh_proto.GlobalResourceOrigin {
-				zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-				if ok && zoneTag != c.ZoneName {
-					return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ZoneTag, c.ZoneName, zoneTag))
-				}
-			}
-			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-				if _, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), core_model.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
-					return forbiddenResponse(err.Error())
-				}
-			}
+	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy && c.Mode == core.Zone {
+		if _, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), core_model.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
+			return forbiddenResponse(err.Error())
 		}
 	}
+	if c.DisableOriginLabelValidation {
+		return nil
+	}
+	switch c.Mode {
+	case core.Global:
+		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
+		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
+			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
+		}
+	case core.Zone, core.Standalone:
+		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
+		if ns == c.SystemNamespace {
+			if !originPresent || resourceOrigin != mesh_proto.ZoneResourceOrigin {
+				return c.resourceIsNotAllowedResponse()
+			}
+		}
+		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
+			zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+			if ok && zoneTag != c.ZoneName {
+				return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ZoneTag, c.ZoneName, zoneTag))
+			}
+		}
+
+	}
+	
 	return nil
 }
 

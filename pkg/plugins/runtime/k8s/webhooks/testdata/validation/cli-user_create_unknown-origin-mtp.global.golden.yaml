@@ -1,10 +1,16 @@
 Patches: null
 allowed: false
 status:
-  code: 403
-  message: Operation not allowed. 'kuma.io/origin' label should have global value,
-    got 'unknownvalue'
+  code: 422
+  details:
+    causes:
+    - field: labels["kuma.io/origin"]
+      message: unknown resource origin "unknownvalue"
+      reason: FieldValueInvalid
+    kind: MeshTrafficPermission
+    name: mtp-es
+  message: 'labels["kuma.io/origin"]: unknown resource origin "unknownvalue"'
   metadata: {}
-  reason: Forbidden
+  reason: Invalid
   status: Failure
 uid: "12345"
