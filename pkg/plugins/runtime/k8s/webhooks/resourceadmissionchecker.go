@@ -94,6 +94,7 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
 			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
 		}
+	// nolint:staticcheck
 	case core.Zone, core.Standalone:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
 		if ns == c.SystemNamespace {
@@ -108,7 +109,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 			}
 		}
 	}
-
 	return nil
 }
 
