@@ -1,11 +1,14 @@
 package v1alpha1
 
 import (
+	"bytes"
+	"maps"
+	"slices"
+	"text/template"
+
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -14,8 +17,12 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
+	bldrs_accesslog "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/pkg/envoy/builders/filter/network/hcm"
+	bldrs_listener "github.com/kumahq/kuma/pkg/envoy/builders/listener"
+	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
+	bldrs_route "github.com/kumahq/kuma/pkg/envoy/builders/route"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
@@ -25,6 +32,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -80,20 +88,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(*r.ResourceOrigin)).
 			WithID(*r.ResourceOrigin)
-
-		kumaValues := listeners_v3.KumaValues{
-			SourceService:      proxy.Dataplane.Spec.GetIdentifyingService(),
-			SourceIP:           proxy.Dataplane.GetIP(),
-			DestinationService: r.ResourceOrigin.Name,
-			Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
-			TrafficDirection:   envoy.TrafficDirectionOutbound,
-		}
-
-		switch envoyResource := r.Resource.(type) {
-		case *envoy_listener.Listener:
-			if err := configureListener(svcCtx.Conf(), envoyResource, endpoints, r.Protocol, kumaValues, accessLogSocketPath); err != nil {
-				return err
-			}
+		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath); err != nil {
+			return err
 		}
 	}
 
@@ -131,7 +127,7 @@ func applyToInbounds(
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
-		if err := configureListener(conf, listener, backends, protocol, kumaValues, accessLogSocketPath); err != nil {
+		if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
 			return err
 		}
 	}
@@ -171,7 +167,7 @@ func applyToOutbounds(
 		}
 
 		protocol := meshCtx.GetServiceProtocol(serviceName)
-		if err := configureListener(*conf, listener, backendsAcc, protocol, kumaValues, accessLogSocketPath); err != nil {
+		if err := configureListener(*conf, listener, backendsAcc, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
 			return err
 		}
 	}
@@ -280,7 +276,7 @@ func applyToGateway(
 					TrafficDirection:   envoy.TrafficDirectionOutbound,
 				}
 
-				if err := configureListener(*conf, listener, backends, protocol, kumaValues, path); err != nil {
+				if err := configureListener(*conf, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
 					return err
 				}
 			}
@@ -295,7 +291,7 @@ func applyToGateway(
 				Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
 				TrafficDirection:   envoy.TrafficDirectionInbound,
 			}
-			if err := configureListener(conf, listener, backends, protocol, kumaValues, path); err != nil {
+			if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
 				return err
 			}
 		}
@@ -308,52 +304,135 @@ func configureListener(
 	conf api.Conf,
 	listener *envoy_listener.Listener,
 	backendsAcc *EndpointAccumulator,
-	protocol core_mesh.Protocol,
+	defaultFormat string,
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) error {
-	defaultFmt := DefaultFormat(protocol)
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(
+			util_slices.Map(
+				pointer.Deref(conf.Backends),
+				func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+					return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, values, accessLogSocketPath)
+				}))).
+		Modify()
+}
 
-	for _, backend := range pointer.Deref(conf.Backends) {
-		accessLog, err := accesslog.NewBuilder().
-			ConfigureIf(backend.Tcp != nil, func() Configurer[envoy_accesslog.AccessLog] {
-				return accesslog.Config(envoy_wellknown.FileAccessLog, accesslog.NewFileBuilder().
-					Configure(TCPBackendSFS(backend.Tcp, defaultFmt, values)).
-					Configure(accesslog.Path(accessLogSocketPath)))
-			}).
-			ConfigureIf(backend.File != nil, func() Configurer[envoy_accesslog.AccessLog] {
-				return accesslog.Config(envoy_wellknown.FileAccessLog, accesslog.NewFileBuilder().
-					Configure(FileBackendSFS(backend.File, defaultFmt, values)).
-					Configure(accesslog.Path(backend.File.Path)))
-			}).
-			ConfigureIf(backend.OpenTelemetry != nil, func() Configurer[envoy_accesslog.AccessLog] {
-				return accesslog.Config("envoy.access_loggers.open_telemetry", accesslog.NewOtelBuilder().
-					Configure(OtelBody(backend.OpenTelemetry, defaultFmt, values)).
-					Configure(OtelAttributes(backend.OpenTelemetry)).
-					Configure(accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
-						EndpointForOtel(backend.OpenTelemetry.Endpoint),
-					)))),
-				)
-			}).
-			Build()
-		if err != nil {
-			return err
-		}
+func applyToRealResource(
+	rctx *outbound.ResourceContext[api.Conf],
+	r *core_xds.Resource,
+	proxy *core_xds.Proxy,
+	backendsAcc *EndpointAccumulator,
+	accessLogSocketPath string,
+) error {
+	listener, ok := r.Resource.(*envoy_listener.Listener)
+	if !ok {
+		return nil
+	}
 
-		for _, chain := range listener.FilterChains {
-			if err := listeners_v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-				hcm.AccessLog = append(hcm.AccessLog, accessLog)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := listeners_v3.UpdateTCPProxy(chain, func(tcpProxy *envoy_tcp.TcpProxy) error {
-				tcpProxy.AccessLog = append(tcpProxy.AccessLog, accessLog)
-				return nil
-			}); err != nil {
-				return err
-			}
+	defaultFormat := DefaultFormat(r.Protocol)
+
+	kumaValues := listeners_v3.KumaValues{
+		SourceService:      proxy.Dataplane.Spec.GetIdentifyingService(),
+		SourceIP:           proxy.Dataplane.GetIP(),
+		DestinationService: r.ResourceOrigin.Name,
+		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
+		TrafficDirection:   envoy.TrafficDirectionOutbound,
+	}
+
+	backends := pointer.Deref(rctx.Conf().Backends)
+
+	routesConfs, err := buildRoutesMap(listener, rctx)
+	if err != nil {
+		return err
+	}
+
+	routesIds := slices.SortedStableFunc(maps.Keys(routesConfs), kri.Compare)
+
+	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesConfs), func(conf api.Conf) bool {
+		return len(pointer.Deref(conf.Backends)) > 0
+	})) > 0
+
+	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+			ConfigureIf(r.Protocol.IsHTTPBased(), func() Configurer[envoy_accesslog.AccessLog] {
+				return bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
+					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
+					Configure(bldrs_matcher.NullValue()))
+			})
+	}
+
+	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
+					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
+					Configure(bldrs_matcher.ExactValue(routeID.String()))))
 		}
 	}
-	return nil
+
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(util_slices.Map(backends, builderForSharedBackend))).
+		Configure(bldrs_listener.Routes(
+			util_maps.MapValues(
+				routesConfs,
+				func(id kri.Identifier, _ api.Conf) Configurer[routev3.Route] {
+					return bldrs_route.Metadata(routeMetadataKey, id.String())
+				}))).
+		Configure(bldrs_listener.AccessLogs(
+			util_slices.FlatMap(
+				routesIds,
+				func(id kri.Identifier) []*Builder[envoy_accesslog.AccessLog] {
+					return util_slices.Map(
+						pointer.Deref(routesConfs[id].Backends),
+						builderForRouteBackend(id),
+					)
+				}))).
+		ConfigureIf(hasAtLeastOneBackend, func() Configurer[envoy_listener.Listener] {
+			return bldrs_listener.HCM(hcm.LuaFilterAddFirst(setFilterMetadataAsDynamicLuaFilter(namespace, routeMetadataKey)))
+		}).
+		Modify()
+}
+
+func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext[api.Conf]) (map[kri.Identifier]api.Conf, error) {
+	routes := map[kri.Identifier]api.Conf{}
+	if err := bldrs_listener.TraverseRoutes(l, func(route *routev3.Route) {
+		if !kri.IsValid(route.Name) {
+			return
+		}
+		id, _ := kri.FromString(route.Name)
+		if conf, isDirect := svcCtx.WithID(id).DirectConf(); isDirect {
+			routes[id] = conf
+		}
+	}); err != nil {
+		return nil, err
+	}
+	return routes, nil
+}
+
+const (
+	routeMetadataKey = "route_kri"
+	namespace        = "kuma.routes"
+)
+
+var luaTemplate = template.Must(template.New("luaFilter").Parse(`function envoy_on_request(handle)
+  local meta = handle:metadata():get("{{ .Key }}")
+  if meta ~= nil then
+    handle:streamInfo():dynamicMetadata():set("{{ .Namespace }}", "{{ .Key }}", meta)
+  end
+end
+`))
+
+// setFilterMetadataAsDynamicLuaFilter returns a Lua filter that takes filter's metadata (set by the route)
+// and set's this as a dynamic metadata (used by the AccessLog filter)
+func setFilterMetadataAsDynamicLuaFilter(namespace, key string) string {
+	var buf bytes.Buffer
+	_ = luaTemplate.Execute(&buf, struct {
+		Namespace string
+		Key       string
+	}{
+		Namespace: namespace,
+		Key:       key,
+	})
+	return buf.String()
 }

@@ -5,6 +5,22 @@
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/accessLog",
       "value": [
         {
+          "filter": {
+            "metadataFilter": {
+              "matchIfKeyNotFound": true,
+              "matcher": {
+                "filter": "kuma.routes",
+                "path": [
+                  {
+                    "key": "route_kri"
+                  }
+                ],
+                "value": {
+                  "nullMatch": {}
+                }
+              }
+            }
+          },
           "name": "envoy.access_loggers.file",
           "typedConfig": {
             "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
@@ -806,6 +822,22 @@
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
                   "accessLog": [
                     {
+                      "filter": {
+                        "metadataFilter": {
+                          "matchIfKeyNotFound": true,
+                          "matcher": {
+                            "filter": "kuma.routes",
+                            "path": [
+                              {
+                                "key": "route_kri"
+                              }
+                            ],
+                            "value": {
+                              "nullMatch": {}
+                            }
+                          }
+                        }
+                      },
                       "name": "envoy.access_loggers.file",
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",

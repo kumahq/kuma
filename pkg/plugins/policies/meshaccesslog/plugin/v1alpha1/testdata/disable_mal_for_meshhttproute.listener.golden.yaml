@@ -24,7 +24,7 @@ filterChains:
             textFormatSource:
               inlineString: |
                 [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "other-meshservice-http" "127.0.0.1" "%UPSTREAM_HOST%"
-          path: /tmp/log
+          path: /tmp/meshservice/log
       httpFilters:
       - name: envoy.filters.http.router
         typedConfig:
@@ -48,7 +48,47 @@ filterChains:
           - '*'
           name: default_other-meshservice-http_other-ns_zone-1_msvc_27777
           routes:
-          - match: {}
+          - match:
+              path: /route-1
+            name: kri_mhttpr_default___route-1_
+            route:
+              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              timeout: 0s
+          - match:
+              prefix: /route-1/
+            name: kri_mhttpr_default___route-1_
+            route:
+              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              timeout: 0s
+          - match:
+              path: /route-2
+            metadata:
+              filterMetadata:
+                envoy.filters.http.lua:
+                  route_kri: kri_mhttpr_default___route-2_
+            name: kri_mhttpr_default___route-2_
+            route:
+              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              timeout: 0s
+          - match:
+              prefix: /route-2/
+            metadata:
+              filterMetadata:
+                envoy.filters.http.lua:
+                  route_kri: kri_mhttpr_default___route-2_
+            name: kri_mhttpr_default___route-2_
+            route:
+              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              timeout: 0s
+          - match:
+              path: /route-3
+            name: kri_mhttpr_default___route-3_
+            route:
+              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              timeout: 0s
+          - match:
+              prefix: /route-3/
+            name: kri_mhttpr_default___route-3_
             route:
               cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
               timeout: 0s

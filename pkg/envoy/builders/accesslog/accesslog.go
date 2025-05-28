@@ -6,8 +6,10 @@ import (
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -34,6 +36,24 @@ func Config[R any](name string, builder *Builder[R]) Configurer[envoy_accesslog.
 		accessLog.Name = name
 		accessLog.ConfigType = &envoy_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshaled,
+		}
+		return nil
+	}
+}
+
+func MetadataFilter(matchIfKeyNotFound bool, matcherBuilder *Builder[matcherv3.MetadataMatcher]) Configurer[envoy_accesslog.AccessLog] {
+	return func(accessLog *envoy_accesslog.AccessLog) error {
+		matcher, err := matcherBuilder.Build()
+		if err != nil {
+			return err
+		}
+		accessLog.Filter = &envoy_accesslog.AccessLogFilter{
+			FilterSpecifier: &envoy_accesslog.AccessLogFilter_MetadataFilter{
+				MetadataFilter: &envoy_accesslog.MetadataFilter{
+					MatchIfKeyNotFound: &wrapperspb.BoolValue{Value: matchIfKeyNotFound},
+					Matcher:            matcher,
+				},
+			},
 		}
 		return nil
 	}

@@ -2,6 +2,24 @@
   "diff": [
     {
       "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:3000/filterChains/0/filters/0/typedConfig/accessLog",
+      "value": [
+        {
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "textFormatSource": {
+                "inlineString": "logging to Mesh\n"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        }
+      ]
+    },
+    {
+      "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/accessLog",
       "value": [
         {
@@ -25,13 +43,147 @@
           "typedConfig": {
             "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
             "logFormat": {
-              "jsonFormat": {
-                "Destination": "%test-server%",
-                "HeaderCamel": "%%REQ(X-Test)%%",
-                "HeaderCrazy": "%%REQ(X-TeSt)%%",
-                "HeaderLower": "%%REQ(x-test)%%",
-                "Source": "%demo-client%",
-                "Start": "%%START_TIME(%%s)%%"
+              "textFormatSource": {
+                "inlineString": "logging to MeshService\n"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        },
+        {
+          "filter": {
+            "metadataFilter": {
+              "matchIfKeyNotFound": false,
+              "matcher": {
+                "filter": "kuma.routes",
+                "path": [
+                  {
+                    "key": "route_kri"
+                  }
+                ],
+                "value": {
+                  "stringMatch": {
+                    "exact": "kri_mhttpr_envoyconfig_kuma-3__test-route_"
+                  }
+                }
+              }
+            }
+          },
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "textFormatSource": {
+                "inlineString": "logging to MeshHTTPRoute\n"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        }
+      ]
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/httpFilters/0",
+      "value": {
+        "name": "envoy.filters.http.lua",
+        "typedConfig": {
+          "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
+          "defaultSourceCode": {
+            "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"kuma.routes\", \"route_kri\", meta)\n  end\nend\n"
+          }
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0",
+      "value": {
+        "match": {
+          "prefix": "/test/"
+        },
+        "metadata": {
+          "filterMetadata": {
+            "envoy.filters.http.lua": {
+              "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_"
+            }
+          }
+        },
+        "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_",
+        "requestHeadersToAdd": [
+          {
+            "header": {
+              "key": "x-test-header",
+              "value": "added-by-policy"
+            }
+          }
+        ],
+        "route": {
+          "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
+          "idleTimeout": "1800s",
+          "timeout": "15s"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0",
+      "value": {
+        "match": {
+          "path": "/test"
+        },
+        "metadata": {
+          "filterMetadata": {
+            "envoy.filters.http.lua": {
+              "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_"
+            }
+          }
+        },
+        "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_",
+        "requestHeadersToAdd": [
+          {
+            "header": {
+              "key": "x-test-header",
+              "value": "added-by-policy"
+            }
+          }
+        ],
+        "route": {
+          "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
+          "idleTimeout": "1800s",
+          "timeout": "15s"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:passthrough:ipv4/filterChains/0/filters/0/typedConfig/accessLog",
+      "value": [
+        {
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "textFormatSource": {
+                "inlineString": "logging to Mesh\n"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        }
+      ]
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:passthrough:ipv6/filterChains/0/filters/0/typedConfig/accessLog",
+      "value": [
+        {
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "textFormatSource": {
+                "inlineString": "logging to Mesh\n"
               }
             },
             "path": "/dev/stdout"
@@ -700,6 +852,20 @@
                 "name": "envoy.filters.network.tcp_proxy",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
+                  "accessLog": [
+                    {
+                      "name": "envoy.access_loggers.file",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "textFormatSource": {
+                            "inlineString": "logging to Mesh\n"
+                          }
+                        },
+                        "path": "/dev/stdout"
+                      }
+                    }
+                  ],
                   "cluster": "envoyconfig_demo-client__kuma-3_msvc_3000",
                   "idleTimeout": "3600s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
@@ -753,13 +919,38 @@
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
                         "logFormat": {
-                          "jsonFormat": {
-                            "Destination": "%test-server%",
-                            "HeaderCamel": "%%REQ(X-Test)%%",
-                            "HeaderCrazy": "%%REQ(X-TeSt)%%",
-                            "HeaderLower": "%%REQ(x-test)%%",
-                            "Source": "%demo-client%",
-                            "Start": "%%START_TIME(%%s)%%"
+                          "textFormatSource": {
+                            "inlineString": "logging to MeshService\n"
+                          }
+                        },
+                        "path": "/dev/stdout"
+                      }
+                    },
+                    {
+                      "filter": {
+                        "metadataFilter": {
+                          "matchIfKeyNotFound": false,
+                          "matcher": {
+                            "filter": "kuma.routes",
+                            "path": [
+                              {
+                                "key": "route_kri"
+                              }
+                            ],
+                            "value": {
+                              "stringMatch": {
+                                "exact": "kri_mhttpr_envoyconfig_kuma-3__test-route_"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "name": "envoy.access_loggers.file",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "textFormatSource": {
+                            "inlineString": "logging to MeshHTTPRoute\n"
                           }
                         },
                         "path": "/dev/stdout"
@@ -770,6 +961,15 @@
                     "idleTimeout": "0s"
                   },
                   "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.lua",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
+                        "defaultSourceCode": {
+                          "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"kuma.routes\", \"route_kri\", meta)\n  end\nend\n"
+                        }
+                      }
+                    },
                     {
                       "name": "envoy.filters.http.router",
                       "typedConfig": {
@@ -823,6 +1023,58 @@
                         "routes": [
                           {
                             "match": {
+                              "path": "/test"
+                            },
+                            "metadata": {
+                              "filterMetadata": {
+                                "envoy.filters.http.lua": {
+                                  "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_"
+                                }
+                              }
+                            },
+                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_",
+                            "requestHeadersToAdd": [
+                              {
+                                "header": {
+                                  "key": "x-test-header",
+                                  "value": "added-by-policy"
+                                }
+                              }
+                            ],
+                            "route": {
+                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
+                              "idleTimeout": "1800s",
+                              "timeout": "15s"
+                            }
+                          },
+                          {
+                            "match": {
+                              "prefix": "/test/"
+                            },
+                            "metadata": {
+                              "filterMetadata": {
+                                "envoy.filters.http.lua": {
+                                  "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_"
+                                }
+                              }
+                            },
+                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_",
+                            "requestHeadersToAdd": [
+                              {
+                                "header": {
+                                  "key": "x-test-header",
+                                  "value": "added-by-policy"
+                                }
+                              }
+                            ],
+                            "route": {
+                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
+                              "idleTimeout": "1800s",
+                              "timeout": "15s"
+                            }
+                          },
+                          {
+                            "match": {
                               "prefix": "/"
                             },
                             "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
@@ -864,6 +1116,20 @@
                 "name": "envoy.filters.network.tcp_proxy",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
+                  "accessLog": [
+                    {
+                      "name": "envoy.access_loggers.file",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "textFormatSource": {
+                            "inlineString": "logging to Mesh\n"
+                          }
+                        },
+                        "path": "/dev/stdout"
+                      }
+                    }
+                  ],
                   "cluster": "outbound:passthrough:ipv4",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
@@ -889,6 +1155,20 @@
                 "name": "envoy.filters.network.tcp_proxy",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
+                  "accessLog": [
+                    {
+                      "name": "envoy.access_loggers.file",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "textFormatSource": {
+                            "inlineString": "logging to Mesh\n"
+                          }
+                        },
+                        "path": "/dev/stdout"
+                      }
+                    }
+                  ],
                   "cluster": "outbound:passthrough:ipv6",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
