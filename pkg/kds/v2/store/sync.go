@@ -53,6 +53,7 @@ type ResourceSyncer interface {
 type SyncOption struct {
 	Predicate            func(r core_model.Resource) bool
 	SkipConflictResource bool
+	IgnoreStatusChange   bool
 	Zone                 string
 }
 
@@ -75,6 +76,12 @@ func Zone(name string) SyncOptionFunc {
 func SkipConflictResource() SyncOptionFunc {
 	return func(opts *SyncOption) {
 		opts.SkipConflictResource = true
+	}
+}
+
+func IgnoreStatusChange() SyncOptionFunc {
+	return func(opts *SyncOption) {
+		opts.IgnoreStatusChange = true
 	}
 }
 
@@ -222,10 +229,18 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		newLabels := r.GetMeta().GetLabels()
 		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) ||
 			!maps.Equal(existing.GetMeta().GetLabels(), newLabels) ||
-			!core_model.Equal(existing.GetStatus(), r.GetStatus()) {
+			(!opts.IgnoreStatusChange && !core_model.Equal(existing.GetStatus(), r.GetStatus())) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
+			// we should preserve Status of the resource on the Zone but update on global
+			// and `IgnoreStatusChange` is set only on the Zone
+			if r.Descriptor().HasStatus && opts.IgnoreStatusChange {
+				if err = r.SetStatus(existing.GetStatus()); err != nil {
+					log.Error(err, "failed to set status", "resource", r.GetMeta())
+					continue
+				}
+			}
 			onUpdate = append(onUpdate, OnUpdate{r: r, opts: []store.UpdateOptionsFunc{store.UpdateWithLabels(newLabels)}})
 		}
 	}
@@ -320,6 +335,12 @@ func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool,
 					}
 					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
 				}),
+				// When syncing a resource from the Global to a Zone, we always remove the status field.
+				// See pkg/kds/context/context.go#88–90.
+				// As a result, the Zone control plane detects a change and updates the status field with an empty object,
+				// which triggers reconciliation of the VIP and a status update.
+				// Therefore, we should ignore status field comparison, since the status is always synced as empty from the Global.
+				IgnoreStatusChange(),
 			}
 			// When there is no KDS hash suffix, we can have conflicts in resources so we simply skip them
 			if tDesc.SkipKDSHash {
