@@ -133,7 +133,7 @@ func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Res
 }
 
 func labelsNotAllowedMsg(label, correctValue, actual string) string {
-	return fmt.Sprintf("Operation not allowed. '%s' label should have %s value, got '%s'", label, correctValue, actual)
+	return fmt.Sprintf("Operation not allowed. '%s' label should have '%s' value, got '%s'", label, correctValue, actual)
 }
 
 func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode) string {
