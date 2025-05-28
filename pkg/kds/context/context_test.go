@@ -84,7 +84,7 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.DataplaneInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "dpi-1", "zone"),
+						Name: hash.HashedName("", "dpi-1", hash.WithAdditionalValuesToHash("zone")),
 						Labels: map[string]string{
 							"kuma.io/origin":       "zone",
 							"kuma.io/zone":         "zone",
@@ -129,7 +129,7 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.ZoneIngressInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "zii-1", "zone"),
+						Name: hash.HashedName("", "zii-1", hash.WithAdditionalValuesToHash("zone")),
 						Labels: map[string]string{
 							"kuma.io/display-name": "zii-1",
 							"kuma.io/origin":       "zone",
@@ -168,7 +168,7 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.ZoneEgressInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "zei-1", "zone"),
+						Name: hash.HashedName("", "zei-1", hash.WithAdditionalValuesToHash("zone")),
 						Labels: map[string]string{
 							"kuma.io/zone":         "zone",
 							"kuma.io/display-name": "zei-1",
@@ -214,7 +214,7 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.CircuitBreakerResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "cb-1", "zone"),
+						Name: hash.HashedName("", "cb-1", hash.WithAdditionalValuesToHash("zone")),
 						Labels: map[string]string{
 							"kuma.io/display-name": "cb-1",
 							"kuma.io/origin":       "zone",
@@ -525,22 +525,8 @@ var _ = Describe("Context", func() {
 				displayName:  "foo",
 				expectedName: "foo-zxw6c95d42zfz9cc",
 				scope:        model.ScopeMesh,
-				features: map[string]bool{
-					kds.FeatureHashSuffix: true,
-				},
-				extraLabels: map[string]string{},
-			}),
-			Entry("should be removed when store type is kubernetes "+
-				"resource is plugin originated and no KDS hash-suffix feature", testCase{
-				isResourcePluginOriginated: true,
-				config: config{
-					storeType:          config_store.KubernetesStore,
-					k8sSystemNamespace: "custom-namespace",
-				},
-				name:         "foo.custom-namespace",
-				expectedName: "foo",
-				scope:        model.ScopeMesh,
 				features:     map[string]bool{},
+				extraLabels:  map[string]string{},
 			}),
 			Entry("shouldn't be removed when store type is kubernetes "+
 				"and resource isn't plugin originated", testCase{
@@ -552,9 +538,7 @@ var _ = Describe("Context", func() {
 				name:         "foo.default",
 				expectedName: "foo.default",
 				scope:        model.ScopeGlobal,
-				features: map[string]bool{
-					kds.FeatureHashSuffix: true,
-				},
+				features:     map[string]bool{},
 			}),
 			Entry("should include zone and namespace in tags when they are present in labels", testCase{
 				isResourcePluginOriginated: true,
@@ -566,9 +550,7 @@ var _ = Describe("Context", func() {
 				displayName:  "foo",
 				expectedName: "foo-696vzv497z4cv4f4",
 				scope:        model.ScopeMesh,
-				features: map[string]bool{
-					kds.FeatureHashSuffix: true,
-				},
+				features:     map[string]bool{},
 				extraLabels: map[string]string{
 					mesh_proto.ZoneTag:          "zone-1",
 					mesh_proto.KubeNamespaceTag: "custom-ns",

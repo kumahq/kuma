@@ -56,9 +56,9 @@ func Inspect() {
 		return multizone.UniZone1
 	}
 
-	testServerDPPName := hash.HashedName(meshName, "test-server", "kuma-4")
-	ingressName := hash.HashedName("", "ingress", "kuma-4")
-	egressName := hash.HashedName("", "egress", "kuma-4")
+	testServerDPPName := hash.HashedName(meshName, "test-server", hash.WithAdditionalValuesToHash("kuma-4"))
+	ingressName := hash.HashedName("", "ingress", hash.WithAdditionalValuesToHash("kuma-4"))
+	egressName := hash.HashedName("", "egress", hash.WithAdditionalValuesToHash("kuma-4"))
 
 	Context("Dataplane", func() {
 		DescribeTable("should execute envoy inspection",

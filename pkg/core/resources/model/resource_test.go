@@ -107,9 +107,9 @@ var _ = Describe("IsReferenced", func() {
 			var mapper reconcile_v2.ResourceMapper
 			switch dst {
 			case "global":
-				mapper = context.HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)
+				mapper = context.HashSuffixMapper(mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)
 			case "zone":
-				mapper = context.HashSuffixMapper(true)
+				mapper = context.HashSuffixMapper()
 			}
 
 			r := meshtimeout_api.NewMeshTimeoutResource() // resource doesn't matter, we just want to call mapper to get a new meta

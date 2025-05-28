@@ -103,9 +103,9 @@ func Migration() {
 
 		// then
 		hasMeshServices(
-			hash.HashedName(meshName, "demo-client", Kuma1, namespace),
-			hash.HashedName(meshName, "test-server", Kuma1, namespace),
-			hash.HashedName(meshName, "test-server", Kuma4),
+			hash.HashedName(meshName, "demo-client", hash.WithAdditionalValuesToHash(Kuma1, namespace)),
+			hash.HashedName(meshName, "test-server", hash.WithAdditionalValuesToHash(Kuma1, namespace)),
+			hash.HashedName(meshName, "test-server", hash.WithAdditionalValuesToHash(Kuma4)),
 		)
 	})
 
@@ -129,10 +129,10 @@ spec:
 
 		// then
 		hasMeshServices(
-			hash.HashedName(meshName, "demo-client", Kuma1, namespace),
-			hash.HashedName(meshName, "test-server", Kuma1, namespace),
-			hash.HashedName(meshName, "test-server", Kuma4),
-			hash.HashedName(meshName, "manually-created-ms", Kuma4),
+			hash.HashedName(meshName, "demo-client", hash.WithAdditionalValuesToHash(Kuma1, namespace)),
+			hash.HashedName(meshName, "test-server", hash.WithAdditionalValuesToHash(Kuma1, namespace)),
+			hash.HashedName(meshName, "test-server", hash.WithAdditionalValuesToHash(Kuma4)),
+			hash.HashedName(meshName, "manually-created-ms", hash.WithAdditionalValuesToHash(Kuma4)),
 		)
 	})
 
@@ -142,7 +142,7 @@ spec:
 
 		// then
 		hasMeshServices(
-			hash.HashedName(meshName, "manually-created-ms", Kuma4),
+			hash.HashedName(meshName, "manually-created-ms", hash.WithAdditionalValuesToHash(Kuma4)),
 		)
 	})
 }

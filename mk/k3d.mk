@@ -255,6 +255,20 @@ k3d/deploy/kumactl/install:
 		| grep --invert-match 'unchanged'
 	@echo
 
+k3d/deploy/kuma-zone:
+	@$(KUMACTL) install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \
+		--set "controlPlane.mode=zone" \
+		--set "controlPlane.zone=kuma-2" \
+		--set "ingress.enabled=true" \
+		--set "controlPlane.tls.kdsZoneClient.skipVerify=true" \
+		--set "controlPlane.kdsGlobalAddress=grpcs://172.28.1.0:5685" \
+		| $(KUBECTL) apply -f -
+	@$(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	@$(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+	until \
+	 $(KUBECTL) get mesh default ; \
+	do echo "Waiting for default mesh to be present" && sleep 1; done
+
 .PHONY: k3d/deploy/kumactl/clean
 k3d/deploy/kumactl/clean:
 	@$(KUMACTL) install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \

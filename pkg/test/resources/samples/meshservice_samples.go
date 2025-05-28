@@ -39,7 +39,7 @@ func MeshServiceWeb() *v1alpha1.MeshServiceResource {
 
 func MeshServiceSyncedBackendBuilder() *builders.MeshServiceBuilder {
 	return MeshServiceBackendBuilder().
-		WithName(hash.HashedName("default", "backend", mesh_proto.ZoneTag, "east")).
+		WithName(hash.HashedName("default", "backend", hash.WithAdditionalValuesToHash(mesh_proto.ZoneTag, "east"))).
 		WithLabels(map[string]string{
 			mesh_proto.DisplayName:         "backend",
 			mesh_proto.ZoneTag:             "east",

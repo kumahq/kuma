@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 const (
@@ -979,6 +980,7 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
 	KDSFlags:            model.GlobalToZonesFlag,
+	HashedNameFn:        hash.DoNothingHashedName,
 	SkipKDSHash:         true,
 	WsPath:              "meshes",
 	KumactlArg:          "mesh",

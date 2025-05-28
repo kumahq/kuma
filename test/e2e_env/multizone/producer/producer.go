@@ -112,7 +112,7 @@ spec:
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
+			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "to-test-server", hash.WithAdditionalValuesToHash(Kuma2, k8sZoneNamespace))))
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -154,7 +154,7 @@ spec:
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
+			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", hash.WithAdditionalValuesToHash(Kuma2, k8sZoneNamespace))))
 		}).Should(Succeed())
 	})
 
@@ -222,7 +222,7 @@ spec:
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "timeout-on-http-route", Kuma2, k8sZoneNamespace)))
+			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "timeout-on-http-route", hash.WithAdditionalValuesToHash(Kuma2, k8sZoneNamespace))))
 		}).Should(Succeed())
 
 		// check 'timeout-on-http-route' is applied

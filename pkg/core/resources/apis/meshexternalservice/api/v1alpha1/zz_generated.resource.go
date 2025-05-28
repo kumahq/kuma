@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 //go:embed schema.yaml
@@ -161,12 +162,19 @@ func (l *MeshExternalServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
 
+func NewMeshExternalServiceResourceHashedNameFn() hash.HashedNameFn {
+	return func(mesh, name string, opts ...hash.Option) string {
+		return hash.HashedName(mesh, name, append(opts, hash.WithNameLengthLimit(hash.K8sNameLengthLimit63))...)
+	}
+}
+
 var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshExternalServiceType,
 	Resource:                     NewMeshExternalServiceResource(),
 	ResourceList:                 &MeshExternalServiceResourceList{},
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
+	HashedNameFn:                 NewMeshExternalServiceResourceHashedNameFn(),
 	WsPath:                       "meshexternalservices",
 	KumactlArg:                   "meshexternalservice",
 	KumactlListArg:               "meshexternalservices",

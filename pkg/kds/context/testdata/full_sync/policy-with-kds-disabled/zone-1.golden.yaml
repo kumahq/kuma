@@ -2,6 +2,7 @@
 ---
 creationTime: "0001-01-01T00:00:00Z"
 labels:
+  kuma.io/display-name: default
   kuma.io/origin: global
 modificationTime: "0001-01-01T00:00:00Z"
 name: default

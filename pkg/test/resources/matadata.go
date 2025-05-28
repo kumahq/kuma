@@ -114,7 +114,7 @@ func SyncToUni(fn BuildMeta) BuildMeta {
 			values = append(values, v)
 		}
 		return &model.ResourceMeta{
-			Name:   hash.HashedName(m.GetMesh(), core_model.GetDisplayName(m), values...),
+			Name:   hash.HashedName(m.GetMesh(), core_model.GetDisplayName(m), hash.WithAdditionalValuesToHash(values...)),
 			Mesh:   m.GetMesh(),
 			Labels: m.GetLabels(),
 		}
@@ -131,7 +131,7 @@ func SyncToK8s(fn BuildMeta) BuildMeta {
 		if v, ok := m.GetLabels()[mesh_proto.KubeNamespaceTag]; ok {
 			values = append(values, v)
 		}
-		newName := hash.HashedName(m.GetMesh(), core_model.GetDisplayName(m), values...)
+		newName := hash.HashedName(m.GetMesh(), core_model.GetDisplayName(m), hash.WithAdditionalValuesToHash(values...))
 		return &model.ResourceMeta{
 			Name:   k8s.K8sNamespacedNameToCoreName(newName, "kuma-system"),
 			Mesh:   m.GetMesh(),

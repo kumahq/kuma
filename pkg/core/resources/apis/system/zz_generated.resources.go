@@ -11,6 +11,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 const (
@@ -117,6 +118,7 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Scope:               model.ScopeGlobal,
 	KDSFlags:            model.GlobalToZonesFlag | model.ProvidedByZoneFlag,
 	SkipKDSHash:         true,
+	HashedNameFn:        hash.DoNothingHashedName,
 	WsPath:              "",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -236,6 +238,7 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Scope:               model.ScopeMesh,
 	KDSFlags:            model.GlobalToZonesFlag | model.ProvidedByZoneFlag,
 	SkipKDSHash:         true,
+	HashedNameFn:        hash.DoNothingHashedName,
 	WsPath:              "secrets",
 	KumactlArg:          "secret",
 	KumactlListArg:      "secrets",
@@ -354,6 +357,7 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
 	KDSFlags:            model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
+	HashedNameFn:        hash.DoNothingHashedName,
 	WsPath:              "zones",
 	KumactlArg:          "zone",
 	KumactlListArg:      "zones",

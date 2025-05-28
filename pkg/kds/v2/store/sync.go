@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
@@ -177,7 +176,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		predicate = append(predicate, opts.Predicate)
 	}
 
-	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
+	log.V(0).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
 	if downstream, err = filterResources(downstream, predicate); err != nil {
 		return err, nil
@@ -186,10 +185,19 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		return err, nil
 	}
 
-	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
+	log.V(0).Info("after filtering", "downstream", downstream, "upstream", upstream)
+
+	outputKey := func(data map[core_model.ResourceKey]core_model.Resource) string {
+		key := ""
+		for i := range data {
+			key = key + fmt.Sprintf("%v, ", i)
+		}
+		return key
+	}
 
 	indexedDownstream := core_model.IndexByKey(downstream.GetItems())
 	indexedUpstream := core_model.IndexByKey(upstream.GetItems())
+	log.V(0).Info("============", "indexedDownstream", outputKey(indexedDownstream), "indexedUpstream", outputKey(indexedUpstream))
 
 	onDelete := []core_model.Resource{}
 	// 1. delete resources which were removed from the upstream
@@ -359,17 +367,8 @@ func GlobalSyncCallback(
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
 ) *client_v2.Callbacks {
-	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
-
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) (error, error) {
-			if !supportsHashSuffixes {
-				// todo: remove in 2 releases after 2.6.x
-				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
-				upstream.InvalidResourcesKey = util.AddPrefixToResourceKeyNames(upstream.InvalidResourcesKey, upstream.ControlPlaneId)
-				util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
-			}
-
 			for _, r := range upstream.AddedResources.GetItems() {
 				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
 					util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),

@@ -88,10 +88,7 @@ func DefaultContext(
 			// we don't want status field from global to be synced to the zone
 			reconcile_v2.HasStatus,
 			RemoveStatus()),
-		reconcile_v2.If(func(resource core_model.Resource) bool {
-			// There's a handful of resource types for which we keep the name unchanged
-			return !resource.Descriptor().SkipKDSHash
-		}, HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
+		HashSuffixMapper(mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
 
 	zoneMappers := []reconcile_v2.ResourceMapper{
@@ -106,7 +103,7 @@ func DefaultContext(
 		reconcile_v2.If(
 			reconcile_v2.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
-		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
+		HashSuffixMapper(mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
 	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
 
@@ -229,12 +226,8 @@ func RemoveStatus() reconcile_v2.ResourceMapper {
 }
 
 // HashSuffixMapper returns mapper that adds a hash suffix to the name during KDS sync
-func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile_v2.ResourceMapper {
+func HashSuffixMapper(labelsToUse ...string) reconcile_v2.ResourceMapper {
 	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		if checkKDSFeature && !features.HasFeature(kds.FeatureHashSuffix) {
-			return r, nil
-		}
-
 		name := core_model.GetDisplayName(r.GetMeta())
 		values := make([]string, 0, len(labelsToUse))
 		for _, lbl := range labelsToUse {
@@ -244,7 +237,14 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile_v2.
 			}
 		}
 
-		return util.CloneResource(r, util.WithResourceName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
+		hashNameFn := hash.HashedName
+		if r.Descriptor().HashedNameFn != nil {
+			hashNameFn = r.Descriptor().HashedNameFn
+		}
+
+		hashOpts := []hash.Option{hash.WithAdditionalValuesToHash(values...)}
+		resourceNameFn := util.WithResourceName(hashNameFn(r.GetMeta().GetMesh(), name, hashOpts...))
+		return util.CloneResource(r, resourceNameFn), nil
 	}
 }
 

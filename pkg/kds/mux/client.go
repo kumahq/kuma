@@ -100,7 +100,6 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
 		kds.FeaturesMetadataKey, kds.FeatureZonePingHealth,
-		kds.FeaturesMetadataKey, kds.FeatureHashSuffix,
 	))
 	defer cancel()
 

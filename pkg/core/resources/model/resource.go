@@ -16,6 +16,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	model_labels "github.com/kumahq/kuma/pkg/core/resources/model/labels"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -166,6 +167,8 @@ type ResourceTypeDescriptor struct {
 	KDSFlags KDSFlagType
 	// SkipKDSHash a small set of entities (legacy only) that do not have a hash when they are synced from Global to Zone.
 	SkipKDSHash bool
+	// todo HashedName
+	HashedNameFn func(mesh, name string, opts ...hash.Option) string
 	// WsPath the path to access on the REST api.
 	WsPath string
 	// KumactlArg the name of the cmdline argument when doing `get` or `delete`.
