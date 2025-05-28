@@ -1,4 +1,4 @@
-# Crate with status
+# Create with status
 #/meshes/default/meshservices/with-status 201 method=PUT
 # Check if status was not saved from request
 #/meshes/default/meshservices/with-status 200
