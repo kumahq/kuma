@@ -1,7 +1,7 @@
 {
  "type": "MeshService",
  "mesh": "default",
- "name": "redis",
+ "name": "with-status",
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
@@ -14,13 +14,13 @@
   "state": "Unavailable",
   "selector": {
    "dataplaneTags": {
-    "app": "redis"
+    "app": "httpbin"
    }
   },
   "ports": [
    {
-    "port": 6379,
-    "targetPort": 6379,
+    "port": 8082,
+    "targetPort": 80,
     "appProtocol": "tcp"
    }
   ]

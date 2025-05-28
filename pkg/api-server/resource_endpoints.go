@@ -395,9 +395,6 @@ func (r *resourceEndpoints) createResource(
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
-	if r.descriptor.HasStatus {
-		_ = res.SetStatus(resRest.GetStatus())
-	}
 
 	labels, err := core_model.ComputeLabels(
 		res.Descriptor(),
@@ -445,9 +442,6 @@ func (r *resourceEndpoints) updateResource(
 	}
 
 	_ = currentRes.SetSpec(newResRest.GetSpec())
-	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
-		_ = currentRes.SetStatus(newResRest.GetStatus())
-	}
 	labels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),

@@ -1,6 +1,6 @@
 {
   "type": "MeshService",
-  "name": "aa.a",
+  "name": "with-status",
   "mesh": "default",
   "spec": {
     "selector": {
@@ -10,9 +10,16 @@
     },
     "ports": [
       {
-        "port": 8081,
+        "port": 8082,
         "targetPort": 80,
         "protocol": "tcp"
+      }
+    ]
+  },
+  "status": {
+    "vips": [
+      {
+        "ip": "10.0.0.2"
       }
     ]
   }
