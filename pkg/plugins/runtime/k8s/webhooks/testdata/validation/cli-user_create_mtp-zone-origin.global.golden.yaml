@@ -1,18 +1,10 @@
 Patches: null
 allowed: false
 status:
-  code: 422
-  details:
-    causes:
-    - field: labels["kuma.io/origin"]
-      message: Operation not allowed. kuma.io/origin label should have global value,
-        got zone
-      reason: FieldValueInvalid
-    kind: MeshTrafficPermission
-    name: mtp-es
-  message: 'labels["kuma.io/origin"]: Operation not allowed. kuma.io/origin label
-    should have global value, got zone'
+  code: 403
+  message: Operation not allowed. 'kuma.io/origin' label should have 'global' value,
+    got 'zone'
   metadata: {}
-  reason: Invalid
+  reason: Forbidden
   status: Failure
 uid: "12345"
