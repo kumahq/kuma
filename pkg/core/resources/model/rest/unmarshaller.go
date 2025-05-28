@@ -30,7 +30,7 @@ var JSON = &unmarshaler{
 }
 
 type UnmarshalOption struct {
-	DisallowStatus bool
+	SkipStatus bool
 }
 
 type UnmarshalOptionFunc func(*UnmarshalOption)
@@ -43,9 +43,9 @@ func NewUnmarshalOptions(fs ...UnmarshalOptionFunc) *UnmarshalOption {
 	return opts
 }
 
-func DisallowStatus() UnmarshalOptionFunc {
+func SkipStatus() UnmarshalOptionFunc {
 	return func(opts *UnmarshalOption) {
-		opts.DisallowStatus = true
+		opts.SkipStatus = true
 	}
 }
 
@@ -103,8 +103,9 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		if err = u.unmarshalFn(bytes, &rawObj); err != nil {
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 		}
-		if _, found := rawObj["status"]; opts.DisallowStatus && found {
-			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: status field cannot be modified", desc.Name)}
+
+		if _, found := rawObj["status"]; opts.SkipStatus && found {
+			rawObj["status"] = struct{}{}
 		}
 
 		// Apply defaulting

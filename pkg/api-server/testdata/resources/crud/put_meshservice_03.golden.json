@@ -1,7 +1,1 @@
-{
- "type": "/std-errors",
- "status": 400,
- "title": "Bad Request",
- "detail": "invalid MeshService object: status field cannot be modified",
- "details": "invalid MeshService object: status field cannot be modified"
-}
+{}

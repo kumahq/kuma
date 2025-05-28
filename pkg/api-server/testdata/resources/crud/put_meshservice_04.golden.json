@@ -1,0 +1,32 @@
+{
+ "type": "MeshService",
+ "mesh": "default",
+ "name": "with-status",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/env": "universal",
+  "kuma.io/mesh": "default",
+  "kuma.io/origin": "zone",
+  "kuma.io/zone": "default"
+ },
+ "spec": {
+  "state": "Unavailable",
+  "selector": {
+   "dataplaneTags": {
+    "app": "httpbin"
+   }
+  },
+  "ports": [
+   {
+    "port": 8081,
+    "targetPort": 80,
+    "appProtocol": "tcp"
+   }
+  ]
+ },
+ "status": {
+  "tls": {},
+  "dataplaneProxies": {}
+ }
+}
