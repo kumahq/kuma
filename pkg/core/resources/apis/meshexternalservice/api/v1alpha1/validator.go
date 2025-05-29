@@ -9,6 +9,7 @@ import (
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -22,7 +23,7 @@ var (
 func (r *MeshExternalServiceResource) validate() error {
 	var verr validators.ValidationError
 
-	verr.Add(validators.ValidateLength(validators.RootedAt("name"), 63, r.Meta.GetName()))
+	verr.Add(validators.ValidateLength(validators.RootedAt("name"), 63, model.GetDisplayName(r.GetMeta())))
 
 	path := validators.RootedAt("spec")
 
