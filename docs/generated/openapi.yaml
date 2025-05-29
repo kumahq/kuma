@@ -3338,6 +3338,13 @@ paths:
         '200':
           $ref: '#/components/responses/MeshServiceList'
 components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Index:
       type: object
@@ -17572,4 +17579,8 @@ components:
             zones:
               - name: east
               - name: west
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+  - {}
 
