@@ -450,7 +450,7 @@ var _ = Describe("KubernetesStore", func() {
 			err := ks.Get(context.Background(), v1alpha1.NewMeshTraceResource(), store.GetByKey("", mesh))
 
 			// then
-			Expect(err.Error()).To(Equal("invalid format: name can't be empty"))
+			Expect(err.Error()).To(Equal("invalid: name can't be empty"))
 		})
 
 		It("should return an existing resource", func() {

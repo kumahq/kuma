@@ -107,7 +107,7 @@ func getKeyBytes(
 ) ([]byte, error) {
 	resource := system.NewGlobalSecretResource()
 	if err := resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(signingKeyPrefix, keyID, model.NoMesh))); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return nil, &SigningKeyNotFound{
 				KeyID:  keyID,
 				Prefix: signingKeyPrefix,

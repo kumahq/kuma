@@ -49,7 +49,7 @@ func (e *DefaultsComponent) ensureInterCpCaExist(ctx context.Context) error {
 		e.Log.V(1).Info("Inter CP CA already exists. Skip creating inter-cp CA.")
 		return nil
 	}
-	if !store.IsResourceNotFound(err) {
+	if !store.IsNotFound(err) {
 		return errors.Wrap(err, "error while loading inter-cp CA")
 	}
 	e.Log.V(1).Info("trying to create Inter CP CA")

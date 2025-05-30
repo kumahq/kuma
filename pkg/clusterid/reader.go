@@ -54,7 +54,7 @@ func (c *clusterIDReader) read(ctx context.Context) (string, time.Time, error) {
 	resource := config_model.NewConfigResource()
 	err := c.rt.ConfigManager().Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return "", time.Time{}, nil
 		}
 		return "", time.Time{}, err

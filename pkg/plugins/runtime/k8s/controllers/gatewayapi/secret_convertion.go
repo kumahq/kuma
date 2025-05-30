@@ -31,7 +31,7 @@ func (r *GatewayReconciler) createSecretIfMissing(
 	exists := true
 	kumaSecret := system.NewSecretResource()
 	if err := r.ResourceManager.Get(ctx, kumaSecret, core_store.GetBy(resKey)); err != nil {
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			exists = false
 		} else {
 			return model.ResourceKey{}, err

@@ -357,7 +357,7 @@ func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.Bo
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
 	if err := b.resManager.Get(ctx, core_mesh.NewMeshResource(), core_store.GetByKey(mesh, core_model.NoMesh)); err != nil {
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
 			return verr.OrNil()

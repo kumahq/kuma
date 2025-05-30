@@ -99,7 +99,7 @@ var _ = Describe("Defaults Component", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey("default", "default"))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(core_store.IsNotFound(err)).To(BeTrue())
 		})
 	})
 })

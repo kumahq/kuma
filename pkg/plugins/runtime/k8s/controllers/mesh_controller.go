@@ -33,7 +33,7 @@ type MeshReconciler struct {
 func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	mesh := core_mesh.NewMeshResource()
 	if err := r.ResourceManager.Get(ctx, mesh, store.GetByKey(req.Name, core_model.NoMesh)); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not get default mesh resources")

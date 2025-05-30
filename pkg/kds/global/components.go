@@ -166,7 +166,7 @@ func Setup(rt runtime.Runtime) error {
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
 	ctx = user.Ctx(ctx, user.ControlPlane)
 	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
-		if !store.IsResourceNotFound(err) || !createZoneOnConnect {
+		if !store.IsNotFound(err) || !createZoneOnConnect {
 			return err
 		}
 		log.Info("creating Zone", "name", name)

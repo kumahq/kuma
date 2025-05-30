@@ -67,7 +67,7 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 	if err == nil {
 		return nil // already exists
 	}
-	if !core_store.IsResourceNotFound(err) {
+	if !core_store.IsNotFound(err) {
 		return errors.Wrap(err, "could not check if token exist")
 	}
 

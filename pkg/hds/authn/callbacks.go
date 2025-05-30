@@ -149,7 +149,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 	// We could just close the stream with an error and Envoy would retry, but to have better UX (not printing confusing logs) it's better to retry
 	err = retry.Do(ctx, retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff)), func(ctx context.Context) error {
 		err := a.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey()))
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 		}
 		return err

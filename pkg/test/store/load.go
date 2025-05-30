@@ -38,7 +38,7 @@ func LoadResources(ctx context.Context, rs store.ResourceStore, inputs string) e
 		curResource := resource.Descriptor().NewObject()
 		create := false
 		if err := rs.Get(ctx, curResource, store.GetByKey(resource.GetMeta().GetName(), resource.GetMeta().GetMesh())); err != nil {
-			if !store.IsResourceNotFound(err) {
+			if !store.IsNotFound(err) {
 				return err
 			}
 			create = true

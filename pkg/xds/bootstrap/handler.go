@@ -102,7 +102,7 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 		}
 		return
 	}
-	if store.IsResourceNotFound(err) {
+	if store.IsNotFound(err) {
 		resp.WriteHeader(http.StatusNotFound)
 		return
 	}

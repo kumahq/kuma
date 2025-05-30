@@ -128,7 +128,7 @@ var _ = Describe("kumactl delete ", func() {
 					// when
 					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key1))
 					// then
-					Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+					Expect(core_store.IsNotFound(err)).To(BeTrue())
 
 					By("verifying that resource with the same name but in a differrent mesh wasn't affected")
 					// when
@@ -258,7 +258,7 @@ var _ = Describe("kumactl delete ", func() {
 					// when
 					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key))
 					// then
-					Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+					Expect(core_store.IsNotFound(err)).To(BeTrue())
 				},
 				Entry("meshes", testCase{
 					typ:             "mesh",

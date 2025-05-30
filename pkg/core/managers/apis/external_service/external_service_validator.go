@@ -32,7 +32,7 @@ func (r *ExternalServiceValidator) validateRateLimits(ctx context.Context, mesh 
 	rateLimits := &core_mesh.RateLimitResourceList{}
 	err := r.Store.List(ctx, rateLimits, store.ListByMesh(mesh))
 	if err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return nil
 		} else {
 			validationErr.AddViolation("externalservice", err.Error())

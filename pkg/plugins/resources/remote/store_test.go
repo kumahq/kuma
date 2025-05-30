@@ -174,7 +174,7 @@ var _ = Describe("RemoteStore", func() {
 			err := store.Get(context.Background(), resource, core_store.GetByKey("test", "test"))
 
 			// then
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(core_store.IsNotFound(err)).To(BeTrue())
 		})
 	})
 
@@ -596,7 +596,7 @@ var _ = Describe("RemoteStore", func() {
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(core_store.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should parse kuma api server error", func() {

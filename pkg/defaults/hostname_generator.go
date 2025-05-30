@@ -158,7 +158,7 @@ func ensureHostnameGeneratorExists(
 	case err == nil:
 		logger.V(1).Info("hostname generator already exist", "name", name)
 		return nil
-	case core_store.IsResourceNotFound(err):
+	case core_store.IsNotFound(err):
 		hostnameGen.Spec = &spec
 		opts := []core_store.CreateOptionsFunc{
 			core_store.CreateByKey(name, core_model.NoMesh),

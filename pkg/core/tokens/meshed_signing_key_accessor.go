@@ -45,7 +45,7 @@ func (s *meshedSigningKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID
 func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, keyID KeyID) ([]byte, error) {
 	resource := system.NewSecretResource()
 	if err := s.resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(s.signingKeyPrefix, keyID, s.mesh))); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return nil, &SigningKeyNotFound{
 				KeyID:  keyID,
 				Prefix: s.signingKeyPrefix,

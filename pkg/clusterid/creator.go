@@ -32,7 +32,7 @@ func (c *clusterIDCreator) create() error {
 	resource := config_model.NewConfigResource()
 	err := c.configManager.Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
-		if !store.IsResourceNotFound(err) {
+		if !store.IsNotFound(err) {
 			return err
 		}
 		resource.Spec.Config = core.NewUUID()

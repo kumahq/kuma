@@ -29,7 +29,7 @@ func AggregateMeshContexts(
 	for _, mesh := range meshList.Items {
 		meshCtx, err := fetcher(ctx, mesh.GetMeta().GetName())
 		if err != nil {
-			if core_store.IsResourceNotFound(err) {
+			if core_store.IsNotFound(err) {
 				// When the mesh no longer exists it's likely because it was removed since, let's just skip it.
 				continue
 			}

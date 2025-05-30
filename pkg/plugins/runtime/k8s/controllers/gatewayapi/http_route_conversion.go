@@ -441,7 +441,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
 		resource := core_mesh.NewExternalServiceResource()
 		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
-			if store.IsResourceNotFound(err) {
+			if store.IsNotFound(err) {
 				return unresolvedTargetRef,
 					&ResolvedRefsConditionFalse{
 						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
