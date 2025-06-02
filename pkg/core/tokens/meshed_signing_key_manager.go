@@ -60,7 +60,7 @@ func (s *meshedSigningKeyManager) CreateSigningKey(ctx context.Context, keyID Ke
 	}
 
 	owner := core_mesh.NewMeshResource()
-	if err := s.manager.Get(ctx, owner, store.GetByKey(s.mesh, model.NoMesh)); err != nil {
+	if err := s.manager.Get(ctx, owner, store.GetByKey(s.mesh, model.NoMesh), store.GetConsistent()); err != nil {
 		return manager.MeshNotFound(s.mesh)
 	}
 

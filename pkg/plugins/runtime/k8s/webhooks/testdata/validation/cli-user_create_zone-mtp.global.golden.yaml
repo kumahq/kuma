@@ -1,10 +1,10 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 403
+  message: Operation not allowed. 'kuma.io/origin' label should have 'global' value,
+    got 'zone'
   metadata: {}
+  reason: Forbidden
+  status: Failure
 uid: "12345"
-warnings:
-- MeshSubset value for 'targetRef.kind' is deprecated, use Dataplane with labels instead
-- MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with
-  'kuma.io/service' instead

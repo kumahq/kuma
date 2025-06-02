@@ -1,0 +1,24 @@
+#/zoneingresses 200
+type: ZoneIngress
+name: zone-ingress-1
+networking:
+  address: 10.0.0.0
+  advertisedAddress: 10.0.0.0
+  port: 1001
+  advertisedPort: 1001
+---
+type: ZoneIngress
+name: zone-ingress-2
+networking:
+  address: 11.0.0.0
+  advertisedAddress: 11.0.0.0
+  port: 1002
+  advertisedPort: 1002
+---
+type: ZoneIngress
+name: zone-ingress-3
+networking:
+  address: 12.0.0.0
+  advertisedAddress: 12.0.0.0
+  port: 1003
+  advertisedPort: 1003

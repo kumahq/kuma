@@ -238,48 +238,6 @@ spec:
 	})
 
 	It("should sync producer MeshRetry that targets producer route to other clusters", func() {
-		// Function CollectResponsesAndFailures sends requests concurrently. If we want to accurately check
-		// that MeshRetry works we need to increase 'maxRetries' using MeshCircuitBreaker policy.
-		Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshCircuitBreaker
-metadata:
-  name: increased-max-retries
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  to:
-  - targetRef:
-      kind: MeshService
-      name: test-server
-    default:
-      connectionLimits:
-        maxRetries: 20`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).Should(Succeed())
-
-		Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshFaultInjection
-metadata:
-  name: mesh-fault-injecton
-  namespace: %s
-  labels:
-    kuma.io/mesh: "%s"
-spec:
-  targetRef:
-    kind: Dataplane
-    labels:
-      app: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        http:
-          - abort:
-              httpStatus: 500
-              percentage: "50.0"
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).Should(Succeed())
-
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -297,27 +255,13 @@ spec:
         - matches:
             - path:
                 type: PathPrefix
-                value: /
+                value: /with-retry
           default:
             backendRefs:
               - kind: MeshService
                 name: test-server
                 port: 80
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
-
-		Eventually(func(g Gomega) {
-			responses, err := framework_client.CollectResponsesAndFailures(
-				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
-				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
-				framework_client.WithNumberOfRequests(100),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(responses).To(And(
-				HaveLen(100),
-				WithTransform(framework_client.CountResponseCodes(500), BeNumerically("~", 50, 15)),
-				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 50, 15)),
-			))
-		}, "30s", "5s").Should(Succeed())
 
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -336,20 +280,36 @@ spec:
         http:
           numRetries: 5
           retryOn:
-            - "5xx"
+            - "503"
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 
+		lastId := 0
+		generateNewId := func() string {
+			lastId++
+			return fmt.Sprintf("%d", lastId)
+		}
+
+		// sending requests to / results in 503
 		Eventually(func(g Gomega) {
-			responses, err := framework_client.CollectResponsesAndFailures(
+			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
-				framework_client.WithNumberOfRequests(100),
+				framework_client.WithHeader("x-succeed-after-n", "5"),
+				framework_client.WithHeader("x-succeed-after-n-id", generateNewId()),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(responses).To(And(
-				HaveLen(100),
-				WithTransform(framework_client.CountResponseCodes(200), BeNumerically("~", 100, 10)),
-			))
-		}, "30s", "5s").Should(Succeed())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}, "1m", "1s").Should(Succeed())
+
+		// sending requests to /with-retry succeeds
+		Eventually(func(g Gomega) {
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local/with-retry", k8sZoneNamespace),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-succeed-after-n", "5"),
+				framework_client.WithHeader("x-succeed-after-n-id", generateNewId()),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "1m", "1s").Should(Succeed())
 	})
 }

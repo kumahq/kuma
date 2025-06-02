@@ -38,16 +38,6 @@ Disable it by running `kuma-dp` with the following environment variable:
 KUMA_DNS_PROXY_PORT=0
 ```
 
-### Introduce an option to skip RBAC creation
-
-By default, we create all RBAC resources required for the mesh to function properly. Since `2.11.x`, it's possible to skip the creation of `ClusterRole`, `ClusterRoleBinding`, `Role`, and `RoleBinding`. We introduced two flags:
-
-* `skipRBAC`: Disables the creation of all RBAC resources (CNI and control plane).
-* `controlPlane.skipClusterRoleCreation`: Disables the creation of `ClusterRole `and `ClusterRoleBinding` resources for the control plane only.
-
-> [!WARNING]
-> Before disabling automatic creation, ensure that the necessary RBAC resources are already in place, as the mesh components will not work correctly without them.
-
 ### `kuma-sidecar` container has `allowPrivilegeEscalation` set to `false`
 
 In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. Starting with this version, it is now explicitly set to `false`.

@@ -83,6 +83,10 @@ var (
 	IPv6Loopback = net.IPv6loopback
 )
 
+func (p Protocol) IsHTTPBased() bool {
+	return p == ProtocolHTTP || p == ProtocolHTTP2 || p == ProtocolGRPC
+}
+
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
 }
