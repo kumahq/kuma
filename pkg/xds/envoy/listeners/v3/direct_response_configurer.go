@@ -8,14 +8,16 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type DirectResponseConfigurer struct {
-	VirtualHostName string
-	Endpoints       []DirectResponseEndpoints
+	VirtualHostName   string
+	Endpoints         []DirectResponseEndpoints
+	InternalAddresses []core_xds.InternalAddress
 }
 
 type DirectResponseEndpoints struct {
@@ -71,6 +73,13 @@ func (c *DirectResponseConfigurer) Configure(filterChain *envoy_listener.FilterC
 				}},
 			},
 		},
+	}
+	if len(c.InternalAddresses) == 0 {
+		c.InternalAddresses = core_xds.LocalHostAddresses
+	}
+	config.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
+		UnixSockets: false,
+		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.InternalAddresses),
 	}
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
 	if err != nil {

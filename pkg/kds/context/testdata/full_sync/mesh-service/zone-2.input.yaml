@@ -1,0 +1,28 @@
+# MeshService
+---
+type: MeshService
+name: redis-zone-2
+mesh: default
+labels:
+  team: db-operators
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+      k8s.kuma.io/namespace: kuma-demo
+  ports:
+  - port: 6739
+    targetPort: 6739
+    appProtocol: tcp
+  - name: some-port
+    port: 16739
+    targetPort: target-port-from-container
+    appProtocol: tcp
+status:
+  addresses:
+  - hostname: redis.mesh
+    origin: HostnameGenerator
+    hostnameGeneratorRef:
+      coreName: kmy-hostname-generator
+  vips:
+  - ip: 10.0.2.1

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -14,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -27,11 +29,18 @@ type DataplaneInsightStore interface {
 	// Upsert creates or updates the subscription, storing it with
 	// the key dataplaneID. dataplaneType gives the resource type of
 	// the dataplane proxy that has subscribed.
-	Upsert(ctx context.Context, dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error
+	Upsert(
+		ctx context.Context,
+		xdsMetadata *structpb.Struct,
+		dataplaneType core_model.ResourceType,
+		dataplaneID core_model.ResourceKey,
+		subscription *mesh_proto.DiscoverySubscription,
+		secretsInfo *secrets.Info,
+	) error
 }
 
 func NewDataplaneInsightSink(
-	dataplaneType core_model.ResourceType,
+	xdsMetadata *structpb.Struct,
 	accessor SubscriptionStatusAccessor,
 	secrets secrets.Secrets,
 	newTicker func() *time.Ticker,
@@ -39,14 +48,31 @@ func NewDataplaneInsightSink(
 	flushBackoff time.Duration,
 	store DataplaneInsightStore,
 ) DataplaneInsightSink {
+	metadata := core_xds.DataplaneMetadataFromXdsMetadata(xdsMetadata)
+
+	var dpType core_model.ResourceType
+	// If the dataplane was started with a resource YAML, then it will be serialized in
+	// the node metadata and we would know the underlying type directly. Since that
+	// is optional, we can't depend on it here, so we map from the proxy type, which is
+	// guaranteed.
+	switch metadata.GetProxyType() {
+	case mesh_proto.IngressProxyType:
+		dpType = core_mesh.ZoneIngressType
+	case mesh_proto.DataplaneProxyType:
+		dpType = core_mesh.DataplaneType
+	case mesh_proto.EgressProxyType:
+		dpType = core_mesh.ZoneEgressType
+	}
+
 	return &dataplaneInsightSink{
 		flushTicker:      newTicker,
 		generationTicker: generationTicker,
-		dataplaneType:    dataplaneType,
+		dataplaneType:    dpType,
 		accessor:         accessor,
 		secrets:          secrets,
 		flushBackoff:     flushBackoff,
 		store:            store,
+		xdsMetadata:      xdsMetadata,
 	}
 }
 
@@ -60,6 +86,7 @@ type dataplaneInsightSink struct {
 	secrets          secrets.Secrets
 	store            DataplaneInsightStore
 	flushBackoff     time.Duration
+	xdsMetadata      *structpb.Struct
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
@@ -96,7 +123,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 		ctx := context.TODO()
 
-		if err := s.store.Upsert(ctx, s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
+		if err := s.store.Upsert(ctx, s.xdsMetadata, s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -153,7 +180,14 @@ type dataplaneInsightStore struct {
 	resManager manager.ResourceManager
 }
 
-func (s *dataplaneInsightStore) Upsert(ctx context.Context, dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error {
+func (s *dataplaneInsightStore) Upsert(
+	ctx context.Context,
+	xdsMetadata *structpb.Struct,
+	dataplaneType core_model.ResourceType,
+	dataplaneID core_model.ResourceKey,
+	subscription *mesh_proto.DiscoverySubscription,
+	secretsInfo *secrets.Info,
+) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
 		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
@@ -171,6 +205,8 @@ func (s *dataplaneInsightStore) Upsert(ctx context.Context, dataplaneType core_m
 			if err := insight.Spec.UpdateSubscription(subscription); err != nil {
 				return err
 			}
+
+			insight.Spec.Metadata = xdsMetadata
 
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil

@@ -36,6 +36,17 @@ selector:
 			}, `
 template: "{{ .Name }}.mesh"
 `),
+		ErrorCase("spec.extension.type empty",
+			validators.Violation{
+				Field:   `spec.extension.type`,
+				Message: `must not be empty`,
+			}, `
+template: "{{ .Name }}.mesh"
+selector:
+  meshService: {}
+extension:
+  config: {}
+`),
 		ErrorCase("spec.selector has too many selectors",
 			validators.Violation{
 				Field:   `spec.selector`,

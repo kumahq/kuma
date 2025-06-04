@@ -1,0 +1,8 @@
+#/zoneingresses/zone-ingress-1 200
+type: ZoneIngress
+name: zone-ingress-1
+networking:
+  address: 10.2.3.4
+  advertisedAddress: 10.3.4.5
+  port: 1000
+  advertisedPort: 1000

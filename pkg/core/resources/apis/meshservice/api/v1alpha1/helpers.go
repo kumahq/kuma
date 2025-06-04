@@ -6,14 +6,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshServiceResource) DestinationName(port uint32) string {
-	id := kri.From(m, "")
-	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshServiceResourceTypeDescriptor.ShortName, port)
+	return destinationname.LegacyName(kri.From(m, ""), MeshServiceResourceTypeDescriptor.ShortName, port)
 }
 
 func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {

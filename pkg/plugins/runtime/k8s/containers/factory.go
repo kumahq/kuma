@@ -203,6 +203,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 			FailureThreshold:    i.ContainerConfig.StartupProbe.FailureThreshold,
 		}
 	}
+
 	if waitForDataplaneReady {
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
@@ -269,6 +270,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
 		},
+	}
+	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: xdsTransportProtocol,
+		}
 	}
 	if i.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{

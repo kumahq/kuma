@@ -80,6 +80,10 @@ var _ = Describe("MeshExternalService", func() {
 				name: "external-service-very-long-very-long-very-long-very-long-very-long-very-long-very-long",
 				file: "name-too-long",
 			}),
+			Entry("name length 63", testCase{
+				name: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+				file: "name-length-63",
+			}),
 		)
 	})
 })

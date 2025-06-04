@@ -1,0 +1,90 @@
+# MeshTimeout with mixed targetRef kinds (MeshHTTPRoute and MeshService)
+type: MeshHTTPRoute
+name: http-route-1
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /api
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: backend
+                weight: 100
+---
+type: MeshHTTPRoute
+name: http-route-2
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /admin
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: backend-admin
+                weight: 100
+---
+type: MeshTimeout
+name: matched-for-rules-mt-1
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        idleTimeout: 30s
+        http:
+          requestTimeout: 25s
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: http-route-1
+      default:
+        http:
+          requestTimeout: 15s
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 10s
+        http:
+          requestTimeout: 5s
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: MeshService
+name: backend-admin
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend-admin
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: Mesh
+name: mesh-1

@@ -182,11 +182,11 @@ spec:
       successThreshold: 1
       timeoutSeconds: 24
     volumeMounts:
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
-    - mountPath: /tmp
-      name: kuma-sidecar-tmp
   volumes:
   - name: default-token-w7dxf
     secret:

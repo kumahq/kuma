@@ -15,7 +15,7 @@ helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/generated/raw
-docs/generated/raw:
+docs/generated/raw: docs/generated/raw/rbac.yaml
 	mkdir -p $@
 	cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
 	cp $(HELM_VALUES_FILE) $@/helm-values.yaml
@@ -28,6 +28,14 @@ docs/generated/raw:
 		--jsonschema_out=$@/protos \
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
+
+.PHONY: docs/generated/raw/rbac.yaml
+docs/generated/raw/rbac.yaml:
+	@mkdir -p docs/generated/raw
+	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
+	$(YQ) eval-all 'select((.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding") and (.metadata.annotations["helm.sh/hook"] == null)) | del(.metadata.labels)' - | \
+	grep -Ev '^\s*#' | \
+	sed 's/[[:space:]]*#.*$$//' > $@
 
 OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
 API_DIRS="$(TOP)/api/openapi/specs:base"

@@ -24,6 +24,16 @@ func MeshAccessLog() *MeshAccessLogBuilder {
 	}
 }
 
+func (m *MeshAccessLogBuilder) WithName(name string) *MeshAccessLogBuilder {
+	m.res.Meta.(*test_model.ResourceMeta).Name = name
+	return m
+}
+
+func (m *MeshAccessLogBuilder) WithLabels(labels map[string]string) *MeshAccessLogBuilder {
+	m.res.Meta.(*test_model.ResourceMeta).Labels = labels
+	return m
+}
+
 func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshAccessLogBuilder {
 	m.res.Spec.TargetRef = &targetRef
 	return m

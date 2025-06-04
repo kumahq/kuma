@@ -26,11 +26,6 @@
   ]
  },
  "status": {
-  "vips": [
-   {
-    "ip": "10.0.0.1"
-   }
-  ],
   "tls": {},
   "dataplaneProxies": {}
  }

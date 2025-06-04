@@ -505,6 +505,26 @@ func CollectResponsesAndFailures(
 	return responses, nil
 }
 
+func CountResponseCodes(statusCode int) func(responses []FailureResponse) int {
+	return func(responses []FailureResponse) int {
+		count := 0
+		for _, r := range responses {
+			if r.ResponseCode == statusCode {
+				count++
+			}
+		}
+		return count
+	}
+}
+
+func IndexByResponseCode(responses []FailureResponse) map[int]int {
+	rv := map[int]int{}
+	for _, response := range responses {
+		rv[response.ResponseCode]++
+	}
+	return rv
+}
+
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
 	res, err := callConcurrently(destination, func() (interface{}, error) {
 		return CollectEchoResponse(cluster, source, destination, fn...)

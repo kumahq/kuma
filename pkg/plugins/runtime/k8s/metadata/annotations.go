@@ -136,7 +136,7 @@ const (
 	HeadlessService = "k8s.kuma.io/is-headless-service"
 
 	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
-	// Available values are: DELTA_GRPC and GRPC
+	// Available value is DELTA_GRPC
 	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
 )
 

@@ -23,7 +23,6 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -86,7 +85,8 @@ func DefaultContext(
 			reconcile_v2.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile_v2.If(
-			reconcile_v2.TypeIs(meshservice_api.MeshServiceType),
+			// we don't want status field from global to be synced to the zone
+			reconcile_v2.HasStatus,
 			RemoveStatus()),
 		reconcile_v2.If(func(resource core_model.Resource) bool {
 			// There's a handful of resource types for which we keep the name unchanged

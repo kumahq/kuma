@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -201,12 +202,7 @@ func BuildFromRules(
 }
 
 func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (ToRules, error) {
-	toList, err := buildToList(matchedPolicies.GetItems(), reader)
-	if err != nil {
-		return ToRules{}, err
-	}
-
-	rules, err := BuildRules(toList, false)
+	rules, err := legacyBuildToRules(matchedPolicies, reader)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -232,19 +228,29 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceRe
 	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
 }
 
-func buildToList(matchedPolicies []core_model.Resource, reader kri.ResourceReader) ([]PolicyItemWithMeta, error) {
+func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (Rules, error) {
+	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](matchedPolicies.GetItems())
+	if !ok {
+		return Rules{}, nil
+	}
 	toList := []PolicyItemWithMeta{}
-	for _, mp := range matchedPolicies {
-		tl, err := buildToListWithRoutes(mp, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+	for i, pwtl := range policiesWithTo {
+		if idx := slices.IndexFunc(pwtl.GetToList(), func(item core_model.PolicyItem) bool {
+			return item.GetTargetRef().Kind == common_api.MeshHTTPRoute
+		}); idx >= 0 {
+			continue
+		}
+		meta := matchedPolicies.GetItems()[i].GetMeta()
+		tl, err := buildToListWithRoutes(meta, pwtl, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
 		if err != nil {
 			return nil, err
 		}
 		if len(tl) > 0 {
-			topLevel := mp.GetSpec().(core_model.PolicyWithToList).GetTargetRef()
-			toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta(), topLevel)...)
+			topLevel := pwtl.GetTargetRef()
+			toList = append(toList, BuildPolicyItemsWithMeta(tl, meta, topLevel)...)
 		}
 	}
-	return toList, nil
+	return BuildRules(toList, false)
 }
 
 func BuildGatewayRules(
@@ -284,17 +290,12 @@ func BuildGatewayRules(
 	}, nil
 }
 
-func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
-	policyWithTo, ok := p.GetSpec().(core_model.PolicyWithToList)
-	if !ok {
-		return nil, nil
-	}
-
+func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
 	var mhr *meshhttproute_api.MeshHTTPRouteResource
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
 		for _, route := range httpRoutes {
-			if core_model.IsReferenced(p.GetMeta(), pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
+			if core_model.IsReferenced(meta, pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
 				if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
 					mhr = r
 				}
@@ -541,10 +542,12 @@ func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, err
 		}
 		for _, mergedRule := range merged {
 			rules = append(rules, &Rule{
-				Subset:          ss,
-				Conf:            mergedRule,
-				Origin:          util_slices.Map(common.Origins(relevant, false), getMeta),
-				OriginByMatches: util_maps.MapValues(common.OriginByMatches(relevant), getMeta),
+				Subset: ss,
+				Conf:   mergedRule,
+				Origin: util_slices.Map(common.Origins(relevant, false), getMeta),
+				OriginByMatches: util_maps.MapValues(common.OriginByMatches(relevant), func(_ common_api.MatchesHash, v common.Origin) core_model.ResourceMeta {
+					return getMeta(v)
+				}),
 			})
 		}
 	}

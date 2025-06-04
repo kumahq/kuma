@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Kuma API
   description: Kuma API
@@ -252,7 +252,18 @@ paths:
           $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
           $ref: '#/components/responses/Internal'
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+  - {}
 components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Index:
       type: object

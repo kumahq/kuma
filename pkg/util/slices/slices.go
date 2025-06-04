@@ -18,6 +18,16 @@ func FilterMap[A any, B any](input []A, f func(A) (B, bool)) []B {
 	return output
 }
 
+func Filter[A any](input []A, f func(A) bool) []A {
+	output := make([]A, 0, len(input))
+	for _, a := range input {
+		if ok := f(a); ok {
+			output = append(output, a)
+		}
+	}
+	return output
+}
+
 func Map[A any, B any](input []A, f func(A) B) []B {
 	output := make([]B, len(input))
 	for i, a := range input {
