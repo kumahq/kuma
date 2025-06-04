@@ -359,7 +359,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsNotFound(err) {
 		create = true
 	} else if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to find a resource")
 	}
 
 	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
@@ -415,7 +415,7 @@ func (r *resourceEndpoints) createResource(
 	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
+		rest_errors.HandleError(ctx, response, err, "Failed to create a resource")
 		return
 	}
 
@@ -464,7 +464,7 @@ func (r *resourceEndpoints) updateResource(
 	}
 
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
+		rest_errors.HandleError(ctx, response, err, "Failed to update a resource")
 		return
 	}
 
