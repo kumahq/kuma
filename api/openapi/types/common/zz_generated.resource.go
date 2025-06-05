@@ -9,6 +9,21 @@ const (
 	Mesh   ResourceTypeDescriptionScope = "Mesh"
 )
 
+// DataplaneInbound defines model for DataplaneInbound.
+type DataplaneInbound struct {
+	Kri      string  `json:"kri"`
+	Name     *string `json:"name,omitempty"`
+	Port     int     `json:"port"`
+	Protocol string  `json:"protocol"`
+}
+
+// DataplaneOutbound defines model for DataplaneOutbound.
+type DataplaneOutbound struct {
+	Kri      string `json:"kri"`
+	Port     *int   `json:"port,omitempty"`
+	Protocol string `json:"protocol"`
+}
+
 // FromRule defines model for FromRule.
 type FromRule struct {
 	Inbound Inbound `json:"inbound"`
@@ -34,7 +49,8 @@ type InboundRule struct {
 	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin []ResourceRuleOrigin `json:"origin"`
+	Origin     []ResourceRuleOrigin `json:"origin"`
+	PolicyType *string              `json:"policyType,omitempty"`
 }
 
 // InboundRulesEntry defines model for InboundRulesEntry.
@@ -82,6 +98,22 @@ type Meta struct {
 
 	// Type the type of this resource
 	Type string `json:"type"`
+}
+
+// PoliciesList defines model for PoliciesList.
+type PoliciesList struct {
+	// Policies The final computed configuration, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Policies []PolicyConf `json:"policies"`
+}
+
+// PolicyConf defines model for PolicyConf.
+type PolicyConf struct {
+	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Conf []interface{} `json:"conf"`
+
+	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin     []string `json:"origin"`
+	PolicyType string   `json:"policyType"`
 }
 
 // PolicyDescription information about a policy
