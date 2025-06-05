@@ -27,7 +27,7 @@ func EnsureEnvoyAdminCaExists(
 		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
 		return nil
 	}
-	if !store.IsResourceNotFound(err) {
+	if !store.IsNotFound(err) {
 		return errors.Wrap(err, "error while loading envoy admin CA")
 	}
 	pair, err := tls.GenerateCA()

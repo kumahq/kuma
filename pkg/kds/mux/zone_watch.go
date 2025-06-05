@@ -91,7 +91,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 
 				log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 				if err := zw.rm.Get(ctx, zoneInsight, store.GetByKey(zone.zone, model.NoMesh)); err != nil {
-					if store.IsResourceNotFound(err) {
+					if store.IsNotFound(err) {
 						zw.bus.Send(service.ZoneWentOffline{
 							Zone:     zone.zone,
 							TenantID: zone.tenantID,
