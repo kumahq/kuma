@@ -17,9 +17,9 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kds_middleware "github.com/kumahq/kuma/pkg/kds/middleware"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	kds_middleware "github.com/kumahq/kuma/pkg/kds/middleware"
 )
 
 const (

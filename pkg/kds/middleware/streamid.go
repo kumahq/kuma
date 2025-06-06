@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"google.golang.org/grpc"
-	"sync/atomic"
 	"context"
+	"sync/atomic"
+
+	"google.golang.org/grpc"
 )
 
 func StreamIDStreamInterceptor(streamCounter *int64) grpc.StreamServerInterceptor {

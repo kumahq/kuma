@@ -14,9 +14,9 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	kds_middleware "github.com/kumahq/kuma/pkg/kds/middleware"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	logger_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/logger"
-	kds_middleware "github.com/kumahq/kuma/pkg/kds/middleware"
 )
 
 type LogLevel int
