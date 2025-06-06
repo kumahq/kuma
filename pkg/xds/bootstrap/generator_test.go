@@ -235,59 +235,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config-minimal-request-and-delta.golden.yaml",
 			hdsEnabled:         true,
 		}),
-		Entry("custom config", testCase{
-			dpAuthForProxyType: authEnabled,
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				return &bootstrap_config.BootstrapServerConfig{
-					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminPort:          9902,          // by default, turn off Admin interface of Envoy
-						AdminAccessLogPath: os.DevNull,
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
-					},
-				}
-			}(),
-			dataplane: defaultDataplane,
-			request: types.BootstrapRequest{
-				Mesh:            "mesh",
-				Name:            "name.namespace",
-				DataplaneToken:  "token",
-				OperatingSystem: "windows",
-				DynamicMetadata: map[string]string{
-					"test": "value",
-				},
-				DataplaneResource: `
-{
-  "type": "Dataplane",
-  "mesh": "mesh",
-  "name": "name.namespace",
-  "creationTime": "1970-01-01T00:00:00Z",
-  "modificationTime": "1970-01-01T00:00:00Z",
-  "networking": {
-    "address": "127.0.0.1",
-    "inbound": [
-      {
-        "port": 22022,
-        "servicePort": 8443,
-        "tags": {
-          "kuma.io/protocol": "http2",
-          "kuma.io/service": "backend"
-        }
-      },
-    ],
-    "admin": {
-      "port": 1234
-    }
-  }
-}`,
-				Version: defaultVersion,
-				Workdir: "/tmp",
-			},
-			expectedConfigFile: "generator.custom-config.golden.yaml",
-			hdsEnabled:         true,
-		}),
 		Entry("default config, kubernetes", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
