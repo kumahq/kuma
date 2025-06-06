@@ -45,7 +45,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata map[string]string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata map[string]string, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
 	bootstrapUrl, err := net_url.Parse(opts.Config.ControlPlane.URL)
 	if err != nil {
 		return nil, nil, err
@@ -74,9 +74,9 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 	backoff := retry.WithMaxDuration(opts.Config.ControlPlane.Retry.MaxDuration.Duration, retry.NewConstant(opts.Config.ControlPlane.Retry.Backoff.Duration))
 	var respBytes []byte
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
-		log.Info("trying to fetch bootstrap configuration from the Control Plane", "features", opts.Config.Features())
+		log.Info("trying to fetch bootstrap configuration from the Control Plane", "features", features)
 		bootstrapUrl.Path = "/bootstrap"
-		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, opts, metadata)
+		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, opts, metadata, features)
 		if err == nil {
 			return nil
 		}
@@ -126,7 +126,7 @@ func (b *remoteBootstrapClient) resourceMetadata(cfg kuma_dp.DataplaneResources)
 	return res
 }
 
-func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, opts Opts, metadata map[string]string) ([]byte, error) {
+func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, opts Opts, metadata map[string]string, features []string) ([]byte, error) {
 	var dataplaneResource string
 	if opts.Dataplane != nil {
 		dpJSON, err := json.Marshal(opts.Dataplane)
@@ -190,7 +190,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		ReadinessPort:        opts.Config.Dataplane.ReadinessPort,
 		AppProbeProxyEnabled: opts.Config.ApplicationProbeProxyServer.Port > 0,
 		OperatingSystem:      b.operatingSystem,
-		Features:             opts.Config.Features(),
+		Features:             features,
 		Resources:            resources,
 		Workdir:              opts.Config.DataplaneRuntime.SocketDir,
 		MetricsResources: types.MetricsResources{
