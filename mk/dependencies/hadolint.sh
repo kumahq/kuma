@@ -11,8 +11,6 @@ if [ "$OS" == "darwin" ]; then
   OS="Darwin"
   # Darwin does not have arm builds so we will use x86_64 via rosetta
   ARCH="x86_64"
-elif [ "$OS" == "windows" ]; then
-  OS="Windows"
 elif [ "$OS" == "linux" ]; then
   OS="Linux"
 fi

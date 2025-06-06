@@ -251,10 +251,9 @@ var _ = Describe("bootstrapGenerator", func() {
 			}(),
 			dataplane: defaultDataplane,
 			request: types.BootstrapRequest{
-				Mesh:            "mesh",
-				Name:            "name.namespace",
-				DataplaneToken:  "token",
-				OperatingSystem: "windows",
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				DataplaneToken: "token",
 				DynamicMetadata: map[string]string{
 					"test": "value",
 				},

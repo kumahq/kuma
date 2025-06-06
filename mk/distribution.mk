@@ -45,11 +45,6 @@ endif
 	find $$@ -type f | xargs chmod 555
 	# Text files don't have executable access
 	find $$@ -type f -exec grep -I -q '' {} \; -print | xargs chmod 444
-# Rename all executables to `.exe` when building the windows distrib
-ifeq ($(1),windows)
-        # find on darwin doesn't support `-executable` so we use `-perm +111` which we can't use on Linux
-	find $$@/bin $(if $(findstring Darwin,$(shell uname)),-perm +111,-executable) -type f -exec mv {} {}.exe \;
-endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
 	mkdir -p $$(@D)
