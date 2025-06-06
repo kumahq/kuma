@@ -16,6 +16,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/multitenant"
 	logger_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/logger"
+	kds_middleware "github.com/kumahq/kuma/pkg/kds/middleware"
 )
 
 type LogLevel int
@@ -92,7 +93,10 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-const TenantLoggerKey = "tenantID"
+const (
+	TenantLoggerKey   = "tenantID"
+	StreamIDLoggerKey = "streamID"
+)
 
 // AddFieldsFromCtx will check if provided context contain tracing span and
 // if the span is currently recording. If so, it will call spanLogValuesProcessor
@@ -106,6 +110,10 @@ func AddFieldsFromCtx(
 ) logr.Logger {
 	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
 		logger = logger.WithValues(TenantLoggerKey, tenantId)
+	}
+
+	if streamID, ok := kds_middleware.StreamIDFromCtx(ctx); ok {
+		logger = logger.WithValues(StreamIDLoggerKey, streamID)
 	}
 
 	return addSpanValuesToLogger(logger, ctx, extensions)
