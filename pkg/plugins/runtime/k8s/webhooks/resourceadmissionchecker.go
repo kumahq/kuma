@@ -115,7 +115,7 @@ func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Res
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
+				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
 				Reason:  "Forbidden",
 				Code:    403,
 				Details: &metav1.StatusDetails{
