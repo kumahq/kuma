@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   maybe-backport:
-    uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
+    uses: kumahq/.github/.github/workflows/wfc_backport.yml@60846f1b88c98b78c5f805a3f49faed67df27f71
     permissions:
       contents: read
       pull-requests: write
