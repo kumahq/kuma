@@ -1,5 +1,5 @@
 define LD_FLAGS
--ldflags="-s -w \
+-ldflags="$(if $(filter true,$(DEBUG)),, -s -w) \
 -X github.com/kumahq/kuma/pkg/version.version=$(BUILD_INFO_VERSION) \
 -X github.com/kumahq/kuma/pkg/version.gitTag=$(GIT_TAG) \
 -X github.com/kumahq/kuma/pkg/version.gitCommit=$(GIT_COMMIT) \
