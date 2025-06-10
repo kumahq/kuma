@@ -18,17 +18,17 @@ Right now, Kuma does something similar by generating SPIFFE-like IDs like `spiff
 
 In SPIFFE, a Trust Domain defines which services are allowed to trust each other. It’s like a boundary — services inside the same trust domain can safely communicate. To talk across trust domains (for example, between two companies or clusters), you need federation, which lets them trust each other's identities.
 
-Kuma currently uses the mesh name as the trust domain. While this works inside Kuma, it doesn’t clearly separate trust boundaries, and it limits how easily Kuma can connect with external services or other meshes.
+Kuma currently uses the mesh name as the trust domain. While this works inside Kuma, it doesn’t clearly separate trust boundaries, and it limits how easily Kuma can connect with external services or other applications in the same trust domain.
 
 This setup causes problems when:
 
 * You want to connect Kuma with other SPIFFE-compliant systems outside the mesh
-* You run multiple clusters or meshes that need to trust each other
+* You run multiple clusters that need to trust each other
 * You work in environments that require strict identity standards for security or compliance reasons
 
 To fully support SPIFFE and modern security practices, Kuma should:
 
-* Issue certificates that include only one SPIFFE-compliant URI SAN
+* Issue certificates that include only one SPIFFE-compliant URI SAN (currently we generate `spiffe://<mesh>/<service>` for each inbound and `kuma://kuma.io/<tag_name>/<tag_value>` for each tag)
 * Let users set the trust domain explicitly, not tie it to the mesh name
 * Allow using other systems (like SPIRE) to manage identities
 
@@ -46,6 +46,10 @@ During the entire process, communication between services must remain secure to 
 
 Currently, users can enable mTLS in both single-zone and multi-zone deployments just by configuring it in the Mesh resource. As we introduce features like trust domains, external identities, or federation, we must preserve this simplicity and avoid adding unnecessary complexity to the mTLS setup process.
 
+### As a user, I want to be able to communicate with applications in the different trust domain.
+
+If a user has a different trust domain in each zone, it should be possible to allow communication between these zones.
+
 ### As a Mesh operator, I want to be able to define a trustDomain for an entire mesh or zone
 
 It makes sense to allow users to define a trust domain for a specific part of the infrastructure: whether that's a zone or an entire mesh. However, this becomes tricky when balanced against the need for stricter security guarantees in other areas.
@@ -59,7 +63,6 @@ By assigning unique trust domains per cluster, we achieve security isolation: if
 ### As a Mesh operator, I want to be able to migrate some workloads to another trust domain without interrupting traffic.
 
 I have a workloads in a trust domain `example.com` and I want to move them to `example.org`. I should be able to do it and don't break the traffic.
-
 
 ## Out of scope
 
