@@ -36,7 +36,7 @@ To fully support SPIFFE and modern security practices, Kuma should:
 
 ### As a user, I want a Dataplane (e.g., Service A) inside the mesh to accept mTLS connections from a service (e.g., Service B) outside the mesh.
 
-A user should be able to use certificates signed by the same Certificate Authority (CA) across different services. This capability simplifies migration paths and unlocks use cases such as enabling mTLS communication between services inside the mesh and components outside the mesh (e.g., a gateway without a sidecar proxy).
+A user should be able to use certificates signed by the same Certificate Authority (CA) across different services. This capability simplifies migration paths and unlocks use cases such as enabling mTLS communication between services inside the mesh and components outside the mesh (e.g., a gateway without a sidecar proxy). It's also worth mentioning that the CA might be managed by another component e.g.: SPIRE, which can issue certificates that are SPIFFE compliant.
 
 ### As a user, I want to be able to rotate or change the Certificate Authority (CA) used for issuing mTLS identities without interrupting existing connections or causing service downtime.
 
