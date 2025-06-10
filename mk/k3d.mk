@@ -2,8 +2,10 @@ CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
 K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
 
+PROJECT_NAME ?= kuma
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
+KUMA_SETTINGS_PREFIX ?=
 # Comment about PORT_PREFIX generation
 #
 # First step: $(KIND_CLUSTER_NAME:kuma%=300%) will replace a string "kuma" from
@@ -77,31 +79,32 @@ ifdef IPV6
 endif
 
 K3D_HELM_DEPLOY_OPTS = \
-	--set global.image.registry="$(DOCKER_REGISTRY)"
-
-ifeq ($(BUILD_INFO_VERSION),0.0.0-preview.vlocal-build)
-	K3D_HELM_DEPLOY_OPTS += \
-		--set global.image.tag="$(BUILD_INFO_VERSION)"
-else
-	K3D_HELM_DEPLOY_OPTS += \
-		--set controlPlane.image.tag="$(BUILD_INFO_VERSION)" \
-		--set cni.image.tag="$(BUILD_INFO_VERSION)" \
-		--set dataPlane.image.tag="$(BUILD_INFO_VERSION)" \
-		--set dataPlane.initImage.tag="$(BUILD_INFO_VERSION)" \
-		--set kumactl.image.tag="$(BUILD_INFO_VERSION)"
-endif
+	--set $(KUMA_SETTINGS_PREFIX)global.image.registry="$(DOCKER_REGISTRY)" \
+	--set $(KUMA_SETTINGS_PREFIX)controlPlane.image.tag="$(BUILD_INFO_VERSION)" \
+	--set $(KUMA_SETTINGS_PREFIX)cni.image.tag="$(BUILD_INFO_VERSION)" \
+	--set $(KUMA_SETTINGS_PREFIX)dataPlane.image.tag="$(BUILD_INFO_VERSION)" \
+	--set $(KUMA_SETTINGS_PREFIX)dataPlane.initImage.tag="$(BUILD_INFO_VERSION)" \
+	--set $(KUMA_SETTINGS_PREFIX)kumactl.image.tag="$(BUILD_INFO_VERSION)"
 
 ifndef K3D_HELM_DEPLOY_NO_CNI
 	K3D_HELM_DEPLOY_OPTS += \
-		--set cni.enabled=true \
-		--set cni.chained=true \
-		--set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
-		--set cni.binDir=/bin/ \
-		--set cni.confName=10-flannel.conflist
+		--set $(KUMA_SETTINGS_PREFIX)cni.enabled=true \
+		--set $(KUMA_SETTINGS_PREFIX)cni.chained=true \
+		--set $(KUMA_SETTINGS_PREFIX)cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
+		--set $(KUMA_SETTINGS_PREFIX)cni.binDir=/bin/ \
+		--set $(KUMA_SETTINGS_PREFIX)cni.confName=10-flannel.conflist
 endif
 
 ifdef K3D_HELM_DEPLOY_ADDITIONAL_OPTS
 	K3D_HELM_DEPLOY_OPTS += $(K3D_HELM_DEPLOY_ADDITIONAL_OPTS)
+endif
+
+ifdef K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS
+K3D_HELM_DEPLOY_OPTS += $(strip \
+  $(foreach setting,$(strip $(K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS)),\
+    --set $(KUMA_SETTINGS_PREFIX)$(setting) \
+  ) \
+)
 endif
 
 define maybe_with_flock
@@ -246,7 +249,10 @@ k3d/deploy/wait/mesh:
 	done
 
 .PHONY: k3d/deploy/wait/cp
-k3d/deploy/wait/cp: k3d/deploy/wait/Available/deployments/kuma-control-plane k3d/deploy/wait/Ready/pods/kuma-control-plane k3d/deploy/wait/mesh
+k3d/deploy/wait/cp: \
+  k3d/deploy/wait/Available/deployments/$(PROJECT_NAME)-control-plane \
+  k3d/deploy/wait/Ready/pods/$(PROJECT_NAME)-control-plane \
+  k3d/deploy/wait/mesh
 
 .PHONY: k3d/deploy/kumactl/install
 k3d/deploy/kumactl/install:
@@ -271,11 +277,11 @@ k3d/restart/kumactl: k3d/stop k3d/start k3d/deploy/kumactl k3d/deploy/demo
 .PHONY: k3d/deploy/helm/clean/release
 k3d/deploy/helm/clean/release:
 ifeq (,$(or $(K3D_DEPLOY_HELM_DONT_CLEAN),$(K3D_DEPLOY_HELM_DONT_CLEAN_RELEASE)))
-	@echo "Deleting Helm release 'kuma'..."
-	@helm delete --wait --ignore-not-found --namespace $(KUMA_NAMESPACE) kuma >/dev/null 2>&1
+	@echo "Deleting Helm release '$(PROJECT_NAME)'..."
+	@helm delete --wait --ignore-not-found --namespace $(KUMA_NAMESPACE) $(PROJECT_NAME) >/dev/null 2>&1
 
 	@echo "Waiting for control plane pods to terminate..."
-	@until $(KUBECTL) get pods --namespace $(KUMA_NAMESPACE) --selector app=kuma-control-plane >/dev/null 2>&1; do \
+	@until $(KUBECTL) get pods --namespace $(KUMA_NAMESPACE) --selector app=$(PROJECT_NAME)-control-plane >/dev/null 2>&1; do \
 		echo "  Still terminating..."; \
 		sleep 1; \
 	done
@@ -299,12 +305,12 @@ k3d/deploy/helm/clean: k3d/deploy/helm/clean/release k3d/deploy/helm/clean/ns
 
 .PHONY: k3d/deploy/helm/upgrade
 k3d/deploy/helm/upgrade:
-	@echo "Upgrading or installing Helm release 'kuma'..."
-	@helm upgrade kuma ./deployments/charts/kuma \
+	@echo "Upgrading or installing Helm release '$(PROJECT_NAME)'..."
+	@helm upgrade $(PROJECT_NAME) ./deployments/charts/$(PROJECT_NAME) \
 		--install \
 		--create-namespace \
 		--namespace $(KUMA_NAMESPACE) \
-		$(strip $(K3D_HELM_DEPLOY_OPTS)) >/dev/null 2>&1
+		$(strip $(K3D_HELM_DEPLOY_OPTS))
 
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load k3d/deploy/helm/clean k3d/deploy/helm/upgrade k3d/deploy/wait/cp
@@ -317,18 +323,21 @@ k3d/deploy/demo: build/kumactl
 # Renamed targets
 
 .PHONY: k3d/deploy/kuma
-k3d/deploy/kuma: k3d/deploy/kumactl
-	@echo
-	@echo " #######################################"
-	@echo " #         Target was renamed          #"
-	@echo " #       Use: k3d/deploy/kumactl       #"
-	@echo " #######################################"
-	@echo
+k3d/deploy/kuma:
+	@>&2 echo
+	@>&2 echo " #######################################"
+	@>&2 echo " #         Target was renamed          #"
+	@>&2 echo " #       Use: k3d/deploy/kumactl       #"
+	@>&2 echo " #######################################"
+	@>&2 echo
+	@exit 1
 
 .PHONY: k3d/restart
-k3d/restart: k3d/restart/kumactl
-	@echo
-	@echo " #######################################"
-	@echo " #         Target was renamed          #"
-	@echo " #      Use: k3d/restart/kumactl       #"
-	@echo " #######################################"
+k3d/restart:
+	@>&2 echo
+	@>&2 echo " #######################################"
+	@>&2 echo " #         Target was renamed          #"
+	@>&2 echo " #      Use: k3d/restart/kumactl       #"
+	@>&2 echo " #######################################"
+	@>&2 echo
+	@exit 1
