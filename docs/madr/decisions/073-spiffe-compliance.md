@@ -81,3 +81,7 @@ Instead, we recommend choosing one of the following approaches:
 
 * Use Kuma as the CA and configure other zones or services to trust its certificates (i.e., share the same root/intermediate CA).
 * Use SPIRE as the CA and federate it across zones and meshes to provide a unified identity source.
+
+### As a user, I want to have trust domain per namespace
+
+I think we shouldn't allow higher granularity than zone or mesh.
