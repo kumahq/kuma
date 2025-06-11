@@ -34,31 +34,31 @@ resources:
                   path: /version1
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: kri_msvc_default___backend_80
                   timeout: 0s
               - match:
                   prefix: /version1/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: kri_msvc_default___backend_80
                   timeout: 0s
               - match:
                   path: /version2
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend-second___msvc_80
+                  cluster: kri_msvc_default___backend-second_80
                   timeout: 0s
               - match:
                   prefix: /version2/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend-second___msvc_80
+                  cluster: kri_msvc_default___backend-second_80
                   timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
           statPrefix: default_backend___msvc_80
     metadata:
