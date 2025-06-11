@@ -14,6 +14,7 @@ type Cluster struct {
 	tags              tags.Tags
 	mesh              string
 	isExternalService bool
+	statName          string
 }
 
 func (c *Cluster) Service() string { return c.service }
@@ -25,6 +26,7 @@ func (c *Cluster) Tags() tags.Tags { return c.tags }
 func (c *Cluster) Mesh() string            { return c.mesh }
 func (c *Cluster) IsExternalService() bool { return c.isExternalService }
 func (c *Cluster) Hash() string            { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
+func (c *Cluster) StatName() string        { return c.statName }
 
 type NewClusterOpt interface {
 	apply(cluster *Cluster)
@@ -92,6 +94,13 @@ func (b *ClusterBuilder) WithTags(tags tags.Tags) *ClusterBuilder {
 func (b *ClusterBuilder) WithExternalService(isExternalService bool) *ClusterBuilder {
 	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
 		cluster.isExternalService = isExternalService
+	}))
+	return b
+}
+
+func (b *ClusterBuilder) WithStatName(statName string) *ClusterBuilder {
+	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
+		cluster.statName = statName
 	}))
 	return b
 }

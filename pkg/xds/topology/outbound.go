@@ -162,7 +162,8 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := mzSvc.DestinationName(port.Port)
+				sectionName, _ := mzSvc.FindSectionNameByPort(port.Port)
+				serviceName := kri.From(mzSvc, sectionName).String()
 
 				existingEndpoints := outbound[ms.DestinationName(port.Port)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
@@ -222,7 +223,8 @@ func fillRemoteMeshServices(
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		for _, port := range ms.Spec.Ports {
-			serviceName := ms.DestinationName(port.Port)
+			sectionName, _ := ms.FindSectionNameByPort(port.Port)
+			serviceName := kri.From(ms, sectionName).String()
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -343,7 +345,9 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := maps.Clone(inbound.GetTags())
-					serviceName := meshSvc.DestinationName(port.Port)
+
+					sectionName, _ := meshSvc.FindSectionNameByPort(port.Port)
+					serviceName := kri.From(meshSvc, sectionName).String()
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -672,7 +676,7 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
-		outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))] = append(outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))], *outboundEndpoint)
+		outbounds[kri.From(mes, "").String()] = append(outbounds[kri.From(mes, "").String()], *outboundEndpoint)
 	}
 	return nil
 }

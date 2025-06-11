@@ -26,3 +26,5 @@ const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-p
 
 // FeatureBindOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses
 const FeatureBindOutbounds string = "feature-bind-outbounds"
+
+const FeatureKRIStats string = "feature-kri-stats"

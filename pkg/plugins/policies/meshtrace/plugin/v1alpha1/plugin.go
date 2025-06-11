@@ -150,9 +150,9 @@ func applyToRealResources(
 	proxy *xds.Proxy,
 ) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
-		service, _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
+		service, _,  _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: &uri,
-		})
+		}, proxy.Metadata.HasFeature(xds_types.FeatureKRIStats))
 		if !found {
 			continue
 		}

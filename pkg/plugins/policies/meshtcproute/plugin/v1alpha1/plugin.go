@@ -165,6 +165,7 @@ func sortRulesToHosts(
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []meshroute_gateway.Sublistener,
 	resolver resolve.LabelResourceIdentifierResolver,
+	proxy *core_xds.Proxy,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 	for _, hostnameTag := range sublisteners {
@@ -188,7 +189,7 @@ func sortRulesToHosts(
 		}
 		// it's ok for us to ignore ResourceRules because MeshGateway routes
 		// target kind: Mesh
-		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener.Rules, resolver))
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener.Rules, resolver, proxy))
 		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,

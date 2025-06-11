@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
@@ -49,12 +50,12 @@ func makeListenerBuilder(
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return envoy_listeners.NewInboundListenerBuilder(
-		apiVersion,
-		address,
-		port,
-		core_xds.SocketAddressProtocolTCP,
-	).Configure(envoy_listeners.TLSInspector())
+	name := kri.From(zoneEgress, "").String()
+
+	return envoy_listeners.
+		NewInboundListenerBuilder(apiVersion, address, port, core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TLSInspector()).
+		WithOverwriteName(name)
 }
 
 func (g Generator) Generate(
@@ -77,13 +78,13 @@ func (g Generator) Generate(
 		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
 		proxy.SecretsTracker = secretsTracker
 
-		for _, generator := range g.ZoneEgressGenerators {
-			rs, err := generator.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
+		for _, zoneEgressGenerator := range g.ZoneEgressGenerators {
+			rs, err := zoneEgressGenerator.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
 			if err != nil {
 				err := errors.Wrapf(
 					err,
 					"%T failed to generate resources for zone egress %q",
-					generator,
+					zoneEgressGenerator,
 					proxy.Id,
 				)
 				return nil, err
@@ -96,6 +97,7 @@ func (g Generator) Generate(
 		if err != nil {
 			return nil, err
 		}
+		core.Log.Info("check listener", "len(listener.(*envoy_listener_v3.Listener).FilterChains)", len(listener.(*envoy_listener_v3.Listener).FilterChains))
 		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
 			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{

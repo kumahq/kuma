@@ -36,6 +36,7 @@ type MapGatewayRulesToHosts func(
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []Sublistener,
 	resolver resolve.LabelResourceIdentifierResolver,
+	proxy *core_xds.Proxy,
 ) []plugin_gateway.GatewayListenerHostname
 
 func CollectListenerInfos(
@@ -105,6 +106,7 @@ func CollectListenerInfos(
 			listener.listener.GetProtocol(),
 			listener.sublisteners,
 			meshCtx.ResolveResourceIdentifier,
+			proxy,
 		)
 
 		infos[port] = plugin_gateway.GatewayListenerInfo{

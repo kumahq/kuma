@@ -5,7 +5,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -20,15 +20,42 @@ func GenerateOutboundListener(
 	apiVersion core_xds.APIVersion,
 	svc meshroute_xds.DestinationService,
 	isTransparent bool,
+	isKRI bool,
 	splits []envoy_common.Split,
 ) (*core_xds.Resource, error) {
-	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TransparentProxying(isTransparent)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-			ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(svc.ServiceName)).
-			Configure(envoy_listeners.TCPProxy(svc.ServiceName, splits...)))).
-		Build()
+	builder := envoy_listeners.NewOutboundListenerBuilder(
+		apiVersion,
+		svc.Outbound.GetAddress(),
+		svc.Outbound.GetPort(),
+		core_xds.SocketAddressProtocolTCP,
+	)
+
+	if svc.Outbound.Resource != nil {
+		builder.WithOverwriteName(svc.Outbound.Resource.String())
+	}
+
+	tproxy := envoy_listeners.TransparentProxying(isTransparent)
+
+	tagsMetadata := envoy_listeners.TagsMetadata(
+		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
+	)
+
+	statsName := svc.ServiceName
+	if isKRI {
+		statsName = svc.Outbound.Resource.String()
+	}
+
+	isKafka := svc.Protocol == mesh.ProtocolKafka
+
+	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+		ConfigureIf(isKafka, envoy_listeners.Kafka(statsName)).
+		Configure(envoy_listeners.TCPProxy(statsName, splits...))
+
+	listener, err := builder.Configure(
+		tproxy,
+		tagsMetadata,
+		envoy_listeners.FilterChain(filterChainBuilder),
+	).Build()
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +84,17 @@ func generateFromService(
 		return nil, nil
 	}
 
-	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
+	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx, proxy)
 
-	isTransparent := !proxy.Metadata.HasFeature(types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
+	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
 
-	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, splits)
+	isKRI := proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats)
+
+	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, isKRI, splits)
 	if err != nil {
 		return nil, err
 	}
+
 	return core_xds.NewResourceSet().Add(listener), nil
 }
 

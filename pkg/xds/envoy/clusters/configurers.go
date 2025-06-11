@@ -50,6 +50,14 @@ func ClientSideMTLSCustomSNI(tracker core_xds.SecretsTracker, mesh *core_mesh.Me
 	})
 }
 
+func CustomStatName(name string) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{
+			StatName: name,
+		})
+	})
+}
+
 func ClientSideMultiIdentitiesMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamTLSReady bool, sni string, identities []string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -113,7 +121,7 @@ func MeshExternalServiceClientSideTLS(endpoints []core_xds.Endpoint, systemCaPat
 func EdsCluster() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.EdsClusterConfigurer{})
-		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+		// builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 
@@ -125,7 +133,7 @@ func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) Clust
 			Endpoints: endpoints,
 			HasIPv6:   hasIPv6,
 		})
-		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+		// builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 
@@ -137,7 +145,7 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 			HasIPv6:                        hasIPv6,
 			AllowMixingIpAndNonIpEndpoints: allowsMixingEndpoints,
 		})
-		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+		// builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 

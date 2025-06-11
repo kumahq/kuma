@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -22,6 +23,7 @@ func MakeTCPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
 ) []envoy_common.Split {
 	return makeSplit(
 		map[core_mesh.Protocol]struct{}{
@@ -36,6 +38,7 @@ func MakeTCPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
+		proxy,
 	)
 }
 
@@ -44,6 +47,7 @@ func MakeHTTPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
 ) []envoy_common.Split {
 	return makeSplit(
 		map[core_mesh.Protocol]struct{}{
@@ -55,6 +59,7 @@ func MakeHTTPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
+		proxy,
 	)
 }
 
@@ -190,43 +195,56 @@ func collectServiceTagService(
 func GetServiceProtocolPortFromRef(
 	meshCtx xds_context.MeshContext,
 	ref *resolve.RealResourceBackendRef,
-) (string, core_mesh.Protocol, uint32, bool) {
+	kriStats bool,
+) (string, string, core_mesh.Protocol, uint32, bool) {
 	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
 	case common_api.MeshExternalService:
 		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource))
 		if mes == nil {
-			return "", "", 0, false
+			return "", "", "", 0, false
 		}
 		port := uint32(mes.Spec.Match.Port)
-		service := mes.DestinationName(port)
+		service := kri.From(mes, "").String()
+		statName := ""
+		if !kriStats {
+			statName = mes.DestinationName(port)
+		}
 		protocol := mes.Spec.Match.Protocol
-		return service, protocol, port, true
+		return service,statName, protocol, port, true
 	case common_api.MeshMultiZoneService:
 		ms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource))
 		if ms == nil {
-			return "", "", 0, false
+			return "", "","", 0, false
 		}
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
-			return "", "", 0, false
+			return "", "","", 0, false
 		}
-		service := ms.DestinationName(port.Port)
+		service := kri.From(ms,ref.Resource.SectionName).String()
+		statName := ""
+		if !kriStats {
+			statName = ms.DestinationName(port.Port)
+		}
 		protocol := port.AppProtocol
-		return service, protocol, port.Port, true
+		return service, statName, protocol, port.Port, true
 	case common_api.MeshService:
 		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource))
 		if ms == nil {
-			return "", "", 0, false
+			return "", "","", 0, false
 		}
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
-			return "", "", 0, false
+			return "", "","", 0, false
 		}
-		service := ms.DestinationName(port.Port)
+		service := kri.From(ms,ref.Resource.SectionName).String()
+		statName := ""
+		if !kriStats {
+			statName = ms.DestinationName(port.Port)
+		}
 		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		return service, protocol, port.Port, true
+		return service, statName, protocol, port.Port, true
 	default:
-		return "", "", 0, false
+		return "", "","", 0, false
 	}
 }
 
@@ -236,12 +254,13 @@ func makeSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
 
 	for _, ref := range refs {
 		if ref.ReferencesRealResource() {
-			if s := handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx); s != nil {
+			if s := handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx, proxy); s != nil {
 				split = append(split, s)
 			}
 		} else {
@@ -260,12 +279,14 @@ func handleRealResources(
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
 ) envoy_common.Split {
 	if ref.Weight == 0 {
 		return nil
 	}
+	useKri := proxy.Metadata.HasFeature(xds_types.FeatureKRIStats)
 
-	service, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref)
+	service, _, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref, useKri)
 	if !ok {
 		return nil
 	}
@@ -274,16 +295,29 @@ func handleRealResources(
 	}
 
 	var clusterName string
+	var statsName string
 	var isExternalService bool
 
 	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
 	case common_api.MeshExternalService:
-		clusterName = meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
+		clusterName = pointer.Deref(ref.Resource).String()
+		statsName = meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+			statsName = clusterName
+		}
 		isExternalService = true
 	case common_api.MeshMultiZoneService:
-		clusterName = meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
+		clusterName = pointer.Deref(ref.Resource).String()
+		statsName = meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+			statsName = clusterName
+		}
 	case common_api.MeshService:
-		clusterName = meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
+		clusterName = pointer.Deref(ref.Resource).String()
+		statsName = meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+			statsName = clusterName
+		}
 	}
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
@@ -307,6 +341,7 @@ func handleRealResources(
 	clusterBuilder := plugins_xds.NewClusterBuilder().
 		WithService(service).
 		WithName(clusterName).
+		WithStatName(statsName).
 		WithTags(envoy_tags.Tags{}.WithTags(mesh_proto.ServiceTag, service)). // todo(lobkovilya): do we need tags for real resource cluster?
 		WithExternalService(isExternalService)
 

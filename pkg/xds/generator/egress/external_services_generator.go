@@ -4,6 +4,7 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -97,6 +98,7 @@ func (*ExternalServicesGenerator) generateCDS(
 					envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCaPath, true),
 				)
 		} else {
+			// TODO: fix naming
 			// There is a case where multiple meshes contain services with
 			// the same names, so we cannot use just "serviceName" as a cluster
 			// name as we would overwrite some clusters with the latest one
@@ -171,6 +173,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		esNames = append(esNames, es.Spec.GetService())
 	}
 
+	core.Log.Info("esNames", "esNames", esNames)
 	for _, esName := range esNames {
 		if !services[esName] {
 			continue
@@ -179,6 +182,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		destinations := meshDestinations.KumaIoServices[esName]
 		destinations = append(destinations, meshDestinations.KumaIoServices[mesh_proto.MatchAllTag]...)
 		for _, destination := range destinations {
+			core.Log.Info("destination", "destination", destination)
 			meshDestination := destination.
 				WithTags(mesh_proto.ServiceTag, esName).
 				WithTags("mesh", meshName)
@@ -205,10 +209,11 @@ func (g *ExternalServicesGenerator) addFilterChains(
 	}
 
 	for _, mes := range meshDestinations.BackendRefs {
-		if !services[mes.DestinationName] {
+		core.Log.Info("mes", "mes", mes)
+		if !services[mes.Name] {
 			return
 		}
-		endpoints := endpointMap[mes.DestinationName]
+		endpoints := endpointMap[mes.Name]
 		if sniUsed[mes.SNI] {
 			continue
 		}
@@ -217,7 +222,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		g.configureFilterChain(
 			apiVersion,
 			internalAddresses,
-			mes.DestinationName,
+			mes.Name,
 			mes.SNI,
 			meshName,
 			endpoints,
@@ -294,10 +299,12 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		// Add the default fall-back route
 		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
+		// TODO: to change
 		routeConfigName := envoy_names.GetOutboundRouteName(esName)
 		if isMeshExternalService(endpoints) {
 			routeConfigName = esName
 		}
+		core.Log.Info("add L7 mes")
 
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(esName, false, internalAddresses)).
@@ -310,6 +317,7 @@ func (*ExternalServicesGenerator) configureFilterChain(
 				DpTags:  nil,
 			}))
 	default:
+		core.Log.Info("add tcp mes")
 		filterChainBuilder.Configure(
 			envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster),
 		)

@@ -33,28 +33,46 @@ func GenerateOutboundListener(
 	apiVersion core_xds.APIVersion,
 	svc meshroute_xds.DestinationService,
 	isTransparent bool,
+	isKRI bool,
 	internalAddresses []core_xds.InternalAddress,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
 ) (*core_xds.Resource, error) {
-	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
+	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(isTransparent)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
-				StatsName:                svc.ServiceName,
-				ForwardClientCertDetails: false,
-				NormalizePath:            true,
-				InternalAddresses:        internalAddresses,
-			})).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
-				Name:    svc.Outbound.NameOrEmpty(),
-				Service: svc.ServiceName,
-				Routes:  routes,
-				DpTags:  originDPPTags,
-			})).
-			ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)))
+
+	resourceName := svc.ServiceName
+
+	if svc.Outbound.Resource != nil {
+		listenerBuilder.WithOverwriteName(svc.Outbound.Resource.String())
+
+		if isKRI {
+			resourceName = svc.Outbound.Resource.String()
+		}
+	}
+
+	var outboundRouteName string
+	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
+		outboundRouteName = resourceName
+	}
+
+	listener, err := listenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
+			StatsName:                resourceName,
+			ForwardClientCertDetails: false,
+			NormalizePath:            true,
+			InternalAddresses:        internalAddresses,
+		})).
+		Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
+			Name:    outboundRouteName,
+			Service: svc.ServiceName,
+			Routes:  routes,
+			DpTags:  originDPPTags,
+		})).
+		ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
 		Build()
+
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +96,7 @@ func generateFromService(
 ) (*core_xds.ResourceSet, error) {
 	var routes []xds.OutboundRoute
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, proxy)
 		if split == nil {
 			continue
 		}
@@ -89,6 +107,7 @@ func generateFromService(
 					clusterCache, servicesAcc,
 					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
 					meshCtx,
+					proxy,
 				)
 			}
 		}
@@ -111,11 +130,21 @@ func generateFromService(
 	}
 
 	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
+	isKRI := proxy.Metadata.HasFeature(xds_types.FeatureKRIStats)
 
-	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, proxy.InternalAddresses, routes, dpTags)
+	listener, err := GenerateOutboundListener(
+		proxy.APIVersion,
+		svc,
+		isTransparent,
+		isKRI,
+		proxy.InternalAddresses,
+		routes,
+		dpTags,
+	)
 	if err != nil {
 		return nil, err
 	}
+
 	return core_xds.NewResourceSet().Add(listener), nil
 }
 
