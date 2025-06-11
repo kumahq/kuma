@@ -104,4 +104,22 @@ var _ = Describe("global view", func() {
 		// then
 		Expect(ip2).To(Equal(ip))
 	})
+
+	It("should allocate new range address if old is out of range", func() {
+		// given
+		host := vips.NewServiceEntry("foo.com")
+		gv, err := vips.NewGlobalView("240.0.0.0/4")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gv).ToNot(BeNil())
+
+		err = gv.Reserve(host, "127.0.0.1")
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		ip, err := gv.Allocate(host)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(ip).To(Equal("240.0.0.0"))
+	})
 })
