@@ -60,9 +60,15 @@ This point is a bit tricky for me, because on one hand, it makes sense to allow 
 
 By assigning unique trust domains per cluster, we achieve security isolation: if one cluster is compromised, the others remain secure. Additionally, it helps with identity scoping, since we can clearly determine the origin of each identity.
 
+Default trust domain: Mesh name
+
 ### As a Mesh operator, I want to be able to migrate some workloads to another trust domain without interrupting traffic.
 
 I have a workloads in a trust domain `example.com` and I want to move them to `example.org`. I should be able to do it and don't break the traffic.
+
+### As a user, I want certificate to be valid for a short period of time
+
+Based on the [specification](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#spiffe-workload-api) certificates should be short-lived.
 
 ## Out of scope
 
@@ -74,7 +80,7 @@ You should use MeshExternalService in this case to configure the outbound connec
 
 In this scenario, you should also use MeshExternalService and include the necessary certificates in the configuration to enable direct mTLS communication.
 
-### As a user, I want to use two different sources of CA (Kuma and SPIRE)
+### As a user, I want to use two different sources of CA (Kuma and SPIRE) at the same time
 
 This is a complex use case and can make the configuration error prone and difficult to manage.
 Instead, we recommend choosing one of the following approaches:
