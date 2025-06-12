@@ -1,4 +1,4 @@
-# MeshLoadBalancingStrategy move `HashPolicies` field out of LB specific structs
+# Moving `HashPolicies` Field Out of Load Balancer Specific Structs in MeshLoadBalancingStrategy
 
 * Status: accepted
 
@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/13436
 
 ## Context and Problem Statement
 
-Today, `HashPolicies` field is located inside the LB specific configs, i.e.
+Currently, the `HashPolicies` field is located inside the load balancer specific configurations, as shown below:
 
 ```yaml
 type: MeshLoadBalancingStrategy
@@ -40,18 +40,18 @@ spec:
                   name: x-header
 ```
 
-Load balancer is configured on the Envoy clusters, while hash policies are configured on the Envoy routes.
+Load balancers are configured on Envoy clusters, while hash policies are configured on Envoy routes.
 
-Today, we simply find all routes pointing to the cluster and update all of them with the same `hashPolicies`.
-But it's a viable use case to configure different hash policies depending on the route.
-That's why we want to add support for `to[].targetRef.kind: MeshHTTPRoute` for MeshLoadBalancingStrategy.
+Currently, we find all routes pointing to a cluster and update them with the same `hashPolicies`.
+However, there's a legitimate use case for configuring different hash policies depending on the specific route.
+This is why we want to add support for `to[].targetRef.kind: MeshHTTPRoute` in MeshLoadBalancingStrategy.
 
-But with the existing API there is a problem:
+The existing API presents two key challenges:
 
-* field `type: RingHash | Maglev | ...` is required and can't be empty
-* field `hashPolicies` is nested inside LB specific fields `ringHash`, `maglev`
+* The field `type: RingHash | Maglev | ...` is required and cannot be empty
+* The `hashPolicies` field is nested inside load balancer specific fields (`ringHash`, `maglev`)
 
-This means if user tries to specify `hashPolicies` for their route, they're forced to pick LB type:
+This means when users attempt to specify `hashPolicies` for their routes, they are forced to select a load balancer type:
 
 ```yaml
 spec:
@@ -61,22 +61,22 @@ spec:
         name: route-1
       default:
         loadBalancer:
-          type: RingHash # has to be specified because 'type' is required
+          type: RingHash # must be specified because 'type' is required
           ringHash:
             hashPolicies: [...]
 ```
 
-Problems with the current approach:
+The current approach presents two significant problems:
 
-* user has to think about LB type while configuring routes
-* from Kuma the policies point of view MeshHTTPRoute conf has more priority than MeshService conf, 
-but we can't guarantee that because multiple routes are sharing the same cluster 
+* Users must consider load balancer type when configuring routes, which creates unnecessary complexity
+* From Kuma's policy perspective, MeshHTTPRoute configuration should have higher priority than MeshService configuration, 
+but we cannot guarantee this behavior because multiple routes share the same cluster
 
 ## Design
 
-### API change
+### API Change
 
-We can bring `hashPolicies` field up to the `default` and deprecate existing `hashPolicies` fields:
+To address these issues, we propose elevating the `hashPolicies` field to the `default` level and deprecating the existing nested `hashPolicies` fields:
 
 ```yaml
 type: MeshLoadBalancingStrategy
@@ -110,7 +110,7 @@ spec:
             tableSize: 1000
 ```
 
-With `hashPolicies` field located at the `default`'s root, targeting MeshHTTPRoute is going to look like:
+With the `hashPolicies` field relocated to the `default` level, targeting a MeshHTTPRoute becomes more intuitive and straightforward:
 
 ```yaml
 type: MeshLoadBalancingStrategy
@@ -128,20 +128,22 @@ spec:
               name: x-header
 ```
 
+This approach properly decouples route-specific hash policies from cluster-level load balancer configuration.
+
 ### Migration
 
-No implications for current MeshLoadBalancingStrategy users. 
+This change has no implications for current MeshLoadBalancingStrategy users.
 
-Applying policies with `default.loadBalancer.ringHash.hashPolicies` or `default.loadBalancer.maglev.hashPolicies` 
-will return warning message suggesting to use `default.hashPolicies`.
+When users apply policies with the legacy fields (`default.loadBalancer.ringHash.hashPolicies` or `default.loadBalancer.maglev.hashPolicies`), 
+they will receive a warning message suggesting migration to the new `default.hashPolicies` field.
 
-Mixing both fields shouldn't be allowed within the single `default` conf.
+To maintain configuration clarity, mixing both old and new fields will not be allowed within a single `default` configuration.
 
-When both fields are mixed in the final conf, `default.hashPolicies` has more priority.
+In cases where both field types appear in the final configuration (e.g., through policy merging), the new `default.hashPolicies` field will take precedence.
 
-#### Example 1
+#### Example 1: Validation Error
 
-The following config should result in validation error:
+The following configuration would result in a validation error because it mixes both old and new hash policy fields within the same configuration:
 
 ```yaml
 spec:
@@ -163,9 +165,11 @@ spec:
                   name: x-test-header-1
 ```
 
-#### Example 2
+This validation prevents ambiguous configurations and encourages users to adopt the new field structure.
 
-User already has a load balancing strategy in place:
+#### Example 2: Migration Path for Existing Configurations
+
+Consider a scenario where a user already has a load balancing strategy in place using the legacy format:
 
 ```yaml
 spec:
@@ -183,7 +187,7 @@ spec:
                   name: x-test-header-1
 ```
 
-They start using per-route configuration:
+Later, they implement per-route configuration using the new format:
 
 ```yaml
 type: MeshLoadBalancingStrategy
@@ -201,10 +205,9 @@ spec:
               name: x-test-header-2
 ```
 
-As a result:
-* when clients consume `test-server-1` on `route-1` hashing is performed on `x-test-header-2` values
-* when clients consume `test-server-1` on other routes, hashing is performed on `x-test-header-1` values
-
+This results in the following behavior:
+* When clients access `test-server-1` through `route-1`, hashing is performed using the `x-test-header-2` values
+* When clients access `test-server-1` through other routes, hashing is performed using the `x-test-header-1` values
 
 ## Implications for Kong Mesh
 
@@ -212,11 +215,11 @@ None
 
 ## Decision
 
-We will move the `hashPolicies` field from load balancer-specific configurations (`ringHash`, `maglev`) to the `default` level in the MeshLoadBalancingStrategy API. This change:
+We will relocate the `hashPolicies` field from load balancer-specific configurations (`ringHash`, `maglev`) to the `default` level in the MeshLoadBalancingStrategy API. This architectural improvement:
 
-1. Decouples hash policy configuration from load balancer type selection
-2. Enables proper per-route hash policy configuration when targeting MeshHTTPRoutes
-3. Maintains backward compatibility by supporting the old configuration format with deprecation warnings
-4. Ensures that when both old and new formats are used, the new `default.hashPolicies` takes precedence
+1. Decouples hash policy configuration from load balancer type selection, simplifying the user experience
+2. Enables proper per-route hash policy configuration when targeting MeshHTTPRoutes, enhancing flexibility
+3. Maintains backward compatibility by supporting the legacy configuration format with appropriate deprecation warnings
+4. Establishes clear precedence rules when both old and new formats appear in the final configuration
 
-This design allows users to configure different hash policies for different routes while maintaining the appropriate load balancer type at the cluster level.
+This design empowers users to configure different hash policies for different routes while maintaining the appropriate load balancer type at the cluster level, resulting in a more intuitive and powerful API.
