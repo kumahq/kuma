@@ -13,6 +13,12 @@ func TLSInspector() ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.TLSInspectorConfigurer{})
 }
 
+func StatPrefix(prefix string) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.StatsConfigurer{ 
+		StatPrefix: prefix,
+	})
+}
+
 func OriginalDstForwarder() ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OriginalDstForwarderConfigurer{})
 }

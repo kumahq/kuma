@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
@@ -49,12 +50,15 @@ func makeListenerBuilder(
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return envoy_listeners.NewInboundListenerBuilder(
+	builder := envoy_listeners.NewInboundListenerBuilder(
 		apiVersion,
 		address,
 		port,
 		core_xds.SocketAddressProtocolTCP,
 	).Configure(envoy_listeners.TLSInspector())
+
+	builder = builder.WithOverwriteName(kri.From(zoneEgress, "").String())
+	return builder
 }
 
 func (g Generator) Generate(
@@ -96,6 +100,7 @@ func (g Generator) Generate(
 		if err != nil {
 			return nil, err
 		}
+		core.Log.Info("check listener", "len(listener.(*envoy_listener_v3.Listener).FilterChains)", len(listener.(*envoy_listener_v3.Listener).FilterChains))
 		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
 			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{

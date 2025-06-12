@@ -102,6 +102,7 @@ func New(
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	systemNamespace string,
+	kriStats bool,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -120,7 +121,7 @@ func New(
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
-			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort,
+			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, kriStats,
 		),
 		systemNamespace: systemNamespace,
 	}, nil
