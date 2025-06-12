@@ -13,8 +13,9 @@ One of the most trusted standards for defining these service identities is SPIFF
 * A standard way to name services: `spiffe://<trust-domain>/<path>`
 * A strict format for certificates, especially the Subject Alternative Name (SAN) - which must contain exactly one URI (the SPIFFE ID)
 * Tools and rules for issuing, rotating, and checking these identities
+* SPIFFE certificates identify workload, not an endpoint or API
 
-Right now, Kuma does something similar by generating SPIFFE-like IDs like `spiffe://<mesh-name>/<service-name>`. But it also adds extra SANs (like `kuma://kuma.io/version/v1`) based on tags. These extra SANs make Kuma's certificates non-compliant with SPIFFE, meaning they can’t be used directly with SPIFFE-based systems like SPIRE, or other tools that expect full compliance.
+Right now, Kuma does something similar by generating SPIFFE-like IDs like `spiffe://<mesh-name>/<service-name>`. But it also adds extra SANs (like `kuma://kuma.io/version/v1`) based on tags. These extra SANs make Kuma's certificates non-compliant with SPIFFE, meaning they can’t be used directly with SPIFFE-based systems like SPIRE, or other tools that expect full compliance. Also, Kuma uses certificates to identify endpoints, whereas SPIFFE-based certificates are used to establish identity via SPIFFE IDs of the workload.
 
 In SPIFFE, a Trust Domain defines which services are allowed to trust each other. It’s like a boundary — services inside the same trust domain can safely communicate. To talk across trust domains (for example, between two companies or clusters), you need federation, which lets them trust each other's identities.
 
@@ -48,19 +49,14 @@ Currently, users can enable mTLS in both single-zone and multi-zone deployments 
 
 ### As a user, I want to be able to communicate with applications in the different trust domain.
 
-If a user has a different trust domain in each zone, it should be possible to allow communication between these zones.
+In the presence of multiple trust domains. Users should be able to trust each domains.
 
-### As a Mesh operator, I want to be able to define a trustDomain for an entire mesh or zone
+### As a Mesh operator, I want to be able to define trustDomain at different levels.
 
-It makes sense to allow users to define a trust domain for a specific part of the infrastructure: whether that's a zone or an entire mesh. However, this becomes tricky when balanced against the need for stricter security guarantees in other areas.
+It makes sense to allow users to define a trust domain for a specific part of the infrastructure: whether that's a zone or an entire mesh.
+By assigning unique trust domains per cluster, we achieve security isolation: if one cluster is compromised, the others remain secure. Additionally, it helps with identity scoping, since we can clearly determine the origin of each identity. Another important aspect is enabling rotation or migration. During the migration, we could use two different trust domains to facilitate the transition from one identity provider to another.
 
-### As a Mesh operator, I should be prevented from configuring the same trust domain in multiple zones when not using SPIRE as the identity provider.
-
-This point is a bit tricky for me, because on one hand, it makes sense to allow users to define a trust domain for an entire mesh (which may span multiple clusters). On the other hand, preventing users from using the same trust domain across different clusters improves security compliance.
-
-By assigning unique trust domains per cluster, we achieve security isolation: if one cluster is compromised, the others remain secure. Additionally, it helps with identity scoping, since we can clearly determine the origin of each identity.
-
-Default trust domain: Mesh name
+Default trust domain: `spiffe://<mesh>.<clusterId>.kuma.io/`
 
 ### As a Mesh operator, I want to be able to migrate some workloads to another trust domain without interrupting traffic.
 
@@ -69,6 +65,10 @@ I have a workloads in a trust domain `example.com` and I want to move them to `e
 ### As a user, I want certificate to be valid for a short period of time
 
 Based on the [specification](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#spiffe-workload-api) certificates should be short-lived.
+
+### As a user, I want to migrate from Kuma non-SPIFFE complient certificates to SPIRE
+
+We should allow users to migrate from Kuma issued certificates, which are not SPIFFE-compliant, to using SPIRE. This may require an intermediate step to first migrate to SPIFFE-compliant certificates, but the details will be specified later.
 
 ## Out of scope
 
@@ -83,10 +83,12 @@ In this scenario, you should also use MeshExternalService and include the necess
 ### As a user, I want to use two different sources of CA (Kuma and SPIRE) at the same time
 
 This is a complex use case and can make the configuration error prone and difficult to manage.
-Instead, we recommend choosing one of the following approaches:
+We want to add some limitation to avoid issues:
+* A dataplane's identity must come from a single source.
+* For trust domains, identities must be issued by one system only — either SPIRE or Kuma, never both for the same dataplane.
+* It's valid for one dataplane to get its identity from Kuma and another from SPIRE — communication between such dataplanes should still work.
 
-* Use Kuma as the CA and configure other zones or services to trust its certificates (i.e., share the same root/intermediate CA).
-* Use SPIRE as the CA and federate it across zones and meshes to provide a unified identity source.
+To enable this setup, we’ll need to establish a federation mechanism — potentially by having Kuma expose a federation endpoint.
 
 ### As a user, I want to have trust domain per namespace
 
