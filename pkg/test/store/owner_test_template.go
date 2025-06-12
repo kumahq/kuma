@@ -53,7 +53,7 @@ func ExecuteOwnerTests(
 			// then
 			actual := secret_model.NewSecretResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should delete resource when its owner is deleted", func() {
@@ -85,7 +85,7 @@ func ExecuteOwnerTests(
 			// then
 			actual := core_mesh.NewTrafficRouteResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should delete resource when its owner is deleted after owner update", func() {
@@ -120,7 +120,7 @@ func ExecuteOwnerTests(
 			// then
 			actual := core_mesh.NewTrafficRouteResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should delete several resources when their owner is deleted", func() {

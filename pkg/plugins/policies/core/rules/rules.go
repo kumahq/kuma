@@ -542,10 +542,12 @@ func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, err
 		}
 		for _, mergedRule := range merged {
 			rules = append(rules, &Rule{
-				Subset:          ss,
-				Conf:            mergedRule,
-				Origin:          util_slices.Map(common.Origins(relevant, false), getMeta),
-				OriginByMatches: util_maps.MapValues(common.OriginByMatches(relevant), getMeta),
+				Subset: ss,
+				Conf:   mergedRule,
+				Origin: util_slices.Map(common.Origins(relevant, false), getMeta),
+				OriginByMatches: util_maps.MapValues(common.OriginByMatches(relevant), func(_ common_api.MatchesHash, v common.Origin) core_model.ResourceMeta {
+					return getMeta(v)
+				}),
 			})
 		}
 	}

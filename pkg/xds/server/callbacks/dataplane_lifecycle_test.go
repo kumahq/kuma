@@ -119,7 +119,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		// then dataplane should be deleted
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
-		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+		Expect(core_store.IsNotFound(err)).To(BeTrue())
 	})
 
 	It("should not override extisting DP with different service", func() {
@@ -386,7 +386,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 				// then dataplane should be deleted
 				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
-				Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+				Expect(core_store.IsNotFound(err)).To(BeTrue())
 
 				wg.Done()
 			}(i)

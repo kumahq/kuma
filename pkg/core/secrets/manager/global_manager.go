@@ -95,7 +95,7 @@ func (s *globalSecretManager) DeleteAll(ctx context.Context, secrets model.Resou
 		return err
 	}
 	for _, item := range list.Items {
-		if err := s.Delete(ctx, item, core_store.DeleteBy(model.MetaToResourceKey(item.Meta))); err != nil && !core_store.IsResourceNotFound(err) {
+		if err := s.Delete(ctx, item, core_store.DeleteBy(model.MetaToResourceKey(item.Meta))); err != nil && !core_store.IsNotFound(err) {
 			return err
 		}
 	}

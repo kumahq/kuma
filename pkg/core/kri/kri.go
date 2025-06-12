@@ -88,3 +88,7 @@ func IsValid(s string) bool {
 	}
 	return true
 }
+
+func Compare(a, b Identifier) int {
+	return strings.Compare(a.String(), b.String())
+}

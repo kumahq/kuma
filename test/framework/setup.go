@@ -811,9 +811,12 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			serviceName = name
 		}
 		if appYaml == "" {
-			if transparent {
+			switch {
+			case transparent:
 				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", serviceName, additionalTags, redirectPortInbound, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
-			} else {
+			case opts.bindOutbounds:
+				appYaml = fmt.Sprintf(DemoClientDataplaneBindOutbounds, mesh, "13000", "3000", serviceName, additionalTags)
+			default:
 				if opts.serviceProbe {
 					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", serviceName, additionalTags, "80", "8080")
 				} else {

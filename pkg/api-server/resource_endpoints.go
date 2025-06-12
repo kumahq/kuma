@@ -178,7 +178,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 		}
 		if withInsight {
 			insight := r.descriptor.NewInsight()
-			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsResourceNotFound(err) {
+			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsNotFound(err) {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
 				return
 			}
@@ -356,10 +356,10 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 
 	create := false
 	resource := r.descriptor.NewObject()
-	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsResourceNotFound(err) {
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsNotFound(err) {
 		create = true
 	} else if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to find a resource")
 	}
 
 	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
@@ -395,9 +395,6 @@ func (r *resourceEndpoints) createResource(
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
-	if r.descriptor.HasStatus {
-		_ = res.SetStatus(resRest.GetStatus())
-	}
 
 	labels, err := core_model.ComputeLabels(
 		res.Descriptor(),
@@ -415,7 +412,7 @@ func (r *resourceEndpoints) createResource(
 	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
+		rest_errors.HandleError(ctx, response, err, "Failed to create a resource")
 		return
 	}
 
@@ -445,9 +442,6 @@ func (r *resourceEndpoints) updateResource(
 	}
 
 	_ = currentRes.SetSpec(newResRest.GetSpec())
-	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
-		_ = currentRes.SetStatus(newResRest.GetStatus())
-	}
 	labels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
@@ -464,7 +458,7 @@ func (r *resourceEndpoints) updateResource(
 	}
 
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
+		rest_errors.HandleError(ctx, response, err, "Failed to update a resource")
 		return
 	}
 
@@ -552,6 +546,12 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	if ok {
 		if oerr := origin.IsValid(); oerr != nil {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
+		}
+	}
+
+	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
+		if ok && origin != mesh_proto.GlobalResourceOrigin {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
 		}
 	}
 
@@ -776,7 +776,14 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
+		dataplaneInsight := core_mesh.NewDataplaneInsightResource()
+		err = r.resManager.Get(ctx, dataplaneInsight, store.GetByKey(name, mesh))
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to fetch dataplane insight")
+			return
+		}
+
+		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata), r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
 			return

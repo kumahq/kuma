@@ -364,7 +364,18 @@ paths:
           $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
           $ref: '#/components/responses/Internal'
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+  - {}
 components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Index:
       type: object

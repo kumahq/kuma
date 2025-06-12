@@ -8,7 +8,8 @@
     "creationTimestamp": "2024-01-24T09:52:46Z",
     "generation": 1,
     "labels": {
-      "kuma.io/mesh": "default"
+      "kuma.io/mesh": "default",
+      "kuma.io/origin": "zone"
     },
     "name": "default",
     "namespace": "kuma-system",

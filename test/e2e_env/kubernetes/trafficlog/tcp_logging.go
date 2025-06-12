@@ -156,7 +156,7 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 
 				stdout, _, err = kubernetes.Cluster.Exec(tcpSinkNamespace, tcpSinkPodName,
-					"tcp-sink", "head", "-1", "/nc.out")
+					"tcp-sink", "tail", "-1", "/nc.out")
 				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
 				g.Expect(parts).To(HaveLen(3))
@@ -166,10 +166,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)
 
-			// Just testing that it is a timestamp, not accuracy. If it's
-			// an int that would represent Unix time within an hour of now
-			// it's probably a timestamp substitution.
-			Expect(startTime).To(BeTemporally("~", time.Now(), time.Hour))
+			Expect(startTime).To(BeTemporally("~", time.Now(), time.Minute))
 
 			Expect(src).To(Equal("demo-client_trafficlog-tcp-logging_svc"))
 			Expect(strings.TrimSpace(dst)).To(Equal("test-server_trafficlog-tcp-logging_svc_80"))

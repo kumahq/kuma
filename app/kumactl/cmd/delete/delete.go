@@ -18,6 +18,10 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	allNames := []string{}
 	for _, desc := range pctx.Runtime.Registry.ObjectDescriptors(model.HasKumactlEnabled()) {
 		byName[desc.KumactlArg] = desc
+		if desc.KumactlArgAlias != "" {
+			byName[desc.KumactlArgAlias] = desc
+			allNames = append(allNames, desc.KumactlArgAlias)
+		}
 		allNames = append(allNames, desc.KumactlArg)
 	}
 	sort.Strings(allNames)
@@ -66,7 +70,7 @@ func deleteResource(name string, mesh string, desc model.ResourceTypeDescriptor,
 	resource := desc.NewObject()
 	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return errors.Errorf("there is no %s with name %q", desc.Name, name)
 		}
 		return errors.Wrapf(err, "failed to delete %s with the name %q", desc.Name, name)

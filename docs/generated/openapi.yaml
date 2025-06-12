@@ -3458,6 +3458,13 @@ paths:
         '200':
           $ref: '#/components/responses/MeshServiceList'
 components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Index:
       type: object
@@ -16193,6 +16200,18 @@ components:
         spec:
           description: Spec is the specification of the Kuma HostnameGenerator resource.
           properties:
+            extension:
+              description: Extension struct for a plugin configuration
+              properties:
+                config:
+                  description: Config freeform configuration for the extension.
+                  x-kubernetes-preserve-unknown-fields: true
+                type:
+                  description: Type of the extension.
+                  type: string
+              required:
+                - type
+              type: object
             selector:
               properties:
                 meshExternalService:
@@ -17812,4 +17831,8 @@ components:
             zones:
               - name: east
               - name: west
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+  - {}
 
