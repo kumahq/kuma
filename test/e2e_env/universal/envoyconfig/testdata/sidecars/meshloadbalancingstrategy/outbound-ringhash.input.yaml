@@ -1,0 +1,20 @@
+type: MeshLoadBalancingStrategy
+name: mlbst-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        loadBalancer:
+          type: RingHash
+          ringHash:
+            minRingSize: 100
+            maxRingSize: 10000
+            hashPolicies:
+            - type: Header
+              header:
+                name: x-header
