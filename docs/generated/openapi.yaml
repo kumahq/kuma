@@ -297,6 +297,78 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_routes:
+    get:
+      operationId: get-outbound-routes
+      summary: Get routes configuration for this outbound
+      description: >-
+        Returns routes configuration derived from combining all routes on this
+        outbound
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutesListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{outbound-kri}/_routes/{route-kri}/_policies:
+    get:
+      operationId: get-route-policy-conf
+      summary: Get policies for this route
+      description: >-
+        Returns route policy configuration derived from combining all policies
+        selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: outbound-kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+        - in: path
+          name: route-kri
+          required: true
+          description: The KRI of the Route to get the configuration for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutePolicyConfResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -5121,11 +5193,11 @@ components:
     PolicyConf:
       type: object
       required:
-        - policyType
+        - kind
         - conf
         - origin
       properties:
-        policyType:
+        kind:
           type: string
         conf:
           description: >-
@@ -5136,11 +5208,9 @@ components:
             order of merging influenced by factors such as where the policy was
             applied (e.g., custom namespace, system, or global control plane),
             policy role, and targetRef specificity.
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-            x-go-type: interface{}
+          type: object
+          additionalProperties: true
+          x-go-type: interface{}
         origin:
           type: array
           description: >-
@@ -5166,6 +5236,117 @@ components:
             policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/PolicyConf'
+    InboundPolicyConf:
+      type: object
+      required:
+        - kind
+        - rules
+        - origin
+      properties:
+        kind:
+          type: string
+        rules:
+          type: array
+          items:
+            type: object
+            required:
+              - conf
+            properties:
+              conf:
+                description: >-
+                  The final computed configuration for the data plane proxy,
+                  derived by merging all policies whose 'targetRef' field
+                  matches the proxy. The merging process follows [RFC 7396 (JSON
+                  Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396),
+                  with the order of merging influenced by factors such as where
+                  the policy was applied (e.g., custom namespace, system, or
+                  global control plane), policy role, and targetRef specificity.
+                type: object
+                additionalProperties: true
+                x-go-type: interface{}
+        origin:
+          type: array
+          description: >-
+            The list of policies KRI that contributed to the 'conf'. The order
+            is important as it reflects in what order confs were merged to get
+            the resulting 'conf'.
+          items:
+            type: string
+    InboundPoliciesList:
+      type: object
+      required:
+        - policies
+      properties:
+        policies:
+          type: array
+          description: >-
+            The final computed configuration, derived by merging all policies
+            whose 'targetRef' field matches the proxy. The merging process
+            follows [RFC 7396 (JSON Merge
+            Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the
+            order of merging influenced by factors such as where the policy was
+            applied (e.g., custom namespace, system, or global control plane),
+            policy role, and targetRef specificity.
+          items:
+            $ref: '#/components/schemas/InboundPolicyConf'
+    RouteConf:
+      type: object
+      required:
+        - kind
+        - rules
+        - origin
+      properties:
+        kind:
+          type: string
+        rules:
+          type: array
+          description: Computed list of routing rules
+          items:
+            type: object
+            required:
+              - kri
+              - conf
+              - matches
+            properties:
+              kri:
+                type: string
+              matches:
+                type: array
+                description: List of matches for which this rule will apply
+                items:
+                  type: object
+                  additionalProperties: true
+                  x-go-type: interface{}
+              conf:
+                description: >-
+                  The final computed configuration for the data plane proxy,
+                  derived by merging all policies whose 'targetRef' field
+                  matches the proxy. The merging process follows [RFC 7396 (JSON
+                  Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396),
+                  with the order of merging influenced by factors such as where
+                  the policy was applied (e.g., custom namespace, system, or
+                  global control plane), policy role, and targetRef specificity.
+                type: object
+                additionalProperties: true
+                x-go-type: interface{}
+        origin:
+          type: array
+          description: >-
+            The list of policies KRI that contributed to the 'conf'. The order
+            is important as it reflects in what order confs were merged to get
+            the resulting 'conf'.
+          items:
+            type: string
+    RoutesList:
+      type: object
+      required:
+        - routes
+      properties:
+        routes:
+          type: array
+          description: Computed list of routes
+          items:
+            $ref: '#/components/schemas/RouteConf'
     NotFoundError:
       allOf:
         - $ref: '#/components/schemas/Error'
@@ -17190,9 +17371,21 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/PoliciesList'
+            $ref: '#/components/schemas/InboundPoliciesList'
     OutboundPolicyConfResponse:
       description: A response containing policies configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PoliciesList'
+    RoutesListResponse:
+      description: A response containing routes configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RoutesList'
+    RoutePolicyConfResponse:
+      description: A response containing policies configuration for selected route
       content:
         application/json:
           schema:

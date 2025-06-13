@@ -43,6 +43,24 @@ type Inbound struct {
 	Tags map[string]string `json:"tags"`
 }
 
+// InboundPoliciesList defines model for InboundPoliciesList.
+type InboundPoliciesList struct {
+	// Policies The final computed configuration, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Policies []InboundPolicyConf `json:"policies"`
+}
+
+// InboundPolicyConf defines model for InboundPolicyConf.
+type InboundPolicyConf struct {
+	Kind string `json:"kind"`
+
+	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin []string `json:"origin"`
+	Rules  []struct {
+		// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+		Conf interface{} `json:"conf"`
+	} `json:"rules"`
+}
+
 // InboundRule defines model for InboundRule.
 type InboundRule struct {
 	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
@@ -109,11 +127,11 @@ type PoliciesList struct {
 // PolicyConf defines model for PolicyConf.
 type PolicyConf struct {
 	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
-	Conf []interface{} `json:"conf"`
+	Conf interface{} `json:"conf"`
+	Kind string      `json:"kind"`
 
 	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin     []string `json:"origin"`
-	PolicyType string   `json:"policyType"`
+	Origin []string `json:"origin"`
 }
 
 // PolicyDescription information about a policy
@@ -178,6 +196,30 @@ type ResourceTypeDescription struct {
 
 // ResourceTypeDescriptionScope defines model for ResourceTypeDescription.Scope.
 type ResourceTypeDescriptionScope string
+
+// RouteConf defines model for RouteConf.
+type RouteConf struct {
+	Kind string `json:"kind"`
+
+	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin []string `json:"origin"`
+
+	// Rules Computed list of routing rules
+	Rules []struct {
+		// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+		Conf interface{} `json:"conf"`
+		Kri  string      `json:"kri"`
+
+		// Matches List of matches for which this rule will apply
+		Matches []interface{} `json:"matches"`
+	} `json:"rules"`
+}
+
+// RoutesList defines model for RoutesList.
+type RoutesList struct {
+	// Routes Computed list of routes
+	Routes []RouteConf `json:"routes"`
+}
 
 // Rule defines model for Rule.
 type Rule struct {

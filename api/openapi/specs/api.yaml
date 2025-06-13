@@ -273,6 +273,74 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_routes:
+    get:
+      operationId: get-outbound-routes
+      summary: Get routes configuration for this outbound
+      description: Returns routes configuration derived from combining all routes on this outbound
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutesListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{outbound-kri}/_routes/{route-kri}/_policies:
+    get:
+      operationId: get-route-policy-conf
+      summary: Get policies for this route
+      description: Returns route policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: outbound-kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+        - in: path
+          name: route-kri
+          required: true
+          description: The KRI of the Route to get the configuration for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutePolicyConfResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -796,9 +864,21 @@ components:
       content:
         application/json:
           schema:
-            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+            $ref: './common/resource.yaml#/components/schemas/InboundPoliciesList'
     OutboundPolicyConfResponse:
       description: A response containing policies configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+    RoutesListResponse:
+      description: A response containing routes configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/RoutesList'
+    RoutePolicyConfResponse:
+      description: A response containing policies configuration for selected route
       content:
         application/json:
           schema:
