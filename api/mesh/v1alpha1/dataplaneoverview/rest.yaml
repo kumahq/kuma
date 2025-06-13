@@ -1,0 +1,79 @@
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "DataplaneOverview"
+
+paths:
+  /meshes/{mesh}/dataplanes/{name}/_overview:
+    get:
+      operationId: getDataplaneOverview
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/_overview:
+    get:
+      operationId: getDataplaneOverviewList
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+
+components:
+  schemas:
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: './common/resource.yaml#/components/schemas/Meta'
+        - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
+
+  responses:
+    GetDataplaneOverviewResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+    GetDataplaneOverviewListResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataplaneOverviewWithMeta'

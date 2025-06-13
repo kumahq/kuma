@@ -9,6 +9,11 @@ import (
 	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
 )
 
+const (
+	BasicAuthScopes  = "BasicAuth.Scopes"
+	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
 // Defines values for GetDataplanesXdsConfigParamsInclude.
 const (
 	Diff GetDataplanesXdsConfigParamsInclude = "diff"
