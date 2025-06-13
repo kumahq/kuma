@@ -14,9 +14,9 @@ paths:
         '200':
           $ref: '#/components/responses/IndexResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -27,9 +27,9 @@ paths:
         '200':
           $ref: '#/components/responses/ResourceTypeDescriptionListResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /global-insight:
     get:
       operationId: get-global-insight
@@ -40,9 +40,9 @@ paths:
         '200':
           $ref: '#/components/responses/GlobalInsightResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -76,49 +76,9 @@ paths:
         '200':
           $ref: '#/components/responses/InspectRulesResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_overview:
-    get:
-      operationId: getDataplaneOverview
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-        - in: path
-          name: name
-          required: true
-          description: The name of the DPP within the mesh to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GetDataplaneOverviewResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/_overview:
-    get:
-      operationId: getDataplaneOverviewList
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       operationId: get-dataplanes-xds-config
@@ -158,9 +118,9 @@ paths:
         '200':
           $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -211,9 +171,9 @@ paths:
         '200':
           $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
     get:
       operationId: inspect-hostnames
@@ -247,11 +207,11 @@ paths:
         '200':
           $ref: '#/components/responses/InspectHostnamesResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '404':
           $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -316,10 +276,6 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: './common/resource.yaml#/components/schemas/Meta'
-        - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
     DataplaneXDSConfig:
       type: object
       title: DataplaneXDSConfig
@@ -604,28 +560,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneXDSConfig'
-    GetDataplaneOverviewResponse:
-      description: A response containing the overview of a dataplane.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/DataplaneOverviewWithMeta'
-    GetDataplaneOverviewListResponse:
-      description: A response containing the overview of a dataplane.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              total:
-                type: integer
-                example: 200
-              next:
-                type: string
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DataplaneOverviewWithMeta'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:
@@ -641,18 +575,6 @@ components:
           examples:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
-    BadRequest:
-      description: Bad Request
-      content:
-        application/problem+json:
-          schema:
-            $ref: './common/error_schema.yaml#/components/schemas/Error'
-    Internal:
-      description: Internal Server Error
-      content:
-        application/problem+json:
-          schema:
-            $ref: './common/error_schema.yaml#/components/schemas/Error'
   examples:
     GlobalInsightExample:
       value:

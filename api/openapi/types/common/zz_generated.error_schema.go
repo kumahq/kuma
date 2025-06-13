@@ -44,5 +44,11 @@ type NotFoundError struct {
 	Type              *interface{}         `json:"type,omitempty"`
 }
 
+// BadRequest standard error
+type BadRequest = Error
+
+// Internal standard error
+type Internal = Error
+
 // NotFound defines model for NotFound.
 type NotFound = NotFoundError
