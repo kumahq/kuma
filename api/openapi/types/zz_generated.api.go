@@ -201,9 +201,6 @@ type SchemasGlobalInsight struct {
 	Zones ZonesStats `json:"zones"`
 }
 
-// BadRequest standard error
-type BadRequest = externalRef0.Error
-
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
 type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
@@ -221,9 +218,6 @@ type InspectHostnamesResponse = InspectHostnames
 
 // InspectRulesResponse A list of rules for a dataplane
 type InspectRulesResponse = InspectRules
-
-// Internal standard error
-type Internal = externalRef0.Error
 
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList

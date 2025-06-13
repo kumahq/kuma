@@ -26,9 +26,9 @@ paths:
         '200':
           $ref: '#/components/responses/GetDataplaneOverviewResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/_overview:
     get:
       operationId: getDataplaneOverviewList
@@ -43,15 +43,15 @@ paths:
         '200':
           $ref: '#/components/responses/GetDataplaneOverviewListResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/Internal'
 
 components:
   schemas:
     DataplaneOverviewWithMeta:
       allOf:
-        - $ref: './common/resource.yaml#/components/schemas/Meta'
+        - $ref: '/specs/base/specs/common/resource.yaml#/components/schemas/Meta'
         - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
 
   responses:
