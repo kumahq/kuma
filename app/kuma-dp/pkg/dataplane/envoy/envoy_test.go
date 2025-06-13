@@ -1,6 +1,3 @@
-//go:build !windows
-// +build !windows
-
 package envoy_test
 
 import (
@@ -256,16 +253,6 @@ var _ = Describe("Envoy", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(version.Version).To(Equal("1.20.0-dev"))
 			Expect(version.Build).To(Equal("50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.20.0-dev/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL"))
-		})
-
-		It("should properly read envoy version for windows", func() {
-			// when
-			version, err := envoy.GetEnvoyVersion(filepath.Join("testdata", "envoy-mock-windows.exit-0.sh"))
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(version.Version).To(Equal("1.19.0"))
-			Expect(version.Build).To(Equal("68fe53a889416fd8570506232052b06f5a531541/1.19.0/Modified/RELEASE/BoringSSL"))
 		})
 	})
 })
