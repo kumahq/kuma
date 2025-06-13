@@ -33,12 +33,24 @@ Internal listeners:
 - inbound
   - kuma:envoy:admin
   - _kuma:dynamicconfig
+  - listener./tmp/kuma-dp-728637052/kuma-mesh-metric-config.sock
+  - listener.0.0.0.0_15001
+  - listener.0.0.0.0_15006
+  - listener.10.42.0.9_9901
+  - listener.[__]_15001 # is it ipv6?
+  - probe_listener
+  - prometheus_listener
+- outbound
+  - outbound:passthrough:ipv4
+  - outbound:passthrough:ipv6
 
 Internal clusters:
 - access_log_sink
 - kuma:envoy:admin
+- kuma:metrics:hijacker
 - kuma:readiness
 - meshtrace_[zipkin|datadog|otel]
+- envoy_grpc_streams (ads)
 
 Internal virtual Hosts:
 - _kuma:dynamicconfig
@@ -54,6 +66,12 @@ Names in codebase:
 - https://github.com/kumahq/kuma/blob/950ff3353f7e85670717557691b42208b17a6579/pkg/plugins/policies/core/xds/meshroute/listeners.go#L343
 - https://github.com/kumahq/kuma/blob/26af860614cf0792c0bff004ac95e8f5115808fc/pkg/xds/envoy/tags/match.go#L37
 - https://github.com/kumahq/kuma/blob/7bafa578aad6e528befcb6c96f025542fd1f6870/pkg/plugins/policies/meshtrace/plugin/xds/configurer.go#L264
+- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
+
+Only clusters and listeners are exposed in metrics.
+
+Ping gui because it might change the implem of:
+- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
 
 ## Use cases
 
@@ -71,6 +89,8 @@ we can do:
 sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_*}.as_count()
 ```
 
+#### Is this a valid use case if we have profiles in MeshMetric?
+
 ### As an operator I want to drop all stats related to internal resources
 
 So I can use a processor like:
@@ -87,9 +107,13 @@ processors:
             value: "^_.*"  # matches if envoy_cluster starts with _
 ```
 
+#### Is this a valid use case if we have profiles in MeshMetric?
+
 ### As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
 
+### As a Kuma developer I want to distinguish between internal and external resources in Envoy
 
+### As a Kuma developer I want to distinguish between external resources exposed and not exposed in metrics
 
 ## Design
 
