@@ -68,12 +68,32 @@ Names in codebase:
 - https://github.com/kumahq/kuma/blob/7bafa578aad6e528befcb6c96f025542fd1f6870/pkg/plugins/policies/meshtrace/plugin/xds/configurer.go#L264
 - https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
 
+Istio related issues:
+- https://github.com/istio/istio/issues/5311
+- https://github.com/istio/istio/issues/31112#issuecomment-1124049572
+
+Istio doesn't seem to be following any naming convention:
+- clusters
+  - some are in form of [inbound|outbound]|port (like `outbound|9080`)
+  - PassthroughCluster / InboundPassthroughCluster
+  - BlackHoleCluster
+  - prometheus_stats
+  - sds-grpc
+  - xds-grpc
+  - agent
+- listeners
+  - ip_port
+  - virtualOutbound
+  - virtualInbound
+
 Only clusters and listeners are exposed in metrics.
 
 Ping gui because it might change the implem of:
 - https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
 
 ## Use cases
+
+### Looking at a resource name I want to easily relate it to Kuma concepts
 
 ### As a user I want to exclude all stats related to internal resources from a query easily
 
