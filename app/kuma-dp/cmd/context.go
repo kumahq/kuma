@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"io"
 	"path/filepath"
 	"runtime"
 
@@ -22,6 +24,10 @@ type RootContext struct {
 	DataplaneTokenGenerator  func(cfg *kumadp.Config) (component.Component, error)
 	Config                   *kumadp.Config
 	LogLevel                 log.LogLevel
+	// DynamicConfigHandlers are handlers for dynamic configuration files. This is useful to add extra handlers in plugins
+	DynamicConfigHandlers map[string]func(ctx context.Context, reader io.Reader) error
+	// Features is a list of features that are enabled in this kuma-dp instance. This is useful to enable/disable features in plugins.
+	Features []string
 }
 
 // defaultDataplaneTokenGenerator uses only given tokens or paths from the
@@ -54,6 +60,7 @@ func DefaultRootContext() *RootContext {
 		BootstrapClient:          envoy.NewRemoteBootstrapClient(runtime.GOOS),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
+		DynamicConfigHandlers:    map[string]func(ctx context.Context, reader io.Reader) error{},
 		DataplaneTokenGenerator:  defaultDataplaneTokenGenerator,
 	}
 }

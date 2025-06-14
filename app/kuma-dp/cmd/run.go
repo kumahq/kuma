@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
 	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
@@ -168,6 +169,25 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
+			rootCtx.Features = []string{
+				xds_types.FeatureTCPAccessLogViaNamedPipe,
+			}
+
+			if cfg.DNS.ProxyPort != 0 {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
+			}
+
+			if cfg.DataplaneRuntime.TransparentProxy != nil {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
+			}
+
+			if cfg.DataplaneRuntime.BindOutbounds {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
+			}
+			switch cfg.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
+			case "DELTA_GRPC":
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)
+			}
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
@@ -200,7 +220,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("fetching bootstrap configuration")
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata)
+			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.Features)
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
@@ -217,6 +237,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
+			// Add external dynamic config handlers
+			for path, handler := range rootCtx.DynamicConfigHandlers {
+				if err := confFetcher.AddHandler(path, handler); err != nil {
+					return errors.Wrapf(err, "could not add dynamic config handler %s", path)
+				}
+			}
 
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
