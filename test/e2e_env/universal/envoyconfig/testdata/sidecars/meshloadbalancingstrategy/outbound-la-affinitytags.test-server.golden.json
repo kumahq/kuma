@@ -2,93 +2,22 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/lbPolicy",
-      "value": "RING_HASH"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/ringHashLbConfig",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/commonLbConfig",
       "value": {
-        "maximumRingSize": "10000",
-        "minimumRingSize": "100"
+        "localityWeightedLbConfig": {}
       }
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
+      "path": "/type.googleapis.com~1envoy.config.endpoint.v3.ClusterLoadAssignment/envoyconfig_test-server__kuma-3_msvc_80/endpoints/0/loadBalancingWeight",
+      "value": 1
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/1/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/3/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/4/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/5/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/6/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header"
-          }
-        }
-      ]
+      "path": "/type.googleapis.com~1envoy.config.endpoint.v3.ClusterLoadAssignment/envoyconfig_test-server__kuma-3_msvc_80/policy",
+      "value": {
+        "overprovisioningFactor": 200
+      }
     }
   ],
   "xds": {
@@ -153,6 +82,9 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "commonLbConfig": {
+          "localityWeightedLbConfig": {}
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -160,12 +92,7 @@
             "resourceApiVersion": "V3"
           }
         },
-        "lbPolicy": "RING_HASH",
         "name": "envoyconfig_test-server__kuma-3_msvc_80",
-        "ringHashLbConfig": {
-          "maximumRingSize": "10000",
-          "minimumRingSize": "100"
-        },
         "transportSocket": {
           "name": "envoy.transport_sockets.tls",
           "typedConfig": {
@@ -427,11 +354,15 @@
                 }
               }
             ],
+            "loadBalancingWeight": 1,
             "locality": {
               "zone": "kuma-3"
             }
           }
-        ]
+        ],
+        "policy": {
+          "overprovisioningFactor": 200
+        }
       }
     },
     "type.googleapis.com/envoy.config.listener.v3.Listener": {
@@ -933,126 +864,11 @@
                         "routes": [
                           {
                             "match": {
-                              "path": "/test-route-1"
-                            },
-                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route-1_",
-                            "route": {
-                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
-                          },
-                          {
-                            "match": {
-                              "prefix": "/test-route-1/"
-                            },
-                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route-1_",
-                            "route": {
-                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
-                          },
-                          {
-                            "match": {
-                              "path": "/test-route-2"
-                            },
-                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route-2_",
-                            "route": {
-                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
-                          },
-                          {
-                            "match": {
-                              "prefix": "/test-route-2/"
-                            },
-                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route-2_",
-                            "route": {
-                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
-                          },
-                          {
-                            "match": {
-                              "path": "/test-route-3"
-                            },
-                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route-3_",
-                            "route": {
-                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
-                          },
-                          {
-                            "match": {
-                              "prefix": "/test-route-3/"
-                            },
-                            "name": "kri_mhttpr_envoyconfig_kuma-3__test-route-3_",
-                            "route": {
-                              "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
-                          },
-                          {
-                            "match": {
                               "prefix": "/"
                             },
                             "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
                             "route": {
                               "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header"
-                                  }
-                                }
-                              ],
                               "idleTimeout": "1800s",
                               "timeout": "15s"
                             }

@@ -18,3 +18,48 @@ spec:
             - type: Header
               header:
                 name: x-header
+---
+type: MeshHTTPRoute
+name: test-route-1
+mesh: envoyconfig
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test-route-1
+          default: {}
+---
+type: MeshHTTPRoute
+name: test-route-2
+mesh: envoyconfig
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test-route-2
+          default: {}
+---
+type: MeshHTTPRoute
+name: test-route-3
+mesh: envoyconfig
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test-route-3
+          default: {}
