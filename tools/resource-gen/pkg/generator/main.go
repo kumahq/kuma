@@ -15,8 +15,11 @@ import (
 
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
@@ -356,8 +359,17 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		SkipKDSHash: true,
 		{{- end}}
 		WsPath: "{{.WsPath}}",
+		{{- if ne .AlternativeWsPath "" }}
+		AlternativeWsPath: "{{.AlternativeWsPath}}",
+		{{- end }}
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",
+		{{- if ne .KumactlSingularAlias ""}}
+		KumactlArgAlias: "{{.KumactlSingularAlias}}",
+		{{- end }}
+		{{- if ne .KumactlPluralAlias ""}}
+		KumactlListArgAlias: "{{.KumactlPluralAlias}}",
+		{{- end }}
 		AllowToInspect: {{.AllowToInspect}},
 		IsPolicy: {{.IsPolicy}},
 		SingularDisplayName: "{{.SingularDisplayName}}",
@@ -447,6 +459,7 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
 	reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}),
 	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
+	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
 }
 
 var ProtoTypeToType = map[string]reflect.Type{
@@ -461,11 +474,12 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		ExpandedStruct:            true,
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
+		IgnoredTypes:              []any{structpb.Struct{}},
 		KeyNamer: func(key string) string {
 			if key == "RSAbits" {
 				return "rsaBits"
 			}
-			return key
+			return snakeToCamel(key)
 		},
 	}
 	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
@@ -549,7 +563,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 
 		wrapped := map[string]interface{}{
-			"openapi": "3.0.3",
+			"openapi": "3.1.0",
 			"info": map[string]string{
 				"x-ref-schema-name": tpe.Name(),
 			},
@@ -698,4 +712,24 @@ func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, 
 		return schema, true
 	}
 	return nil, false
+}
+
+// snakeToCamel converts a snake_case string to camelCase
+func snakeToCamel(s string) string {
+	parts := strings.Split(s, "_")
+	if len(parts) == 1 {
+		return s
+	}
+
+	camel := strings.ToLower(parts[0])
+	caser := cases.Title(language.Und)
+
+	for _, part := range parts[1:] {
+		if part == "" {
+			continue
+		}
+		camel += caser.String(strings.ToLower(part))
+	}
+
+	return camel
 }

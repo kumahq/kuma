@@ -8,15 +8,35 @@ does not have any particular instructions.
 
 ## Upgrade to `2.11.x`
 
-### Introduce an option to skip RBAC creation
+### Embedded Proxy DNS is Enabled by Default
 
-By default, we create all RBAC resources required for the mesh to function properly. Since `2.11.x`, it's possible to skip the creation of `ClusterRole`, `ClusterRoleBinding`, `Role`, and `RoleBinding`. We introduced two flags:
+In version `2.11.x`, we reimplemented how mesh DNS queries are resolved by replacing CoreDNS with our Embedded DNS Server. This server is built into `kuma-dp`. After a pod restart (in Kubernetes) or an upgrade of `kuma-dp` (in Universal mode) to `2.11.x`, the embedded DNS proxy is enabled by default.
 
-* `skipRBAC`: Disables the creation of all RBAC resources (CNI and control plane).
-* `controlPlane.skipClusterRoleCreation`: Disables the creation of `ClusterRole `and `ClusterRoleBinding` resources for the control plane only.
+If you encounter any issues, you can disable it as follows:
 
-> [!WARNING]
-> Before disabling automatic creation, ensure that the necessary RBAC resources are already in place, as the mesh components will not work correctly without them.
+**Kubernetes**
+Disable it by setting the environment variable when deploying `kuma-cp`:
+```bash
+KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY=false
+```
+
+Or via configuration:
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+      builtinDns:
+        experimentalProxy: false
+```
+
+**Universal**
+
+Disable it by running `kuma-dp` with the following environment variable:
+
+```bash
+KUMA_DNS_PROXY_PORT=0
+```
 
 ### `kuma-sidecar` container has `allowPrivilegeEscalation` set to `false`
 
@@ -45,13 +65,14 @@ We have split the `ClusterRole` for the control plane into two parts:
 
 By default, a `ClusterRoleBinding` is used to grant write permissions to the control plane, and no action is required from the user. However, if you want the control plane to have access only in specific namespaces, you can use the `namespaceAllowList` configuration to define where it should have write permissions.
 
-### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
+### Namespaces that are part of the mesh requires `kuma.io/sidecar-injection` label to exist
 
-Since version 2.11.x, to improve performance and security, each namespace participating in the Mesh is required to have the `kuma.io/sidecar-injection` label set.
+Since version 2.11.x, to improve performance and security, each namespace participating in the mesh is required to have the `kuma.io/sidecar-injection` label set.
 
-Before upgrading, check whether any deployments are using the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: false` to those namespaces.
+Before upgrading, check whether any deployments are using the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: disabled` to those namespaces.
 
-You can use this script to detect such namespaces:
+As a one-time fix, you can use this script to detect such namespaces by looking for running mesh-enabled pods:
+
 ```bash
 for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
   ns_label=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.kuma\.io/sidecar-injection}' 2>/dev/null)
@@ -68,6 +89,45 @@ You can later patch namespaces with the following command:
 ```bash
 kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
 ```
+
+It's recommended to update your workflow that creates namespaces to include this label.
+
+### Fixed: Extra Newlines in MeshAccessLog with TCP Backends
+
+This fix affects users of MeshAccessLog policies that send logs to a TCP backend using the `plain` format 
+(or where the format type was not explicitly set):
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp # <--- backend type is 'Tcp'
+            tcp:
+              format:
+                type: Plain 
+                plain: '...' # <--- the format is 'plain' or unspecified
+              address: "%s:9999"
+```
+
+In previous versions of Kuma, logs sent with this setup included **an unintended double newline** between entries, producing output like:
+
+```
+[2025-05-20T14:03:17.123Z] "GET /api/v1/users HTTP/1.1" 200 - "-" "curl/8.1.2" 0 123 45 44 "192.168.1.10" "service-backend" "cluster-backend" "10.0.0.15:8080" "envoy-router" - default
+
+[2025-05-20T14:03:18.456Z] "POST /auth/login HTTP/1.1" 401 - "-" "Mozilla/5.0" 0 98 56 55 "192.168.1.11" "auth-service" "cluster-auth" "10.0.0.20:9090" "envoy-router" - default
+
+[2025-05-20T14:03:19.789Z] "GET /metrics HTTP/1.1" 200 - "-" "Prometheus/2.47.0" 0 6789 12 12 "127.0.0.1" "metrics-service" "cluster-metrics" "127.0.0.1:9100" "envoy-router" - default
+
+```
+This has now been corrected—each log line will end with a single newline `\n`, as intended.
+
+> **Note:** If your logging backend or tooling relied on the previous double-newline behavior (e.g. for framing or parsing), 
+> you can preserve it by manually adding `\n` at the end of your `plain` format string.
 
 ## Upgrade to `2.10.x`
 

@@ -7,6 +7,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -30,8 +31,9 @@ type TransparentProxyGenerator struct{}
 
 func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
+
 	tpCfg := proxy.GetTransparentProxy()
-	if !tpCfg.Redirect.Outbound.Enabled {
+	if !tpCfg.Redirect.Outbound.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		return resources, nil
 	}
 

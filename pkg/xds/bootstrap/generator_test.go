@@ -19,6 +19,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -105,6 +106,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		expectedConfigFile  string
 		dpBootstrapVerifier func(KumaDpBootstrap)
 		hdsEnabled          bool
+		deltaXds            bool
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
@@ -117,7 +119,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				proxyConfig = *given.proxyConfig
 			}
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, given.deltaXds)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -221,16 +223,14 @@ var _ = Describe("bootstrapGenerator", func() {
 			dataplane: func() *core_mesh.DataplaneResource {
 				dp := defaultDataplane()
 				dp.Spec.Networking.Admin.Port = 9902
-				dp.Spec.Envoy = &mesh_proto.EnvoyConfiguration{
-					XdsTransportProtocolVariant: mesh_proto.EnvoyConfiguration_DELTA_GRPC,
-				}
 				return dp
 			},
 			request: types.BootstrapRequest{
-				Mesh:    "mesh",
-				Name:    "name.namespace",
-				Version: defaultVersion,
-				Workdir: "/tmp",
+				Mesh:     "mesh",
+				Name:     "name.namespace",
+				Version:  defaultVersion,
+				Workdir:  "/tmp",
+				Features: []string{xds_types.FeatureDeltaGRPC},
 			},
 			expectedConfigFile: "generator.custom-config-minimal-request-and-delta.golden.yaml",
 			hdsEnabled:         true,
@@ -251,10 +251,9 @@ var _ = Describe("bootstrapGenerator", func() {
 			}(),
 			dataplane: defaultDataplane,
 			request: types.BootstrapRequest{
-				Mesh:            "mesh",
-				Name:            "name.namespace",
-				DataplaneToken:  "token",
-				OperatingSystem: "windows",
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				DataplaneToken: "token",
 				DynamicMetadata: map[string]string{
 					"test": "value",
 				},
@@ -279,9 +278,6 @@ var _ = Describe("bootstrapGenerator", func() {
     ],
     "admin": {
       "port": 1234
-    },
-    "envoy" : {
-      "xdsTransportProtocolVariant": "DELTA_GRPC"
     }
   }
 }`,

@@ -5,8 +5,6 @@ metadata:
     k8s.kuma.io/namespace: kuma-system
     kuma.io/proxy-type: zoneingress
 spec:
-  envoy:
-    xdsTransportProtocolVariant: GRPC
   networking:
     address: 192.168.0.1
     advertisedAddress: 192.168.100.1

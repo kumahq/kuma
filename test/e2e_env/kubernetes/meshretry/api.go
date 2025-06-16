@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -15,17 +16,11 @@ func API() {
 	meshName := "meshretry-api"
 
 	BeforeAll(func() {
-		err := NewClusterSetup().
-			Install(MeshKubernetes(meshName)).
-			Setup(kubernetes.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Delete the default meshretry policy
-		Expect(DeleteMeshPolicyOrError(
-			kubernetes.Cluster,
-			v1alpha1.MeshRetryResourceTypeDescriptor,
-			fmt.Sprintf("mesh-retry-all-%s", meshName),
-		)).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(Yaml(builders.Mesh().
+				WithName(meshName).
+				WithoutInitialPolicies())).
+			Setup(kubernetes.Cluster)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

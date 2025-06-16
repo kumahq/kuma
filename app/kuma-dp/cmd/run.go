@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
 	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
@@ -168,6 +169,25 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
+			rootCtx.Features = []string{
+				xds_types.FeatureTCPAccessLogViaNamedPipe,
+			}
+
+			if cfg.DNS.ProxyPort != 0 {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
+			}
+
+			if cfg.DataplaneRuntime.TransparentProxy != nil {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
+			}
+
+			if cfg.DataplaneRuntime.BindOutbounds {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
+			}
+			switch cfg.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
+			case "DELTA_GRPC":
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)
+			}
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
@@ -200,7 +220,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("fetching bootstrap configuration")
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata)
+			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.Features)
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
@@ -217,6 +237,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
+			// Add external dynamic config handlers
+			for path, handler := range rootCtx.DynamicConfigHandlers {
+				if err := confFetcher.AddHandler(path, handler); err != nil {
+					return errors.Wrapf(err, "could not add dynamic config handler %s", path)
+				}
+			}
 
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
@@ -232,7 +258,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
 					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
 					// Using embedded DNS
-					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("localhost", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
+					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("0.0.0.0", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
 					if err != nil {
 						return err
 					}
@@ -367,6 +393,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyComponentLogLevel, "envoy-component-log-level", "", "Configures Envoy's --component-log-level")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.CertPath, "metrics-cert-path", cfg.DataplaneRuntime.Metrics.CertPath, "A path to the certificate for metrics listener")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.KeyPath, "metrics-key-path", cfg.DataplaneRuntime.Metrics.KeyPath, "A path to the certificate key for metrics listener")
+	cmd.PersistentFlags().BoolVar(&cfg.DataplaneRuntime.BindOutbounds, "bind-outbounds", cfg.DataplaneRuntime.BindOutbounds, "If true then dataplane bind outbounds to real addresses")
 	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")

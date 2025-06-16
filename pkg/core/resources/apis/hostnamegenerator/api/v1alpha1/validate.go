@@ -13,6 +13,7 @@ func (r *HostnameGeneratorResource) validate() error {
 	path := validators.RootedAt("spec")
 	verr.Add(validateSelectors(path.Field("selector"), r.Spec.Selector))
 	verr.AddErrorAt(path.Field("template"), validateTemplate(r.Spec.Template))
+	verr.Add(validateExtension(path.Field("extension"), r.Spec.Extension))
 	return verr.OrNil()
 }
 
@@ -44,6 +45,14 @@ func validateTemplate(tmpl string) validators.ValidationError {
 		Parse(tmpl)
 	if err != nil {
 		verr.AddViolationAt(validators.Root(), errors.Wrap(err, "couldn't parse template").Error())
+	}
+	return verr
+}
+
+func validateExtension(path validators.PathBuilder, extension *Extension) validators.ValidationError {
+	var verr validators.ValidationError
+	if extension != nil && extension.Type == "" {
+		verr.AddViolationAt(path.Field("type"), validators.MustNotBeEmpty)
 	}
 	return verr
 }

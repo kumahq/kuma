@@ -84,6 +84,7 @@ func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.Stre
 		ctx:      ctx,
 		resource: nil,
 	}
+	core.Log.V(1).Info("OnStreamOpen", "streamID", streamID)
 	return nil
 }
 
@@ -94,6 +95,7 @@ func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 }
 
 func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
+	core.Log.V(1).Info("OnStreamRequest auth", "req", req)
 	return a.onStreamRequest(streamID, req, a.getStreams)
 }
 
@@ -117,6 +119,7 @@ func (a *authCallbacks) OnDeltaStreamClosed(streamID int64) {
 }
 
 func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
+	core.Log.V(1).Info("OnStreamDeltaRequest auth", "req", req)
 	return a.onStreamRequest(streamID, req, a.getDeltaStreams)
 }
 
@@ -125,7 +128,6 @@ func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds
 	if err != nil {
 		return err
 	}
-	core.Log.V(1).Info("OnStreamDeltaRequest auth", "req", req)
 
 	if !s.authenticated {
 		credential, err := ExtractCredential(s.ctx)
@@ -196,7 +198,7 @@ func (a *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMeta
 	backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			return retry.RetryableError(errors.Errorf(
 				"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
 				proxyId, resource.Descriptor().Name))

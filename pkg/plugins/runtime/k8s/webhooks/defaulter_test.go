@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
+	v1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -31,6 +32,7 @@ var _ = Describe("Defaulter", func() {
 		inputObject string
 		expected    string
 		kind        string
+		username    string
 		checker     ResourceAdmissionChecker
 	}
 
@@ -71,6 +73,9 @@ var _ = Describe("Defaulter", func() {
 					},
 					Kind: kube_meta.GroupVersionKind{
 						Kind: given.kind,
+					},
+					UserInfo: v1.UserInfo{
+						Username: given.username,
 					},
 				},
 			}
@@ -541,6 +546,8 @@ var _ = Describe("Defaulter", func() {
 		Entry("should not add namespace label when resource originates from universal zone", testCase{
 			checker: globalChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			// when resource originate from the zone it has username of kuma
+			username: "system:serviceaccount:kuma-system:kuma-control-plane",
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",

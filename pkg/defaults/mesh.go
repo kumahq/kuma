@@ -35,7 +35,7 @@ func EnsureDefaultMeshExists(
 		logger.V(1).Info("default Mesh already exists. Skip creating default Mesh.")
 		return nil
 	}
-	if !core_store.IsResourceNotFound(err) {
+	if !core_store.IsNotFound(err) {
 		return err
 	}
 	if err := resManager.Create(ctx, mesh, core_store.CreateBy(defaultMeshKey)); err != nil {

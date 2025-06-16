@@ -250,6 +250,17 @@ var _ = Describe("ComputePolicyRole", func() {
 			namespace:    core_model.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
+		Entry("producer policy for MeshHTTPRoute", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshHTTPRoute("route-1", "kuma-demo"), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:    core_model.NewNamespace("kuma-demo", false),
+			expectedRole: mesh_proto.ProducerPolicyRole,
+		}),
 		Entry("workload-owner policy with from", testCase{
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").

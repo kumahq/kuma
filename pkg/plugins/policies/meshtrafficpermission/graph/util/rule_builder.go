@@ -1,6 +1,7 @@
 package util
 
 import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -17,7 +18,7 @@ func ComputeMtpRulesForTags(
 	resources := context.Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
-				Items: mtpsWithTrimmedTags,
+				Items: filterOutMTPsWithKindDataplane(mtpsWithTrimmedTags),
 			},
 		},
 	}
@@ -46,4 +47,18 @@ func ComputeMtpRulesForTags(
 		Port:    1234,
 	}]
 	return rl, ok, nil
+}
+
+// TODO Currently autoreachable services functionality is based on tags. When MTP selects dataplanes by Dataplane kind
+// we don't have tags to work with. We should rethink how to implement autoreachable services with new workload identity
+// after we design it
+func filterOutMTPsWithKindDataplane(mtps []*mtp_api.MeshTrafficPermissionResource) []*mtp_api.MeshTrafficPermissionResource {
+	var filteredMtps []*mtp_api.MeshTrafficPermissionResource
+	for _, mtp := range mtps {
+		if mtp.Spec != nil && mtp.Spec.GetTargetRef().Kind == common_api.Dataplane {
+			continue
+		}
+		filteredMtps = append(filteredMtps, mtp)
+	}
+	return filteredMtps
 }

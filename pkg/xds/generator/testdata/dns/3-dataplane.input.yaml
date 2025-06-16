@@ -1,4 +1,5 @@
 networking:
+  address: 172.0.0.1
   outbound:
     - port: 80
       address: 240.0.0.0

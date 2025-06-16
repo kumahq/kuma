@@ -13,7 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 )
 
@@ -69,22 +68,6 @@ type Config struct {
 	// DNS defines a configuration for builtin DNS in Kuma DP
 	DNS                         DNS                         `json:"dns,omitempty"`
 	ApplicationProbeProxyServer ApplicationProbeProxyServer `json:"applicationProbeProxyServer,omitempty"`
-}
-
-func (c *Config) Features() []string {
-	base := []string{
-		xds_types.FeatureTCPAccessLogViaNamedPipe,
-	}
-
-	if c.DNS.ProxyPort != 0 {
-		base = append(base, xds_types.FeatureEmbeddedDNS)
-	}
-
-	if c.DataplaneRuntime.TransparentProxy != nil {
-		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
-	}
-
-	return base
 }
 
 func (c *Config) Sanitize() {
@@ -245,6 +228,10 @@ type DataplaneRuntime struct {
 	// including redirect behavior, DNS capture, and IP family mode.
 	// This is used to determine how traffic redirection and interception is handled.
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
+	// BindOutbounds configure dataplane to bind to real loopback addresses
+	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
+	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
+	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
 }
 
 type Metrics struct {
@@ -362,6 +349,15 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
+	}
+	if d.EnvoyXdsTransportProtocolVariant != "" {
+		switch d.EnvoyXdsTransportProtocolVariant {
+		case "DELTA_GRPC":
+		case "GRPC":
+		default:
+			errs = multierr.Append(
+				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
+		}
 	}
 	return errs
 }

@@ -172,6 +172,12 @@ type ResourceTypeDescriptor struct {
 	KumactlArg string
 	// KumactlListArg the name of the cmdline argument when doing `list`.
 	KumactlListArg string
+	// AlternativeWsPath the alternative path to access on the REST api.
+	AlternativeWsPath string
+	// KumactlArgAlias the alternative name of the cmdline argument when doing `get` or `delete`.
+	KumactlArgAlias string
+	// KumactlListArgAlias the alternative name of the cmdline argument when doing `list`.
+	KumactlListArgAlias string
 	// AllowToInspect if it's required to generate Inspect API endpoint for this type
 	AllowToInspect bool
 	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
@@ -645,8 +651,17 @@ func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
+	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
+		return pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value
+	}
+
 	isProducerItem := func(tr common_api.TargetRef) bool {
-		return tr.Kind == common_api.MeshService && pointer.Deref(tr.Name) != "" && (pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value)
+		switch tr.Kind {
+		case common_api.MeshService, common_api.MeshHTTPRoute:
+			return pointer.Deref(tr.Name) != "" && hasSameOrOmittedNamespace(tr)
+		default:
+			return false
+		}
 	}
 
 	producerItems := 0

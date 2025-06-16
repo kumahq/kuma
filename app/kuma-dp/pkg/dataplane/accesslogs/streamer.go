@@ -1,5 +1,3 @@
-//go:build !windows
-
 package accesslogs
 
 import (
@@ -133,9 +131,8 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) error {
 					logger.Error(err, "unable to marshal embedded message")
 					continue
 				}
+				accessLogMsg = append(accessLogMsg, '\n')
 			}
-
-			accessLogMsg = append(accessLogMsg, '\n')
 		}
 
 		s.RLock()

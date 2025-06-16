@@ -47,7 +47,7 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh core_model.R
 			continue
 		}
 
-		if !core_store.IsResourceNotFound(err) {
+		if !core_store.IsNotFound(err) {
 			return err
 		}
 
@@ -108,7 +108,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 		},
 	}
 	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(mesh), core_store.CreateBy(certSecretResKey(meshName, backend.Name))); err != nil {
-		if !errors.Is(err, &core_store.ResourceConflictError{}) {
+		if !core_store.IsAlreadyExists(err) {
 			return err
 		}
 		log.V(1).Info("CA certificate already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
@@ -120,7 +120,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 		},
 	}
 	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(mesh), core_store.CreateBy(keySecretResKey(meshName, backend.Name))); err != nil {
-		if !errors.Is(err, &core_store.ResourceConflictError{}) {
+		if !core_store.IsAlreadyExists(err) {
 			return err
 		}
 		log.V(1).Info("CA secret key already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)

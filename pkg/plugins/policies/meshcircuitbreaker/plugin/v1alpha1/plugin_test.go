@@ -16,11 +16,9 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -33,6 +31,7 @@ import (
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
+	test_policies "github.com/kumahq/kuma/pkg/test/policies"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -596,9 +595,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshhttproute_api.PolicyDefault{
+							Rules: core_rules.Rules{
+								test_policies.NewRule(subsetutils.MeshSubset(), meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
 										Matches: []meshhttproute_api.Match{{
 											Path: &meshhttproute_api.PathMatch{
@@ -614,14 +612,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 											}},
 										},
 									}},
-								},
-								Origin: []core_model.ResourceMeta{
-									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
-								},
-								BackendRefOriginIndex: rules_common.BackendRefOriginIndex{
-									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
-								},
-							}},
+								}),
+							},
 						},
 					},
 				},

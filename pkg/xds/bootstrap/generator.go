@@ -22,6 +22,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -82,6 +83,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err := b.validateRequest(request); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
+	features := make(xds_types.Features, len(request.Features))
+	for _, feature := range request.Features {
+		features[feature] = true
+	}
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
@@ -112,7 +117,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		ReadinessPort:        request.ReadinessPort,
 		AppProbeProxyEnabled: request.AppProbeProxyEnabled,
 		ProxyType:            request.ProxyType,
-		Features:             request.Features,
+		Features:             features,
 		Resources:            request.Resources,
 		Workdir:              request.Workdir,
 		MetricsCertPath:      request.MetricsResources.CertPath,
@@ -128,19 +133,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = b.defaultAdminPort
 		}
 	}
-	setXdsTransportProtocolVariant := func(resourceMode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant) {
-		switch resourceMode {
-		case mesh_proto.EnvoyConfiguration_DEFAULT:
-			params.XdsTransportProtocolVariant = types.GRPC
-			if b.deltaXdsEnabled {
-				params.XdsTransportProtocolVariant = types.DELTA_GRPC
-			}
-		case mesh_proto.EnvoyConfiguration_DELTA_GRPC:
-			params.XdsTransportProtocolVariant = types.DELTA_GRPC
-		case mesh_proto.EnvoyConfiguration_GRPC:
-			params.XdsTransportProtocolVariant = types.GRPC
-		}
-	}
 
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:
@@ -151,7 +143,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 		params.Service = "ingress"
 		setAdminPort(zoneIngress.Spec.GetNetworking().GetAdmin().GetPort())
-		setXdsTransportProtocolVariant(zoneIngress.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 	case mesh_proto.EgressProxyType:
 		zoneEgress, err := b.zoneEgressFor(ctx, request, proxyId)
 		if err != nil {
@@ -159,7 +150,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = "egress"
 		setAdminPort(zoneEgress.Spec.GetNetworking().GetAdmin().GetPort())
-		setXdsTransportProtocolVariant(zoneEgress.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -180,7 +170,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
-		setXdsTransportProtocolVariant(dataplane.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 
 		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap)
 		if err != nil {
@@ -297,7 +286,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 			return nil, err
 		}
 		// this part of validation works only for Universal scenarios with TransparentProxying
-		if dp.Spec.Networking.TransparentProxying != nil && len(dp.Spec.Networking.Outbound) != 0 {
+		if request.TransparentProxy.Enabled() && len(dp.Spec.GetNetworking().GetOutbound()) > 0 {
 			var err validators.ValidationError
 			err.AddViolation("outbound", "should be empty since dataplane is in Transparent Proxying mode")
 			return nil, err.OrNil()
@@ -363,7 +352,7 @@ func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.Bo
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
 	if err := b.resManager.Get(ctx, core_mesh.NewMeshResource(), core_store.GetByKey(mesh, core_model.NoMesh)); err != nil {
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
 			return verr.OrNil()
@@ -420,11 +409,6 @@ func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
 func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
 	if operatingSystem == "" { // backwards compatibility
 		return b.config.Params.AdminAccessLogPath
-	}
-	if b.config.Params.AdminAccessLogPath == os.DevNull && operatingSystem == "windows" {
-		// when AdminAccessLogPath was not explicitly set and DPP OS is Windows we need to set window specific DevNull.
-		// otherwise when CP is on Linux, we would set /dev/null which is not valid on Windows.
-		return "NUL"
 	}
 	return b.config.Params.AdminAccessLogPath
 }

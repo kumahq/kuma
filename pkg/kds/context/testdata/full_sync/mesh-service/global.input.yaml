@@ -1,0 +1,26 @@
+---
+type: Mesh
+name: default
+---
+type: MeshService
+mesh: default
+name: redis-zone-2-ff29vc4685c6f594
+labels:
+  kuma.io/display-name: redis-zone-2
+  kuma.io/origin: zone
+  kuma.io/zone: zone-2
+  team: db-operators
+spec:
+  ports:
+  - appProtocol: tcp
+    port: 6739
+    targetPort: 6739
+  - appProtocol: tcp
+    name: some-port
+    port: 16739
+    targetPort: target-port-from-container
+  selector:
+    dataplaneTags:
+      app: redis
+      k8s.kuma.io/namespace: kuma-demo
+  state: Unavailable

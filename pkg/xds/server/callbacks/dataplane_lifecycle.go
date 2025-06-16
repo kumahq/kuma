@@ -91,7 +91,8 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID c
 	default:
 	}
 
-	d.deregister(ctx, streamID, proxyKey)
+	// we need to use appCtx here, "ctx" should not be used because it has the same lifetime with the underlying gRPC stream itself and the gRPC stream is terminating now
+	d.deregister(d.appCtx, streamID, proxyKey) // nolint: contextcheck
 }
 
 func (d *DataplaneLifecycle) register(
@@ -187,16 +188,17 @@ func (d *DataplaneLifecycle) deregister(
 		return
 	}
 
-	if connected, err := d.proxyConnectedToAnotherCP(ctx, proxyType, proxyKey, log); err != nil {
+	connected, err := d.proxyConnectedToAnotherCP(ctx, proxyType, proxyKey, log)
+	if err != nil {
 		log.Error(err, "could not check if proxy connected to another CP")
-		return
-	} else if connected {
 		return
 	}
 
-	log.Info("deregister proxy")
-	if err := d.resManager.Delete(ctx, proxyResource(proxyType), store.DeleteBy(proxyKey)); err != nil {
-		log.Error(err, "could not unregister proxy")
+	if !connected {
+		log.Info("deregister proxy")
+		if err := d.resManager.Delete(ctx, proxyResource(proxyType), store.DeleteBy(proxyKey)); err != nil {
+			log.Error(err, "could not unregister proxy")
+		}
 	}
 
 	d.proxyInfos.Delete(proxyKey)
@@ -240,7 +242,7 @@ func (d *DataplaneLifecycle) proxyConnectedToAnotherCP(
 
 	err := d.resManager.Get(ctx, insight, store.GetBy(key))
 	switch {
-	case store.IsResourceNotFound(err):
+	case store.IsNotFound(err):
 		// If insight is missing it most likely means that it was not yet created, so DP just connected and now leaving the mesh.
 		log.Info("insight is missing. Safe to deregister the proxy")
 		return false, nil

@@ -12,6 +12,10 @@ networking:
       tags:
         kuma.io/service: foo
 ---
+type: DataplaneInsight
+name: dp-1
+mesh: default  
+---
 type: MeshTimeout
 name: idle-inbound
 mesh: default

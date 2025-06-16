@@ -83,6 +83,10 @@ var (
 	IPv6Loopback = net.IPv6loopback
 )
 
+func (p Protocol) IsHTTPBased() bool {
+	return p == ProtocolHTTP || p == ProtocolHTTP2 || p == ProtocolGRPC
+}
+
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
 }
@@ -253,7 +257,10 @@ func (d *DataplaneResource) AsOutbounds(resolver resolve.LabelResourceIdentifier
 				},
 				Port: pointer.To(o.BackendRef.Port),
 			}
-			ref := resolve.BackendRef(d.GetMeta(), backendRef, resolver)
+			ref, ok := resolve.BackendRef(d.GetMeta(), backendRef, resolver)
+			if !ok {
+				continue
+			}
 			if ref.ReferencesRealResource() {
 				outbounds = append(outbounds, &xds_types.Outbound{
 					Address:  o.Address,

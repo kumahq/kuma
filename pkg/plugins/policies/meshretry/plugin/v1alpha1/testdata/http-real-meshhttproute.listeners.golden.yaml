@@ -1,0 +1,159 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 10001
+filterChains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      httpFilters:
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      internalAddressConfig:
+        cidrRanges:
+        - addressPrefix: 127.0.0.1
+          prefixLen: 32
+        - addressPrefix: ::1
+          prefixLen: 128
+      routeConfig:
+        name: outbound:http-service
+        requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&kuma.io/service=web&'
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: http-service
+          routes:
+          - match:
+              headers:
+              - name: :method
+                stringMatch:
+                  exact: GET
+              path: /another-backend
+            name: kri_mhttpr_mesh-1___test-route-1_
+            route:
+              cluster: http-service
+              retryPolicy:
+                hostSelectionRetryMaxAttempts: "2"
+                numRetries: 1
+                perTryTimeout: 2s
+                rateLimitedRetryBackOff:
+                  maxInterval: 5s
+                  resetHeaders:
+                  - name: retry-after-http
+                  - format: UNIX_TIMESTAMP
+                    name: x-retry-after-http
+                retriableHeaders:
+                - name: x-retry-regex
+                  stringMatch:
+                    safeRegex:
+                      regex: .*
+                - name: x-retry-exact
+                  stringMatch:
+                    exact: exact-value
+                retriableRequestHeaders:
+                - name: :method
+                  stringMatch:
+                    exact: CONNECT
+                - name: :method
+                  stringMatch:
+                    exact: DELETE
+                - name: :method
+                  stringMatch:
+                    exact: GET
+                - name: :method
+                  stringMatch:
+                    exact: HEAD
+                - name: :method
+                  stringMatch:
+                    exact: OPTIONS
+                - name: :method
+                  stringMatch:
+                    exact: PATCH
+                - name: :method
+                  stringMatch:
+                    exact: POST
+                - name: :method
+                  stringMatch:
+                    exact: PUT
+                - name: :method
+                  stringMatch:
+                    exact: TRACE
+                - name: x-retry-prefix
+                  stringMatch:
+                    prefix: prefix-
+                retriableStatusCodes:
+                - 429
+                retryBackOff:
+                  baseInterval: 3s
+                  maxInterval: 4s
+                retryHostPredicate:
+                - name: envoy.retry_host_predicates.previous_hosts
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.host.previous_hosts.v3.PreviousHostsPredicate
+                - name: envoy.retry_host_predicates.omit_host_metadata
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.host.omit_host_metadata.v3.OmitHostMetadataConfig
+                    metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          test: test
+                retryOn: 5xx,gateway-error,reset,retriable-4xx,connect-failure,envoy-ratelimited,refused-stream,http3-post-connect-failure,retriable-status-codes
+                retryPriority:
+                  name: envoy.retry_priorities.previous_priorities
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.priority.previous_priorities.v3.PreviousPrioritiesConfig
+                    updateFrequency: 2
+              timeout: 0s
+          - match:
+              prefix: /
+            name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+            route:
+              cluster: http-service
+              retryPolicy:
+                hostSelectionRetryMaxAttempts: "99"
+                numRetries: 6
+                perTryTimeout: 77s
+                rateLimitedRetryBackOff:
+                  maxInterval: 11s
+                  resetHeaders:
+                  - format: UNIX_TIMESTAMP
+                    name: x-retry-after-http
+                retriableHeaders:
+                - name: x-retry-regex
+                  stringMatch:
+                    safeRegex:
+                      regex: .*
+                retriableRequestHeaders:
+                - name: x-retry-prefix
+                  stringMatch:
+                    prefix: prefix-another
+                retryBackOff:
+                  baseInterval: 88s
+                  maxInterval: 999s
+                retryHostPredicate:
+                - name: envoy.retry_host_predicates.previous_hosts
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.host.previous_hosts.v3.PreviousHostsPredicate
+                - name: envoy.retry_host_predicates.omit_host_metadata
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.host.omit_host_metadata.v3.OmitHostMetadataConfig
+                    metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          another-test: another-test
+                retryOn: gateway-error,connect-failure,refused-stream
+                retryPriority:
+                  name: envoy.retry_priorities.previous_priorities
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.priority.previous_priorities.v3.PreviousPrioritiesConfig
+                    updateFrequency: 5
+              timeout: 0s
+      statPrefix: outbound_127_0_0_1_10001
+name: outbound:127.0.0.1:10001
+trafficDirection: OUTBOUND

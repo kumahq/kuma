@@ -517,7 +517,7 @@ spec:
 			Eventually(func(g Gomega) {
 				makeRequest(g)
 
-				stdout, _, err := universal.Cluster.Exec("", "", "mes-tcp-sink", "head", "-1", "/nc.out")
+				stdout, _, err := universal.Cluster.Exec("", "", "mes-tcp-sink", "tail", "-1", "/nc.out")
 				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
 				g.Expect(parts).To(HaveLen(3))
@@ -525,7 +525,7 @@ spec:
 				startTimeInt, err := strconv.Atoi(strings.TrimSpace(parts[0]))
 				Expect(err).ToNot(HaveOccurred())
 				startTime := time.Unix(int64(startTimeInt), 0)
-				Expect(startTime).To(BeTemporally("~", time.Now(), time.Hour))
+				Expect(startTime).To(BeTemporally("~", time.Now(), time.Minute))
 
 				src, dst = parts[1], parts[2]
 			}, "30s", "1s").Should(Succeed())

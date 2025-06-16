@@ -217,6 +217,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
+			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.ExperimentalProxy).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
@@ -577,6 +578,7 @@ runtime:
         enabled: true
         port: 1053
         logging: false
+        experimentalProxy: false
       ebpf:
         enabled: true
         instanceIPEnvVarName: FOO
@@ -939,7 +941,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY":                          "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY":                          "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT":                                     "1112",

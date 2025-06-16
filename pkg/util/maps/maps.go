@@ -20,3 +20,11 @@ func AllValues[M ~map[K]V, K comparable, V any](m M) []V {
 	values := maps.Values(m)
 	return slices.Collect(values)
 }
+
+func MapValues[K comparable, V any, R any](input map[K]V, f func(K, V) R) map[K]R {
+	output := make(map[K]R, len(input))
+	for k, v := range input {
+		output[k] = f(k, v)
+	}
+	return output
+}

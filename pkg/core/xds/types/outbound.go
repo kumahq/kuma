@@ -14,6 +14,18 @@ type Outbound struct {
 	Resource *kri.Identifier
 }
 
+// AssociatedServiceResource
+//   - if the outbound supports new service resources,
+//     then it returns KRI to MeshService, MeshExternalService, MeshMultiZoneService and true
+//   - if the outbound is defined using the old way with 'kuma.io/service' tag,
+//     then it returns empty kri.Identifier and false
+func (o *Outbound) AssociatedServiceResource() (kri.Identifier, bool) {
+	if o.Resource != nil {
+		return *o.Resource, true
+	}
+	return kri.Identifier{}, false
+}
+
 func (o *Outbound) GetAddress() string {
 	if o.LegacyOutbound != nil {
 		return o.LegacyOutbound.Address
@@ -28,6 +40,15 @@ func (o *Outbound) TagsOrNil() map[string]string {
 		return o.LegacyOutbound.Tags
 	}
 	return nil
+}
+
+// NameOrEmpty returns Outbound's name based on KRI if the Outbound has an associated service resource.
+// Otherwise, it returns an empty string.
+func (o *Outbound) NameOrEmpty() string {
+	if id, ok := o.AssociatedServiceResource(); ok {
+		return id.String()
+	}
+	return ""
 }
 
 func (o *Outbound) GetPort() uint32 {

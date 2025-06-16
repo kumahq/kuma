@@ -121,11 +121,11 @@ spec:
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: coredns-token-9gmrh
       readOnly: true
-    - mountPath: /tmp
-      name: kuma-sidecar-tmp
   - args:
     - -conf
     - /etc/coredns/Corefile
