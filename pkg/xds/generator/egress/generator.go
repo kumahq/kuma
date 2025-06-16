@@ -97,7 +97,6 @@ func (g Generator) Generate(
 		if err != nil {
 			return nil, err
 		}
-		core.Log.Info("check listener", "len(listener.(*envoy_listener_v3.Listener).FilterChains)", len(listener.(*envoy_listener_v3.Listener).FilterChains))
 		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
 			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{

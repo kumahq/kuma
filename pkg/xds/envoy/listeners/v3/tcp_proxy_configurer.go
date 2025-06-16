@@ -11,7 +11,7 @@ import (
 )
 
 type TcpProxyConfigurer struct {
-	StatsName string
+	StatPrefix string
 	// Splits to forward traffic to.
 	Splits      []envoy_common.Split
 	UseMetadata bool
@@ -39,7 +39,7 @@ func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) 
 
 func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 	proxy := envoy_tcp.TcpProxy{
-		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
+		StatPrefix: util_xds.SanitizeMetric(c.StatPrefix),
 	}
 
 	if len(c.Splits) == 1 {

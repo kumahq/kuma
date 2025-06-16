@@ -250,30 +250,24 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
-								HttpInboundRoutes(
-									"eds-cluster",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("eds-cluster"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-								),
+								HttpInboundRoutes("", "eds-cluster", envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("eds-cluster"),
+										envoy_common.WithWeight(100),
+									)},
+								}}),
 							),
 						)).Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(MatchTransportProtocol("tls")).
 						Configure(MatchServerNames("static-cluster{mesh=mesh-2}")).
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
-							HttpInboundRoutes(
-								"static-cluster",
-								envoy_common.Routes{{
-									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-										envoy_common.WithService("static-cluster"),
-										envoy_common.WithWeight(100),
-									)},
-								}},
-							),
+							HttpInboundRoutes("", "static-cluster", envoy_common.Routes{{
+								Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+									envoy_common.WithService("static-cluster"),
+									envoy_common.WithWeight(100),
+								)},
+							}}),
 						),
 					)).MustBuild(),
 				},
@@ -387,30 +381,24 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
-								HttpInboundRoutes(
-									"eds-cluster",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("eds-cluster"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-								),
+								HttpInboundRoutes("", "eds-cluster", envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("eds-cluster"),
+										envoy_common.WithWeight(100),
+									)},
+								}}),
 							),
 						)).Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(MatchTransportProtocol("tls")).
 						Configure(MatchServerNames("static-cluster{mesh=mesh-2}")).
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
-							HttpInboundRoutes(
-								"static-cluster",
-								envoy_common.Routes{{
-									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-										envoy_common.WithService("static-cluster"),
-										envoy_common.WithWeight(100),
-									)},
-								}},
-							),
+							HttpInboundRoutes("", "static-cluster", envoy_common.Routes{{
+								Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+									envoy_common.WithService("static-cluster"),
+									envoy_common.WithWeight(100),
+								)},
+							}}),
 						),
 					)).MustBuild(),
 				},
@@ -1155,26 +1143,22 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{
-											envoy_common.NewCluster(
-												envoy_common.WithService("backend-bb38a94289f18fb9"),
-												envoy_common.WithWeight(90),
-											),
-											envoy_common.NewCluster(
-												envoy_common.WithService("backend-c72efb5be46fae6b"),
-												envoy_common.WithWeight(10),
-											),
-										},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"backend": true,
-										},
+								HttpOutboundRoute("", "backend", envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{
+										envoy_common.NewCluster(
+											envoy_common.WithService("backend-bb38a94289f18fb9"),
+											envoy_common.WithWeight(90),
+										),
+										envoy_common.NewCluster(
+											envoy_common.WithService("backend-c72efb5be46fae6b"),
+											envoy_common.WithWeight(10),
+										),
 									},
-								),
+								}}, map[string]map[string]bool{
+									"kuma.io/service": {
+										"backend": true,
+									},
+								}),
 							),
 						)).MustBuild(),
 				},
@@ -1685,20 +1669,16 @@ func paymentsListener() envoy_common.NamedResource {
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(HttpConnectionManager("127.0.0.1:27778", false, nil)).
 			Configure(
-				HttpOutboundRoute(
-					"backend",
-					envoy_common.Routes{{
-						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-							envoy_common.WithService("payment"),
-							envoy_common.WithWeight(100),
-						)},
-					}},
-					map[string]map[string]bool{
-						"kuma.io/service": {
-							"payment": true,
-						},
+				HttpOutboundRoute("", "backend", envoy_common.Routes{{
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("payment"),
+						envoy_common.WithWeight(100),
+					)},
+				}}, map[string]map[string]bool{
+					"kuma.io/service": {
+						"payment": true,
 					},
-				),
+				}),
 			),
 		)).MustBuild()
 }
@@ -1708,20 +1688,16 @@ func backendListener() envoy_common.NamedResource {
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 			Configure(
-				HttpOutboundRoute(
-					"backend",
-					envoy_common.Routes{{
-						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-							envoy_common.WithService("backend"),
-							envoy_common.WithWeight(100),
-						)},
-					}},
-					map[string]map[string]bool{
-						"kuma.io/service": {
-							"backend": true,
-						},
+				HttpOutboundRoute("", "backend", envoy_common.Routes{{
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
+				}}, map[string]map[string]bool{
+					"kuma.io/service": {
+						"backend": true,
 					},
-				),
+				}),
 			),
 		)).MustBuild()
 }

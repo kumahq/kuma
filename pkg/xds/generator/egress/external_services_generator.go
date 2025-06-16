@@ -173,7 +173,6 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		esNames = append(esNames, es.Spec.GetService())
 	}
 
-	core.Log.Info("esNames", "esNames", esNames)
 	for _, esName := range esNames {
 		if !services[esName] {
 			continue
@@ -304,7 +303,6 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		if isMeshExternalService(endpoints) {
 			routeConfigName = esName
 		}
-		core.Log.Info("add L7 mes")
 
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(esName, false, internalAddresses)).

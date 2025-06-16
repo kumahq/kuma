@@ -9,16 +9,14 @@ import (
 )
 
 type KafkaConfigurer struct {
-	StatsName string
+	StatPrefix string
 }
 
 var _ FilterChainConfigurer = &KafkaConfigurer{}
 
 func (c *KafkaConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	pbst, err := proto.MarshalAnyDeterministic(
-		&envoy_kafka.KafkaBroker{
-			StatPrefix: util_xds.SanitizeMetric(c.StatsName),
-		})
+	statPrefix := util_xds.SanitizeMetric(c.StatPrefix)
+	pbst, err := proto.MarshalAnyDeterministic(&envoy_kafka.KafkaBroker{StatPrefix: statPrefix})
 	if err != nil {
 		return err
 	}

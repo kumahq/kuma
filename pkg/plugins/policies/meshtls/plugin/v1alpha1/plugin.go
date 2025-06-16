@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -11,6 +13,7 @@ import (
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -270,34 +273,44 @@ func configure(
 	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
 	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
+	inboundListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
+	statPrefix := ""
+	if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+		kriName := kri.From(proxy.Dataplane, fmt.Sprintf("%d", iface.WorkloadPort)).String()
+		localClusterName = kriName
+		inboundListenerName = kriName
+		statPrefix = kriName
+	}
 	cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
 	service := inbound.GetService()
 	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP).
+		WithOverwriteName(inboundListenerName).
+		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
 
 	switch mode {
 	case api.ModeStrict:
 		listenerBuilder.
-			Configure(envoy_listeners.FilterChain(generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
+			Configure(envoy_listeners.FilterChain(generator.FilterChainBuilder(true, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 				envoy_listeners.NetworkRBAC(listener.GetName(), mesh.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),
 			)))
 	case api.ModePermissive:
 		listenerBuilder.
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(envoy_listeners.FilterChain(
-				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
+				generator.FilterChainBuilder(false, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 					envoy_listeners.MatchTransportProtocol("raw_buffer"))),
 			).
 			Configure(envoy_listeners.FilterChain(
 				// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
 				// the app itself might be protected by TLS.
-				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
+				generator.FilterChainBuilder(false, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"))),
 			).
 			Configure(envoy_listeners.FilterChain(
-				generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
+				generator.FilterChainBuilder(true, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"),
 					envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
 					envoy_listeners.NetworkRBAC(listener.GetName(), xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),

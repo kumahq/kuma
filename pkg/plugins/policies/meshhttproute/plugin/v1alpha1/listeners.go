@@ -25,6 +25,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -42,35 +43,45 @@ func GenerateOutboundListener(
 		Configure(envoy_listeners.TransparentProxying(isTransparent)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)))
 
-	resourceName := svc.ServiceName
+	listenerStatPrefix := ""
+	routeConfigName := envoy_names.GetOutboundRouteName(svc.ServiceName)
+	virtualHostName := svc.ServiceName
+	hcmStatsName := svc.ServiceName
 
 	if svc.Outbound.Resource != nil {
-		listenerBuilder.WithOverwriteName(svc.Outbound.Resource.String())
+		resourceName := svc.Outbound.Resource.String()
+
+		listenerBuilder.WithOverwriteName(resourceName)
 
 		if isKRI {
-			resourceName = svc.Outbound.Resource.String()
+			listenerStatPrefix = resourceName
+			hcmStatsName = resourceName
+			virtualHostName = resourceName
+		}
+
+		if isKRI || svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
+			routeConfigName = resourceName
 		}
 	}
 
-	var outboundRouteName string
-	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
-		outboundRouteName = resourceName
-	}
-
-	listener, err := listenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+	filderChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
-			StatsName:                resourceName,
+			StatsName:                hcmStatsName,
 			ForwardClientCertDetails: false,
 			NormalizePath:            true,
 			InternalAddresses:        internalAddresses,
 		})).
 		Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
-			Name:    outboundRouteName,
-			Service: svc.ServiceName,
-			Routes:  routes,
-			DpTags:  originDPPTags,
+			RouteConfigName: routeConfigName,
+			VirtualHostName: virtualHostName,
+			Routes:          routes,
+			DpTags:          originDPPTags,
 		})).
-		ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
+		ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()) // TODO: https://github.com/kumahq/kuma/issues/3325
+
+	listener, err := listenerBuilder.
+		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
+		Configure(envoy_listeners.FilterChain(filderChainBuilder)).
 		Build()
 
 	if err != nil {

@@ -42,8 +42,13 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
+		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
+		statPrefix := ""
 		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
-			localClusterName = kri.From(proxy.Dataplane, fmt.Sprintf("%d", endpoint.WorkloadPort)).String()
+			kriName := kri.From(proxy.Dataplane, fmt.Sprintf("%d", endpoint.WorkloadPort)).String()
+			localClusterName = kriName
+			inboundListenerName = kriName
+			statPrefix = kriName
 		}
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, localClusterName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
@@ -80,33 +85,40 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 
 		// generate LDS resource
 		service := iface.GetService()
-		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 
-		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
+		listenerBuilder := envoy_listeners.
+			NewInboundListenerBuilder(
+				proxy.APIVersion,
+				endpoint.DataplaneIP,
+				endpoint.DataplanePort,
+				core_xds.SocketAddressProtocolTCP,
+			).
+			WithOverwriteName(inboundListenerName).
+			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
 			listenerBuilder.
-				Configure(envoy_listeners.FilterChain(FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
+				Configure(envoy_listeners.FilterChain(FilterChainBuilder(true, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 					envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
 				)))
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
 				Configure(envoy_listeners.TLSInspector()).
 				Configure(envoy_listeners.FilterChain(
-					FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
+					FilterChainBuilder(false, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("raw_buffer"))),
 				).
 				Configure(envoy_listeners.FilterChain(
 					// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
 					// the app itself might be protected by TLS.
-					FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
+					FilterChainBuilder(false, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"))),
 				).
 				Configure(envoy_listeners.FilterChain(
-					FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
+					FilterChainBuilder(true, protocol, proxy, inboundListenerName, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
 						envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
@@ -129,7 +141,19 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 	return resources, nil
 }
 
-func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy *core_xds.Proxy, localClusterName string, xdsCtx xds_context.Context, endpoint mesh_proto.InboundInterface, service string, routes *envoy_common.Routes, tlsVersion *tls.Version, ciphers []tls.TlsCipher) *envoy_listeners.FilterChainBuilder {
+func FilterChainBuilder(
+	serverSideMTLS bool,
+	protocol core_mesh.Protocol,
+	proxy *core_xds.Proxy,
+	listenerName string,
+	localClusterName string,
+	xdsCtx xds_context.Context,
+	endpoint mesh_proto.InboundInterface,
+	service string,
+	routes *envoy_common.Routes,
+	tlsVersion *tls.Version,
+	ciphers []tls.TlsCipher,
+) *envoy_listeners.FilterChainBuilder {
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 	switch protocol {
 	// configuration for HTTP case
@@ -139,7 +163,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
+			Configure(envoy_listeners.HttpInboundRoutes(listenerName, service, *routes))
 	case core_mesh.ProtocolGRPC:
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
@@ -147,7 +171,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
+			Configure(envoy_listeners.HttpInboundRoutes(listenerName, service, *routes))
 	case core_mesh.ProtocolKafka:
 		filterChainBuilder.
 			Configure(envoy_listeners.Kafka(localClusterName)).

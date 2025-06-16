@@ -30,32 +30,34 @@ func GenerateOutboundListener(
 		core_xds.SocketAddressProtocolTCP,
 	)
 
+	tags := envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
+
+	listenerStatPrefix := ""
+	filterStatPrefix := svc.ServiceName
+
 	if svc.Outbound.Resource != nil {
-		builder.WithOverwriteName(svc.Outbound.Resource.String())
-	}
+		resourceName := svc.Outbound.Resource.String()
 
-	tproxy := envoy_listeners.TransparentProxying(isTransparent)
+		builder.WithOverwriteName(resourceName)
 
-	tagsMetadata := envoy_listeners.TagsMetadata(
-		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
-	)
-
-	statsName := svc.ServiceName
-	if isKRI {
-		statsName = svc.Outbound.Resource.String()
+		if isKRI {
+			listenerStatPrefix = resourceName
+			filterStatPrefix = resourceName
+		}
 	}
 
 	isKafka := svc.Protocol == mesh.ProtocolKafka
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-		ConfigureIf(isKafka, envoy_listeners.Kafka(statsName)).
-		Configure(envoy_listeners.TCPProxy(statsName, splits...))
+		ConfigureIf(isKafka, envoy_listeners.Kafka(filterStatPrefix)).
+		Configure(envoy_listeners.TCPProxy(filterStatPrefix, splits...))
 
-	listener, err := builder.Configure(
-		tproxy,
-		tagsMetadata,
-		envoy_listeners.FilterChain(filterChainBuilder),
-	).Build()
+	listener, err := builder.
+		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
+		Configure(envoy_listeners.TransparentProxying(isTransparent)).
+		Configure(envoy_listeners.TagsMetadata(tags)).
+		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
+		Build()
 	if err != nil {
 		return nil, err
 	}

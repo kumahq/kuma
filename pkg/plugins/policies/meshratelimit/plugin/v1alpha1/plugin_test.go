@@ -42,6 +42,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -104,17 +105,14 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
-								HttpInboundRoutes(
-									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-												envoy_common.WithService("backend"),
-												envoy_common.WithWeight(100),
-											)},
-										},
+								HttpInboundRoutes("", "backend", envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
 									},
-								),
+								}),
 							),
 						)).MustBuild(),
 				},
@@ -235,32 +233,29 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
-								HttpInboundRoutes(
-									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-												envoy_common.WithService("backend"),
-												envoy_common.WithWeight(100),
-											)},
-											RateLimit: &mesh_proto.RateLimit{
-												Sources: []*mesh_proto.Selector{
-													{
-														Match: map[string]string{
-															mesh_proto.ServiceTag: "frontend",
-														},
+								HttpInboundRoutes("", "backend", envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+										RateLimit: &mesh_proto.RateLimit{
+											Sources: []*mesh_proto.Selector{
+												{
+													Match: map[string]string{
+														mesh_proto.ServiceTag: "frontend",
 													},
 												},
-												Conf: &mesh_proto.RateLimit_Conf{
-													Http: &mesh_proto.RateLimit_Conf_Http{
-														Requests: 100,
-														Interval: &durationpb.Duration{Seconds: 14},
-													},
+											},
+											Conf: &mesh_proto.RateLimit_Conf{
+												Http: &mesh_proto.RateLimit_Conf_Http{
+													Requests: 100,
+													Interval: &durationpb.Duration{Seconds: 14},
 												},
 											},
 										},
 									},
-								),
+								}),
 							),
 						)).MustBuild(),
 				},
@@ -422,17 +417,14 @@ var _ = Describe("MeshRateLimit", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
-							HttpInboundRoutes(
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
+							HttpInboundRoutes("", "backend", envoy_common.Routes{
+								{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("backend"),
+										envoy_common.WithWeight(100),
+									)},
 								},
-							),
+							}),
 						),
 					)).MustBuild(),
 			}},
@@ -515,17 +507,14 @@ var _ = Describe("MeshRateLimit", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
-							HttpInboundRoutes(
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
+							HttpInboundRoutes("", "backend", envoy_common.Routes{
+								{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("backend"),
+										envoy_common.WithWeight(100),
+									)},
 								},
-							),
+							}),
 						),
 					)).MustBuild(),
 			}},
@@ -1000,7 +989,8 @@ func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteC
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		Service: serviceName,
+		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
+		VirtualHostName: serviceName,
 		Routes: []meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
 				plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
