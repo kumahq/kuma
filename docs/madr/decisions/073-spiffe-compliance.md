@@ -17,7 +17,7 @@ One of the most trusted standards for defining these service identities is SPIFF
 
 Right now, Kuma does something similar by generating SPIFFE-like IDs like `spiffe://<mesh-name>/<service-name>`. But it also adds extra SANs (like `kuma://kuma.io/version/v1`) based on tags. These extra SANs make Kuma's certificates non-compliant with SPIFFE, meaning they can’t be used directly with SPIFFE-based systems like SPIRE, or other tools that expect full compliance. Also, Kuma uses certificates to identify endpoints, whereas SPIFFE-based certificates are used to establish identity via SPIFFE IDs of the workload.
 
-In SPIFFE, a Trust Domain defines which services are allowed to trust each other. It’s like a boundary — services inside the same trust domain can safely communicate. To talk across trust domains (for example, between two companies or clusters), you need federation, which lets them trust each other's identities.
+In SPIFFE, a Trust Domain is a logical boundary for identity and trust, similar to a DNS domain. Services within the same trust domain can securely identify and trust each other. Communication across different trust domains (such as between organizations or clusters) requires federation, which establishes trust relationships so that identities from one trust domain are recognized and trusted by another.
 
 Kuma currently uses the mesh name as the trust domain. While this works inside Kuma, it doesn’t clearly separate trust boundaries, and it limits how easily Kuma can connect with external services or other applications in the same trust domain.
 
@@ -70,6 +70,24 @@ Based on the [specification](https://spiffe.io/docs/latest/spiffe-about/spiffe-c
 
 We should allow users to migrate from Kuma issued certificates, which are not SPIFFE-compliant, to using SPIRE. This may require an intermediate step to first migrate to SPIFFE-compliant certificates, but the details will be specified later.
 
+## Future User Stories (things that are going to be implemented in future releases)
+
+### As a user, I want to have a SPIFFE-compliant SAN in a non-Kubernetes environment
+
+It would be beneficial to support connectivity between different environments. Unfortunately, our services currently lack proper identity on Universal, which makes this challenging.
+
+### As a user, I want to federate different trust domains using the Federation API exposed by the control plane
+
+It should be possible to federate different trust domains without creating additional resources, only by using the federation endpoint exposed by the control plane. This would be a valuable feature, enabling interoperability between different SPIFFE-compliant systems.
+
+### As a user, I want private key to not be transfered over network
+
+The private key should not be sent from the control plane to the dataplane. This can be addressed by redesigning our secret flow: instead of pushing certificates from the control plane, the dataplane should send a Certificate Signing Request (CSR) to the control plane, which then signs the certificate. In this setup, the private key remains local and never leaves the dataplane environment. This change may require significant work and might not be feasible in the current release, but it should be targeted for a future release.
+
+### As a user, I want to use an intermediate CA instead of a root CA on the zone
+
+When a user provides a root CA on the global control plane, we could generate a separate intermediate CA for each connecting zone. This would offer a stronger security model, ensuring that if a certificate is compromised in one zone, it does not impact other zones.
+
 ## Out of scope
 
 ### As a user, I want to specify certificates for a specific outbound
@@ -93,3 +111,26 @@ To enable this setup, we’ll need to establish a federation mechanism — poten
 ### As a user, I want to have trust domain per namespace
 
 I think we shouldn't allow higher granularity than zone or mesh.
+
+### As a user, I want to provide MeshTrafficPermission for SPIFFEID
+
+This should be covered by a separate MADR in a separate [issue](https://github.com/kumahq/kuma/issues/12374).
+
+## Summary
+
+Release 2.12
+1. The system is SPIFFE-compliant on Kubernetes.
+2. Certificate configuration is defined outside of the Mesh object.
+3. It is possible to manually federate different trust domains.
+4. The system can accept mTLS traffic from services outside the mesh.
+5. The mTLS setup is no more complex than it is today.
+6. It is possible to run Kuma with SPIRE — users can register entries manually or by using the [spire-controller-manager](https://github.com/spiffe/spire-controller-manager).
+
+Future releases
+1. The dataplane sends a CSR (Certificate Signing Request) to the control plane for signing.
+2. Each zone uses its own intermediate CA.
+3. Universal (non-Kubernetes) workflows are SPIFFE-compliant.
+
+Nice to have:
+1. Kuma control plane can register entries into SPIRE (How can we attest and trust control-plane?)
+2. Kuma exposes a federation endpoint.
