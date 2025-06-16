@@ -410,11 +410,6 @@ func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
 	if operatingSystem == "" { // backwards compatibility
 		return b.config.Params.AdminAccessLogPath
 	}
-	if b.config.Params.AdminAccessLogPath == os.DevNull && operatingSystem == "windows" {
-		// when AdminAccessLogPath was not explicitly set and DPP OS is Windows we need to set window specific DevNull.
-		// otherwise when CP is on Linux, we would set /dev/null which is not valid on Windows.
-		return "NUL"
-	}
 	return b.config.Params.AdminAccessLogPath
 }
 

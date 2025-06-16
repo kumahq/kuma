@@ -15,6 +15,13 @@ type GlobalView struct {
 
 // Reserve add an ip/host to the list of reserved ips (useful when loading an existing view).
 func (g *GlobalView) Reserve(hostname HostnameEntry, ip string) error {
+	// When we have an existing map and the CIDR configuration changes,
+	// we may attempt to reserve an address that is no longer within the new CIDR range.
+	// In such cases, the operation fails, which is incorrect. Instead, we should skip reserving
+	// the out of range address, allowing new addresses to be allocated as needed.
+	if !g.ipam.CIDR.Contains(net.ParseIP(ip)) {
+		return nil
+	}
 	err := g.ipam.Reserve(net.ParseIP(ip))
 	if err != nil {
 		return err
