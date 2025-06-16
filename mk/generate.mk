@@ -107,7 +107,7 @@ endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basen
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN)
 	for endpoint in $(endpoints); do \
 		DEST=$${endpoint#"api/openapi/specs"}; \
-		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
+		$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml  || { echo "Failed to generate $$endpoint"; exit 1; }; \
 	done
 	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
 
