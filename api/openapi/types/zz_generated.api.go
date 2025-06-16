@@ -9,6 +9,11 @@ import (
 	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
 )
 
+const (
+	BasicAuthScopes  = "BasicAuth.Scopes"
+	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
 // Defines values for GetDataplanesXdsConfigParamsInclude.
 const (
 	Diff GetDataplanesXdsConfigParamsInclude = "diff"
@@ -31,15 +36,6 @@ const (
 type BaseStatus struct {
 	Online int `json:"online"`
 	Total  int `json:"total"`
-}
-
-// DataplaneLayout TODO
-type DataplaneLayout struct {
-	Inbounds  *[]externalRef0.DataplaneInbound  `json:"inbounds,omitempty"`
-	Kri       string                            `json:"kri"`
-	Labels    *map[string]interface{}           `json:"labels,omitempty"`
-	Name      string                            `json:"name"`
-	Outbounds *[]externalRef0.DataplaneOutbound `json:"outbounds,omitempty"`
 }
 
 // DataplaneXDSConfig defines model for DataplaneXDSConfig.
@@ -205,20 +201,11 @@ type SchemasGlobalInsight struct {
 	Zones ZonesStats `json:"zones"`
 }
 
-// BadRequest standard error
-type BadRequest = externalRef0.Error
-
-// DataplaneLayoutResponse TODO
-type DataplaneLayoutResponse = DataplaneLayout
-
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
 type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
 // GlobalInsightResponse defines model for GlobalInsightResponse.
 type GlobalInsightResponse = GlobalInsight
-
-// InboundRulesResponse defines model for InboundRulesResponse.
-type InboundRulesResponse = externalRef0.DataplaneInboundRules
 
 // IndexResponse Some metadata about the service
 type IndexResponse = Index
@@ -231,15 +218,6 @@ type InspectHostnamesResponse = InspectHostnames
 
 // InspectRulesResponse A list of rules for a dataplane
 type InspectRulesResponse = InspectRules
-
-// Internal standard error
-type Internal = externalRef0.Error
-
-// OutboundRulesResponse defines model for OutboundRulesResponse.
-type OutboundRulesResponse = externalRef0.DataplaneOutboundRules
-
-// ProxyRulesResponse defines model for ProxyRulesResponse.
-type ProxyRulesResponse = externalRef0.DataplaneProxyRules
 
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
