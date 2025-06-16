@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
@@ -77,6 +78,7 @@ func generateEnvoyRouteEntries(
 	host plugin_gateway.GatewayHost,
 	toRules rules.Rules,
 	resolver resolve.LabelResourceIdentifierResolver,
+	proxy *core_xds.Proxy,
 ) []route.Entry {
 	var entries []route.Entry
 
@@ -89,7 +91,7 @@ func generateEnvoyRouteEntries(
 
 		entries = append(
 			entries,
-			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), impactfulMeta(rule.Origin), resolver),
+			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), impactfulMeta(rule.Origin), resolver, proxy),
 		)
 	}
 
@@ -102,6 +104,7 @@ func makeTcpRouteEntry(
 	rule api.Rule,
 	origin core_model.ResourceMeta,
 	resolver resolve.LabelResourceIdentifierResolver,
+	proxy *core_xds.Proxy,
 ) route.Entry {
 	entry := route.Entry{
 		Route: name,
@@ -111,7 +114,7 @@ func makeTcpRouteEntry(
 		var dest map[string]string
 		ref := resolve.BackendRefOrNil(origin, b, resolver)
 		if ref.ReferencesRealResource() {
-			service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
+			service, _, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef(), proxy.Metadata.HasFeature(xds_types.FeatureKRIStats))
 			if ok {
 				dest = map[string]string{
 					mesh_proto.ServiceTag: service,

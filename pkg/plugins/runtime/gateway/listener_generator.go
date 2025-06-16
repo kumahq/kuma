@@ -1,9 +1,10 @@
 package gateway
 
 import (
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 // TODO(jpeach) It's a lot to ask operators to tune these defaults,
@@ -41,7 +42,11 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 		"protocol", protocol,
 	)
 
-	name := envoy_names.GetGatewayListenerName(info.Gateway.Meta.GetName(), protocol.String(), port)
+	name :=  kri.From(info.Gateway, "").String()
+	statName := ""
+	if !info.Proxy.Metadata.HasFeature(xds_types.FeatureKRIStats) {
+		statName = name
+	}
 
 	var limits *RuntimeResoureLimitListener
 	if resources := info.Listener.Resources; resources != nil {
@@ -68,5 +73,7 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 			envoy_listeners.EnableReusePort(true),
 			// Always sniff for TLS.
 			envoy_listeners.TLSInspector(),
+			envoy_listeners.StatPrefix(statName),
+	
 		), limits
 }

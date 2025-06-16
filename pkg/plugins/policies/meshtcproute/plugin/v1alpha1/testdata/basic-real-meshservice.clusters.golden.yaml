@@ -1,12 +1,12 @@
 resources:
-- name: default_backend___msvc_80
+- name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: default_backend___msvc_80
+    name: kri_msvc_default___backend_80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

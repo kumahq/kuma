@@ -6,11 +6,17 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-type AltStatNameConfigurer struct{}
+type AltStatNameConfigurer struct{
+	StatName string
+}
 
 var _ ClusterConfigurer = &AltStatNameConfigurer{}
 
 func (e *AltStatNameConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
+	if e.StatName != "" {
+		cluster.AltStatName = e.StatName
+		return nil
+	}
 	sanitizedName := util_xds.SanitizeMetric(cluster.Name)
 	if sanitizedName != cluster.Name {
 		cluster.AltStatName = sanitizedName

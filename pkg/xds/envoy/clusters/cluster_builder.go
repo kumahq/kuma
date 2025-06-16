@@ -4,6 +4,7 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
@@ -43,6 +44,7 @@ func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
 
 // Build generates an Envoy cluster by applying a series of ClusterConfigurers.
 func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
+	
 	switch b.apiVersion {
 	case envoy.APIV3:
 		cluster := envoy_api.Cluster{
@@ -56,6 +58,7 @@ func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 		if len(cluster.GetName()) == 0 {
 			return nil, errors.New("cluster name is undefined")
 		}
+		core.Log.Info("TEST" , "b", cluster.AltStatName)
 		return &cluster, nil
 	default:
 		return nil, errors.New("unknown API")
