@@ -15,9 +15,9 @@ paths:
         '200':
           $ref: '#/components/responses/IndexResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: '#/components/responses/responses-Internal'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -29,9 +29,9 @@ paths:
         '200':
           $ref: '#/components/responses/ResourceTypeDescriptionListResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: '#/components/responses/responses-Internal'
   /global-insight:
     get:
       operationId: get-global-insight
@@ -43,9 +43,9 @@ paths:
         '200':
           $ref: '#/components/responses/GlobalInsightResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: '#/components/responses/responses-Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -82,9 +82,9 @@ paths:
         '200':
           $ref: '#/components/responses/InspectRulesResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: '#/components/responses/responses-Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       operationId: get-dataplanes-xds-config
@@ -134,7 +134,7 @@ paths:
         '200':
           $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_layout:
@@ -161,7 +161,7 @@ paths:
         '200':
           $ref: '#/components/responses/DataplaneNetworkingLayoutResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_policies:
@@ -188,7 +188,7 @@ paths:
         '200':
           $ref: '#/components/responses/ProxyPolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-name}/_policies:
@@ -221,7 +221,7 @@ paths:
         '200':
           $ref: '#/components/responses/InboundPolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policies:
@@ -254,7 +254,7 @@ paths:
         '200':
           $ref: '#/components/responses/OutboundPolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_routes:
@@ -287,7 +287,7 @@ paths:
         '200':
           $ref: '#/components/responses/RoutesListResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{outbound-kri}/_routes/{route-kri}/_policies:
@@ -326,7 +326,7 @@ paths:
         '200':
           $ref: '#/components/responses/RoutePolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
@@ -382,7 +382,7 @@ paths:
         '200':
           $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
@@ -422,7 +422,7 @@ paths:
         '200':
           $ref: '#/components/responses/InspectHostnamesResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/responses-BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -17375,6 +17375,18 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     Internal:
+      description: Internal Server Error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    responses-BadRequest:
+      description: Bad Request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    responses-Internal:
       description: Internal Server Error
       content:
         application/problem+json:

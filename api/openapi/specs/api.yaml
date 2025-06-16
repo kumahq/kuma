@@ -143,9 +143,9 @@ paths:
         '200':
           $ref: '#/components/responses/DataplaneNetworkingLayoutResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_policies:
     get:
       operationId: get-proxy-policy-conf
@@ -168,9 +168,9 @@ paths:
         '200':
           $ref: '#/components/responses/ProxyPolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-name}/_policies:
     get:
       operationId: get-inbound-policy-conf
@@ -199,9 +199,9 @@ paths:
         '200':
           $ref: '#/components/responses/InboundPolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policies:
     get:
       operationId: get-outbound-policy-conf
@@ -230,9 +230,9 @@ paths:
         '200':
           $ref: '#/components/responses/OutboundPolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_routes:
     get:
       operationId: get-outbound-routes
@@ -261,9 +261,9 @@ paths:
         '200':
           $ref: '#/components/responses/RoutesListResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{outbound-kri}/_routes/{route-kri}/_policies:
     get:
       operationId: get-route-policy-conf
@@ -298,9 +298,9 @@ paths:
         '200':
           $ref: '#/components/responses/RoutePolicyConfResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
