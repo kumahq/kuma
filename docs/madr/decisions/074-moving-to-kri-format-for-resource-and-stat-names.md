@@ -1,4 +1,4 @@
-# Resource Identifier
+# Moving to KRI format for resource and stat names
 
 * Status: accepted
 
