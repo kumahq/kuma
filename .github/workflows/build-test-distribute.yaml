@@ -50,7 +50,7 @@ jobs:
       - name: Install speedtest-cli
         run: sudo apt-get update && sudo apt-get install -y speedtest-cli
       - name: Run speedtest
-        run: speedtest-c
+        run: speedtest-cli
       - name: Save results to file
         run: |
           speedtest-cli --json > speedtest.json
