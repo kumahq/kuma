@@ -106,6 +106,10 @@ Kuma currently supports various CA (Certificate Authority) backends for identity
 
 We should allow users to migrate from Kuma issued certificates, which are not SPIFFE-compliant, to using SPIRE. This may require an intermediate step to first migrate to SPIFFE-compliant certificates, but the details will be specified later.
 
+### As a user, I want to automatically rotate the CA
+
+This could be straightforward to implement, but we shouldn't prioritize it at the moment.
+
 ## Out of scope
 
 ### As a user, I want to specify certificates for a specific outbound or inbound
@@ -129,6 +133,10 @@ To enable this setup, we’ll need to establish a federation mechanism — poten
 ### As a user, I want to provide MeshTrafficPermission for SPIFFEID
 
 This should be covered by a separate MADR in a separate [issue](https://github.com/kumahq/kuma/issues/12374).
+
+### As a user, I want to change a trust domain without changing the CA
+
+Based on the SPIFFE [specification](https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md?plain=1#L54), it seems that it's not supported, so we shouldn't support it as well
 
 ## Summary
 
