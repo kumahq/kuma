@@ -6,7 +6,11 @@ Technical Story: https://github.com/kumahq/kuma/issues/13659
 
 ## Context and Problem Statement
 
-In today’s service mesh systems, secure communication between services is essential. To make that possible, each service needs a clear and trusted identity: so we know exactly who is talking to whom.
+In today’s service mesh systems, secure communication between services is essential. To make that possible, each service needs a clear and trusted identity: so we know exactly who is talking to whom and who we can trust.
+
+We should define two crucial concepts:
+* **Identity** - (Who a workload is) — A workload's identity is the name encoded in its certificate, and this identity is considered valid only if the certificate is signed by a Trust.
+* **Trust** - (Who to believe) - Trust defines which identities you accept as valid, and is established through trusted certificate authorities (CAs) that issue those identities. Trust is attached to trust domain, and there can be mutliple Trusts in the cluster.
 
 One of the most trusted standards for defining these service identities is SPIFFE (Secure Production Identity Framework for Everyone). It gives us:
 
@@ -35,28 +39,36 @@ To fully support SPIFFE and modern security practices, Kuma should:
 
 ## User Stories
 
-### As a user, I want a Dataplane (e.g., Service A) inside the mesh to accept mTLS connections from a service (e.g., Service B) outside the mesh.
+### As a user, I want a Dataplane (e.g., Service A) inside the mesh to accept mTLS connections based on Trusts.
 
 A user should be able to use certificates signed by the same Certificate Authority (CA) across different services. This capability simplifies migration paths and unlocks use cases such as enabling mTLS communication between services inside the mesh and components outside the mesh (e.g., a gateway without a sidecar proxy). It's also worth mentioning that the CA might be managed by another component e.g.: SPIRE, which can issue certificates that are SPIFFE compliant.
 
-### As a user, I want to be able to rotate or change the Certificate Authority (CA) used for issuing mTLS identities without interrupting existing connections or causing service downtime.
+### As a user, I want to be able to change the way I issue Identity without interrupting existing connections or causing service downtime.
 
 During the entire process, communication between services must remain secure to ensure uninterrupted, encrypted traffic. This is essential for maintaining zero-trust security guarantees and ensuring operational reliability in production environments.
+
+Example:
+I want to move from using certificates issued by Kuma to SPIRE in different trust domain. 
 
 ### As a user, it should not become harder to enable or manage mTLS in either single-zone or multi-zone deployments than it is today.
 
 Currently, users can enable mTLS in both single-zone and multi-zone deployments just by configuring it in the Mesh resource. As we introduce features like trust domains, external identities, or federation, we must preserve this simplicity and avoid adding unnecessary complexity to the mTLS setup process.
 
+Release `2.12.x`: We are going to sync only Trust from global to zones, but not from zone to other zones.
+
 ### As a user, I want to be able to communicate with applications in the different trust domain.
 
 In the presence of multiple trust domains. Users should be able to trust each domains.
 
-### As a Mesh operator, I want to be able to define trustDomain at different levels.
+### As a Mesh operator, I want to be able to define Identity issuers for subset of Dataplanes.
 
-It makes sense to allow users to define a trust domain for a specific part of the infrastructure: whether that's a zone or an entire mesh.
-By assigning unique trust domains per cluster, we achieve security isolation: if one cluster is compromised, the others remain secure. Additionally, it helps with identity scoping, since we can clearly determine the origin of each identity. Another important aspect is enabling rotation or migration. During the migration, we could use two different trust domains to facilitate the transition from one identity provider to another.
+It makes sense to allow users to define a trust domain for specific parts of the infrastructure — whether that's a single zone or an entire mesh. Additionally, it should be possible to select a specific subset of dataplanes to use a particular identity provider.
 
-Default trust domain: `spiffe://<mesh>.<clusterId>.kuma.io/`
+One important use case is identity rotation or migration. During migration, multiple trust domains can be used simultaneously to support a smooth transition from one identity provider to another without service disruption.
+
+From a security perspective, assigning separate identities or trust domains per zone provides better isolation. If one trust domain is compromised, it does not impact the others — enabling a stronger and more granular trust model.
+
+Suggestions trust domain on global: `spiffe://<mesh>.<KumaClusterId>.kuma.io/` - is generated on Global, to ensure uniquness
 
 ### As a Mesh operator, I want to be able to migrate some workloads to another trust domain without interrupting traffic.
 
@@ -80,25 +92,29 @@ It would be beneficial to support connectivity between different environments. U
 
 It should be possible to federate different trust domains without creating additional resources, only by using the federation endpoint exposed by the control plane. This would be a valuable feature, enabling interoperability between different SPIFFE-compliant systems.
 
-### As a user, I want private key to not be transfered over network
-
-The private key should not be sent from the control plane to the dataplane. This can be addressed by redesigning our secret flow: instead of pushing certificates from the control plane, the dataplane should send a Certificate Signing Request (CSR) to the control plane, which then signs the certificate. In this setup, the private key remains local and never leaves the dataplane environment. This change may require significant work and might not be feasible in the current release, but it should be targeted for a future release.
-
 ### As a user, I want to use an intermediate CA instead of a root CA on the zone
 
 When a user provides a root CA on the global control plane, we could generate a separate intermediate CA for each connecting zone. This would offer a stronger security model, ensuring that if a certificate is compromised in one zone, it does not impact other zones.
 
+### As a user, I want to Trust from my zone to be synced to other zones automatically.
+
+Trust could be automatically generated by the control plane and propagated to other zones. While this would improve automation and reduce configuration overhead, it is not critical at this stage and can be addressed in a future iteration.
+
+### As a user, I want to use all available CA providers from legacy mTLS in new mTLS setup
+
+Kuma currently supports various CA (Certificate Authority) backends for identity management. The new mTLS system should at least support the same set of CA providers, to ensure a smooth transition and preserve compatibility with existing deployments.
+
 ## Out of scope
 
-### As a user, I want to specify certificates for a specific outbound
+### As a user, I want to specify certificates for a specific outbound or inbound
 
-You should use MeshExternalService in this case to configure the outbound connection and provide the required certificates.
+You should use MeshExternalService in this case to configure the outbound connection and provide the required certificates. Dataplane has at the time only one Identity.
 
 ### As a user, I want my dataplanes to communicate with Istio services without going through a gateway
 
 In this scenario, you should also use MeshExternalService and include the necessary certificates in the configuration to enable direct mTLS communication.
 
-### As a user, I want to use two different sources of CA (Kuma and SPIRE) at the same time
+### As a user, I want to use two different sources of CA (Kuma non-SPIFFE compliant and SPIRE) at the same time
 
 This is a complex use case and can make the configuration error prone and difficult to manage.
 We want to add some limitation to avoid issues:
@@ -107,10 +123,6 @@ We want to add some limitation to avoid issues:
 * It's valid for one dataplane to get its identity from Kuma and another from SPIRE — communication between such dataplanes should still work.
 
 To enable this setup, we’ll need to establish a federation mechanism — potentially by having Kuma expose a federation endpoint.
-
-### As a user, I want to have trust domain per namespace
-
-I think we shouldn't allow higher granularity than zone or mesh.
 
 ### As a user, I want to provide MeshTrafficPermission for SPIFFEID
 
@@ -125,11 +137,14 @@ Release 2.12
 4. The system can accept mTLS traffic from services outside the mesh.
 5. The mTLS setup is no more complex than it is today.
 6. It is possible to run Kuma with SPIRE — users can register entries manually or by using the [spire-controller-manager](https://github.com/spiffe/spire-controller-manager).
+7. Migration from old mTLS to SPIFFE-compliant mTLS should be possible
+8. Let's support: builtin, provided and SPIRE as Identity providers
 
 Future releases
 1. The dataplane sends a CSR (Certificate Signing Request) to the control plane for signing.
 2. Each zone uses its own intermediate CA.
 3. Universal (non-Kubernetes) workflows are SPIFFE-compliant.
+4. Support other Identity providers
 
 Nice to have:
 1. Kuma control plane can register entries into SPIRE (How can we attest and trust control-plane?)
