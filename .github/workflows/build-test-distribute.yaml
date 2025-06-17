@@ -67,6 +67,11 @@ jobs:
           df -h
           echo "Top 5 memory-hungry processes:"
           ps aux --sort=-%mem | head -n 6
+      - name: Check Write Speed with dd
+        run: |
+          echo "Measuring disk write speed..."
+          dd if=/dev/zero of=tempfile bs=1M count=1024 conv=fdatasync status=progress
+          rm tempfile
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
