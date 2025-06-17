@@ -57,9 +57,10 @@ jobs:
         id: set-gomemlimit
         run: |
           # Get total memory in bytes
+          set -e
           mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
           mem_total_bytes=$((mem_total_kb * 1024))
-          gomemlimit=$((mem_total_bytes * 0.9))
+          gomemlimit=$((mem_total_bytes * 9 / 10))
           echo "GOMEMLIMIT=${gomemlimit}" >> $GITHUB_ENV
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec $gomemlimit)"
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
