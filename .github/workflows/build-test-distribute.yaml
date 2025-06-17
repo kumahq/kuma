@@ -51,15 +51,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y speedtest-cli
       - name: Run speedtest
         run: speedtest-cli
-      - name: Save results to file
-        run: |
-          speedtest-cli --json > speedtest.json
-          cat speedtest.js
-      - name: Upload speedtest results
-        uses: actions/upload-artifact@v4
-        with:
-          name: speedtest-results
-          path: speedtest.json
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
