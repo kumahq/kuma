@@ -2,114 +2,100 @@
 
 * Status: accepted
 
-## Context and Problem Statement
+## Context and problem statement
 
-As stated in the [MADR](070-resource-identifier.md) about resource identifiers, we are not consistent in how we set names for resources. By improving the naming, we can also enable much more powerful cross-resource referencing, which would allow better presentation of data.
-We would like to make this change, but it would break all places where users rely on Envoy metrics (e.g., dashboards) and might also impact the GUI.
-Therefore, we need a path forward that allows users to transition safely to the new model.
+As described in the [Resource Identifier MADR](070-resource-identifier.md), we chose to standardize resource naming using the KRI (Kuma Resource Identifier) format. This change improves consistency across the system and allows for stronger cross-resource references, making data easier to present and understand. However, moving to KRI will break existing setups that rely on current Envoy stat and resource names, such as dashboards and GUI features. A smooth migration path is needed to let users adopt KRI without disruption.
 
-## Considered Options
+### Affected systems and users
 
-* Option 1 - Rename resources based on KRI without introducing a breaking change, and introduce a feature flag to enable the new resource naming.
+Two main groups are impacted:
 
-## Decision Outcome
+* Internal systems: Kuma GUI
+* External users: Dashboards, Prometheus
 
-* Option 1 - ename resources based on KRI without introducing a breaking change, and introduce a feature flag to enable the new resource naming.
+#### Kuma GUI
 
-## Pros and Cons of the Options
+The Dataplane view displays inbound and outbound endpoints using data from Envoy stats. It matches these stats to configuration by parsing stat names, such as cluster or listener names. Changes to stat naming or resource identifiers will break this matching logic. We must coordinate changes with the GUI to support both the old and new formats during the transition.
 
-### Option 1 - ename resources based on KRI without introducing a breaking change, and introduce a feature flag to enable the new resource naming.
+## Scope
 
-We currently have two modes to consider:
+This decision applies to environments using the new service discovery model based on:
 
-* `kuma.io/service`
-* `MeshService`, `MeshExternalService`, and `MeshMultiZoneService`
+* `MeshService`
+* `MeshExternalService`
+* `MeshMultiZoneService`
 
-We will not change anything for `kuma.io/service`, since it is not a real resource.
+These and the legacy `kuma.io/service` tag represent two different modes of describing the same types of services in the mesh. Since `kuma.io/service` is deprecated and will be removed in the future, this migration only covers naming changes for resources generated from the new model. Updating or supporting naming for the legacy mode is out of scope.
 
-During this task, we should split the work into two main parts:
-* Rename places that are not exposed to or used by clients, so that we can adopt the new model by default internally.
-* Introduce a feature flag to switch all resource names and metrics to the KRI-based naming for users.
+This document also does not cover renaming of internal Envoy resources that do not correspond directly to real Kuma resources such as `MeshHTTPRoute`, `Dataplane`, or `MeshExternalService`. These include:
 
-#### Rename places that are not exposed to or used by clients, so that we can adopt the new model by default internally.
+* Secrets
+* Internal listeners and clusters
+* Default routes (when no `MeshHTTPRoute` or `MeshTCPRoute` is defined)
+* `MeshPassthrough` resources
 
-We can distinguish two types of clients:
+Renaming of these internal resources will be handled in a separate MADR.
 
-* Internal — GUI
-* External — Dashboards, Prometheus
+Support for the built-in gateway is also out of scope. It may be addressed separately if we decide to include it.
 
-On the Dataplane view, we show the outbounds and inbounds.
-We retrieve this information from the stats and later reference the configuration based on the name of the stats — either the cluster name or the listener name.
-Changing either the resource name or the statistic name might impact this functionality.
-We need to coordinate changes with the UI team to ensure we support both situations.
+## Decision outcome
 
-What can we do?
+Introduce a feature flag to enable the new KRI-based resource naming. This flag can be set at the control plane level, causing all data plane proxies to use the KRI format in Envoy resource and stat names. Alternatively, it can be enabled per data plane proxy using an environment variable in Universal mode or an annotation in Kubernetes mode.
 
->[!NOTE]
-> Format of resource names is defined in [MADR](070-resource-identifier.md)
+## Implementation
 
-* `Dataplane`
-Cluster:
-```
-  name: kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport
-  alt_stats_name: mesh-1_backend_kuma-demo_us-east2-_msvc_9090
-```
-Listener:
-```
-  name: kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport
-  stat_prefix: mesh-1_backend_kuma-demo_us-east2-_msvc_9090
-```
-The GUI should be updated to support looking up resources not just by name, but also by `alt_stats_name` (for Clusters) or `stat_prefix` (for Listeners).
-This way, we avoid breaking the stats view for metrics even when naming changes.
+### Feature flag
 
-* `ZoneIngress` and `ZoneEgress`
-In these cases, we should be able to rename the fields without any impact, since they are not exposed to external consumers.
-Cluster:
-```
-  name: kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport
-```
-Listener:
-```
-  name: kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport
+A new feature flag will be introduced to enable the KRI-based stat naming. This flag will be opt-in at first, with a clear deprecation notice: the new format will become the default in the future, and eventually the flag will be removed. The goal is to avoid breaking existing setups while giving users an early path to adopt the new behavior.
+
+The feature flag will be sent by the data plane proxy to the control plane via xDS metadata, using the following constant:
+
+```go
+const FeatureKRIStats string = "feature-kri-stats"
 ```
 
-#### Introduce a feature flag to switch all resource names and metrics to the KRI-based naming for users.
+To enable this feature globally, users can set a control plane runtime option:
 
-In `2.11.x`, we want to introduce a flag that allows switching to the new format, along with a note that starting from `2.13.x`, this will become the default behavior.
-We do not want to break existing user setups, but we want to give users a heads-up that this change is coming, and that switching earlier might make the transition less painful.
-
-```
-KRIStatsEnabled bool `json:"kriStatsEnabled" envconfig:"KUMA_MESH_SERVICE_KRI_STATS_ENABLED"
+```go
+KRIStatsEnabled bool `json:"kriStatsEnabled" envconfig:"KUMA_MESH_SERVICE_KRI_STATS_ENABLED"`
 ```
 
-By default, the flag will have a `false` value, but in `2.13.x` we will change the default to `true`.
-In `2.15.x`, we will completely remove the flag — the new behavior will be the only supported mode.
+This will cause all data plane proxies to include the feature flag automatically.
 
-When the variable is set to `true`, metrics will use only the new format.
-This means we will no longer set `alt_stats_name` or `stat_prefix`; instead, only the resource name (for Cluster, Listener, Routes and Endpoint) will be set and used in both metrics and configuration.
+To enable the feature for individual data planes:
 
-We will also introduce an option to migrate a single dataplane to the new model:
+| Mode       | How to enable                                                        |
+|------------|----------------------------------------------------------------------|
+| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_METRICS_KRI_STATS_ENABLED=true` |
+| Kubernetes | Add annotation: `kuma.io/kri-stats-enabled: "true"`                  |
 
-| Universal | Kubernetes |
-| --- | --- |
-| Set environment variable: `KUMA_DATAPLANE_RUNTIME_METRICS_KRI_STATS_ENABLED=true` | Set annotation: `kuma.io/kri-stats-enabled: "true"` |
+In Kubernetes, the sidecar injector will convert the annotation into the corresponding environment variable. `kuma-dp` will then detect this variable and include the feature flag in the xDS metadata sent to the control plane.
 
-On Kubernetes, we will translate the annotation into the environment variable `KUMA_DATAPLANE_RUNTIME_METRICS_KRI_STATS_ENABLED` during sidecar injection.
-Based on this environment variable, `kuma-dp` will enable the feature and propagate it via metadata:
+## Test scenarios required for completion
 
-```golang 
-const FeatureKRIStats string = "feature-kri-stats"`
-```
+The following scenarios must be verified to consider the work complete. Each case ensures the correct generation and usage of KRI-based resource and stat names across various deployment modes.
 
-After releasing `2.11.x`, we should start adjusting dashboards and metric references so that by the time the new behavior becomes default in `2.13.x`, users will not encounter issues with observability.
+### Single-zone deployments
 
-#### Pros and Cons of the Option 1
+* `MeshService` is targeted directly by a dataplane in the same zone
+* `MeshExternalService` is targeted via ZoneEgress in the same zone
 
-**Pros:**
-* Enables gradual migration of stats without breaking existing dashboards.
-* Does not change the `kuma.io/service` behavior.
-* Lays the foundation for building better tooling around metrics and observability.
+### Multi-zone with ZoneEgress and ZoneIngress (Global + 2 zones)
 
-**Cons:**
-* Might make the code more complicated.
-* Migration might be troublesome for users who have custom dashboards.
+* Dataplane in zone 1 targets a `MeshService` in zone 2
+* Dataplane in zone 1 targets a `MeshExternalService` in zone 1
+* Dataplane in zone 1 targets a `MeshMultiZoneService` in zone 2
+* Dataplane in zone 1 targets a `MeshMultiZoneService` in zone 2 with locality awareness disabled via `MeshLoadBalancingStrategy`
+
+### Multi-zone with only ZoneIngress (Global + 2 zones)
+
+* Dataplane in zone 1 targets a `MeshService` in zone 2
+* Dataplane in zone 1 targets a `MeshMultiZoneService` in zone 1
+* Dataplane in zone 2 targets a `MeshMultiZoneService` in zone 2 with locality awareness disabled via `MeshLoadBalancingStrategy`
+
+### Multi-zone with ZoneIngress in both zones and ZoneEgress in one zone (Global + 2 zones)
+
+* Dataplane in zone 1 targets a `MeshService` in zone 2
+* Dataplane in zone 2 targets a `MeshService` in zone 1
+* Dataplanes in both zones target a `MeshMultiZoneService` in their respective zones
+* Dataplanes in both zones target a `MeshMultiZoneService` with locality awareness disabled via `MeshLoadBalancingStrategy`
