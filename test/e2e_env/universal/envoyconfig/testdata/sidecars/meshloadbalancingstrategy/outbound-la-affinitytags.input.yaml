@@ -1,0 +1,16 @@
+type: MeshLoadBalancingStrategy
+name: mlbst-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        localityAwareness:
+          localZone:
+            affinityTags:
+              - key: k8s.io/node
+              - key: k8s.io/az
