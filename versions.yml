@@ -50,13 +50,15 @@
 - edition: kuma
   version: 2.10.1
   release: 2.10.x
-  latest: true
   releaseDate: "2025-03-20"
   endOfLifeDate: "2026-03-20"
   branch: release-2.10
 - edition: kuma
   version: 2.11.0
   release: 2.11.x
+  latest: true
+  releaseDate: "2025-06-10"
+  endOfLifeDate: "2026-06-10"
   branch: release-2.11
 - edition: kuma
   version: preview

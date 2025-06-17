@@ -63,6 +63,7 @@ GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
 HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
 KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
 HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
+OAPI_CODEGEN=$(CI_TOOLS_BIN_DIR)/oapi-codegen
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
