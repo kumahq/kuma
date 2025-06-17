@@ -205,6 +205,37 @@ spec:
               name: x-test-header-2
 ```
 
+The final configurations after merging:
+
+* `kri_msvc_envoyconfig_us-east-1_ns-1_test-server-1_`:
+
+    ```yaml
+    loadBalancer:
+      type: RingHash 
+      ringHash:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-test-header-1
+    ```
+
+* `kri_mhttpr_envoyconfig___route-1_`:
+
+    ```yaml
+    hashPolicies:
+      - type: Header
+        header:
+          name: x-test-header-2 
+    loadBalancer:
+      type: RingHash 
+      ringHash:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-test-header-1
+    ```
+
+
 This results in the following behavior:
 * When clients access `test-server-1` through `route-1`, hashing is performed using the `x-test-header-2` values
 * When clients access `test-server-1` through other routes, hashing is performed using the `x-test-header-1` values
