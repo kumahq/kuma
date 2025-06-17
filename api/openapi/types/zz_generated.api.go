@@ -42,7 +42,7 @@ type BaseStatus struct {
 type DataplaneNetworkingLayout struct {
 	Inbounds  *[]externalRef0.DataplaneInbound  `json:"inbounds,omitempty"`
 	Kri       string                            `json:"kri"`
-	Labels    *map[string]interface{}           `json:"labels,omitempty"`
+	Labels    *map[string]string                `json:"labels,omitempty"`
 	Name      string                            `json:"name"`
 	Outbounds *[]externalRef0.DataplaneOutbound `json:"outbounds,omitempty"`
 }
