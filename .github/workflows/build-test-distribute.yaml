@@ -51,6 +51,22 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y speedtest-cli
       - name: Run speedtest
         run: speedtest-cli
+      - name: Get CPU Info
+        run: |
+          echo "CPU Info:"
+          lscpu
+      - name: Get Memory Info
+        run: |
+          echo "Memory Info:"
+          free -h
+      - name: Get System Summary
+        run: |
+          echo "Uptime and Load:"
+          uptime
+          echo "Disk Info:"
+          df -h
+          echo "Top 5 memory-hungry processes:"
+          ps aux --sort=-%mem | head -n 6
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
