@@ -2,11 +2,12 @@ package cluster
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 )
 
 func LocalityWeightedLbConfigurer() Configurer[envoy_cluster.Cluster] {

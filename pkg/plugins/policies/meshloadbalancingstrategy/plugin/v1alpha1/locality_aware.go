@@ -5,14 +5,15 @@ import (
 	"strings"
 
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
 const defaultOverprovisioningFactor uint32 = 200
