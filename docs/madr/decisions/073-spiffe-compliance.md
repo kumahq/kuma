@@ -17,7 +17,7 @@ One of the most trusted standards for defining these service identities is SPIFF
 * A standard way to name services: `spiffe://<trust-domain>/<path>`
 * A strict format for certificates, especially the Subject Alternative Name (SAN) - which must contain exactly one URI (the SPIFFE ID)
 * Tools and rules for issuing, rotating, and checking these identities
-* SPIFFE certificates identify workload, not an endpoint or API
+* SPIFFE certificates identify workload, not an API endpoint
 
 Right now, Kuma does something similar by generating SPIFFE-like IDs like `spiffe://<mesh-name>/<service-name>`. But it also adds extra SANs (like `kuma://kuma.io/version/v1`) based on tags. These extra SANs make Kuma's certificates non-compliant with SPIFFE, meaning they can’t be used directly with SPIFFE-based systems like SPIRE, or other tools that expect full compliance. Also, Kuma uses certificates to identify endpoints, whereas SPIFFE-based certificates are used to establish identity via SPIFFE IDs of the workload.
 
@@ -55,8 +55,6 @@ I want to move from using certificates issued by Kuma to SPIRE in different trus
 ### As a user, it should not become harder to enable or manage mTLS in either single-zone or multi-zone deployments than it is today.
 
 Currently, users can enable mTLS in both single-zone and multi-zone deployments just by configuring it in the Mesh resource. As we introduce features like trust domains, external identities, or federation, we must preserve this simplicity and avoid adding unnecessary complexity to the mTLS setup process.
-
-Release `2.12.x`: We are going to sync only Trust from global to zones, but not from zone to other zones.
 
 ### As a user, I want to be able to communicate with applications in different trust domains.
 
