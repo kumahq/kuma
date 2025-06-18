@@ -124,7 +124,7 @@ In this scenario, you should also use MeshExternalService and include the necess
 
 This is a complex use case and can make the configuration error prone and difficult to manage.
 We want to add some limitation to avoid issues:
-* We should be add a Trust to SPIRE service while using Kuma certificate.
+* We should be able to add a Trust to SPIRE service while using Kuma certificate.
 * Identities must be issued by one system only — either SPIRE or Kuma, never both for the same dataplane.
 * It's valid for one dataplane to get its identity from Kuma and another from SPIRE — communication between such dataplanes should still work.
 
