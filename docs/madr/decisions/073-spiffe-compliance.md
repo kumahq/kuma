@@ -108,6 +108,10 @@ We should allow users to migrate from Kuma issued certificates, which are not SP
 
 This could be straightforward to implement, but we shouldn't prioritize it at the moment.
 
+### As a user, I want to specify certificates for ZoneEgress proxy and Admin endpoints.
+
+This would provide a beneficial option to avoid generating separate certificates for the Admin API and for each mesh when using ZoneEgress. Users could specify which identity they want to use. However, this feature requires additional development work that might not be feasible for the 2.12 release and may need to be deferred to a future one.
+
 ## Out of scope
 
 ### As a user, I want to specify certificates for a specific outbound or inbound
@@ -153,6 +157,7 @@ Future releases
 2. Each zone uses its own intermediate CA.
 3. Universal (non-Kubernetes) workflows are SPIFFE-compliant.
 4. Support other Identity providers
+5. ZoneEgress identity
 
 Nice to have:
 1. Kuma control plane can register entries into SPIRE (How can we attest and trust control-plane?)
