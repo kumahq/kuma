@@ -28,7 +28,7 @@ import (
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 
 type BootstrapClient interface {
-	Fetch(ctx context.Context, opts Opts, metadata map[string]string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
+	Fetch(ctx context.Context, opts Opts, metadata map[string]string, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
 }
 
 type Opts struct {

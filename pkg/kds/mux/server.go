@@ -17,6 +17,7 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kds_middleware "github.com/kumahq/kuma/pkg/kds/middleware"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
@@ -50,6 +51,8 @@ type server struct {
 	streamInterceptors   []grpc.StreamServerInterceptor
 	unaryInterceptors    []grpc.UnaryServerInterceptor
 	mesh_proto.UnimplementedMultiplexServiceServer
+
+	streamCount int64
 }
 
 var _ component.Component = &server{}
@@ -104,12 +107,15 @@ func (s *server) Start(stop <-chan struct{}) error {
 		}
 		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
-	for _, interceptor := range s.streamInterceptors {
-		grpcOptions = append(grpcOptions, grpc.ChainStreamInterceptor(interceptor))
-	}
+
 	grpcOptions = append(
 		grpcOptions,
-		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
+		grpc.ChainStreamInterceptor(
+			append(s.streamInterceptors, kds_middleware.StreamIDStreamInterceptor(&s.streamCount))...,
+		),
+		grpc.ChainUnaryInterceptor(
+			append(s.unaryInterceptors, kds_middleware.StreamIDUnaryInterceptor(&s.streamCount))...,
+		),
 	)
 	if s.config.Tracing.Enabled {
 		grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))
