@@ -47,31 +47,6 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - name: Install speedtest-cli
-        run: sudo apt-get update && sudo apt-get install -y speedtest-cli
-      - name: Run speedtest
-        run: speedtest-cli
-      - name: Get CPU Info
-        run: |
-          echo "CPU Info:"
-          lscpu
-      - name: Get Memory Info
-        run: |
-          echo "Memory Info:"
-          free -h
-      - name: Get System Summary
-        run: |
-          echo "Uptime and Load:"
-          uptime
-          echo "Disk Info:"
-          df -h
-          echo "Top 5 memory-hungry processes:"
-          ps aux --sort=-%mem | head -n 6
-      - name: Check Write Speed with dd
-        run: |
-          echo "Measuring disk write speed..."
-          dd if=/dev/zero of=tempfile bs=1M count=1024 conv=fdatasync status=progress
-          rm tempfile
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
