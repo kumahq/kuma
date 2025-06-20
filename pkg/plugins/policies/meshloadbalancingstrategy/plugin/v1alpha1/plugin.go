@@ -326,6 +326,10 @@ func getHashPolicies(conf api.Conf) *[]api.HashPolicy {
 		return nil
 	}
 
+	if conf.HashPolicies != nil {
+		return conf.HashPolicies
+	}
+
 	switch conf.LoadBalancer.Type {
 	case api.RingHashType:
 		if conf.LoadBalancer.RingHash == nil {
