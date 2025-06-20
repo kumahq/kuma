@@ -9,11 +9,11 @@ spec:
         kind: MeshService
         name: test-server
       default:
+        hashPolicies:
+          - type: Cookie
+            cookie:
+              name: session_id
         loadBalancer:
           type: Maglev
           maglev:
             tableSize: 17
-            hashPolicies:
-            - type: Cookie
-              cookie:
-                name: session_id
