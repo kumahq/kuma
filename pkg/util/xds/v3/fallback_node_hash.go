@@ -15,9 +15,11 @@ type FallBackNodeHash struct {
 var _ cache.NodeHash = &FallBackNodeHash{}
 
 func (h *FallBackNodeHash) ID(node *envoy_core.Node) string {
-	for _, id := range h.GetIds() {
-		if id == node.Id {
-			return id
+	if node != nil {
+		for _, id := range h.GetIds() {
+			if id == node.Id {
+				return id
+			}
 		}
 	}
 	return h.DefaultId
