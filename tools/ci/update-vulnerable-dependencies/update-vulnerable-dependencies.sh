@@ -21,11 +21,23 @@ for i in "${OSV_SCANNER_ADDITIONAL_OPTS[@]}"; do
    OSV_FLAGS+=("${i}")
 done
 
-for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
-  name: $vulnerablePackage,
-  current: .package.version,
-  fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events |
-  map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name != "github.com/kumahq/kuma")'); do
+SKIP_PACKAGES='["github.com/kumahq/kuma", "github.com/open-policy-agent/opa"]'
+
+for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c --argjson skipPackages "$SKIP_PACKAGES" '
+    .results[].packages[]
+    | .package.name as $vulnerablePackage
+    | select($vulnerablePackage | IN($skipPackages[]) | not)
+    | {
+        name: $vulnerablePackage,
+        current: .package.version,
+        fixedVersions: [
+          .vulnerabilities[].affected[]
+          | select(.package.name == $vulnerablePackage)
+          | .ranges[].events
+          | map(select(.fixed != null) | .fixed)
+        ] | map(select(length > 0))
+      }
+  '); do
 
   fixVersion=$(go run "$SCRIPT_DIR"/main.go <<< "$dep")
 
