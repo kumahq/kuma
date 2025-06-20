@@ -181,28 +181,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							{
 								Subset: subsetutils.MeshService("payment"),
 								Conf: v1alpha1.Conf{
+									HashPolicies: &[]v1alpha1.HashPolicy{
+										{
+											Type: v1alpha1.QueryParameterType,
+											QueryParameter: &v1alpha1.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: v1alpha1.ConnectionType,
+											Connection: &v1alpha1.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
+										},
+									},
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
 										RingHash: &v1alpha1.RingHash{
 											MinRingSize:  pointer.To[uint32](100),
 											MaxRingSize:  pointer.To[uint32](1000),
 											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-											HashPolicies: &[]v1alpha1.HashPolicy{
-												{
-													Type: v1alpha1.QueryParameterType,
-													QueryParameter: &v1alpha1.QueryParameter{
-														Name: "queryparam",
-													},
-													Terminal: pointer.To(true),
-												},
-												{
-													Type: v1alpha1.ConnectionType,
-													Connection: &v1alpha1.Connection{
-														SourceIP: pointer.To(true),
-													},
-													Terminal: pointer.To(false),
-												},
-											},
 										},
 									},
 								},
@@ -212,6 +212,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Build(),
 				Routing: *paymentsAndBackendRouting().Build(),
 			},
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
 		}),
 		Entry("egress", testCase{
 			resources: []core_xds.Resource{
@@ -587,28 +590,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								{
 									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
+										HashPolicies: &[]v1alpha1.HashPolicy{
+											{
+												Type: v1alpha1.QueryParameterType,
+												QueryParameter: &v1alpha1.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: v1alpha1.ConnectionType,
+												Connection: &v1alpha1.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
 											RingHash: &v1alpha1.RingHash{
 												MinRingSize:  pointer.To[uint32](100),
 												MaxRingSize:  pointer.To[uint32](1000),
 												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
-												},
 											},
 										},
 										LocalityAwareness: &v1alpha1.LocalityAwareness{
@@ -644,6 +647,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						}),
 				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_basic_egress_enabled", testCase{
@@ -768,28 +774,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								{
 									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
+										HashPolicies: &[]v1alpha1.HashPolicy{
+											{
+												Type: v1alpha1.QueryParameterType,
+												QueryParameter: &v1alpha1.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: v1alpha1.ConnectionType,
+												Connection: &v1alpha1.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
 											RingHash: &v1alpha1.RingHash{
 												MinRingSize:  pointer.To[uint32](100),
 												MaxRingSize:  pointer.To[uint32](1000),
 												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
-												},
 											},
 										},
 										LocalityAwareness: &v1alpha1.LocalityAwareness{
@@ -927,28 +933,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								{
 									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
+										HashPolicies: &[]v1alpha1.HashPolicy{
+											{
+												Type: v1alpha1.QueryParameterType,
+												QueryParameter: &v1alpha1.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: v1alpha1.ConnectionType,
+												Connection: &v1alpha1.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
 											RingHash: &v1alpha1.RingHash{
 												MinRingSize:  pointer.To[uint32](100),
 												MaxRingSize:  pointer.To[uint32](1000),
 												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
-												},
 											},
 										},
 									},
@@ -956,6 +962,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						}),
 				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_cross_zone", testCase{
@@ -1066,28 +1075,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								{
 									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
+										HashPolicies: &[]v1alpha1.HashPolicy{
+											{
+												Type: v1alpha1.QueryParameterType,
+												QueryParameter: &v1alpha1.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: v1alpha1.ConnectionType,
+												Connection: &v1alpha1.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
 											RingHash: &v1alpha1.RingHash{
 												MinRingSize:  pointer.To[uint32](100),
 												MaxRingSize:  pointer.To[uint32](1000),
 												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
-												},
 											},
 										},
 									},
@@ -1095,6 +1104,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						}),
 				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_split", testCase{
@@ -1260,28 +1272,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							{
 								Subset: subsetutils.MeshService("payment"),
 								Conf: v1alpha1.Conf{
+									HashPolicies: &[]v1alpha1.HashPolicy{
+										{
+											Type: v1alpha1.QueryParameterType,
+											QueryParameter: &v1alpha1.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: v1alpha1.ConnectionType,
+											Connection: &v1alpha1.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
+										},
+									},
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
 										RingHash: &v1alpha1.RingHash{
 											MinRingSize:  pointer.To[uint32](100),
 											MaxRingSize:  pointer.To[uint32](1000),
 											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-											HashPolicies: &[]v1alpha1.HashPolicy{
-												{
-													Type: v1alpha1.QueryParameterType,
-													QueryParameter: &v1alpha1.QueryParameter{
-														Name: "queryparam",
-													},
-													Terminal: pointer.To(true),
-												},
-												{
-													Type: v1alpha1.ConnectionType,
-													Connection: &v1alpha1.Connection{
-														SourceIP: pointer.To(true),
-													},
-													Terminal: pointer.To(false),
-												},
-											},
 										},
 									},
 								},
@@ -1289,6 +1301,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						},
 					}),
 				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
 	)
@@ -1379,28 +1394,28 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Rules: core_rules.Rules{{
 								Subset: subsetutils.Subset{},
 								Conf: v1alpha1.Conf{
+									HashPolicies: &[]v1alpha1.HashPolicy{
+										{
+											Type: v1alpha1.QueryParameterType,
+											QueryParameter: &v1alpha1.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: v1alpha1.ConnectionType,
+											Connection: &v1alpha1.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
+										},
+									},
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
 										RingHash: &v1alpha1.RingHash{
 											MinRingSize:  pointer.To[uint32](100),
 											MaxRingSize:  pointer.To[uint32](1000),
 											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-											HashPolicies: &[]v1alpha1.HashPolicy{
-												{
-													Type: v1alpha1.QueryParameterType,
-													QueryParameter: &v1alpha1.QueryParameter{
-														Name: "queryparam",
-													},
-													Terminal: pointer.To(true),
-												},
-												{
-													Type: v1alpha1.ConnectionType,
-													Connection: &v1alpha1.Connection{
-														SourceIP: pointer.To(true),
-													},
-													Terminal: pointer.To(false),
-												},
-											},
 										},
 									},
 								},

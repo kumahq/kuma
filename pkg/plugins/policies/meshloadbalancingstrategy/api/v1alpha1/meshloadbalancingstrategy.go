@@ -33,6 +33,11 @@ type Conf struct {
 	LocalityAwareness *LocalityAwareness `json:"localityAwareness,omitempty"`
 	// LoadBalancer allows to specify load balancing algorithm.
 	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
+	// HashPolicies specify a list of request/connection properties that are used to calculate a hash.
+	// These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
+	// set to true, and there is already a hash generated, the hash is returned immediately,
+	// ignoring the rest of the hash policy list.
+	HashPolicies *[]HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type LocalityAwareness struct {
