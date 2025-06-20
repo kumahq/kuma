@@ -11,7 +11,7 @@ import (
 	envoy "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
-func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *envoy_endpoint.ClusterLoadAssignment {
+func ToLocalityLbEndpoints(endpoints []core_xds.Endpoint) []*envoy_endpoint.LocalityLbEndpoints {
 	localityLbEndpoints := LocalityLbEndpointsMap{}
 
 	for _, ep := range endpoints {
@@ -58,9 +58,13 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 		sortLbEndpoints(lbEndpoints.LbEndpoints)
 	}
 
+	return localityLbEndpoints.asSlice()
+}
+
+func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *envoy_endpoint.ClusterLoadAssignment {
 	return &envoy_endpoint.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints:   localityLbEndpoints.asSlice(),
+		Endpoints:   ToLocalityLbEndpoints(endpoints),
 	}
 }
 

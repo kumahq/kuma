@@ -212,6 +212,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Build(),
 				Routing: *paymentsAndBackendRouting().Build(),
 			},
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
 		}),
 		Entry("egress", testCase{
 			resources: []core_xds.Resource{
@@ -645,6 +648,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						}),
 				).
 				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
 		}),
 		Entry("locality_aware_basic_egress_enabled", testCase{
 			resources: []core_xds.Resource{
@@ -957,6 +963,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						}),
 				).
 				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
 		}),
 		Entry("locality_aware_cross_zone", testCase{
 			resources: []core_xds.Resource{
@@ -1095,6 +1104,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						}),
 				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_split", testCase{
@@ -1289,6 +1301,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						},
 					}),
 				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
 	)

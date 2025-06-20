@@ -18,8 +18,16 @@ import (
 //
 // At any moment we can call rctx.Conf() and get right configuration.
 type ResourceContext[T any] struct {
-	ids   []kri.Identifier
-	rules ResourceRules
+	ids      []kri.Identifier
+	rules    ResourceRules
+	fallback T
+}
+
+func AsResourceContext[T any](conf T) *ResourceContext[T] {
+	return &ResourceContext[T]{
+		rules:    ResourceRules{},
+		fallback: conf,
+	}
 }
 
 func RootContext[T any](mesh *core_mesh.MeshResource, rules ResourceRules) *ResourceContext[T] {
@@ -52,8 +60,7 @@ func (rc *ResourceContext[T]) Conf() T {
 			return rule.Conf[0].(T)
 		}
 	}
-	var conf T
-	return conf
+	return rc.fallback
 }
 
 func (rc *ResourceContext[T]) DirectConf() (T, bool) {

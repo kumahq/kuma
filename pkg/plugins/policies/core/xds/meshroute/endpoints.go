@@ -54,9 +54,10 @@ func GenerateEndpoints(
 				}
 
 				resources.Add(&core_xds.Resource{
-					Name:     cluster.Name(),
-					Origin:   generator.OriginOutbound,
-					Resource: loadAssignment,
+					Name:           cluster.Name(),
+					Origin:         generator.OriginOutbound,
+					Resource:       loadAssignment,
+					ResourceOrigin: service.BackendRef().ResourceOrNil(),
 				})
 			}
 		}
