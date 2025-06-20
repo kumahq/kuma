@@ -56,13 +56,21 @@ func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
 		return false, err
 	}
 	if golden.UpdateGoldenFiles() {
-		if len(actualContent) > 0 && actualContent[len(actualContent)-1] != '\n' {
-			actualContent += "\n"
+		if actualContent == "" { // If there's no actual content, we remove the golden file
+			_ = os.Remove(g.GoldenFilePath)
+		} else {
+			if len(actualContent) > 0 && actualContent[len(actualContent)-1] != '\n' {
+				actualContent += "\n"
+			}
+			err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0o600)
+			if err != nil {
+				return false, errors.Wrap(err, "could not update golden file")
+			}
 		}
-		err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0o600)
-		if err != nil {
-			return false, errors.Wrap(err, "could not update golden file")
-		}
+	}
+	// No content means that there shouldn't be a golden file (this avoids keep empty golden files)
+	if actualContent == "" {
+		return gomega.Not(gomega.BeAnExistingFile()).Match(g.GoldenFilePath)
 	}
 	expected, err := os.ReadFile(g.GoldenFilePath)
 	if err != nil {
@@ -82,6 +90,9 @@ func (g *GoldenMatcher) FailureMessage(actual interface{}) string {
 	if err != nil {
 		return err.Error()
 	}
+	if actualContent == "" {
+		return golden.RerunMsg(g.GoldenFilePath) + "\n\n exists but output is empty, which means that the golden file should not exist."
+	}
 	return golden.RerunMsg(g.GoldenFilePath) + "\n\n" + g.Matcher.FailureMessage(actualContent)
 }
 
@@ -95,6 +106,10 @@ func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) string {
 
 func (g *GoldenMatcher) actualString(actual interface{}) (string, error) {
 	switch actual := actual.(type) {
+	case nil:
+		return "", nil
+	case error:
+		return actual.Error(), nil
 	case []byte:
 		return string(actual), nil
 	case string:

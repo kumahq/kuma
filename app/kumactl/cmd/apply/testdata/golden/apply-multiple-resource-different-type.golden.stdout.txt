@@ -1,0 +1,2 @@
+Resource type="Dataplane" mesh="default" name="sample1" Created
+Resource type="Secret" mesh="default" name="sample" Created
