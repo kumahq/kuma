@@ -105,7 +105,7 @@ func GenerateClusters(
 								// services that are synced can be accessed only with TLS through ZoneIngress
 								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 								if port, found := ms.FindPortByName(realResourceRef.Resource.SectionName); found {
-									protocol = port.AppProtocol
+									protocol = core_mesh.ParseProtocol(port.GetProtocol())
 								}
 							}
 						}
@@ -156,7 +156,7 @@ func SniForBackendRef(
 		resource = ms
 		name = ms.SNIName(systemNamespace)
 		if p, ok := ms.FindPortByName(backendRef.Resource.SectionName); ok {
-			port = p.Port
+			port = p.GetValue()
 		}
 	case common_api.MeshExternalService:
 		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(backendRef.Resource))
@@ -168,7 +168,7 @@ func SniForBackendRef(
 		resource = mzms
 		name = core_model.GetDisplayName(resource.GetMeta())
 		if p, ok := mzms.FindPortByName(backendRef.Resource.SectionName); ok {
-			port = p.Port
+			port = p.GetValue()
 		}
 	}
 	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, port, nil)

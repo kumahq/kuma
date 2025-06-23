@@ -1,10 +1,15 @@
 package v1alpha1
 
 import (
+	"fmt"
+	"strconv"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -58,4 +63,44 @@ func (t *MeshExternalServiceResource) Domains() *xds_types.VIPDomains {
 		}
 	}
 	return nil
+}
+
+func (t *MeshExternalServiceResource) GetPorts() []core.Port {
+	return []core.Port{
+		MesPort{
+			Value:    int(t.Spec.Match.Port),
+			Protocol: t.Spec.Match.Protocol,
+		},
+	}
+}
+
+func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bool) {
+	if name == strconv.Itoa(int(t.Spec.Match.Port)) {
+		return MesPort{
+			Value:    int(t.Spec.Match.Port),
+			Protocol: t.Spec.Match.Protocol,
+		}, true
+	}
+	return MesPort{}, false
+}
+
+type MesPort struct {
+	Value    int
+	Protocol core_mesh.Protocol
+}
+
+func (m MesPort) GetName() string {
+	return fmt.Sprintf("%d", m.Value)
+}
+
+func (m MesPort) GetValue() uint32 {
+	return uint32(m.Value)
+}
+
+func (m MesPort) GetNameOrStringifyPort() string {
+	return fmt.Sprintf("%d", m.Value)
+}
+
+func (m MesPort) GetProtocol() string {
+	return string(m.Protocol)
 }

@@ -32,7 +32,7 @@ func (m *MeshServiceResource) FindSectionNameByPort(port uint32) (string, bool) 
 	return "", false
 }
 
-func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
+func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Name == name {
 			return p, true
@@ -143,4 +143,8 @@ func (p Port) GetName() string {
 
 func (p Port) GetValue() uint32 {
 	return p.Port
+}
+
+func (p Port) GetProtocol() string {
+	return string(p.AppProtocol)
 }

@@ -24,11 +24,15 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:                        samples.MeshDefault(),
-				EndpointMap:                     map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation:             map[string]*xds_context.ServiceInformation{},
-				MeshExternalServiceByIdentifier: map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource{},
-				MeshServiceByIdentifier:         map[kri.Identifier]*meshservice_api.MeshServiceResource{},
+				Resource:            samples.MeshDefault(),
+				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServicesInformation: map[string]*xds_context.ServiceInformation{},
+				BaseMeshContext: &xds_context.BaseMeshContext{
+					DestinationIndex: &xds_context.DestinationIndex{
+						MeshServiceByIdentifier:         map[kri.Identifier]*meshservice_api.MeshServiceResource{},
+						MeshExternalServiceByIdentifier: map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource{},
+					},
+				},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -41,10 +45,10 @@ func Context() *ContextBuilder {
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
 	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
-		mc.res.Mesh.MeshServiceByIdentifier[kri.From(ms, "")] = ms
+		mc.res.Mesh.BaseMeshContext.DestinationIndex.MeshServiceByIdentifier[kri.From(ms, "")] = ms
 	}
 	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
-		mc.res.Mesh.MeshExternalServiceByIdentifier[kri.From(mes, "")] = mes
+		mc.res.Mesh.BaseMeshContext.DestinationIndex.MeshExternalServiceByIdentifier[kri.From(mes, "")] = mes
 	}
 	return mc.res
 }

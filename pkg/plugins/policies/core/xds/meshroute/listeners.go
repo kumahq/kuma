@@ -123,13 +123,13 @@ func collectMeshService(
 		return nil
 	}
 	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if port.AppProtocol != "" {
-		protocol = port.AppProtocol
+	if port.GetProtocol() != "" {
+		protocol = core_mesh.ParseProtocol(port.GetProtocol())
 	}
 	return &DestinationService{
 		Outbound:    outbound,
 		Protocol:    protocol,
-		ServiceName: ms.DestinationName(port.Port),
+		ServiceName: ms.DestinationName(port.GetValue()),
 	}
 }
 
@@ -165,13 +165,13 @@ func collectMeshMultiZoneService(
 		return nil
 	}
 	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if port.AppProtocol != "" {
-		protocol = port.AppProtocol
+	if port.GetProtocol() != "" {
+		protocol = core_mesh.ParseProtocol(port.GetProtocol())
 	}
 	return &DestinationService{
 		Outbound:    outbound,
 		Protocol:    protocol,
-		ServiceName: svc.DestinationName(port.Port),
+		ServiceName: svc.DestinationName(port.GetValue()),
 	}
 }
 
@@ -210,9 +210,9 @@ func GetServiceProtocolPortFromRef(
 		if !ok {
 			return "", "", 0, false
 		}
-		service := ms.DestinationName(port.Port)
-		protocol := port.AppProtocol
-		return service, protocol, port.Port, true
+		service := ms.DestinationName(port.GetValue())
+		protocol := core_mesh.ParseProtocol(port.GetProtocol())
+		return service, protocol, port.GetValue(), true
 	case common_api.MeshService:
 		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource))
 		if ms == nil {
@@ -222,9 +222,9 @@ func GetServiceProtocolPortFromRef(
 		if !ok {
 			return "", "", 0, false
 		}
-		service := ms.DestinationName(port.Port)
-		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		return service, protocol, port.Port, true
+		service := ms.DestinationName(port.GetValue())
+		protocol := core_mesh.Protocol(port.GetProtocol()) // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+		return service, protocol, port.GetValue(), true
 	default:
 		return "", "", 0, false
 	}

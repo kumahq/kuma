@@ -44,7 +44,7 @@ func (m *MeshMultiZoneServiceResource) FindSectionNameByPort(port uint32) (strin
 	return "", false
 }
 
-func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) {
+func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if pointer.Deref(p.Name) == name {
 			return p, true
@@ -109,4 +109,8 @@ func (p Port) GetName() string {
 
 func (p Port) GetValue() uint32 {
 	return p.Port
+}
+
+func (p Port) GetProtocol() string {
+	return string(p.AppProtocol)
 }
