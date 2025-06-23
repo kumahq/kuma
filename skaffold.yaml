@@ -61,6 +61,7 @@ deploy:
           kumactl.image.tag: "{{.IMAGE_TAG_kumahq_kumactl}}"
           controlPlane.resources.limits.memory: "1Gi"
           controlPlane.podSecurityContext.runAsNonRoot: "false"
+          installCrdsOnUpgrade.enabled: "false"
         setValues:
           controlPlane.podAnnotations:
             "debug\\.cloud\\.google\\.com/probe-timeouts": "skip"
