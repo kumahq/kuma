@@ -3877,6 +3877,8 @@ components:
           type: string
         labels:
           type: object
+          additionalProperties:
+            type: string
           example:
             k8s.kuma.io/namespace: kuma-demo
             kuma.io/display-name: demo-app
