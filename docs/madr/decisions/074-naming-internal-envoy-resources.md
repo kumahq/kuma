@@ -74,7 +74,10 @@ Istio doesn't seem to be following any naming convention:
 
 ### Looking at a resource name I want to easily relate it to Kuma concepts
 
-### As a user I want my custom MeshProxyPatch 
+### As a user I want my MeshProxyPatch to continue working after the change
+
+I don't think that's going to be possible.
+In MeshProxyPatch you can use `name` matcher to match a resource name but if we change the name of the resource, it will not match anymore.
 
 ### As a user I want to easily exclude all stats related to internal resources from a query
 
@@ -87,7 +90,7 @@ sum:envoy.cluster.upstream_rq.count{!envoy_cluster:kuma_readiness , !envoy_clust
 we can do:
 
 ``` 
-sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_*}.as_count()
+sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_kuma*}.as_count()
 ```
 
 **Is this a valid use case if we have profiles in MeshMetric?**
