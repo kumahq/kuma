@@ -3014,6 +3014,91 @@ spec:
                         Default is a configuration specific to the group of destinations referenced in
                         'targetRef'
                       properties:
+                        hashPolicies:
+                          description: |-
+                            HashPolicies specify a list of request/connection properties that are used to calculate a hash.
+                            These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
+                            set to true, and there is already a hash generated, the hash is returned immediately,
+                            ignoring the rest of the hash policy list.
+                          items:
+                            properties:
+                              connection:
+                                properties:
+                                  sourceIP:
+                                    description: Hash on source IP address.
+                                    type: boolean
+                                type: object
+                              cookie:
+                                properties:
+                                  name:
+                                    description: The name of the cookie that will
+                                      be used to obtain the hash key.
+                                    minLength: 1
+                                    type: string
+                                  path:
+                                    description: The name of the path for the cookie.
+                                    type: string
+                                  ttl:
+                                    description: If specified, a cookie with the TTL
+                                      will be generated if the cookie is not present.
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              filterState:
+                                properties:
+                                  key:
+                                    description: |-
+                                      The name of the Object in the per-request filterState, which is
+                                      an Envoy::Hashable object. If there is no data associated with the key,
+                                      or the stored object is not Envoy::Hashable, no hash will be produced.
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - key
+                                type: object
+                              header:
+                                properties:
+                                  name:
+                                    description: The name of the request header that
+                                      will be used to obtain the hash key.
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              queryParameter:
+                                properties:
+                                  name:
+                                    description: |-
+                                      The name of the URL query parameter that will be used to obtain the hash key.
+                                      If the parameter is not present, no hash will be produced. Query parameter names
+                                      are case-sensitive.
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              terminal:
+                                description: |-
+                                  Terminal is a flag that short-circuits the hash computing. This field provides
+                                  a ‘fallback’ style of configuration: “if a terminal policy doesn’t work, fallback
+                                  to rest of the policy list”, it saves time when the terminal policy works.
+                                  If true, and there is already a hash computed, ignore rest of the list of hash polices.
+                                type: boolean
+                              type:
+                                enum:
+                                - Header
+                                - Cookie
+                                - Connection
+                                - SourceIP
+                                - QueryParameter
+                                - FilterState
+                                type: string
+                            required:
+                            - type
+                            type: object
+                          type: array
                         loadBalancer:
                           description: LoadBalancer allows to specify load balancing
                             algorithm.
