@@ -1,35 +1,27 @@
-# {short title of solved problem and solution}
+# Standardized Naming for internal xDS Resources
 
-* Status: {rejected | accepted} <!-- recommended to have the status as accepted proactively and then to change it if needed -->
+* Status: accepted
 
-Technical Story: {ticket/issue URL} <!-- link to the github issue -->
+Technical Story: https://github.com/kumahq/kuma/issues/13266
 
 ## Context and Problem Statement
 
-{Describe the context and problem statement. You need to be as thorough as possible. If possible create set of use cases.
-Always try thinking from end user point of view. Remember to not think in terms of solutions in this section. Try to be as 
-objective as possible only describing current state and what we need.}
+We use resource names to identify listeners, clusters, routes, virtual hosts and secrets in the xDS APIs.
+These names appear in metrics, logs, and debug endpoints (config_dump), and they are often used for monitoring, filtering, and diagnostics.
 
-Some resources in Envoy don't correlate with the real resources in the store. That's why we can't use KRI formatted name for these resources.
+It's important to know the difference between internal resources (the ones that are defined by Kuma itself, and they usually do not concern the end users) and external resources (the ones that are defined indirectly by the user and the users are interested in).
+For example, clusters like `kuma:envoy:admin` or `_kuma:dynamicconfig` are internal to Kuma, while `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport` cluster is an external resource.
 
-Is it really the case for everything?
-I think secrets have a relationship:
-- mesh_ca in the store is `mesh-1.ca-builtin-cert-ca-1` that is defined in `mesh.backens[]` (CRD) so the kri could be `kri_secret_mesh-1___mesh-ca_`
+Currently, there is inconsistency in how these resource names are formed, some of them have a `_kuma` prefix, some of them just contain `kuma` and some are free form.
 
-Current:
+Some internal resources do not map clearly to Kuma resources in the data store, making it difficult to relate metrics to Kuma abstractions.
 
-```
-mesh_ca:secret:mesh-1
-```
+There are also resources that are in a bit of a gray area, like `meshtrace_datadog` which is a cluster created for `MeshTrace` policy.
+It seems internal, but it could be traced down to MeshTrace resource `kri_meshtrace_mesh-1__kuma-system_my-meshtrace_`.
 
-```
-kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
-```
+#### Examples of kuma resource names
 
-Secrets format:
-https://github.com/kumahq/kuma/blob/9ed757d3e5955ea57d7940badf4468057ed46663/pkg/xds/envoy/secrets.go#L26
-
-Internal listeners:
+Listeners:
 - inbound
   - kuma:envoy:admin
   - _kuma:dynamicconfig
@@ -44,7 +36,7 @@ Internal listeners:
   - outbound:passthrough:ipv4
   - outbound:passthrough:ipv6
 
-Internal clusters:
+Clusters:
 - access_log_sink
 - kuma:envoy:admin
 - kuma:metrics:hijacker
@@ -52,7 +44,7 @@ Internal clusters:
 - meshtrace_[zipkin|datadog|otel]
 - envoy_grpc_streams (ads)
 
-Internal virtual Hosts:
+Virtual Hosts:
 - _kuma:dynamicconfig
 - kuma:envoy:admin
 
@@ -60,17 +52,9 @@ Routes (not all of them even have a name):
 - _kuma:dynamicconfig:/dns
 - 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route)
 
-Names in codebase:
-- https://github.com/kumahq/kuma/blob/bdc95fb8b8a4da2388948041171d5b9ecf4345a5/pkg/xds/envoy/names/resource_names.go
-- https://github.com/kumahq/kuma/blob/9ed757d3e5955ea57d7940badf4468057ed46663/pkg/xds/envoy/secrets.go#L13
-- https://github.com/kumahq/kuma/blob/950ff3353f7e85670717557691b42208b17a6579/pkg/plugins/policies/core/xds/meshroute/listeners.go#L343
-- https://github.com/kumahq/kuma/blob/26af860614cf0792c0bff004ac95e8f5115808fc/pkg/xds/envoy/tags/match.go#L37
-- https://github.com/kumahq/kuma/blob/7bafa578aad6e528befcb6c96f025542fd1f6870/pkg/plugins/policies/meshtrace/plugin/xds/configurer.go#L264
-- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
+#### Other meshes
 
-Istio related issues:
-- https://github.com/istio/istio/issues/5311
-- https://github.com/istio/istio/issues/31112#issuecomment-1124049572
+##### Istio
 
 Istio doesn't seem to be following any naming convention:
 - clusters
@@ -86,16 +70,13 @@ Istio doesn't seem to be following any naming convention:
   - virtualOutbound
   - virtualInbound
 
-Only clusters and listeners are exposed in metrics.
-
-Ping gui because it might change the implem of:
-- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
-
 ## Use cases
 
 ### Looking at a resource name I want to easily relate it to Kuma concepts
 
-### As a user I want to exclude all stats related to internal resources from a query easily
+### As a user I want my custom MeshProxyPatch 
+
+### As a user I want to easily exclude all stats related to internal resources from a query
 
 So instead 
 
@@ -109,7 +90,7 @@ we can do:
 sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_*}.as_count()
 ```
 
-#### Is this a valid use case if we have profiles in MeshMetric?
+**Is this a valid use case if we have profiles in MeshMetric?**
 
 ### As an operator I want to drop all stats related to internal resources
 
@@ -127,7 +108,7 @@ processors:
             value: "^_.*"  # matches if envoy_cluster starts with _
 ```
 
-#### Is this a valid use case if we have profiles in MeshMetric?
+**Is this a valid use case if we have profiles in MeshMetric?**
 
 ### As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
 
@@ -137,19 +118,32 @@ processors:
 
 ## Design
 
-{This is a place for main design, it is best to present multiple solutions. 
-- Remember about examples. It is best to present then in context of previously defined use cases. 
-- Add advantages and disadvantages sections to proposed solutions.
-- When writing design remember to include history of how it evolved. This doc should be understandable without looking into git history.}
+TBA
 
 ## Implications for Kong Mesh
 
-{In this section we should look into how this changes affect Kong Mesh. For example we might need to update Kong Mesh policies to new API.}
+TBA
 
 ## Decision
 
-{Fill this section as last. This section should contain simplified description of selected solution.}
+TBA
 
-## Notes <!-- optional -->
+## Notes
 
-{This section could include notes from meeting or open topics for discussion}
+Names in codebase:
+- https://github.com/kumahq/kuma/blob/bdc95fb8b8a4da2388948041171d5b9ecf4345a5/pkg/xds/envoy/names/resource_names.go
+- https://github.com/kumahq/kuma/blob/9ed757d3e5955ea57d7940badf4468057ed46663/pkg/xds/envoy/secrets.go#L13
+- https://github.com/kumahq/kuma/blob/950ff3353f7e85670717557691b42208b17a6579/pkg/plugins/policies/core/xds/meshroute/listeners.go#L343
+- https://github.com/kumahq/kuma/blob/26af860614cf0792c0bff004ac95e8f5115808fc/pkg/xds/envoy/tags/match.go#L37
+- https://github.com/kumahq/kuma/blob/7bafa578aad6e528befcb6c96f025542fd1f6870/pkg/plugins/policies/meshtrace/plugin/xds/configurer.go#L264
+- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
+
+Istio related issues:
+- https://github.com/istio/istio/issues/5311
+- https://github.com/istio/istio/issues/31112#issuecomment-1124049572
+
+Ping FE team because it might change the implementation of:
+- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
+
+Secrets format:
+- https://github.com/kumahq/kuma/blob/9ed757d3e5955ea57d7940badf4468057ed46663/pkg/xds/envoy/secrets.go#L26
