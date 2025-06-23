@@ -470,8 +470,17 @@ var ProtoTypeToType = map[string]reflect.Type{
 	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 }
 
+var secret = jsonschema.NewProperties()
+var file = jsonschema.NewProperties()
+var inline = jsonschema.NewProperties()
+var inlineString = jsonschema.NewProperties()
+
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
-	// this is where the new types need to be added if we want to generate openAPI for it
+	secret.Set("secret", &jsonschema.Schema{Type: "string"})
+	file.Set("file", &jsonschema.Schema{Type: "string"})
+	inline.Set("inline", &jsonschema.Schema{Type: "string"})
+	inlineString.Set("inlineString", &jsonschema.Schema{Type: "string"})
+
 	reflector := jsonschema.Reflector{
 		ExpandedStruct:            true,
 		DoNotReference:            true,
@@ -712,6 +721,27 @@ func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, 
 			OneOf: backendConf,
 		})
 		return schema, true
+	}
+	if r.Name() == "DataSource" {
+		return &jsonschema.Schema{
+			OneOf: []*jsonschema.Schema{
+			{
+				Type: "object",
+				Properties: secret,
+			},
+			{
+				Type: "object",
+				Properties: file,
+			},
+			{
+				Type: "object",
+				Properties: inline,
+			},
+			{
+				Type: "object",
+				Properties: inlineString,
+			},
+		}}, true
 	}
 	return nil, false
 }
