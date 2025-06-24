@@ -129,8 +129,6 @@ components:
       type: object
       required: [conf, origin]
       properties:
-        policyType:
-          type: string
         conf:
           description: The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           type: array
@@ -162,15 +160,13 @@ components:
       properties:
         kri:
           type: string
-        name:
-          type: string
         port:
           type: integer
         protocol:
           type: string
     DataplaneOutbound:
       type: object
-      required: [ kri, protocol ]
+      required: [ kri, port, protocol ]
       properties:
         kri:
           type: string
@@ -189,7 +185,7 @@ components:
             $ref: '#/components/schemas/PolicyConf'
     PolicyConf:
       type: object
-      required: [ kind, conf, origin ]
+      required: [ kind, conf, origins ]
       properties:
         kind:
           type: string
@@ -198,11 +194,11 @@ components:
           type: object
           additionalProperties: true
           x-go-type: 'interface{}'
-        origin:
+        origins:
           type: array
           description: The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
           items:
-            type: string
+            $ref: "#/components/schemas/PolicyOrigin"
     InboundPoliciesList:
       type: object
       required: [ policies ]
@@ -214,7 +210,7 @@ components:
             $ref: '#/components/schemas/InboundPolicyConf'
     InboundPolicyConf:
       type: object
-      required: [ kind, rules, origin ]
+      required: [ kind, rules, origins ]
       properties:
         kind:
           type: string
@@ -229,11 +225,11 @@ components:
                 type: object
                 additionalProperties: true
                 x-go-type: 'interface{}'
-        origin:
+        origins:
           type: array
           description: The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
           items:
-            type: string
+            $ref: "#/components/schemas/PolicyOrigin"
     RoutesList:
       type: object
       required: [ routes ]
@@ -270,11 +266,15 @@ components:
                 type: object
                 additionalProperties: true
                 x-go-type: 'interface{}'
-        origin:
-          type: array
-          description: The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-          items:
-            type: string
+        origins:
+          $ref: "#/components/schemas/PolicyOrigin"
+    PolicyOrigin:
+      type: object
+      required: [ kri ]
+      description: The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+      properties:
+        kri:
+          type: string
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object

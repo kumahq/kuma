@@ -11,16 +11,15 @@ const (
 
 // DataplaneInbound defines model for DataplaneInbound.
 type DataplaneInbound struct {
-	Kri      string  `json:"kri"`
-	Name     *string `json:"name,omitempty"`
-	Port     int     `json:"port"`
-	Protocol string  `json:"protocol"`
+	Kri      string `json:"kri"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
 }
 
 // DataplaneOutbound defines model for DataplaneOutbound.
 type DataplaneOutbound struct {
 	Kri      string `json:"kri"`
-	Port     *int   `json:"port,omitempty"`
+	Port     int    `json:"port"`
 	Protocol string `json:"protocol"`
 }
 
@@ -53,9 +52,9 @@ type InboundPoliciesList struct {
 type InboundPolicyConf struct {
 	Kind string `json:"kind"`
 
-	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin []string `json:"origin"`
-	Rules  []struct {
+	// Origins The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origins []PolicyOrigin `json:"origins"`
+	Rules   []struct {
 		// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
 		Conf interface{} `json:"conf"`
 	} `json:"rules"`
@@ -67,8 +66,7 @@ type InboundRule struct {
 	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin     []ResourceRuleOrigin `json:"origin"`
-	PolicyType *string              `json:"policyType,omitempty"`
+	Origin []ResourceRuleOrigin `json:"origin"`
 }
 
 // InboundRulesEntry defines model for InboundRulesEntry.
@@ -130,8 +128,8 @@ type PolicyConf struct {
 	Conf interface{} `json:"conf"`
 	Kind string      `json:"kind"`
 
-	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin []string `json:"origin"`
+	// Origins The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origins []PolicyOrigin `json:"origins"`
 }
 
 // PolicyDescription information about a policy
@@ -147,6 +145,11 @@ type PolicyDescription struct {
 
 	// IsTargetRef whether this policy uses targetRef matching
 	IsTargetRef bool `json:"isTargetRef"`
+}
+
+// PolicyOrigin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+type PolicyOrigin struct {
+	Kri string `json:"kri"`
 }
 
 // ProxyRule a rule that affects the entire proxy
@@ -201,8 +204,8 @@ type ResourceTypeDescriptionScope string
 type RouteConf struct {
 	Kind string `json:"kind"`
 
-	// Origin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin []string `json:"origin"`
+	// Origins The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origins *PolicyOrigin `json:"origins,omitempty"`
 
 	// Rules Computed list of routing rules
 	Rules []struct {

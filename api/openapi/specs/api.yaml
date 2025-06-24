@@ -149,7 +149,7 @@ paths:
   /meshes/{mesh}/dataplanes/{name}/_policies:
     get:
       operationId: get-proxy-policy-conf
-      summary: Get policies for this dataplane
+      summary: Get proxy policies for this dataplane
       description: Returns proxy level policy configuration derived from combining all proxy policies selecting this dataplane
       parameters:
         - in: path
@@ -171,7 +171,7 @@ paths:
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
           $ref: './common/error_schema.yaml#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-name}/_policies:
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-kri}/_policies:
     get:
       operationId: get-inbound-policy-conf
       summary: Get policies for this inbound
@@ -190,7 +190,7 @@ paths:
           schema:
             type: string
         - in: path
-          name: inbound-name
+          name: inbound-kri
           required: true
           description: The name of the Inbound from DPP to get the policies for.
           schema:
@@ -707,13 +707,11 @@ components:
       type: object
       title: DataplaneLayout
       description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
-      required: [ kri, name ]
+      required: [ kri ]
       properties:
         kri:
           type: string
           example: kri_msvc_mesh-1_us-east-2_kuma-demo_demo-app_http-port
-        name:
-          type: string
         labels:
           type: object
           additionalProperties:
