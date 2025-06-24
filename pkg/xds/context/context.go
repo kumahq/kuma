@@ -132,15 +132,15 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 }
 
 func (mc *MeshContext) GetMeshServiceByKRI(id kri.Identifier) *meshservice_api.MeshServiceResource {
-	return mc.BaseMeshContext.DestinationIndex.MeshServiceByIdentifier[kri.NoSectionName(id)]
+	return mc.BaseMeshContext.DestinationIndex.meshServiceByIdentifier[kri.NoSectionName(id)]
 }
 
 func (mc *MeshContext) GetMeshExternalServiceByKRI(id kri.Identifier) *meshexternalservice_api.MeshExternalServiceResource {
-	return mc.BaseMeshContext.DestinationIndex.MeshExternalServiceByIdentifier[kri.NoSectionName(id)]
+	return mc.BaseMeshContext.DestinationIndex.meshExternalServiceByIdentifier[kri.NoSectionName(id)]
 }
 
 func (mc *MeshContext) GetMeshMultiZoneServiceByKRI(id kri.Identifier) *meshmzservice_api.MeshMultiZoneServiceResource {
-	return mc.BaseMeshContext.DestinationIndex.MeshMultiZoneServiceByIdentifier[kri.NoSectionName(id)]
+	return mc.BaseMeshContext.DestinationIndex.meshMultiZoneServiceByIdentifier[kri.NoSectionName(id)]
 }
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {

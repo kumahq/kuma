@@ -15,9 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -176,9 +173,9 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(ctx, mesh, m.zone, baseMeshContext.DestinationIndex.MeshServiceByIdentifier, meshMultiZoneServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices, loader)
+	endpointMap := xds_topology.BuildEdsEndpointMap(ctx, mesh, m.zone, baseMeshContext.DestinationIndex.meshServiceByIdentifier, meshMultiZoneServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices, loader)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
-	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(ctx, mesh, m.zone, baseMeshContext.DestinationIndex.MeshServiceByIdentifier, meshMultiZoneServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses, loader)
+	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(ctx, mesh, m.zone, baseMeshContext.DestinationIndex.meshServiceByIdentifier, meshMultiZoneServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses, loader)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
@@ -275,55 +272,8 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		hash:             newHash,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: buildDestinationsIndex(rmap),
+		DestinationIndex: NewDestinationIndex(rmap),
 	}, nil
-}
-
-func buildDestinationsIndex(resourceMap ResourceMap) *DestinationIndex {
-	var meshServices []*v1alpha1.MeshServiceResource
-	if resourceMap[v1alpha1.MeshServiceResourceTypeDescriptor.Name] != nil {
-		meshServices = resourceMap[v1alpha1.MeshServiceResourceTypeDescriptor.Name].(*v1alpha1.MeshServiceResourceList).Items
-	}
-	meshServicesByKri := make(map[kri.Identifier]*v1alpha1.MeshServiceResource, len(meshServices))
-	meshServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
-	for _, ms := range meshServices {
-		ri := kri.From(ms, "")
-		meshServicesByKri[ri] = ms
-		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels())
-	}
-
-	var meshExternalServices []*meshextenralservice_api.MeshExternalServiceResource
-	if resourceMap[meshextenralservice_api.MeshExternalServiceResourceTypeDescriptor.Name] != nil {
-		meshExternalServices = resourceMap[meshextenralservice_api.MeshExternalServiceResourceTypeDescriptor.Name].(*meshextenralservice_api.MeshExternalServiceResourceList).Items
-	}
-	meshExternalServicesByKri := make(map[kri.Identifier]*meshextenralservice_api.MeshExternalServiceResource, len(meshExternalServices))
-	meshExternalServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
-	for _, mes := range meshExternalServices {
-		ri := kri.From(mes, "")
-		meshExternalServicesByKri[ri] = mes
-		buildLabelValueToServiceNames(ri, meshExternalServicesByLabelByValue, mes.Meta.GetLabels())
-	}
-
-	var meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource
-	if resourceMap[meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor.Name] != nil {
-		meshMultiZoneServices = resourceMap[meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor.Name].(*meshmzservice_api.MeshMultiZoneServiceResourceList).Items
-	}
-	meshMultiZoneServicesByKri := make(map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource, len(meshMultiZoneServices))
-	meshMultiZoneServiceNameByLabelByValue := LabelsToValuesToResourceIdentifier{}
-	for _, svc := range meshMultiZoneServices {
-		ri := kri.From(svc, "")
-		meshMultiZoneServicesByKri[ri] = svc
-		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels())
-	}
-
-	return &DestinationIndex{
-		MeshServiceByIdentifier:             meshServicesByKri,
-		MeshServicesByLabelByValue:          meshServicesByLabelByValue,
-		MeshExternalServiceByIdentifier:     meshExternalServicesByKri,
-		MeshExternalServicesByLabelByValue:  meshExternalServicesByLabelByValue,
-		MeshMultiZoneServiceByIdentifier:    meshMultiZoneServicesByKri,
-		MeshMultiZoneServicesByLabelByValue: meshMultiZoneServiceNameByLabelByValue,
-	}
 }
 
 type filterFn = func(rs core_model.Resource) bool

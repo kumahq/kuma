@@ -21,23 +21,70 @@ type Destination interface {
 }
 
 type DestinationIndex struct {
-	MeshServiceByIdentifier             map[kri.Identifier]*meshservice_api.MeshServiceResource
-	MeshServicesByLabelByValue          LabelsToValuesToResourceIdentifier
-	MeshExternalServiceByIdentifier     map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource
-	MeshExternalServicesByLabelByValue  LabelsToValuesToResourceIdentifier
-	MeshMultiZoneServiceByIdentifier    map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource
-	MeshMultiZoneServicesByLabelByValue LabelsToValuesToResourceIdentifier
+	meshServiceByIdentifier             map[kri.Identifier]*meshservice_api.MeshServiceResource
+	meshServicesByLabelByValue          LabelsToValuesToResourceIdentifier
+	meshExternalServiceByIdentifier     map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource
+	meshExternalServicesByLabelByValue  LabelsToValuesToResourceIdentifier
+	meshMultiZoneServiceByIdentifier    map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource
+	meshMultiZoneServicesByLabelByValue LabelsToValuesToResourceIdentifier
+}
+
+func NewDestinationIndex(resourceMap ResourceMap) *DestinationIndex {
+	var meshServices []*meshservice_api.MeshServiceResource
+	if resourceMap[meshservice_api.MeshServiceType] != nil {
+		meshServices = resourceMap[meshservice_api.MeshServiceType].(*meshservice_api.MeshServiceResourceList).Items
+	}
+	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
+	meshServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
+	for _, ms := range meshServices {
+		ri := kri.From(ms, "")
+		meshServicesByKri[ri] = ms
+		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels())
+	}
+
+	var meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
+	if resourceMap[meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor.Name] != nil {
+		meshExternalServices = resourceMap[meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor.Name].(*meshexternalservice_api.MeshExternalServiceResourceList).Items
+	}
+	meshExternalServicesByKri := make(map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource, len(meshExternalServices))
+	meshExternalServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
+	for _, mes := range meshExternalServices {
+		ri := kri.From(mes, "")
+		meshExternalServicesByKri[ri] = mes
+		buildLabelValueToServiceNames(ri, meshExternalServicesByLabelByValue, mes.Meta.GetLabels())
+	}
+
+	var meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource
+	if resourceMap[meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor.Name] != nil {
+		meshMultiZoneServices = resourceMap[meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor.Name].(*meshmzservice_api.MeshMultiZoneServiceResourceList).Items
+	}
+	meshMultiZoneServicesByKri := make(map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource, len(meshMultiZoneServices))
+	meshMultiZoneServiceNameByLabelByValue := LabelsToValuesToResourceIdentifier{}
+	for _, svc := range meshMultiZoneServices {
+		ri := kri.From(svc, "")
+		meshMultiZoneServicesByKri[ri] = svc
+		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels())
+	}
+
+	return &DestinationIndex{
+		meshServiceByIdentifier:             meshServicesByKri,
+		meshServicesByLabelByValue:          meshServicesByLabelByValue,
+		meshExternalServiceByIdentifier:     meshExternalServicesByKri,
+		meshExternalServicesByLabelByValue:  meshExternalServicesByLabelByValue,
+		meshMultiZoneServiceByIdentifier:    meshMultiZoneServicesByKri,
+		meshMultiZoneServicesByLabelByValue: meshMultiZoneServiceNameByLabelByValue,
+	}
 }
 
 func (dc *DestinationIndex) GetAllDestinations() map[kri.Identifier]Destination {
 	allDestinations := make(map[kri.Identifier]Destination)
-	for k, v := range dc.MeshServiceByIdentifier {
+	for k, v := range dc.meshServiceByIdentifier {
 		allDestinations[k] = v
 	}
-	for k, v := range dc.MeshExternalServiceByIdentifier {
+	for k, v := range dc.meshExternalServiceByIdentifier {
 		allDestinations[k] = v
 	}
-	for k, v := range dc.MeshMultiZoneServiceByIdentifier {
+	for k, v := range dc.meshMultiZoneServiceByIdentifier {
 		allDestinations[k] = v
 	}
 	return allDestinations
@@ -78,11 +125,11 @@ func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, d
 func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) Destination {
 	switch id.ResourceType {
 	case meshservice_api.MeshServiceType:
-		return dc.MeshServiceByIdentifier[id]
+		return dc.meshServiceByIdentifier[id]
 	case meshexternalservice_api.MeshExternalServiceType:
-		return dc.MeshExternalServiceByIdentifier[id]
+		return dc.meshExternalServiceByIdentifier[id]
 	case meshmzservice_api.MeshMultiZoneServiceType:
-		return dc.MeshMultiZoneServiceByIdentifier[id]
+		return dc.meshMultiZoneServiceByIdentifier[id]
 	}
 	return nil
 }
@@ -101,7 +148,7 @@ func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(kind string, lab
 func (dc *DestinationIndex) getSectionName(kind core_model.ResourceType, key kri.Identifier, port uint32) string {
 	switch kind {
 	case meshservice_api.MeshServiceType:
-		ms := dc.MeshServiceByIdentifier[key]
+		ms := dc.meshServiceByIdentifier[key]
 		if ms == nil {
 			return fmt.Sprintf("%d", port)
 		}
@@ -110,7 +157,7 @@ func (dc *DestinationIndex) getSectionName(kind core_model.ResourceType, key kri
 		}
 		return fmt.Sprintf("%d", port)
 	case meshmzservice_api.MeshMultiZoneServiceType:
-		mmzs := dc.MeshMultiZoneServiceByIdentifier[key]
+		mmzs := dc.meshMultiZoneServiceByIdentifier[key]
 		if mmzs == nil {
 			return fmt.Sprintf("%d", port)
 		}
@@ -134,11 +181,11 @@ func (dc *DestinationIndex) getResourceNamesForLabels(kind string, labels map[st
 		var found bool
 		switch kind {
 		case string(meshexternalservice_api.MeshExternalServiceType):
-			matchedResourceIdentifiers, found = dc.MeshExternalServicesByLabelByValue[key]
+			matchedResourceIdentifiers, found = dc.meshExternalServicesByLabelByValue[key]
 		case string(meshservice_api.MeshServiceType):
-			matchedResourceIdentifiers, found = dc.MeshServicesByLabelByValue[key]
+			matchedResourceIdentifiers, found = dc.meshServicesByLabelByValue[key]
 		case string(meshmzservice_api.MeshMultiZoneServiceType):
-			matchedResourceIdentifiers, found = dc.MeshMultiZoneServicesByLabelByValue[key]
+			matchedResourceIdentifiers, found = dc.meshMultiZoneServicesByLabelByValue[key]
 		}
 		if found {
 			for ri := range matchedResourceIdentifiers {

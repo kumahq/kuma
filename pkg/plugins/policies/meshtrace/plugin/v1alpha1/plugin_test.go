@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -108,7 +109,11 @@ var _ = Describe("MeshTrace", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_samples.SampleContext()
+			meshResources := xds_context.NewResources()
+			meshResources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
+				Items: []*v1alpha1.MeshServiceResource{samples.MeshServiceBackend()},
+			}
+			context := xds_samples.SampleContextWith(meshResources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -122,7 +127,6 @@ var _ = Describe("MeshTrace", func() {
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
 
-			context.Mesh.BaseMeshContext.DestinationIndex.MeshServiceByIdentifier[backendMeshServiceIdentifier] = samples.MeshServiceBackend()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())

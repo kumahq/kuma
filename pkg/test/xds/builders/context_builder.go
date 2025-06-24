@@ -3,7 +3,6 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -27,12 +26,7 @@ func Context() *ContextBuilder {
 				Resource:            samples.MeshDefault(),
 				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
 				ServicesInformation: map[string]*xds_context.ServiceInformation{},
-				BaseMeshContext: &xds_context.BaseMeshContext{
-					DestinationIndex: &xds_context.DestinationIndex{
-						MeshServiceByIdentifier:         map[kri.Identifier]*meshservice_api.MeshServiceResource{},
-						MeshExternalServiceByIdentifier: map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource{},
-					},
-				},
+				BaseMeshContext:     &xds_context.BaseMeshContext{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -44,12 +38,11 @@ func Context() *ContextBuilder {
 }
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
-	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
-		mc.res.Mesh.BaseMeshContext.DestinationIndex.MeshServiceByIdentifier[kri.From(ms, "")] = ms
+	resMap := xds_context.ResourceMap{
+		meshservice_api.MeshServiceType:                 mc.res.Mesh.Resources.MeshServices(),
+		meshexternalservice_api.MeshExternalServiceType: mc.res.Mesh.Resources.MeshExternalServices(),
 	}
-	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
-		mc.res.Mesh.BaseMeshContext.DestinationIndex.MeshExternalServiceByIdentifier[kri.From(mes, "")] = mes
-	}
+	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(resMap)
 	return mc.res
 }
 
