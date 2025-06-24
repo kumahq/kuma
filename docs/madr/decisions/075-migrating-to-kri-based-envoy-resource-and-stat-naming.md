@@ -1,4 +1,4 @@
-# Moving to KRI format for resource and stat names
+# Migrating to KRI-based Envoy resource and stat naming
 
 * Status: accepted
 
