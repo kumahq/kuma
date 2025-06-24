@@ -711,7 +711,7 @@ components:
       properties:
         kri:
           type: string
-          example: kri_msvc_mesh-1_us-east-2_kuma-demo_demo-app_http-port
+          example: kri_dp_default_default_kuma-demo_demo-app-75ff54499c-ttwd7_http-port
         labels:
           type: object
           additionalProperties:
