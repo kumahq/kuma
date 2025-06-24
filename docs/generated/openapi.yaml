@@ -167,7 +167,7 @@ paths:
   /meshes/{mesh}/dataplanes/{name}/_policies:
     get:
       operationId: get-proxy-policy-conf
-      summary: Get policies for this dataplane
+      summary: Get proxy policies for this dataplane
       description: >-
         Returns proxy level policy configuration derived from combining all
         proxy policies selecting this dataplane
@@ -191,7 +191,7 @@ paths:
           $ref: '#/components/responses/responses-BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-name}/_policies:
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-kri}/_policies:
     get:
       operationId: get-inbound-policy-conf
       summary: Get policies for this inbound
@@ -212,7 +212,7 @@ paths:
           schema:
             type: string
         - in: path
-          name: inbound-name
+          name: inbound-kri
           required: true
           description: The name of the Inbound from DPP to get the policies for.
           schema:
@@ -3868,13 +3868,13 @@ components:
         outbounds
       required:
         - kri
-        - name
+        - labels
+        - inbounds
+        - outbounds
       properties:
         kri:
           type: string
-          example: kri_msvc_mesh-1_us-east-2_kuma-demo_demo-app_http-port
-        name:
-          type: string
+          example: kri_dp_default_default_kuma-demo_demo-app-75ff54499c-ttwd7_http-port
         labels:
           type: object
           additionalProperties:
@@ -4165,8 +4165,6 @@ components:
         - conf
         - origin
       properties:
-        policyType:
-          type: string
         conf:
           description: >-
             The final computed configuration for the data plane proxy, derived
@@ -4291,8 +4289,6 @@ components:
       properties:
         kri:
           type: string
-        name:
-          type: string
         port:
           type: integer
         protocol:
@@ -4301,6 +4297,7 @@ components:
       type: object
       required:
         - kri
+        - port
         - protocol
       properties:
         kri:
@@ -4309,12 +4306,23 @@ components:
           type: integer
         protocol:
           type: string
+    PolicyOrigin:
+      type: object
+      required:
+        - kri
+      description: >-
+        The list of policies KRI that contributed to the 'conf'. The order is
+        important as it reflects in what order confs were merged to get the
+        resulting 'conf'.
+      properties:
+        kri:
+          type: string
     PolicyConf:
       type: object
       required:
         - kind
         - conf
-        - origin
+        - origins
       properties:
         kind:
           type: string
@@ -4330,14 +4338,14 @@ components:
           type: object
           additionalProperties: true
           x-go-type: interface{}
-        origin:
+        origins:
           type: array
           description: >-
             The list of policies KRI that contributed to the 'conf'. The order
             is important as it reflects in what order confs were merged to get
             the resulting 'conf'.
           items:
-            type: string
+            $ref: '#/components/schemas/PolicyOrigin'
     PoliciesList:
       type: object
       required:
@@ -4360,7 +4368,7 @@ components:
       required:
         - kind
         - rules
-        - origin
+        - origins
       properties:
         kind:
           type: string
@@ -4383,14 +4391,14 @@ components:
                 type: object
                 additionalProperties: true
                 x-go-type: interface{}
-        origin:
+        origins:
           type: array
           description: >-
             The list of policies KRI that contributed to the 'conf'. The order
             is important as it reflects in what order confs were merged to get
             the resulting 'conf'.
           items:
-            type: string
+            $ref: '#/components/schemas/PolicyOrigin'
     InboundPoliciesList:
       type: object
       required:
@@ -4448,14 +4456,8 @@ components:
                 type: object
                 additionalProperties: true
                 x-go-type: interface{}
-        origin:
-          type: array
-          description: >-
-            The list of policies KRI that contributed to the 'conf'. The order
-            is important as it reflects in what order confs were merged to get
-            the resulting 'conf'.
-          items:
-            type: string
+        origins:
+          $ref: '#/components/schemas/PolicyOrigin'
     RoutesList:
       type: object
       required:
