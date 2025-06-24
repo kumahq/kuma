@@ -65,6 +65,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshMultiZoneService,
+				common_api.MeshHTTPRoute,
 			}
 		}
 		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
