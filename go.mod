@@ -44,7 +44,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.64.0
+	github.com/prometheus/common v0.65.0
 	github.com/sethvargo/go-retry v0.3.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.13.0
@@ -55,8 +55,8 @@ require (
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
-	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.60.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.61.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.36.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.36.0
@@ -77,14 +77,14 @@ require (
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	helm.sh/helm/v3 v3.18.2
-	k8s.io/api v0.33.1
-	k8s.io/apiextensions-apiserver v0.33.1
-	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.33.1
+	helm.sh/helm/v3 v3.18.3
+	k8s.io/api v0.33.2
+	k8s.io/apiextensions-apiserver v0.33.2
+	k8s.io/apimachinery v0.33.2
+	k8s.io/client-go v0.33.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
-	k8s.io/kubectl v0.33.1
+	k8s.io/kubectl v0.33.2
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/controller-tools v0.18.0
@@ -277,9 +277,9 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
-	k8s.io/apiserver v0.33.1 // indirect
-	k8s.io/code-generator v0.33.1 // indirect
-	k8s.io/component-base v0.33.1 // indirect
+	k8s.io/apiserver v0.33.2 // indirect
+	k8s.io/code-generator v0.33.2 // indirect
+	k8s.io/component-base v0.33.2 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 )

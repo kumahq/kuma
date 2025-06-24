@@ -28,3 +28,32 @@ func (b *Builder[R]) Build() (*R, error) {
 	}
 	return &r, nil
 }
+
+func If[R any](condition bool, configurer Configurer[R]) Configurer[R] {
+	return func(c *R) error {
+		if condition {
+			return configurer(c)
+		}
+		return nil
+	}
+}
+
+func IfNotNil[R, P any](ptr *P, fn func(P) Configurer[R]) Configurer[R] {
+	return func(c *R) error {
+		if ptr != nil {
+			return fn(*ptr)(c)
+		}
+		return nil
+	}
+}
+
+func AsBuilder[R any](fn func() (*R, error)) *Builder[R] {
+	return &Builder[R]{configurers: []Configurer[R]{func(r *R) error {
+		ptr, err := fn()
+		if err != nil {
+			return err
+		}
+		*r = *ptr
+		return nil
+	}}}
+}
