@@ -115,6 +115,12 @@ Because none of these options are satisfactory, the chosen path is to document t
 * Include a warning in the upgrade notes to alert users that existing `MeshProxyPatch` policies must be reviewed and updated before enabling KRI naming
 * Add a strong warning to the documentation for `MeshProxyPatch` policies
 
+### Updating ZoneIgress and ZoneEgress overview resources with feature flags
+
+To support the Kuma GUI in adapting to KRI-based naming, we need to expose feature flag information in `ZoneIngressOverview` and `ZoneEgressOverview` resources, similar to how it's already done for `DataplaneOverview`. These overview resources are available via the control plane API and provide a summary of runtime state and metadata.
+
+We will update both `ZoneIngressOverview` and `ZoneEgressOverview` to include metadata with active feature flags. This will allow the GUI to detect whether KRI naming is enabled for each proxy and adjust its behavior accordingly.
+
 ## Test scenarios required for completion
 
 The following scenarios must be verified to consider the work complete. Each case ensures the correct generation and usage of KRI-based resource and stat names across various deployment modes.
