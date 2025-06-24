@@ -121,6 +121,22 @@ To support the Kuma GUI in adapting to KRI-based naming, we need to expose featu
 
 We will update both `ZoneIngressOverview` and `ZoneEgressOverview` to include metadata with active feature flags. This will allow the GUI to detect whether KRI naming is enabled for each proxy and adjust its behavior accordingly.
 
+## Migration
+
+### Kuma GUI
+
+The Kuma GUI relies on Envoy stat names to display inbound and outbound endpoint details for data plane, `ZoneIngress`, and `ZoneEgress` proxies. These names are used to associate metrics with specific resources and visualize traffic paths in the GUI.
+
+To support the KRI naming format, we need to update the GUI parsers that extract resource information from stat names such as listeners, clusters, and endpoints. These parsers must recognize and handle the new KRI format defined in the [Resource Identifier MADR](https://github.com/kumahq/kuma/blob/d19b78a4556962f4d9d3cc5921c7bdc73dc93d26/docs/madr/decisions/070-resource-identifier.md?plain=1#L328):
+
+```
+kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
+```
+
+The updated parsers will be activated when the `feature-kri-naming` flag is present in the metadata of the `DataplaneOverview`, `ZoneIngressOverview`, and `ZoneEgressOverview` resources.
+
+The GUI does not rely on the names of xDS resources themselves. It only uses stat names, so no additional changes are required to support KRI naming.
+
 ## Test scenarios required for completion
 
 The following scenarios must be verified to consider the work complete. Each case ensures the correct generation and usage of KRI-based resource and stat names across various deployment modes.
