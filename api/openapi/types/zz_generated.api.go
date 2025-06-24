@@ -40,10 +40,10 @@ type BaseStatus struct {
 
 // DataplaneNetworkingLayout Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
 type DataplaneNetworkingLayout struct {
-	Inbounds  *[]externalRef0.DataplaneInbound  `json:"inbounds,omitempty"`
-	Kri       string                            `json:"kri"`
-	Labels    *map[string]string                `json:"labels,omitempty"`
-	Outbounds *[]externalRef0.DataplaneOutbound `json:"outbounds,omitempty"`
+	Inbounds  []externalRef0.DataplaneInbound  `json:"inbounds"`
+	Kri       string                           `json:"kri"`
+	Labels    map[string]string                `json:"labels"`
+	Outbounds []externalRef0.DataplaneOutbound `json:"outbounds"`
 }
 
 // DataplaneXDSConfig defines model for DataplaneXDSConfig.

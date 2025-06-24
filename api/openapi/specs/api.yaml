@@ -707,7 +707,7 @@ components:
       type: object
       title: DataplaneLayout
       description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
-      required: [ kri ]
+      required: [ kri, labels, inbounds, outbounds ]
       properties:
         kri:
           type: string
