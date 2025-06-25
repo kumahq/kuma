@@ -149,10 +149,13 @@ func applyToRealResources(
 	rs *xds.ResourceSet,
 	proxy *xds.Proxy,
 ) error {
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
-		service, _,  _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
-			Resource: &uri,
-		}, proxy.Metadata.HasFeature(xds_types.FeatureKRINaming))
+		service, _,  _, _, found := meshroute.GetServiceProtocolPortFromRef(
+			ctx.Mesh,
+			&resolve.RealResourceBackendRef{Resource: &uri},
+			kriNamingEnabled,
+		)
 		if !found {
 			continue
 		}

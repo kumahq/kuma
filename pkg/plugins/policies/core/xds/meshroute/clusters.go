@@ -29,6 +29,7 @@ func GenerateClusters(
 	services envoy_common.Services,
 	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 	resources := core_xds.NewResourceSet()
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
@@ -39,7 +40,7 @@ func GenerateClusters(
 			clusterName := cluster.Name()
 			statName := clusterName
 			core.Log.Info("TEST", "statName", statName, "cluster", cluster)
-			if !proxy.Metadata.HasFeature(xds_types.FeatureKRINaming) {
+			if !kriNamingEnabled {
 				statName = cluster.StatName()
 			}
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)

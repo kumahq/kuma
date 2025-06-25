@@ -110,11 +110,13 @@ func makeTcpRouteEntry(
 		Route: name,
 	}
 
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
+
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
 		ref := resolve.BackendRefOrNil(origin, b, resolver)
 		if ref.ReferencesRealResource() {
-			service, _, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef(), proxy.Metadata.HasFeature(xds_types.FeatureKRINaming))
+			service, _, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef(), kriNamingEnabled)
 			if ok {
 				dest = map[string]string{
 					mesh_proto.ServiceTag: service,

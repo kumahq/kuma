@@ -30,6 +30,7 @@ const OriginInbound = "inbound"
 type InboundProxyGenerator struct{}
 
 func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 	resources := core_xds.NewResourceSet()
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
 		// we do not create inbounds for serviceless
@@ -44,7 +45,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		statPrefix := ""
-		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming) {
+		if kriNamingEnabled {
 			kriName := kri.From(proxy.Dataplane, fmt.Sprintf("%d", endpoint.WorkloadPort)).String()
 			localClusterName = kriName
 			inboundListenerName = kriName
