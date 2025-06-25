@@ -70,19 +70,19 @@ resources:
                   path: /v4
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: kri_msvc_default___backend_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v4/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: kri_msvc_default___backend_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: kri_msvc_default___backend_test-port
+                  cluster: default_backend___msvc_80
                   timeout: 0s
           statPrefix: default_backend___msvc_80
     metadata:

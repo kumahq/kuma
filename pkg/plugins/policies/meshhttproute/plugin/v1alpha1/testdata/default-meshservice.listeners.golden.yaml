@@ -34,7 +34,7 @@ resources:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: kri_msvc_default___backend_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
           statPrefix: default_backend___msvc_80
     metadata:
