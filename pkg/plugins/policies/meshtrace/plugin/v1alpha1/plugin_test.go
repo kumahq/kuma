@@ -111,7 +111,10 @@ var _ = Describe("MeshTrace", func() {
 
 			meshResources := xds_context.NewResources()
 			meshResources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
-				Items: []*v1alpha1.MeshServiceResource{samples.MeshServiceBackend()},
+				Items: []*v1alpha1.MeshServiceResource{samples.MeshServiceBackendBuilder().
+					WithZone("zone-1").
+					WithNamespace("backend-ns").
+					Build()},
 			}
 			context := xds_samples.SampleContextWith(meshResources)
 			proxy := xds_builders.Proxy().
