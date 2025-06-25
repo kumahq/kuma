@@ -875,12 +875,16 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
 		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
-		HttpInboundRoutes("", "backend", envoy_common.Routes{{
-			Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("backend"),
-				envoy_common.WithWeight(100),
-			)},
-		}}))
+		HttpInboundRoutes(
+			"",
+			"backend",
+			envoy_common.Routes{{
+				Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+					envoy_common.WithService("backend"),
+					envoy_common.WithWeight(100),
+				)},
+			}},
+		))
 }
 
 func createListener(builder *ListenerBuilder, route FilterChainBuilderOpt) envoy_common.NamedResource {

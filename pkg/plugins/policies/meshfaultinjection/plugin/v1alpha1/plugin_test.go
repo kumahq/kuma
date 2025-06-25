@@ -89,14 +89,18 @@ var _ = Describe("MeshFaultInjection", func() {
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
-								listeners.HttpInboundRoutes("", "backend", envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
+								listeners.HttpInboundRoutes(
+									"",
+									"backend",
+									envoy_common.Routes{
+										{
+											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+												envoy_common.WithService("backend"),
+												envoy_common.WithWeight(100),
+											)},
+										},
 									},
-								}),
+								),
 							),
 						)).MustBuild(),
 				},
