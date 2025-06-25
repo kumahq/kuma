@@ -13,7 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 )
 
@@ -69,35 +68,6 @@ type Config struct {
 	// DNS defines a configuration for builtin DNS in Kuma DP
 	DNS                         DNS                         `json:"dns,omitempty"`
 	ApplicationProbeProxyServer ApplicationProbeProxyServer `json:"applicationProbeProxyServer,omitempty"`
-}
-
-func (c *Config) Features() []string {
-	base := []string{
-		xds_types.FeatureTCPAccessLogViaNamedPipe,
-	}
-
-	if c.DNS.ProxyPort != 0 {
-		base = append(base, xds_types.FeatureEmbeddedDNS)
-	}
-
-	if c.DataplaneRuntime.TransparentProxy != nil {
-		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
-	}
-
-	if c.DataplaneRuntime.BindOutbounds {
-		base = append(base, xds_types.FeatureBindOutbounds)
-	}
-
-	switch c.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
-	case "DELTA_GRPC":
-		base = append(base, xds_types.FeatureDeltaGRPC)
-	}
-
-	if c.DataplaneRuntime.KRINamingEnabled {
-		base = append(base, xds_types.FeatureKRINaming)
-	}
-
-	return base
 }
 
 func (c *Config) Sanitize() {
