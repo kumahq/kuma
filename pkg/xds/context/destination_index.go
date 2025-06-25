@@ -15,11 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 )
 
-type Destination interface {
-	GetPorts() []core.Port
-	FindPortByName(name string) (core.Port, bool)
-}
-
 type DestinationIndex struct {
 	meshServiceByIdentifier             map[kri.Identifier]*meshservice_api.MeshServiceResource
 	meshServicesByLabelByValue          LabelsToValuesToResourceIdentifier
@@ -76,8 +71,8 @@ func NewDestinationIndex(resourceMap ResourceMap) *DestinationIndex {
 	}
 }
 
-func (dc *DestinationIndex) GetAllDestinations() map[kri.Identifier]Destination {
-	allDestinations := make(map[kri.Identifier]Destination)
+func (dc *DestinationIndex) GetAllDestinations() map[kri.Identifier]core.Destination {
+	allDestinations := make(map[kri.Identifier]core.Destination)
 	for k, v := range dc.meshServiceByIdentifier {
 		allDestinations[k] = v
 	}
@@ -122,7 +117,7 @@ func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, d
 	return &out
 }
 
-func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) Destination {
+func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
 	switch id.ResourceType {
 	case meshservice_api.MeshServiceType:
 		return dc.meshServiceByIdentifier[id]

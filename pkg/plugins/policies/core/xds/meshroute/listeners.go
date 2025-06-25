@@ -124,7 +124,7 @@ func collectMeshService(
 	}
 	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
 	if port.GetProtocol() != "" {
-		protocol = core_mesh.ParseProtocol(port.GetProtocol())
+		protocol = port.GetProtocol()
 	}
 	return &DestinationService{
 		Outbound:    outbound,
@@ -166,7 +166,7 @@ func collectMeshMultiZoneService(
 	}
 	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
 	if port.GetProtocol() != "" {
-		protocol = core_mesh.ParseProtocol(port.GetProtocol())
+		protocol = port.GetProtocol()
 	}
 	return &DestinationService{
 		Outbound:    outbound,
@@ -211,7 +211,7 @@ func GetServiceProtocolPortFromRef(
 			return "", "", 0, false
 		}
 		service := ms.DestinationName(port.GetValue())
-		protocol := core_mesh.ParseProtocol(port.GetProtocol())
+		protocol := port.GetProtocol()
 		return service, protocol, port.GetValue(), true
 	case common_api.MeshService:
 		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource))
@@ -223,7 +223,7 @@ func GetServiceProtocolPortFromRef(
 			return "", "", 0, false
 		}
 		service := ms.DestinationName(port.GetValue())
-		protocol := core_mesh.Protocol(port.GetProtocol()) // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+		protocol := port.GetProtocol() // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
 		return service, protocol, port.GetValue(), true
 	default:
 		return "", "", 0, false

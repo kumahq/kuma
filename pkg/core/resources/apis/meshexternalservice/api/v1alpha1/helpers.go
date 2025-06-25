@@ -101,6 +101,6 @@ func (m MesPort) GetNameOrStringifyPort() string {
 	return fmt.Sprintf("%d", m.Value)
 }
 
-func (m MesPort) GetProtocol() string {
-	return string(m.Protocol)
+func (m MesPort) GetProtocol() core_mesh.Protocol {
+	return m.Protocol
 }

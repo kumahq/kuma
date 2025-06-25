@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -145,6 +146,6 @@ func (p Port) GetValue() uint32 {
 	return p.Port
 }
 
-func (p Port) GetProtocol() string {
-	return string(p.AppProtocol)
+func (p Port) GetProtocol() core_mesh.Protocol {
+	return p.AppProtocol
 }

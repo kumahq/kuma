@@ -24,10 +24,6 @@ func (rs *ResourceSection) Identifier() kri.Identifier {
 	return kri.From(rs.Resource, rs.SectionName)
 }
 
-type ResourceWithPorts interface {
-	GetPorts() []core.Port
-}
-
 type query struct {
 	byIdentifier *kri.Identifier
 	byLabels     map[string]string
@@ -124,7 +120,7 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	// filter out resources that don't have requested section name or port
 	var result []*ResourceSection
 	for _, r := range resources {
-		if resourceWithPorts, ok := r.(ResourceWithPorts); ok {
+		if resourceWithPorts, ok := r.(core.Destination); ok {
 			if port := q.findPort(resourceWithPorts.GetPorts()); port != nil {
 				result = append(result, &ResourceSection{
 					Resource:    r,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/kri"
@@ -21,6 +22,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -122,7 +124,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	bindOutbounds bool,
 ) []*xds_types.Outbound {
 	if !tpEnabled && !bindOutbounds {
-		return dataplane.AsOutbounds(meshContext.ResolveResourceIdentifier)
+		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
 	}
 	reachableServices := map[string]bool{}
 	var reachableBackends *xds_context.ReachableBackends
@@ -231,4 +233,35 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
+}
+
+func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelResourceIdentifierResolver) xds_types.Outbounds {
+	var outbounds xds_types.Outbounds
+	for _, o := range dataplane.Spec.Networking.Outbound {
+		if o.BackendRef != nil {
+			// convert proto BackendRef to common_api.BackendRef
+			backendRef := common_api.BackendRef{
+				TargetRef: common_api.TargetRef{
+					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+					Name:   pointer.To(o.BackendRef.Name),
+					Labels: pointer.To(o.BackendRef.Labels),
+				},
+				Port: pointer.To(o.BackendRef.Port),
+			}
+			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, resolver)
+			if !ok {
+				continue
+			}
+			if ref.ReferencesRealResource() {
+				outbounds = append(outbounds, &xds_types.Outbound{
+					Address:  o.Address,
+					Port:     o.Port,
+					Resource: ref.RealResourceBackendRef().Resource,
+				})
+			}
+		} else {
+			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
+		}
+	}
+	return outbounds
 }

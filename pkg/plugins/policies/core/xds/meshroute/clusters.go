@@ -105,7 +105,7 @@ func GenerateClusters(
 								// services that are synced can be accessed only with TLS through ZoneIngress
 								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 								if port, found := ms.FindPortByName(realResourceRef.Resource.SectionName); found {
-									protocol = core_mesh.ParseProtocol(port.GetProtocol())
+									protocol = port.GetProtocol()
 								}
 							}
 						}
