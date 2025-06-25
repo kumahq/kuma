@@ -102,6 +102,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			IgnoredServiceSelectorLabels: []string{},
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy: []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
+			KRINamingEnabled: false,
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -238,6 +239,10 @@ type Injector struct {
 	// configuration. If this value is left empty, the transparent proxy configuration will not be loaded from
 	// a ConfigMap. The actual value is expected to be provided via an environment variable
 	TransparentProxyConfigMapName string `json:"transparentProxyConfigMap" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_configmap_name"`
+	// KRINamingEnabled enables automatic injection of the KRI naming feature flag into all sidecar-injected workloads.
+	// When set to true, the injector will add the `kuma.io/kri-naming-enabled: "true"` annotation to each pod, which ensures
+	// that the data plane proxy uses the KRI-based naming format for Envoy resource and stat names.
+	KRINamingEnabled bool `json:"kriNamingEnabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_KRI_NAMING_ENABLED"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection

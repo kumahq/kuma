@@ -94,7 +94,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 
 	proxyFactory := containers.NewDataplaneProxyFactory(
 		cpURL, caCert, rt.Config().GetEnvoyAdminPort(), cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS,
-		false, false, false, 0, rt.Config().MeshService.KRIStatsEnabled,
+		false, false, false, 0, rt.Config().Runtime.Kubernetes.Injector.KRINamingEnabled,
 	)
 
 	kubeConfig := mgr.GetConfig()

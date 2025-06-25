@@ -93,7 +93,7 @@ func (c *Config) Features() []string {
 		base = append(base, xds_types.FeatureDeltaGRPC)
 	}
 
-	if c.DataplaneRuntime.Metrics.KRIStats {
+	if c.DataplaneRuntime.KRINamingEnabled {
 		base = append(base, xds_types.FeatureKRINaming)
 	}
 
@@ -262,6 +262,10 @@ type DataplaneRuntime struct {
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
 	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
 	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
+	// KRINamingEnabled enables the KRI-based naming format for Envoy resource and stat names.
+	// When set to true, the data plane proxy will generate and report stats using structured
+	// Kuma Resource Identifiers (KRIs).
+	KRINamingEnabled bool `json:"KRINamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_kri_naming_enabled"`
 }
 
 type Metrics struct {
@@ -269,7 +273,6 @@ type Metrics struct {
 	CertPath string `json:"metricsCertPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_cert_path"`
 	// KeyPath path to the key for metrics listener
 	KeyPath string `json:"metricsKeyPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_key_path"`
-	KRIStats bool `json:"kriStats,omitempty" envconfig:"kuma_dataplane_runtime_metrics_kri_stats"`
 }
 
 type DynamicConfiguration struct {
