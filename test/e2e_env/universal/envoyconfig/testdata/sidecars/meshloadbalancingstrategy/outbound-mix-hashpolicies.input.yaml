@@ -1,0 +1,42 @@
+type: MeshLoadBalancingStrategy
+name: mlbst-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        hashPolicies:
+          - type: Cookie
+            cookie:
+              name: session_id
+        loadBalancer:
+          type: Maglev
+          maglev:
+            tableSize: 17
+---
+type: MeshLoadBalancingStrategy
+name: mlbst-2
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        loadBalancer:
+          type: Maglev
+          maglev:
+            tableSize: 27
+            hashPolicies:
+              - type: Cookie
+                cookie:
+                  name: should-be-overridden
+              - type: Header
+                header:
+                  name: should-be-overridden
