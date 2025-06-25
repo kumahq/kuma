@@ -284,7 +284,7 @@ func handleRealResources(
 	if ref.Weight == 0 {
 		return nil
 	}
-	useKri := proxy.Metadata.HasFeature(xds_types.FeatureKRIStats)
+	useKri := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 
 	service, _, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref, useKri)
 	if !ok {
@@ -302,20 +302,20 @@ func handleRealResources(
 	case common_api.MeshExternalService:
 		clusterName = pointer.Deref(ref.Resource).String()
 		statsName = meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
-		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming) {
 			statsName = clusterName
 		}
 		isExternalService = true
 	case common_api.MeshMultiZoneService:
 		clusterName = pointer.Deref(ref.Resource).String()
 		statsName = meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
-		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming) {
 			statsName = clusterName
 		}
 	case common_api.MeshService:
 		clusterName = pointer.Deref(ref.Resource).String()
 		statsName = meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
-		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming) {
 			statsName = clusterName
 		}
 	}

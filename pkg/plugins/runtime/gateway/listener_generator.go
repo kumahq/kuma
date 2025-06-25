@@ -44,7 +44,7 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 
 	name :=  kri.From(info.Gateway, "").String()
 	statName := ""
-	if !info.Proxy.Metadata.HasFeature(xds_types.FeatureKRIStats) {
+	if !info.Proxy.Metadata.HasFeature(xds_types.FeatureKRINaming) {
 		statName = name
 	}
 

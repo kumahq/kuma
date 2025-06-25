@@ -44,7 +44,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		statPrefix := ""
-		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+		if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming) {
 			kriName := kri.From(proxy.Dataplane, fmt.Sprintf("%d", endpoint.WorkloadPort)).String()
 			localClusterName = kriName
 			inboundListenerName = kriName

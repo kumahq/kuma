@@ -275,7 +275,7 @@ func configure(
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
 	inboundListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
 	statPrefix := ""
-	if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRIStats) {
+	if proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming) {
 		kriName := kri.From(proxy.Dataplane, fmt.Sprintf("%d", iface.WorkloadPort)).String()
 		localClusterName = kriName
 		inboundListenerName = kriName

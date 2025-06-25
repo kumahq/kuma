@@ -94,7 +94,7 @@ func (c *Config) Features() []string {
 	}
 
 	if c.DataplaneRuntime.Metrics.KRIStats {
-		base = append(base, xds_types.FeatureKRIStats)
+		base = append(base, xds_types.FeatureKRINaming)
 	}
 
 	return base

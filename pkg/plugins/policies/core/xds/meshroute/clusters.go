@@ -39,7 +39,7 @@ func GenerateClusters(
 			clusterName := cluster.Name()
 			statName := clusterName
 			core.Log.Info("TEST", "statName", statName, "cluster", cluster)
-			if !proxy.Metadata.HasFeature(xds_types.FeatureKRIStats) {
+			if !proxy.Metadata.HasFeature(xds_types.FeatureKRINaming) {
 				statName = cluster.StatName()
 			}
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)

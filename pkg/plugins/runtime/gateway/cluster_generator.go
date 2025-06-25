@@ -153,7 +153,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	systemNamespace string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, string, error) {
-	service, stat, destProtocol, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, backendRef, proxy.Metadata.HasFeature(xds_types.FeatureKRIStats))
+	service, stat, destProtocol, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, backendRef, proxy.Metadata.HasFeature(xds_types.FeatureKRINaming))
 	if !ok {
 		return nil, "", nil
 	}
