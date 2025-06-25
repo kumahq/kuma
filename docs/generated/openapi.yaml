@@ -15949,6 +15949,16 @@ components:
     MeshGatewayDeleteSuccessResponse:
       type: object
       properties: {}
+    Zone:
+      properties:
+        enabled:
+          description: >-
+            enable allows to turn the zone on/off and exclude the whole zone
+            from
+
+            balancing traffic on it
+          type: boolean
+      type: object
     HostnameGeneratorItem:
       type: object
       required:
