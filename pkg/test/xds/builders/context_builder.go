@@ -1,6 +1,7 @@
 package builders
 
 import (
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -39,8 +40,9 @@ func Context() *ContextBuilder {
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
 	resMap := xds_context.ResourceMap{
-		meshservice_api.MeshServiceType:                 mc.res.Mesh.Resources.MeshServices(),
-		meshexternalservice_api.MeshExternalServiceType: mc.res.Mesh.Resources.MeshExternalServices(),
+		meshservice_api.MeshServiceType:                   mc.res.Mesh.Resources.MeshServices(),
+		meshexternalservice_api.MeshExternalServiceType:   mc.res.Mesh.Resources.MeshExternalServices(),
+		meshmultizoneservice_api.MeshMultiZoneServiceType: mc.res.Mesh.Resources.MeshMultiZoneServices(),
 	}
 	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(resMap)
 	return mc.res
