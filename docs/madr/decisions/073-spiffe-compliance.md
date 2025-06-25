@@ -162,3 +162,405 @@ Future releases
 Nice to have:
 1. Kuma control plane can register entries into SPIRE (How can we attest and trust control-plane?)
 2. Kuma exposes a federation endpoint.
+
+## Design
+
+### API
+
+#### Default SPIFFE ID
+
+Spire, which is an implementation of SPIFFE, defines a standard way for Subject Alternative Name (SAN) definition. By default, on Kubernetes, it uses the Service Account (SA) and namespace in a path format such as:
+
+```
+spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>
+```
+This default model works for us on Kubernetes but will not be supported in Universal deployments. We therefore need to find a default SPIFFE ID format that works consistently for both Kubernetes and Universal environments.
+
+Unfortunately, we currently lack a native workload identifier in Universal deployments, which prevents us from directly adopting a similar identity model.
+
+**Proposal**
+
+For the current release, we propose defining the default SPIFFE ID for Kubernetes workloads with the following structure:
+
+```
+spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>
+```
+
+Trust domain: `{ .Mesh }.{ .Zone }.{ .ClusterID }.kuma.io`
+
+Once a TrustDomain is defined on the Global control plane, we require it to include the zone name in the template. We are going to implement a validator for this case.
+
+Question:
+* Is there an issue once we rename zone ? Isn't it an edge case that we might don't need to support?
+  It's not supported and can cause many issues, we shouldn't think about it.
+
+### MeshIdentity
+
+This resource allows the creation of Certificate Authorities (CAs) that are supported within a specific Mesh. It does not actively issue certificates — it simply defines the authority. The user must later configure which CA is used as the default, and which ones should continue to be supported during a migration period.
+
+* The resource can be created on the Global control plane and synced to Zones.
+* It can also be created on a Zone, in which case it will be synced to Global, but not propagated to other Zones.
+
+KDS flags:
+```golang
+model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+```
+
+**Model**
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: test
+  spiffeID: # optional
+    trustDomain: "prod.example.fr" # { .Mesh }.{ .Zone }.{ .ClusterID}.kuma.io
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same as HostnameGenerator
+  provider:
+    type: builtin | cert-manager | external | spire | extension
+    builtin:
+      address: spire server address that is going to be set of envoy sds, also we would set correctly the name of certs
+      certificate: file/inline/secret
+      privateKey: file/inline/secret
+    certManager:
+    spire:
+      serverAddress:
+    extension: # to extend in KM
+      type: vault
+      conf: # JSON
+```
+
+Currently, the `ServiceAccount` is not exposed in the `Dataplane` resource, which is problematic since we need to access this information. A potential solution is to add a dedicated field to the `Dataplane` object to store the associated `ServiceAccount`.
+
+#### Provider types
+
+There can be multiple difference identity providers but in the first iteration we would like to focus on:
+
+* builtin
+* provided
+* spire
+
+**Builtin**
+
+The builtin provider type is where the control plane generates a Root CA, which is later used for issuing workload identities.
+Currently, in a multizone setup, Kuma creates a Root CA on the Global control plane and syncs it to the zones. With the new approach, instead of sharing a single Root CA, we will sync only the resource definition, and each zone will generate its own Root CA for workload identity. This improves isolation between zones and allows for better security boundaries.
+
+**Provided**
+
+The provided type allows users to supply their own CA certificates. These can be configured per zone or as a global definition.
+Users can provide certificates in the following ways:
+
+* Inline,
+* File path,
+* Secret reference.
+
+This gives flexibility for organizations that already have an established PKI or need to integrate with existing certificate authorities.
+
+**Spire**
+
+The spire provider is a new type that configures Envoy to request its identity certificate directly from SPIRE.
+In this first iteration:
+
+* Workloads must be registered in SPIRE manually or by SPIRE controller.
+* The control plane does not handle workload registration in SPIRE yet.
+
+This approach allows Kuma to leverage SPIFFE-compliant identities issued by SPIRE while keeping the initial integration simple.
+
+#### Define active identity provider
+
+Previously, defining the active identity for a group of services was done through a single, perhaps less flexible, mechanism. Now, the `MeshIdentity` resource, leveraging its `selector`, offers a more granular and controlled approach to activate specific configurations.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: old-identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+....
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: new-identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: demo-app
+```
+
+The `MeshIdentity` resource’s selector field allows selection based on dataplane labels. Users can define it to apply to either all dataplanes or a specific subset.
+If there are multiple (X) identities selecting the same dataplane, the control plane will resolve the conflict by choosing one based on the following order of precedence:
+
+1. Selector specificity – the identity with most specific selector is preferred.
+2. Lexicographical order – if selector sizes are equal, the identity with the lexicographically smallest name is chosen.
+3. Age – if names are the same, the oldest identity (based on creation timestamp) is selected.
+
+#### How would look the process of switching backends?
+
+1. User has a Mesh with MeshIdentity `ca-1`
+```yaml
+...
+name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
+type: DataplaneInsight
+mTLS:
+  certificateExpirationTime: "2025-06-03T17:35:33Z"
+  certificateRegenerations: 1
+  issuedBackend: ca-1 # name of MeshIdentity
+  lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
+  supportedBackends: # list of MeshTrust name
+  - ca-1
+...
+```
+2. User creates MeshTrust with CA of a new MeshIdentity `ca-2`
+3. Trust is propagated. We provide identity and keep the information(supported CA (Trust), and Identity) in DataplaneInsight
+```yaml
+...
+name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
+type: DataplaneInsight
+mTLS:
+  certificateExpirationTime: "2025-06-03T17:35:33Z"
+  certificateRegenerations: 1
+  issuedBackend: ca-1 # name of MeshIdentity
+  lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
+  supportedBackends: # list of MeshTrust name
+  - ca-1
+  - ca-2
+...
+```
+
+Based on this information we will update MeshService
+
+```yaml
+...
+name: second-test-server-b7dwz26bb9b4z676
+spec:
+  identities:
+  - type: SpiffeID
+    value: spiffe://example.com/zone/my-new-zone/ns/real-resource-ns/sa/default
+  ports:
+  - appProtocol: http
+    name: main
+    port: 80
+    targetPort: main
+  selector:
+    dataplaneTags:
+      app: second-test-server
+      k8s.kuma.io/namespace: real-resource-ns
+  state: Available
+status:
+  ...
+  tls:
+    status: Ready <- only if all DPPs have identity provided
+  vips:
+  - ip: 10.43.245.159
+type: MeshService
+```
+
+4. User create a new MeshIdentity `ca-2`
+5. We start deliver new identity provided by `ca-2`
+We reuse existing fields
+```yaml
+...
+name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
+type: DataplaneInsight
+mTLS:
+  certificateExpirationTime: "2025-06-03T17:35:33Z"
+  certificateRegenerations: 1
+  issuedBackend: ca-2 # name of MeshIdentity
+  lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
+  supportedBackends: # list of MeshTrust name
+  - ca-1
+  - ca-2
+...
+```
+Update SpiffeID based on identities
+```yaml
+...
+name: second-test-server-b7dwz26bb9b4z676
+spec:
+  identities:
+  - type: SpiffeID
+    value: spiffe://example.com/ns/real-resource-ns/sa/default
+  - type: SpiffeID
+    value: spiffe://example.fr/ns/real-resource-ns/sa/default
+  ports:
+  - appProtocol: http
+    name: main
+    port: 80
+    targetPort: main
+  selector:
+    dataplaneTags:
+      app: second-test-server
+      k8s.kuma.io/namespace: real-resource-ns
+  state: Available
+status:
+  ...
+  tls:
+    status: Ready
+  vips:
+  - ip: 10.43.245.159
+type: MeshService
+```
+
+6. User can remove MeshIdentity `ca-1`
+7. MeshTrust should be removed by the parent reference
+
+![Rotation flow](rotation-flow.png)
+
+#### MeshTrust
+
+Based on the existing `MeshIdentity`, we should create a `MeshTrust` resource, which will be used to properly generate trust domains for other zones.
+`MeshTrust` should be created in each zone and then synchronized with the global control plane.
+1. Can be created on the Zone and synced to Global
+2. Can be created on the Global and synced to all Zones
+3. Can be created on the Zone and not synced to global by providing label `kuma.io/kds-sync: disabled`
+4. Can be created on the Zone and synced to all zones (Future release) (`SyncedAcrossZonesFlag`)
+
+We can describe it as KDS flag:
+
+```golang
+model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+```
+
+There should also be an option to disable automatic generation in cases where the user does not want cross trust-domain traffic to be allowed by default.
+
+**Model**
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrust
+metadata:
+  name: trust-hash
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  ca: inline | secret | file | clusterbundletrust
+  trustDomain: "prod.zone-1.id.kuma.io" # if we want a zone
+```
+
+The resource should also be manually creatable by the user. This enables users to define additional trust domains and allows the local sidecar to accept incoming mTLS traffic from services outside the mesh.
+This functionality is essential for:
+
+* Enabling ExternalClients,
+* Accepting mTLS connections from external services, and
+* Federating multiple separate clusters through shared trust.
+
+**MeshTrust based on MeshIdentity**
+
+When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the MeshTrust based on the `MeshIdentity`.
+To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will introduce a grace period after which the automatically created `MeshTrust` is deleted. To distinguish resources that are manually created from those automatically generated, we will apply the label:
+
+```yaml
+kuma.io/managed-by: meshidentity-provider
+```
+
+#### MeshMultiZoneService
+
+A `MeshMultiZoneService` is composed of multiple MeshService instances, potentially spanning different zones that may each use different identity providers.
+To ensure that cross-zone traffic functions correctly in this setup, we need to:
+* Set the appropriate Subject Alternative Names (SANs) in the Clusters, and
+* Configure the correct list of trusted Certificate Authorities (CAs).
+
+This ensures that workloads can authenticate each other across zones using mTLS, even when different trust domains are involved.
+
+#### Egress and Ingress
+
+> [!WARNING]
+> Since the correct design might require more time, we are going to skip support for Egress in the 2.12 release and plan to design and implement it in the next release.
+
+**Problem**
+
+Currently, we provide multiple different certificates for Egress, as each mesh might have a different identity provider. This is problematic because it results in Egress having multiple identities.
+
+These dataplanes are internal components that enable cross-cluster traffic and external communication. Ingress doesn't require any specific identity since it doesn't decrypt traffic; it merely passes it through. However, Egress requires decryption of traffic because we do not want to communicate with external applications using an internal certificate. In this scenario, applications communicating with Egress validate its identity. Unfortunately, Egress is a shared cluster component that serves as a point for multiple meshes, where each mesh might have a different identity provider. Consequently, we need to establish a common issuer for Egress.
+
+**Proposal**
+
+We propose introducing a default internal certificate generated by the control plane for communication with Egress. This would provide a single identity for the Egress dataplane and allow us to configure sidecars and Egress to validate each other.
+
+Users would be allowed by the configuration to override this default identity provider with their own.
+
+1. When one of Meshes use Spire support only Spire
+We could force user to use Spire for egress and don't support other Identity than Spire if one of Mesh uses Spire.
+User would need to configure control-plane to make Spire responsible for providing identity for Egress.
+
+1. Generate separate CA for control-plane
+In this setup, the control plane is responsible for providing the identity for the Egress. This enables a secure connection between the Egress and dataplanes, as both sides can mutually authenticate using mTLS.
+
+If SPIRE is used to issue certificates to dataplanes, the Egress must be configured to trust SPIRE's Root CA in order to verify the dataplane's certificate.
+Additionally, the dataplanes must trust the Root CA used by the control plane to sign the Egress certificate — this CA should be configured in the dataplane's validation context.
+
+* Trust domain for Egress
+
+User would be allowed to change it but the default could be:
+```yaml
+spiffe://system.kuma.io/ns/namespace/sa/serviceAccount
+```
+
+#### Admin API certificates
+
+> [!WARNING]
+> Since the correct design may require more time, we will skip support for Admin API in the 2.12 release, and its behavior will remain unchanged.
+
+**Problem**
+
+Currently, each dataplane receives a separate certificate for the listener protecting its admin endpoint. These certificates are issued by a different Certificate Authority (CA) that is used only for Admin API access. Unfortunately, this forces the control plane to generate two sets of certificates for each dataplane: one for the admin endpoint and one for mesh mTLS communication.
+
+This dual-certificate generation is computationally expensive, and during the startup of multiple dataplanes, it can cause significantly higher CPU usage on the control plane. Furthermore, it results in dataplanes having different identities depending on which endpoint (Admin API vs. mesh traffic) we intend to reach.
+
+**Proposal**
+
+The Admin endpoint should always be protected, as it allows remote closure of the sidecar and can potentially cause traffic outages. To standardize this protection and simplify certificate management, we need to distinguish two main cases:
+1. Mesh has mTLS enabled
+
+   We use the same identity generated for the dataplane and generate client certificate for the control-plane that is signed by the same CA as a Mesh use. The problem is that control-plane needs a separate client certificate for each mesh.
+2. Mesh doesn't have mTLS enabled
+
+  We will leverage the default certificate that the control plane generates for Egress (or a user-specified certificate if an override is configured). In this specific case, we would use the same certificate to secure the Admin API for both dataplanes and the control plane.
+
+3. Don't protect Admin API when there is no mTLS
+
+  In this case we would not protect Admin API if mTLS is disabled.
+
+Another potential solution is to use the default certificate (the same as for Egress) for providing the control plane's identity, and subsequently configure sidecars to validate the control plane using this CA.
+
+Ref:
+* https://github.com/kumahq/kuma/pull/3353
+* https://github.com/kumahq/kuma/pull/4676
+
+### Integrations with ClusterBundleTrust
+Kubernetes 1.33 arrives with a new feature in beta mode [ClusterTrustBundle](https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/#cluster-trust-bundles) (not default). It's a new Cluster-scope resource which allows storing and distributing X.509 trust anchors (root certificates) workloads within the cluster.
+
+It feel like we can use it in few cases:
+* MeshTrust referencing ClusterBundleTrust.
+* Storing certificate that is used by dataplanes to verify control-plane certificate. Instead of injecting it as env variable we could provide it [projected-volume](https://kubernetes.io/docs/concepts/storage/projected-volumes/#clustertrustbundle).
+* MeshIdentity referencing ClusterBundleTrust additionally to Secret/Inline/File
+* Trusting CAs from ClusterBundleTrust in Envoy
+
+This doesn't have to be implemented in current release.
+
+
+### Migration from mTLS in Mesh to MeshIdentity
+
+1. Mesh has mTLS enabled
+2. User create a MeshTrust for new MeshIdentity
+3. Create MeshTrafficPermissions for new ID
+4. User create a new MeshIdentity
+5. User remove mTLS section from Mesh object
