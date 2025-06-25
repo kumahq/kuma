@@ -61,7 +61,7 @@ Users can enable the feature for individual data plane proxies:
 | Mode       | How to enable                                                 |
 |------------|---------------------------------------------------------------|
 | Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_KRI_NAMING_ENABLED=true` |
-| Kubernetes | Add annotation: `kuma.io/kri-naming-enabled: "true"`          |
+| Kubernetes | Add annotation: `kuma.io/kri-naming: "enabled"`               |
 
 In Kubernetes, the sidecar injector will translate the annotation into the corresponding environment variable. `kuma-dp` will detect the variable and include the feature flag in xDS metadata.
 
@@ -87,7 +87,7 @@ experimental.kriNaming.enabled
 
 When set to `true`, this will:
 
-* Add the `kuma.io/kri-naming-enabled: "true"` annotation to all `ZoneIngress` and `ZoneEgress` proxies
+* Add the `kuma.io/kri-naming: "enabled"` annotation to all `ZoneIngress` and `ZoneEgress` proxies
 * Set the `KUMA_RUNTIME_KUBERNETES_INJECTOR_KRI_NAMING_ENABLED="true"` environment variable in the control plane deployment
 
 Once KRI naming becomes the default, this setting will also default to `true`. Users will still be able to disable it by setting it to `false`. Eventually, this setting will be removed when disabling the feature is no longer supported.
