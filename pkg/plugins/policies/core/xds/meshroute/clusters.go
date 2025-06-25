@@ -31,6 +31,7 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 	resources := core_xds.NewResourceSet()
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)

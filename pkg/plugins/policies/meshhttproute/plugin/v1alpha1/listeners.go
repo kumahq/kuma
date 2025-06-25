@@ -143,15 +143,7 @@ func generateFromService(
 	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
 	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 
-	listener, err := GenerateOutboundListener(
-		proxy.APIVersion,
-		svc,
-		isTransparent,
-		kriNamingEnabled,
-		proxy.InternalAddresses,
-		routes,
-		dpTags,
-	)
+	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, kriNamingEnabled, proxy.InternalAddresses, routes, dpTags)
 	if err != nil {
 		return nil, err
 	}

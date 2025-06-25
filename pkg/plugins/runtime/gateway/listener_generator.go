@@ -74,6 +74,5 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 			// Always sniff for TLS.
 			envoy_listeners.TLSInspector(),
 			envoy_listeners.StatPrefix(statName),
-	
 		), limits
 }

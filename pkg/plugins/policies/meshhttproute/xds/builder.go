@@ -43,7 +43,6 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 			})
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}
-
 	static := envoy_listeners_v3.HttpStaticRouteConfigurer{
 		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, c.RouteConfigName).
 			Configure(envoy_routes.CommonRouteConfiguration()).

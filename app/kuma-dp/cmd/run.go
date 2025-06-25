@@ -184,7 +184,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
 			}
-
 			switch cfg.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
 			case "DELTA_GRPC":
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)

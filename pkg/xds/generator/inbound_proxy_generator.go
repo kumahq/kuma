@@ -142,19 +142,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 	return resources, nil
 }
 
-func FilterChainBuilder(
-	serverSideMTLS bool,
-	protocol core_mesh.Protocol,
-	proxy *core_xds.Proxy,
-	listenerName string,
-	localClusterName string,
-	xdsCtx xds_context.Context,
-	endpoint mesh_proto.InboundInterface,
-	service string,
-	routes *envoy_common.Routes,
-	tlsVersion *tls.Version,
-	ciphers []tls.TlsCipher,
-) *envoy_listeners.FilterChainBuilder {
+func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy *core_xds.Proxy, listenerName string, localClusterName string, xdsCtx xds_context.Context, endpoint mesh_proto.InboundInterface, service string, routes *envoy_common.Routes, tlsVersion *tls.Version, ciphers []tls.TlsCipher) *envoy_listeners.FilterChainBuilder {
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 	switch protocol {
 	// configuration for HTTP case
