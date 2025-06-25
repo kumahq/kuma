@@ -20,7 +20,7 @@ func GenerateOutboundListener(
 	apiVersion core_xds.APIVersion,
 	svc meshroute_xds.DestinationService,
 	isTransparent bool,
-	isKRI bool,
+	kriNamingEnabled bool,
 	splits []envoy_common.Split,
 ) (*core_xds.Resource, error) {
 	builder := envoy_listeners.NewOutboundListenerBuilder(
@@ -40,7 +40,7 @@ func GenerateOutboundListener(
 
 		builder.WithOverwriteName(resourceName)
 
-		if isKRI {
+		if kriNamingEnabled {
 			listenerStatPrefix = resourceName
 			filterStatPrefix = resourceName
 		}
@@ -90,9 +90,9 @@ func generateFromService(
 
 	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
 
-	isKRI := proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming)
+	kriNamingEnabled := proxy.Metadata.Features.HasFeature(xds_types.FeatureKRINaming)
 
-	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, isKRI, splits)
+	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, kriNamingEnabled, splits)
 	if err != nil {
 		return nil, err
 	}

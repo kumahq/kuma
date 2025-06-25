@@ -195,7 +195,7 @@ func collectServiceTagService(
 func GetServiceProtocolPortFromRef(
 	meshCtx xds_context.MeshContext,
 	ref *resolve.RealResourceBackendRef,
-	kriStats bool,
+	kriNamingEnabled bool,
 ) (string, string, core_mesh.Protocol, uint32, bool) {
 	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
 	case common_api.MeshExternalService:
@@ -206,23 +206,23 @@ func GetServiceProtocolPortFromRef(
 		port := uint32(mes.Spec.Match.Port)
 		service := kri.From(mes, "").String()
 		statName := ""
-		if !kriStats {
+		if !kriNamingEnabled {
 			statName = mes.DestinationName(port)
 		}
 		protocol := mes.Spec.Match.Protocol
-		return service,statName, protocol, port, true
+		return service, statName, protocol, port, true
 	case common_api.MeshMultiZoneService:
 		ms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource))
 		if ms == nil {
-			return "", "","", 0, false
+			return "", "", "", 0, false
 		}
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
-			return "", "","", 0, false
+			return "", "", "", 0, false
 		}
-		service := kri.From(ms,ref.Resource.SectionName).String()
+		service := kri.From(ms, ref.Resource.SectionName).String()
 		statName := ""
-		if !kriStats {
+		if !kriNamingEnabled {
 			statName = ms.DestinationName(port.Port)
 		}
 		protocol := port.AppProtocol
@@ -230,21 +230,21 @@ func GetServiceProtocolPortFromRef(
 	case common_api.MeshService:
 		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource))
 		if ms == nil {
-			return "", "","", 0, false
+			return "", "", "", 0, false
 		}
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
-			return "", "","", 0, false
+			return "", "", "", 0, false
 		}
-		service := kri.From(ms,ref.Resource.SectionName).String()
+		service := kri.From(ms, ref.Resource.SectionName).String()
 		statName := ""
-		if !kriStats {
+		if !kriNamingEnabled {
 			statName = ms.DestinationName(port.Port)
 		}
 		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
 		return service, statName, protocol, port.Port, true
 	default:
-		return "", "","", 0, false
+		return "", "", "", 0, false
 	}
 }
 
@@ -284,9 +284,9 @@ func handleRealResources(
 	if ref.Weight == 0 {
 		return nil
 	}
-	useKri := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 
-	service, _, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref, useKri)
+	service, _, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref, kriNamingEnabled)
 	if !ok {
 		return nil
 	}

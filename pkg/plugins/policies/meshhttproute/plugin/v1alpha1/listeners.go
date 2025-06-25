@@ -34,7 +34,7 @@ func GenerateOutboundListener(
 	apiVersion core_xds.APIVersion,
 	svc meshroute_xds.DestinationService,
 	isTransparent bool,
-	isKRI bool,
+	kriNamingEnabled bool,
 	internalAddresses []core_xds.InternalAddress,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
@@ -53,13 +53,13 @@ func GenerateOutboundListener(
 
 		listenerBuilder.WithOverwriteName(resourceName)
 
-		if isKRI {
+		if kriNamingEnabled {
 			listenerStatPrefix = resourceName
 			hcmStatsName = resourceName
 			virtualHostName = resourceName
 		}
 
-		if isKRI || svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
+		if kriNamingEnabled || svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
 			routeConfigName = resourceName
 		}
 	}
@@ -141,13 +141,13 @@ func generateFromService(
 	}
 
 	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
-	isKRI := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 
 	listener, err := GenerateOutboundListener(
 		proxy.APIVersion,
 		svc,
 		isTransparent,
-		isKRI,
+		kriNamingEnabled,
 		proxy.InternalAddresses,
 		routes,
 		dpTags,
