@@ -129,17 +129,26 @@ We will update both `ZoneIngressOverview` and `ZoneEgressOverview` to include me
 
 ### Kuma GUI
 
-The Kuma GUI relies on Envoy stat names to display inbound and outbound endpoint details for data plane, `ZoneIngress`, and `ZoneEgress` proxies. These names are used to associate metrics with specific resources and visualize traffic paths in the GUI.
+The Kuma GUI relies on Envoy stat names and xDS resource names to display inbound and outbound endpoint details for `Dataplane`, `ZoneIngress`, and `ZoneEgress` proxies. These names are used to associate metrics with specific resources and visualize traffic paths in the GUI.
 
-To support the KRI naming format, we need to update the GUI parsers that extract resource information from stat names such as listeners, clusters, and endpoints. These parsers must recognize and handle the new KRI format defined in the [Resource Identifier MADR](https://github.com/kumahq/kuma/blob/d19b78a4556962f4d9d3cc5921c7bdc73dc93d26/docs/madr/decisions/070-resource-identifier.md?plain=1#L328):
+To support the KRI naming format, the GUI parsers that extract resource information from stat names and xDS configuration (listeners, clusters, endpoints) must be updated. The new format is defined in the [Resource Identifier MADR](https://github.com/kumahq/kuma/blob/d19b78a4556962f4d9d3cc5921c7bdc73dc93d26/docs/madr/decisions/070-resource-identifier.md?plain=1#L328):
 
 ```
 kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
 ```
 
-The updated parsers will be activated when the `feature-kri-naming` flag is present in the metadata of the `DataplaneOverview`, `ZoneIngressOverview`, and `ZoneEgressOverview` resources.
+When the `feature-kri-naming` flag is present in the metadata of `DataplaneOverview`, `ZoneIngressOverview`, and `ZoneEgressOverview`, the GUI must:
 
-The GUI does not rely on the names of xDS resources themselves. It only uses stat names, so no additional changes are required to support KRI naming.
+* Parse and interpret stat names and xDS resource names based on the KRI format
+* Drop any assumptions about `inbound:` or `outbound:` prefixes, which are no longer used
+* Match stat names directly to xDS resource names, which now correspond 1:1
+
+#### Examples of KRI-formatted names
+
+* `kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080`
+* `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport`
+* `kri_mhttpr_mesh-1_us-east-2_kuma-demo_route-1_`
+* `kri_extsvc_mesh-1__kuma-system_es1_`
 
 ## Test scenarios required for completion
 
