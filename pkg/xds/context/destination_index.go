@@ -29,45 +29,24 @@ func NewDestinationIndex(resourceMap ResourceMap) *DestinationIndex {
 	if resourceMap[meshservice_api.MeshServiceType] != nil {
 		meshServices = resourceMap[meshservice_api.MeshServiceType].(*meshservice_api.MeshServiceResourceList).Items
 	}
-	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
-	meshServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
-	for _, ms := range meshServices {
-		ri := kri.From(ms, "")
-		meshServicesByKri[ri] = ms
-		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels())
-	}
 
 	var meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
 	if resourceMap[meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor.Name] != nil {
 		meshExternalServices = resourceMap[meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor.Name].(*meshexternalservice_api.MeshExternalServiceResourceList).Items
-	}
-	meshExternalServicesByKri := make(map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource, len(meshExternalServices))
-	meshExternalServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
-	for _, mes := range meshExternalServices {
-		ri := kri.From(mes, "")
-		meshExternalServicesByKri[ri] = mes
-		buildLabelValueToServiceNames(ri, meshExternalServicesByLabelByValue, mes.Meta.GetLabels())
 	}
 
 	var meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource
 	if resourceMap[meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor.Name] != nil {
 		meshMultiZoneServices = resourceMap[meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor.Name].(*meshmzservice_api.MeshMultiZoneServiceResourceList).Items
 	}
-	meshMultiZoneServicesByKri := make(map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource, len(meshMultiZoneServices))
-	meshMultiZoneServiceNameByLabelByValue := LabelsToValuesToResourceIdentifier{}
-	for _, svc := range meshMultiZoneServices {
-		ri := kri.From(svc, "")
-		meshMultiZoneServicesByKri[ri] = svc
-		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels())
-	}
 
 	return &DestinationIndex{
-		meshServiceByIdentifier:             meshServicesByKri,
-		meshServicesByLabelByValue:          meshServicesByLabelByValue,
-		meshExternalServiceByIdentifier:     meshExternalServicesByKri,
-		meshExternalServicesByLabelByValue:  meshExternalServicesByLabelByValue,
-		meshMultiZoneServiceByIdentifier:    meshMultiZoneServicesByKri,
-		meshMultiZoneServicesByLabelByValue: meshMultiZoneServiceNameByLabelByValue,
+		meshServiceByIdentifier:             indexByKri(meshServices),
+		meshServicesByLabelByValue:          indexByLabelKeyValue(meshServices),
+		meshExternalServiceByIdentifier:     indexByKri(meshExternalServices),
+		meshExternalServicesByLabelByValue:  indexByLabelKeyValue(meshExternalServices),
+		meshMultiZoneServiceByIdentifier:    indexByKri(meshMultiZoneServices),
+		meshMultiZoneServicesByLabelByValue: indexByLabelKeyValue(meshMultiZoneServices),
 	}
 }
 
@@ -189,4 +168,38 @@ func (dc *DestinationIndex) getResourceNamesForLabels(kind string, labels map[st
 		}
 	}
 	return reachable
+}
+
+func indexByKri[T core_model.Resource](list []T) map[kri.Identifier]T {
+	byKri := make(map[kri.Identifier]T, len(list))
+	for _, item := range list {
+		ri := kri.From(item, "")
+		byKri[ri] = item
+	}
+	return byKri
+}
+
+func indexByLabelKeyValue[T core_model.Resource](list []T) LabelsToValuesToResourceIdentifier {
+	resourceNamesByLabels := LabelsToValuesToResourceIdentifier{}
+	for _, item := range list {
+		ri := kri.From(item, "")
+		buildLabelValueToServiceNames(ri, resourceNamesByLabels, item.GetMeta().GetLabels())
+	}
+	return resourceNamesByLabels
+}
+
+func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
+	for label, value := range labels {
+		key := LabelValue{
+			Label: label,
+			Value: value,
+		}
+		if _, ok := resourceNamesByLabels[key]; ok {
+			resourceNamesByLabels[key][ri] = true
+		} else {
+			resourceNamesByLabels[key] = map[kri.Identifier]bool{
+				ri: true,
+			}
+		}
+	}
 }

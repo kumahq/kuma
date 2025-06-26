@@ -13,7 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -488,22 +487,6 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 		}
 	}
 	return nil
-}
-
-func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
-	for label, value := range labels {
-		key := LabelValue{
-			Label: label,
-			Value: value,
-		}
-		if _, ok := resourceNamesByLabels[key]; ok {
-			resourceNamesByLabels[key][ri] = true
-		} else {
-			resourceNamesByLabels[key] = map[kri.Identifier]bool{
-				ri: true,
-			}
-		}
-	}
 }
 
 func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
