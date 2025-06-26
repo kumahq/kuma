@@ -288,7 +288,7 @@ metadata:
 spec:
   selector:
     dataplane:
-      matchLabels: {}
+      matchLabels: {} # select all
 ....
 ---
 apiVersion: kuma.io/v1alpha1
@@ -420,7 +420,7 @@ type: MeshService
 ```
 
 6. User can remove MeshIdentity `ca-1`
-7. MeshTrust should be removed by the parent reference
+7. MeshTrust should be removed by the user
 
 ![Rotation flow](assets/073/rotation-flow.png)
 
@@ -465,11 +465,11 @@ This functionality is essential for:
 **MeshTrust based on MeshIdentity**
 
 When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the MeshTrust based on the `MeshIdentity`.
-To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will introduce a grace period after which the automatically created `MeshTrust` is deleted. To distinguish resources that are manually created from those automatically generated, we will apply the label:
+To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. In case it's problematic for the user we can implement it later.
 
-```yaml
-kuma.io/managed-by: meshidentity-provider
-```
+**Multizone**
+
+In the first iteration, `MeshTrust` will not be synced between zones. This means that if a user wants to create a multizone setup, they must manually create a `MeshTrust` resource in each zone.
 
 #### MeshMultiZoneService
 
@@ -483,7 +483,7 @@ This ensures that workloads can authenticate each other across zones using mTLS,
 #### Egress and Ingress
 
 > [!WARNING]
-> Since the correct design might require more time, we are going to skip support for Egress in the 2.12 release and plan to design and implement it in the next release.
+> Since the correct design might require more time, we are going to skip support for Egress in the 2.12 release and plan to design and implement it in the next release. Also, proposal here is not a final and might be improved in the future release.
 
 **Problem**
 
@@ -517,7 +517,7 @@ spiffe://system.kuma.io/ns/namespace/sa/serviceAccount
 #### Admin API certificates
 
 > [!WARNING]
-> Since the correct design may require more time, we will skip support for Admin API in the 2.12 release, and its behavior will remain unchanged.
+> Since the correct design may require more time, we will skip support for Admin API in the 2.12 release, and its behavior will remain unchanged. Also, proposal here is not a final and might be improved in the future release.
 
 **Problem**
 
