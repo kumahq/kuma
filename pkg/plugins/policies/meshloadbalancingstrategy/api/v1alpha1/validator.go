@@ -84,6 +84,18 @@ func validateConf(conf Conf, to To) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
 	verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness, to))
+	verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
+
+	// Check if hashPolicies is specified both at the top level and in one of the load balancer types
+	if conf.HashPolicies != nil && conf.LoadBalancer != nil {
+		if conf.LoadBalancer.RingHash != nil && conf.LoadBalancer.RingHash.HashPolicies != nil {
+			verr.AddViolation("loadBalancer.ringHash.hashPolicies", "hashPolicies already specified in the root level")
+		}
+		if conf.LoadBalancer.Maglev != nil && conf.LoadBalancer.Maglev.HashPolicies != nil {
+			verr.AddViolation("loadBalancer.maglev.hashPolicies", "hashPolicies already specified in the root level")
+		}
+	}
+
 	return verr
 }
 
