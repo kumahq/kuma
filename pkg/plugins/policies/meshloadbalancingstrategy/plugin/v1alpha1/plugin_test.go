@@ -1858,7 +1858,3 @@ func contextWithEgressEnabled() xds_context.Context {
 		WithMeshBuilder(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
 		Build()
 }
-
-func routeKRI(name string) kri.Identifier {
-	return kri.Identifier{ResourceType: meshhttproute_api.MeshHTTPRouteType, Name: name, Mesh: "default"}
-}
