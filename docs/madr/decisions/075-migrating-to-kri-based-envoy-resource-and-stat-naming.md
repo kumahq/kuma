@@ -148,7 +148,7 @@ The following scenarios must be verified to consider the work complete. Each cas
 ### Single-zone deployments
 
 * `MeshService` is targeted directly by a `Dataplane` in the same zone
-* `MeshExternalService` is targeted vy a `Dataplane` via the `ZoneEgress` in the same zone
+* `MeshExternalService` is targeted by a `Dataplane` via the `ZoneEgress` in the same zone
 
 ### Multi-zone with ZoneEgress and ZoneIngress (Global + 2 zones)
 
