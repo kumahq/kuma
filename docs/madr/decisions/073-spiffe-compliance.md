@@ -556,11 +556,10 @@ It feel like we can use it in few cases:
 
 This doesn't have to be implemented in current release.
 
-
 ### Migration from mTLS in Mesh to MeshIdentity
 
 1. Mesh has mTLS enabled
 2. User create a MeshTrust for new MeshIdentity
 3. Create MeshTrafficPermissions for new ID
-4. User create a new MeshIdentity
+4. User create a new MeshIdentityxw
 5. User remove mTLS section from Mesh object
