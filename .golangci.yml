@@ -54,7 +54,36 @@ linters:
               desc: pkg can't import app
     gocritic:
       disabled-checks:
+        - appendAssign
+        - appendCombine
+        - builtinShadow
+        - commentedOutCode
+        - deferInLoop
+        - docStub
+        - emptyFallthrough
+        - emptyStringTest
+        - exposedSyncMutex
+        - filepathJoin
+        - httpNoBody
+        - hugeParam
+        - importShadow
+        - nestingReduce
+        - nilValReturn
+        - paramTypeCombine
+        - preferStringWriter
+        - rangeValCopy
+        - regexpSimplify
         - singleCaseSwitch
+        - sloppyReassign
+        - sprintfQuotedString
+        - stringConcatSimplify
+        - stringXbytes
+        - typeAssertChain
+        - typeDefFirst
+        - unnamedResult
+        - whyNoLint
+        - yodaStyleExpr
+      enable-all: true
     gomodguard:
       blocked:
         modules:
@@ -127,9 +156,6 @@ linters:
       - linters:
           - staticcheck
         text: 'IsIngress is deprecated: use ZoneIngress'
-      - linters:
-          - gocritic
-        text: 'appendAssign: append result not assigned to the same slice'
       - linters:
           - staticcheck
         text: 'SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated'
