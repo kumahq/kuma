@@ -143,12 +143,25 @@ When the `feature-kri-naming` flag is present in the metadata of `DataplaneOverv
 * Drop any assumptions about `inbound:` or `outbound:` prefixes, which are no longer used
 * Match stat names directly to xDS resource names, which now correspond 1:1
 
-#### Examples of KRI-formatted names
+**Examples of KRI-formatted resource names:**
 
 * `kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080`
 * `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport`
+* `kri_mzsvc_mesh-1__kuma-system_backend-app_8080`
 * `kri_mhttpr_mesh-1_us-east-2_kuma-demo_route-1_`
 * `kri_extsvc_mesh-1__kuma-system_es1_`
+
+**Examples of stats using KRI-formatted names:**
+
+* `cluster.kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport.upstream_cx_active: 0`
+* `cluster.kri_mzsvc_mesh-1__kuma-system_backend-app_8080.upstream_cx_active: 0`
+* `cluster.kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080.upstream_cx_active: 0`
+* `http.kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport.downstream_cx_active: 0`
+* `http.kri_mzsvc_mesh-1__kuma-system_backend-app_8080.downstream_cx_active: 0`
+* `http.kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080.downstream_cx_active: 0`
+* `listener.kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport.downstream_cx_active: 0`
+* `listener.kri_mzsvc_mesh-1__kuma-system_backend-app_8080.downstream_cx_active: 0`
+* `listener.kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080.downstream_cx_active: 0`
 
 ## Test scenarios required for completion
 
