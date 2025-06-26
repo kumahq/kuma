@@ -60,7 +60,7 @@ func (h *httpInspectEnvoyProxyClient) executeInspectRequest(ctx context.Context,
 		return nil, errors.Wrap(err, "could not construct the url")
 	}
 	resUrl.RawQuery = queryParams.Encode()
-	req, err := http.NewRequest("GET", resUrl.String(), nil)
+	req, err := http.NewRequest("GET", resUrl.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

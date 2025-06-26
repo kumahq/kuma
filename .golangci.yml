@@ -64,7 +64,6 @@ linters:
         - emptyStringTest
         - exposedSyncMutex
         - filepathJoin
-        - httpNoBody
         - hugeParam
         - importShadow
         - nestingReduce

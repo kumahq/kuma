@@ -59,7 +59,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	It("should support CORS", func() {
 		// given
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 		req.Header.Add(restful.HEADER_Origin, "test")
 
@@ -78,7 +78,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	It("should expose metrics", func() {
 		// given
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
