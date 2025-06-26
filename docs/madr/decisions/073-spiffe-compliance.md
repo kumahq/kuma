@@ -422,7 +422,7 @@ type: MeshService
 6. User can remove MeshIdentity `ca-1`
 7. MeshTrust should be removed by the parent reference
 
-![Rotation flow](rotation-flow.png)
+![Rotation flow](assets/073/rotation-flow.png)
 
 #### MeshTrust
 
