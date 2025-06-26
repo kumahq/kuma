@@ -34,11 +34,6 @@ spec:
           - type: Header
             header:
               name: x-header-for-test-route-2
-        loadBalancer:
-          type: RingHash
-          ringHash:
-            minRingSize: 100
-            maxRingSize: 10000
 ---
 type: MeshHTTPRoute
 name: test-route-1
