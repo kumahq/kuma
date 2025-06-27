@@ -70,7 +70,6 @@ linters:
         - sloppyReassign
         - unnamedResult
         - whyNoLint
-        - yodaStyleExpr
       enable-all: true
     gomodguard:
       blocked:
