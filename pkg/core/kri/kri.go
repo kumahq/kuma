@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/constraints" //nolint:exptostd // https://github.com/kumahq/kuma/pull/13810/files#r2179434552
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"

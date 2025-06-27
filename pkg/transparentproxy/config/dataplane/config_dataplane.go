@@ -2,7 +2,7 @@ package dataplane
 
 import (
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/constraints" //nolint:exptostd // https://github.com/kumahq/kuma/pull/13810/files#r2179434552
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
