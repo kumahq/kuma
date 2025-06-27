@@ -160,8 +160,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				)).
 				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
 
-		case core_mesh.ProtocolTCP:
-			fallthrough
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
