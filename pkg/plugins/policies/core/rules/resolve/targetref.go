@@ -44,9 +44,6 @@ func (q query) findPort(ports []core.Port) core.Port {
 			if port.GetName() == q.sectionName {
 				return port
 			}
-			if parsed, ok := tryParsePort(q.sectionName); ok && port.GetName() == "" && port.GetValue() == parsed {
-				return port
-			}
 		}
 	}
 	return nil
@@ -124,7 +121,7 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 			if port := q.findPort(resourceWithPorts.GetPorts()); port != nil {
 				result = append(result, &ResourceSection{
 					Resource:    r,
-					SectionName: port.GetNameOrStringifyPort(),
+					SectionName: port.GetName(),
 				})
 			}
 		} else {

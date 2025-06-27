@@ -28,7 +28,7 @@ func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
 
 func (m *MeshServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
 	if port, found := m.findPort(port); found {
-		return port.GetNameOrStringifyPort(), true
+		return port.GetName(), true
 	}
 	return "", false
 }
@@ -102,7 +102,7 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     port.Port,
-				Resource: pointer.To(kri.From(t, port.GetNameOrStringifyPort())),
+				Resource: pointer.To(kri.From(t, port.GetName())),
 			})
 		}
 	}
@@ -131,15 +131,11 @@ func (t *MeshServiceResource) GetPorts() []core.Port {
 	return ports
 }
 
-func (p Port) GetNameOrStringifyPort() string {
+func (p Port) GetName() string {
 	if p.Name != "" {
 		return p.Name
 	}
 	return fmt.Sprintf("%d", p.Port)
-}
-
-func (p Port) GetName() string {
-	return p.Name
 }
 
 func (p Port) GetValue() uint32 {
