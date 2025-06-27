@@ -46,7 +46,7 @@ type OptionTwo struct {
 }
 
 type NonMergeableStruct struct {
-    RequiredIntField int `json:"required_int_field"` // OK
+    RequiredIntField int32 `json:"required_int_field"` // OK
     RequiredStrField string `json:"required_str_field"` // OK
 }
 
