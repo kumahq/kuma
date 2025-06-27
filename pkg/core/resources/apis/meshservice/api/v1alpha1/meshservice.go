@@ -8,23 +8,22 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-type DataplaneTags map[string]string
-
 type Selector struct {
-	DataplaneTags DataplaneTags `json:"dataplaneTags,omitempty"`
+	DataplaneTags *map[string]string `json:"dataplaneTags,omitempty"`
 	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`
 }
 
 type DataplaneRef struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 }
 
 type Port struct {
-	Name       string             `json:"name,omitempty"`
+	Name       *string             `json:"name,omitempty"`
 	Port       uint32             `json:"port"`
-	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
+	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
-	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
+	// +kubebuilder:validation:Optional
+	AppProtocol core_mesh.Protocol `json:"appProtocol"`
 }
 
 const maxNameLength = 63
@@ -40,15 +39,18 @@ type MeshService struct {
 	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
 	// It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
 	// +kubebuilder:default=Unavailable
-	State    State    `json:"state,omitempty"`
-	Selector Selector `json:"selector,omitempty"`
+	// +kubebuilder:validation:Optional
+	State    State    `json:"state"`
+	Selector Selector `json:"selector"`
 	// +patchMergeKey=port
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=port
 	// +listMapKey=appProtocol
-	Ports      []Port                `json:"ports,omitempty"`
-	Identities []MeshServiceIdentity `json:"identities,omitempty"`
+	Ports      []Port                `json:"ports"`
+	// +kubebuilder:default=[]
+	// +kubebuilder:validation:Optional
+	Identities []MeshServiceIdentity `json:"identities"`
 }
 
 type VIP struct {

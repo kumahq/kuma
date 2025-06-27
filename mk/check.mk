@@ -71,6 +71,7 @@ api-lint:
 	go run $(TOOLS_DIR)/ci/api-linter/main.go \
 		github.com/kumahq/kuma/api/common/v1alpha1 \
 		github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1 \
+		github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1 \
 		github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1
 
 .PHONY: check

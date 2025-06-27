@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"reflect"
 	"time"
 
@@ -119,14 +120,14 @@ func ExecuteStoreTests(
 				created := meshservice_api.MeshServiceResource{
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{
-							DataplaneTags: map[string]string{
+							DataplaneTags: &map[string]string{
 								"a": "b",
 							},
 						},
 						Ports: []meshservice_api.Port{
 							{
 								Port:        80,
-								TargetPort:  intstr.FromInt(80),
+								TargetPort:  pointer.To(intstr.FromInt(80)),
 								AppProtocol: "http",
 							},
 						},
@@ -265,14 +266,14 @@ func ExecuteStoreTests(
 				updated := meshservice_api.MeshServiceResource{
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{
-							DataplaneTags: map[string]string{
+							DataplaneTags: &map[string]string{
 								"a": "b",
 							},
 						},
 						Ports: []meshservice_api.Port{
 							{
 								Port:        80,
-								TargetPort:  intstr.FromInt(80),
+								TargetPort:  pointer.To(intstr.FromInt(80)),
 								AppProtocol: "http",
 							},
 						},

@@ -427,7 +427,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Selector: meshservice_api.Selector{},
 						Ports: []meshservice_api.Port{{
 							Port:        80,
-							TargetPort:  intstr.FromInt(8084),
+							TargetPort:  pointer.To(intstr.FromInt(8084)),
 							AppProtocol: core_mesh.ProtocolHTTP,
 						}},
 						Identities: []meshservice_api.MeshServiceIdentity{
@@ -530,7 +530,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Selector: meshservice_api.Selector{},
 						Ports: []meshservice_api.Port{{
 							Port:        80,
-							TargetPort:  intstr.FromInt(8084),
+							TargetPort:  pointer.To(intstr.FromInt(8084)),
 							AppProtocol: core_mesh.ProtocolHTTP,
 						}},
 						Identities: []meshservice_api.MeshServiceIdentity{

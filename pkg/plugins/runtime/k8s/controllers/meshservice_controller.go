@@ -284,7 +284,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 	}
 	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
 	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: dpTags,
+		DataplaneTags: &dpTags,
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{
@@ -398,9 +398,9 @@ func (r *MeshServiceReconciler) manageMeshService(
 				portName = strconv.Itoa(int(port.Port))
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
-				Name:        portName,
+				Name:        pointer.To(portName),
 				Port:        uint32(port.Port),
-				TargetPort:  port.TargetPort,
+				TargetPort:  &port.TargetPort,
 				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}
