@@ -70,7 +70,7 @@ api-lint:
     # policies
 	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./pkg/plugins/policies/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
 	# resources
-	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./pkg/core/resources/apis/*/api/v1alpha1 -type d -maxdepth 0 | grep -v hostnamegenerator | sed 's|^|$(GO_MODULE)/|')
+	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./pkg/core/resources/apis/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
 	# common
 	go run $(TOOLS_DIR)/ci/api-linter/main.go github.com/kumahq/kuma/api/common/v1alpha1
 
