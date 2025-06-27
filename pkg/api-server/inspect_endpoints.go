@@ -278,19 +278,20 @@ func inspectPolicies(
 				}
 			} else {
 				for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies, dp.Spec.Networking) {
-					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
-						attachmentList := []api_server_types.AttachmentEntry{}
-						for _, attachment := range attachments {
-							attachmentList = append(attachmentList, api_server_types.AttachmentEntry{
-								Type:    attachment.Type.String(),
-								Name:    attachment.Name,
-								Service: attachment.Service,
-							})
-						}
-						entry := api_server_types.NewPolicyInspectSidecarEntry(resourceKey)
-						entry.Attachments = attachmentList
-						result.Items = append(result.Items, api_server_types.NewPolicyInspectEntry(&entry))
+					if policy.Type != resType || policy.Key.Name != policyName || policy.Key.Mesh != meshName {
+						continue
 					}
+					attachmentList := []api_server_types.AttachmentEntry{}
+					for _, attachment := range attachments {
+						attachmentList = append(attachmentList, api_server_types.AttachmentEntry{
+							Type:    attachment.Type.String(),
+							Name:    attachment.Name,
+							Service: attachment.Service,
+						})
+					}
+					entry := api_server_types.NewPolicyInspectSidecarEntry(resourceKey)
+					entry.Attachments = attachmentList
+					result.Items = append(result.Items, api_server_types.NewPolicyInspectEntry(&entry))
 				}
 			}
 		}

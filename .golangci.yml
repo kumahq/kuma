@@ -65,7 +65,6 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - nestingReduce
         - nilValReturn
         - paramTypeCombine
         - preferStringWriter

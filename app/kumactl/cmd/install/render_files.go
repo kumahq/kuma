@@ -19,17 +19,18 @@ func renderFilesWithFilter(templates []data.File, args interface{}, newRenderer 
 	renderedFiles := make([]data.File, len(templates))
 
 	for i, template := range templates {
-		if filter.Filter(template.FullPath) {
-			renderer, err := newRenderer(template)
-			if err != nil {
-				return nil, err
-			}
-			var buf bytes.Buffer
-			if err := renderer.Execute(&buf, args); err != nil {
-				return nil, err
-			}
-			renderedFiles[i].Data = buf.Bytes()
+		if !filter.Filter(template.FullPath) {
+			continue
 		}
+		renderer, err := newRenderer(template)
+		if err != nil {
+			return nil, err
+		}
+		var buf bytes.Buffer
+		if err := renderer.Execute(&buf, args); err != nil {
+			return nil, err
+		}
+		renderedFiles[i].Data = buf.Bytes()
 	}
 
 	return renderedFiles, nil
