@@ -132,14 +132,6 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	return result
 }
 
-func tryParsePort(s string) (uint32, bool) {
-	u, err := strconv.ParseUint(s, 10, 32)
-	if err != nil {
-		return 0, false
-	}
-	return uint32(u), true
-}
-
 // parseService is copied from pkg/plugins/runtime/k8s/controllers/outbound_converter.go
 // but when port is not specified it returns 0 instead of IANA Reserved port 49151.
 // We don't need reserved port in the original 'parseService',
