@@ -204,13 +204,21 @@ func listenerConfigurer(rctx *rules_outbound.ResourceContext[api.Conf]) Configur
 }
 
 func filterChainConfigurer(rctx *rules_outbound.ResourceContext[api.Conf]) Configurer[envoy_listener.FilterChain] {
-	return IfNotNil(getHashPolicies(rctx.Conf()), func(hashPolicies []api.HashPolicy) Configurer[envoy_listener.FilterChain] {
-		return bldrs_listener.AllRoutesOnFilterChain(routeConfigurer(hashPolicies))
+	return bldrs_listener.RoutesOnFilterChain(func(route *envoy_route.Route) error {
+		var routeCtx *rules_outbound.ResourceContext[api.Conf]
+		if routeID, err := kri.FromString(route.Name); err == nil {
+			routeCtx = rctx.WithID(routeID)
+		} else {
+			routeCtx = rctx
+		}
+		return NewModifier(route).Configure(routeConfigurer(routeCtx)).Modify()
 	})
 }
 
-func routeConfigurer(hashPolicies []api.HashPolicy) Configurer[envoy_route.Route] {
-	return bldrs_route.HashPolicies(util_slices.Map(hashPolicies, hashPolicy))
+func routeConfigurer(rctx *rules_outbound.ResourceContext[api.Conf]) Configurer[envoy_route.Route] {
+	return IfNotNil(getHashPolicies(rctx.Conf()), func(hashPolicies []api.HashPolicy) Configurer[envoy_route.Route] {
+		return bldrs_route.HashPolicies(util_slices.Map(hashPolicies, hashPolicy))
+	})
 }
 
 func clusterConfigurer(conf api.Conf) Configurer[envoy_cluster.Cluster] {
@@ -322,12 +330,12 @@ func getDurationOrNil(d *k8s.Duration) *time.Duration {
 }
 
 func getHashPolicies(conf api.Conf) *[]api.HashPolicy {
-	if conf.LoadBalancer == nil {
-		return nil
-	}
-
 	if conf.HashPolicies != nil {
 		return conf.HashPolicies
+	}
+
+	if conf.LoadBalancer == nil {
+		return nil
 	}
 
 	switch conf.LoadBalancer.Type {
@@ -545,11 +553,6 @@ func (p plugin) configureRDS(
 		return nil
 	}
 
-	hashPolicies := getHashPolicies(*conf)
-	if hashPolicies == nil {
-		return nil
-	}
-
 	routeConfigs := []string{}
 	for _, chain := range l.FilterChains {
 		for _, filter := range chain.Filters {
@@ -572,7 +575,7 @@ func (p plugin) configureRDS(
 
 	for _, rc := range routeConfigs {
 		err := NewModifier(routes[rc]).
-			Configure(bldrs_route.AllRoutes(routeConfigurer(*hashPolicies))).
+			Configure(bldrs_route.AllRoutes(routeConfigurer(rules_outbound.AsResourceContext(*conf)))).
 			Modify()
 		if err != nil {
 			return err
