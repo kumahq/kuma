@@ -70,7 +70,6 @@ linters:
         - rangeValCopy
         - singleCaseSwitch
         - sloppyReassign
-        - stringXbytes
         - typeAssertChain
         - typeDefFirst
         - unnamedResult
