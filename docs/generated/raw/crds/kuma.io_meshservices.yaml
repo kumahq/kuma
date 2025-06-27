@@ -47,6 +47,7 @@ spec:
             description: Spec is the specification of the Kuma MeshService resource.
             properties:
               identities:
+                default: '[]'
                 items:
                   properties:
                     type:
@@ -91,6 +92,8 @@ spec:
                     properties:
                       name:
                         type: string
+                    required:
+                    - name
                     type: object
                   dataplaneTags:
                     additionalProperties:
@@ -106,6 +109,9 @@ spec:
                 - Available
                 - Unavailable
                 type: string
+            required:
+            - ports
+            - selector
             type: object
           status:
             description: Status is the current status of the Kuma MeshService resource.

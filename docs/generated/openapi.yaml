@@ -17187,6 +17187,7 @@ components:
           description: Spec is the specification of the Kuma MeshService resource.
           properties:
             identities:
+              default: '[]'
               items:
                 properties:
                   type:
@@ -17231,6 +17232,8 @@ components:
                   properties:
                     name:
                       type: string
+                  required:
+                    - name
                   type: object
                 dataplaneTags:
                   additionalProperties:
@@ -17250,6 +17253,9 @@ components:
                 - Available
                 - Unavailable
               type: string
+          required:
+            - ports
+            - selector
           type: object
         creationTime:
           readOnly: true
