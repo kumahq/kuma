@@ -68,7 +68,6 @@ linters:
         - nilValReturn
         - paramTypeCombine
         - rangeValCopy
-        - regexpSimplify
         - singleCaseSwitch
         - sloppyReassign
         - sprintfQuotedString
