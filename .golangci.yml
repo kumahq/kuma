@@ -57,7 +57,6 @@ linters:
     gocritic:
       disabled-checks:
         - appendAssign
-        - appendCombine
         - builtinShadow
         - commentedOutCode
         - deferInLoop
