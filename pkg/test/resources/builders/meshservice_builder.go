@@ -2,7 +2,6 @@ package builders
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -11,6 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type MeshServiceBuilder struct {
