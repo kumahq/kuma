@@ -135,26 +135,27 @@ func (a *Allocator) allocateVIPs(ctx context.Context, typeDesc model.ResourceTyp
 	}
 
 	for _, resource := range resources {
-		if len(resource.VIPs()) == 0 {
-			log := a.logger.WithValues(
-				"name", resource.GetMeta().GetName(),
-				"mesh", resource.GetMeta().GetMesh(),
-				"type", resource.Descriptor().Name,
-			)
-			ip, err := kumaIpam.Allocate()
-			if err != nil {
-				return errors.Wrapf(err, "could not allocate vip for %s %s", typeDesc.Name, resource.GetMeta().GetName())
-			}
-			log.Info("allocating IP", "ip", ip.String())
-			resource.AllocateVIP(ip.String())
+		if len(resource.VIPs()) != 0 {
+			continue
+		}
+		log := a.logger.WithValues(
+			"name", resource.GetMeta().GetName(),
+			"mesh", resource.GetMeta().GetMesh(),
+			"type", resource.Descriptor().Name,
+		)
+		ip, err := kumaIpam.Allocate()
+		if err != nil {
+			return errors.Wrapf(err, "could not allocate vip for %s %s", typeDesc.Name, resource.GetMeta().GetName())
+		}
+		log.Info("allocating IP", "ip", ip.String())
+		resource.AllocateVIP(ip.String())
 
-			if err := a.resManager.Update(ctx, resource); err != nil {
-				msg := "could not update the resource with allocated Kuma VIP. Will try to update in the next allocation window"
-				if store.IsConflict(err) {
-					log.Info(msg, "cause", "conflict", "interval", a.interval)
-				} else {
-					log.Error(err, msg, "interval", a.interval)
-				}
+		if err := a.resManager.Update(ctx, resource); err != nil {
+			msg := "could not update the resource with allocated Kuma VIP. Will try to update in the next allocation window"
+			if store.IsConflict(err) {
+				log.Info(msg, "cause", "conflict", "interval", a.interval)
+			} else {
+				log.Error(err, msg, "interval", a.interval)
 			}
 		}
 	}
