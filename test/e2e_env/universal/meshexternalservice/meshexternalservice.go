@@ -147,7 +147,7 @@ networking:
 				checkSuccessfulRequest("ext-srv-1.extsvc.mesh.local", clientName, And(
 					Not(ContainSubstring("HTTPS")),
 					// Should rewrite host header
-					ContainSubstring(fmt.Sprintf(`"Host":["%s"]`, esHttpContainerName)),
+					ContainSubstring(fmt.Sprintf(`"Host":[%q]`, esHttpContainerName)),
 				))
 			})
 
