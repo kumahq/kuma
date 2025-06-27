@@ -672,7 +672,7 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
-		outbounds[mes.DestinationName(mes.Spec.Match.Port)] = append(outbounds[mes.DestinationName(int32(mes.Spec.Match.Port))], *outboundEndpoint)
+		outbounds[mes.DestinationName(mes.Spec.Match.Port)] = append(outbounds[mes.DestinationName(mes.Spec.Match.Port)], *outboundEndpoint)
 	}
 	return nil
 }
