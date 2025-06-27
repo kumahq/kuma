@@ -145,7 +145,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, meshExtSvc.DestinationName(uint32(meshExtSvc.Spec.Match.Port)))
+			mesNames = append(mesNames, meshExtSvc.DestinationName(meshExtSvc.Spec.Match.Port))
 		}
 
 		for _, esName := range esNames {

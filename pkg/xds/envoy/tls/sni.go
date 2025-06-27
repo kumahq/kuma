@@ -47,7 +47,7 @@ const (
 	dnsLabelLimit    = 63
 )
 
-func SNIForResource(resName string, meshName string, resType model.ResourceType, port uint32, additionalData map[string]string) string {
+func SNIForResource(resName string, meshName string, resType model.ResourceType, port int32, additionalData map[string]string) string {
 	var mapStrings []string
 	for _, key := range maps.SortedKeys(additionalData) {
 		mapStrings = append(mapStrings, fmt.Sprintf("%s=%s", key, additionalData[key]))

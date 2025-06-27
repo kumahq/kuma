@@ -672,7 +672,7 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
-		outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))] = append(outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))], *outboundEndpoint)
+		outbounds[mes.DestinationName(mes.Spec.Match.Port)] = append(outbounds[mes.DestinationName(int32(mes.Spec.Match.Port))], *outboundEndpoint)
 	}
 	return nil
 }
@@ -801,7 +801,7 @@ func fillExternalServicesOutboundsThroughEgress(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := mes.DestinationName(uint32(mes.Spec.Match.Port))
+		serviceName := mes.DestinationName(mes.Spec.Match.Port)
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
