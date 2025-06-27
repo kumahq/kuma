@@ -424,6 +424,20 @@ type: MeshService
 
 ![Rotation flow](assets/073/rotation-flow.png)
 
+#### Secret naming
+
+We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshIdentity` creates a separate resource (Secret), it should be named based on the KRI to simplify correlation between the `Secret` and the `MeshIdentity` configuration.
+
+Proposed name:
+
+```yaml
+kri_mi_mesh-1_us-east-2_kuma-system_identity-1
+```
+
+> [!WARNING]
+> The naming is different when using SPIRE, since SPIRE uses SPIFFEID or `default` as a certificate name
+> https://spiffe.io/docs/latest/deploying/spire_agent/#sds-configuration
+> https://spiffe.io/docs/latest/microservices/envoy/#tls-certificates
 #### MeshTrust
 
 Based on the existing `MeshIdentity`, we should create a `MeshTrust` resource, which will be used to properly generate trust domains for other zones.
@@ -470,6 +484,21 @@ To avoid issues where a user removes a `MeshIdentity` but an old trust remains i
 **Multizone**
 
 In the first iteration, `MeshTrust` will not be synced between zones. This means that if a user wants to create a multizone setup, they must manually create a `MeshTrust` resource in each zone.
+
+**Secret naming**
+
+We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshTrust` creates a separate resource (Secret), it should be named based on the KRI to simplify correlation between the `Secret` and the `MeshTrust` configuration.
+
+Proposed name:
+
+```yaml
+kri_mtrust_mesh-1_us-east-2_kuma-system_ca-1
+```
+
+> [!WARNING]
+> The naming is different when using SPIRE, since SPIRE uses `trustDomain` as a name for validation context, and `ALL` once we want all trust domains (federation)
+> https://spiffe.io/docs/latest/deploying/spire_agent/#sds-configuration
+> https://spiffe.io/docs/latest/microservices/envoy/#tls-certificates
 
 #### MeshMultiZoneService
 
