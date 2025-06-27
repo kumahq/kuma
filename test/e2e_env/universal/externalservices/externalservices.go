@@ -135,7 +135,7 @@ networking:
 				checkSuccessfulRequest("ext-srv-1.mesh", clientName, And(
 					Not(ContainSubstring("HTTPS")),
 					// Should rewrite host header
-					ContainSubstring(fmt.Sprintf(`"Host":["%s"]`, esHttpContainerName)),
+					ContainSubstring(fmt.Sprintf(`"Host":[%q]`, esHttpContainerName)),
 				))
 				checkSuccessfulRequest(esHttpHostPort, clientName, Not(ContainSubstring("HTTPS")))
 			})

@@ -192,7 +192,7 @@ func validateFormat(format Format) validators.ValidationError {
 			if field.Value == "" {
 				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
 			}
-			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
+			if !govalidator.IsJSON(fmt.Sprintf(`{%q: %q}`, field.Key, field.Value)) {
 				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
