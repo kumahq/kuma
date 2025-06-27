@@ -28,7 +28,7 @@ type MeshMultiZoneService struct {
 
 type Port struct {
 	Name *string `json:"name,omitempty"`
-	Port uint32  `json:"port"`
+	Port int32   `json:"port"`
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
 	AppProtocol core_mesh.Protocol `json:"appProtocol"`

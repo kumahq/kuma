@@ -324,7 +324,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				Endpoints: &[]meshexternalservice_api.Endpoint{
 					{
 						Address: "192.168.0.1",
-						Port:    meshexternalservice_api.Port(27017),
+						Port:    27017,
 					},
 				},
 			},

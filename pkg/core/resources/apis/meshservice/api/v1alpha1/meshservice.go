@@ -21,7 +21,7 @@ type DataplaneRef struct {
 
 type Port struct {
 	Name       string             `json:"name,omitempty"`
-	Port       uint32             `json:"port"`
+	Port       int32              `json:"port"`
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
 	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
