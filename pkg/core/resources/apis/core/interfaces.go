@@ -2,13 +2,13 @@ package core
 
 import core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
-// Port is a common abstraction for a destination port. It provides us basic information about port.
+// Port is a common abstraction for a destination port. It provides us basic information about port
 type Port interface {
 	// GetName returns port name or stringified port value. This can be used when building KRI of a destination
 	GetName() string
 	// GetValue returns port value
 	GetValue() uint32
-	// GetProtocol return protocol of a port.
+	// GetProtocol return standardized protocol name of a port
 	GetProtocol() core_mesh.Protocol
 }
 
