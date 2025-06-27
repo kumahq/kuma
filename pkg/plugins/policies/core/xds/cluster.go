@@ -58,7 +58,7 @@ func (b *ClusterBuilder) Build() *Cluster {
 func (b *ClusterBuilder) WithService(service string) *ClusterBuilder {
 	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
 		cluster.service = service
-		if len(cluster.name) == 0 {
+		if cluster.name == "" {
 			cluster.name = service
 		}
 	}))
@@ -68,7 +68,7 @@ func (b *ClusterBuilder) WithService(service string) *ClusterBuilder {
 func (b *ClusterBuilder) WithName(name string) *ClusterBuilder {
 	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
 		cluster.name = name
-		if len(cluster.service) == 0 {
+		if cluster.service == "" {
 			cluster.service = name
 		}
 	}))
