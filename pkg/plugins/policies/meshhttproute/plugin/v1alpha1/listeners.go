@@ -25,6 +25,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -33,28 +34,56 @@ func GenerateOutboundListener(
 	apiVersion core_xds.APIVersion,
 	svc meshroute_xds.DestinationService,
 	isTransparent bool,
+	kriNamingEnabled bool,
 	internalAddresses []core_xds.InternalAddress,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
 ) (*core_xds.Resource, error) {
-	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
+	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(isTransparent)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
-				StatsName:                svc.ServiceName,
-				ForwardClientCertDetails: false,
-				NormalizePath:            true,
-				InternalAddresses:        internalAddresses,
-			})).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
-				Name:    svc.Outbound.NameOrEmpty(),
-				Service: svc.ServiceName,
-				Routes:  routes,
-				DpTags:  originDPPTags,
-			})).
-			ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)))
+
+	listenerStatPrefix := ""
+	routeConfigName := envoy_names.GetOutboundRouteName(svc.ServiceName)
+	virtualHostName := svc.ServiceName
+	hcmStatsName := svc.ServiceName
+
+	if svc.Outbound.Resource != nil {
+		resourceName := svc.Outbound.Resource.String()
+
+		listenerBuilder.WithOverwriteName(resourceName)
+
+		if kriNamingEnabled {
+			listenerStatPrefix = resourceName
+			hcmStatsName = resourceName
+			virtualHostName = resourceName
+		}
+
+		if kriNamingEnabled || svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
+			routeConfigName = resourceName
+		}
+	}
+
+	filderChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
+			StatsName:                hcmStatsName,
+			ForwardClientCertDetails: false,
+			NormalizePath:            true,
+			InternalAddresses:        internalAddresses,
+		})).
+		Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
+			RouteConfigName: routeConfigName,
+			VirtualHostName: virtualHostName,
+			Routes:          routes,
+			DpTags:          originDPPTags,
+		})).
+		ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()) // TODO: https://github.com/kumahq/kuma/issues/3325
+
+	listener, err := listenerBuilder.
+		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
+		Configure(envoy_listeners.FilterChain(filderChainBuilder)).
 		Build()
+
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +107,7 @@ func generateFromService(
 ) (*core_xds.ResourceSet, error) {
 	var routes []xds.OutboundRoute
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, proxy)
 		if split == nil {
 			continue
 		}
@@ -89,6 +118,7 @@ func generateFromService(
 					clusterCache, servicesAcc,
 					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
 					meshCtx,
+					proxy,
 				)
 			}
 		}
@@ -111,11 +141,13 @@ func generateFromService(
 	}
 
 	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 
-	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, proxy.InternalAddresses, routes, dpTags)
+	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, kriNamingEnabled, proxy.InternalAddresses, routes, dpTags)
 	if err != nil {
 		return nil, err
 	}
+
 	return core_xds.NewResourceSet().Add(listener), nil
 }
 

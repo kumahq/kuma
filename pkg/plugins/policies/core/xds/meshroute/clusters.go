@@ -5,11 +5,13 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -27,6 +29,7 @@ func GenerateClusters(
 	services envoy_common.Services,
 	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
+	kriNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureKRINaming)
 	resources := core_xds.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
@@ -36,6 +39,11 @@ func GenerateClusters(
 
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
+			statName := clusterName
+			core.Log.Info("TEST", "statName", statName, "cluster", cluster)
+			if !kriNamingEnabled {
+				statName = cluster.StatName()
+			}
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
@@ -45,6 +53,7 @@ func GenerateClusters(
 					// MeshExternalService is only available through egress
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
+						Configure(envoy_clusters.CustomStatName(statName)).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
 							meshCtx.Resource,
@@ -115,7 +124,7 @@ func GenerateClusters(
 							tlsReady,
 							SniForBackendRef(realResourceRef, meshCtx, systemNamespace),
 							ServiceTagIdentities(realResourceRef, meshCtx),
-						))
+						)).Configure(envoy_clusters.CustomStatName(statName))
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
@@ -123,7 +132,7 @@ func GenerateClusters(
 					}
 				}
 			}
-
+			core.Log.Info("TEST", "statName", statName)
 			edsCluster, err := edsClusterBuilder.Build()
 			if err != nil {
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)

@@ -591,6 +591,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								"",
 								"backend",
 								envoy_common.Routes{
 									{
@@ -775,6 +776,7 @@ func otherServiceHTTPListener() core_xds.Resource {
 			ServiceName: "other-service-http",
 		},
 		false,
+		false,
 		[]core_xds.InternalAddress{},
 		[]meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
@@ -799,6 +801,7 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 			ServiceName: service,
 		},
 		false,
+		false,
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(service).Build(),
 		},
@@ -819,6 +822,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port uin
 			Protocol:    core_mesh.ProtocolHTTP,
 			ServiceName: serviceName(serviceResourceKRI, port),
 		},
+		false,
 		false,
 		[]core_xds.InternalAddress{},
 		routes,

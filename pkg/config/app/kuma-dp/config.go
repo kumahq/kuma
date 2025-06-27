@@ -232,6 +232,10 @@ type DataplaneRuntime struct {
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
 	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
 	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
+	// KRINamingEnabled enables the KRI-based naming format for Envoy resource and stat names.
+	// When set to true, the data plane proxy will generate and report stats using structured
+	// Kuma Resource Identifiers (KRIs).
+	KRINamingEnabled bool `json:"KRINamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_kri_naming_enabled"`
 }
 
 type Metrics struct {

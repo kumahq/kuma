@@ -31,7 +31,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false, nil)).
-					Configure(HttpOutboundRoute(given.service, given.routes, given.dpTags)))).
+					Configure(HttpOutboundRoute("", given.service, given.routes, given.dpTags)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

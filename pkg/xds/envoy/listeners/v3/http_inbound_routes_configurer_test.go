@@ -59,7 +59,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, true, nil)).
-					Configure(HttpInboundRoutes(given.service, given.routes)))).
+					Configure(HttpInboundRoutes("", given.service, given.routes)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

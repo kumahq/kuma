@@ -35,6 +35,7 @@ var _ = Describe("RetryConfigurer", func() {
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false, nil)).
 					Configure(HttpOutboundRoute(
+						"",
 						given.service,
 						given.routes,
 						given.dpTags,

@@ -254,6 +254,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									"",
 									"eds-cluster",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -269,6 +270,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								"",
 								"static-cluster",
 								envoy_common.Routes{{
 									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -391,6 +393,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									"",
 									"eds-cluster",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -406,6 +409,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								"",
 								"static-cluster",
 								envoy_common.Routes{{
 									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -1168,6 +1172,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 							Configure(
 								HttpOutboundRoute(
+									"",
 									"backend",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{
@@ -1701,6 +1706,7 @@ func paymentsListener() envoy_common.NamedResource {
 			Configure(HttpConnectionManager("127.0.0.1:27778", false, nil)).
 			Configure(
 				HttpOutboundRoute(
+					"",
 					"backend",
 					envoy_common.Routes{{
 						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -1724,6 +1730,7 @@ func backendListener() envoy_common.NamedResource {
 			Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 			Configure(
 				HttpOutboundRoute(
+					"",
 					"backend",
 					envoy_common.Routes{{
 						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(

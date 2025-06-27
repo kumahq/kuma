@@ -138,6 +138,10 @@ const (
 	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
 	// Available value is DELTA_GRPC
 	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
+
+	// KumaKRINaming is the annotation used to enable KRI-based naming on a per-pod basis.
+	// When set to "enabled", the sidecar will use the KRI format for Envoy resource and stat names.
+	KumaKRINaming = "kuma.io/kri-naming"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

@@ -90,6 +90,7 @@ var _ = Describe("MeshFaultInjection", func() {
 							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								listeners.HttpInboundRoutes(
+									"",
 									"backend",
 									envoy_common.Routes{
 										{

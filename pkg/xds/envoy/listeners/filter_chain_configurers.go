@@ -15,16 +15,16 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.GrpcStatsConfigurer{})
 }
 
-func Kafka(statsName string) FilterChainBuilderOpt {
+func Kafka(statPrefix string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.KafkaConfigurer{
-		StatsName: statsName,
+		StatPrefix: statPrefix,
 	})
 }
 
@@ -121,7 +121,7 @@ func (s *splitAdapter) Weight() uint32           { return s.weight }
 func (s *splitAdapter) LBMetadata() tags.Tags    { return s.lbMetadata }
 func (s *splitAdapter) HasExternalService() bool { return s.hasExternalService }
 
-func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+func TcpProxyDeprecated(statPrefix string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
 		cluster := cluster.(*envoy_common.ClusterImpl)
@@ -133,13 +133,13 @@ func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) Filt
 		})
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
-		StatsName:   statsName,
+		StatPrefix:  statPrefix,
 		Splits:      splits,
 		UseMetadata: false,
 	})
 }
 
-func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+func TcpProxyDeprecatedWithMetadata(statPrefix string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
 		cluster := cluster.(*envoy_common.ClusterImpl)
@@ -151,15 +151,15 @@ func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.C
 		})
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
-		StatsName:   statsName,
+		StatPrefix:  statPrefix,
 		Splits:      splits,
 		UseMetadata: true,
 	})
 }
 
-func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilderOpt {
+func TCPProxy(statPrefix string, splits ...envoy_common.Split) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
-		StatsName:   statsName,
+		StatPrefix:  statPrefix,
 		Splits:      splits,
 		UseMetadata: true,
 	})
@@ -239,15 +239,17 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	})
 }
 
-func HttpInboundRoutes(service string, routes envoy_common.Routes) FilterChainBuilderOpt {
+func HttpInboundRoutes(name string, service string, routes envoy_common.Routes) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
+		Name:    name,
 		Service: service,
 		Routes:  routes,
 	})
 }
 
-func HttpOutboundRoute(service string, routes envoy_common.Routes, dpTags mesh_proto.MultiValueTagSet) FilterChainBuilderOpt {
+func HttpOutboundRoute(name string, service string, routes envoy_common.Routes, dpTags mesh_proto.MultiValueTagSet) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
+		Name:    name,
 		Service: service,
 		Routes:  routes,
 		DpTags:  dpTags,

@@ -274,6 +274,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 					Configure(
 						listeners.HttpInboundRoutes(
+							"",
 							"backend",
 							envoy_common.Routes{
 								{
@@ -324,6 +325,7 @@ func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBui
 					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 					Configure(
 						listeners.HttpInboundRoutes(
+							"",
 							"backend",
 							envoy_common.Routes{
 								{

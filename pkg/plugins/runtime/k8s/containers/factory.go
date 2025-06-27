@@ -36,6 +36,7 @@ type DataplaneProxyFactory struct {
 	sidecarContainersEnabled  bool
 	virtualProbesEnabled      bool
 	applicationProbeProxyPort uint32
+	kriNamingEnabled          bool
 }
 
 func NewDataplaneProxyFactory(
@@ -48,6 +49,7 @@ func NewDataplaneProxyFactory(
 	sidecarContainersEnabled bool,
 	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
+	kriNamingEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:           controlPlaneURL,
@@ -59,6 +61,7 @@ func NewDataplaneProxyFactory(
 		sidecarContainersEnabled:  sidecarContainersEnabled,
 		virtualProbesEnabled:      virtualProbesEnabled,
 		applicationProbeProxyPort: applicationProbeProxyPort,
+		kriNamingEnabled:          kriNamingEnabled,
 	}
 }
 
@@ -313,6 +316,17 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENABLED",
 			Value: "false",
+		}
+	}
+
+	kriNamingEnabled, _, err := metadata.Annotations(podAnnotations).GetEnabledWithDefault(i.kriNamingEnabled, metadata.KumaKRINaming)
+	if err != nil {
+		return nil, err
+	}
+	if kriNamingEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_KRI_NAMING_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_KRI_NAMING_ENABLED",
+			Value: "true",
 		}
 	}
 
