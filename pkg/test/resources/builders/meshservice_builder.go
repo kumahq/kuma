@@ -2,6 +2,7 @@ package builders
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -90,10 +91,10 @@ func (m *MeshServiceBuilder) AddIntPortWithName(port, target uint32, protocol co
 }
 
 func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshServiceBuilder {
-	m.res.Spec.Identities = append(m.res.Spec.Identities, v1alpha1.MeshServiceIdentity{
+	m.res.Spec.Identities = pointer.To(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
 		Type:  v1alpha1.MeshServiceIdentityServiceTagType,
 		Value: identity,
-	})
+	}))
 	return m
 }
 

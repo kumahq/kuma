@@ -430,7 +430,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
 							AppProtocol: core_mesh.ProtocolHTTP,
 						}},
-						Identities: []meshservice_api.MeshServiceIdentity{
+						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
 								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 								Value: "backend",
@@ -533,7 +533,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
 							AppProtocol: core_mesh.ProtocolHTTP,
 						}},
-						Identities: []meshservice_api.MeshServiceIdentity{
+						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
 								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 								Value: "backend",

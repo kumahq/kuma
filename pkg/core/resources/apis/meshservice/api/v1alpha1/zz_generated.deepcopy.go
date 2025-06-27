@@ -52,8 +52,12 @@ func (in *MeshService) DeepCopyInto(out *MeshService) {
 	}
 	if in.Identities != nil {
 		in, out := &in.Identities, &out.Identities
-		*out = make([]MeshServiceIdentity, len(*in))
-		copy(*out, *in)
+		*out = new([]MeshServiceIdentity)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]MeshServiceIdentity, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 

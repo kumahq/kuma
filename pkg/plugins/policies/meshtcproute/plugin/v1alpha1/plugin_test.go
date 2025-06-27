@@ -546,7 +546,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						AppProtocol: core_mesh.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend",

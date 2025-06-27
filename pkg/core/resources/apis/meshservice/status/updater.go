@@ -123,7 +123,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		identities := buildIdentities(dpps)
 		if !reflect.DeepEqual(ms.Spec.Identities, identities) {
 			changeReasons = append(changeReasons, "identities")
-			ms.Spec.Identities = identities
+			ms.Spec.Identities = &identities
 		}
 
 		mesh := meshByKey[core_model.ResourceKey{Name: ms.Meta.GetMesh()}]
