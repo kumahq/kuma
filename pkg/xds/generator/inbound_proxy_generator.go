@@ -146,8 +146,6 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 		filterChainBuilder.
 			Configure(envoy_listeners.Kafka(localClusterName)).
 			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
-	case core_mesh.ProtocolTCP:
-		fallthrough
 	default:
 		// configuration for non-HTTP cases
 		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
