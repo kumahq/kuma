@@ -140,13 +140,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			}
 		}
 
-		if ident, ok := field.Type.(*ast.Ident); ok && strings.Contains(ident.Name, "int") && ident.Name != "int32" && ident.Name != "int64" {
-			pass.Reportf(field.Pos(), "field %s must be either int32 or int64", fieldPath)
-		} else if ptrType, ok := field.Type.(*ast.StarExpr); ok {
-			if ident, ok := ptrType.X.(*ast.Ident); ok && strings.Contains(ident.Name, "int") && ident.Name != "int32" && ident.Name != "int64" {
-				pass.Reportf(field.Pos(), "field %s must be a pointer to either int32 or int64", fieldPath)
-			}
-		}
+		isIntegerFieldInt32OrInt64(fieldPath, field, pass)
 
 		// Process the field normally
 		if isMergeable {
@@ -280,4 +274,20 @@ func stripExtension(filename string) string {
 	base := filepath.Base(filename)
 	name := strings.TrimSuffix(base, ".go")
 	return name
+}
+
+func isIntegerFieldInt32OrInt64(fieldPath string, field *ast.Field, pass *analysis.Pass) {
+	ident := &ast.Ident{}
+
+	if i, ok := field.Type.(*ast.Ident); ok{
+		ident = i
+	} else if ptrType, ok := field.Type.(*ast.StarExpr); ok {
+		if i, ok := ptrType.X.(*ast.Ident); ok {
+			ident = i
+		}
+	}
+
+	if strings.Contains(ident.Name, "int") && ident.Name != "int32" && ident.Name != "int64" {
+		pass.Reportf(field.Pos(), "field %s must be either int32 or int64", fieldPath)
+	}
 }
