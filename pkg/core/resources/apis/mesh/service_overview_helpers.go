@@ -8,8 +8,6 @@ func (t *ServiceOverviewResource) Status() Status {
 		return PartiallyDegraded
 	case mesh_proto.ServiceInsight_Service_online:
 		return Online
-	case mesh_proto.ServiceInsight_Service_offline:
-		fallthrough
 	default:
 		return Offline
 	}

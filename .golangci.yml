@@ -61,7 +61,6 @@ linters:
         - commentedOutCode
         - deferInLoop
         - docStub
-        - emptyFallthrough
         - emptyStringTest
         - exposedSyncMutex
         - filepathJoin
