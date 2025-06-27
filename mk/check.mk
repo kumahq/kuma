@@ -63,16 +63,8 @@ hadolint:
 	find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile*" ! -iname "*dockerignore*" -exec $(HADOLINT) {} \;
 
 .PHONY: lint
-lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint api-lint
+lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
 
-.PHONY: api-lint
-api-lint:
-    # policies
-	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./pkg/plugins/policies/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
-	# resources
-	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./pkg/core/resources/apis/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
-	# common
-	go run $(TOOLS_DIR)/ci/api-linter/main.go github.com/kumahq/kuma/api/common/v1alpha1
 
 .PHONY: check
 check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)

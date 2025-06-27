@@ -66,8 +66,9 @@ generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-import
 	POLICIES_DIR=$(RESOURCES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-config
+	$(MAKE) api-lint/resources
 
-generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
+generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm api-lint/policies ## Generate all policies written as plugins
 
 .PHONY: clean/policies
 clean/policies: $(addprefix clean/policy/,$(policies))
@@ -135,3 +136,15 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
+
+.PHONY: api-lint/policies
+api-lint/policies:
+	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|') \
+		github.com/kumahq/kuma/api/common/v1alpha1
+
+.PHONY: api-lint/resources
+api-lint/resources:
+	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(RESOURCES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
+
+.PHONY: api-lint
+api-lint: api-lint/policies api-lint/resources
