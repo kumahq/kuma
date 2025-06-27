@@ -152,7 +152,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
 			if hasAnnotations(field, defaultAnnotation, optionalAnnotation) {
-				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation, optionalAnnotation}, ", "))
+				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, defaultAnnotation+", "+optionalAnnotation)
 			}
 		} else {
 			_, isValid := determineNonMergeableCategory(field)
