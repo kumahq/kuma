@@ -34,7 +34,7 @@ func (h *httpMeshGatewayInspectClient) InspectDataplanes(ctx context.Context, me
 	if err != nil {
 		return api_server_types.GatewayDataplanesInspectEntryList{}, errors.Wrap(err, "could not construct the url")
 	}
-	req, err := http.NewRequest("GET", resUrl.String(), nil)
+	req, err := http.NewRequest("GET", resUrl.String(), http.NoBody)
 	if err != nil {
 		return api_server_types.GatewayDataplanesInspectEntryList{}, err
 	}
