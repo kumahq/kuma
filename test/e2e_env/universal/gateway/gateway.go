@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"path"
 	"strconv"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -346,7 +345,7 @@ spec:
 			cert, key, err := CreateCertsFor("example.kuma.io")
 			Expect(err).ToNot(HaveOccurred())
 
-			payload := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+			payload := base64.StdEncoding.EncodeToString([]byte(key + "\n" + cert))
 
 			// Create the TLS secret containing the self-signed certificate and corresponding private key.
 			Expect(
