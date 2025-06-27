@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"reflect"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func ExecuteStoreTests(

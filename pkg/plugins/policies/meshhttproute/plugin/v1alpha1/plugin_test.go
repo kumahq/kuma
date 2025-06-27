@@ -282,7 +282,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 				Spec: &meshservice_api.MeshService{
 					Selector: meshservice_api.Selector{
-						DataplaneTags: meshservice_api.DataplaneTags{
+						DataplaneTags: &map[string]string{
 							mesh_proto.ServiceTag: "backend",
 						},
 					},
@@ -1778,7 +1778,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8080),
+						TargetPort:  pointer.To(intstr.FromInt(8080)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},

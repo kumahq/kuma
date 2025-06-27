@@ -2,7 +2,6 @@ package generate
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"maps"
 	"reflect"
 	"slices"
@@ -25,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )

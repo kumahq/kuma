@@ -10,7 +10,7 @@ import (
 
 type Selector struct {
 	DataplaneTags *map[string]string `json:"dataplaneTags,omitempty"`
-	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`
+	DataplaneRef  *DataplaneRef      `json:"dataplaneRef,omitempty"`
 }
 
 type DataplaneRef struct {
@@ -19,7 +19,7 @@ type DataplaneRef struct {
 
 type Port struct {
 	Name       *string             `json:"name,omitempty"`
-	Port       uint32             `json:"port"`
+	Port       uint32              `json:"port"`
 	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
 	// +kubebuilder:validation:Optional
@@ -47,7 +47,7 @@ type MeshService struct {
 	// +listType=map
 	// +listMapKey=port
 	// +listMapKey=appProtocol
-	Ports      []Port                `json:"ports"`
+	Ports []Port `json:"ports"`
 	// +kubebuilder:default=[]
 	// +kubebuilder:validation:Optional
 	Identities []MeshServiceIdentity `json:"identities"`

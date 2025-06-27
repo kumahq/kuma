@@ -3,11 +3,14 @@ package v1alpha1_test
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"os"
 	"path"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -37,8 +40,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 func getResource(

@@ -2,7 +2,6 @@ package generate_test
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"net"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	cache_mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
@@ -246,7 +246,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("81"),
 					Port:        81,
-					TargetPort:  intstr.FromInt(81),
+					TargetPort:  pointer.To(intstr.FromInt(81)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
