@@ -261,7 +261,7 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 		metrics = bytes.ReplaceAll(metrics, []byte("# EOF"), []byte(""))
 
 		buf.Write(metrics)
-		buf.Write([]byte("\n"))
+		buf.WriteString("\n")
 	}
 
 	processedMetrics := append(processNewlineChars(buf.Bytes()), '\n')
@@ -270,7 +270,7 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 
 	if contentType == FmtOpenMetrics_1_0_0 || contentType == FmtOpenMetrics_0_0_1 {
 		// make metrics OpenMetrics compliant
-		buf.Write([]byte("# EOF\n"))
+		buf.WriteString("# EOF\n")
 	}
 
 	return buf.Bytes()

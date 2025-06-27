@@ -65,7 +65,6 @@ linters:
         - importShadow
         - nilValReturn
         - paramTypeCombine
-        - preferStringWriter
         - rangeValCopy
         - regexpSimplify
         - singleCaseSwitch

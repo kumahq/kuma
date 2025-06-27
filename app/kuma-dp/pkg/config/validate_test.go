@@ -38,7 +38,7 @@ var _ = Describe("ValidateTokenPath", func() {
 				invalidTokenFile, err := os.CreateTemp("", "")
 				Expect(err).ToNot(HaveOccurred())
 
-				_, err = invalidTokenFile.Write([]byte(given.token))
+				_, err = invalidTokenFile.WriteString(given.token)
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
