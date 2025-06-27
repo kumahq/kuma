@@ -4,22 +4,29 @@
 
 Technical Story: https://github.com/kumahq/kuma/issues/13266
 
+Supersedes: https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/036-internal-listeners.md
+
 ## Context and Problem Statement
 
 We use resource names to identify listeners, clusters, routes, virtual hosts and secrets in the xDS APIs.
 These names appear in metrics, logs, and debug endpoints (config_dump), and they are often used for monitoring, filtering, and diagnostics.
 
-It's important to know the difference between internal resources (the ones that are defined by Kuma itself, and they usually do not concern the end users) and external resources (the ones that are defined indirectly by the user and the users are interested in).
-For example, clusters like `kuma:envoy:admin` or `_kuma:dynamicconfig` are internal to Kuma, while `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport` cluster is an external resource.
+It's important to know the difference between system resources (the ones that are defined by Kuma itself, and they usually do not concern the end users) and user resources (the ones that are defined indirectly by the user and the users are interested in).
+For example, clusters like `kuma:envoy:admin` or `_kuma:dynamicconfig` are system resources, while `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport` cluster is user resource.
 
 Currently, there is inconsistency in how these resource names are formed, some of them have a `_kuma` prefix, some of them just contain `kuma` and some are free form.
 
 Some internal resources do not map clearly to Kuma resources in the data store, making it difficult to relate metrics to Kuma abstractions.
 
-There are also resources that are in a bit of a gray area, like `meshtrace_datadog` which is a cluster created for `MeshTrace` policy.
-It seems internal, but it could be traced down to MeshTrace resource `kri_meshtrace_mesh-1__kuma-system_my-meshtrace_`.
+There are also resources that seem to be in a bit of a gray area, like `meshtrace_datadog` which is a cluster created for `MeshTrace` policy.
+It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-meshtrace_` and if a cluster operator has problems with tracing collection it might be something to look at.
 
-#### Examples of kuma resource names
+To make it easier to distinguish between the two types we introduce the following definition:
+
+- **User resource** - any resource that comes from `Mesh*Service` and `Mesh*Route` definition
+- **System resource** - any resource that is not a user resource
+
+### Kuma system resource names
 
 Listeners:
 - inbound
@@ -74,11 +81,6 @@ Istio doesn't seem to be following any naming convention:
 
 ### Looking at a resource name I want to easily relate it to Kuma concepts
 
-### As a user I want my MeshProxyPatch to continue working after the change
-
-I don't think that's going to be possible.
-In MeshProxyPatch you can use `name` matcher to match a resource name but if we change the name of the resource, it will not match anymore.
-
 ### As a user I want to easily exclude all stats related to internal resources from a query
 
 So instead 
@@ -93,7 +95,9 @@ we can do:
 sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_kuma*}.as_count()
 ```
 
-**Is this a valid use case if we have profiles in MeshMetric?**
+You might be tempted to think that this use case is already covered by the `MeshMetric` profiles, 
+and it partially is (the end result is the same) but this use case compliments it by making the profiles easier to implement and maintain.
+It also allows users to do their own filtering easier.
 
 ### As an operator I want to drop all stats related to internal resources
 
@@ -111,13 +115,19 @@ processors:
             value: "^_.*"  # matches if envoy_cluster starts with _
 ```
 
-**Is this a valid use case if we have profiles in MeshMetric?**
-
 ### As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
 
 ### As a Kuma developer I want to distinguish between internal and external resources in Envoy
 
 ### As a Kuma developer I want to distinguish between external resources exposed and not exposed in metrics
+
+## Non use cases
+
+### As a user I want my MeshProxyPatch to continue working after the change
+
+This is not possible.
+In MeshProxyPatch you can use `name` matcher to match a resource name but if we change the name of the resource, it will not match anymore.
+The feature will be behind a feature flag so that nothing breaks unexpectedly but migration of MeshProxyPatch resources will be required.
 
 ## Design
 
