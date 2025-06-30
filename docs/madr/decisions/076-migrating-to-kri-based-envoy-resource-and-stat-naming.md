@@ -25,7 +25,7 @@ This decision applies to environments using the new service discovery model base
 * `MeshExternalService`
 * `MeshMultiZoneService`
 
-These and the legacy `kuma.io/service` tag represent two different modes of describing the same types of services in the mesh. Since `kuma.io/service` is deprecated and will be removed in the future, this migration only covers naming changes for resources generated from the new model. Updating or supporting naming for the legacy mode is out of scope.
+These and the legacy `kuma.io/service` tag represent two different modes of describing the same types of services in the mesh. Since `kuma.io/service` will be removed in the future, this migration only covers naming changes for resources generated from the new model. Updating or supporting naming for the legacy mode is out of scope.
 
 This document also does not cover renaming of Envoy resources that do not currently map directly to real Kuma resources like `MeshHTTPRoute`, `Dataplane`, or `MeshExternalService`. This includes resources that are generated internally by the control plane and are not tied to a specific user-defined resource. Examples include:
 
