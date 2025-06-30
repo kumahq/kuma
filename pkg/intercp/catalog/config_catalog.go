@@ -130,7 +130,7 @@ func NewConfigCatalogReader(resManager manager.ReadOnlyResourceManager) Reader {
 func (c *ConfigCatalogReader) Instances(ctx context.Context) ([]Instance, error) {
 	cfg := system.NewConfigResource()
 	if err := c.resManager.Get(ctx, cfg, store.GetBy(CatalogKey)); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			return []Instance{}, nil
 		}
 		return nil, err

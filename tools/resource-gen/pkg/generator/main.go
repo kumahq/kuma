@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
@@ -460,6 +461,7 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}),
 	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
 	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
+	reflect.TypeOf(system_proto.Zone{}),
 }
 
 var ProtoTypeToType = map[string]reflect.Type{

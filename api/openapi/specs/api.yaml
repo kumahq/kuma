@@ -14,9 +14,9 @@ paths:
         '200':
           $ref: '#/components/responses/IndexResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -27,9 +27,9 @@ paths:
         '200':
           $ref: '#/components/responses/ResourceTypeDescriptionListResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /global-insight:
     get:
       operationId: get-global-insight
@@ -40,9 +40,9 @@ paths:
         '200':
           $ref: '#/components/responses/GlobalInsightResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -76,49 +76,9 @@ paths:
         '200':
           $ref: '#/components/responses/InspectRulesResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_overview:
-    get:
-      operationId: getDataplaneOverview
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-        - in: path
-          name: name
-          required: true
-          description: The name of the DPP within the mesh to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GetDataplaneOverviewResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/_overview:
-    get:
-      operationId: getDataplaneOverviewList
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       operationId: get-dataplanes-xds-config
@@ -158,9 +118,189 @@ paths:
         '200':
           $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_layout:
+    get:
+      operationId: get-dataplanes-layout
+      summary: Get networking layout for this dataplane
+      description: Returns detailed dataplane networking layout with most important information on dataplane and list of its inbounds and outbounds
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the layout for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the layout for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneNetworkingLayoutResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_policies:
+    get:
+      operationId: get-proxy-policy-conf
+      summary: Get proxy policies for this dataplane
+      description: Returns proxy level policy configuration derived from combining all proxy policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyPolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-kri}/_policies:
+    get:
+      operationId: get-inbound-policy-conf
+      summary: Get policies for this inbound
+      description: Returns inbound policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: inbound-kri
+          required: true
+          description: The name of the Inbound from DPP to get the policies for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/InboundPolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policies:
+    get:
+      operationId: get-outbound-policy-conf
+      summary: Get policies for this outbound
+      description: Returns outbound policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: The KRI of the Outbound to get the policies for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OutboundPolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_routes:
+    get:
+      operationId: get-outbound-routes
+      summary: Get routes configuration for this outbound
+      description: Returns routes configuration derived from combining all routes on this outbound
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutesListResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{outbound-kri}/_routes/{route-kri}/_policies:
+    get:
+      operationId: get-route-policy-conf
+      summary: Get policies for this route
+      description: Returns route policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: outbound-kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+        - in: path
+          name: route-kri
+          required: true
+          description: The KRI of the Route to get the configuration for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutePolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -211,9 +351,9 @@ paths:
         '200':
           $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
     get:
       operationId: inspect-hostnames
@@ -247,11 +387,11 @@ paths:
         '200':
           $ref: '#/components/responses/InspectHostnamesResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '404':
           $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -316,10 +456,6 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: './common/resource.yaml#/components/schemas/Meta'
-        - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
     DataplaneXDSConfig:
       type: object
       title: DataplaneXDSConfig
@@ -567,6 +703,32 @@ components:
         name:
           type: string
           example: east
+    DataplaneNetworkingLayout:
+      type: object
+      title: DataplaneLayout
+      description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+      required: [ kri, labels, inbounds, outbounds ]
+      properties:
+        kri:
+          type: string
+          example: kri_dp_default_default_kuma-demo_demo-app-75ff54499c-ttwd7_http-port
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "k8s.kuma.io/namespace": "kuma-demo"
+            "kuma.io/display-name": "demo-app"
+            "kuma.io/mesh": "default"
+            "kuma.io/origin": "zone"
+        inbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneInbound'
+        outbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneOutbound'
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -604,28 +766,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneXDSConfig'
-    GetDataplaneOverviewResponse:
-      description: A response containing the overview of a dataplane.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/DataplaneOverviewWithMeta'
-    GetDataplaneOverviewListResponse:
-      description: A response containing the overview of a dataplane.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              total:
-                type: integer
-                example: 200
-              next:
-                type: string
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DataplaneOverviewWithMeta'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:
@@ -641,6 +781,42 @@ components:
           examples:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
+    DataplaneNetworkingLayoutResponse:
+      description: A response containing dataplane networking layout.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneNetworkingLayout'
+    ProxyPolicyConfResponse:
+      description: A response containing policies configuration for selected dataplane
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+    InboundPolicyConfResponse:
+      description: A response containing policies configuration for selected inbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/InboundPoliciesList'
+    OutboundPolicyConfResponse:
+      description: A response containing policies configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+    RoutesListResponse:
+      description: A response containing routes configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/RoutesList'
+    RoutePolicyConfResponse:
+      description: A response containing policies configuration for selected route
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
     BadRequest:
       description: Bad Request
       content:

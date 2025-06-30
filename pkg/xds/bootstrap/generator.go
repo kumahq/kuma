@@ -124,11 +124,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsKeyPath:       request.MetricsResources.KeyPath,
 		SystemCaPath:         request.SystemCaPath,
 		TransparentProxy:     request.TransparentProxy,
-		UseDeltaXds:          b.deltaXdsEnabled,
-	}
-
-	if params.Features.HasFeature(xds_types.FeatureDeltaGRPC) {
-		params.UseDeltaXds = true
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -357,7 +352,7 @@ func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.Bo
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
 	if err := b.resManager.Get(ctx, core_mesh.NewMeshResource(), core_store.GetByKey(mesh, core_model.NoMesh)); err != nil {
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
 			return verr.OrNil()
@@ -414,11 +409,6 @@ func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
 func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
 	if operatingSystem == "" { // backwards compatibility
 		return b.config.Params.AdminAccessLogPath
-	}
-	if b.config.Params.AdminAccessLogPath == os.DevNull && operatingSystem == "windows" {
-		// when AdminAccessLogPath was not explicitly set and DPP OS is Windows we need to set window specific DevNull.
-		// otherwise when CP is on Linux, we would set /dev/null which is not valid on Windows.
-		return "NUL"
 	}
 	return b.config.Params.AdminAccessLogPath
 }

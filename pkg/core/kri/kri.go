@@ -72,6 +72,14 @@ func FromString(s string) (Identifier, error) {
 	}, nil
 }
 
+func MustFromString(s string) Identifier {
+	id, err := FromString(s)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 func NoSectionName(id Identifier) Identifier {
 	idCopy := id
 	idCopy.SectionName = ""

@@ -43,7 +43,7 @@ func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh 
 	meshRes := core_mesh.NewMeshResource()
 	err := s.store.Get(ctx, meshRes, core_store.GetByKey(mesh, model.NoMesh))
 	if err != nil {
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			return nil // when Mesh no longer exist we should be able to safely delete a secret because it's not referenced anywhere
 		}
 		return err

@@ -198,7 +198,7 @@ func (a *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMeta
 	backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
-		if core_store.IsResourceNotFound(err) {
+		if core_store.IsNotFound(err) {
 			return retry.RetryableError(errors.Errorf(
 				"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
 				proxyId, resource.Descriptor().Name))

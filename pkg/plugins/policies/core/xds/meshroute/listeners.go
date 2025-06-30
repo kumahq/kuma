@@ -148,7 +148,7 @@ func collectMeshExternalService(
 	return &DestinationService{
 		Outbound:    outbound,
 		Protocol:    protocol,
-		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
+		ServiceName: mes.DestinationName(mes.Spec.Match.Port),
 	}
 }
 
@@ -190,14 +190,14 @@ func collectServiceTagService(
 func GetServiceProtocolPortFromRef(
 	meshCtx xds_context.MeshContext,
 	ref *resolve.RealResourceBackendRef,
-) (string, core_mesh.Protocol, uint32, bool) {
+) (string, core_mesh.Protocol, int32, bool) {
 	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
 	case common_api.MeshExternalService:
 		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource))
 		if mes == nil {
 			return "", "", 0, false
 		}
-		port := uint32(mes.Spec.Match.Port)
+		port := mes.Spec.Match.Port
 		service := mes.DestinationName(port)
 		protocol := mes.Spec.Match.Protocol
 		return service, protocol, port, true

@@ -270,7 +270,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			r.SetMeta(nil)
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
-				if opts.SkipConflictResource && store.IsResourceAlreadyExists(err) {
+				if opts.SkipConflictResource && store.IsAlreadyExists(err) {
 					nackError = std_errors.Join(nackError, err)
 				} else {
 					return err

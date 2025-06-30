@@ -91,7 +91,7 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme kube_core.URIS
 		Host:     net.JoinHostPort(podAddr, strconv.Itoa(port)),
 	}
 
-	upstreamReq, err := http.NewRequest(http.MethodGet, upstreamURL.String(), nil)
+	upstreamReq, err := http.NewRequest(http.MethodGet, upstreamURL.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

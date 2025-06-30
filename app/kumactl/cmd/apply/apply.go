@@ -74,7 +74,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					client := &http.Client{
 						Timeout: timeout,
 					}
-					req, err := http.NewRequest("GET", ctx.args.file, nil)
+					req, err := http.NewRequest("GET", ctx.args.file, http.NoBody)
 					if err != nil {
 						return errors.Wrap(err, "error creating new http request")
 					}
@@ -167,7 +167,7 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 
 	meta := res.GetMeta()
 	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			cerr := rs.Create(warnContext, res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreateWithLabels(meta.GetLabels()))
 			return warnings, cerr
 		} else {

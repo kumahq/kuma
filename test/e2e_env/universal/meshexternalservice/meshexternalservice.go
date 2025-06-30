@@ -44,7 +44,7 @@ networking:
 `, meshName))
 	}
 
-	meshExternalService := func(service, host, meshName string, port int, tls bool, caCert []byte) *meshexternalservice_api.MeshExternalServiceResource {
+	meshExternalService := func(service, host, meshName string, port int32, tls bool, caCert []byte) *meshexternalservice_api.MeshExternalServiceResource {
 		mes := &meshexternalservice_api.MeshExternalServiceResource{
 			Meta: &test_model.ResourceMeta{
 				Mesh: meshName,
@@ -61,7 +61,7 @@ networking:
 				},
 				Endpoints: &[]meshexternalservice_api.Endpoint{{
 					Address: host,
-					Port:    meshexternalservice_api.Port(port),
+					Port:    port,
 				}},
 			},
 			Status: &meshexternalservice_api.MeshExternalServiceStatus{},

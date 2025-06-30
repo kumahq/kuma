@@ -32,7 +32,7 @@ func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string,
 	if err != nil {
 		return nil, errors.Wrap(err, "could not construct the url")
 	}
-	req, err := http.NewRequest("GET", resUrl.String(), nil)
+	req, err := http.NewRequest("GET", resUrl.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

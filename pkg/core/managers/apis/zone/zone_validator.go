@@ -19,7 +19,7 @@ func (v *Validator) ValidateDelete(ctx context.Context, name string) error {
 	zi := system.NewZoneInsightResource()
 	validationErr := &validators.ValidationError{}
 	if err := v.Store.Get(ctx, zi, store.GetByKey(name, model.NoMesh)); err != nil {
-		if store.IsResourceNotFound(err) {
+		if store.IsNotFound(err) {
 			// if ZoneInsight isn't found we allow to delete Zone since
 			// there is no information about Online/Offline status
 			return nil

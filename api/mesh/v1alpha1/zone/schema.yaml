@@ -1,0 +1,13 @@
+components:
+  schemas:
+    Zone:
+      properties:
+        enabled:
+          description: |-
+            enable allows to turn the zone on/off and exclude the whole zone from
+            balancing traffic on it
+          type: boolean
+      type: object
+info:
+  x-ref-schema-name: Zone
+openapi: 3.1.0

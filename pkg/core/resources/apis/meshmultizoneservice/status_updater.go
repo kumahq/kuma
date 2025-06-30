@@ -94,7 +94,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 
 	for _, mzSvc := range mzSvcList.Items {
 		var matched []meshmzservice_api.MatchedMeshService
-		ports := map[uint32]meshservice_api.Port{}
+		ports := map[int32]meshservice_api.Port{}
 		for _, svc := range msList.Items {
 			if matchesService(mzSvc, svc) {
 				ri := kri.From(svc, "")
@@ -119,7 +119,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			mzSvc.Status.MeshServices = matched
 			log.Info("updating matched mesh services", "matchedMeshServices", matched)
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
-				if errors.Is(err, &store.ResourceConflictError{}) {
+				if store.IsConflict(err) {
 					log.Info("couldn't update mesh multi zone service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
 				} else {
 					log.Error(err, "could not update matched mesh services mesh services")
