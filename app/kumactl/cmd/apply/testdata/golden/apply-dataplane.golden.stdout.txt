@@ -1,1 +1,1 @@
-Resource type="Dataplane" mesh="default" name="sample" Created
+resource type="Dataplane" mesh="default" name="sample" Created

@@ -1,2 +1,2 @@
-Resource type="Dataplane" mesh="default" name="sample1" Created
-Resource type="Dataplane" mesh="default" name="sample2" Created
+resource type="Dataplane" mesh="default" name="sample1" Created
+resource type="Dataplane" mesh="default" name="sample2" Created

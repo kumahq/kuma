@@ -149,7 +149,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					if isUpdate {
 						action = "Updated"
 					}
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Resource type=%q mesh=%q name=%q %s\n", resource.Descriptor().Name, resource.GetMeta().GetMesh(), resource.GetMeta().GetName(), action)
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "resource type=%q mesh=%q name=%q %s\n", resource.Descriptor().Name, resource.GetMeta().GetMesh(), resource.GetMeta().GetName(), action)
 					for _, w := range warnings {
 						if _, err := fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", w); err != nil {
 							return err

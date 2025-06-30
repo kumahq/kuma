@@ -1,1 +1,1 @@
-Resource type="Mesh" mesh="" name="sample" Created
+resource type="Mesh" mesh="" name="sample" Created
