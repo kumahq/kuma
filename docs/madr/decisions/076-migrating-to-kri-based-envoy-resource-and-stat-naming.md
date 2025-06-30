@@ -106,7 +106,7 @@ kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 
 While technically correct and traceable, this approach significantly increases metrics cardinality compared to the current convention (e.g., `localhost_5050`), and would cause noticeable regressions in performance, cost, and compatibility with existing observability tooling. To mitigate this, we are considering alternative naming schemes for these inbound-related resources:
 
-#### Option 1: Replace dataplane name with a simple keyword (`self` or `this`)
+#### Option 1: Replace Dataplane name with a simple keyword (`self` or `this`)
 
 Use a naming format like `{prefix}_{sectionName}`, where prefix is a static term such as `self` or `this`. Example:
 
@@ -120,6 +120,9 @@ This would apply to both resource names and stat names for non-internal inbounds
 
 * No increase in metric cardinality
 * Minimal changes to existing tooling: `localhost_*` just becomes `self_*` or `this_*`
+* The name does not look like an internal resource (no `_kuma_` or `_` prefix), avoiding confusion with system-generated resources
+* Absence of the `kri` prefix makes it obvious that this is not a KRI-formatted name, signaling a separate handling case and reducing false expectations in tooling
+* Since the name in Kubernetes deployments doesn’t include pod-specific data, it avoids metric churn during pod restarts and keeps time-series data consistent and easier to query
 
 **Drawbacks:**
 
@@ -130,12 +133,11 @@ This would apply to both resource names and stat names for non-internal inbounds
 
 * Provides no more or less value than the current `localhost_*` naming scheme
 
-#### Option 2: Treat inbounds as "restricted" and use `_kuma_{prefix}_{sectionName}` format
+#### Option 2: Treat inbounds as "system" resources and use `_kuma_{prefix}_{sectionName}` format
 
-Update the [Internal listeners naming convention](036-internal-listeners.md) and [Resource Identifier](070-resource-identifier.md) MADRs by:
+Adjust the **Standardized Naming for internal xDS Resources** and [Resource Identifier](070-resource-identifier.md) MADRs by:
 
-* Renaming `internal` resources to `restricted`
-* Including non-internal inbounds that correlate to a `Dataplane` in the `restricted` category
+* Including non-internal inbounds that correlate to a `Dataplane` in the `system` category
 * Using names like `_kuma_self_5050` or `_kuma_this_5050`
 
 **Benefits:**
@@ -148,6 +150,10 @@ Update the [Internal listeners naming convention](036-internal-listeners.md) and
 
 * Might confuse users and tooling that ignore `_kuma_*` or `_`-prefixed resources, expecting them to be internal and non-essential
 * Requires clear documentation and possible GUI and dashboard exceptions
+
+**Neutral:**
+
+* Provides no more or less value than the current `localhost_*` naming scheme
 
 #### Option 3: Use modified KRI with placeholder in place of Dataplane name
 
@@ -162,6 +168,35 @@ Adapt the existing KRI naming format to exclude the dataplane name, replacing it
 * Inherits all drawbacks of previous approaches
 * Smaller increase in metric cardinality compared to including the full `Dataplane` name, but still unnecessarily elevated due to mesh, zone, and namespace being part of the name (even though mesh and namespace are already available as metric labels)
 * Including `zone` may cause further confusion or inconsistency, depending on whether `zone` is also captured in the labels
+
+#### Option 4: Use full KRI name for resources, simplified name for stats
+
+In this option, the Envoy **resource names** (used in xDS configuration) would follow the full KRI format as originally defined:
+
+```
+kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
+```
+
+However, the **stat names** would use a simplified format as described in earlier options, for example:
+
+```
+self_5050
+```
+
+This decouples stat name cardinality from resource naming, allowing us to retain KRI for traceability and tooling while avoiding excessive metric explosion.
+
+**Benefits:**
+
+* No increase in metric cardinality
+* Keeps the xDS resources traceable via full KRI names
+* One side (stats or resources) remains compatible with the original KRI format
+
+**Drawbacks:**
+
+* Breaks the promise in the Resource Identifier MADR that stat names and resource names would be aligned and consistent
+* Makes it harder to correlate stats with resources in tooling like the Kuma GUI, which would now need to handle both formats separately
+* Requires dual parsing and matching logic in Kuma GUI (e.g., different strategies for xDS config vs. stats)
+* Increases implementation complexity and potential for confusion when debugging or inspecting proxy behavior
 
 ### Impact on MeshProxyPatch policies
 
