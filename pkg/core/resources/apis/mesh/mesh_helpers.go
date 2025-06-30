@@ -103,7 +103,7 @@ func (m *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.C
 	return nil
 }
 
-var durationRE = regexp.MustCompile("^([0-9]+)(y|w|d|h|m|s|ms)$")
+var durationRE = regexp.MustCompile(`^(\d+)(y|w|d|h|m|s|ms)$`)
 
 // ParseDuration parses a string into a time.Duration
 func ParseDuration(durationStr string) (time.Duration, error) {

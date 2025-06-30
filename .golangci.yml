@@ -55,33 +55,21 @@ linters:
     gocritic:
       disabled-checks:
         - appendAssign
-        - appendCombine
         - builtinShadow
         - commentedOutCode
         - deferInLoop
         - docStub
-        - emptyFallthrough
-        - emptyStringTest
         - exposedSyncMutex
         - filepathJoin
         - hugeParam
         - importShadow
-        - nestingReduce
         - nilValReturn
         - paramTypeCombine
-        - preferStringWriter
         - rangeValCopy
-        - regexpSimplify
         - singleCaseSwitch
         - sloppyReassign
-        - sprintfQuotedString
-        - stringConcatSimplify
-        - stringXbytes
-        - typeAssertChain
-        - typeDefFirst
         - unnamedResult
         - whyNoLint
-        - yodaStyleExpr
       enable-all: true
     gomodguard:
       blocked:
@@ -192,7 +180,14 @@ linters:
       - (^|/)vendored($|/)
       - pkg/transparentproxy/iptables/builder
 issues:
+  # Fix found issues (if it's supported by the linter).
   fix: true
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  max-same-issues: 0
 formatters:
   enable:
     - gci

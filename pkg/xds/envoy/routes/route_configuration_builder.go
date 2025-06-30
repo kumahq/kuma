@@ -52,7 +52,7 @@ func (b *RouteConfigurationBuilder) Build() (envoy.NamedResource, error) {
 				return nil, err
 			}
 		}
-		if len(routeConfiguration.GetName()) == 0 {
+		if routeConfiguration.GetName() == "" {
 			return nil, errors.New("route configuration name is undefined")
 		}
 		return &routeConfiguration, nil

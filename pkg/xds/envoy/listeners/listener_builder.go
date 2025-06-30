@@ -10,6 +10,14 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
+// ListenerBuilder is responsible for generating an Envoy listener
+// by applying a series of ListenerConfigurers.
+type ListenerBuilder struct {
+	apiVersion  core_xds.APIVersion
+	configurers []v3.ListenerConfigurer
+	name        string
+}
+
 // ListenerBuilderOpt is a configuration option for ListenerBuilder.
 //
 // The goal of ListenerBuilderOpt is to facilitate fluent ListenerBuilder API.
@@ -59,14 +67,6 @@ func NewOutboundListenerBuilder(
 func (b *ListenerBuilder) WithOverwriteName(name string) *ListenerBuilder {
 	b.name = name
 	return b
-}
-
-// ListenerBuilder is responsible for generating an Envoy listener
-// by applying a series of ListenerConfigurers.
-type ListenerBuilder struct {
-	apiVersion  core_xds.APIVersion
-	configurers []v3.ListenerConfigurer
-	name        string
 }
 
 // Configure configures ListenerBuilder by adding individual ListenerConfigurers.
