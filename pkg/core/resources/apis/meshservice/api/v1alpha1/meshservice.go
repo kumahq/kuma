@@ -19,7 +19,7 @@ type DataplaneRef struct {
 
 type Port struct {
 	Name       *string             `json:"name,omitempty"`
-	Port       uint32              `json:"port"`
+	Port       int32              `json:"port"`
 	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
 	// +kubebuilder:validation:Optional

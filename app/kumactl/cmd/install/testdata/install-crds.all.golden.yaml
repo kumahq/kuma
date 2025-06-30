@@ -2415,6 +2415,7 @@ spec:
                       type: string
                     port:
                       description: Port of the endpoint
+                      format: int32
                       maximum: 65535
                       minimum: 1
                       type: integer
@@ -2443,6 +2444,7 @@ spec:
                 properties:
                   port:
                     description: Port defines a port to which a user does request.
+                    format: int32
                     maximum: 65535
                     minimum: 1
                     type: integer

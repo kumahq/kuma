@@ -69,7 +69,7 @@ func Api() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest("GET", kubernetes.Cluster.GetKuma().GetAPIServerAddress()+given.path, nil)
+				req, err := http.NewRequest("GET", kubernetes.Cluster.GetKuma().GetAPIServerAddress()+given.path, http.NoBody)
 				g.Expect(err).ToNot(HaveOccurred())
 				req.Header.Add("authorization", "Bearer "+token)
 				r, err := http.DefaultClient.Do(req)
