@@ -1826,13 +1826,13 @@ func backendListener() envoy_common.NamedResource {
 		)).MustBuild()
 }
 
-func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port uint32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
+func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
 		envoy_common.APIV3,
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
-				Port:     port,
+				Port:     uint32(port),
 				Resource: &serviceResourceKRI,
 			},
 			Protocol:    core_mesh.ProtocolHTTP,
@@ -1847,7 +1847,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port uin
 	return *listener
 }
 
-func serviceName(id kri.Identifier, port uint32) string {
+func serviceName(id kri.Identifier, port int32) string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	Expect(err).ToNot(HaveOccurred())
 	return destinationname.LegacyName(id, desc.ShortName, port)
