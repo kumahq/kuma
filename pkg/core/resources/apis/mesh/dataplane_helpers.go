@@ -9,14 +9,10 @@ import (
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -242,35 +238,4 @@ func (d *DataplaneResource) Hash() []byte {
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
-}
-
-func (d *DataplaneResource) AsOutbounds(resolver resolve.LabelResourceIdentifierResolver) xds_types.Outbounds {
-	var outbounds xds_types.Outbounds
-	for _, o := range d.Spec.Networking.Outbound {
-		if o.BackendRef != nil {
-			// convert proto BackendRef to common_api.BackendRef
-			backendRef := common_api.BackendRef{
-				TargetRef: common_api.TargetRef{
-					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
-					Name:   pointer.To(o.BackendRef.Name),
-					Labels: pointer.To(o.BackendRef.Labels),
-				},
-				Port: pointer.To(o.BackendRef.Port),
-			}
-			ref, ok := resolve.BackendRef(d.GetMeta(), backendRef, resolver)
-			if !ok {
-				continue
-			}
-			if ref.ReferencesRealResource() {
-				outbounds = append(outbounds, &xds_types.Outbound{
-					Address:  o.Address,
-					Port:     o.Port,
-					Resource: ref.RealResourceBackendRef().Resource,
-				})
-			}
-		} else {
-			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
-		}
-	}
-	return outbounds
 }

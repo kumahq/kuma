@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -27,12 +28,12 @@ func (m *MeshServiceResource) findPort(port int32) (Port, bool) {
 
 func (m *MeshServiceResource) FindSectionNameByPort(port int32) (string, bool) {
 	if port, found := m.findPort(port); found {
-		return port.GetNameOrStringifyPort(), true
+		return port.GetName(), true
 	}
 	return "", false
 }
 
-func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
+func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Name == name {
 			return p, true
@@ -101,7 +102,7 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     uint32(port.Port),
-				Resource: pointer.To(kri.From(t, port.GetNameOrStringifyPort())),
+				Resource: pointer.To(kri.From(t, port.GetName())),
 			})
 		}
 	}
@@ -130,17 +131,17 @@ func (t *MeshServiceResource) GetPorts() []core.Port {
 	return ports
 }
 
-func (p Port) GetNameOrStringifyPort() string {
+func (p Port) GetName() string {
 	if p.Name != "" {
 		return p.Name
 	}
 	return fmt.Sprintf("%d", p.Port)
 }
 
-func (p Port) GetName() string {
-	return p.Name
-}
-
 func (p Port) GetValue() int32 {
 	return p.Port
+}
+
+func (p Port) GetProtocol() core_mesh.Protocol {
+	return p.AppProtocol
 }
