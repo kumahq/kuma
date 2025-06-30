@@ -126,7 +126,7 @@ This would apply to both resource names and stat names for non-internal inbounds
 
 **Drawbacks:**
 
-* Breaks the original Resource Identifier model by introducing a third category of resources (not Kuma-based, not internal, but still service-to-service and not uniquely identified)
+* Breaks the original Resource Identifier model by introducing a third category of resources (not Kuma-based, not system, but still service-to-service and not uniquely identified)
 * Reduces consistency in the overall naming convention
 
 **Neutral:**
