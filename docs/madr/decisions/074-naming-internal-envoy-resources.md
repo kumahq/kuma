@@ -79,7 +79,11 @@ Istio doesn't seem to be following any naming convention:
 
 ## Use cases
 
-### Looking at a resource name I want to easily relate it to Kuma concepts
+### All resources should have a name even if it's optional
+
+Currently, there are routes that do not have a name - let's add a name for them.
+
+### Looking at a resource name I want to easily relate it to Kuma concepts and understand where it's coming from
 
 ### As a user I want to easily exclude all stats related to internal resources from a query
 
@@ -97,7 +101,7 @@ sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_kuma*}.as_count()
 
 You might be tempted to think that this use case is already covered by the `MeshMetric` profiles, 
 and it partially is (the end result is the same) but this use case compliments it by making the profiles easier to implement and maintain.
-It also allows users to do their own filtering easier.
+It also allows users to do their own filtering more easily.
 
 ### As an operator I want to drop all stats related to internal resources
 
@@ -121,6 +125,12 @@ processors:
 
 ### As a Kuma developer I want to distinguish between system resources exposed and not exposed in metrics
 
+### As a user I want the cardinality of these resource names to be low
+
+Need to avoid:
+- IPs / non constant bits
+- Avoid dataplane name.
+
 ## Non use cases
 
 ### As a user I want my MeshProxyPatch to continue working after the change
@@ -133,7 +143,9 @@ The feature will be behind a feature flag so that nothing breaks unexpectedly bu
 
 ### Prefix system resources using `_kuma_`
 
-All system resources will be prefixed using `_kuma_` prefix (we shouldn't use `_kuma:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
+All changes will be behind the same feature flag as in [Migrating to KRI-based Envoy resource and stat naming](./076-migrating-to-kri-based-envoy-resource-and-stat-naming.md).
+
+All system resources will conform to `^_kuma_[a-z0-9_]+$` regex (we shouldn't use `_kuma:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
 
 System resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `_kuma_<KRI>`.
 
@@ -151,7 +163,7 @@ Resources that are not correlated with any Kuma resource like:
 kuma:envoy:admin
 ```
 
-Will have a prefix `_kuma_` and adhere to the general format rules (not using `:`):
+Will conform with the previously mentioned regex:
 
 ```
 _kuma_envoy_admin
