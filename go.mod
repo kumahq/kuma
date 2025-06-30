@@ -90,7 +90,7 @@ require (
 	sigs.k8s.io/controller-tools v0.18.0
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.3.0
-	sigs.k8s.io/yaml v1.4.0
+	sigs.k8s.io/yaml v1.5.0
 )
 
 require (
@@ -277,6 +277,8 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
+	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	k8s.io/apiserver v0.33.2 // indirect
 	k8s.io/code-generator v0.33.2 // indirect
 	k8s.io/component-base v0.33.2 // indirect
