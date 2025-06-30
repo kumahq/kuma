@@ -1,0 +1,2 @@
+resource[0]: failed to parse resource: invalid meta type: "error converting YAML to JSON: yaml: found unexpected end of stream"
+Error: failed to validate some resources

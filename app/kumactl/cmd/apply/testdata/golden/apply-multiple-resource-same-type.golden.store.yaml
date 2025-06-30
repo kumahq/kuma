@@ -1,0 +1,45 @@
+# Dataplane
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: sample1
+networking:
+  address: 2.2.2.2
+  inbound:
+  - address: 1.1.1.1
+    port: 80
+    servicePort: 8080
+    tags:
+      env: production
+      kuma.io/service: web
+      service: web
+      version: STRIPPED_VERSION
+  outbound:
+  - port: 3000
+    tags:
+      kuma.io/service: postgres
+type: Dataplane
+
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: sample2
+networking:
+  address: 3.3.3.3
+  inbound:
+  - address: 1.1.1.1
+    port: 80
+    servicePort: 8080
+    tags:
+      env: staging
+      kuma.io/service: web
+      service: web
+      version: STRIPPED_VERSION
+  outbound:
+  - port: 3000
+    tags:
+      kuma.io/service: postgres
+type: Dataplane
+
