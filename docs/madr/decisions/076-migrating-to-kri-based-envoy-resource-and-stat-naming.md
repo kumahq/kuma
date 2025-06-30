@@ -150,6 +150,7 @@ Adjust the **Standardized Naming for internal xDS Resources** and [Resource Iden
 
 * Might confuse users and tooling that ignore `_kuma_*` or `_`-prefixed resources, expecting them to be internal and non-essential
 * Requires clear documentation and possible GUI and dashboard exceptions
+* Conflicts with the upcoming definition of system resources in the **Standardized Naming for internal xDS Resources** MADR, which would require adjustments to that MADR to account for this exception 
 
 **Neutral:**
 
