@@ -68,7 +68,7 @@ func (t *MeshExternalServiceResource) Domains() *xds_types.VIPDomains {
 func (t *MeshExternalServiceResource) GetPorts() []core.Port {
 	return []core.Port{
 		MesPort{
-			Value:    int(t.Spec.Match.Port),
+			Value:    t.Spec.Match.Port,
 			Protocol: t.Spec.Match.Protocol,
 		},
 	}
@@ -77,7 +77,7 @@ func (t *MeshExternalServiceResource) GetPorts() []core.Port {
 func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bool) {
 	if name == strconv.Itoa(int(t.Spec.Match.Port)) {
 		return MesPort{
-			Value:    int(t.Spec.Match.Port),
+			Value:    t.Spec.Match.Port,
 			Protocol: t.Spec.Match.Protocol,
 		}, true
 	}
@@ -85,7 +85,7 @@ func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bo
 }
 
 type MesPort struct {
-	Value    int
+	Value    int32
 	Protocol core_mesh.Protocol
 }
 
@@ -93,8 +93,8 @@ func (m MesPort) GetName() string {
 	return fmt.Sprintf("%d", m.Value)
 }
 
-func (m MesPort) GetValue() uint32 {
-	return uint32(m.Value)
+func (m MesPort) GetValue() int32 {
+	return m.Value
 }
 
 func (m MesPort) GetProtocol() core_mesh.Protocol {

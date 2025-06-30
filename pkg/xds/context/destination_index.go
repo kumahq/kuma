@@ -77,7 +77,7 @@ func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, d
 		if len(reachableBackend.Labels) > 0 {
 			for _, tri := range dc.resolveResourceIdentifiersForLabels(reachableBackend.Kind, reachableBackend.Labels) {
 				if port := reachableBackend.Port; port != nil {
-					tri.SectionName = dc.getSectionName(tri.ResourceType, tri, reachableBackend.Port.GetValue())
+					tri.SectionName = dc.getSectionName(tri.ResourceType, tri, int32(reachableBackend.Port.GetValue()))
 				}
 				out[tri] = true
 			}
@@ -88,7 +88,7 @@ func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, d
 				Namespace: &reachableBackend.Namespace,
 			})
 			if port := reachableBackend.Port; port != nil {
-				key.SectionName = dc.getSectionName(key.ResourceType, key, reachableBackend.Port.GetValue())
+				key.SectionName = dc.getSectionName(key.ResourceType, key, int32(reachableBackend.Port.GetValue()))
 			}
 			out[key] = true
 		}
@@ -119,7 +119,7 @@ func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(kind string, lab
 	return result
 }
 
-func (dc *DestinationIndex) getSectionName(kind core_model.ResourceType, key kri.Identifier, port uint32) string {
+func (dc *DestinationIndex) getSectionName(kind core_model.ResourceType, key kri.Identifier, port int32) string {
 	switch kind {
 	case meshservice_api.MeshServiceType:
 		ms := dc.meshServiceByIdentifier[key]
