@@ -44,9 +44,9 @@ Introduce a feature flag to enable the new KRI-based resource naming. This flag 
 
 ## Implementation
 
-### Feature flag and propagation
+### Data plane feature flag and propagation
 
-A new feature flag will control the use of KRI-based stat and resource naming. It will be optional at first, with a clear deprecation plan: KRI naming will become the default in the future, and the flag will eventually be removed. This gives users time to migrate without breaking existing setups.
+A new data plane feature flag will control the use of KRI-based stat and resource naming. It will be optional at first, with a clear deprecation plan: KRI naming will become the default in the future, and the flag will eventually be removed. This gives users time to migrate without breaking existing setups.
 
 The flag will be passed from the data plane proxy to the control plane via xDS metadata using:
 
@@ -95,6 +95,73 @@ When set to `true`, this will:
 * Set the `KUMA_RUNTIME_KUBERNETES_INJECTOR_KRI_NAMING_ENABLED="true"` environment variable in the control plane deployment
 
 Once KRI naming becomes the default, this setting will also default to `true`. Users will still be able to disable it by setting it to `false`. Eventually, this setting will be removed when disabling the feature is no longer supported.
+
+### Naming for inbound-related resources
+
+The current KRI naming format, as defined in the [Resource Identifier](070-resource-identifier.md) MADR, proposes that non-internal inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port/name as the `sectionName`. This would result in names like:
+
+```
+kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
+```
+
+While technically correct and traceable, this approach significantly increases metrics cardinality compared to the current convention (e.g., `localhost_5050`), and would cause noticeable regressions in performance, cost, and compatibility with existing observability tooling. To mitigate this, we are considering alternative naming schemes for these inbound-related resources:
+
+#### Option 1: Replace dataplane name with a simple keyword (`self` or `this`)
+
+Use a naming format like `{prefix}_{sectionName}`, where prefix is a static term such as `self` or `this`. Example:
+
+```
+self_5050
+```
+
+This would apply to both resource names and stat names for non-internal inbounds.
+
+**Benefits:**
+
+* No increase in metric cardinality
+* Minimal changes to existing tooling: `localhost_*` just becomes `self_*` or `this_*`
+
+**Drawbacks:**
+
+* Breaks the original Resource Identifier model by introducing a third category of resources (not Kuma-based, not internal, but still service-to-service and not uniquely identified)
+* Reduces consistency in the overall naming convention
+
+**Neutral:**
+
+* Provides no more or less value than the current `localhost_*` naming scheme
+
+#### Option 2: Treat inbounds as "restricted" and use `_kuma_{prefix}_{sectionName}` format
+
+Update the [Internal listeners naming convention](036-internal-listeners.md) and [Resource Identifier](070-resource-identifier.md) MADRs by:
+
+* Renaming `internal` resources to `restricted`
+* Including non-internal inbounds that correlate to a `Dataplane` in the `restricted` category
+* Using names like `_kuma_self_5050` or `_kuma_this_5050`
+
+**Benefits:**
+
+* No increase in metric cardinality
+* Keeps a consistent naming format with other restricted/internal resources
+* Small change required in existing tools (e.g., replace `localhost_*` with `_kuma_self_*`)
+
+**Drawbacks:**
+
+* Might confuse users and tooling that ignore `_kuma_*` or `_`-prefixed resources, expecting them to be internal and non-essential
+* Requires clear documentation and possible GUI and dashboard exceptions
+
+#### Option 3: Use modified KRI with placeholder in place of Dataplane name
+
+Adapt the existing KRI naming format to exclude the dataplane name, replacing it with an empty value or keyword (`self` or `this`). Examples:
+
+* `kri_dp_default_kuma-2_kuma-demo__5050`
+* `kri_dp_default_kuma-2_kuma-demo_self_5050`
+* `kri_dp_default_kuma-2_kuma-demo_this_5050`
+
+**Drawbacks:**
+
+* Inherits all drawbacks of previous approaches
+* Smaller increase in metric cardinality compared to including the full `Dataplane` name, but still unnecessarily elevated due to mesh, zone, and namespace being part of the name (even though mesh and namespace are already available as metric labels)
+* Including `zone` may cause further confusion or inconsistency, depending on whether `zone` is also captured in the labels
 
 ### Impact on MeshProxyPatch policies
 
