@@ -149,7 +149,7 @@ func SniForBackendRef(
 ) string {
 	var resource core_model.Resource
 	var name string
-	var port uint32
+	var port int32
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
 		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(backendRef.Resource))
@@ -162,7 +162,7 @@ func SniForBackendRef(
 		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(backendRef.Resource))
 		resource = mes
 		name = core_model.GetDisplayName(resource.GetMeta())
-		port = uint32(mes.Spec.Match.Port)
+		port = mes.Spec.Match.Port
 	case common_api.MeshMultiZoneService:
 		mzms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(backendRef.Resource))
 		resource = mzms

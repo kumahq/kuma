@@ -13,11 +13,11 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func (m *MeshServiceResource) DestinationName(port uint32) string {
+func (m *MeshServiceResource) DestinationName(port int32) string {
 	return destinationname.LegacyName(kri.From(m, ""), MeshServiceResourceTypeDescriptor.ShortName, port)
 }
 
-func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
+func (m *MeshServiceResource) findPort(port int32) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Port == port {
 			return p, true
@@ -26,7 +26,7 @@ func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
 	return Port{}, false
 }
 
-func (m *MeshServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
+func (m *MeshServiceResource) FindSectionNameByPort(port int32) (string, bool) {
 	if port, found := m.findPort(port); found {
 		return port.GetName(), true
 	}

@@ -534,10 +534,88 @@ to:
               cookie:
                 name: session_id
 `),
+		ErrorCases(
+			"MeshHTTPRoute with loadBalancer",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.loadBalancer",
+					Message: "field is not allowed when targetRef.kind is MeshHTTPRoute, only hashPolicies is supported",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to: 
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: route-1
+    default:
+      loadBalancer:
+        type: RoundRobin
+      hashPolicies:
+        - type: Header
+          header:
+            name: x-header-name
+`),
+		ErrorCases(
+			"MeshHTTPRoute with localityAwareness",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.localityAwareness",
+					Message: "field is not allowed when targetRef.kind is MeshHTTPRoute, only hashPolicies is supported",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to: 
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: route-1
+    default:
+      localityAwareness:
+        disabled: true
+      hashPolicies:
+        - type: Header
+          header:
+            name: x-header-name
+`),
 	)
 
 	DescribeValidCases(
 		api.NewMeshLoadBalancingStrategyResource,
+		Entry(
+			"MeshHTTPRoute with only hashPolicies",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to: 
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: route-1
+    default:
+      hashPolicies:
+        - type: Header
+          header:
+            name: x-header-name
+        - type: Cookie
+          cookie:
+            name: session_id
+            ttl: 1s
+            path: /absolute-path
+`),
 		Entry(
 			"full spec",
 			`

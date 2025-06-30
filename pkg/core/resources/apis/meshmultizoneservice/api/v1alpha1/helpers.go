@@ -29,7 +29,7 @@ func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-func (m *MeshMultiZoneServiceResource) findPort(port uint32) (Port, bool) {
+func (m *MeshMultiZoneServiceResource) findPort(port int32) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Port == port {
 			return p, true
@@ -38,7 +38,7 @@ func (m *MeshMultiZoneServiceResource) findPort(port uint32) (Port, bool) {
 	return Port{}, false
 }
 
-func (m *MeshMultiZoneServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
+func (m *MeshMultiZoneServiceResource) FindSectionNameByPort(port int32) (string, bool) {
 	if port, found := m.findPort(port); found {
 		return port.GetName(), true
 	}
@@ -57,7 +57,7 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, b
 	return Port{}, false
 }
 
-func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
+func (m *MeshMultiZoneServiceResource) DestinationName(port int32) string {
 	return destinationname.LegacyName(kri.From(m, ""), MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
 }
 

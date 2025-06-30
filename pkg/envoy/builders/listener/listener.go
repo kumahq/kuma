@@ -66,7 +66,7 @@ func FilterChains(configurer Configurer[envoy_listener.FilterChain]) Configurer[
 	}
 }
 
-func AllRoutesOnFilterChain(configurer Configurer[routev3.Route]) Configurer[envoy_listener.FilterChain] {
+func RoutesOnFilterChain(configurer Configurer[routev3.Route]) Configurer[envoy_listener.FilterChain] {
 	return func(fc *envoy_listener.FilterChain) error {
 		return listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
 			return NewModifier(hcm.GetRouteConfig()).

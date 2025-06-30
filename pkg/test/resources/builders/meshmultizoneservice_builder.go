@@ -64,7 +64,7 @@ func (m *MeshMultiZoneServiceBuilder) AddPort(port meshmzservice_api.Port) *Mesh
 	return m
 }
 
-func (m *MeshMultiZoneServiceBuilder) AddIntPort(port uint32, protocol core_mesh.Protocol) *MeshMultiZoneServiceBuilder {
+func (m *MeshMultiZoneServiceBuilder) AddIntPort(port int32, protocol core_mesh.Protocol) *MeshMultiZoneServiceBuilder {
 	m.res.Spec.Ports = append(m.res.Spec.Ports, meshmzservice_api.Port{
 		Port:        port,
 		AppProtocol: protocol,
@@ -72,7 +72,7 @@ func (m *MeshMultiZoneServiceBuilder) AddIntPort(port uint32, protocol core_mesh
 	return m
 }
 
-func (m *MeshMultiZoneServiceBuilder) AddIntPortWithName(port uint32, protocol core_mesh.Protocol, name string) *MeshMultiZoneServiceBuilder {
+func (m *MeshMultiZoneServiceBuilder) AddIntPortWithName(port int32, protocol core_mesh.Protocol, name string) *MeshMultiZoneServiceBuilder {
 	m.res.Spec.Ports = append(m.res.Spec.Ports, meshmzservice_api.Port{
 		Port:        port,
 		AppProtocol: protocol,

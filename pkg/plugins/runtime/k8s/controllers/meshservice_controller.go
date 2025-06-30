@@ -399,7 +399,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
 				Name:        portName,
-				Port:        uint32(port.Port),
+				Port:        port.Port,
 				TargetPort:  port.TargetPort,
 				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})

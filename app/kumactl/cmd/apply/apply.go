@@ -74,7 +74,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					client := &http.Client{
 						Timeout: timeout,
 					}
-					req, err := http.NewRequest("GET", ctx.args.file, nil)
+					req, err := http.NewRequest("GET", ctx.args.file, http.NoBody)
 					if err != nil {
 						return errors.Wrap(err, "error creating new http request")
 					}

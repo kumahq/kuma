@@ -7,7 +7,7 @@ type Port interface {
 	// GetName returns port name or stringified port value. This can be used when building KRI of a destination
 	GetName() string
 	// GetValue returns port value
-	GetValue() uint32
+	GetValue() int32
 	// GetProtocol return standardized protocol name of a port
 	GetProtocol() core_mesh.Protocol
 }
