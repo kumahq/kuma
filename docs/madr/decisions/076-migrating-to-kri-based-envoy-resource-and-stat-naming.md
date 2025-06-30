@@ -27,7 +27,7 @@ This decision applies to environments using the new service discovery model base
 
 These and the legacy `kuma.io/service` tag represent two different modes of describing the same types of services in the mesh. Since `kuma.io/service` is deprecated and will be removed in the future, this migration only covers naming changes for resources generated from the new model. Updating or supporting naming for the legacy mode is out of scope.
 
-This document also does not cover renaming of internal Envoy resources that do not correspond directly to real Kuma resources such as `MeshHTTPRoute`, `Dataplane`, or `MeshExternalService`. These include:
+This document also does not cover renaming of Envoy resources that do not currently map directly to real Kuma resources like `MeshHTTPRoute`, `Dataplane`, or `MeshExternalService`. This includes resources that are generated internally by the control plane and are not tied to a specific user-defined resource. Examples include:
 
 * Secrets
 * Internal listeners and clusters
@@ -119,11 +119,11 @@ Because none of these options are satisfactory, the chosen path is to document t
 * Include a warning in the upgrade notes to alert users that existing `MeshProxyPatch` policies must be reviewed and updated before enabling KRI naming
 * Add a strong warning to the documentation for `MeshProxyPatch` policies
 
-### Updating ZoneIgress and ZoneEgress overview resources with feature flags
+### Updating ZoneIgress and ZoneEgress insight resources with feature flags
 
-To support the Kuma GUI in adapting to KRI-based naming, we need to expose feature flag information in `ZoneIngressOverview` and `ZoneEgressOverview` resources, similar to how it's already done for `DataplaneOverview`. These overview resources are available via the control plane API and provide a summary of runtime state and metadata.
+To support the Kuma GUI in adapting to KRI-based naming, we need to expose feature flag information in `ZoneIngressIngress` and `ZoneEgressIngress` resources, similar to how it's already done for `DataplaneIngress`. These insights resources are available via the control plane API and provide a summary of runtime state and metadata.
 
-We will update both `ZoneIngressOverview` and `ZoneEgressOverview` to include metadata with active feature flags. This will allow the GUI to detect whether KRI naming is enabled for each proxy and adjust its behavior accordingly.
+We will update both `ZoneIngressIngress` and `ZoneEgressIngress` to include metadata with active feature flags. This will allow the GUI to detect whether KRI naming is enabled for each proxy and adjust its behavior accordingly.
 
 ## Migration
 
@@ -137,7 +137,7 @@ To support the KRI naming format, the GUI parsers that extract resource informat
 kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
 ```
 
-When the `feature-kri-naming` flag is present in the metadata of `DataplaneOverview`, `ZoneIngressOverview`, and `ZoneEgressOverview`, the GUI must:
+When the `feature-kri-naming` flag is present in the metadata of `DataplaneIngress`, `ZoneIngressIngress`, and `ZoneEgressInsight`, the GUI must:
 
 * Parse and interpret stat names and xDS resource names based on the KRI format
 * Drop any assumptions about `inbound:` or `outbound:` prefixes, which are no longer used
