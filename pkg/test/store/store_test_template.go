@@ -131,6 +131,7 @@ func ExecuteStoreTests(
 								AppProtocol: "http",
 							},
 						},
+						State: meshservice_api.StateUnavailable,
 					},
 					Status: &meshservice_api.MeshServiceStatus{
 						VIPs: []meshservice_api.VIP{
@@ -277,6 +278,7 @@ func ExecuteStoreTests(
 								AppProtocol: "http",
 							},
 						},
+						State: meshservice_api.StateUnavailable,
 					},
 					Status: &meshservice_api.MeshServiceStatus{
 						VIPs: []meshservice_api.VIP{
