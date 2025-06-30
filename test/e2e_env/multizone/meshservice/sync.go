@@ -143,7 +143,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
 			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipPrefix))
-			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
+			g.Expect(spec.Identities).To(Equal(&[]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
 					Value: "test-server",
@@ -157,7 +157,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
 			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipPrefix))
-			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
+			g.Expect(spec.Identities).To(Equal(&[]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
 					Value: "test-server",
@@ -171,7 +171,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
 			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipOverridePrefix))
-			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
+			g.Expect(spec.Identities).To(Equal(&[]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
 					Value: "test-server",

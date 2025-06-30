@@ -24,6 +24,7 @@ import (
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	cache_mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
@@ -94,9 +95,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -163,9 +164,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "main",
+					Name:        pointer.To("main"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -182,9 +183,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -206,9 +207,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -225,9 +226,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -243,9 +244,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "81",
+					Name:        pointer.To("81"),
 					Port:        81,
-					TargetPort:  intstr.FromInt(81),
+					TargetPort:  pointer.To(intstr.FromInt(81)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -262,9 +263,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -300,9 +301,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -346,9 +347,9 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
-					Name:        "80",
+					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))

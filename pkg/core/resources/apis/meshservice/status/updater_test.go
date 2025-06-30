@@ -59,7 +59,7 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 				{
 					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 					Value: "backend",
@@ -84,7 +84,7 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 				{
 					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 					Value: "backend",

@@ -210,10 +210,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend",
@@ -282,16 +282,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 				Spec: &meshservice_api.MeshService{
 					Selector: meshservice_api.Selector{
-						DataplaneTags: meshservice_api.DataplaneTags{
+						DataplaneTags: &map[string]string{
 							mesh_proto.ServiceTag: "backend",
 						},
 					},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend",
@@ -763,11 +763,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
-						Name:        "test-port",
+						Name:        pointer.To("test-port"),
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend",
@@ -892,11 +892,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
-						Name:        "test-port",
+						Name:        pointer.To("test-port"),
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend",
@@ -922,11 +922,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
-						Name:        "test-port",
+						Name:        pointer.To("test-port"),
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend-second",
@@ -1778,11 +1778,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8080),
+						TargetPort:  pointer.To(intstr.FromInt(8080)),
 						AppProtocol: core_mesh.ProtocolHTTP,
-						Name:        "test-port",
+						Name:        pointer.To("test-port"),
 					}},
-					Identities: []meshservice_api.MeshServiceIdentity{
+					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend_svc_80",

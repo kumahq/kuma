@@ -162,12 +162,12 @@ var _ = Describe("MeshTLS", func() {
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{},
 						Ports: []meshservice_api.Port{{
-							Name:        "test-port",
+							Name:        pointer.To("test-port"),
 							Port:        80,
-							TargetPort:  intstr.FromInt(8084),
+							TargetPort:  pointer.To(intstr.FromInt(8084)),
 							AppProtocol: core_mesh.ProtocolHTTP,
 						}},
-						Identities: []meshservice_api.MeshServiceIdentity{
+						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
 								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 								Value: "backend",
