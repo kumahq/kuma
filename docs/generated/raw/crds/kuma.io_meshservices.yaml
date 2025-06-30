@@ -47,7 +47,6 @@ spec:
             description: Spec is the specification of the Kuma MeshService resource.
             properties:
               identities:
-                default: '[]'
                 items:
                   properties:
                     type:

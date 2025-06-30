@@ -16525,6 +16525,8 @@ components:
                       additionalProperties:
                         type: string
                       type: object
+                  required:
+                    - matchLabels
                   type: object
                 meshMultiZoneService:
                   properties:
@@ -16532,6 +16534,8 @@ components:
                       additionalProperties:
                         type: string
                       type: object
+                  required:
+                    - matchLabels
                   type: object
                 meshService:
                   properties:
@@ -16539,10 +16543,14 @@ components:
                       additionalProperties:
                         type: string
                       type: object
+                  required:
+                    - matchLabels
                   type: object
               type: object
             template:
               type: string
+          required:
+            - template
           type: object
         creationTime:
           readOnly: true
@@ -17189,7 +17197,6 @@ components:
           description: Spec is the specification of the Kuma MeshService resource.
           properties:
             identities:
-              default: '[]'
               items:
                 properties:
                   type:
