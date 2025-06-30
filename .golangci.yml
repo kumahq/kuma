@@ -22,6 +22,7 @@ linters:
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
     - whitespace
   settings:
     depguard:
@@ -138,6 +139,8 @@ linters:
         - cancelled
     nonamedreturns:
       report-error-in-defer: false
+    usestdlibvars:
+      http-status-code: false
   exclusions:
     generated: lax
     presets:

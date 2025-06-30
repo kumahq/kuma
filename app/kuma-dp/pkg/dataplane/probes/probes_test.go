@@ -99,7 +99,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe HTTP upstream when it's healthy", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/8080/healthz", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/8080/healthz", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5")
 
@@ -110,7 +110,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe HTTP upstream when the port is not listening", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/8081/healthz", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/8081/healthz", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -121,7 +121,7 @@ var _ = Describe("Application probe proxy", func() {
 
 		It("should probe HTTP upstream when the application reports a failure and return application status code", func() {
 			// given a header set to trigger a failure
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/8080/healthz", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/8080/healthz", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set("x-custom-header-triggers-failure", "present")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5") // 5s is longer than the execution duration	(3s)
@@ -134,7 +134,7 @@ var _ = Describe("Application probe proxy", func() {
 
 		It("should probe HTTP upstream when path does not match", func() {
 			// given a header set to trigger a failure
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/8080/bad-path", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/8080/bad-path", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5") // 5s is longer than the execution duration	(3s)
 
@@ -146,7 +146,7 @@ var _ = Describe("Application probe proxy", func() {
 
 		It("should fail with short timeout when probing", func() {
 			// given a timeout shorter than the execution duration
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/8080/healthz", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/8080/healthz", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "2") // 2s is shorter than the execution duration (3s)
 
@@ -198,7 +198,7 @@ var _ = Describe("Application probe proxy", func() {
 
 		It("should probe HTTPS upstream without verifying server certificates and keep query", func() {
 			// time.Sleep(100 * time.Second)
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/18443/healthz?scheme=https", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/18443/healthz?scheme=https", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameScheme, "HTTPS")
 
@@ -246,7 +246,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe TCP server when it's healthy", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/tcp/6379", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/tcp/6379", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -256,7 +256,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe TCP server when the port is not listening", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/tcp/6000", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/tcp/6000", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "3")
 
@@ -307,7 +307,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe gRPC server when it's healthy", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/grpc/5678", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/grpc/5678", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "liveness")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5")
@@ -319,7 +319,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should fail with a short timeout when probing", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/grpc/5678", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/grpc/5678", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "liveness")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "2")
@@ -331,7 +331,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe gRPC server when the port is not listening", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/grpc/5656", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/grpc/5656", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			response, err := http.DefaultClient.Do(probeReq)
 
@@ -340,7 +340,7 @@ var _ = Describe("Application probe proxy", func() {
 		})
 
 		It("should probe gRPC server when the application reports a failure", func() {
-			probeReq, err := http.NewRequest("GET", probeProxyURL("/grpc/5678", vProbePort), http.NoBody)
+			probeReq, err := http.NewRequest(http.MethodGet, probeProxyURL("/grpc/5678", vProbePort), http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "readiness")
 

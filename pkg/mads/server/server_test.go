@@ -113,7 +113,7 @@ var _ = Describe("MADS Server", func() {
 		reqBytes, err := util_proto.ToJSON(req)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), bytes.NewReader(reqBytes))
+		request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), bytes.NewReader(reqBytes))
 		Expect(err).ToNot(HaveOccurred())
 
 		request.Header.Add("Content-Type", "application/json")

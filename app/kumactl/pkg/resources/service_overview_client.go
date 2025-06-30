@@ -27,7 +27,7 @@ type httpServiceOverviewClient struct {
 }
 
 func (d *httpServiceOverviewClient) List(ctx context.Context, meshName string) (*mesh.ServiceOverviewResourceList, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("/meshes/%s/service-insights", meshName), http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/meshes/%s/service-insights", meshName), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

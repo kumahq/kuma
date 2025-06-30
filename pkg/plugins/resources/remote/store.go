@@ -80,7 +80,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("PUT", resourceApi.Item(meta.Mesh, meta.Name), bytes.NewReader(b))
+	req, err := http.NewRequest(http.MethodPut, resourceApi.Item(meta.Mesh, meta.Name), bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to delete a %q", res.Descriptor().Name)
 	}
-	req, err := http.NewRequest("DELETE", resourceApi.Item(opts.Mesh, opts.Name), http.NoBody)
+	req, err := http.NewRequest(http.MethodDelete, resourceApi.Item(opts.Mesh, opts.Name), http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return errors.Wrapf(err, "failed to construct URI to fetch a %q", res.Descriptor().Name)
 	}
 	opts := store.NewGetOptions(fs...)
-	req, err := http.NewRequest("GET", resourceApi.Item(opts.Mesh, opts.Name), http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, resourceApi.Item(opts.Mesh, opts.Name), http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.GetItemType())
 	}
 	opts := store.NewListOptions(fs...)
-	req, err := http.NewRequest("GET", resourceApi.List(opts.Mesh), http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, resourceApi.List(opts.Mesh), http.NoBody)
 	if err != nil {
 		return err
 	}

@@ -97,7 +97,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -122,7 +122,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err = http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -236,7 +236,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -275,7 +275,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err = http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -303,7 +303,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -334,7 +334,7 @@ var _ = Describe("MADS http service", func() {
 			time.Sleep(refreshInterval * 2)
 
 			// when
-			req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err = http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -368,7 +368,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -394,7 +394,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err = http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -442,7 +442,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=1s", strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath+"?fetch-timeout=1s", strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -479,7 +479,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -504,7 +504,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err = http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=1ms", strings.NewReader(reqBytes))
+			req, err = http.NewRequest(http.MethodPost, monitoringAssignmentPath+"?fetch-timeout=1ms", strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -528,7 +528,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=0s", strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath+"?fetch-timeout=0s", strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -560,7 +560,7 @@ var _ = Describe("MADS http service", func() {
 			reqBytes, err = pbMarshaller.MarshalToString(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
 			// when
-			req, err = http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=0s", strings.NewReader(reqBytes))
+			req, err = http.NewRequest(http.MethodPost, monitoringAssignmentPath+"?fetch-timeout=0s", strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
@@ -586,7 +586,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=not-a-timeout", strings.NewReader(reqBytes))
+			req, err := http.NewRequest(http.MethodPost, monitoringAssignmentPath+"?fetch-timeout=not-a-timeout", strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
