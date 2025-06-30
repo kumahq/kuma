@@ -30,6 +30,7 @@ items:
     selector:
       dataplaneRef:
         name: example-1.demo
+    state: ""
   status:
     dataplaneProxies: {}
     tls: {}
@@ -66,6 +67,7 @@ items:
     selector:
       dataplaneRef:
         name: example-2.demo
+    state: ""
   status:
     dataplaneProxies: {}
     tls: {}
@@ -100,6 +102,7 @@ items:
     selector:
       dataplaneRef:
         name: very-long-very-long-very-long-very-long-very-long-v.demo
+    state: ""
   status:
     dataplaneProxies: {}
     tls: {}

@@ -28,6 +28,7 @@ items:
     selector:
       dataplaneTags:
         k8s.kuma.io/namespace: demo
+    state: ""
   status:
     dataplaneProxies: {}
     tls: {}
