@@ -141,7 +141,7 @@ The feature will be behind a feature flag so that nothing breaks unexpectedly bu
 
 ## Design
 
-### Prefix system resources using `_kuma_`
+### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
 
 All changes will be behind the same feature flag as in [Migrating to KRI-based Envoy resource and stat naming](./076-migrating-to-kri-based-envoy-resource-and-stat-naming.md).
 
@@ -183,7 +183,7 @@ For MeshOPA it only modifies existing resources and doesn't create any new ones.
 
 ## Decision
 
-We will prefix all system resources with `_kuma_` as described in "Prefix system resources using `_kuma_`" section.
+We will use a regex on all system resources as described in "Use a `^_kuma_[a-z0-9_]+$` regex to name system resources" section.
 
 ## Notes
 
