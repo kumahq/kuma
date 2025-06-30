@@ -29,7 +29,7 @@ func NewHTTPResourcesListClient(client util_http.Client) ResourcesListClient {
 }
 
 func (h HTTPResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
-	req, err := http.NewRequest("GET", "/_resources", nil)
+	req, err := http.NewRequest("GET", "/_resources", http.NoBody)
 	if err != nil {
 		return api_types.ResourceTypeDescriptionList{}, err
 	}

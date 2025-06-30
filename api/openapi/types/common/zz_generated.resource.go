@@ -9,6 +9,20 @@ const (
 	Mesh   ResourceTypeDescriptionScope = "Mesh"
 )
 
+// DataplaneInbound defines model for DataplaneInbound.
+type DataplaneInbound struct {
+	Kri      string `json:"kri"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+}
+
+// DataplaneOutbound defines model for DataplaneOutbound.
+type DataplaneOutbound struct {
+	Kri      string `json:"kri"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+}
+
 // FromRule defines model for FromRule.
 type FromRule struct {
 	Inbound Inbound `json:"inbound"`
@@ -26,6 +40,24 @@ type Inbound struct {
 	Name *string           `json:"name,omitempty"`
 	Port int               `json:"port"`
 	Tags map[string]string `json:"tags"`
+}
+
+// InboundPoliciesList defines model for InboundPoliciesList.
+type InboundPoliciesList struct {
+	// Policies The final computed configuration, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Policies []InboundPolicyConf `json:"policies"`
+}
+
+// InboundPolicyConf defines model for InboundPolicyConf.
+type InboundPolicyConf struct {
+	Kind string `json:"kind"`
+
+	// Origins The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origins []PolicyOrigin `json:"origins"`
+	Rules   []struct {
+		// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+		Conf interface{} `json:"conf"`
+	} `json:"rules"`
 }
 
 // InboundRule defines model for InboundRule.
@@ -84,6 +116,22 @@ type Meta struct {
 	Type string `json:"type"`
 }
 
+// PoliciesList defines model for PoliciesList.
+type PoliciesList struct {
+	// Policies The final computed configuration, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Policies []PolicyConf `json:"policies"`
+}
+
+// PolicyConf defines model for PolicyConf.
+type PolicyConf struct {
+	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Conf interface{} `json:"conf"`
+	Kind string      `json:"kind"`
+
+	// Origins The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origins []PolicyOrigin `json:"origins"`
+}
+
 // PolicyDescription information about a policy
 type PolicyDescription struct {
 	// HasFromTargetRef indicates that this policy can be used as an inbound policy
@@ -97,6 +145,11 @@ type PolicyDescription struct {
 
 	// IsTargetRef whether this policy uses targetRef matching
 	IsTargetRef bool `json:"isTargetRef"`
+}
+
+// PolicyOrigin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+type PolicyOrigin struct {
+	Kri string `json:"kri"`
 }
 
 // ProxyRule a rule that affects the entire proxy
@@ -146,6 +199,30 @@ type ResourceTypeDescription struct {
 
 // ResourceTypeDescriptionScope defines model for ResourceTypeDescription.Scope.
 type ResourceTypeDescriptionScope string
+
+// RouteConf defines model for RouteConf.
+type RouteConf struct {
+	Kind string `json:"kind"`
+
+	// Origins The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origins *PolicyOrigin `json:"origins,omitempty"`
+
+	// Rules Computed list of routing rules
+	Rules []struct {
+		// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+		Conf interface{} `json:"conf"`
+		Kri  string      `json:"kri"`
+
+		// Matches List of matches for which this rule will apply
+		Matches []interface{} `json:"matches"`
+	} `json:"rules"`
+}
+
+// RoutesList defines model for RoutesList.
+type RoutesList struct {
+	// Routes Computed list of routes
+	Routes []RouteConf `json:"routes"`
+}
 
 // Rule defines model for Rule.
 type Rule struct {

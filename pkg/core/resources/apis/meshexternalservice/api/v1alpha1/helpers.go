@@ -9,9 +9,9 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
+func (m *MeshExternalServiceResource) DestinationName(port int32) string {
 	if port == 0 {
-		port = uint32(m.Spec.Match.Port)
+		port = m.Spec.Match.Port
 	}
 	return destinationname.LegacyName(kri.From(m, ""), MeshExternalServiceResourceTypeDescriptor.ShortName, port)
 }

@@ -31,7 +31,7 @@ type ResourceWithPorts interface {
 type query struct {
 	byIdentifier *kri.Identifier
 	byLabels     map[string]string
-	port         uint32
+	port         int32
 	sectionName  string
 }
 
@@ -139,30 +139,30 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	return result
 }
 
-func tryParsePort(s string) (uint32, bool) {
-	u, err := strconv.ParseUint(s, 10, 32)
+func tryParsePort(s string) (int32, bool) {
+	u, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
 		return 0, false
 	}
-	return uint32(u), true
+	return int32(u), true
 }
 
 // parseService is copied from pkg/plugins/runtime/k8s/controllers/outbound_converter.go
 // but when port is not specified it returns 0 instead of IANA Reserved port 49151.
 // We don't need reserved port in the original 'parseService',
 // there is an issue to fix it https://github.com/kumahq/kuma/issues/12834
-func parseService(host string) (string, string, uint32, error) {
+func parseService(host string) (string, string, int32, error) {
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
 
-	var port uint32
+	var port int32
 	switch len(segments) {
 	case 4:
 		p, err := strconv.ParseInt(segments[3], 10, 32)
 		if err != nil {
 			return "", "", 0, err
 		}
-		port = uint32(p)
+		port = int32(p)
 	case 3:
 		// service less service names have no port, so we just put the reserved
 		// one here to note that this service is actually

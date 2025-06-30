@@ -16,7 +16,7 @@ func MeshServiceBackendBuilder() *builders.MeshServiceBuilder {
 			mesh_proto.ServiceTag: "backend",
 		}).
 		WithKumaVIP("240.0.0.1").
-		AddIntPort(builders.FirstInboundPort, builders.FirstInboundPort, "http")
+		AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http")
 }
 
 func MeshServiceBackend() *v1alpha1.MeshServiceResource {
@@ -30,7 +30,7 @@ func MeshServiceWebBuilder() *builders.MeshServiceBuilder {
 			mesh_proto.ServiceTag: "web",
 		}).
 		WithKumaVIP("240.0.0.2").
-		AddIntPort(builders.FirstInboundPort, builders.FirstInboundPort, "http")
+		AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http")
 }
 
 func MeshServiceWeb() *v1alpha1.MeshServiceResource {

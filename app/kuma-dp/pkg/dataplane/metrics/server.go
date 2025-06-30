@@ -337,7 +337,7 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 }
 
 func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, expfmt.Format) {
-	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), nil)
+	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), http.NoBody)
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil, ""

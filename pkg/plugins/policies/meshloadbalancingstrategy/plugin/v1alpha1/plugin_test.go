@@ -15,16 +15,21 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
+	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -157,22 +162,22 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					}).Build()},
 				},
 				Policies: *xds_builders.MatchedPolicies().
-					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
+					WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
 								Subset: subsetutils.MeshService("backend"),
-								Conf: v1alpha1.Conf{
-									LoadBalancer: &v1alpha1.LoadBalancer{
-										Type: v1alpha1.RandomType,
+								Conf: api.Conf{
+									LoadBalancer: &api.LoadBalancer{
+										Type: api.RandomType,
 									},
 								},
 							},
 							{
 								Subset: subsetutils.MeshService("frontend"),
-								Conf: v1alpha1.Conf{
-									LoadBalancer: &v1alpha1.LoadBalancer{
-										Type: v1alpha1.LeastRequestType,
-										LeastRequest: &v1alpha1.LeastRequest{
+								Conf: api.Conf{
+									LoadBalancer: &api.LoadBalancer{
+										Type: api.LeastRequestType,
+										LeastRequest: &api.LeastRequest{
 											ActiveRequestBias: &intstr.IntOrString{Type: intstr.String, StrVal: "10.1"},
 										},
 									},
@@ -180,29 +185,29 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 							{
 								Subset: subsetutils.MeshService("payment"),
-								Conf: v1alpha1.Conf{
-									LoadBalancer: &v1alpha1.LoadBalancer{
-										Type: v1alpha1.RingHashType,
-										RingHash: &v1alpha1.RingHash{
+								Conf: api.Conf{
+									HashPolicies: &[]api.HashPolicy{
+										{
+											Type: api.QueryParameterType,
+											QueryParameter: &api.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: api.ConnectionType,
+											Connection: &api.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
+										},
+									},
+									LoadBalancer: &api.LoadBalancer{
+										Type: api.RingHashType,
+										RingHash: &api.RingHash{
 											MinRingSize:  pointer.To[uint32](100),
 											MaxRingSize:  pointer.To[uint32](1000),
-											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-											HashPolicies: &[]v1alpha1.HashPolicy{
-												{
-													Type: v1alpha1.QueryParameterType,
-													QueryParameter: &v1alpha1.QueryParameter{
-														Name: "queryparam",
-													},
-													Terminal: pointer.To(true),
-												},
-												{
-													Type: v1alpha1.ConnectionType,
-													Connection: &v1alpha1.Connection{
-														SourceIP: pointer.To(true),
-													},
-													Terminal: pointer.To(false),
-												},
-											},
+											HashFunction: pointer.To(api.MurmurHash2Type),
 										},
 									},
 								},
@@ -290,25 +295,25 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Mesh: builders.Mesh().WithName("mesh-1").Build(),
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"eds-cluster": {
-									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+									api.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										FromRules: core_rules.FromRules{
 											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+													{Conf: api.Conf{LocalityAwareness: &api.LocalityAwareness{
 														Disabled: pointer.To(false),
-														CrossZone: &v1alpha1.CrossZone{
-															Failover: &[]v1alpha1.Failover{
+														CrossZone: &api.CrossZone{
+															Failover: &[]api.Failover{
 																{
-																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
-																	To: v1alpha1.ToZone{
-																		Type:  v1alpha1.Only,
+																	From: &api.FromZone{Zones: []string{"zone-1"}},
+																	To: api.ToZone{
+																		Type:  api.Only,
 																		Zones: &[]string{"zone-2"},
 																	},
 																},
 																{
-																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
-																	To: v1alpha1.ToZone{
-																		Type:  v1alpha1.Only,
+																	From: &api.FromZone{Zones: []string{"zone-1"}},
+																	To: api.ToZone{
+																		Type:  api.Only,
 																		Zones: &[]string{"zone-3"},
 																	},
 																},
@@ -326,17 +331,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Mesh: builders.Mesh().WithName("mesh-2").Build(),
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"static-cluster": {
-									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+									api.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										FromRules: core_rules.FromRules{
 											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+													{Conf: api.Conf{LocalityAwareness: &api.LocalityAwareness{
 														Disabled: pointer.To(false),
-														CrossZone: &v1alpha1.CrossZone{
-															Failover: &[]v1alpha1.Failover{
+														CrossZone: &api.CrossZone{
+															Failover: &[]api.Failover{
 																{
-																	To: v1alpha1.ToZone{
-																		Type: v1alpha1.Any,
+																	To: api.ToZone{
+																		Type: api.Any,
 																	},
 																},
 															},
@@ -427,11 +432,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Mesh: builders.Mesh().WithName("mesh-1").Build(),
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"eds-cluster": {
-									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+									api.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										FromRules: core_rules.FromRules{
 											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+													{Conf: api.Conf{LocalityAwareness: &api.LocalityAwareness{
 														Disabled: pointer.To(false),
 													}}},
 												},
@@ -445,11 +450,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Mesh: builders.Mesh().WithName("mesh-2").Build(),
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"static-cluster": {
-									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+									api.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										FromRules: core_rules.FromRules{
 											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+													{Conf: api.Conf{LocalityAwareness: &api.LocalityAwareness{
 														Disabled: pointer.To(false),
 													}}},
 												},
@@ -533,17 +538,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
+						WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
 									Subset: subsetutils.MeshService("backend"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RandomType,
+									Conf: api.Conf{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RandomType,
 										},
-										LocalityAwareness: &v1alpha1.LocalityAwareness{
-											LocalZone: &v1alpha1.LocalZone{
-												AffinityTags: &[]v1alpha1.AffinityTag{
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
 													{
 														Key:    "k8s.io/node",
 														Weight: pointer.To[uint32](9000),
@@ -558,27 +563,27 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 											},
-											CrossZone: &v1alpha1.CrossZone{
-												FailoverThreshold: &v1alpha1.FailoverThreshold{Percentage: intstr.FromString("99")},
-												Failover: &[]v1alpha1.Failover{
+											CrossZone: &api.CrossZone{
+												FailoverThreshold: &api.FailoverThreshold{Percentage: intstr.FromString("99")},
+												Failover: &[]api.Failover{
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.AnyExcept,
+														To: api.ToZone{
+															Type:  api.AnyExcept,
 															Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 														},
 													},
 													{
-														From: &v1alpha1.FromZone{
+														From: &api.FromZone{
 															Zones: []string{"zone-1"},
 														},
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-3"},
 														},
 													},
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-4"},
 														},
 													},
@@ -589,34 +594,34 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 								{
 									Subset: subsetutils.MeshService("payment"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RingHashType,
-											RingHash: &v1alpha1.RingHash{
-												MinRingSize:  pointer.To[uint32](100),
-												MaxRingSize:  pointer.To[uint32](1000),
-												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
+									Conf: api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "queryparam",
 												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: api.ConnectionType,
+												Connection: &api.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
 											},
 										},
-										LocalityAwareness: &v1alpha1.LocalityAwareness{
-											LocalZone: &v1alpha1.LocalZone{
-												AffinityTags: &[]v1alpha1.AffinityTag{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RingHashType,
+											RingHash: &api.RingHash{
+												MinRingSize:  pointer.To[uint32](100),
+												MaxRingSize:  pointer.To[uint32](1000),
+												HashFunction: pointer.To(api.MurmurHash2Type),
+											},
+										},
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
 													{
 														Key:    "k8s.io/node",
 														Weight: pointer.To[uint32](9000),
@@ -631,11 +636,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 											},
-											CrossZone: &v1alpha1.CrossZone{
-												Failover: &[]v1alpha1.Failover{
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-2"},
 														},
 													},
@@ -718,17 +723,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
+						WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
 									Subset: subsetutils.MeshService("backend"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RandomType,
+									Conf: api.Conf{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RandomType,
 										},
-										LocalityAwareness: &v1alpha1.LocalityAwareness{
-											LocalZone: &v1alpha1.LocalZone{
-												AffinityTags: &[]v1alpha1.AffinityTag{
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
 													{
 														Key:    "k8s.io/node",
 														Weight: pointer.To[uint32](9000),
@@ -743,26 +748,26 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 											},
-											CrossZone: &v1alpha1.CrossZone{
-												Failover: &[]v1alpha1.Failover{
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.AnyExcept,
+														To: api.ToZone{
+															Type:  api.AnyExcept,
 															Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 														},
 													},
 													{
-														From: &v1alpha1.FromZone{
+														From: &api.FromZone{
 															Zones: []string{"zone-1"},
 														},
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-3"},
 														},
 													},
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-4"},
 														},
 													},
@@ -773,34 +778,34 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 								{
 									Subset: subsetutils.MeshService("payment"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RingHashType,
-											RingHash: &v1alpha1.RingHash{
-												MinRingSize:  pointer.To[uint32](100),
-												MaxRingSize:  pointer.To[uint32](1000),
-												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
+									Conf: api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "queryparam",
 												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: api.ConnectionType,
+												Connection: &api.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
 											},
 										},
-										LocalityAwareness: &v1alpha1.LocalityAwareness{
-											LocalZone: &v1alpha1.LocalZone{
-												AffinityTags: &[]v1alpha1.AffinityTag{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RingHashType,
+											RingHash: &api.RingHash{
+												MinRingSize:  pointer.To[uint32](100),
+												MaxRingSize:  pointer.To[uint32](1000),
+												HashFunction: pointer.To(api.MurmurHash2Type),
+											},
+										},
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
 													{
 														Key:    "k8s.io/node",
 														Weight: pointer.To[uint32](9000),
@@ -815,11 +820,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 											},
-											CrossZone: &v1alpha1.CrossZone{
-												Failover: &[]v1alpha1.Failover{
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-2"},
 														},
 													},
@@ -902,17 +907,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
+						WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
 									Subset: subsetutils.MeshService("backend"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RandomType,
+									Conf: api.Conf{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RandomType,
 										},
-										LocalityAwareness: &v1alpha1.LocalityAwareness{
-											LocalZone: &v1alpha1.LocalZone{
-												AffinityTags: &[]v1alpha1.AffinityTag{
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
 													{
 														Key:    "k8s.io/node",
 														Weight: pointer.To[uint32](9000),
@@ -932,29 +937,29 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 								{
 									Subset: subsetutils.MeshService("payment"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RingHashType,
-											RingHash: &v1alpha1.RingHash{
+									Conf: api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: api.ConnectionType,
+												Connection: &api.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RingHashType,
+											RingHash: &api.RingHash{
 												MinRingSize:  pointer.To[uint32](100),
 												MaxRingSize:  pointer.To[uint32](1000),
-												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
-												},
+												HashFunction: pointer.To(api.MurmurHash2Type),
 											},
 										},
 									},
@@ -1035,35 +1040,35 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
+						WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
 									Subset: subsetutils.MeshService("backend"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RandomType,
+									Conf: api.Conf{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RandomType,
 										},
-										LocalityAwareness: &v1alpha1.LocalityAwareness{
-											CrossZone: &v1alpha1.CrossZone{
-												Failover: &[]v1alpha1.Failover{
+										LocalityAwareness: &api.LocalityAwareness{
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.AnyExcept,
+														To: api.ToZone{
+															Type:  api.AnyExcept,
 															Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 														},
 													},
 													{
-														From: &v1alpha1.FromZone{
+														From: &api.FromZone{
 															Zones: []string{"zone-1"},
 														},
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-3"},
 														},
 													},
 													{
-														To: v1alpha1.ToZone{
-															Type:  v1alpha1.Only,
+														To: api.ToZone{
+															Type:  api.Only,
 															Zones: &[]string{"zone-4"},
 														},
 													},
@@ -1074,29 +1079,29 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 								{
 									Subset: subsetutils.MeshService("payment"),
-									Conf: v1alpha1.Conf{
-										LoadBalancer: &v1alpha1.LoadBalancer{
-											Type: v1alpha1.RingHashType,
-											RingHash: &v1alpha1.RingHash{
+									Conf: api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: api.ConnectionType,
+												Connection: &api.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RingHashType,
+											RingHash: &api.RingHash{
 												MinRingSize:  pointer.To[uint32](100),
 												MaxRingSize:  pointer.To[uint32](1000),
-												HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-												HashPolicies: &[]v1alpha1.HashPolicy{
-													{
-														Type: v1alpha1.QueryParameterType,
-														QueryParameter: &v1alpha1.QueryParameter{
-															Name: "queryparam",
-														},
-														Terminal: pointer.To(true),
-													},
-													{
-														Type: v1alpha1.ConnectionType,
-														Connection: &v1alpha1.Connection{
-															SourceIP: pointer.To(true),
-														},
-														Terminal: pointer.To(false),
-													},
-												},
+												HashFunction: pointer.To(api.MurmurHash2Type),
 											},
 										},
 									},
@@ -1219,17 +1224,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				}).
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
-					xds_builders.MatchedPolicies().WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
+					xds_builders.MatchedPolicies().WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
 								Subset: subsetutils.MeshService("backend"),
-								Conf: v1alpha1.Conf{
-									LoadBalancer: &v1alpha1.LoadBalancer{
-										Type: v1alpha1.RandomType,
+								Conf: api.Conf{
+									LoadBalancer: &api.LoadBalancer{
+										Type: api.RandomType,
 									},
-									LocalityAwareness: &v1alpha1.LocalityAwareness{
-										LocalZone: &v1alpha1.LocalZone{
-											AffinityTags: &[]v1alpha1.AffinityTag{
+									LocalityAwareness: &api.LocalityAwareness{
+										LocalZone: &api.LocalZone{
+											AffinityTags: &[]api.AffinityTag{
 												{
 													Key: "k8s.io/node",
 												},
@@ -1241,26 +1246,26 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 										},
-										CrossZone: &v1alpha1.CrossZone{
-											Failover: &[]v1alpha1.Failover{
+										CrossZone: &api.CrossZone{
+											Failover: &[]api.Failover{
 												{
-													To: v1alpha1.ToZone{
-														Type:  v1alpha1.AnyExcept,
+													To: api.ToZone{
+														Type:  api.AnyExcept,
 														Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 													},
 												},
 												{
-													From: &v1alpha1.FromZone{
+													From: &api.FromZone{
 														Zones: []string{"zone-1"},
 													},
-													To: v1alpha1.ToZone{
-														Type:  v1alpha1.Only,
+													To: api.ToZone{
+														Type:  api.Only,
 														Zones: &[]string{"zone-3"},
 													},
 												},
 												{
-													To: v1alpha1.ToZone{
-														Type:  v1alpha1.Only,
+													To: api.ToZone{
+														Type:  api.Only,
 														Zones: &[]string{"zone-4"},
 													},
 												},
@@ -1271,29 +1276,29 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 							{
 								Subset: subsetutils.MeshService("payment"),
-								Conf: v1alpha1.Conf{
-									LoadBalancer: &v1alpha1.LoadBalancer{
-										Type: v1alpha1.RingHashType,
-										RingHash: &v1alpha1.RingHash{
+								Conf: api.Conf{
+									HashPolicies: &[]api.HashPolicy{
+										{
+											Type: api.QueryParameterType,
+											QueryParameter: &api.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: api.ConnectionType,
+											Connection: &api.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
+										},
+									},
+									LoadBalancer: &api.LoadBalancer{
+										Type: api.RingHashType,
+										RingHash: &api.RingHash{
 											MinRingSize:  pointer.To[uint32](100),
 											MaxRingSize:  pointer.To[uint32](1000),
-											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-											HashPolicies: &[]v1alpha1.HashPolicy{
-												{
-													Type: v1alpha1.QueryParameterType,
-													QueryParameter: &v1alpha1.QueryParameter{
-														Name: "queryparam",
-													},
-													Terminal: pointer.To(true),
-												},
-												{
-													Type: v1alpha1.ConnectionType,
-													Connection: &v1alpha1.Connection{
-														SourceIP: pointer.To(true),
-													},
-													Terminal: pointer.To(false),
-												},
-											},
+											HashFunction: pointer.To(api.MurmurHash2Type),
 										},
 									},
 								},
@@ -1302,6 +1307,86 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					}),
 				).
 				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
+		}),
+		Entry("route", testCase{
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777, []meshhttproute_xds.OutboundRoute{
+					{
+						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-1_").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+						},
+					},
+					{
+						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-2_").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+						},
+					},
+					{
+						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-3_").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+						},
+					},
+				}),
+			},
+			proxy: &core_xds.Proxy{
+				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
+				Dataplane: builders.Dataplane().
+					AddInboundOfTagsMap(map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						mesh_proto.ZoneTag:    "zone-1",
+					}).
+					Build(),
+				Policies: *xds_builders.MatchedPolicies().
+					WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
+						ResourceRules: outbound.ResourceRules{
+							kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"): outbound.ResourceRule{
+								Conf: []interface{}{
+									api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.HeaderType,
+												Header: &api.Header{
+													Name: "x-per-meshservice-header",
+												},
+											},
+										},
+									},
+								},
+							},
+							kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-3_"): outbound.ResourceRule{
+								Conf: []interface{}{
+									api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.HeaderType,
+												Header: &api.Header{
+													Name: "x-per-meshhttproute-route-3",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}).
+					Build(),
+			},
 			context: *xds_builders.Context().
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
@@ -1351,7 +1436,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					})).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithGatewayPolicy(v1alpha1.MeshLoadBalancingStrategyType, given.rules).
+						WithGatewayPolicy(api.MeshLoadBalancingStrategyType, given.rules).
 						WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes),
 				).
 				Build()
@@ -1393,29 +1478,29 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
 								Subset: subsetutils.Subset{},
-								Conf: v1alpha1.Conf{
-									LoadBalancer: &v1alpha1.LoadBalancer{
-										Type: v1alpha1.RingHashType,
-										RingHash: &v1alpha1.RingHash{
+								Conf: api.Conf{
+									HashPolicies: &[]api.HashPolicy{
+										{
+											Type: api.QueryParameterType,
+											QueryParameter: &api.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: api.ConnectionType,
+											Connection: &api.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
+										},
+									},
+									LoadBalancer: &api.LoadBalancer{
+										Type: api.RingHashType,
+										RingHash: &api.RingHash{
 											MinRingSize:  pointer.To[uint32](100),
 											MaxRingSize:  pointer.To[uint32](1000),
-											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-											HashPolicies: &[]v1alpha1.HashPolicy{
-												{
-													Type: v1alpha1.QueryParameterType,
-													QueryParameter: &v1alpha1.QueryParameter{
-														Name: "queryparam",
-													},
-													Terminal: pointer.To(true),
-												},
-												{
-													Type: v1alpha1.ConnectionType,
-													Connection: &v1alpha1.Connection{
-														SourceIP: pointer.To(true),
-													},
-													Terminal: pointer.To(false),
-												},
-											},
+											HashFunction: pointer.To(api.MurmurHash2Type),
 										},
 									},
 								},
@@ -1445,10 +1530,10 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
 								Subset: subsetutils.Subset{},
-								Conf: v1alpha1.Conf{
-									LocalityAwareness: &v1alpha1.LocalityAwareness{
-										LocalZone: &v1alpha1.LocalZone{
-											AffinityTags: &[]v1alpha1.AffinityTag{
+								Conf: api.Conf{
+									LocalityAwareness: &api.LocalityAwareness{
+										LocalZone: &api.LocalZone{
+											AffinityTags: &[]api.AffinityTag{
 												{
 													Key:    "k8s.io/node",
 													Weight: pointer.To[uint32](9000),
@@ -1463,26 +1548,26 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 										},
-										CrossZone: &v1alpha1.CrossZone{
-											Failover: &[]v1alpha1.Failover{
+										CrossZone: &api.CrossZone{
+											Failover: &[]api.Failover{
 												{
-													To: v1alpha1.ToZone{
-														Type:  v1alpha1.AnyExcept,
+													To: api.ToZone{
+														Type:  api.AnyExcept,
 														Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 													},
 												},
 												{
-													From: &v1alpha1.FromZone{
+													From: &api.FromZone{
 														Zones: []string{"zone-1"},
 													},
-													To: v1alpha1.ToZone{
-														Type:  v1alpha1.Only,
+													To: api.ToZone{
+														Type:  api.Only,
 														Zones: &[]string{"zone-3"},
 													},
 												},
 												{
-													To: v1alpha1.ToZone{
-														Type:  v1alpha1.Only,
+													To: api.ToZone{
+														Type:  api.Only,
 														Zones: &[]string{"zone-4"},
 													},
 												},
@@ -1516,13 +1601,13 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
 								Subset: subsetutils.Subset{},
-								Conf: v1alpha1.Conf{
-									LocalityAwareness: &v1alpha1.LocalityAwareness{
-										CrossZone: &v1alpha1.CrossZone{
-											Failover: &[]v1alpha1.Failover{
+								Conf: api.Conf{
+									LocalityAwareness: &api.LocalityAwareness{
+										CrossZone: &api.CrossZone{
+											Failover: &[]api.Failover{
 												{
-													To: v1alpha1.ToZone{
-														Type: v1alpha1.None,
+													To: api.ToZone{
+														Type: api.None,
 													},
 												},
 											},
@@ -1610,10 +1695,10 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
-										v1alpha1.Conf{
-											LocalityAwareness: &v1alpha1.LocalityAwareness{
-												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: &[]v1alpha1.AffinityTag{
+										api.Conf{
+											LocalityAwareness: &api.LocalityAwareness{
+												LocalZone: &api.LocalZone{
+													AffinityTags: &[]api.AffinityTag{
 														{
 															Key:    "k8s.io/node",
 															Weight: pointer.To[uint32](9000),
@@ -1628,26 +1713,26 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 														},
 													},
 												},
-												CrossZone: &v1alpha1.CrossZone{
-													Failover: &[]v1alpha1.Failover{
+												CrossZone: &api.CrossZone{
+													Failover: &[]api.Failover{
 														{
-															To: v1alpha1.ToZone{
-																Type:  v1alpha1.AnyExcept,
+															To: api.ToZone{
+																Type:  api.AnyExcept,
 																Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 															},
 														},
 														{
-															From: &v1alpha1.FromZone{
+															From: &api.FromZone{
 																Zones: []string{"zone-1"},
 															},
-															To: v1alpha1.ToZone{
-																Type:  v1alpha1.Only,
+															To: api.ToZone{
+																Type:  api.Only,
 																Zones: &[]string{"zone-3"},
 															},
 														},
 														{
-															To: v1alpha1.ToZone{
-																Type:  v1alpha1.Only,
+															To: api.ToZone{
+																Type:  api.Only,
 																Zones: &[]string{"zone-4"},
 															},
 														},
@@ -1739,6 +1824,33 @@ func backendListener() envoy_common.NamedResource {
 				),
 			),
 		)).MustBuild()
+}
+
+func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
+	listener, err := meshhttproute_plugin.GenerateOutboundListener(
+		envoy_common.APIV3,
+		meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Address:  "127.0.0.1",
+				Port:     uint32(port),
+				Resource: &serviceResourceKRI,
+			},
+			Protocol:    core_mesh.ProtocolHTTP,
+			ServiceName: serviceName(serviceResourceKRI, port),
+		},
+		false,
+		[]core_xds.InternalAddress{},
+		routes,
+		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+	)
+	Expect(err).ToNot(HaveOccurred())
+	return *listener
+}
+
+func serviceName(id kri.Identifier, port int32) string {
+	desc, err := registry.Global().DescriptorFor(id.ResourceType)
+	Expect(err).ToNot(HaveOccurred())
+	return destinationname.LegacyName(id, desc.ShortName, port)
 }
 
 func contextWithEgressEnabled() xds_context.Context {
