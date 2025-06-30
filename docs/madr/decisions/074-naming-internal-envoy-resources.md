@@ -112,14 +112,14 @@ processors:
         metric_names: [".*"]  # apply to all metrics
         attributes:
           - key: envoy_cluster
-            value: "^_.*"  # matches if envoy_cluster starts with _
+            value: "^_kuma_.*"  # matches if envoy_cluster starts with _
 ```
 
 ### As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
 
-### As a Kuma developer I want to distinguish between internal and external resources in Envoy
+### As a Kuma developer I want to distinguish between system and user resources in Envoy
 
-### As a Kuma developer I want to distinguish between external resources exposed and not exposed in metrics
+### As a Kuma developer I want to distinguish between system resources exposed and not exposed in metrics
 
 ## Non use cases
 
@@ -139,17 +139,39 @@ Resources that can be traced back to a Kuma resource with a valid KRI will have 
 
 For example:
 
+```
+_kuma_kri_mtr_mesh-1__kuma-system_my-meshtrace_
+```
 
+Which indicates a system resource that was created for a `MeshTrace` resource.
 
-Resources that are not correlated with any Kuma resource will 
+Resources that are not correlated with any Kuma resource like:
+
+```
+kuma:envoy:admin
+```
+
+Will have a prefix `_kuma_` and adhere to the general format rules (not using `:`):
+
+```
+_kuma_envoy_admin
+```
+
+and should describe the resource as accurately and plainly as possible (it **MUST** take into account any related configuration option or annotation if exists).
+
+It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `_kuma_transparent_proxying_outbound_listener`.
 
 ## Implications for Kong Mesh
 
-TBA
+Kong Mesh doesn't use any special type of resource that is not used by Kuma. 
+In its policies, it only defines `meshglobalratelimit:service` cluster for MeshGlobalRateLimit
+(as well as an endpoint, modifications to routes, virtual hosts and filter chains).
+
+For MeshOPA it only modifies existing resources and doesn't create any new ones.
 
 ## Decision
 
-TBA
+We will prefix all system resources with `_kuma_` as described in "Prefix system resources using `_kuma_`" section.
 
 ## Notes
 
