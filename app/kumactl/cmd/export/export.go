@@ -45,7 +45,7 @@ const (
 	formatKubernetes = "kubernetes"
 )
 
-var excludedLabelsPerProfile map[string]map[string]struct{} = map[string]map[string]struct{}{
+var excludedLabelsPerProfile = map[string]map[string]struct{}{
 	profileFederation: {
 		mesh_proto.ResourceOriginLabel: struct{}{},
 	},

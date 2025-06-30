@@ -65,7 +65,7 @@ func (x *ZoneEgressInsight) GetLastSubscription() generic.Subscription {
 }
 
 func (x *ZoneEgressInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {
-	var result uint64 = 0
+	var result uint64
 	for _, s := range x.GetSubscriptions() {
 		result += v(s)
 	}
