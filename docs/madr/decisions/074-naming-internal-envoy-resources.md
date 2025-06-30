@@ -131,7 +131,17 @@ The feature will be behind a feature flag so that nothing breaks unexpectedly bu
 
 ## Design
 
-TBA
+### Prefix system resources using `_kuma_`
+
+All system resources will be prefixed using `_kuma_` prefix (we shouldn't use `_kuma:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
+
+Resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `_kuma_<KRI>`.
+
+For example:
+
+
+
+Resources that are not correlated with any Kuma resource will 
 
 ## Implications for Kong Mesh
 
