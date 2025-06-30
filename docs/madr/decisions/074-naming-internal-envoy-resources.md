@@ -135,7 +135,7 @@ The feature will be behind a feature flag so that nothing breaks unexpectedly bu
 
 All system resources will be prefixed using `_kuma_` prefix (we shouldn't use `_kuma:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
 
-Resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `_kuma_<KRI>`.
+System resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `_kuma_<KRI>`.
 
 For example:
 
@@ -159,7 +159,7 @@ _kuma_envoy_admin
 
 and should describe the resource as accurately and plainly as possible (it **MUST** take into account any related configuration option or annotation if exists).
 
-It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `_kuma_transparent_proxying_outbound_listener`.
+It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `_kuma_transparent_proxy_outbound_listener`.
 
 ## Implications for Kong Mesh
 
