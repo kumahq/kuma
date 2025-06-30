@@ -17,12 +17,13 @@ import (
 
 type DestinationIndex struct {
 	meshServiceByIdentifier             map[kri.Identifier]*meshservice_api.MeshServiceResource
-	meshServicesByLabelByValue          LabelsToValuesToResourceIdentifier
+	meshServicesByLabelByValue          labelsToValuesToResourceIdentifier
 	meshExternalServiceByIdentifier     map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource
-	meshExternalServicesByLabelByValue  LabelsToValuesToResourceIdentifier
+	meshExternalServicesByLabelByValue  labelsToValuesToResourceIdentifier
 	meshMultiZoneServiceByIdentifier    map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource
-	meshMultiZoneServicesByLabelByValue LabelsToValuesToResourceIdentifier
+	meshMultiZoneServicesByLabelByValue labelsToValuesToResourceIdentifier
 }
+type labelsToValuesToResourceIdentifier map[LabelValue]map[kri.Identifier]bool
 
 func NewDestinationIndex(resourceMap ResourceMap) *DestinationIndex {
 	var meshServices []*meshservice_api.MeshServiceResource
@@ -179,8 +180,8 @@ func indexByKri[T core_model.Resource](list []T) map[kri.Identifier]T {
 	return byKri
 }
 
-func indexByLabelKeyValue[T core_model.Resource](list []T) LabelsToValuesToResourceIdentifier {
-	resourceNamesByLabels := LabelsToValuesToResourceIdentifier{}
+func indexByLabelKeyValue[T core_model.Resource](list []T) labelsToValuesToResourceIdentifier {
+	resourceNamesByLabels := labelsToValuesToResourceIdentifier{}
 	for _, item := range list {
 		ri := kri.From(item, "")
 		buildLabelValueToServiceNames(ri, resourceNamesByLabels, item.GetMeta().GetLabels())
@@ -188,7 +189,7 @@ func indexByLabelKeyValue[T core_model.Resource](list []T) LabelsToValuesToResou
 	return resourceNamesByLabels
 }
 
-func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
+func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels labelsToValuesToResourceIdentifier, labels map[string]string) {
 	for label, value := range labels {
 		key := LabelValue{
 			Label: label,

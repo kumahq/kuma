@@ -35,10 +35,7 @@ func (m *MeshServiceResource) FindSectionNameByPort(port int32) (string, bool) {
 
 func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
-		if p.Name == name {
-			return p, true
-		}
-		if fmt.Sprintf("%d", p.Port) == name {
+		if p.GetName() == name {
 			return p, true
 		}
 	}

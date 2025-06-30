@@ -47,10 +47,7 @@ func (m *MeshMultiZoneServiceResource) FindSectionNameByPort(port int32) (string
 
 func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
-		if pointer.Deref(p.Name) == name {
-			return p, true
-		}
-		if fmt.Sprintf("%d", p.Port) == name {
+		if p.GetName() == name {
 			return p, true
 		}
 	}

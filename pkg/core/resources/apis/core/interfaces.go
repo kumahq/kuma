@@ -4,7 +4,7 @@ import core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 // Port is a common abstraction for a destination port. It provides us basic information about port
 type Port interface {
-	// GetName returns port name or stringified port value. This can be used when building KRI of a destination
+	// GetName returns port name or stringified port value. This can be used when building KRI of a destination. Name cannot be empty
 	GetName() string
 	// GetValue returns port value
 	GetValue() int32

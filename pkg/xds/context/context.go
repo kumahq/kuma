@@ -68,9 +68,6 @@ type LabelValue struct {
 	Label string
 	Value string
 }
-type (
-	LabelsToValuesToResourceIdentifier map[LabelValue]map[kri.Identifier]bool
-)
 
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
