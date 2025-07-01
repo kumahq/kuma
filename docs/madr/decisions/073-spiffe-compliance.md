@@ -224,17 +224,27 @@ spec:
     trustDomain: "prod.example.fr" # { .Mesh }.{ .Zone }.{ .ClusterID}.kuma.io
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same as HostnameGenerator
   provider:
-    type: builtin | cert-manager | external | spire | extension
+    type: builtin | provided | spire
     builtin:
-      address: spire server address that is going to be set of envoy sds, also we would set correctly the name of certs
-      certificate: file/inline/secret
-      privateKey: file/inline/secret
-    certManager:
+      dataplaneCertificate:
+        duration: 24h
     spire:
-      serverAddress:
-    extension: # to extend in KM
-      type: vault
-      conf: # JSON
+      agent:
+        addresss: "/run/spire/sockets/agent.sock"
+        timeout: 1s
+    provided: # to extend in KM
+      certificate:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      privateKey:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      dataplaneCertificate:
+        duration: 24h
 ```
 
 Currently, the `ServiceAccount` is not exposed in the `Dataplane` resource, which is problematic since we need to access this information. A potential solution is to add a dedicated field to the `Dataplane` object to store the associated `ServiceAccount`.
@@ -252,6 +262,11 @@ There can be multiple difference identity providers but in the first iteration w
 The builtin provider type is where the control plane generates a Root CA, which is later used for issuing workload identities.
 Currently, in a multizone setup, Kuma creates a Root CA on the Global control plane and syncs it to the zones. With the new approach, instead of sharing a single Root CA, we will sync only the resource definition, and each zone will generate its own Root CA for workload identity. This improves isolation between zones and allows for better security boundaries.
 
+```yaml
+    builtin:
+      dataplaneCertificate:
+        duration: 24h
+```
 **Provided**
 
 The provided type allows users to supply their own CA certificates. These can be configured per zone or as a global definition.
@@ -263,6 +278,22 @@ Users can provide certificates in the following ways:
 
 This gives flexibility for organizations that already have an established PKI or need to integrate with existing certificate authorities.
 
+```yaml
+    provided: # to extend in KM
+      certificate:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      privateKey:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      dataplaneCertificate:
+        duration: 24h
+```
+
 **Spire**
 
 The spire provider is a new type that configures Envoy to request its identity certificate directly from SPIRE.
@@ -272,6 +303,13 @@ In this first iteration:
 * The control plane does not handle workload registration in SPIRE yet.
 
 This approach allows Kuma to leverage SPIFFE-compliant identities issued by SPIRE while keeping the initial integration simple.
+
+```yaml
+    spire:
+      agent:
+        addresss: "/run/spire/sockets/agent.sock"
+        timeout: 1s
+```       
 
 #### Define active identity provider
 
@@ -465,8 +503,8 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  ca: inline | secret | file | clusterbundletrust
-  trustDomain: "prod.zone-1.id.kuma.io" # if we want a zone
+  ca: inline | secret | file
+  trustDomain: "prod.zone-1.id.kuma.io"
 ```
 
 The resource should also be manually creatable by the user. This enables users to define additional trust domains and allows the local sidecar to accept incoming mTLS traffic from services outside the mesh.
@@ -488,17 +526,22 @@ In the first iteration, `MeshTrust` will not be synced between zones. This means
 **Secret naming**
 
 We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshTrust` creates a separate resource (Secret), it should be named based on the KRI to simplify correlation between the `Secret` and the `MeshTrust` configuration.
+Since there might be multiple MeshTrusts and we need to aggregate them into one bundle we might use a different naming.
 
 Proposed name:
 
 ```yaml
-kri_mtrust_mesh-1_us-east-2_kuma-system_ca-1
+_kuma_cabundle
 ```
 
 > [!WARNING]
 > The naming is different when using SPIRE, since SPIRE uses `trustDomain` as a name for validation context, and `ALL` once we want all trust domains (federation)
 > https://spiffe.io/docs/latest/deploying/spire_agent/#sds-configuration
 > https://spiffe.io/docs/latest/microservices/envoy/#tls-certificates
+
+**Spire**
+
+In the case of Spire, all certificates are delivered by Spire’s SDS server. The CA configured in `MeshTrust` is not delivered or used for workload identity issuance. However, if the user wants to enable federation with another trust domain, they are required to create a `MeshTrust` resource that defines the `trustDomain` of the federated cluster — but without specifying a CA. This is because the CA will be provided dynamically by Spire as part of the federation mechanism.
 
 #### MeshMultiZoneService
 
@@ -588,7 +631,126 @@ This doesn't have to be implemented in current release.
 ### Migration from mTLS in Mesh to MeshIdentity
 
 1. Mesh has mTLS enabled
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+```
 2. User create a MeshTrust for new MeshIdentity
-3. Create MeshTrafficPermissions for new ID
-4. User create a new MeshIdentityxw
-5. User remove mTLS section from Mesh object
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrust
+metadata:
+  name: trust-of-new-identity
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  ca: inline | secret | file
+  trustDomain: "prod.zone-1.id.kuma.io"
+```
+3. Create MeshTrafficPermissions for accept all traffic
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: allow-all
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Allow
+```
+or more specific but it's not a part of this MADR
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: allow-all
+  namespace: kuma-demo
+  labels:
+    kuma.io/mesh: default
+spec:
+  match:
+    rules:
+    ....
+```
+4. User create a new MeshIdentity for single Dataplane
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: demo-app
+  spiffeID: # optional
+    trustDomain: "prod.zone-1.id.kuma.io"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: provided
+    provided:
+      certificate:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      privateKey:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      dataplaneCertificate:
+        duration: 24h
+```
+5. Check if works by verifing DataplaneInsights
+6. Process with selecting more Dataplanes
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID: # optional
+    trustDomain: "prod.zone-1.id.kuma.io"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: provided
+    provided:
+      certificate:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      privateKey:
+        # one of
+        secret:
+        inline:
+        inlineString:
+      dataplaneCertificate:
+        duration: 24h
+``` 
+7. Wait for propagation of values, we cna verify this in MeshInsights
+8. User remove mTLS section from Mesh object once all dataplanes uses new identity
