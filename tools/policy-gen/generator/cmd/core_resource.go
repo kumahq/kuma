@@ -98,11 +98,12 @@ const (
 	{{.Name}}Type model.ResourceType = "{{.Name}}"
 )
 
-var _ model.Resource = &{{.Name}}Resource{}
-
+var (
+    _ model.Resource = &{{.Name}}Resource{}
 {{- if .IsDestination }}
-var _ core.Destination = &{{.Name}}Resource{}
+    _ core.Destination = &{{.Name}}Resource{}
 {{- end }}
+)
 
 type {{.Name}}Resource struct {
 	Meta model.ResourceMeta

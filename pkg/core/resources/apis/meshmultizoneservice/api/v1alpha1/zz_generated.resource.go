@@ -51,8 +51,10 @@ const (
 	MeshMultiZoneServiceType model.ResourceType = "MeshMultiZoneService"
 )
 
-var _ model.Resource = &MeshMultiZoneServiceResource{}
-var _ core.Destination = &MeshMultiZoneServiceResource{}
+var (
+	_ model.Resource   = &MeshMultiZoneServiceResource{}
+	_ core.Destination = &MeshMultiZoneServiceResource{}
+)
 
 type MeshMultiZoneServiceResource struct {
 	Meta   model.ResourceMeta

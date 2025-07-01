@@ -51,8 +51,10 @@ const (
 	MeshExternalServiceType model.ResourceType = "MeshExternalService"
 )
 
-var _ model.Resource = &MeshExternalServiceResource{}
-var _ core.Destination = &MeshExternalServiceResource{}
+var (
+	_ model.Resource   = &MeshExternalServiceResource{}
+	_ core.Destination = &MeshExternalServiceResource{}
+)
 
 type MeshExternalServiceResource struct {
 	Meta   model.ResourceMeta

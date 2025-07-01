@@ -51,8 +51,10 @@ const (
 	MeshServiceType model.ResourceType = "MeshService"
 )
 
-var _ model.Resource = &MeshServiceResource{}
-var _ core.Destination = &MeshServiceResource{}
+var (
+	_ model.Resource   = &MeshServiceResource{}
+	_ core.Destination = &MeshServiceResource{}
+)
 
 type MeshServiceResource struct {
 	Meta   model.ResourceMeta
