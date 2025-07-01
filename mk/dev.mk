@@ -43,7 +43,7 @@ $(error "mise - https://github.com/jdx/mise - not found. Please install it.")
 endif
 MISE := $(shell which mise)
 
-PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
+PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
 
 CLANG_FORMAT=$(MISE) x clang-format -- clang-format
 YQ=$(MISE) x yq -- yq
