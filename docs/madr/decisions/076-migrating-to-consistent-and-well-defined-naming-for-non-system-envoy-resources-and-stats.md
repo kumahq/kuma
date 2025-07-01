@@ -2,11 +2,11 @@
 
 * Status: accepted
 
-Related:
+* Related MADRs:
 
-* [MADR-036 Internal listeners naming convention](036-internal-listeners.md)
-* [MADR-070 Resource Identifier](070-resource-identifier.md)
-* [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md)
+  * [MADR-036 Internal listeners naming convention](036-internal-listeners.md)
+  * [MADR-070 Resource Identifier](070-resource-identifier.md)
+  * [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md)
 
 ## Context and problem statement
 
