@@ -7,8 +7,8 @@ status:
     - field: metadata.labels[kuma.io/origin]
       message: cannot be empty
       reason: FieldValueInvalid
-  message: Operation not allowed. Applying policies on Zone CP on a system namespace requires 'kuma.io/origin'
-    label to be set to 'zone'.
+  message: Operation not allowed. Applying policies on Zone CP on a system namespace
+    requires 'kuma.io/origin' label to be set to 'zone'.
   metadata: {}
   reason: Forbidden
   status: Failure
