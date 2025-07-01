@@ -472,6 +472,12 @@ Proposed name:
 kri_mi_mesh-1_us-east-2_kuma-system_identity-1
 ```
 
+Also, we need to name the Spire agent cluster, in this case is it internal or maybe based on MeshIdentity:
+Proposed name:
+```yaml
+_kuma_spire_agent
+```
+
 > [!WARNING]
 > The naming is different when using SPIRE, since SPIRE uses SPIFFEID or `default` as a certificate name
 > https://spiffe.io/docs/latest/deploying/spire_agent/#sds-configuration
