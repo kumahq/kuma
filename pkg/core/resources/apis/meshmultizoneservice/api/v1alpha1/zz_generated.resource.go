@@ -51,10 +51,7 @@ const (
 	MeshMultiZoneServiceType model.ResourceType = "MeshMultiZoneService"
 )
 
-var (
-	_ model.Resource   = &MeshMultiZoneServiceResource{}
-	_ core.Destination = &MeshMultiZoneServiceResource{}
-)
+var _ model.Resource = &MeshMultiZoneServiceResource{}
 
 type MeshMultiZoneServiceResource struct {
 	Meta   model.ResourceMeta
@@ -164,6 +161,8 @@ func (l *MeshMultiZoneServiceResourceList) GetPagination() *model.Pagination {
 func (l *MeshMultiZoneServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
+
+var _ core.Destination = &MeshMultiZoneServiceResource{}
 
 var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshMultiZoneServiceType,

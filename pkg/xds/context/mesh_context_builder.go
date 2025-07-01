@@ -567,11 +567,3 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
 	}
 	return serviceProtocol
 }
-
-func isDestinationResource(resources core_model.ResourceList) bool {
-	if len(resources.GetItems()) > 0 {
-		_, ok := resources.GetItems()[0].(DestinationResource)
-		return ok
-	}
-	return false
-}

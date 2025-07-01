@@ -51,10 +51,7 @@ const (
 	MeshServiceType model.ResourceType = "MeshService"
 )
 
-var (
-	_ model.Resource   = &MeshServiceResource{}
-	_ core.Destination = &MeshServiceResource{}
-)
+var _ model.Resource = &MeshServiceResource{}
 
 type MeshServiceResource struct {
 	Meta   model.ResourceMeta
@@ -164,6 +161,8 @@ func (l *MeshServiceResourceList) GetPagination() *model.Pagination {
 func (l *MeshServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
+
+var _ core.Destination = &MeshServiceResource{}
 
 var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshServiceType,

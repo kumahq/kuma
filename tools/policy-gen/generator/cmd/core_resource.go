@@ -98,12 +98,7 @@ const (
 	{{.Name}}Type model.ResourceType = "{{.Name}}"
 )
 
-var (
-    _ model.Resource = &{{.Name}}Resource{}
-{{- if .IsDestination }}
-    _ core.Destination = &{{.Name}}Resource{}
-{{- end }}
-)
+var _ model.Resource = &{{.Name}}Resource{}
 
 type {{.Name}}Resource struct {
 	Meta model.ResourceMeta
@@ -227,6 +222,10 @@ func (l *{{.Name}}ResourceList) GetPagination() *model.Pagination {
 func (l *{{.Name}}ResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
+
+{{- if .IsDestination }}
+var _ core.Destination = &{{.Name}}Resource{}
+{{- end }}
 
 var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.Name}}Type,

@@ -51,10 +51,7 @@ const (
 	MeshExternalServiceType model.ResourceType = "MeshExternalService"
 )
 
-var (
-	_ model.Resource   = &MeshExternalServiceResource{}
-	_ core.Destination = &MeshExternalServiceResource{}
-)
+var _ model.Resource = &MeshExternalServiceResource{}
 
 type MeshExternalServiceResource struct {
 	Meta   model.ResourceMeta
@@ -164,6 +161,8 @@ func (l *MeshExternalServiceResourceList) GetPagination() *model.Pagination {
 func (l *MeshExternalServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
+
+var _ core.Destination = &MeshExternalServiceResource{}
 
 var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshExternalServiceType,
