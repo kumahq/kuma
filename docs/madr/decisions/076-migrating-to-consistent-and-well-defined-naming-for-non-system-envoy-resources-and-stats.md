@@ -1,46 +1,67 @@
-# Migrating to consistent and well defined resource and stat naming for non-system Envoy resources
+# Migrating to consistent and well-defined naming for non-system Envoy resources and stats
 
 * Status: accepted
 
 ## Context and problem statement
 
-As described in the [Resource Identifier MADR](070-resource-identifier.md), we chose to standardize resource naming using the KRI (Kuma Resource Identifier) format. This change improves consistency across the system and allows for stronger cross-resource references, making data easier to present and understand. However, moving to KRI will break existing setups that rely on current Envoy stat and resource names, such as dashboards and GUI features. A smooth migration path is needed to let users adopt KRI without disruption.
+As described in the [Resource Identifier MADR](070-resource-identifier.md), we are standardizing xDS resource and Envoy stat naming using a structured format to improve consistency, traceability, and integration with tooling such as observability dashboards and the Kuma GUI. This effort introduces two major changes:
 
-### Affected systems and users
+1. **KRI-based naming**: Used for resources that are a direct result of distinct Kuma resources like `MeshService`, `MeshGateway`, `MeshHTTPRoute`, and others. This format improves correlation between Envoy configuration and Kuma resources, making it easier to trace metrics, understand traffic behavior, and troubleshoot issues.
+
+2. **`self_` naming format**: Used for inbound-related resources, which are currently always defined inside a `Dataplane`. These resources already exist in the context of the `Dataplane` that created them, so repeating that reference using a full KRI name does not add value and would unnecessarily raise metric cardinality. Instead, a simpler format like `self_{sectionName}` is used. In the future, if inbound resources can be defined by something other than a `Dataplane`, such as a new type of policy, then those resources will have their own identity and use full KRI naming.
+
+While these formats improve structure and consistency, they differ from the current naming conventions used for Envoy resources and stats, which often follow legacy or default patterns. Right now, resource names and stat names are not aligned and can differ significantly, even when generated from the same Kuma resource. Changing them without care can disrupt existing observability setups that rely on these names.
+
+To support the transition, a smooth migration path must be defined that introduces the new formats without disrupting existing environments.
+
+## Affected systems and users
 
 Two main groups are impacted:
 
 * Internal systems: Kuma GUI
 * External users: Dashboards, Prometheus
 
-#### Kuma GUI
+### Kuma GUI
 
-The `Dataplane` view displays inbound and outbound endpoints using data from Envoy stats. It matches these stats to configuration by parsing stat names, such as cluster or listener names. Changes to stat naming or resource identifiers will break this matching logic. We must coordinate changes with the GUI to support both the old and new formats during the transition.
+The `Dataplane` view in the GUI shows inbound and outbound endpoints by parsing Envoy stat names such as clusters and listeners, and matching them to the config. Changes to how names are built will affect this matching. The GUI must be updated to support both old and new formats during the migration. This includes handling KRI-based names for outbound and routing resources, and `self_` names for inbounds. Unlike before, stat names and resource names will now match, so GUI logic must reflect that.
 
 ## Scope
 
-This decision applies to environments using the new service discovery model based on:
+This decision applies to environments using the new service discovery model:
 
-* `MeshService`
-* `MeshExternalService`
+* `MeshService`  
+* `MeshExternalService`  
 * `MeshMultiZoneService`
 
-These and the legacy `kuma.io/service` tag represent two different modes of describing the same types of services in the mesh. Since `kuma.io/service` will be removed in the future, this migration only covers naming changes for resources generated from the new model. Updating or supporting naming for the legacy mode is out of scope.
+These resources replace the legacy `kuma.io/service` tag for describing services in the mesh. Since the legacy tag is being removed, this migration only affects naming for resources generated from the new model. Legacy-based setups are out of scope.
 
-This document also does not cover renaming of Envoy resources that do not currently map directly to real Kuma resources like `MeshHTTPRoute`, `Dataplane`, or `MeshExternalService`. This includes resources that are generated internally by the control plane and are not tied to a specific user-defined resource. Examples include:
+### Out of scope
 
-* Secrets
-* Internal listeners and clusters
+This document does not cover renaming of Envoy resources that do not directly map to Kuma resources like `MeshHTTPRoute`, `MeshService`, or `MeshExternalService`. This includes system resources generated by Kuma, such as:
+
+* Secrets  
+* System listeners and clusters  
 * Default routes (when no `MeshHTTPRoute` or `MeshTCPRoute` is defined)
-* `MeshPassthrough` resources
 
-Renaming of these internal resources will be handled in a separate MADR.
+Renaming of these system resources will be handled in a separate MADR.
 
-Support for the built-in gateway is also out of scope. It may be addressed separately if we decide to include it.
+The `MeshPassthrough` resource is not covered and may be addressed separately.
+
+Support for the built-in gateway is also out of scope and may be handled in a separate effort.
 
 ## Decision outcome
 
-Introduce a feature flag to enable the new KRI-based resource naming. This flag can be enabled per data plane proxy using an environment variable in Universal mode or an annotation in Kubernetes mode. In Kubernetes, the control plane can be configured to automatically inject the annotation into all workloads during sidecar injection, enabling the feature by default for all proxies in the zone.
+Introduce a feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
+
+* KRI-based names for resources tied to distinct Kuma resources like `MeshService`
+* `self_` format for inbound-related resources defined inside a `Dataplane`
+
+The flag can be enabled per proxy by setting an environment variable:
+
+* Directly in Universal mode
+* Indirectly in Kubernetes via a pod annotation, which is converted by the sidecar injector into the same environment variable and applied to the `kuma-sidecar` container
+
+In Kubernetes, the control plane can be configured to auto-inject the annotation into all workloads during sidecar injection, turning the feature on by default for all proxies in the zone.
 
 ## Implementation
 
