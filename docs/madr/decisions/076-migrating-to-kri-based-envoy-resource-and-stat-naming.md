@@ -129,11 +129,94 @@ This would apply to both resource names and stat names for non-internal inbounds
 * Breaks the original Resource Identifier model by introducing a third category of resources (not Kuma-based, not system, but still service-to-service and not uniquely identified)
 * Reduces consistency in the overall naming convention
 
-**Neutral:**
+#### Option 2: Align resource names with existing `localhost_{port}` inbound clusters stat format
 
-* Provides no more or less value than the current `localhost_*` naming scheme
+This option proposes using the already established stat format `localhost_{port}` (currently used for inbound Envoy cluster stats) as the unified name for all related xDS resources such as clusters and listeners.
 
-#### Option 2: Treat inbounds as "system" resources and use `_kuma_{prefix}_{sectionName}` format
+Specifically:
+
+* Change cluster names from `localhost:{port}` to `localhost_{port}` to match stat names
+* Change listener and other inbound-related resource names (e.g. from `inbound:10.42.0.83:5050`) to `localhost_{port}`
+
+**Benefits:**
+
+* Resource names align with existing `localhost_{port}` cluster stat names
+* No increase in metric cardinality
+* No changes needed for dashboards or alerts that rely on current cluster stat names
+
+**Drawbacks:**
+
+* Listener stat names will change, requiring updates to dashboards that rely on them
+* `localhost_{port}` is misleading for listeners since they do not bind to localhost
+* Breaks the original Resource Identifier model by introducing a third category of resources
+* Reduces consistency in the naming convention used across xDS resources and stats
+
+#### Option 3: Use modified KRI with placeholder in place of Dataplane name
+
+This option preserves the structure of the original KRI format but modifies the Dataplane-related sections to avoid high cardinality. There are three suboptions for how to handle the Dataplane identity portion of the name:
+
+##### Suboption A: Replace Dataplane name with a keyword like `self` or `this`
+
+Example:
+
+* `kri_dp_default_kuma-2_kuma-demo_self_5050`
+* `kri_dp_default_kuma-2_kuma-demo_this_5050`
+
+**Benefits:**
+
+* Lower cardinality compared to full Dataplane name
+* Retains full KRI structure with readable, recognizable identity
+
+**Drawbacks:**
+
+* **If a user names their Dataplane `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real Dataplane name and can be confusing**
+* Breaks the original Resource Identifier model by introducing a special case for inbounds that does not align with the two existing categories (Kuma-based and system), creating inconsistency in the naming logic
+* Reduces consistency in the overall naming convention
+* Still includes mesh, zone, and namespace, which are already present as metric labels
+
+##### Suboption B: Replace Dataplane name with a `-` to indicate hidden value
+
+Example:
+
+* `kri_dp_default_kuma-2_kuma-demo_-_5050`
+
+The `-` acts as a placeholder to signal that the value exists but is intentionally omitted or obfuscated. This approach avoids using reserved or meaningful terms like `self`.
+
+**Benefits:**
+
+* Same as Suboption A
+* Avoids name collision with user-defined Dataplane names like `self` or `this`
+* Opens the path to extending the KRI format definition to support `-` as a special reserved marker for any KRI section
+
+**Drawbacks:**
+
+* Still includes mesh, zone, and namespace, contributing to metric cardinality
+* Requires updates to the original KRI MADR to define the semantics of `-` as a valid placeholder
+* Less intuitive than using keywords, may require more documentation
+
+##### Suboption C: Collapse all KRI sections before `sectionName` into `-`
+
+Example:
+
+* `kri_dp_-_-_-_-_5050`
+
+This keeps the `kri_dp` prefix and `sectionName`, but compresses all identity-bearing sections into dashes to fully anonymize the Dataplane.
+
+**Benefits:**
+
+* Preserves KRI format while minimizing cardinality
+* No risk of naming collisions or ambiguity
+* Can be formally described in the KRI specification as a valid but anonymized identifier
+
+**Drawbacks:**
+
+* Looks awkward and artificial
+* May confuse users and tooling — resource names like `kri_dp_-_-_-_-_5050` are syntactically valid but visually obscure
+* Loses most of the traceability benefit of KRI
+* Requires KRI spec to explicitly allow this pattern and define its meaning
+* Still includes the `kri_` prefix, which might falsely suggest the name is fully qualified and traceable
+
+#### Option 4: Treat inbounds as "system" resources and use `_kuma_{prefix}_{sectionName}` format
 
 Adjust the **Standardized Naming for internal xDS Resources** and [Resource Identifier](070-resource-identifier.md) MADRs by:
 
@@ -151,76 +234,7 @@ Adjust the **Standardized Naming for internal xDS Resources** and [Resource Iden
 * Might confuse users and tooling that ignore `_kuma_*`-prefixed resources, expecting them to be internal and non-essential
 * Requires clear documentation and possible GUI and dashboard exceptions
 
-**Neutral:**
-
-* Provides no more or less value than the current `localhost_*` naming scheme
-
-#### Option 3: Use modified KRI with placeholder in place of Dataplane name
-
-This option preserves the structure of the original KRI format but modifies the dataplane-related sections to avoid high cardinality. There are three suboptions for how to handle the dataplane identity portion of the name:
-
-##### Suboption A: Replace dataplane name with a keyword like `self` or `this`
-
-Example:
-
-* `kri_dp_default_kuma-2_kuma-demo_self_5050`
-* `kri_dp_default_kuma-2_kuma-demo_this_5050`
-
-**Benefits:**
-
-* Lower cardinality compared to full dataplane name
-* Retains full KRI structure with readable, recognizable identity
-* Simple for users and tooling to understand and match
-
-**Drawbacks:**
-
-* Inherits all drawbacks from earlier approaches
-* If a user names their dataplane `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real dataplane name and can be confusing
-* Still includes mesh, zone, and namespace, which are already present as metric labels
-
-##### Suboption B: Replace dataplane name with a `-` to indicate hidden value
-
-Example:
-
-* `kri_dp_default_kuma-2_kuma-demo_-_5050`
-
-The `-` acts as a placeholder to signal that the value exists but is intentionally omitted or obfuscated. This approach avoids using reserved or meaningful terms like `self`.
-
-**Benefits:**
-
-* Same as Suboption A
-* Avoids name collision with user-defined dataplane names like `self` or `this`
-* Opens the path to extending the KRI format definition to support `-` as a special reserved marker for any KRI section
-
-**Drawbacks:**
-
-* Still includes mesh, zone, and namespace, contributing to metric cardinality
-* Requires updates to the original KRI MADR to define the semantics of `-` as a valid placeholder
-* Less intuitive than using keywords, may require more documentation
-
-##### Suboption C: Collapse all KRI sections before `sectionName` into `-`
-
-Example:
-
-* `kri_dp_-_-_-_-_5050`
-
-This keeps the `kri_dp` prefix and `sectionName`, but compresses all identity-bearing sections into dashes to fully anonymize the dataplane.
-
-**Benefits:**
-
-* Preserves KRI format while minimizing cardinality
-* No risk of naming collisions or ambiguity
-* Can be formally described in the KRI specification as a valid but anonymized identifier
-
-**Drawbacks:**
-
-* Looks awkward and artificial
-* May confuse users and tooling — resource names like `kri_dp_-_-_-_-_5050` are syntactically valid but visually obscure
-* Loses most of the traceability benefit of KRI
-* Requires KRI spec to explicitly allow this pattern and define its meaning
-* Still includes the `kri_` prefix, which might falsely suggest the name is fully qualified and traceable
-
-#### Option 4: Use full KRI name for resources, simplified name for stats
+#### Option 5: Use full KRI name for resources, simplified name for stats
 
 In this option, the Envoy **resource names** (used in xDS configuration) would follow the full KRI format as originally defined:
 
@@ -263,7 +277,7 @@ Unfortunately, there is currently no reliable way to detect and warn users about
 
   *Problem:* This is unreliable, and all the concerns above still apply.
 
-* Show a general warning in the dataplane or policy view when KRI is enabled and any `MeshProxyPatch` applies
+* Show a general warning in the Dataplane or policy view when KRI is enabled and any `MeshProxyPatch` applies
 
   *Problem:* This might be useful the first time but would quickly become noise once the user verifies their configuration.
 
