@@ -613,7 +613,31 @@ Based on the existing `MeshIdentity`, we should create a `MeshTrust` resource, w
 We can describe it as KDS flag:
 
 ```golang
-model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                         MeshTrustType,
+	Resource:                     NewMeshTrustResource(),
+	ResourceList:                 &MeshTrustResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag, // in the future SyncedAcrossZonesFlag
+	WsPath:                       "meshtrusts",
+	KumactlArg:                   "meshtrust",
+	KumactlListArg:               "meshtrusts",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Trust",
+	PluralDisplayName:            "Mesh Trusts",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasRulesTargetRef:            false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: true,
+	IsReferenceableInTo:          false,
+	ShortName:                    "mtrust",
+	IsFromAsRules:                false,
+}
 ```
 
 There should also be an option to disable automatic generation in cases where the user does not want cross trust-domain traffic to be allowed by default.
