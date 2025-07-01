@@ -352,6 +352,65 @@ Purpose of the Label:
 * This label signals that the pod has SPIRE integration enabled.
 * It prevents Kuma from delivering Spire-related configuration (e.g., SDS config, identity provider references) to pods that don't have the socket mounted.
 
+2. We could expose the configuration in control-plane to be more generic
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+        extraLabels:
+          kuma.io/spire-integration: enabled
+        extraVolumes:
+          - name: spire-agent-socket
+            hostPath:
+              path: /run/spire/sockets
+              type: Directory
+        containerPatches: ["spire-agent-socket-patch"]
+```
+
+ContainerPatch
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: spire-agent-socket-patch
+  namespace: kuma-system
+spec:
+  sidecarPatch:
+    - op: add
+      path: /volumeMounts/-
+      value:
+        name: spire-agent-socket
+        mountPath: /run/spire/sockets/
+        readOnly: true
+```
+
+3. We could introduce templating/overlay (out-of-scope for this MADR)
+
+We could introduce overlay to the control-plane injector config.
+
+Example: 
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+        overlay:
+            - path: spec.template.spec.volumes.spire-agent-socket
+              op: add
+              value:
+                name: spire-agent-socket
+                hostPath:
+                  path: /run/spire/sockets
+                  type: Directory
+            - path: spec.template.spec.containers.kuma-sidecar.volumeMounts.spire-agent-socket
+              op: add
+              value:
+                name: spire-agent-socket
+                mountPath: /run/spire/sockets/
+                readOnly: true          
+```
+
 #### Define active identity provider
 
 Previously, defining the active identity for a group of services was done through a single, perhaps less flexible, mechanism. Now, the `MeshIdentity` resource, leveraging its `selector`, offers a more granular and controlled approach to activate specific configurations.
