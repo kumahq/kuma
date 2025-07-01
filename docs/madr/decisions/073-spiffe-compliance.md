@@ -247,16 +247,13 @@ spec:
   spiffeID: # optional
     trustDomain: "prod.example.fr" # { .Mesh }.{ .Zone }.{ .ClusterID}.kuma.io
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same as HostnameGenerator
-  trustExtractionDisabled: false # allows to disable extraction of CA into MeshTrust
   provider:
     type: Provided | Spire
-    builtin:
-      dataplaneCertificate:
-        duration: 24h
     spire:
       agent:
         timeout: 1s
     provided: # to extend in KM
+      trustExtractionDisabled: false # allows to disable extraction of CA into MeshTrust
       insecureAutogenerate: false
       certificate:
         # one of
@@ -660,7 +657,7 @@ This functionality is essential for:
 **MeshTrust based on MeshIdentity**
 
 When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the MeshTrust based on the `MeshIdentity`. This option can be disabled and `MeshTrust` might not be created.
-To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. In case it's problematic for the user we can implement it later. Once user updates a MeshIdentity we shouldn't update existing MeshTrust and keep it as it is. We added a new type into `MeshIdentity.trustExtractionDisabled` which allows controlling this.
+To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. In case it's problematic for the user we can implement it later. Once user updates a MeshIdentity we shouldn't update existing MeshTrust and keep it as it is. We added a new type into `MeshIdentity.provided.trustExtractionDisabled` which allows controlling this.
 
 **Multizone**
 
