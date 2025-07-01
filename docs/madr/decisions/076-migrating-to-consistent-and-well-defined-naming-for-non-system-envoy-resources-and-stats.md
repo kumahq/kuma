@@ -1,4 +1,4 @@
-# Migrating to KRI-based Envoy resource and stat naming
+# Migrating to consistent and well defined resource and stat naming for non-system Envoy resources
 
 * Status: accepted
 
