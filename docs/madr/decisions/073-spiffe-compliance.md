@@ -201,9 +201,33 @@ This resource allows the creation of Certificate Authorities (CAs) that are supp
 * The resource can be created on the Global control plane and synced to Zones.
 * It can also be created on a Zone, in which case it will be synced to Global, but not propagated to other Zones.
 
-KDS flags:
+Resource descriptor
 ```golang
-model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+var MeshIdentityResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                         MeshIdentityType,
+	Resource:                     NewMeshIdentityResource(),
+	ResourceList:                 &MeshIdentityResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshidentities",
+	KumactlArg:                   "meshidentity",
+	KumactlListArg:               "meshidentities",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Identity",
+	PluralDisplayName:            "Mesh Identities",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasRulesTargetRef:            false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: true,
+	IsReferenceableInTo:          false,
+	ShortName:                    "mid",
+	IsFromAsRules:                false,
+}
 ```
 
 **Model**
@@ -223,26 +247,27 @@ spec:
   spiffeID: # optional
     trustDomain: "prod.example.fr" # { .Mesh }.{ .Zone }.{ .ClusterID}.kuma.io
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same as HostnameGenerator
+  trustExtractionDisabled: false # allows to disable extraction of CA into MeshTrust
   provider:
-    type: builtin | provided | spire
+    type: Provided | Spire
     builtin:
       dataplaneCertificate:
         duration: 24h
     spire:
       agent:
-        addresss: "/run/spire/sockets/agent.sock"
         timeout: 1s
     provided: # to extend in KM
+      insecureAutogenerate: false
       certificate:
         # one of
         secret:
-        inline:
-        inlineString:
+        path:
+        envVar:
       privateKey:
         # one of
         secret:
-        inline:
-        inlineString:
+        path:
+        envVar:
       dataplaneCertificate:
         duration: 24h
 ```
@@ -272,7 +297,7 @@ Currently, in a multizone setup, Kuma creates a Root CA on the Global control pl
 The provided type allows users to supply their own CA certificates. These can be configured per zone or as a global definition.
 Users can provide certificates in the following ways:
 
-* Inline,
+* Environment variable,
 * File path,
 * Secret reference.
 
@@ -280,19 +305,22 @@ This gives flexibility for organizations that already have an established PKI or
 
 ```yaml
     provided: # to extend in KM
+      insecureAutogenerate: false
       certificate:
         # one of
         secret:
-        inline:
-        inlineString:
+        path:
+        envVar:
       privateKey:
         # one of
         secret:
-        inline:
-        inlineString:
+        path:
+        envVar:
       dataplaneCertificate:
         duration: 24h
 ```
+
+Additionally, we could introduce a configuration option called `insecureAutogenerate`, which automatically generates a default CA and persists it in the store. This would functionally be equivalent to the current builtin CA.
 
 **Spire**
 
@@ -313,18 +341,19 @@ This approach allows Kuma to leverage SPIFFE-compliant identities issued by SPIR
 
 Another thing is that we need to mount a volume with Spire Agent unix socket.
 
-1. Add a new section to the injector configuration:
+1.(Chosen) Add a new section to the injector configuration:
 
 ```yaml
 runtime:
   kubernetes:
     injector:
       spire:
+        injector-mode: annotation | always | never (default)
         path: /run/spire/sockets
         mountPath: /run/spire/sockets
 ```
 
-If the `spire.mountPath` and `spire.path` are set the injector automatically:
+Once `injector-mode: annotation` and `kuma.io/spire-integration: enabled` or `injector-mode: always` are set the injector automatically:
 
 * creates volume
 ```yaml
@@ -352,7 +381,7 @@ Purpose of the Label:
 * This label signals that the pod has SPIRE integration enabled.
 * It prevents Kuma from delivering Spire-related configuration (e.g., SDS config, identity provider references) to pods that don't have the socket mounted.
 
-2. We could expose the configuration in control-plane to be more generic
+1. We could expose the configuration in control-plane to be more generic
 
 ```yaml
 runtime:
@@ -448,11 +477,10 @@ If there are multiple (X) identities selecting the same dataplane, the control p
 
 1. Selector specificity – the identity with most specific selector is preferred.
 2. Lexicographical order – if selector sizes are equal, the identity with the lexicographically smallest name is chosen.
-3. Age – if names are the same, the oldest identity (based on creation timestamp) is selected.
 
 #### How would look the process of switching backends?
 
-1. User has a Mesh with MeshIdentity `ca-1`
+1. User has a Mesh with MeshIdentity `identity-1`
 ```yaml
 ...
 name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
@@ -460,13 +488,13 @@ type: DataplaneInsight
 mTLS:
   certificateExpirationTime: "2025-06-03T17:35:33Z"
   certificateRegenerations: 1
-  issuedBackend: ca-1 # name of MeshIdentity
+  issuedBackend: system_kri_mi_mesh-1_us-east-2_kuma-system_identity-1
   lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
   supportedBackends: # list of MeshTrust name
-  - ca-1
+  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
 ...
 ```
-2. User creates MeshTrust with CA of a new MeshIdentity `ca-2`
+2. User creates MeshTrust with CA of a new MeshIdentity `identity-2`
 3. Trust is propagated. We provide identity and keep the information(supported CA (Trust), and Identity) in DataplaneInsight
 ```yaml
 ...
@@ -475,11 +503,11 @@ type: DataplaneInsight
 mTLS:
   certificateExpirationTime: "2025-06-03T17:35:33Z"
   certificateRegenerations: 1
-  issuedBackend: ca-1 # name of MeshIdentity
+  issuedBackend: system_kri_mi_mesh-1_us-east-2_kuma-system_identity-1 # name of MeshIdentity
   lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
   supportedBackends: # list of MeshTrust name
-  - ca-1
-  - ca-2
+  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
+  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2
 ...
 ```
 
@@ -491,7 +519,7 @@ name: second-test-server-b7dwz26bb9b4z676
 spec:
   identities:
   - type: SpiffeID
-    value: spiffe://example.com/zone/my-new-zone/ns/real-resource-ns/sa/default
+    value: spiffe://old.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
   ports:
   - appProtocol: http
     name: main
@@ -511,8 +539,8 @@ status:
 type: MeshService
 ```
 
-4. User create a new MeshIdentity `ca-2`
-5. We start deliver new identity provided by `ca-2`
+4. User create a new MeshIdentity `identity-2`
+5. We start deliver new identity provided by `identity-2`
 We reuse existing fields
 ```yaml
 ...
@@ -521,11 +549,11 @@ type: DataplaneInsight
 mTLS:
   certificateExpirationTime: "2025-06-03T17:35:33Z"
   certificateRegenerations: 1
-  issuedBackend: ca-2 # name of MeshIdentity
+  issuedBackend: system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2 # name of MeshIdentity
   lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
   supportedBackends: # list of MeshTrust name
-  - ca-1
-  - ca-2
+  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
+  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2
 ...
 ```
 Update SpiffeID based on identities
@@ -535,9 +563,9 @@ name: second-test-server-b7dwz26bb9b4z676
 spec:
   identities:
   - type: SpiffeID
-    value: spiffe://example.com/ns/real-resource-ns/sa/default
+    value: spiffe://old.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
   - type: SpiffeID
-    value: spiffe://example.fr/ns/real-resource-ns/sa/default
+    value: spiffe://new.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
   ports:
   - appProtocol: http
     name: main
@@ -557,30 +585,30 @@ status:
 type: MeshService
 ```
 
-6. User can remove MeshIdentity `ca-1`
+6. User can remove MeshIdentity `identity-1`
 7. MeshTrust should be removed by the user
 
 ![Rotation flow](assets/073/rotation-flow.png)
 
 #### Secret naming
 
-We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshIdentity` creates a separate resource (Secret), it should be named based on the KRI to simplify correlation between the `Secret` and the `MeshIdentity` configuration.
+We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshIdentity` generates secrets for each dataplane, it should be named based on the KRI to simplify correlation between the Envoy `Secret` and the `MeshIdentity` configuration.
 
 Proposed name:
 
 ```yaml
-kri_mi_mesh-1_us-east-2_kuma-system_identity-1
+system_kri_mi_mesh-1_us-east-2_kuma-system_identity-1
 ```
 
 Also, we need to name the Spire agent cluster, in this case is it internal or maybe based on MeshIdentity:
 Proposed name:
 ```yaml
-system_spire-agent
+system_sds-spire-agent
 ```
 
 or 
 ```yaml
-kri_mi_mesh-1_us-east-2_kuma-system_spire-identity
+system_kri_mi_mesh-1_us-east-2_kuma-system_spire-identity
 ```
 
 > [!WARNING]
@@ -616,6 +644,10 @@ metadata:
 spec:
   ca: inline | secret | file
   trustDomain: "prod.zone-1.id.kuma.io"
+  originRef:
+    kind: MeshIdentity
+    name: default
+    namespace: kuma-system
 ```
 
 The resource should also be manually creatable by the user. This enables users to define additional trust domains and allows the local sidecar to accept incoming mTLS traffic from services outside the mesh.
