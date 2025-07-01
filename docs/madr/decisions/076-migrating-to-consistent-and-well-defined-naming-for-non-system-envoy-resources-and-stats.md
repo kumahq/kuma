@@ -51,7 +51,7 @@ Support for the built-in gateway is also out of scope and may be handled in a se
 
 ## Decision outcome
 
-Introduce a feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
+Introduce a data plane feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
 
 * KRI-based names for resources tied to distinct Kuma resources like `MeshService`
 * `self_` format for inbound-related resources defined inside a `Dataplane`
