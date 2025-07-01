@@ -2,9 +2,15 @@
 
 * Status: accepted
 
+Related:
+
+* [MADR-036 Internal listeners naming convention](036-internal-listeners.md)
+* [MADR-070 Resource Identifier](070-resource-identifier.md)
+* [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md)
+
 ## Context and problem statement
 
-As described in the [Resource Identifier MADR](070-resource-identifier.md), we are standardizing xDS resource and Envoy stat naming using a structured format to improve consistency, traceability, and integration with tooling such as observability dashboards and the Kuma GUI. This effort introduces two major changes:
+As first introduced in the [Resource Identifier](070-resource-identifier.md) MADR, we chose to standardize Envoy resource and stat naming using a structured format to improve consistency, traceability, and integration with tools like observability dashboards and the Kuma GUI. This effort introduces two major changes:
 
 1. **KRI-based naming**: Used for resources that are a direct result of distinct Kuma resources like `MeshService`, `MeshGateway`, `MeshHTTPRoute`, and others. This format improves correlation between Envoy configuration and Kuma resources, making it easier to trace metrics, understand traffic behavior, and troubleshoot issues.
 
