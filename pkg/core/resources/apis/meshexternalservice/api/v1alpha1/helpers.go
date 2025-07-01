@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"strconv"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
@@ -75,13 +74,10 @@ func (t *MeshExternalServiceResource) GetPorts() []core.Port {
 }
 
 func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bool) {
-	if name == strconv.Itoa(int(t.Spec.Match.Port)) {
-		return MesPort{
-			Value:    t.Spec.Match.Port,
-			Protocol: t.Spec.Match.Protocol,
-		}, true
-	}
-	return MesPort{}, false
+	return MesPort{
+		Value:    t.Spec.Match.Port,
+		Protocol: t.Spec.Match.Protocol,
+	}, true
 }
 
 type MesPort struct {

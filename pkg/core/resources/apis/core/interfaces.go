@@ -14,6 +14,8 @@ type Port interface {
 
 // Destination interface creates abstraction for Kuma destinations like MeshService, MeshMultiZoneService or MeshExternalService
 type Destination interface {
+	// DestinationName TODO
+	DestinationName(port int32) string
 	// GetPorts returns all ports from a destination
 	GetPorts() []Port
 	// FindPortByName return single port and information if port was found. This method accepts either port name or

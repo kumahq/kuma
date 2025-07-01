@@ -8,10 +8,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core2 "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -103,15 +101,7 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	var oldestCreationTime *time.Time
 	var oldestTri *kri.Identifier
 	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(labels) {
-		var resource core_model.Resource
-		switch tri.ResourceType {
-		case meshexternalservice_api.MeshExternalServiceType:
-			resource = mc.GetMeshExternalServiceByKRI(tri)
-		case meshservice_api.MeshServiceType:
-			resource = mc.GetMeshServiceByKRI(tri)
-		case meshmzservice_api.MeshMultiZoneServiceType:
-			resource = mc.GetMeshMultiZoneServiceByKRI(tri)
-		}
+		resource := mc.GetServiceByKRI(tri).(core_model.Resource)
 		if resource != nil {
 			resCreationTime := resource.GetMeta().GetCreationTime()
 			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
@@ -123,37 +113,8 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	return oldestTri
 }
 
-func (mc *MeshContext) GetMeshServiceByKRI(id kri.Identifier) *meshservice_api.MeshServiceResource {
-	if id.ResourceType != meshservice_api.MeshServiceType {
-		return nil
-	}
-	dest, found := mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-	if found {
-		return dest.(*meshservice_api.MeshServiceResource)
-	}
-	return nil
-}
-
-func (mc *MeshContext) GetMeshExternalServiceByKRI(id kri.Identifier) *meshexternalservice_api.MeshExternalServiceResource {
-	if id.ResourceType != meshexternalservice_api.MeshExternalServiceType {
-		return nil
-	}
-	dest, found := mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-	if found {
-		return dest.(*meshexternalservice_api.MeshExternalServiceResource)
-	}
-	return nil
-}
-
-func (mc *MeshContext) GetMeshMultiZoneServiceByKRI(id kri.Identifier) *meshmzservice_api.MeshMultiZoneServiceResource {
-	if id.ResourceType != meshmzservice_api.MeshMultiZoneServiceType {
-		return nil
-	}
-	dest, found := mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-	if found {
-		return dest.(*meshmzservice_api.MeshMultiZoneServiceResource)
-	}
-	return nil
+func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core2.Destination {
+	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
