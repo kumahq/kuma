@@ -660,7 +660,7 @@ This functionality is essential for:
 **MeshTrust based on MeshIdentity**
 
 When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the MeshTrust based on the `MeshIdentity`. This option can be disabled and `MeshTrust` might not be created.
-To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. In case it's problematic for the user we can implement it later.
+To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. In case it's problematic for the user we can implement it later. Once user updates a MeshIdentity we shouldn't update existing MeshTrust and keep it as it is. We added a new type into `MeshIdentity.trustExtractionDisabled` which allows controlling this.
 
 **Multizone**
 
