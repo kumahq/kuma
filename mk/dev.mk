@@ -38,32 +38,37 @@ endef
 # so this is location should not be changed by developers.
 KUBECONFIG_DIR := $(HOME)/.kube
 
+ifeq (,$(shell which mise))
+$(error "mise - https://github.com/jdx/mise - not found. Please install it.")
+endif
+MISE := $(shell which mise)
+
 PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 
-CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
-YQ=$(CI_TOOLS_BIN_DIR)/yq
-HELM=$(CI_TOOLS_BIN_DIR)/helm
-K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
-KIND=$(CI_TOOLS_BIN_DIR)/kind
-KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
+CLANG_FORMAT=$(MISE) x clang-format -- clang-format
+YQ=$(MISE) x yq -- yq
+HELM=$(MISE) x helm -- helm
+K3D_BIN=$(MISE) x k3d -- k3d
+KIND=$(MISE) x kind -- kind
+KUBEBUILDER=$(MISE) x hadolint -- kubebuilder
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
-CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
-KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
-PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
-SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
-CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
+CONTROLLER_GEN=$(MISE) x controller-gen -- controller-gen
+KUBECTL=$(MISE) x kubectl -- kubectl
+PROTOC_BIN=$(MISE) x protoc -- protoc
+SHELLCHECK=$(MISE) x shellcheck -- shellcheck
+CONTAINER_STRUCTURE_TEST=$(MISE) x container-structure-test -- container-structure-test
 # from go-deps
-PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
-PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
-PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
-PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
-PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
-GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
-GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
-HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
-KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
-HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
-OAPI_CODEGEN=$(CI_TOOLS_BIN_DIR)/oapi-codegen
+PROTOC_GEN_GO=$(shell which protoc-gen-go)
+PROTOC_GEN_GO_GRPC=$(shell which protoc-gen-go-grpc)
+PROTOC_GEN_VALIDATE=$(shell which protoc-gen-validate)
+PROTOC_GEN_KUMADOC=$(shell which protoc-gen-kumadoc)
+PROTOC_GEN_JSONSCHEMA=$(shell which protoc-gen-jsonschema)
+GINKGO=$(MISE) x ginkgo -- ginkgo
+GOLANGCI_LINT=$(MISE) x golangci-lint -- golangci-lint
+HELM_DOCS=$(MISE) x helm-docs -- helm-docs
+KUBE_LINTER=$(MISE) x kube-linter -- kube-linter
+HADOLINT=$(MISE) x hadolint -- hadolint
+OAPI_CODEGEN=$(MISE) x oapi-codegen -- oapi-codegen
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock

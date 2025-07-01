@@ -26,8 +26,7 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
