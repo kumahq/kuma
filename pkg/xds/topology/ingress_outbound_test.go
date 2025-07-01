@@ -8,7 +8,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -42,15 +41,11 @@ var _ = Describe("IngressTrafficRoute", func() {
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				meshServicesByName := make(map[kri.Identifier]*v1alpha1.MeshServiceResource, len(given.meshServices))
-				for _, ms := range given.meshServices {
-					meshServicesByName[kri.From(ms, "")] = ms
-				}
 				endpoints := topology.BuildIngressEndpointMap(
 					context.Background(),
 					given.mesh,
 					"east",
-					meshServicesByName,
+					given.meshServices,
 					nil,
 					nil,
 					given.dataplanes,

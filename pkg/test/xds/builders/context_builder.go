@@ -4,9 +4,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -39,12 +36,17 @@ func Context() *ContextBuilder {
 }
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
-	resMap := xds_context.ResourceMap{
-		meshservice_api.MeshServiceType:                   mc.res.Mesh.Resources.MeshServices(),
-		meshexternalservice_api.MeshExternalServiceType:   mc.res.Mesh.Resources.MeshExternalServices(),
-		meshmultizoneservice_api.MeshMultiZoneServiceType: mc.res.Mesh.Resources.MeshMultiZoneServices(),
+	var destinations []xds_context.DestinationResource
+	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
+		destinations = append(destinations, ms)
 	}
-	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(resMap)
+	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
+		destinations = append(destinations, mes)
+	}
+	for _, mmzs := range mc.res.Mesh.Resources.MeshMultiZoneServices().Items {
+		destinations = append(destinations, mmzs)
+	}
+	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(destinations)
 	return mc.res
 }
 

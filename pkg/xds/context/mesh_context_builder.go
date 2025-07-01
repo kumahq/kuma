@@ -172,9 +172,33 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(ctx, mesh, m.zone, baseMeshContext.DestinationIndex.meshServiceByIdentifier, meshMultiZoneServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices, loader)
+	endpointMap := xds_topology.BuildEdsEndpointMap(
+		ctx,
+		mesh,
+		m.zone,
+		meshServices,
+		meshMultiZoneServices,
+		meshExternalServices,
+		dataplanes,
+		zoneIngresses,
+		zoneEgresses,
+		externalServices,
+		loader,
+	)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
-	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(ctx, mesh, m.zone, baseMeshContext.DestinationIndex.meshServiceByIdentifier, meshMultiZoneServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses, loader)
+	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
+		ctx,
+		mesh,
+		m.zone,
+		meshServices,
+		meshMultiZoneServices,
+		meshExternalServices,
+		dataplanes,
+		externalServices,
+		resources.Gateways().Items,
+		zoneEgresses,
+		loader,
+	)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
@@ -267,11 +291,23 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 	if latest != nil && bytes.Equal(newHash, latest.hash) {
 		return latest, nil
 	}
+
+	var destinations []DestinationResource
+	for _, resources := range rmap {
+		if !isDestinationResource(resources) {
+			continue
+		}
+
+		for _, res := range resources.GetItems() {
+			destinations = append(destinations, res.(DestinationResource))
+		}
+	}
+
 	return &BaseMeshContext{
 		hash:             newHash,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: NewDestinationIndex(rmap),
+		DestinationIndex: NewDestinationIndex(destinations),
 	}, nil
 }
 
@@ -537,4 +573,12 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
 		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol
+}
+
+func isDestinationResource(resources core_model.ResourceList) bool {
+	if len(resources.GetItems()) > 0 {
+		_, ok := resources.GetItems()[0].(DestinationResource)
+		return ok
+	}
+	return false
 }

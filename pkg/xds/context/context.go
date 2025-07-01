@@ -64,11 +64,6 @@ func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)
 }
 
-type LabelValue struct {
-	Label string
-	Value string
-}
-
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
 // If there is an information that can be precomputed and shared between all data plane proxies
@@ -107,7 +102,7 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	}
 	var oldestCreationTime *time.Time
 	var oldestTri *kri.Identifier
-	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(string(resType), labels) {
+	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(labels) {
 		var resource core_model.Resource
 		switch tri.ResourceType {
 		case meshexternalservice_api.MeshExternalServiceType:
@@ -129,15 +124,36 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 }
 
 func (mc *MeshContext) GetMeshServiceByKRI(id kri.Identifier) *meshservice_api.MeshServiceResource {
-	return mc.BaseMeshContext.DestinationIndex.meshServiceByIdentifier[kri.NoSectionName(id)]
+	if id.ResourceType != meshservice_api.MeshServiceType {
+		return nil
+	}
+	dest, found := mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
+	if found {
+		return dest.(*meshservice_api.MeshServiceResource)
+	}
+	return nil
 }
 
 func (mc *MeshContext) GetMeshExternalServiceByKRI(id kri.Identifier) *meshexternalservice_api.MeshExternalServiceResource {
-	return mc.BaseMeshContext.DestinationIndex.meshExternalServiceByIdentifier[kri.NoSectionName(id)]
+	if id.ResourceType != meshexternalservice_api.MeshExternalServiceType {
+		return nil
+	}
+	dest, found := mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
+	if found {
+		return dest.(*meshexternalservice_api.MeshExternalServiceResource)
+	}
+	return nil
 }
 
 func (mc *MeshContext) GetMeshMultiZoneServiceByKRI(id kri.Identifier) *meshmzservice_api.MeshMultiZoneServiceResource {
-	return mc.BaseMeshContext.DestinationIndex.meshMultiZoneServiceByIdentifier[kri.NoSectionName(id)]
+	if id.ResourceType != meshmzservice_api.MeshMultiZoneServiceType {
+		return nil
+	}
+	dest, found := mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
+	if found {
+		return dest.(*meshmzservice_api.MeshMultiZoneServiceResource)
+	}
+	return nil
 }
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {

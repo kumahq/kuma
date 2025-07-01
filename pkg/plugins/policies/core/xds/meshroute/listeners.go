@@ -218,6 +218,7 @@ func GetServiceProtocolPortFromRef(
 		if ms == nil {
 			return "", "", 0, false
 		}
+		// Right now backendRef can only be numeric port, so you cannot get port by name if destination has actual name.
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
 			return "", "", 0, false

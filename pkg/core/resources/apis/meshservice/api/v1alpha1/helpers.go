@@ -17,25 +17,13 @@ func (m *MeshServiceResource) DestinationName(port int32) string {
 	return destinationname.LegacyName(kri.From(m, ""), MeshServiceResourceTypeDescriptor.ShortName, port)
 }
 
-func (m *MeshServiceResource) findPort(port int32) (Port, bool) {
-	for _, p := range m.Spec.Ports {
-		if p.Port == port {
-			return p, true
-		}
-	}
-	return Port{}, false
-}
-
-func (m *MeshServiceResource) FindSectionNameByPort(port int32) (string, bool) {
-	if port, found := m.findPort(port); found {
-		return port.GetName(), true
-	}
-	return "", false
-}
-
+// FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
 func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
-		if p.GetName() == name {
+		if p.Name == name {
+			return p, true
+		}
+		if fmt.Sprintf("%d", p.Port) == name {
 			return p, true
 		}
 	}
