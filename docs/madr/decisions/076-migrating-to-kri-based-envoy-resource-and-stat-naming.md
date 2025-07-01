@@ -15,7 +15,7 @@ Two main groups are impacted:
 
 #### Kuma GUI
 
-The Dataplane view displays inbound and outbound endpoints using data from Envoy stats. It matches these stats to configuration by parsing stat names, such as cluster or listener names. Changes to stat naming or resource identifiers will break this matching logic. We must coordinate changes with the GUI to support both the old and new formats during the transition.
+The `Dataplane` view displays inbound and outbound endpoints using data from Envoy stats. It matches these stats to configuration by parsing stat names, such as cluster or listener names. Changes to stat naming or resource identifiers will break this matching logic. We must coordinate changes with the GUI to support both the old and new formats during the transition.
 
 ## Scope
 
@@ -98,7 +98,7 @@ Once KRI naming becomes the default, this setting will also default to `true`. U
 
 ### Naming for inbound-related resources
 
-The current KRI naming format, as defined in the [Resource Identifier](070-resource-identifier.md) MADR, proposes that non-internal inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port/name as the `sectionName`. This would result in names like:
+The current KRI naming format, as defined in the [Resource Identifier](070-resource-identifier.md) MADR, proposes that non-system inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port/name as the `sectionName`. This would result in names like:
 
 ```
 kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
@@ -106,35 +106,41 @@ kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 
 While technically correct and traceable, this approach significantly increases metrics cardinality compared to the current convention (e.g., `localhost_5050`), and would cause noticeable regressions in performance, cost, and compatibility with existing observability tooling. To mitigate this, we are considering alternative naming schemes for these inbound-related resources:
 
-#### Option 1: Replace Dataplane name with a simple keyword (`self` or `this`)
+#### Option 1: Introduce a separate naming scheme for inbound resources using `self` or `this` keyword
 
-Use a naming format like `{prefix}_{sectionName}`, where prefix is a static term such as `self` or `this`. Example:
-
-```
-self_5050
-```
-
-This would apply to both resource names and stat names for non-internal inbounds.
-
-Unlike the current formats (`localhost:{port}` for Envoy clusters and `inbound:{ip_address}:{port}` for listeners), this format uses the underscore separator and may include the port's name instead of the raw port number, if one is defined. For example:
+This option proposes a new naming format specifically for non-system inbound xDS resources. Instead of using the full KRI (which includes the `Dataplane` name) or the system format (which uses the `system_` prefix), these resources would follow a distinct format based on the `self` or `this` keyword:
 
 ```
+self_5050  
 self_httpport
 ```
+
+The format uses an underscore separator and may include either the raw port number or the named port, depending on the `Dataplane` configuration.
+
+This approach introduces a third well-defined and consistent naming scheme:
+
+* `kri_` prefix — used for Kuma resource–based names
+* `system_` prefix — used for system resources
+* `self_` (or `this_`) prefix — used for contextual inbound resources that belong to a specific `Dataplane`
+
+The main justification is that inbound resources always exist in the context of the `Dataplane` that defines them. Unlike outbounds (which are tied to another named resource), inbounds are local and self-contained. If we try to use KRI format and remove the `Dataplane` name, we break the KRI's purpose of clearly correlating the name with the originating resource. Therefore, a dedicated and simple contextual naming format is more accurate and practical.
 
 **Benefits:**
 
 * No increase in metric cardinality
+* Keeps stat and resource names short and practical
 * Minimal changes to existing tooling: `localhost_*` just becomes `self_*` or `this_*`
-* The name does not look like a system resource (no `_kuma_` prefix), avoiding confusion with system-generated resources
-* Absence of the `kri` prefix makes it clear this is not a KRI-formatted name, signaling a separate handling case and reducing false expectations in tooling
-* Since the name in Kubernetes deployments doesn’t include pod-specific data, it avoids metric churn during pod restarts and keeps time-series data stable
-* More flexible than current formats by allowing named ports, not just port numbers
+* Format avoids confusion with system resources (no `system_` prefix)
+* No `kri_` prefix makes it clear this is not KRI-based, avoiding incorrect expectations in tooling
+* Avoids metric churn in Kubernetes by not embedding pod-specific values
+* Supports named ports in addition to numeric ports
+* Establishes a clear, purpose-specific format for inbounds that fits their context
 
 **Drawbacks:**
 
-* Breaks the original Resource Identifier model by introducing a third category of resources (not Kuma-based, not system, but still service-to-service and not uniquely identified)
-* Reduces consistency in the overall naming convention
+* Introduces a third naming category outside the original Resource Identifier MADR, requiring updates to formally define and support it
+* Removes the ability to directly correlate inbound resource names with their originating `Dataplane`
+* Increases complexity by maintaining and reasoning about three separate naming formats across the system
 
 #### Option 2: Align resource names with existing `localhost_{port}` inbound clusters stat format
 
@@ -166,11 +172,11 @@ Unlike current formats, this allows `{sectionName}` to be either a port number o
 * Breaks the original Resource Identifier model by introducing a third category of resources outside Kuma-based and system types
 * Reduces consistency in naming format across all xDS resource types and stats
 
-#### Option 3: Use modified KRI with placeholder in place of Dataplane name
+#### Option 3: Use modified KRI with placeholder in place of `Dataplane` name
 
-This option preserves the structure of the original KRI format but modifies the Dataplane-related sections to avoid high cardinality. There are three suboptions for how to handle the Dataplane identity portion of the name:
+This option preserves the structure of the original KRI format but modifies the Dataplane-related sections to avoid high cardinality. There are three suboptions for how to handle the `Dataplane` identity portion of the name:
 
-##### Suboption A: Replace Dataplane name with a keyword like `self`, `this`, or leave it empty
+##### Suboption A: Replace `Dataplane` name with a keyword like `self`, `this`, or leave it empty
 
 Examples:
 
@@ -180,19 +186,19 @@ Examples:
 
 **Benefits:**
 
-* Lower cardinality compared to full Dataplane name
+* Lower cardinality compared to full `Dataplane` name
 * Retains full KRI structure with readable, recognizable identity
 * Clear and straightforward for users and tools to recognize and match
 
 **Drawbacks:**
 
-* **If a user names their Dataplane `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real Dataplane name and can be confusing**
+* **If a user names their `Dataplane` `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real `Dataplane` name and can be confusing**
 * Leaving the name section empty may look broken or incomplete even if technically valid
 * Breaks the original Resource Identifier model by introducing a special case for inbounds that does not align with the two existing categories (Kuma-based and system), creating inconsistency in the naming logic
 * Reduces consistency in the overall naming convention
 * Still includes mesh, zone, and namespace, which are already present as metric labels
 
-##### Suboption B: Replace Dataplane name with a `-` to indicate hidden value
+##### Suboption B: Replace `Dataplane` name with a `-` to indicate hidden value
 
 Example:
 
@@ -203,7 +209,7 @@ The `-` acts as a placeholder to signal that the value exists but is intentional
 **Benefits:**
 
 * Same as Suboption A
-* Avoids name collision with user-defined Dataplane names like `self` or `this`
+* Avoids name collision with user-defined `Dataplane` names like `self` or `this`
 * Opens the path to extending the KRI format definition to support `-` as a special reserved marker for any KRI section
 
 **Drawbacks:**
@@ -295,7 +301,7 @@ Unfortunately, there is currently no reliable way to detect and warn users about
 
   *Problem:* This is unreliable, and all the concerns above still apply.
 
-* Show a general warning in the Dataplane or policy view when KRI is enabled and any `MeshProxyPatch` applies
+* Show a general warning in the `Dataplane` or policy view when KRI is enabled and any `MeshProxyPatch` applies
 
   *Problem:* This might be useful the first time but would quickly become noise once the user verifies their configuration.
 
