@@ -116,13 +116,20 @@ self_5050
 
 This would apply to both resource names and stat names for non-internal inbounds.
 
+Unlike the current formats (`localhost:{port}` for Envoy clusters and `inbound:{ip_address}:{port}` for listeners), this format uses the underscore separator and may include the port's name instead of the raw port number, if one is defined. For example:
+
+```
+self_httpport
+```
+
 **Benefits:**
 
 * No increase in metric cardinality
 * Minimal changes to existing tooling: `localhost_*` just becomes `self_*` or `this_*`
 * The name does not look like a system resource (no `_kuma_` prefix), avoiding confusion with system-generated resources
-* Absence of the `kri` prefix makes it obvious that this is not a KRI-formatted name, signaling a separate handling case and reducing false expectations in tooling
-* Since the name in Kubernetes deployments doesn’t include pod-specific data, it avoids metric churn during pod restarts and keeps time-series data consistent and easier to query
+* Absence of the `kri` prefix makes it clear this is not a KRI-formatted name, signaling a separate handling case and reducing false expectations in tooling
+* Since the name in Kubernetes deployments doesn’t include pod-specific data, it avoids metric churn during pod restarts and keeps time-series data stable
+* More flexible than current formats by allowing named ports, not just port numbers
 
 **Drawbacks:**
 
@@ -135,21 +142,29 @@ This option proposes using the already established stat format `localhost_{port}
 
 Specifically:
 
-* Change cluster names from `localhost:{port}` to `localhost_{port}` to match stat names
-* Change listener and other inbound-related resource names (e.g. from `inbound:10.42.0.83:5050`) to `localhost_{port}`
+* Change cluster names from `localhost:{port}` to `localhost_{sectionName}` to match stat format
+* Change listener and other inbound-related resource names (e.g. from `inbound:10.42.0.83:5050`) to `localhost_{sectionName}` for consistency across resources
+
+Unlike current formats, this allows `{sectionName}` to be either a port number or a named port (e.g. `httpport`).
+
+**Examples:**
+
+* `localhost_5050`
+* `localhost_httpport`
 
 **Benefits:**
 
-* Resource names align with existing `localhost_{port}` cluster stat names
+* Keeps resource names in sync with existing `localhost_{port}` stat format for clusters, as long as no port name is used (only numeric ports)
 * No increase in metric cardinality
-* No changes needed for dashboards or alerts that rely on current cluster stat names
+* Dashboards and alerts using current cluster stat names will continue to work without changes when numeric ports are used
+* Builds on a format already familiar to users
 
 **Drawbacks:**
 
-* Listener stat names will change, requiring updates to dashboards that rely on them
-* `localhost_{port}` is misleading for listeners since they do not bind to localhost
-* Breaks the original Resource Identifier model by introducing a third category of resources
-* Reduces consistency in the naming convention used across xDS resources and stats
+* Listener stat names will change, which may require updates to dashboards or alerts that rely on them
+* The prefix `localhost_` may be misleading for listeners, which typically bind to pod IPs, not loopback
+* Breaks the original Resource Identifier model by introducing a third category of resources outside Kuma-based and system types
+* Reduces consistency in naming format across all xDS resource types and stats
 
 #### Option 3: Use modified KRI with placeholder in place of Dataplane name
 
