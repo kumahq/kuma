@@ -67,55 +67,59 @@ In Kubernetes, the control plane can be configured to auto-inject the annotation
 
 ### Data plane feature flag and propagation
 
-A new data plane feature flag will control the use of KRI-based stat and resource naming. It will be optional at first, with a clear deprecation plan: KRI naming will become the default in the future, and the flag will eventually be removed. This gives users time to migrate without breaking existing setups.
+A new data plane feature flag will control the use of consistent naming for proxy resources and stats, including both KRI-based formats and the new `self_` format for inbounds. It will be optional at first, with a deprecation path: the new naming will become the default in the future, and the flag will eventually be removed. This gives users time to migrate without breaking existing setups.
 
 The flag will be passed from the data plane proxy to the control plane via xDS metadata using:
 
 ```go
-const FeatureKRINaming string = "feature-kri-naming"
+const FeatureProxyResourcesAndStatsNamingV2 string = "feature-proxy-resources-and-stats-naming-v2"
 ```
 
 #### Per-proxy opt-in
 
 Users can enable the feature for individual data plane proxies:
 
-| Mode       | How to enable                                                 |
-|------------|---------------------------------------------------------------|
-| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_KRI_NAMING_ENABLED=true` |
-| Kubernetes | Add annotation: `kuma.io/kri-naming: "enabled"`               |
+| Mode       | How to enable                                                                          |
+|------------|----------------------------------------------------------------------------------------|
+| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true` |
+| Kubernetes | Add annotation: `features.kuma.io/proxy-resources-and-stats-naming-v2: "enabled"`      |
 
-In Kubernetes, the sidecar injector will translate the annotation into the corresponding environment variable. `kuma-dp` will detect the variable and include the feature flag in xDS metadata.
+In Kubernetes, we cannot rely on setting the environment variable directly because environment variables are container-scoped, not pod-scoped. Since the `kuma-sidecar` container is injected into the pod by the sidecar injector, setting the environment variable on the user’s workload container would not affect the sidecar container. Therefore, the only viable and generic way to control this feature per pod is to use an annotation. The sidecar injector reads the annotation and converts it into the correct environment variable on the `kuma-sidecar` container. `kuma-dp` will then pick up the variable and include the feature flag in the xDS metadata sent to the control plane.
 
-#### Zone-wide opt-in for data plane proxies in Kubernetes
+**This annotation follows a new convention for data plane feature flags: all new per-pod feature flags will use the `features.` prefix.** This aligns with Kubernetes annotation guidelines, which recommend that prefixes carry context and follow the pattern `subsystem.kubernetes.io/parameter` over flat or ambiguous keys. See [Kubernetes API Conventions](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#label-selector-and-annotation-conventions) for details.
 
-To enable KRI naming for all injected data plane proxies in a Kubernetes zone, users can configure the control plane to automatically set the annotation during sidecar injection:
+#### Zone-wide opt-in for Kubernetes data planes
+
+To enable the naming changes for all injected data plane proxies in a Kubernetes zone, users can configure the control plane to automatically inject the annotation during sidecar injection:
 
 ```go
-KRINamingEnabled bool `json:"kriNamingEnabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_KRI_NAMING_ENABLED"`
+ProxyResourcesAndStatsNamingV2Enabled bool `json:"proxyResourcesAndStatsNamingV2Enabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED"`
 ```
 
-#### ZoneIngress and ZoneEgress proxies
+#### ZoneIngress and ZoneEgress
 
-`ZoneIngress` and `ZoneEgress` proxies must also include the KRI naming feature flag to ensure consistent naming across the mesh. In both Universal and Kubernetes modes, this is done by setting the following environment variable in their deployments:
+`ZoneIngress` and `ZoneEgress` proxies must also include the feature flag to ensure consistent naming accross the mesh. In both Universal and Kubernetes, this is done by setting the following environment variable in their deployments:
 
 ```env
-KUMA_DATAPLANE_RUNTIME_KRI_NAMING_ENABLED=true
+KUMA_DATAPLANE_RUNTIME_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true
 ```
 
 #### Helper setting for Kubernetes installations
 
-To simplify configuration in Kubernetes environments, a new installation setting will be introduced:
+To simplify configuration, a new setting will be introduced under the `dataPlane.features` section for Helm and other Kubernetes-based install methods:
 
 ```yaml
-experimental.kriNaming.enabled
+dataPlane:
+  features:
+    proxyResourcesAndStatsNamingV2: true
 ```
 
-When set to `true`, this will:
+When enabled, it will:
 
-* Set the `KUMA_DATAPLANE_RUNTIME_KRI_NAMING_ENABLED="true"` environment variable in all `ZoneIngress` and `ZoneEgress` deployments
-* Set the `KUMA_RUNTIME_KUBERNETES_INJECTOR_KRI_NAMING_ENABLED="true"` environment variable in the control plane deployment
+* Add `KUMA_DATAPLANE_RUNTIME_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true` to all `ZoneIngress` and `ZoneEgress` deployments
+* Set `KUMA_RUNTIME_KUBERNETES_INJECTOR_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true` in the control plane deployment
 
-Once KRI naming becomes the default, this setting will also default to `true`. Users will still be able to disable it by setting it to `false`. Eventually, this setting will be removed when disabling the feature is no longer supported.
+When the new naming becomes the default, this setting will also default to `true`. Eventually, it will be removed when the feature can no longer be disabled.
 
 ### Naming for inbound-related resources
 
@@ -316,28 +320,26 @@ The new naming format will be used consistently for both xDS resource names and 
 
 This makes the resource identity clear and contextual to the `Dataplane`, without embedding full KRI metadata that would otherwise increase metric churn and complexity. Among the options discussed, this one offers the best balance between simplicity, compatibility with existing tooling, and clear semantics. It introduces a new, dedicated naming category for inbounds that reflects their contextual nature without overloading the existing `kri_` or `system_` prefixes.
 
-### Impact on MeshProxyPatch policies
+### Impact on `MeshProxyPatch` policies
 
-Enabling the KRI naming feature can immediately break existing `MeshProxyPatch` policies if they were written using legacy resource names and are not updated ahead of time. Since KRI changes the structure and names of xDS resources, any patch relying on previous names may stop applying correctly.
+Enabling the new naming formats (`kri_` and `self_`) may break existing `MeshProxyPatch` policies that rely on old resource names. These patches often target specific cluster or listener names, and any mismatch caused by the updated naming will prevent the patch from applying.
 
-Unfortunately, there is currently no reliable way to detect and warn users about this. Several approaches were considered:
+Several ideas were considered to help detect or prevent breakage, but none were viable:
 
-* Log or show a warning if a `Dataplane` is matched by a `MeshProxyPatch`, but none of the patch modifiers apply to any xDS resources
+* Emit a warning when a `MeshProxyPatch` matches a proxy but none of its modifiers apply. However, patches like JSON Patch are complex and hard to analyze. Logging unmatched cases would likely produce too much noise and lead to false positives.
 
-  *Problem:* It's hard to determine whether complex patches like JSON Patch match anything. There's no existing way to surface this to the GUI, and logging such cases could be noisy and lead to false positives. Even in debug logs, it could quickly become more annoying than helpful.
+* Scan patches for the presence of `kri_` or `self_` prefixes as an indicator of awareness. This would be fragile and could not reliably detect incompatible patches.
 
-* Search for the `kri_` prefix in patch contents as a hint that the policy is KRI-aware
+* Show a general warning in the GUI when KRI is enabled and any `MeshProxyPatch` is active. This might help initially but would quickly become repetitive and unhelpful once users confirm their setups.
 
-  *Problem:* This is unreliable, and all the concerns above still apply.
+Since there’s no clean way to catch or warn about this in code, the decision is to document the risk clearly. Users are expected to:
 
-* Show a general warning in the `Dataplane` or policy view when KRI is enabled and any `MeshProxyPatch` applies
+* Review and update their `MeshProxyPatch` policies before enabling the new naming formats
 
-  *Problem:* This might be useful the first time but would quickly become noise once the user verifies their configuration.
+As part of updating the documentation, we will:
 
-Because none of these options are satisfactory, the chosen path is to document this behavior clearly:
-
-* Include a warning in the upgrade notes to alert users that existing `MeshProxyPatch` policies must be reviewed and updated before enabling KRI naming
-* Add a strong warning to the documentation for `MeshProxyPatch` policies
+* Add a strong warning to the `MeshProxyPatch` section explaining that policies must be reviewed and updated when switching to the new naming formats
+* Include a notice in the upgrade notes to alert users of this requirement
 
 ### Updating ZoneIgress and ZoneEgress insight resources with feature flags
 
