@@ -139,6 +139,18 @@ This is not possible.
 In MeshProxyPatch you can use `name` matcher to match a resource name but if we change the name of the resource, it will not match anymore.
 The feature will be behind a feature flag so that nothing breaks unexpectedly but migration of MeshProxyPatch resources will be required.
 
+### As a Kuma developer I want to rename resources that are coming from outside Kuma
+
+This is either not possible or very hard.
+Envoy can connect to many xDS servers to get configuration from.
+If we integrate with systems like Spire (that exposes its own SDS server) we will not be able to rename resources that are coming from there.
+
+See:
+- https://github.com/spiffe/spire/blob/f687bf21e812a4bf027d88136032fc46497e7fe0/pkg/agent/endpoints/sdsv3/handler.go#L395
+- https://github.com/spiffe/spire/blob/f6a11a0ae03353b3444007ecaa8c81b34931bb49/pkg/agent/endpoints/sdsv3/handler.go#L282
+- https://github.com/spiffe/spire/blob/f6a11a0ae03353b3444007ecaa8c81b34931bb49/pkg/agent/endpoints/sdsv3/handler.go#L291
+- https://github.com/spiffe/spire/blob/f6a11a0ae03353b3444007ecaa8c81b34931bb49/pkg/agent/endpoints/sdsv3/handler.go#L312
+
 ## Design
 
 ### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
