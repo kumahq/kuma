@@ -275,20 +275,9 @@ Currently, the `ServiceAccount` is not exposed in the `Dataplane` resource, whic
 
 There can be multiple difference identity providers but in the first iteration we would like to focus on:
 
-* builtin
 * provided
 * spire
 
-**Builtin**
-
-The builtin provider type is where the control plane generates a Root CA, which is later used for issuing workload identities.
-Currently, in a multizone setup, Kuma creates a Root CA on the Global control plane and syncs it to the zones. With the new approach, instead of sharing a single Root CA, we will sync only the resource definition, and each zone will generate its own Root CA for workload identity. This improves isolation between zones and allows for better security boundaries.
-
-```yaml
-    builtin:
-      dataplaneCertificate:
-        duration: 24h
-```
 **Provided**
 
 The provided type allows users to supply their own CA certificates. These can be configured per zone or as a global definition.
