@@ -153,18 +153,18 @@ See:
 
 ## Design
 
-### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
+### Use a `^system_[a-z0-9_]+$` regex to name system resources
 
 All changes will be behind the same feature flag as in [Migrating to KRI-based Envoy resource and stat naming](./076-migrating-to-kri-based-envoy-resource-and-stat-naming.md).
 
-All system resources will conform to `^_kuma_[a-z0-9_]+$` regex (we shouldn't use `_kuma:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
+All system resources will conform to `^system_[a-z0-9_]+$` regex (we shouldn't use `_system:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
 
-System resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `_kuma_<KRI>`.
+System resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `system_<KRI>`.
 
 For example:
 
 ```
-_kuma_kri_mtr_mesh-1__kuma-system_my-meshtrace_
+system_kri_mtr_mesh-1__kuma-system_my-meshtrace_
 ```
 
 Which indicates a system resource that was created for a `MeshTrace` resource.
@@ -178,12 +178,16 @@ kuma:envoy:admin
 Will conform with the previously mentioned regex:
 
 ```
-_kuma_envoy_admin
+system_envoy_admin
 ```
 
 and should describe the resource as accurately and plainly as possible (it **MUST** take into account any related configuration option or annotation if exists).
 
-It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `_kuma_transparent_proxy_outbound_listener`.
+It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `system_transparent_proxy_outbound_listener`.
+
+### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
+
+Same as above, but with `_kuma_` instead of `system_`.
 
 ## Implications for Kong Mesh
 
@@ -195,7 +199,7 @@ For MeshOPA it only modifies existing resources and doesn't create any new ones.
 
 ## Decision
 
-We will use a regex on all system resources as described in "Use a `^_kuma_[a-z0-9_]+$` regex to name system resources" section.
+We will use a regex on all system resources as described in "Use a `^system_[a-z0-9_]+$` regex to name system resources" section.
 
 ## Notes
 
