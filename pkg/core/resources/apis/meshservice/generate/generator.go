@@ -111,6 +111,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 				},
 			},
 			Ports: ports,
+			State: meshservice_api.StateUnavailable,
 		}
 		services[serviceTag] = &ms
 	}

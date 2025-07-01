@@ -383,6 +383,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 			ms.Spec = &meshservice_api.MeshService{}
 		}
 
+		ms.Spec.State = meshservice_api.StateUnavailable
 		ms.Spec.Ports = []meshservice_api.Port{}
 		for _, port := range svc.Spec.Ports {
 			if port.Protocol != kube_core.ProtocolTCP {
