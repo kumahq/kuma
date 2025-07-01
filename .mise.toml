@@ -2,7 +2,7 @@
 experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
-clang-format = "21.0.0"
+clang-format = "20.1.7"
 container-structure-test = "1.15.0"
 etcd = "3.5.9"
 golangci-lint = "2.1.6"
