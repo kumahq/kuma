@@ -12,7 +12,7 @@
 
 As first introduced in the [Resource Identifier](070-resource-identifier.md) MADR, we chose to standardize Envoy resource and stat naming using a structured format to improve consistency, traceability, and integration with tools like observability dashboards and the Kuma GUI. This effort introduces two major changes:
 
-1. **KRI-based naming**: Used for resources that are a direct result of distinct Kuma resources like `MeshService`, `MeshGateway`, `MeshHTTPRoute`, and others. This format improves correlation between Envoy configuration and Kuma resources, making it easier to trace metrics, understand traffic behavior, and troubleshoot issues.
+1. **KRI-based naming**: Used for resources that are a direct result of distinct Kuma resources like `MeshService`, `MeshExternalService`, `MeshHTTPRoute`, and others. This format improves correlation between Envoy configuration and Kuma resources, making it easier to trace metrics, understand traffic behavior, and troubleshoot issues.
 
 2. **`self_` naming format**: Used for inbound-related resources, which are currently always defined inside a `Dataplane`. These resources already exist in the context of the `Dataplane` that created them, so repeating that reference using a full KRI name does not add value and would unnecessarily raise metric cardinality. Instead, a simpler format like `self_{sectionName}` is used. In the future, if inbound resources can be defined by something other than a `Dataplane`, such as a new type of policy, then those resources will have their own identity and use full KRI naming.
 
