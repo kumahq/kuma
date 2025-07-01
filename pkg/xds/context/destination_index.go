@@ -83,7 +83,7 @@ func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, d
 }
 
 func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
-	return dc.destinationByIdentifier[id]
+	return dc.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
 func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(labels map[string]string) []kri.Identifier {
