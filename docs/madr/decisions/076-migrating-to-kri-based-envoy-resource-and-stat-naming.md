@@ -155,21 +155,24 @@ Specifically:
 
 This option preserves the structure of the original KRI format but modifies the Dataplane-related sections to avoid high cardinality. There are three suboptions for how to handle the Dataplane identity portion of the name:
 
-##### Suboption A: Replace Dataplane name with a keyword like `self` or `this`
+##### Suboption A: Replace Dataplane name with a keyword like `self`, `this`, or leave it empty
 
-Example:
+Examples:
 
 * `kri_dp_default_kuma-2_kuma-demo_self_5050`
 * `kri_dp_default_kuma-2_kuma-demo_this_5050`
+* `kri_dp_default_kuma-2_kuma-demo__5050`
 
 **Benefits:**
 
 * Lower cardinality compared to full Dataplane name
 * Retains full KRI structure with readable, recognizable identity
+* Clear and straightforward for users and tools to recognize and match
 
 **Drawbacks:**
 
 * **If a user names their Dataplane `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real Dataplane name and can be confusing**
+* Leaving the name section empty may look broken or incomplete even if technically valid
 * Breaks the original Resource Identifier model by introducing a special case for inbounds that does not align with the two existing categories (Kuma-based and system), creating inconsistency in the naming logic
 * Reduces consistency in the overall naming convention
 * Still includes mesh, zone, and namespace, which are already present as metric labels
