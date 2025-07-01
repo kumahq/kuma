@@ -98,13 +98,13 @@ Once KRI naming becomes the default, this setting will also default to `true`. U
 
 ### Naming for inbound-related resources
 
-The current KRI naming format, as defined in the [Resource Identifier](070-resource-identifier.md) MADR, proposes that non-system inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port/name as the `sectionName`. This would result in names like:
+The current KRI naming format, as defined in the [Resource Identifier](070-resource-identifier.md) MADR, proposes that non-system inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port or name as the `sectionName`. This would result in names like:
 
 ```
 kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 ```
 
-While technically correct and traceable, this approach significantly increases metrics cardinality compared to the current convention (e.g., `localhost_5050`), and would cause noticeable regressions in performance, cost, and compatibility with existing observability tooling. To mitigate this, we are considering alternative naming schemes for these inbound-related resources:
+While technically correct and traceable, this causes a significant increase in metrics cardinality compared to current formats like `localhost_5050` (used for cluster stat names). For listeners, where the format was not explicitly defined by us, the names defaulted to Envoy’s format like `{address}_{port}`. This would lead to regressions in performance, cost, and compatibility with observability tooling. The following alternatives are considered:
 
 #### Option 1: Introduce a separate naming scheme for inbound resources using `self` or `this` keyword
 
@@ -115,13 +115,13 @@ self_5050
 self_httpport
 ```
 
-The format uses an underscore separator and may include either the raw port number or the named port, depending on the `Dataplane` configuration.
+The format uses an underscore separator and may include either the port number or the named port, depending on the `Dataplane` configuration.
 
 This approach introduces a third well-defined and consistent naming scheme:
 
-* `kri_` prefix — used for Kuma resource–based names
-* `system_` prefix — used for system resources
-* `self_` (or `this_`) prefix — used for contextual inbound resources that belong to a specific `Dataplane`
+* `kri_` prefix: used for Kuma resource–based names
+* `system_` prefix: used for system resources
+* `self_` (or `this_`) prefix: used for contextual inbound resources that belong to a specific `Dataplane`
 
 The main justification is that inbound resources always exist in the context of the `Dataplane` that defines them. Unlike outbounds (which are tied to another named resource), inbounds are local and self-contained. If we try to use KRI format and remove the `Dataplane` name, we break the KRI's purpose of clearly correlating the name with the originating resource. Therefore, a dedicated and simple contextual naming format is more accurate and practical.
 
@@ -160,7 +160,7 @@ Unlike current formats, this allows `{sectionName}` to be either a port number o
 
 **Benefits:**
 
-* Keeps resource names in sync with existing `localhost_{port}` stat format for clusters, as long as no port name is used (only numeric ports)
+* Keeps resource names in sync with existing `localhost_{port}` stat format for clusters, as long as no port name is used
 * No increase in metric cardinality
 * Dashboards and alerts using current cluster stat names will continue to work without changes when numeric ports are used
 * Builds on a format already familiar to users
@@ -174,7 +174,7 @@ Unlike current formats, this allows `{sectionName}` to be either a port number o
 
 #### Option 3: Use modified KRI with placeholder in place of `Dataplane` name
 
-This option preserves the structure of the original KRI format but modifies the Dataplane-related sections to avoid high cardinality. There are three suboptions for how to handle the `Dataplane` identity portion of the name:
+This option preserves the structure of the original KRI format but modifies the `Dataplane`-related sections to avoid high cardinality. There are three suboptions for how to handle the `Dataplane` identity portion of the name:
 
 ##### Suboption A: Replace `Dataplane` name with a keyword like `self`, `this`, or leave it empty
 
@@ -192,9 +192,9 @@ Examples:
 
 **Drawbacks:**
 
-* **If a user names their `Dataplane` `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real `Dataplane` name and can be confusing**
+* If a user names their `Dataplane` `self` or `this`, the name will look like a valid KRI but won’t be correct. It won’t match the real `Dataplane` name and can be confusing
 * Leaving the name section empty may look broken or incomplete even if technically valid
-* Breaks the original Resource Identifier model by introducing a special case for inbounds that does not align with the two existing categories (Kuma-based and system), creating inconsistency in the naming logic
+* Breaks the original Resource Identifier model by introducing a special case for inbounds that does not align with the two existing categories
 * Reduces consistency in the overall naming convention
 * Still includes mesh, zone, and namespace, which are already present as metric labels
 
@@ -215,8 +215,8 @@ The `-` acts as a placeholder to signal that the value exists but is intentional
 **Drawbacks:**
 
 * Still includes mesh, zone, and namespace, contributing to metric cardinality
-* Requires updates to the original KRI MADR to define the semantics of `-` as a valid placeholder
-* Less intuitive than using keywords, may require more documentation
+* Requires updates to the KRI MADR to define the semantics of `-`
+* Less intuitive than using keywords and may need extra explanation
 
 ##### Suboption C: Collapse all KRI sections before `sectionName` into `-`
 
@@ -224,11 +224,9 @@ Example:
 
 * `kri_dp_-_-_-_-_5050`
 
-This keeps the `kri_dp` prefix and `sectionName`, but compresses all identity-bearing sections into dashes to fully anonymize the Dataplane.
-
 **Benefits:**
 
-* Preserves KRI format while minimizing cardinality
+* Keeps KRI format while minimizing cardinality
 * No risk of naming collisions or ambiguity
 * Can be formally described in the KRI specification as a valid but anonymized identifier
 
@@ -240,39 +238,38 @@ This keeps the `kri_dp` prefix and `sectionName`, but compresses all identity-be
 * Requires KRI spec to explicitly allow this pattern and define its meaning
 * Still includes the `kri_` prefix, which might falsely suggest the name is fully qualified and traceable
 
-#### Option 4: Treat inbounds as "system" resources and use `_kuma_{prefix}_{sectionName}` format
+#### Option 4: Treat inbounds as "system" resources and use `system_{prefix}_{sectionName}` format
 
 Adjust the **Standardized Naming for internal xDS Resources** and [Resource Identifier](070-resource-identifier.md) MADRs by:
 
-* Including non-system inbounds that correlate to a `Dataplane` in the `system` category
-* Using names like `_kuma_self_5050` or `_kuma_this_5050`
+* Including non-system inbounds in the `system` category
+* Using names like `system_self_5050` or `system_this_5050`
 
 **Benefits:**
 
 * No increase in metric cardinality
-* Small change required in existing tools (e.g., replace `localhost_*` with `_kuma_self_*`)
+* Small changes to tools (e.g., replace `localhost_*` with `system_self_*`)
 
 **Drawbacks:**
 
-* Severely breaks the intended definition of system resources in the **Standardized Naming for internal xDS Resources** MADR — inbound resources are part of service-to-service communication and user-defined configuration, which fundamentally does not fit the system resource model. Including them here introduces significant conceptual confusion and undermines the purpose of separating internal and user-facing xDS entities. The referenced MADR would require major changes to accommodate this contradiction.
-* Might confuse users and tooling that ignore `_kuma_*`-prefixed resources, expecting them to be internal and non-essential
-* Requires clear documentation and possible GUI and dashboard exceptions
+* Strongly contradicts the purpose of the system resource category, which is meant for internal, non-user-facing entities. Inbounds are tied to user configuration and traffic, so including them breaks this separation
+* Users and tools that ignore `system_*` resources may unintentionally miss inbound data
+* Requires documentation and tooling exceptions
+* Forces major changes to the **Standardized Naming for internal xDS Resources** MADR
 
 #### Option 5: Use full KRI name for resources, simplified name for stats
 
-In this option, the Envoy **resource names** (used in xDS configuration) would follow the full KRI format as originally defined:
+In this option, the Envoy resource names (used in xDS configuration) would follow the full KRI format as originally defined:
 
 ```
 kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 ```
 
-However, the **stat names** would use a simplified format as described in earlier options, for example:
+However, the stat names would use a simplified format as described in earlier options, for example:
 
 ```
 self_5050
 ```
-
-This decouples stat name cardinality from resource naming, allowing us to retain KRI for traceability and tooling while avoiding excessive metric explosion.
 
 **Benefits:**
 
@@ -286,6 +283,17 @@ This decouples stat name cardinality from resource naming, allowing us to retain
 * Makes it harder to correlate stats with resources in tooling like the Kuma GUI, which would now need to handle both formats separately
 * Requires dual parsing and matching logic in Kuma GUI (e.g., different strategies for xDS config vs. stats)
 * Increases implementation complexity and potential for confusion when debugging or inspecting proxy behavior
+
+#### Chosen approach for inbound resource naming
+
+We will go with **Option 1: Introduce a separate naming scheme for inbound resources using the `self` keyword**. This approach avoids the high cardinality problem of full KRI-formatted names and keeps tooling changes minimal by building on familiar patterns.
+
+The new naming format will be used consistently for both xDS resource names and stat names associated with non-system inbound traffic. It will follow the pattern:
+
+* `self_5050`
+* `self_httpport`
+
+This makes the resource identity clear and contextual to the `Dataplane`, without embedding full KRI metadata that would otherwise increase metric churn and complexity. Among the options discussed, this one offers the best balance between simplicity, compatibility with existing tooling, and clear semantics. It introduces a new, dedicated naming category for inbounds that reflects their contextual nature without overloading the existing `kri_` or `system_` prefixes.
 
 ### Impact on MeshProxyPatch policies
 
