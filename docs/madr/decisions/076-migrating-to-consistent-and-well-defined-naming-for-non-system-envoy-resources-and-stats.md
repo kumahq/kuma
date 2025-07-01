@@ -78,17 +78,17 @@ A new data plane feature flag will control the use of consistent naming for prox
 The flag will be passed from the data plane proxy to the control plane via xDS metadata using:
 
 ```go
-const FeatureProxyResourcesAndStatsNamingV2 string = "feature-proxy-resources-and-stats-naming-v2"
+const FeatureUnifiedProxyResourcesAndStatsNaming string = "feature-unified-proxy-resources-and-stats-naming"
 ```
 
 #### Per-proxy opt-in
 
 Users can enable the feature for individual data plane proxies:
 
-| Mode       | How to enable                                                                          |
-|------------|----------------------------------------------------------------------------------------|
-| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true` |
-| Kubernetes | Add annotation: `features.kuma.io/proxy-resources-and-stats-naming-v2: "enabled"`      |
+| Mode       | How to enable                                                                               |
+|------------|---------------------------------------------------------------------------------------------|
+| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY-RESOURCES_AND_STATS_NAMING_ENABLED=true` |
+| Kubernetes | Add annotation: `features.kuma.io/unified-proxy-resources-and-stats-naming: "enabled"`      |
 
 In Kubernetes, we cannot rely on setting the environment variable directly because environment variables are container-scoped, not pod-scoped. Since the `kuma-sidecar` container is injected into the pod by the sidecar injector, setting the environment variable on the user’s workload container would not affect the sidecar container. Therefore, the only viable and generic way to control this feature per pod is to use an annotation. The sidecar injector reads the annotation and converts it into the correct environment variable on the `kuma-sidecar` container. `kuma-dp` will then pick up the variable and include the feature flag in the xDS metadata sent to the control plane.
 
@@ -99,7 +99,7 @@ In Kubernetes, we cannot rely on setting the environment variable directly becau
 To enable the naming changes for all injected data plane proxies in a Kubernetes zone, users can configure the control plane to automatically inject the annotation during sidecar injection:
 
 ```go
-ProxyResourcesAndStatsNamingV2Enabled bool `json:"proxyResourcesAndStatsNamingV2Enabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED"`
+UnifiedProxyResourcesAndStatsNamingEnabled bool `json:"unifiedProxyResourcesAndStatsNamingEnabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED"`
 ```
 
 #### ZoneIngress and ZoneEgress
@@ -107,7 +107,7 @@ ProxyResourcesAndStatsNamingV2Enabled bool `json:"proxyResourcesAndStatsNamingV2
 `ZoneIngress` and `ZoneEgress` proxies must also include the feature flag to ensure consistent naming accross the mesh. In both Universal and Kubernetes, this is done by setting the following environment variable in their deployments:
 
 ```env
-KUMA_DATAPLANE_RUNTIME_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true
+KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true
 ```
 
 #### Helper setting for Kubernetes installations
@@ -117,13 +117,13 @@ To simplify configuration, a new setting will be introduced under the `dataPlane
 ```yaml
 dataPlane:
   features:
-    proxyResourcesAndStatsNamingV2: true
+    unifiedProxyResourcesAndStatsNaming: true
 ```
 
 When enabled, it will:
 
-* Add `KUMA_DATAPLANE_RUNTIME_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true` to all `ZoneIngress` and `ZoneEgress` deployments
-* Set `KUMA_RUNTIME_KUBERNETES_INJECTOR_PROXY_RESOURCES_AND_STATS_NAMING_V2_ENABLED=true` in the control plane deployment
+* Add `KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` to all `ZoneIngress` and `ZoneEgress` deployments
+* Set `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` in the control plane deployment
 
 When the new naming becomes the default, this setting will also default to `true`. Eventually, it will be removed when the feature can no longer be disabled.
 
@@ -359,13 +359,13 @@ We will update both `ZoneIngressIngress` and `ZoneEgressIngress` to include meta
 
 The Kuma GUI relies on Envoy stat names and xDS resource names to display inbound and outbound endpoint details for `Dataplane`, `ZoneIngress`, and `ZoneEgress` proxies. These names are used to associate metrics with specific resources and visualize traffic paths in the GUI.
 
-To support the KRI naming format, the GUI parsers that extract resource information from stat names and xDS configuration (listeners, clusters, endpoints) must be updated. The new format is defined in the [Resource Identifier MADR](https://github.com/kumahq/kuma/blob/d19b78a4556962f4d9d3cc5921c7bdc73dc93d26/docs/madr/decisions/070-resource-identifier.md?plain=1#L328):
+To support the KRI naming format, the GUI parsers that extract resource information from stat names and xDS configuration (listeners, clusters, endpoints) must be updated. The new format is defined in the [Resource Identifier](https://github.com/kumahq/kuma/blob/d19b78a4556962f4d9d3cc5921c7bdc73dc93d26/docs/madr/decisions/070-resource-identifier.md?plain=1#L328) MADR:
 
 ```
 kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
 ```
 
-When the `feature-kri-naming` flag is present in the metadata of `DataplaneIngress`, `ZoneIngressIngress`, and `ZoneEgressInsight`, the GUI must:
+When the `feature-unified-proxy-resources-and-stats-naming` flag is present in the metadata of `DataplaneInsight`, `ZoneIngressInsight`, and `ZoneEgressInsight`, the GUI must:
 
 * Parse and interpret stat names and xDS resource names based on the KRI format
 * Drop any assumptions about `inbound:` or `outbound:` prefixes, which are no longer used
