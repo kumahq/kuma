@@ -242,7 +242,7 @@ func (d *DataplaneLifecycle) proxyConnectedToAnotherCP(
 
 	err := d.resManager.Get(ctx, insight, store.GetBy(key))
 	switch {
-	case store.IsResourceNotFound(err):
+	case store.IsNotFound(err):
 		// If insight is missing it most likely means that it was not yet created, so DP just connected and now leaving the mesh.
 		log.Info("insight is missing. Safe to deregister the proxy")
 		return false, nil

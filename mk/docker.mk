@@ -7,7 +7,7 @@ DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
 define build_image
-$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY)/,$(1)))
+$(addsuffix :$(BUILD_INFO_VERSION)$(if $(and $(2),$(if $(findstring true,$(SKIP_PLATFORM)),,1)),-$(2)),$(addprefix $(DOCKER_REGISTRY)/,$(1)))
 endef
 
 IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni

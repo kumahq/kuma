@@ -151,7 +151,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		if len(changeReasons) > 0 {
 			log.Info("updating mesh service", "reason", changeReasons)
 			if err := s.resManager.Update(ctx, ms); err != nil {
-				if errors.Is(err, &store.ResourceConflictError{}) {
+				if store.IsConflict(err) {
 					log.Info("couldn't update mesh service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
 				} else {
 					log.Error(err, "could not update mesh service", "reason", changeReasons)

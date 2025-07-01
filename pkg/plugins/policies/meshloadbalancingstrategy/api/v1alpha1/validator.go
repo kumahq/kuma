@@ -65,6 +65,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshMultiZoneService,
+				common_api.MeshHTTPRoute,
 			}
 		}
 		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
@@ -82,8 +83,35 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 
 func validateConf(conf Conf, to To) validators.ValidationError {
 	var verr validators.ValidationError
-	verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
-	verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness, to))
+
+	// For MeshHTTPRoute, only hashPolicies is allowed
+	if to.TargetRef.Kind == common_api.MeshHTTPRoute {
+		verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
+
+		// Add validation errors if other fields are specified
+		if conf.LoadBalancer != nil {
+			verr.AddViolation("loadBalancer", "field is not allowed when targetRef.kind is MeshHTTPRoute, only hashPolicies is supported")
+		}
+		if conf.LocalityAwareness != nil {
+			verr.AddViolation("localityAwareness", "field is not allowed when targetRef.kind is MeshHTTPRoute, only hashPolicies is supported")
+		}
+	} else {
+		// For other target reference kinds, validate all fields
+		verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
+		verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness, to))
+		verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
+
+		// Check if hashPolicies is specified both at the top level and in one of the load balancer types
+		if conf.HashPolicies != nil && conf.LoadBalancer != nil {
+			if conf.LoadBalancer.RingHash != nil && conf.LoadBalancer.RingHash.HashPolicies != nil {
+				verr.AddViolation("loadBalancer.ringHash.hashPolicies", "hashPolicies already specified in the root level")
+			}
+			if conf.LoadBalancer.Maglev != nil && conf.LoadBalancer.Maglev.HashPolicies != nil {
+				verr.AddViolation("loadBalancer.maglev.hashPolicies", "hashPolicies already specified in the root level")
+			}
+		}
+	}
+
 	return verr
 }
 

@@ -1,5 +1,5 @@
 define LD_FLAGS
--ldflags="-s -w \
+-ldflags="$(if $(filter true,$(DEBUG)),, -s -w) \
 -X github.com/kumahq/kuma/pkg/version.version=$(BUILD_INFO_VERSION) \
 -X github.com/kumahq/kuma/pkg/version.gitTag=$(GIT_TAG) \
 -X github.com/kumahq/kuma/pkg/version.gitCommit=$(GIT_COMMIT) \
@@ -20,7 +20,7 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
 # An optional extension to the coredns packages
 COREDNS_EXT ?=
-COREDNS_VERSION = v1.12.1
+COREDNS_VERSION = v1.12.2
 
 # List of binaries that we have build/release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy

@@ -1,0 +1,65 @@
+type: MeshLoadBalancingStrategy
+name: mlbst-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-header
+        loadBalancer:
+          type: RingHash
+          ringHash:
+            minRingSize: 100
+            maxRingSize: 10000
+---
+type: MeshHTTPRoute
+name: test-route-1
+mesh: envoyconfig
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test-route-1
+          default: {}
+---
+type: MeshHTTPRoute
+name: test-route-2
+mesh: envoyconfig
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test-route-2
+          default: {}
+---
+type: MeshHTTPRoute
+name: test-route-3
+mesh: envoyconfig
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /test-route-3
+          default: {}

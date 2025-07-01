@@ -9,6 +9,11 @@ import (
 	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
 )
 
+const (
+	BasicAuthScopes  = "BasicAuth.Scopes"
+	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
 // Defines values for GetDataplanesXdsConfigParamsInclude.
 const (
 	Diff GetDataplanesXdsConfigParamsInclude = "diff"
@@ -31,6 +36,14 @@ const (
 type BaseStatus struct {
 	Online int `json:"online"`
 	Total  int `json:"total"`
+}
+
+// DataplaneNetworkingLayout Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+type DataplaneNetworkingLayout struct {
+	Inbounds  []externalRef0.DataplaneInbound  `json:"inbounds"`
+	Kri       string                           `json:"kri"`
+	Labels    map[string]string                `json:"labels"`
+	Outbounds []externalRef0.DataplaneOutbound `json:"outbounds"`
 }
 
 // DataplaneXDSConfig defines model for DataplaneXDSConfig.
@@ -199,11 +212,17 @@ type SchemasGlobalInsight struct {
 // BadRequest standard error
 type BadRequest = externalRef0.Error
 
+// DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
+
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
 type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
 // GlobalInsightResponse defines model for GlobalInsightResponse.
 type GlobalInsightResponse = GlobalInsight
+
+// InboundPolicyConfResponse defines model for InboundPolicyConfResponse.
+type InboundPolicyConfResponse = externalRef0.InboundPoliciesList
 
 // IndexResponse Some metadata about the service
 type IndexResponse = Index
@@ -220,8 +239,20 @@ type InspectRulesResponse = InspectRules
 // Internal standard error
 type Internal = externalRef0.Error
 
+// OutboundPolicyConfResponse defines model for OutboundPolicyConfResponse.
+type OutboundPolicyConfResponse = externalRef0.PoliciesList
+
+// ProxyPolicyConfResponse defines model for ProxyPolicyConfResponse.
+type ProxyPolicyConfResponse = externalRef0.PoliciesList
+
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
+
+// RoutePolicyConfResponse defines model for RoutePolicyConfResponse.
+type RoutePolicyConfResponse = externalRef0.PoliciesList
+
+// RoutesListResponse defines model for RoutesListResponse.
+type RoutesListResponse = externalRef0.RoutesList
 
 // GetDataplanesXdsConfigParams defines parameters for GetDataplanesXdsConfig.
 type GetDataplanesXdsConfigParams struct {

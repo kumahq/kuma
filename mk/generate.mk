@@ -102,12 +102,12 @@ generate/policy-defaults:
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
-endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basename $(dir)))
+endpoints?=$(foreach dir,$(shell find api/openapi/specs -type f -name "*.yaml" | sort),$(basename $(dir)))
 
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN)
 	for endpoint in $(endpoints); do \
 		DEST=$${endpoint#"api/openapi/specs"}; \
-		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
+		$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml  || { echo "Failed to generate $$endpoint"; exit 1; }; \
 	done
 	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
 

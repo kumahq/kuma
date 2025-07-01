@@ -1,0 +1,70 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: kuma
+build:
+  local:
+    push: false
+  artifacts:
+    - image: kumahq/kuma-cp
+      runtimeType: go
+      custom:
+        buildCommand: |
+          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          image_tag=$(echo $IMAGE | cut -d':' -f2)
+          GOTRACEBACK=all DEBUG=true EXTRA_GOFLAGS='-gcflags="all=-N -l"' SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kuma-cp/$platform
+        dependencies:
+          paths:
+            - app/kuma-cp
+            - pkg
+    - image: kumahq/kuma-dp
+      custom:
+        buildCommand: |
+          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          image_tag=$(echo $IMAGE | cut -d':' -f2)
+          SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kuma-dp/$platform
+        dependencies:
+          paths:
+            - app/kuma-dp
+    - image: kumahq/kumactl
+      custom:
+        buildCommand: |
+          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          image_tag=$(echo $IMAGE | cut -d':' -f2)
+          SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kumactl/$platform
+        dependencies:
+          paths:
+            - app/kumactl
+    - image: kumahq/kuma-init
+      custom:
+        buildCommand: |
+          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          image_tag=$(echo $IMAGE | cut -d':' -f2)
+          SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kuma-init/$platform
+        dependencies:
+          paths:
+            - app/kumactl
+deploy:
+  helm:
+    releases:
+      - name: kuma
+        chartPath: deployments/charts/kuma
+        namespace: kuma-system
+        createNamespace: true
+        valuesFiles:
+          - deployments/charts/kuma/values.yaml
+        setValueTemplates:
+          global.image.registry: "kumahq"
+          controlPlane.image.tag: "{{.IMAGE_TAG_kumahq_kuma_cp}}"
+          dataPlane.image.tag: "{{.IMAGE_TAG_kumahq_kuma_dp}}"
+          dataPlane.initImage.tag: "{{.IMAGE_TAG_kumahq_kuma_init}}"
+          kumactl.image.tag: "{{.IMAGE_TAG_kumahq_kumactl}}"
+          controlPlane.resources.limits.memory: "1Gi"
+          controlPlane.podSecurityContext.runAsNonRoot: "false"
+          installCrdsOnUpgrade.enabled: "false"
+        setValues:
+          controlPlane.podAnnotations:
+            "debug\\.cloud\\.google\\.com/probe-timeouts": "skip"
+manifests:
+  rawYaml:
+    - k8s/demo-kv.yaml

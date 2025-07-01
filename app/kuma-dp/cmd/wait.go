@@ -56,7 +56,7 @@ func newWaitCmd() *cobra.Command {
 }
 
 func checkIfEnvoyReady(client *http.Client, url string) error {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return err
 	}

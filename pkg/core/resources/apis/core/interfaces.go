@@ -2,6 +2,6 @@ package core
 
 type Port interface {
 	GetName() string
-	GetValue() uint32
+	GetValue() int32
 	GetNameOrStringifyPort() string
 }

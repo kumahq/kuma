@@ -2,7 +2,7 @@ KUMA_DIR ?= .
 TOOLS_DIR = $(KUMA_DIR)/tools
 # Important to use `:=` to only run the script once per make invocation!
 BUILD_INFO := $(shell $(TOOLS_DIR)/releases/version.sh)
-BUILD_INFO_VERSION = $(word 1, $(BUILD_INFO))
+BUILD_INFO_VERSION ?= $(word 1, $(BUILD_INFO))
 GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
@@ -63,6 +63,7 @@ GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
 HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
 KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
 HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
+OAPI_CODEGEN=$(CI_TOOLS_BIN_DIR)/oapi-codegen
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
