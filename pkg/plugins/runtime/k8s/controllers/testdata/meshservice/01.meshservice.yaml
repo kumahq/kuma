@@ -28,7 +28,7 @@ items:
     selector:
       dataplaneTags:
         k8s.kuma.io/namespace: demo
-    state: ""
+    state: Unavailable
   status:
     dataplaneProxies: {}
     tls: {}
