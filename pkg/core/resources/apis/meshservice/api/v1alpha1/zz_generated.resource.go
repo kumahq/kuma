@@ -15,6 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -51,6 +52,7 @@ const (
 )
 
 var _ model.Resource = &MeshServiceResource{}
+var _ core.Destination = &MeshServiceResource{}
 
 type MeshServiceResource struct {
 	Meta   model.ResourceMeta
@@ -172,6 +174,7 @@ var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshservices",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Service",
 	PluralDisplayName:            "Mesh Services",

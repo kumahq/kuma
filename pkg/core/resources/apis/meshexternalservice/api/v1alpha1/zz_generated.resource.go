@@ -15,6 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -51,6 +52,7 @@ const (
 )
 
 var _ model.Resource = &MeshExternalServiceResource{}
+var _ core.Destination = &MeshExternalServiceResource{}
 
 type MeshExternalServiceResource struct {
 	Meta   model.ResourceMeta
@@ -172,6 +174,7 @@ var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshexternalservices",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh External Service",
 	PluralDisplayName:            "Mesh External Services",

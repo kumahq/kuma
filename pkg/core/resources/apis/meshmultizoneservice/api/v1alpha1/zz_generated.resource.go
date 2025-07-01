@@ -15,6 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -51,6 +52,7 @@ const (
 )
 
 var _ model.Resource = &MeshMultiZoneServiceResource{}
+var _ core.Destination = &MeshMultiZoneServiceResource{}
 
 type MeshMultiZoneServiceResource struct {
 	Meta   model.ResourceMeta
@@ -172,6 +174,7 @@ var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshmultizoneservices",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Multi Zone Service",
 	PluralDisplayName:            "Mesh Multi Zone Services",

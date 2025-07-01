@@ -59,6 +59,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+{{- if .IsDestination }}
+    "github.com/kumahq/kuma/pkg/core/resources/apis/core"
+{{- end }}
 )
 
 {{- if not .SkipRegistration }}
@@ -96,6 +99,10 @@ const (
 )
 
 var _ model.Resource = &{{.Name}}Resource{}
+
+{{- if .IsDestination }}
+var _ core.Destination = &{{.Name}}Resource{}
+{{- end }}
 
 type {{.Name}}Resource struct {
 	Meta model.ResourceMeta
@@ -231,6 +238,7 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlListArg: "{{.Path}}",
 		AllowToInspect: {{.IsPolicy}},
 		IsPolicy: {{.IsPolicy}},
+        IsDestination: {{.IsDestination}},
 		IsExperimental: false,
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",

@@ -18,6 +18,7 @@ import (
 // +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=extsvc
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+// +kuma:policy:is_destination=true
 // +kubebuilder:printcolumn:name=Hostname,type=string,JSONPath=".status.addresses[0].hostname"
 type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.
