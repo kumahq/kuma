@@ -309,7 +309,48 @@ This approach allows Kuma to leverage SPIFFE-compliant identities issued by SPIR
       agent:
         addresss: "/run/spire/sockets/agent.sock"
         timeout: 1s
-```       
+``` 
+
+Another thing is that we need to mount a volume with Spire Agent unix socket.
+
+1. Add a new section to the injector configuration:
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+      spire:
+        path: /run/spire/sockets
+        mountPath: /run/spire/sockets
+```
+
+If the `spire.mountPath` and `spire.path` are set the injector automatically:
+
+* creates volume
+```yaml
+volumes:
+  - name: spire-agent-socket
+    hostPath:
+      path: /run/spire/sockets
+      type: Directory
+```
+
+* mount volume
+```yaml
+volumeMounts:
+  - name: spire-agent-socket
+    mountPath: /run/spire/sockets
+    readOnly: true
+```
+* and inject label
+
+```yaml
+kuma.io/spire-integration: enabled
+```
+
+Purpose of the Label:
+* This label signals that the pod has SPIRE integration enabled.
+* It prevents Kuma from delivering Spire-related configuration (e.g., SDS config, identity provider references) to pods that don't have the socket mounted.
 
 #### Define active identity provider
 
@@ -475,7 +516,12 @@ kri_mi_mesh-1_us-east-2_kuma-system_identity-1
 Also, we need to name the Spire agent cluster, in this case is it internal or maybe based on MeshIdentity:
 Proposed name:
 ```yaml
-_kuma_spire_agent
+system_spire-agent
+```
+
+or 
+```yaml
+kri_mi_mesh-1_us-east-2_kuma-system_spire-identity
 ```
 
 > [!WARNING]
@@ -537,7 +583,7 @@ Since there might be multiple MeshTrusts and we need to aggregate them into one 
 Proposed name:
 
 ```yaml
-_kuma_cabundle
+system_cabundle
 ```
 
 > [!WARNING]
