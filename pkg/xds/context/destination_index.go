@@ -12,6 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 )
 
+// DestinationIndex indexes destinations by KRI and labels. It provides optimized access to Kuma destinations. It should
+// be used when working with referencable destination resources like MeshServices, MeshExternalServices or MeshMultizoneServices
 type DestinationIndex struct {
 	destinationByIdentifier    map[kri.Identifier]core.Destination
 	destinationsByLabelByValue labelsToValuesToResourceIdentifier
@@ -23,6 +25,7 @@ type labelValue struct {
 	value string
 }
 
+// DestinationResource is an interface that combines Resource with Destination. This can be used to build KRI from destinations, and access metadata of Destination
 type DestinationResource interface {
 	core_model.Resource
 	core.Destination
