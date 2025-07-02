@@ -22,7 +22,9 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION = v1.27.16-k3s1
-K8S_MAX_VERSION = v1.32.2-k3s1
+# TODO this probably needs to be done cleaner, just testing
+K8S_MAX_VERSION_BASE=1.32.0
+K8S_MAX_VERSION=v$(K8S_MAX_VERSION_BASE)-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v2.1.6
 GOOS := $(shell go env GOOS)
@@ -53,23 +55,23 @@ PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@maste
 PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
 CLANG_FORMAT=$(MISE) x clang-format -- clang-format
-YQ=$(shell which yq)
+YQ=$(shell mise which yq)
 HELM=$(MISE) x helm -- helm
 K3D_BIN=$(MISE) x k3d -- k3d
 KIND=$(MISE) x kind -- kind
-KUBEBUILDER=$(MISE) x hadolint -- kubebuilder
-KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
-CONTROLLER_GEN=$(shell which controller-gen)
+KUBEBUILDER=$(MISE) x kubebuilder -- kubebuilder
+KUBEBUILDER_ASSETS=$(shell setup-envtest use $(K8S_MAX_VERSION_BASE) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
+CONTROLLER_GEN=$(shell mise which controller-gen)
 KUBECTL=$(MISE) x kubectl -- kubectl
 PROTOC_BIN=$(MISE) x protoc -- protoc
 SHELLCHECK=$(MISE) x shellcheck -- shellcheck
 CONTAINER_STRUCTURE_TEST=$(MISE) x container-structure-test -- container-structure-test
 # from go-deps
-PROTOC_GEN_GO=$(shell which protoc-gen-go)
-PROTOC_GEN_GO_GRPC=$(shell which protoc-gen-go-grpc)
-PROTOC_GEN_VALIDATE=$(shell which protoc-gen-validate)
-PROTOC_GEN_KUMADOC=$(shell which protoc-gen-kumadoc)
-PROTOC_GEN_JSONSCHEMA=$(shell which protoc-gen-jsonschema)
+PROTOC_GEN_GO=$(shell mise which protoc-gen-go)
+PROTOC_GEN_GO_GRPC=$(shell mise which protoc-gen-go-grpc)
+PROTOC_GEN_VALIDATE=$(shell mise which protoc-gen-validate)
+PROTOC_GEN_KUMADOC=$(shell mise which protoc-gen-kumadoc)
+PROTOC_GEN_JSONSCHEMA=$(shell mise which protoc-gen-jsonschema)
 GINKGO=$(MISE) x ginkgo -- ginkgo
 GOLANGCI_LINT=$(MISE) x golangci-lint -- golangci-lint
 HELM_DOCS=$(MISE) x helm-docs -- helm-docs
@@ -153,7 +155,7 @@ dev/sync-demo:
 
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
-	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+	$(HELM) repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
 
 .PHONY: clean
 clean: clean/build clean/generated clean/docs ## Dev: Clean
