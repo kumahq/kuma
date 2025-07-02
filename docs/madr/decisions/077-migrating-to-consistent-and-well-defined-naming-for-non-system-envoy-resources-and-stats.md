@@ -424,9 +424,9 @@ As part of updating the documentation, we will:
 
 ### Updating ZoneIgress and ZoneEgress insight resources with feature flags
 
-To support the Kuma GUI in adapting to KRI-based naming, we need to expose feature flag information in `ZoneIngressIngress` and `ZoneEgressIngress` resources, similar to how it's already done for `DataplaneIngress`. These insights resources are available via the control plane API and provide a summary of runtime state and metadata.
+To support the Kuma GUI in adapting to KRI-based naming, we need to expose feature flag information in `ZoneIngressInsight` and `ZoneEgressInsight` resources, similar to how it's already done for `DataplaneInsight`. These insights resources are available via the control plane API and provide a summary of runtime state and metadata.
 
-We will update both `ZoneIngressIngress` and `ZoneEgressIngress` to include metadata with active feature flags. This will allow the GUI to detect whether KRI naming is enabled for each proxy and adjust its behavior accordingly.
+We will update both `ZoneIngressInsight` and `ZoneEgressInsight` to include metadata with active feature flags. This will allow the GUI to detect whether KRI naming is enabled for each proxy and adjust its behavior accordingly.
 
 ## Migration
 
