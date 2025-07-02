@@ -73,7 +73,19 @@ func BuildEgressEndpointMap(
 	return outbound
 }
 
-func BuildIngressEndpointMap(ctx context.Context, mesh *core_mesh.MeshResource, localZone string, meshServices []*meshservice_api.MeshServiceResource, meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource, meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource, dataplanes []*core_mesh.DataplaneResource, externalServices []*core_mesh.ExternalServiceResource, gateways []*core_mesh.MeshGatewayResource, zoneEgresses []*core_mesh.ZoneEgressResource, loader datasource.Loader) core_xds.EndpointMap {
+func BuildIngressEndpointMap(
+	ctx context.Context,
+	mesh *core_mesh.MeshResource,
+	localZone string,
+	meshServices []*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
+	loader datasource.Loader,
+) core_xds.EndpointMap {
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
 	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices, loader)
@@ -81,7 +93,19 @@ func BuildIngressEndpointMap(ctx context.Context, mesh *core_mesh.MeshResource, 
 	return outbound
 }
 
-func BuildEdsEndpointMap(ctx context.Context, mesh *core_mesh.MeshResource, localZone string, meshServices []*meshservice_api.MeshServiceResource, meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource, meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource, dataplanes []*core_mesh.DataplaneResource, zoneIngresses []*core_mesh.ZoneIngressResource, zoneEgresses []*core_mesh.ZoneEgressResource, externalServices []*core_mesh.ExternalServiceResource, loader datasource.Loader) core_xds.EndpointMap {
+func BuildEdsEndpointMap(
+	ctx context.Context,
+	mesh *core_mesh.MeshResource,
+	localZone string,
+	meshServices []*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	loader datasource.Loader,
+) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
 	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
