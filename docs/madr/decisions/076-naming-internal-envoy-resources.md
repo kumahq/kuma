@@ -197,6 +197,11 @@ For `MeshIdentity` and user defined secrets we can use `KRI` but that will be co
 
 For all other secrets we can use `^system_([a-z0-9]+_{0,1})+$` naming.
 
+#### Enforcement
+
+To enforce these rules we will add checks in resource builders like [ClusterBuilder](https://github.com/kumahq/kuma/blob/dedaba5b9de1bd134dce813ae49b3475d5d24e6b/pkg/xds/envoy/clusters/cluster_builder.go#L80).
+If anyone tries to add a new resource that doesn't conform to any type it will fail in unit tests.
+
 ### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
 
 Same as above, but with `_kuma_` instead of `system_`.
