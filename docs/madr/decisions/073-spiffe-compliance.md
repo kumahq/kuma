@@ -188,7 +188,7 @@ spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>
 
 Trust domain: `{ .Mesh }.{ .Zone }.{ .ClusterID }.kuma.io`
 
-Once a TrustDomain is defined on the Global control plane, we require it to include the zone name in the template. We are going to implement a validator for this case.
+Once a TrustDomain is defined on the Global control plane, we require it to include the zone name in the template. We are going to implement a validator for this case. Also, we need to validate length of each segment where Mesh and Zone has limit of 63 characters, and ClusterID is an UUID.
 
 Question:
 * Is there an issue once we rename zone ? Isn't it an edge case that we might don't need to support?
