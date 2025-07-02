@@ -22,7 +22,7 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION = v1.27.16-k3s1
-K8S_MAX_VERSION=v1.3.2-k3s1
+K8S_MAX_VERSION=v1.32.2-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v2.1.6
 GOOS := $(shell go env GOOS)
