@@ -204,7 +204,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal request to json")
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewReader(jsonBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url.String(), bytes.NewReader(jsonBytes))
 	if err != nil {
 		return nil, err
 	}
