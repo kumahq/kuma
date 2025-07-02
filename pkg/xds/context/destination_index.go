@@ -25,19 +25,15 @@ type labelValue struct {
 	value string
 }
 
-// DestinationResource is an interface that combines Resource with Destination. This can be used to build KRI from destinations, and access metadata of Destination
-type DestinationResource interface {
-	core_model.Resource
-	core.Destination
-}
-
-func NewDestinationIndex[T DestinationResource](destinations []T) *DestinationIndex {
+func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 	destinationByIdentifier := make(map[kri.Identifier]core.Destination)
 	destinationsByLabelByValue := labelsToValuesToResourceIdentifier{}
-	for _, item := range destinations {
-		ri := kri.From(item, "")
-		destinationByIdentifier[ri] = item
-		buildLabelValueToServiceNames(ri, destinationsByLabelByValue, item.GetMeta().GetLabels())
+	for _, destinations := range resources {
+		for _, item := range destinations {
+			ri := kri.From(item, "")
+			destinationByIdentifier[ri] = item.(core.Destination)
+			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, item.GetMeta().GetLabels())
+		}
 	}
 
 	return &DestinationIndex{

@@ -267,7 +267,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 	rmap[core_mesh.MeshType] = mesh.Descriptor().NewList()
 	_ = rmap[core_mesh.MeshType].AddItem(mesh)
 	rmap[core_mesh.MeshType].GetPagination().SetTotal(1)
-	var destinations []DestinationResource
+	var destinations [][]core_model.Resource
 	for t := range m.typeSet {
 		desc, err := registry.Global().DescriptorFor(t)
 		if err != nil {
@@ -275,11 +275,11 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		}
 		// Only pick the policies, gateways, external services and the vip config map
 		switch {
-		case desc.IsPolicy || desc.IsReferenceableInTo || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
-			destinations = append(destinations, rmap[t].(DestinationResource))
+			destinations = append(destinations, rmap[t].GetItems())
+		case desc.IsPolicy || desc.IsReferenceableInTo || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
+			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 		case desc.Name == system.ConfigType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, func(rs core_model.Resource) bool {
 				return rs.GetMeta().GetName() == vips.ConfigKey(meshName)
@@ -300,7 +300,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		hash:             newHash,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: NewDestinationIndex(destinations),
+		DestinationIndex: NewDestinationIndex(destinations...),
 	}, nil
 }
 

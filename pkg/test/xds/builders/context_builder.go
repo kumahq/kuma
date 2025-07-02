@@ -5,6 +5,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -36,17 +37,12 @@ func Context() *ContextBuilder {
 }
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
-	var destinations []xds_context.DestinationResource
-	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
-		destinations = append(destinations, ms)
-	}
-	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
-		destinations = append(destinations, mes)
-	}
-	for _, mmzs := range mc.res.Mesh.Resources.MeshMultiZoneServices().Items {
-		destinations = append(destinations, mmzs)
-	}
-	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(destinations)
+	var destinations [][]core_model.Resource
+	destinations = append(destinations, mc.res.Mesh.Resources.MeshServices().GetItems())
+	destinations = append(destinations, mc.res.Mesh.Resources.MeshExternalServices().GetItems())
+	destinations = append(destinations, mc.res.Mesh.Resources.MeshMultiZoneServices().GetItems())
+
+	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(destinations...)
 	return mc.res
 }
 
