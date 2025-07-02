@@ -196,7 +196,7 @@ Question:
 
 ### MeshIdentity
 
-This resource allows the creation of Certificate Authorities (CAs) that are supported within a specific Mesh. It does not actively issue certificates — it simply defines the authority. The user must later configure which CA is used as the default, and which ones should continue to be supported during a migration period.
+This resource defines Certificate Authorities (CAs) for a specific Mesh. It issues identities for dataplanes, while trust management is handled separately by `MeshTrust`. Users can specify which dataplanes use a particular identity, but changing the identity provider happens seamlessly in the background.
 
 * The resource can be created on the Global control plane and synced to Zones.
 * It can also be created on a Zone, in which case it will be synced to Global, but not propagated to other Zones.
@@ -245,8 +245,8 @@ spec:
       matchLabels:
         app: test
   spiffeID: # optional
-    trustDomain: "prod.example.fr" # { .Mesh }.{ .Zone }.{ .ClusterID}.kuma.io
-    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same as HostnameGenerator
+    trustDomain: "default.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io" # { .Mesh }.{ .Zone }.{ .ClusterID }.kuma.io
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same templating format as HostnameGenerator
   provider:
     type: Provided | Spire
     spire:
@@ -285,7 +285,8 @@ Users can provide certificates in the following ways:
 
 * Environment variable,
 * File path,
-* Secret reference.
+* Secret reference,
+* Auto generated and stored in a Secret
 
 This gives flexibility for organizations that already have an established PKI or need to integrate with existing certificate authorities.
 
@@ -307,6 +308,12 @@ This gives flexibility for organizations that already have an established PKI or
 ```
 
 Additionally, we could introduce a configuration option called `insecureAutogenerate`, which automatically generates a default CA and persists it in the store. This would functionally be equivalent to the current builtin CA.
+Currently, Kuma uses a CA with the RSA algorithm and a key size of 2048 bits, which is widely supported and compatible.
+
+* Algorithm: RSA
+* Key size: 2048
+
+If the user wants to use a different algorithm, it is possible to provide their own CA.
 
 **Spire**
 
@@ -334,7 +341,7 @@ runtime:
   kubernetes:
     injector:
       spire:
-        injector-mode: annotation | always | never (default)
+        injectorMode: annotation | always | never (default)
         path: /run/spire/sockets
         mountPath: /run/spire/sockets
 ```
@@ -357,7 +364,7 @@ volumeMounts:
     mountPath: /run/spire/sockets
     readOnly: true
 ```
-* and inject label
+* and inject annotation
 
 ```yaml
 kuma.io/spire-integration: enabled
@@ -464,6 +471,73 @@ If there are multiple (X) identities selecting the same dataplane, the control p
 1. Selector specificity – the identity with most specific selector is preferred.
 2. Lexicographical order – if selector sizes are equal, the identity with the lexicographically smallest name is chosen.
 
+**Examples**
+
+1. Select only specific dataplane
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+...
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: demo-app
+```
+
+2. Select all dataplanes
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+...
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+```
+
+3. Select nathing
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+...
+spec:
+  selector:
+    dataplane: {}
+```
+
+or
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+...
+spec:
+  selector:
+```
+
+or
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+...
+spec:
+...
+```
+
+It seems to be consistant with LabelsMatcher from kubernetes api https://github.com/kubernetes/apimachinery/blob/v0.33.2/pkg/apis/meta/v1/helpers.go#L36-L43.
+
+```golang
+func LabelSelectorAsSelector(ps *LabelSelector) (labels.Selector, error) {
+	if ps == nil {
+		return labels.Nothing(), nil
+	}
+	if len(ps.MatchLabels)+len(ps.MatchExpressions) == 0 {
+		return labels.Everything(), nil
+	}
+```
+
 #### How would look the process of switching backends?
 
 1. User has a Mesh with MeshIdentity `identity-1`
@@ -474,10 +548,10 @@ type: DataplaneInsight
 mTLS:
   certificateExpirationTime: "2025-06-03T17:35:33Z"
   certificateRegenerations: 1
-  issuedBackend: system_kri_mi_mesh-1_us-east-2_kuma-system_identity-1
+  issuedBackend: kri_mi_mesh-1_us-east-2_kuma-system_identity-1
   lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
   supportedBackends: # list of MeshTrust name
-  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
+  - kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
 ...
 ```
 2. User creates MeshTrust with CA of a new MeshIdentity `identity-2`
@@ -489,11 +563,11 @@ type: DataplaneInsight
 mTLS:
   certificateExpirationTime: "2025-06-03T17:35:33Z"
   certificateRegenerations: 1
-  issuedBackend: system_kri_mi_mesh-1_us-east-2_kuma-system_identity-1 # name of MeshIdentity
+  issuedBackend: kri_mi_mesh-1_us-east-2_kuma-system_identity-1 # name of MeshIdentity
   lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
   supportedBackends: # list of MeshTrust name
-  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
-  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2
+  - kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
+  - kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2
 ...
 ```
 
@@ -501,11 +575,11 @@ Based on this information we will update MeshService
 
 ```yaml
 ...
-name: second-test-server-b7dwz26bb9b4z676
+name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
 spec:
   identities:
   - type: SpiffeID
-    value: spiffe://old.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
+    value: spiffe://mesh-1.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
   ports:
   - appProtocol: http
     name: main
@@ -513,7 +587,7 @@ spec:
     targetPort: main
   selector:
     dataplaneTags:
-      app: second-test-server
+      app: demo-client
       k8s.kuma.io/namespace: real-resource-ns
   state: Available
 status:
@@ -535,23 +609,23 @@ type: DataplaneInsight
 mTLS:
   certificateExpirationTime: "2025-06-03T17:35:33Z"
   certificateRegenerations: 1
-  issuedBackend: system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2 # name of MeshIdentity
+  issuedBackend: kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2 # name of MeshIdentity
   lastCertificateRegeneration: "2025-06-02T17:35:33.624189876Z"
   supportedBackends: # list of MeshTrust name
-  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
-  - system_kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2
+  - kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
+  - kri_mtrust_mesh-1_us-east-2_kuma-system_identity-2
 ...
 ```
 Update SpiffeID based on identities
 ```yaml
 ...
-name: second-test-server-b7dwz26bb9b4z676
+name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
 spec:
   identities:
   - type: SpiffeID
-    value: spiffe://old.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
+    value: spiffe://mesh-1.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
   - type: SpiffeID
-    value: spiffe://new.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default
+    value: spiffe://mesh-1.zone-1.0c5afd2e-de93-437b-8ba0-3decdff805b6.kuma.io/ns/real-resource-ns/sa/default/service/demo-client # assume there is different path template
   ports:
   - appProtocol: http
     name: main
@@ -559,7 +633,7 @@ spec:
     targetPort: main
   selector:
     dataplaneTags:
-      app: second-test-server
+      app: demo-client
       k8s.kuma.io/namespace: real-resource-ns
   state: Available
 status:
@@ -618,7 +692,7 @@ var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTrustResource(),
 	ResourceList:                 &MeshTrustResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag, // in the future SyncedAcrossZonesFlag
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag |SyncedAcrossZonesFlag
 	WsPath:                       "meshtrusts",
 	KumactlArg:                   "meshtrust",
 	KumactlListArg:               "meshtrusts",
@@ -652,8 +726,21 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  ca: inline | secret | file
+  ca:
+    - source:
+        # one of
+        secret:
+        path:
+        envVar:
+      firstExpiry: # date when expiry
+    - source:
+        # one of
+        secret:
+        path:
+        envVar:
+      firstExpiry: 
   trustDomain: "prod.zone-1.id.kuma.io"
+status: # status is not synced to the other zone
   originRef:
     kind: MeshIdentity
     name: default
@@ -669,8 +756,8 @@ This functionality is essential for:
 
 **MeshTrust based on MeshIdentity**
 
-When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the MeshTrust based on the `MeshIdentity`. This option can be disabled and `MeshTrust` might not be created.
-To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. In case it's problematic for the user we can implement it later. Once user updates a MeshIdentity we shouldn't update existing MeshTrust and keep it as it is. We added a new type into `MeshIdentity.provided.trustExtractionDisabled` which allows controlling this.
+When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the MeshTrust based on the `MeshIdentity`. This option can be disabled and `MeshTrust` might not be created by setting `MeshIdentity.provided.trustExtractionDisabled`.
+To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. Once a user update MeshIdentity we will append existing MeshTrust with additional entry in the CA list.
 
 **Multizone**
 
