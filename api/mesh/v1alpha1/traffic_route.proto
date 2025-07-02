@@ -20,7 +20,7 @@ message TrafficRoute {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match data plane proxies that are sources of traffic.
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1 [ (validate.rules).repeated.min_items = 1 ];
 
   // List of selectors to match services that are destinations of traffic.
   //
@@ -29,7 +29,7 @@ message TrafficRoute {
   // the destination is a service that could be either within or outside
   // of a mesh.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+      [ (validate.rules).repeated.min_items = 1 ];
 
   // Split defines a destination with a weight assigned to it.
   message Split {
@@ -100,7 +100,7 @@ message TrafficRoute {
   message Conf {
     // List of destinations with weights assigned to them.
     // When used, "destination" is not allowed.
-    repeated Split split = 1 [ (validate.rules).repeated .min_items = 1 ];
+    repeated Split split = 1 [ (validate.rules).repeated.min_items = 1 ];
     // Load balancer configuration for given "split" or "destination"
     LoadBalancer load_balancer = 2;
     // One destination that the traffic will be redirected to.

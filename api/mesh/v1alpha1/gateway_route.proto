@@ -42,11 +42,10 @@ message MeshGatewayRoute {
     message Rule {
       // repeated Match matches = 1;
 
-      repeated Backend backends = 2
-          [ (validate.rules).repeated .min_items = 1 ];
+      repeated Backend backends = 2 [ (validate.rules).repeated.min_items = 1 ];
     };
 
-    repeated Rule rules = 1 [ (validate.rules).repeated .min_items = 1 ];
+    repeated Rule rules = 1 [ (validate.rules).repeated.min_items = 1 ];
   };
 
   // HTTP routes are valid for listeners that accept HTTP/1.1 and HTTP/2 over
@@ -199,7 +198,7 @@ message MeshGatewayRoute {
     message Rule {
       // Matches are checked in order. If any match is successful, the
       // rule is selected (OR semantics).
-      repeated Match matches = 1 [ (validate.rules).repeated .min_items = 1 ];
+      repeated Match matches = 1 [ (validate.rules).repeated.min_items = 1 ];
 
       // Filters are request processing steps that are applied to
       // matched requests.
@@ -222,7 +221,7 @@ message MeshGatewayRoute {
     repeated string hostnames = 1;
 
     // Rules specifies how the gateway should match and process HTTP requests.
-    repeated Rule rules = 2 [ (validate.rules).repeated .min_items = 1 ];
+    repeated Rule rules = 2 [ (validate.rules).repeated.min_items = 1 ];
   };
 
   message Conf {
@@ -240,7 +239,7 @@ message MeshGatewayRoute {
   };
 
   // Selectors is used to match this resource to MeshGateway listener.
-  repeated Selector selectors = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector selectors = 1 [ (validate.rules).repeated.min_items = 1 ];
 
   // Conf specifies the route configuration.
   Conf conf = 2 [ (validate.rules).message.required = true ];
