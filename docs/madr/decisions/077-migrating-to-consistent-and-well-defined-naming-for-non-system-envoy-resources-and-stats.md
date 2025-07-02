@@ -8,7 +8,7 @@ As first introduced in the [MADR-070 Resource Identifier](070-resource-identifie
 
 1. **KRI-based naming**: Used for resources that are a direct result of distinct Kuma resources like `MeshService`, `MeshExternalService`, `MeshHTTPRoute`, and others. This format improves correlation between Envoy configuration and Kuma resources, making it easier to trace metrics, understand traffic behavior, and troubleshoot issues.
 
-2. **`self_` naming format**: Used for inbound-related resources, which are currently always defined inside a `Dataplane`. These resources already exist in the context of the `Dataplane` that created them, so repeating that reference using a full KRI name does not add value and would unnecessarily raise metric cardinality. Instead, a simpler format like `self_{sectionName}` is used. In the future, if inbound resources can be defined by something other than a `Dataplane`, such as a new type of policy, then those resources will have their own identity and use full KRI naming.
+2. **`self_` naming format**: Used for inbound-related resources, which are currently always defined inside a `Dataplane`. These resources already exist in the context of the `Dataplane` that created them, so repeating that reference using a full KRI name does not add value and would unnecessarily raise metric cardinality. Instead, a simpler format like `self_<port>` is used. In the future, if inbound resources can be defined by something other than a `Dataplane`, such as a new type of policy, then those resources will have their own identity and use full KRI naming.
 
 While these formats improve structure and consistency, they differ from the current naming conventions used for Envoy resources and stats, which often follow legacy or default patterns. Right now, resource names and stat names are not aligned and can differ significantly, even when generated from the same Kuma resource. Changing them without care can disrupt existing observability setups that rely on these names.
 
@@ -27,29 +27,47 @@ The `Dataplane` view in the GUI shows inbound and outbound endpoints by parsing 
 
 ## Scope
 
-This decision applies to environments using the new service discovery model:
+### Service discovery model
 
-* `MeshService`  
-* `MeshExternalService`  
+This decision applies only to environments using the new service discovery model, which is based on the following resources:
+
+* `MeshService`
+* `MeshExternalService`
 * `MeshMultiZoneService`
 
-These resources replace the legacy `kuma.io/service` tag for describing services in the mesh. Since the legacy tag is being removed, this migration only affects naming for resources generated from the new model. Legacy-based setups are out of scope.
+These resources replace the legacy `kuma.io/service` tag previously used to define services in the mesh. Since the legacy tag is being phased out and will eventually be removed, this decision only affects the naming of resources generated from the new model.
+
+### Observability tooling
+
+This decision includes updates to Grafana dashboards installed via `kumactl install observability`.
+
+While there is an open discussion and no final decision yet about the future of these observability components (see [issue #11693](https://github.com/kumahq/kuma/issues/11693)), they have not been officially removed or deprecated. Although current direction leans toward deprecation and shifting responsibility to users to follow setup instructions for each tool individually, this has not been finalized.
+
+Given that:
+
+* the changes needed to align existing dashboards with the new naming scheme are minimal
+* the time effort to make those changes is low
+
+We will update the included Grafana dashboards to use the new resource and stat names introduced in this decision document.
 
 ### Out of scope
+
+Renaming Envoy resources and stat names generated using the legacy service discovery model based on the `kuma.io/service` tag is out of scope. This means the new, consistent and well-defined naming, described later in this document, will not apply to those resources even if the related data plane proxy feature flag is enabled.
 
 #### Envoy resource exclusions
 
 This document does not cover renaming of Envoy resources that:
 
-1. Do not directly map to Kuma resources. This includes system-generated resources such as:
+1. Do not directly map to Kuma resources. This includes system-generated resources, some of which are already covered by [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md), such as:
 
    * Secrets
    * System listeners and clusters
+
+   Others will be covered in a separate MADR, such as:
+
    * Default routes (when no `MeshHTTPRoute` or `MeshTCPRoute` is defined)
 
-   These are covered by [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md).
-
-2. Are related to the `MeshPassthrough` resource, which may be addressed separately.
+2. Are related to the `MeshPassthrough` resource, which will be addressed separately.
 
 3. Are part of the built-in gateway, which is excluded from this effort and may be handled independently.
 
