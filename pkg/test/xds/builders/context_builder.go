@@ -5,7 +5,6 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -37,7 +36,7 @@ func Context() *ContextBuilder {
 }
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
-	var destinations [][]core_model.Resource
+	var destinations [][]model.Resource
 	destinations = append(destinations, mc.res.Mesh.Resources.MeshServices().GetItems())
 	destinations = append(destinations, mc.res.Mesh.Resources.MeshExternalServices().GetItems())
 	destinations = append(destinations, mc.res.Mesh.Resources.MeshMultiZoneServices().GetItems())
