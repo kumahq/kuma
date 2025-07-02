@@ -199,8 +199,36 @@ For all other secrets we can use `^system_([a-z0-9]+_{0,1})+$` naming.
 
 #### Enforcement
 
+##### Builders
+
 To enforce these rules we will add checks in resource builders like [ClusterBuilder](https://github.com/kumahq/kuma/blob/dedaba5b9de1bd134dce813ae49b3475d5d24e6b/pkg/xds/envoy/clusters/cluster_builder.go#L80).
 If anyone tries to add a new resource that doesn't conform to any type it will fail in unit tests.
+
+Pros:
+- Simple to implement
+
+Cons:
+- Can be easily skipped by not using a builder
+
+##### Inspecting golden files
+
+We could have a target that goes over golden files and checks the names of all resources.
+
+Pros:
+- Can catch things that are not created by a builder
+
+Cons:
+- Can be skipped by a code path not using golden files or not tested
+
+##### Custom linter
+
+A linter that would use `go/ssa` and `callgraph` that would figure out if an Envoy resource with a name that doesn't conform to the regex is created.
+
+Pros:
+- Should catch all the cases
+
+Cons:
+- Might be really hard to implement
 
 ### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
 
