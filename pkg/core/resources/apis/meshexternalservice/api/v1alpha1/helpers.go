@@ -65,34 +65,21 @@ func (t *MeshExternalServiceResource) Domains() *xds_types.VIPDomains {
 }
 
 func (t *MeshExternalServiceResource) GetPorts() []core.Port {
-	return []core.Port{
-		MesPort{
-			Value:    t.Spec.Match.Port,
-			Protocol: t.Spec.Match.Protocol,
-		},
-	}
+	return []core.Port{t.Spec.Match}
 }
 
 func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bool) {
-	return MesPort{
-		Value:    t.Spec.Match.Port,
-		Protocol: t.Spec.Match.Protocol,
-	}, true
+	return t.Spec.Match, true
 }
 
-type MesPort struct {
-	Value    int32
-	Protocol core_mesh.Protocol
+func (m Match) GetName() string {
+	return fmt.Sprintf("%d", m.Port)
 }
 
-func (m MesPort) GetName() string {
-	return fmt.Sprintf("%d", m.Value)
+func (m Match) GetValue() int32 {
+	return m.Port
 }
 
-func (m MesPort) GetValue() int32 {
-	return m.Value
-}
-
-func (m MesPort) GetProtocol() core_mesh.Protocol {
+func (m Match) GetProtocol() core_mesh.Protocol {
 	return m.Protocol
 }
