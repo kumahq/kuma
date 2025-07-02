@@ -155,7 +155,7 @@ See:
 
 ### Use a `^system_[a-z0-9_]+$` regex to name system resources
 
-All changes will be behind the same feature flag as in [Migrating to KRI-based Envoy resource and stat naming](./076-migrating-to-kri-based-envoy-resource-and-stat-naming.md).
+All changes will be behind the same feature flag as in [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
 All system resources will conform to `^system_[a-z0-9_]+$` regex (we shouldn't use `_system:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
 
