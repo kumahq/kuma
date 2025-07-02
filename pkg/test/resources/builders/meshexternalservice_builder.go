@@ -30,7 +30,7 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 				Endpoints: &[]v1alpha1.Endpoint{
 					{
 						Address: "192.168.0.1",
-						Port:    v1alpha1.Port(27017),
+						Port:    27017,
 					},
 				},
 			},

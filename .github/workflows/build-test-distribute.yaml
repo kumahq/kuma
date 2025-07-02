@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
-    timeout-minutes: 25
+    timeout-minutes: 30
     runs-on: ubuntu-24.04
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
