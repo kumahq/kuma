@@ -23,7 +23,7 @@ It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-me
 
 To make it easier to distinguish between the two types we introduce the following definition:
 
-- **User resource** - any resource that comes from `Mesh*Service` and `Mesh*Route` definition
+- **User resource** - any resource that comes from `Mesh*Service`, `Mesh*Route` and user defined `Secret`s
 - **System resource** - any resource that is not a user resource
 
 ### Kuma system resource names
@@ -153,11 +153,11 @@ See:
 
 ## Design
 
-### Use a `^system_[a-z0-9_]+$` regex to name system resources
+### Use a `^system_([a-z0-9]+_{0,1})+$` regex to name system resources
 
 All changes will be behind the same feature flag as in [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-All system resources will conform to `^system_[a-z0-9_]+$` regex (we shouldn't use `_system:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
+All system resources will conform to `^system_([a-z0-9]+_{0,1})+$` regex (we shouldn't use `_system:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
 
 System resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `system_<KRI>`.
 
@@ -185,6 +185,18 @@ and should describe the resource as accurately and plainly as possible (it **MUS
 
 It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `system_transparent_proxy_outbound_listener`.
 
+#### Secrets
+
+In the future we will most likely introduce new policies - `MeshTrust`, `MeshIdentity` and `SPIRE` integration.
+
+For `Spire` we can't control the secrets as mentioned in [Non use cases section](#as-a-kuma-developer-i-want-to-rename-resources-that-are-coming-from-outside-kuma).
+
+For a secret related to `MeshTrust`s we can't use `KRI` because it's a combination of all of them and `KRI` currently don't deal with lists of resources.
+
+For `MeshIdentity` and user defined secrets we can use `KRI` but that will be covered by [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+
+For all other secrets we can use `^system_([a-z0-9]+_{0,1})+$` naming.
+
 ### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
 
 Same as above, but with `_kuma_` instead of `system_`.
@@ -199,7 +211,7 @@ For MeshOPA it only modifies existing resources and doesn't create any new ones.
 
 ## Decision
 
-We will use a regex on all system resources as described in "Use a `^system_[a-z0-9_]+$` regex to name system resources" section.
+We will use a regex on all system resources as described in "Use a `^system_([a-z0-9]+_{0,1})+$` regex to name system resources" section.
 
 ## Notes
 
