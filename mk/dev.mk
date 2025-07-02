@@ -22,9 +22,7 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION = v1.27.16-k3s1
-# TODO this probably needs to be done cleaner, just testing
-K8S_MAX_VERSION_BASE=1.32.0
-K8S_MAX_VERSION=v$(K8S_MAX_VERSION_BASE)-k3s1
+K8S_MAX_VERSION=v1.3.2-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v2.1.6
 GOOS := $(shell go env GOOS)
@@ -60,7 +58,9 @@ HELM=$(MISE) x helm -- helm
 K3D_BIN=$(MISE) x k3d -- k3d
 KIND=$(MISE) x kind -- kind
 KUBEBUILDER=$(MISE) x kubebuilder -- kubebuilder
-KUBEBUILDER_ASSETS=$(shell setup-envtest use $(K8S_MAX_VERSION_BASE) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
+# TODO this should be automated with max k8s version
+KUBEBUILDER_ASSETS_VERSION=1.32.0
+KUBEBUILDER_ASSETS=$(shell setup-envtest use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
 CONTROLLER_GEN=$(shell mise which controller-gen)
 KUBECTL=$(MISE) x kubectl -- kubectl
 PROTOC_BIN=$(MISE) x protoc -- protoc
