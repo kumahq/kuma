@@ -45,14 +45,21 @@ MISE := $(shell which mise)
 
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
 
+XDS_VERSION=$(shell go list -f '{{ .Version }}' -m github.com/cncf/xds/go)
+PROTO_XDS=$(shell go mod download github.com/cncf/xds@$(XDS_VERSION) && go list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
+PGV_VERSION=$(shell go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
+PROT_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && go list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
+PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
+PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
+
 CLANG_FORMAT=$(MISE) x clang-format -- clang-format
-YQ=$(MISE) x yq -- yq
+YQ=$(shell which yq)
 HELM=$(MISE) x helm -- helm
 K3D_BIN=$(MISE) x k3d -- k3d
 KIND=$(MISE) x kind -- kind
 KUBEBUILDER=$(MISE) x hadolint -- kubebuilder
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
-CONTROLLER_GEN=$(MISE) x controller-gen -- controller-gen
+CONTROLLER_GEN=$(shell which controller-gen)
 KUBECTL=$(MISE) x kubectl -- kubectl
 PROTOC_BIN=$(MISE) x protoc -- protoc
 SHELLCHECK=$(MISE) x shellcheck -- shellcheck
