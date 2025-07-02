@@ -66,6 +66,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v2.1.6
+      - run: go list -f '{{ .Dir }}' -m github.com/cncf/xds/go
       - run: |
           make clean
       - run: |
