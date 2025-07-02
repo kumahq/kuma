@@ -40,7 +40,7 @@ func (k *HTTPKubernetesResourcesClient) Get(ctx context.Context, descriptor mode
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", api.Item(mesh, name)+"?format=k8s", http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, api.Item(mesh, name)+"?format=k8s", http.NoBody)
 	if err != nil {
 		return nil, err
 	}

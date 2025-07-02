@@ -109,7 +109,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	It("should throw an error if validFor is not present", func() {
 		// given invalid request (cannot be implemented using UserTokenClient)
-		req, err := http.NewRequest("POST", "/tokens/user", strings.NewReader(`{"name": "xyz"}`))
+		req, err := http.NewRequest(http.MethodPost, "/tokens/user", strings.NewReader(`{"name": "xyz"}`))
 		req.Header.Add("content-type", "application/json")
 		Expect(err).ToNot(HaveOccurred())
 
