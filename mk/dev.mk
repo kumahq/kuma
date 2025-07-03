@@ -86,16 +86,9 @@ TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
 
 # Install all dependencies on tools and protobuf files
-# We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles
-# ideally the tool should be idempotent to make things quick to rerun.
-# it's important that everything lands in $(CI_TOOLS_DIR) to be able to cache this folder in CI and speed up the build.
-.PHONY: dev/tools
-dev/tools: ## Bootstrap: Install all development tools
-	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH) $(TOOLS_MAKEFILE)
-
-.PHONY: dev/tools/clean
-dev/tools/clean: ## Bootstrap: Remove all development tools
-	rm -rf $(CI_TOOLS_DIR)
+.PHONY: install
+install: ## Bootstrap: Install all development tools
+	$(MISE) install
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)
