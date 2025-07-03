@@ -1,8 +1,8 @@
 # Defining and migrating to consistent naming for non-system Envoy resources and stats
 
-| Status   | Technical story                                                  |
-|----------|------------------------------------------------------------------|
-| accepted | [kumahq/kuma#13264](https://github.com/kumahq/kuma/issues/13264) |
+* Status: accepted
+
+Technical Story: https://github.com/kumahq/kuma/issues/13264
 
 ## Context and problem statement
 
