@@ -386,6 +386,74 @@ self_httpport
 * Results in mixed naming styles (some with names, some with port numbers), reducing overall consistency
 * Can make it harder to scan and compare resource or metric names across environments where naming practices vary
 
+### Naming for transparent proxy passthrough resources
+
+This decision area focuses on how to name the inbound and outbound Envoy resources and stats used for IPv4 and IPv6 transparent proxy passthrough. These resources are generated when a `Dataplane` is configured with:
+
+```yaml
+networking:
+  transparentProxying:
+    redirectPortInbound: <port>
+    redirectPortOutbound: <port>
+```
+
+These passthrough resources are tied to the current `Dataplane` and play a role in redirecting traffic through the proxy.
+
+Two options are considered:
+
+#### Option 1: Use `system_` prefix
+
+Treat passthrough resources as internal system components and name them using the `system` resources formattin described in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md).
+
+**Benefits:**
+
+* Makes passthrough resources clearly distinct from user-defined service-related resources
+* Matches the behavior of other resources that may or may not be used, depending on the traffic path
+* Reflects the initial perception that these resources are internal to proxy functionality
+* Avoids adding more variation to `self_`-prefixed resources when their observability value is uncertain in some setups
+
+**Drawbacks:**
+
+* These resources may sit on the regular service-to-service traffic path
+* The `system_` prefix can reduce visibility and observability of traffic that users care about
+* Makes it harder to trace and analyze traffic flowing through these passthrough points
+
+#### Option 2: Use `self_` prefix
+
+Use the contextual naming format already applied to inbounds and treat passthrough resources as part of the `Dataplane`'s scoped configuration.
+
+**Benefits:**
+
+* Reflects that passthrough behavior is explicitly configured in the `Dataplane`
+* Groups passthrough traffic with other contextual resources using the same naming convention
+* Improves observability and traceability for users monitoring traffic through these paths
+
+**Drawbacks:**
+
+* Slightly expands the use of the `self_` prefix beyond direct inbounds
+* Requires awareness in tooling to treat these passthrough resource types appropriately
+
+### Impact on `MeshProxyPatch` policies
+
+Enabling the new naming formats may break existing `MeshProxyPatch` policies that rely on old resource names. These patches often target specific cluster or listener names, and any mismatch caused by the updated naming will prevent the patch from applying.
+
+Several ideas were considered to help detect or prevent breakage, but none were viable:
+
+* Emit a warning when a `MeshProxyPatch` matches a proxy but none of its modifiers apply. However, patches like JSON Patch are complex and hard to analyze. Logging unmatched cases would likely produce too much noise and lead to false positives.
+
+* Scan patches for the presence of used prefixes as an indicator of awareness. This would be fragile and could not reliably detect incompatible patches.
+
+* Show a general warning in the GUI when KRI is enabled and any `MeshProxyPatch` is active. This might help initially but would quickly become repetitive and unhelpful once users confirm their setups.
+
+Since there’s no clean way to catch or warn about this in code, the decision is to document the risk clearly. Users are expected to:
+
+* Review and update their `MeshProxyPatch` policies before enabling the new naming formats
+
+As part of updating the documentation, we will:
+
+* Add a strong warning to the `MeshProxyPatch` section explaining that policies must be reviewed and updated when switching to the new naming formats
+* Include a notice in the upgrade notes to alert users of this requirement
+
 ## Decision outcome
 
 Introduce a data plane feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
@@ -572,27 +640,6 @@ When enabled, it will:
 * Set `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` in the control plane deployment
 
 When the new naming becomes the default, this setting will also default to `true`. Eventually, it will be removed when the feature can no longer be disabled.
-
-### Impact on `MeshProxyPatch` policies
-
-Enabling the new naming formats (`kri_` and `self_`) may break existing `MeshProxyPatch` policies that rely on old resource names. These patches often target specific cluster or listener names, and any mismatch caused by the updated naming will prevent the patch from applying.
-
-Several ideas were considered to help detect or prevent breakage, but none were viable:
-
-* Emit a warning when a `MeshProxyPatch` matches a proxy but none of its modifiers apply. However, patches like JSON Patch are complex and hard to analyze. Logging unmatched cases would likely produce too much noise and lead to false positives.
-
-* Scan patches for the presence of `kri_` or `self_` prefixes as an indicator of awareness. This would be fragile and could not reliably detect incompatible patches.
-
-* Show a general warning in the GUI when KRI is enabled and any `MeshProxyPatch` is active. This might help initially but would quickly become repetitive and unhelpful once users confirm their setups.
-
-Since there’s no clean way to catch or warn about this in code, the decision is to document the risk clearly. Users are expected to:
-
-* Review and update their `MeshProxyPatch` policies before enabling the new naming formats
-
-As part of updating the documentation, we will:
-
-* Add a strong warning to the `MeshProxyPatch` section explaining that policies must be reviewed and updated when switching to the new naming formats
-* Include a notice in the upgrade notes to alert users of this requirement
 
 ### Updating ZoneIgress and ZoneEgress insight resources with feature flags
 
