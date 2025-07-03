@@ -8,11 +8,7 @@
 
 Right now, Envoy resources and stats in Kuma use different naming styles. Some follow legacy or default Envoy formats, which makes them harder to understand and trace. Resource names and their related stats often don’t match, even when they come from the same Kuma resource. This makes it difficult to work with observability tools and troubleshoot issues.
 
-The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But while working on it, it became clear that using full KRI names for some resources, like inbounds and passthrough outbounds, would lead to a sharp increase in metrics cardinality without providing real value.
-
-As a result, the scope changed.
-
-This MADR now:
+The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But while working on it, it became clear that using full KRI names for some resources, like inbounds and passthrough outbounds, would lead to a sharp increase in metrics cardinality without providing real value. As a result, the scope changed. This document now:
 
 * Clearly defines how non-system Envoy resources and stats should be named
 * Specifies which resources should use KRI names and which should use simpler formats
