@@ -65,7 +65,7 @@ The changes described in this document do not apply to all types of Envoy resour
 
 ## Design areas requiring decisions
 
-### Naming for inbound-related resources
+### Naming for non-system inbound-related resources
 
 The current KRI naming format, as defined in the [MADR-070 Resource Identifier](070-resource-identifier.md), proposes that non-system inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port or name as the `sectionName`. This would result in names like:
 
@@ -448,42 +448,40 @@ As part of updating the documentation, we will:
 
 Introduce a data plane feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
 
-* KRI-based names for resources tied to distinct Kuma resources like `MeshService`
-* `self_` format for inbound-related resources defined inside a `Dataplane`
+* KRI-based names for resources tied to distinct Kuma resources (as defined in [MADR-070](070-resource-identifier.md))
+* `self_<descriptor>` format for resources that are contextual to the current `Dataplane`, including inbounds and passthrough traffic
 
 The flag can be enabled per proxy by setting an environment variable:
 
 * Directly in Universal mode
 * Indirectly in Kubernetes via a pod annotation, which is converted by the sidecar injector into the same environment variable and applied to the `kuma-sidecar` container
 
-In Kubernetes, the control plane can be configured to auto-inject the annotation into all workloads during sidecar injection, turning the feature on by default for all proxies in the zone.
+In Kubernetes, the control plane can be configured to auto-inject the annotation into all workloads during sidecar injection, enabling the feature by default for all proxies in the zone.
 
 ### Inbound resource naming
 
-Inbound-related Envoy resources and stats will adopt a dedicated naming scheme based on the `self_` prefix. This avoids the high cardinality of full KRI-formatted names (e.g., `kri_dp_default_..._5050`) and uses a more contextual format `self_<sectionName>`
+Non-system inbound-related Envoy resources and stats will use the `self_<descriptor>` format, where the `<descriptor>` is a [`<sectionName>`](#format-sectionname) derived from the inbound's port.
 
 Examples:
 
 ```
-self_5050  
 self_httpport
+self_5050  
 ```
 
-This scheme clearly identifies inbound resources as local to the `Dataplane`, avoids overloading existing `kri_` or `system_` prefixes, and minimizes impact on observability tooling. It strikes a balance between clarity, performance, and compatibility.
+This approach avoids the high cardinality of full KRI-formatted names and provides a clear, scoped way to refer to inbounds. It also avoids overloading the `kri_` or `system_` prefixes, helping keep observability tooling aligned and reducing complexity.
 
 #### Chosen section naming strategy
 
-We will use **port name if defined, otherwise fall back to port value** for the `<sectionName>` part of inbound resource and stat names.
+The `<sectionName>` will use the **port name if defined, otherwise fall back to the port value**. This keeps resource and stat names aligned with policy references that use `sectionName`. It also supports user-defined port names in Universal mode and Kubernetes (via service port names). While this introduces variation between numeric and named values, it improves clarity and control when writing policies.
 
-This ensures alignment between policy `sectionName` references and actual resource names. It allows meaningful, user-defined names where available while still working with unnamed ports. Though it introduces some inconsistency in the format, the added clarity and policy compatibility are more valuable in practice.
+### Transparent proxy passthrough resource naming
 
-#### Transparent proxy passthrough resource naming
+Passthrough-related Envoy resources and stats will also follow the `self_<descriptor>` format. The descriptor for these will use the [`passthrough_ipv<IPVersion>_<direction>` format](#format-self_passthrough_ipvipversion_direction), where `<IPVersion>` is `4` or `6` and `<direction>` is `inbound` or `outbound`.
 
-We will use the `self_<descriptor>` format (defined in the [format definition](#format-self_descriptor)), where `<descriptor>` follows the [`passthrough_ipv<IPVersion>_<direction>` format](#format-self_passthrough_ipvipversion_direction), for naming IPv4 and IPv6 passthrough-related resources and stats.
+These resources are explicitly tied to the current `Dataplane` through the `transparentProxying` configuration. Although they are not active in all environments, in cases like `MeshPassthrough` they play a critical role in traffic flow. Using the contextual `self_` format keeps naming consistent and improves observability in relevant setups.
 
-Although these resources are not always active in all environments, they are explicitly tied to the current `Dataplane` through the `transparentProxying` configuration. In setups like `MeshPassthrough`, they are heavily used and form part of the main data path. Using the `self_` prefix clearly marks them as contextual to the `Dataplane` and aligns them with other scoped resources like inbounds.
-
-This results in the following four possible final names:
+Final name examples:
 
 ```
 self_passthrough_ipv4_inbound
@@ -492,11 +490,11 @@ self_passthrough_ipv6_inbound
 self_passthrough_ipv6_outbound
 ```
 
-### Formal format definitions
+## Formal format definitions
 
 This section defines the format rules introduced by this decision to ensure consistency and compatibility across all affected components.
 
-#### Format: `<sectionName>`
+### Format: `<sectionName>`
 
 The `<sectionName>` is a placeholder used to identify a specific part or section within a given context (such as a `Dataplane`). It is used to label a resource or stat that originates from that section of the context. For example, when used with the `self_` prefix, it refers to an inbound or passthrough-related resource in the context of the current `Dataplane`.
 
@@ -546,13 +544,13 @@ backend-kumahq.com
 (([1-9][0-9]{0,4})|([a-z](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
 ```
 
-#### Format: `<self_passthrough_ipv<IPVersion>_<direction>>`
+### Format: `<self_passthrough_ipv<IPVersion>_<direction>>`
 
 This format is used for naming resources and stats related to transparent proxy passthrough traffic in the context of the current `Dataplane`.
 
 **Structure:**
 
-* Starts with the literal prefix `self_passthrough_`
+* Starts with the literal prefix `passthrough_`
 * Followed by `ipv4` or `ipv6` to indicate the IP version
 * Ends with either `inbound` or `outbound` to indicate the traffic direction
 
@@ -567,13 +565,13 @@ passthrough_ipv6_outbound
 
 These names are not user-configurable and are generated based on the `Dataplane`'s `transparentProxying` configuration.
 
-##### Regular expression
+#### Regular expression
 
 ```
 passthrough_ipv(4|6)_(inbound|outbound)
 ```
 
-#### Format: `self_<descriptor>`
+### Format: `self_<descriptor>`
 
 This format is used for naming resources and stats that are specific to the context of the current `Dataplane`. The part after `self_` is called a `<descriptor>`, and it identifies the relevant section of the `Dataplane` configuration that the resource belongs to.
 
@@ -595,14 +593,12 @@ self_backend-kumahq.com
 self_passthrough_ipv4_outbound
 ```
 
-##### Valid formats for `<descriptor>`
+#### Valid formats for `<descriptor>`
 
 The exact format of `<descriptor>` depends on the type of resource:
 
-* **For non-system inbounds**: use a [`<sectionName>`](#format-sectionname), which can be either a port number or a port name
-* **For transparent proxy passthrough resources**: use the [`<passthrough_ipv<IPVersion>_<direction>`](#format-self_passthrough_ipvipversion_direction) format, where `<IPVersion>` is `4` or `6` and `<direction>` is `inbound` or `outbound`
-
-All valid `<descriptor>` values used in `self_<descriptor>` must match one of the formats listed above.
+* **For non-system inbounds**: use a [`<sectionName>` format](#format-sectionname), which can be either a port name or a port number
+* **For transparent proxy passthrough resources**: use the [`<passthrough_ipv<IPVersion>_<direction>>` format](#format-self_passthrough_ipvipversion_direction), where `<IPVersion>` is `4` or `6` and `<direction>` is `inbound` or `outbound`
 
 ## Implications for Kong Mesh
 
