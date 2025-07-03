@@ -73,7 +73,7 @@ This document does not cover renaming of Envoy resources that:
 
 3. Are part of the built-in gateway, which is excluded from this effort and may be handled independently.
 
-## Additional sub-problems identified
+## Design areas requiring decisions
 
 ### Naming for inbound-related resources
 
@@ -316,6 +316,76 @@ self_5050
 * Requires dual parsing and matching logic in Kuma GUI (e.g., different strategies for xDS config vs. stats)
 * Increases implementation complexity and potential for confusion when debugging or inspecting proxy behavior
 
+### Inbound section naming strategy
+
+This section describes the problem of how to choose the `<sectionName>` for inbound resource and stat names, and presents the options under consideration.
+
+Kuma policies can target individual inbounds on a `Dataplane` by setting the `sectionName` field in the `targetRef`. This value must match the name or port used in the inbound configuration. This is helpful when a `Dataplane` exposes multiple inbounds and the policy should apply only to one of them.
+
+For example, the following policy applies fault injection **only to the inbound named `backend-api`**:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshFaultInjection
+metadata:
+  name: only-backend-api-inbound
+  namespace: kuma-demo
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: backend
+    sectionName: backend-api
+  from:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+      - abort:
+          httpStatus: 500
+          percentage: '2.5'
+```
+
+There are two options for choosing the section name format:
+
+#### Option 1: Always use the port value
+
+Example:
+
+```
+self_5050
+```
+
+**Benefits:**
+
+* Simple and consistent naming
+* All inbounds follow the same format regardless of configuration
+* Easier to recognize and match across resources and stats
+
+**Drawbacks:**
+
+* Does not remove support for targeting inbounds in policies, but creates inconsistency between what values can be used in `sectionName` (name or port) and the actual resource and stat names, which always use the port value in this option
+
+#### Option 2: Use port name if defined, otherwise fall back to port value
+
+Examples:
+
+```
+self_5050
+self_httpport
+```
+
+**Benefits:**
+
+* Supports both named and unnamed inbounds while preserving the user-defined port name in resource and stat names
+* Aligns with policy `sectionName` values, allowing consistent targeting using either port name or value
+* Produces more meaningful names when users define port names in Universal mode or when taken from Kubernetes service port names
+
+**Drawbacks:**
+
+* Results in mixed naming styles (some with names, some with port numbers), reducing overall consistency
+* Can make it harder to scan and compare resource or metric names across environments where naming practices vary
+
 ## Decision outcome
 
 Introduce a data plane feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
@@ -335,11 +405,56 @@ In Kubernetes, the control plane can be configured to auto-inject the annotation
 Inbound-related Envoy resources and stats will adopt a dedicated naming scheme based on the `self_` prefix. This avoids the high cardinality of full KRI-formatted names (e.g., `kri_dp_default_..._5050`) and uses a more contextual format:
 
 ```
-self_5050
+self_5050  
 self_httpport
 ```
 
 This scheme clearly identifies inbound resources as local to the `Dataplane`, avoids overloading existing `kri_` or `system_` prefixes, and minimizes impact on observability tooling. It strikes a balance between clarity, performance, and compatibility.
+
+#### Chosen section naming strategy
+
+We will use **port name if defined, otherwise fall back to port value** for the `<sectionName>` part of inbound resource and stat names.
+
+This ensures alignment between policy `sectionName` references and actual resource names. It allows meaningful, user-defined names where available while still working with unnamed ports. Though it introduces some inconsistency in the format, the added clarity and policy compatibility are more valuable in practice.
+
+#### Formal format definition
+
+The naming format for inbound resources and stats follows the pattern:
+
+```
+self_<sectionName>
+```
+
+Where:
+
+* `self_` is a required literal prefix
+* `<sectionName>` is either a user-defined port name or a port number, following specific format rules
+
+##### `<sectionName>` requirements
+
+The `<sectionName>` MUST:
+
+* Be **1 to 63 characters** long (not counting the `self_` prefix)
+* Contain only:
+   * Lowercase US-ASCII letters (`a`–`z`)
+   * Digits (`0`–`9`)
+   * Hyphens (`-`)
+* **Start and end** with a lowercase letter or digit
+* **Not contain** consecutive hyphens (`--`)
+* **Not start or end** with a hyphen
+
+These constraints are the **combination** of:
+
+* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), which follow the **DNS_LABEL** format defined in [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
+* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), which follow the **IANA_SVC_NAME** format defined in [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
+
+This ensures compatibility across both naming use cases.
+
+##### Regular expression
+
+```
+^self_(?!.*--)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$
+```
 
 ## Implications for Kong Mesh
 
