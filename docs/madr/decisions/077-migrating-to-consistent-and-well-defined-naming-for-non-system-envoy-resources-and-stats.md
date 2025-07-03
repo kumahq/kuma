@@ -423,66 +423,72 @@ This ensures alignment between policy `sectionName` references and actual resour
 
 This section defines the format rules introduced by this decision to ensure consistency and compatibility across all affected components.
 
-#### Format: `self_<sectionName>`
+#### Format: `<sectionName>`
 
-The naming format follows this pattern:
+The `<sectionName>` is a placeholder used to identify a specific part or section within a given context (such as a `Dataplane`). It is used to label a resource or stat that originates from that section of the context. For example, when used with the `self_` prefix, it refers to an inbound or passthrough-related resource in the context of the current `Dataplane`.
 
-```
-self_<sectionName>
-```
+To support future extensibility (such as upcoming support for `MeshPassthrough`), the format allows dots (`.`), which may be useful for representing DNS-like names.
 
-Where:
+**If numeric:**
 
-* `self_` is a required literal prefix
-* `<sectionName>` is either:
-   * A numeric port value in the range **1 to 65535**, or
-   * A user-defined port name that follows specific format rules
-
-##### Rules for the `<sectionName>` value
-
-If `<sectionName>` is numeric:
-
-* It must consist only of digits (`0`–`9`)
-* It must represent a valid port number in the range **1 to 65535**
+* Must consist only of digits (`0`–`9`)
+* Must represent a valid port number in the range **1 to 65535**
 * Leading zeros are not allowed
 
 Example:
 
 ```
-self_5050
+5050
 ```
 
-If `<sectionName>` contains any non-digit characters, it is treated as a named port. In that case, it must:
+**If named:**
 
-* Be **1 to 63 characters** long (excluding the `self_` prefix)
-* Contain only:
+* Must be **1 to 63 characters** long
+* Can contain:
    * Lowercase US-ASCII letters (`a`–`z`)
    * Digits (`0`–`9`)
    * Hyphens (`-`)
-* **Start with a letter**
-* **End with a letter or digit**
-* **Not contain** consecutive hyphens (`--`)
-* **Not start or end** with a hyphen
+   * Dots (`.`)
+* Must **start with a letter**
+* Must **end with a letter or digit**
+* Must **not contain** consecutive hyphens (`--`)
+* Must **not contain** consecutive dots (`..`)
+* Must **not start or end** with a hyphen or dot
 
-These constraints are the **combination** of:
+These rules combine:
 
-* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
-* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA_SVC_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
+* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS\_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
+* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA\_SVC\_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
+* Additional support for dots (`.`) to allow future use cases like `MeshPassthrough` where DNS-like names are expected
+
+Example:
+
+```
+backend-kumahq.com
+```
+
+**Regular expression:**
+
+```
+(([1-9][0-9]{0,4})|([a-z](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
+```
+
+#### Format: `self_<sectionName>`
+
+This format is used for naming inbound-related resources and stats that exist only in the context of the current `Dataplane`.
+
+**Structure:**
+
+* Starts with the literal prefix `self_`
+* Followed by a `<sectionName>` value, as defined above
 
 Examples:
 
 ```
-self_httpport
-self_passthrough_transparentproxy_inbound
+self_5050
+self_httpport  
+self_backend-kumahq.com
 ```
-
-##### Regular expression
-
-```
-^self_(([1-9][0-9]{0,4})|([a-z](?!.*--)[a-z0-9-]{0,61}[a-z0-9]))$
-```
-
-This pattern matches either a valid numeric port (1 to 65535) or a valid named port.
 
 #### Usage of this format
 
@@ -527,7 +533,7 @@ Users can enable the feature for individual data plane proxies:
 
 | Mode       | How to enable                                                                               |
 |------------|---------------------------------------------------------------------------------------------|
-| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY-RESOURCES_AND_STATS_NAMING_ENABLED=true` |
+| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` |
 | Kubernetes | Add annotation: `features.kuma.io/unified-proxy-resources-and-stats-naming: "enabled"`      |
 
 In Kubernetes, we cannot rely on setting the environment variable directly because environment variables are container-scoped, not pod-scoped. Since the `kuma-sidecar` container is injected into the pod by the sidecar injector, setting the environment variable on the user’s workload container would not affect the sidecar container. Therefore, the only viable and generic way to control this feature per pod is to use an annotation. The sidecar injector reads the annotation and converts it into the correct environment variable on the `kuma-sidecar` container. `kuma-dp` will then pick up the variable and include the feature flag in the xDS metadata sent to the control plane.
