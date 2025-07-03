@@ -1,24 +1,30 @@
-# Migrating to consistent and well-defined naming for non-system Envoy resources and stats
+# Defining and migrating to consistent naming for non-system Envoy resources and stats
 
-* Status: accepted
+| Status   | Technical story                                                  |
+|----------|------------------------------------------------------------------|
+| accepted | [kumahq/kuma#13264](https://github.com/kumahq/kuma/issues/13264) |
 
 ## Context and problem statement
 
-As first introduced in the [MADR-070 Resource Identifier](070-resource-identifier.md), we chose to standardize Envoy resource and stat naming using a structured format to improve consistency, traceability, and integration with tools like observability dashboards and the Kuma GUI. This effort introduces two major changes:
+Right now, Envoy resources and stats in Kuma use different naming styles. Some follow legacy or default Envoy formats, which makes them harder to understand and trace. Resource names and their related stats often don’t match, even when they come from the same Kuma resource. This makes it difficult to work with observability tools and troubleshoot issues.
 
-1. **KRI-based naming**: Used for resources that are a direct result of distinct Kuma resources like `MeshService`, `MeshExternalService`, `MeshHTTPRoute`, and others. This format improves correlation between Envoy configuration and Kuma resources, making it easier to trace metrics, understand traffic behavior, and troubleshoot issues.
+The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But while working on it, it became clear that using full KRI names for some resources, like inbounds and passthrough outbounds, would lead to a sharp increase in metrics cardinality without providing real value.
 
-2. **`self_` naming format**: Used for inbound-related resources, which are currently always defined inside a `Dataplane`. These resources already exist in the context of the `Dataplane` that created them, so repeating that reference using a full KRI name does not add value and would unnecessarily raise metric cardinality. Instead, a simpler format like `self_<port>` is used. In the future, if inbound resources can be defined by something other than a `Dataplane`, such as a new type of policy, then those resources will have their own identity and use full KRI naming.
+As a result, the scope changed.
 
-While these formats improve structure and consistency, they differ from the current naming conventions used for Envoy resources and stats, which often follow legacy or default patterns. Right now, resource names and stat names are not aligned and can differ significantly, even when generated from the same Kuma resource. Changing them without care can disrupt existing observability setups that rely on these names.
+This MADR now:
 
-To support the transition, a smooth migration path must be defined that introduces the new formats without disrupting existing environments.
+* Clearly defines how non-system Envoy resources and stats should be named
+* Specifies which resources should use KRI names and which should use simpler formats
+* Describes a migration path for switching to the new names safely and gradually
+
+The goal is to make naming consistent, easy to understand, and better connected to Kuma resources, without causing problems like high metrics cardinality or churn. The new approach builds on the ideas from [MADR-070 Resource Identifier](070-resource-identifier.md) but avoids unnecessary complexity.
 
 ## Affected systems and users
 
 Two main groups are impacted:
 
-* Internal systems: Kuma GUI
+* Internal systems: Kuma GUI, Grafana dashboards shipped with `kumactl install observability`
 * External users: Dashboards, Prometheus
 
 ### Kuma GUI
@@ -41,7 +47,7 @@ These resources replace the legacy `kuma.io/service` tag previously used to defi
 
 This decision includes updates to Grafana dashboards installed via `kumactl install observability`.
 
-While there is an open discussion and no final decision yet about the future of these observability components (see [issue #11693](https://github.com/kumahq/kuma/issues/11693)), they have not been officially removed or deprecated. Although current direction leans toward deprecation and shifting responsibility to users to follow setup instructions for each tool individually, this has not been finalized.
+While there is an open discussion and no final decision yet about the future of these observability components (see [kumahq/kuma#11693](https://github.com/kumahq/kuma/issues/11693)), they have not been officially removed or deprecated. Although current direction leans toward deprecation and shifting responsibility to users to follow setup instructions for each tool individually, this has not been finalized.
 
 Given that:
 
