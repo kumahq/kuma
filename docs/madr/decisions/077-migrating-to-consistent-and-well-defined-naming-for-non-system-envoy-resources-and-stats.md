@@ -83,7 +83,7 @@ The current KRI naming format, as defined in the [MADR-070 Resource Identifier](
 kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 ```
 
-While technically correct and traceable, this significantly increases metrics cardinality compared to current formats, such as `localhost_{port}` for clusters and `{address}_{port}` for listeners, which use Envoy’s default format. This would lead to regressions in performance, cost, and compatibility with observability tooling. The following alternatives are considered:
+While technically correct and traceable, this significantly increases metrics cardinality compared to current formats, such as `localhost_<port>` for clusters and `<address>_<port>` for listeners, which use Envoy’s default format. This would lead to regressions in performance, cost, and compatibility with observability tooling. The following alternatives are considered:
 
 #### Option 1: Introduce a dedicated contextual naming scheme for inbound resources
 
@@ -164,16 +164,16 @@ local_httpport
 * Less familiar as a naming prefix compared to `self` or `this`
 * Might be confused with `localhost` or other network terms, suggesting a different meaning than intended (e.g., local to pod or machine instead of to the current `Dataplane`)
 
-#### Option 2: Align resource names with existing `localhost_{port}` inbound clusters stat format
+#### Option 2: Align resource names with existing `localhost_<port>` inbound clusters stat format
 
-This option proposes using the already established stat format `localhost_{port}` (currently used for inbound Envoy cluster stats) as the unified name for all related xDS resources such as clusters and listeners.
+This option proposes using the already established stat format `localhost_<port>` (currently used for inbound Envoy cluster stats) as the unified name for all related xDS resources such as clusters and listeners.
 
 Specifically:
 
-* Change cluster names from `localhost:{port}` to `localhost_{sectionName}` to match stat format
-* Change listener and other inbound-related resource names (e.g. from `inbound:10.42.0.83:5050`) to `localhost_{sectionName}` for consistency across resources
+* Change cluster names from `localhost:<port>` to `localhost_<sectionName>` to match stat format
+* Change listener and other inbound-related resource names (e.g. from `inbound:10.42.0.83:5050`) to `localhost_<sectionName>` for consistency across resources
 
-Unlike current formats, this allows `{sectionName}` to be either a port number or a named port (e.g. `httpport`).
+Unlike current formats, this allows `<sectionName>` to be either a port number or a named port (e.g. `httpport`).
 
 **Examples:**
 
@@ -185,7 +185,7 @@ localhost_httpport
 **Benefits:**
 
 * No increase in metric cardinality
-* Keeps resource names in sync with existing `localhost_{port}` stat format for clusters, as long as no port name is used
+* Keeps resource names in sync with existing `localhost_<port>` stat format for clusters, as long as no port name is used
 * Dashboards and alerts using current cluster stat names will continue to work without changes when numeric ports are used
 * Builds on a format already familiar to users
 
@@ -270,7 +270,7 @@ kri_dp_-_-_-_-_5050
 * Requires KRI specification to explicitly allow this pattern and define its meaning
 * Still includes the `kri_` prefix, which might falsely suggest the name is fully qualified and traceable
 
-#### Option 4: Treat inbounds as "system" resources and use `system_{prefix}_{sectionName}` format
+#### Option 4: Treat inbounds as "system" resources and use `system_<prefix>_<sectionName>` format
 
 Adjust the [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md) and [MADR-070 Resource Identifier](070-resource-identifier.md) by:
 
