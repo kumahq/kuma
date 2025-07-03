@@ -46,8 +46,8 @@ But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://gi
 1. I want all requests in the mesh to be denied by default (2.12)
 
 2. I want to declare a group of identities as explicitly denied,
-   so that no Service Owner can override or bypass that decision,
-   ensuring enforcement of critical security boundaries across the mesh. (2.12)
+   so that Service Owner can't override or bypass that decision,
+   ensuring enforcement of critical security boundaries across the mesh. (2.12) 
 
 3. I want to allow all clients in the `observability` namespace to access all services by default,
    so that telemetry and monitoring tools function automatically,
@@ -58,17 +58,17 @@ But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://gi
 
 #### Service Owner
 
-1. I want to opt out of mesh-wide `observability` access,
+1. I want to grant access to my service to any client I choose,
+   so that I can support integrations and collaboration with other teams,
+   unless the Mesh Operator has explicitly denied that client,
+   ensuring I remain in control while respecting mesh-wide security boundaries. (2.12)
+
+2. I want to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
    so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
 
-2. I want to block malicious/abusive client even if previously it was allowed,
+3. I want to block malicious/abusive client even if previously it was allowed,
    so I can prevent my service from overloading until client's service team reacts to the incident. (2.12)
-
-3. I want to grant access to my service to any client I choose,
-   so that I can support integrations and collaboration with other teams,
-   unless the Mesh Operator has explicitly denied that client,
-   ensuring I remain in control while respecting mesh-wide security boundaries.(2.12)
 
 4. I want to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
    so that read operations are public but write operations are gated.
@@ -111,4 +111,3 @@ Across all rules specified on applicable Routes, precedence must be given to the
 * Method match.
 * Largest number of header matches.
 * Largest number of query param matches.
-
