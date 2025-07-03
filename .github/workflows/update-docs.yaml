@@ -7,7 +7,6 @@ on:
       - UPGRADE.md
       - docs/generated/raw/**
     branches: ["master"]
-    tags: ["*"]
   workflow_dispatch: {}
   schedule:
     - cron: 0 8 * * *
