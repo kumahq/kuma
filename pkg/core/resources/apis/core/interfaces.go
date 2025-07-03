@@ -14,11 +14,13 @@ type Port interface {
 
 // Destination interface creates abstraction for Kuma destinations like MeshService, MeshMultiZoneService or MeshExternalService
 type Destination interface {
-	// DestinationName TODO
+	// DestinationName returns destination name in format of legacy kuma.io/service
 	DestinationName(port int32) string
 	// GetPorts returns all ports from a destination
 	GetPorts() []Port
 	// FindPortByName return single port and information if port was found. This method accepts either port name or
-	// stringified version of port value. Can be used to find destination port struct based on destination KRI
+	// stringified version of port value. It Can be used to find destination port struct based on destination KRI.
+	// This method always checks both port value and port name and treats them equally. This is needed to hande backendRef
+	// and reachableBackendRef where you can only specify port value. More on this in issue: https://github.com/kumahq/kuma/issues/11738
 	FindPortByName(name string) (Port, bool)
 }

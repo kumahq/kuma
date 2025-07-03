@@ -148,14 +148,13 @@ func SniForBackendRef(
 	meshCtx xds_context.MeshContext,
 	systemNamespace string,
 ) string {
-	var name string
 	var port int32
 	dest := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
 	if p, ok := dest.FindPortByName(backendRef.Resource.SectionName); ok {
 		port = p.GetValue()
 	}
 	resource := dest.(core_model.Resource)
-	name = core_model.GetDisplayName(resource.GetMeta())
+	name := core_model.GetDisplayName(resource.GetMeta())
 	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
 		name = resource.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
 	}

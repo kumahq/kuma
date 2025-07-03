@@ -90,9 +90,14 @@ func CollectServices(
 	for _, outbound := range proxy.Outbounds {
 		var destinationService *DestinationService
 		if outbound.LegacyOutbound != nil {
-			destinationService = collectServiceTagService(outbound, meshCtx)
+			serviceName := outbound.LegacyOutbound.GetService()
+			destinationService = &DestinationService{
+				Outbound:    outbound,
+				Protocol:    meshCtx.GetServiceProtocol(serviceName),
+				ServiceName: serviceName,
+			}
 		} else {
-			destinationService = collectService(outbound, meshCtx)
+			destinationService = createServiceFromRealResource(outbound, meshCtx)
 		}
 		if destinationService != nil {
 			dests = append(dests, *destinationService)
@@ -101,12 +106,14 @@ func CollectServices(
 	return dests
 }
 
-func collectService(
+func createServiceFromRealResource(
 	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
 	service := meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource))
 	if service == nil {
+		// we want to ignore service which is not found. Logging might be excessive here.
+		// We don't have another mechanism to bubble up warnings yet.
 		return nil
 	}
 	port, ok := service.FindPortByName(outbound.Resource.SectionName)
@@ -121,18 +128,6 @@ func collectService(
 		Outbound:    outbound,
 		Protocol:    protocol,
 		ServiceName: service.DestinationName(port.GetValue()),
-	}
-}
-
-func collectServiceTagService(
-	outbound *xds_types.Outbound,
-	meshCtx xds_context.MeshContext,
-) *DestinationService {
-	serviceName := outbound.LegacyOutbound.GetService()
-	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    meshCtx.GetServiceProtocol(serviceName),
-		ServiceName: serviceName,
 	}
 }
 

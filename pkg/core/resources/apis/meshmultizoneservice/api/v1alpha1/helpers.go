@@ -29,7 +29,6 @@ func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-// FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
 func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if pointer.Deref(p.Name) == name {
