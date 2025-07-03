@@ -73,10 +73,6 @@ This document does not cover renaming of Envoy resources that:
 
 3. Are part of the built-in gateway, which is excluded from this effort and may be handled independently.
 
-#### Deprecated observability components
-
-Updates to the Grafana dashboards shipped with Kuma are out of scope. These dashboards, previously installed via `kumactl install observability`, will not be updated as a result of the changes described here. The `kumactl install observability` feature has been deprecated as of version 2.12, and no observability components (including Grafana and its dashboards) will be actively maintained.
-
 ## Additional sub-problems identified
 
 ### Naming for inbound-related resources
