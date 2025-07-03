@@ -91,7 +91,7 @@ sum:envoy.cluster.upstream_rq.count{!envoy_cluster:kuma_readiness , !envoy_clust
 we can do:
 
 ``` 
-sum:envoy.cluster.upstream_rq.count{!envoy_cluster:_kuma*}.as_count()
+sum:envoy.cluster.upstream_rq.count{!envoy_cluster:system_*}.as_count()
 ```
 
 You might be tempted to think that this use case is already covered by the `MeshMetric` profiles, 
@@ -104,14 +104,14 @@ So I can use a processor like:
 
 ```yaml
 processors:
-  filter/drop_kuma_internal_clusters:
+  filter/drop_kuma_system_resources:
     metrics:
-      include:
+      exclude:
         match_type: regexp
         metric_names: [".*"]  # apply to all metrics
         attributes:
           - key: envoy_cluster
-            value: "^_kuma_.*"  # matches if envoy_cluster starts with _
+            value: "^system_.*"  # matches if envoy_cluster starts with _
 ```
 
 ### As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
@@ -152,7 +152,7 @@ See:
 
 All changes will be behind the same feature flag as in [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-All system resources will conform to `^system_([a-z0-9]+_{0,1})+$` regex (we shouldn't use `system:` because of [this issue with `:` as separator](https://github.com/kumahq/kuma/issues/2363)).
+All system resources will conform to `^system_([a-z0-9-]*_?)+$` regex (we shouldn't use `system:` because of [this issue with `:` as separator](https://github.com/kumahq/kuma/issues/2363)).
 
 System resources that can be traced back to a Kuma resource with a valid KRI have the format `system_<KRI>`.
 
@@ -182,15 +182,9 @@ It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/tran
 
 #### Secrets
 
-In the future we will most likely introduce new policies - `MeshTrust`, `MeshIdentity` and `SPIRE` integration.
-
-For `Spire` we can't control the secrets as mentioned in [Non use cases section](#as-a-kuma-developer-i-want-to-rename-resources-that-are-coming-from-outside-kuma).
-
-For a secret related to `MeshTrust`s we can't use `KRI` because it's a combination of all of them and `KRI` currently don't deal with lists of resources.
-
-For `MeshIdentity` and user defined secrets we can use `KRI` but that will be covered by [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
-
-For all other secrets we can use `^system_([a-z0-9]+_{0,1})+$` naming.
+Secrets are resources like any others but should most likely always be considered system.
+Therefore, they will follow if they are an actual Kuma secret `^system_KRI` and `^system_<someusefulName>` otherwise.
+There are possible exceptions but these should be explicitly called out in MADRs. (.e.g [MeshTrust and MeshIdentity](./073-spiffe-compliance.md)).
 
 #### Enforcement
 
@@ -239,7 +233,7 @@ For MeshOPA it only modifies existing resources and doesn't create any new ones.
 
 ## Decision
 
-We will use a regex on all system resources as described in "Use a `^system_([a-z0-9]+_{0,1})+$` regex to name system resources" section.
+We will use a regex on all system resources as described in "Use a `^system_([a-z0-9-]*_?)+$` regex to name system resources" section.
 
 ## Notes
 
