@@ -428,32 +428,52 @@ self_<sectionName>
 Where:
 
 * `self_` is a required literal prefix
-* `<sectionName>` is either a user-defined port name or a port number, following specific format rules
+* `<sectionName>` is either:
 
-##### `<sectionName>` requirements
+   * A numeric port value in the range **1 to 65535**, or
+   * A user-defined port name that follows specific format rules
 
-The `<sectionName>` MUST:
+##### Rules for the `<sectionName>` value
 
-* Be **1 to 63 characters** long (not counting the `self_` prefix)
+If `<sectionName>` is numeric:
+
+* It must consist only of digits (`0`–`9`)
+* It must represent a valid port number in the range **1 to 65535**
+* Leading zeros are not allowed
+
+Example:
+
+```
+self_5050
+```
+
+If `<sectionName>` contains any non-digit characters, it is treated as a named port. In that case, it must:
+
+* Be **1 to 63 characters** long (excluding the `self_` prefix)
 * Contain only:
    * Lowercase US-ASCII letters (`a`–`z`)
    * Digits (`0`–`9`)
    * Hyphens (`-`)
-* **Start and end** with a lowercase letter or digit
+* **Start with a letter**
+* **End with a letter or digit**
 * **Not contain** consecutive hyphens (`--`)
 * **Not start or end** with a hyphen
 
 These constraints are the **combination** of:
 
-* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), which follow the **DNS_LABEL** format defined in [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
-* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), which follow the **IANA_SVC_NAME** format defined in [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
+* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
+* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA_SVC_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
 
-This ensures compatibility across both naming use cases.
+Example:
+
+```
+self_httpport
+```
 
 ##### Regular expression
 
 ```
-^self_(?!.*--)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$
+^self_(([1-9][0-9]{0,4})|([a-z](?!.*--)[a-z0-9-]{0,61}[a-z0-9]))$
 ```
 
 ## Implications for Kong Mesh
