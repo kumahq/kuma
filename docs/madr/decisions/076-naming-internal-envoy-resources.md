@@ -23,7 +23,7 @@ It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-me
 
 To make it easier to distinguish between the two types we introduce the following definition:
 
-- **User resource** - any resource that comes from `Mesh*Service`, `Mesh*Route` and user defined `Secret`s
+- **User resource** - any resource that comes from passthrough, `Mesh*Service`, `Mesh*Route` and user defined `Secret`s
 - **System resource** - any resource that is not a user resource
 
 ### Kuma system resource names
@@ -33,15 +33,10 @@ Listeners:
   - kuma:envoy:admin
   - _kuma:dynamicconfig
   - listener./tmp/kuma-dp-728637052/kuma-mesh-metric-config.sock
-  - listener.0.0.0.0_15001
-  - listener.0.0.0.0_15006
   - listener.10.42.0.9_9901
   - listener.[__]_15001 # is it ipv6?
   - probe_listener
   - prometheus_listener
-- outbound
-  - outbound:passthrough:ipv4
-  - outbound:passthrough:ipv6
 
 Clusters:
 - access_log_sink
