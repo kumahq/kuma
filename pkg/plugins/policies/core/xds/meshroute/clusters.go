@@ -101,7 +101,9 @@ func GenerateClusters(
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
 						tlsReady = true // tls readiness is only relevant for MeshService
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							if ms := meshCtx.GetServiceByKRI(pointer.Deref(realResourceRef.Resource)).(*meshservice_api.MeshServiceResource); ms != nil {
+							dest := meshCtx.GetServiceByKRI(pointer.Deref(realResourceRef.Resource))
+							if dest != nil {
+								ms := dest.(*meshservice_api.MeshServiceResource)
 								// we only check TLS status for local service
 								// services that are synced can be accessed only with TLS through ZoneIngress
 								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
@@ -169,16 +171,22 @@ func ServiceTagIdentities(
 	var result []string
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
-		ms := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource)).(*meshservice_api.MeshServiceResource)
-		for _, identity := range ms.Spec.Identities {
+		ms := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+		if ms == nil {
+			return result
+		}
+		for _, identity := range ms.(*meshservice_api.MeshServiceResource).Spec.Identities {
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, identity.Value)
 			}
 		}
 	case common_api.MeshMultiZoneService:
-		svc := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource)).(*meshmultizoneservice_api.MeshMultiZoneServiceResource)
+		svc := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+		if svc == nil {
+			return result
+		}
 		identities := map[string]struct{}{}
-		for _, matchedMs := range svc.Status.MeshServices {
+		for _, matchedMs := range svc.(*meshmultizoneservice_api.MeshMultiZoneServiceResource).Status.MeshServices {
 			ri := kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Name:         matchedMs.Name,
@@ -186,11 +194,11 @@ func ServiceTagIdentities(
 				Zone:         matchedMs.Zone,
 				Mesh:         matchedMs.Mesh,
 			}
-			ms := meshCtx.GetServiceByKRI(ri).(*meshservice_api.MeshServiceResource)
+			ms := meshCtx.GetServiceByKRI(ri)
 			if ms == nil {
 				continue
 			}
-			for _, identity := range ms.Spec.Identities {
+			for _, identity := range ms.(*meshservice_api.MeshServiceResource).Spec.Identities {
 				if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 					identities[identity.Value] = struct{}{}
 				}
