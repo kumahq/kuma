@@ -124,7 +124,7 @@ processors:
 
 Need to avoid:
 - IPs / non constant bits
-- Avoid dataplane name.
+- Avoid dataplane name or kri.
 
 ## Non use cases
 
@@ -148,13 +148,13 @@ See:
 
 ## Design
 
-### Use a `^system_([a-z0-9]+_{0,1})+$` regex to name system resources
+### Use a `^system_([a-z0-9-]*_?)+$` regex to name system resources
 
 All changes will be behind the same feature flag as in [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-All system resources will conform to `^system_([a-z0-9]+_{0,1})+$` regex (we shouldn't use `_system:` because of [this issue](https://github.com/kumahq/kuma/issues/2363)).
+All system resources will conform to `^system_([a-z0-9]+_{0,1})+$` regex (we shouldn't use `system:` because of [this issue with `:` as separator](https://github.com/kumahq/kuma/issues/2363)).
 
-System resources that can be traced back to a Kuma resource with a valid KRI will have take the form of `system_<KRI>`.
+System resources that can be traced back to a Kuma resource with a valid KRI have the format `system_<KRI>`.
 
 For example:
 
@@ -197,7 +197,7 @@ For all other secrets we can use `^system_([a-z0-9]+_{0,1})+$` naming.
 ##### Builders
 
 To enforce these rules we will add checks in resource builders like [ClusterBuilder](https://github.com/kumahq/kuma/blob/dedaba5b9de1bd134dce813ae49b3475d5d24e6b/pkg/xds/envoy/clusters/cluster_builder.go#L80).
-If anyone tries to add a new resource that doesn't conform to any type it will fail in unit tests.
+If anyone tries to add a new resource that doesn't conform to any type it will fail tests.
 
 Pros:
 - Simple to implement
