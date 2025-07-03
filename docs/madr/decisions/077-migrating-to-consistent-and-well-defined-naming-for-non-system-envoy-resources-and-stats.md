@@ -8,14 +8,6 @@
 
 Right now, Envoy resources and stats in Kuma use different naming styles. Some follow legacy or default Envoy formats, which makes them harder to understand and trace. Resource names and their related stats often don’t match, even when they come from the same Kuma resource. This makes it difficult to work with observability tools and troubleshoot issues.
 
-The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But while working on it, it became clear that using full KRI names for some resources, like inbounds and passthrough outbounds, would lead to a sharp increase in metrics cardinality without providing real value. As a result, the scope changed. This document now:
-
-* Clearly defines how non-system Envoy resources and stats should be named
-* Specifies which resources should use KRI names and which should use simpler formats
-* Describes a migration path for switching to the new names safely and gradually
-
-The goal is to make naming consistent, easy to understand, and better connected to Kuma resources, without causing problems like high metrics cardinality or churn. The new approach builds on the ideas from [MADR-070 Resource Identifier](070-resource-identifier.md) but avoids unnecessary complexity.
-
 ## Affected systems and users
 
 Two main groups are impacted:
@@ -28,6 +20,14 @@ Two main groups are impacted:
 The `Dataplane` view in the GUI shows inbound and outbound endpoints by parsing Envoy stat names such as clusters and listeners, and matching them to the config. Changes to how names are built will affect this matching. The GUI must be updated to support both old and new formats during the migration. This includes handling KRI-based names for outbound and routing resources, and `self_` names for inbounds. Unlike before, stat names and resource names will now match, so GUI logic must reflect that.
 
 ## Scope
+
+The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But while working on it, it became clear that using full KRI names for some resources, like inbounds and passthrough outbounds, would lead to a sharp increase in metrics cardinality without providing real value. As a result, the scope changed. This document now:
+
+* Clearly defines how non-system Envoy resources and stats should be named
+* Specifies which resources should use KRI names and which should use simpler formats
+* Describes a migration path for switching to the new names safely and gradually
+
+The goal is to make naming consistent, easy to understand, and better connected to Kuma resources, without causing problems like high metrics cardinality or churn. The new approach builds on the ideas from [MADR-070 Resource Identifier](070-resource-identifier.md) but avoids unnecessary complexity.
 
 ### Service discovery model
 
@@ -52,11 +52,11 @@ Given that:
 
 We will update the included Grafana dashboards to use the new resource and stat names introduced in this decision document.
 
-### Out of scope
+## Out of scope
 
 Renaming Envoy resources and stat names generated using the legacy service discovery model based on the `kuma.io/service` tag is out of scope. This means the new, consistent and well-defined naming, described later in this document, will not apply to those resources even if the related data plane proxy feature flag is enabled.
 
-#### Envoy resource exclusions
+### Resource exclusions
 
 This document does not cover renaming of Envoy resources that:
 
