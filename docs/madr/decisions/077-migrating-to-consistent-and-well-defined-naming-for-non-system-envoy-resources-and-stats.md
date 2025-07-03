@@ -361,8 +361,8 @@ self_5050
 Examples:
 
 ```
-self_5050
 self_httpport
+self_5050
 ```
 
 **Benefits:**
@@ -391,37 +391,37 @@ These passthrough resources are tied to the current `Dataplane` and play a role 
 
 Two options are considered:
 
-#### Option 1: Use `system_` prefix
+#### Option 1: Use system resource naming format
 
-Treat passthrough resources as internal system components and name them using the `system` resources formatting described in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md).
-
-**Benefits:**
-
-* Makes passthrough resources clearly distinct from user-defined service-related resources
-* Matches the behavior of other resources that may or may not be used, depending on the traffic path
-* Reflects the initial perception that these resources are internal to proxy functionality
-* Avoids adding more variation to `self_`-prefixed resources when their observability value is uncertain in some setups
-
-**Drawbacks:**
-
-* These resources may sit on the regular service-to-service traffic path
-* The `system_` prefix can reduce visibility and observability of traffic that users care about
-* Makes it harder to trace and analyze traffic flowing through these passthrough points
-
-#### Option 2: Use `self_` prefix
-
-Use the contextual naming format already applied to inbounds and treat passthrough resources as part of the `Dataplane`'s scoped configuration.
+Treat passthrough resources as internal system components and name them using the `system_<..>` format described in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md). This approach follows the conventions used for system-generated resources not tied to specific Kuma resources.
 
 **Benefits:**
 
-* Reflects that passthrough behavior is explicitly configured in the `Dataplane`
-* Groups passthrough traffic with other contextual resources using the same naming convention
-* Improves observability and traceability for users monitoring traffic through these paths
+* Clearly separates passthrough resources from user-defined service-related resources
+* Matches the assumption that these resources may be internal to proxy behavior in some setups
+* Avoids expanding contextual naming to cases where observability value may vary
 
 **Drawbacks:**
 
-* Slightly expands the use of the `self_` prefix beyond direct inbounds
-* Requires awareness in tooling to treat these passthrough resource types appropriately
+* These resources may be part of the regular service-to-service traffic path, where treating them as system components would be misleading and using the system format would not accurately reflect their role
+* Using the system format may reduce visibility into traffic users expect to observe
+* Makes it harder to trace and correlate passthrough traffic with `Dataplane` configuration and metrics when relevant
+
+#### Option 2: Use contextual `self_<descriptor>` format
+
+Apply the same contextual naming structure used for inbounds to passthrough resources, using the `self_<descriptor>` format. Treat passthrough resources as part of the scoped configuration defined within the `Dataplane`.
+
+**Benefits:**
+
+* Reflects that passthrough traffic is explicitly configured in the `Dataplane`
+* Reuses the same naming logic as other contextual resources, keeping naming consistent
+* Helps users trace and monitor passthrough traffic with familiar patterns
+
+**Drawbacks:**
+
+* Extends use of the contextual format to resources that are not bound to a specific port or service
+* Requires tooling to recognize and handle these new descriptors correctly
+* Introduces new descriptor values for passthrough traffic that must be formally defined and validated
 
 ### Impact on `MeshProxyPatch` policies
 
