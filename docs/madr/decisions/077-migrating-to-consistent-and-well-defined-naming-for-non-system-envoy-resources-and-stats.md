@@ -403,7 +403,7 @@ Two options are considered:
 
 #### Option 1: Use `system_` prefix
 
-Treat passthrough resources as internal system components and name them using the `system` resources formattin described in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md).
+Treat passthrough resources as internal system components and name them using the `system` resources formatting described in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md).
 
 **Benefits:**
 
@@ -487,6 +487,21 @@ We will use **port name if defined, otherwise fall back to port value** for the 
 
 This ensures alignment between policy `sectionName` references and actual resource names. It allows meaningful, user-defined names where available while still working with unnamed ports. Though it introduces some inconsistency in the format, the added clarity and policy compatibility are more valuable in practice.
 
+#### Transparent proxy passthrough resource naming
+
+We will use the `self_<descriptor>` format (defined in the [format definition](#format-self_descriptor)), where `<descriptor>` follows the [`passthrough_ipv<IPVersion>_<direction>` format](#format-self_passthrough_ipvipversion_direction), for naming IPv4 and IPv6 passthrough-related resources and stats.
+
+Although these resources are not always active in all environments, they are explicitly tied to the current `Dataplane` through the `transparentProxying` configuration. In setups like `MeshPassthrough`, they are heavily used and form part of the main data path. Using the `self_` prefix clearly marks them as contextual to the `Dataplane` and aligns them with other scoped resources like inbounds.
+
+This results in the following four possible final names:
+
+```
+self_passthrough_ipv4_inbound
+self_passthrough_ipv4_outbound
+self_passthrough_ipv6_inbound
+self_passthrough_ipv6_outbound
+```
+
 ### Formal format definitions
 
 This section defines the format rules introduced by this decision to ensure consistency and compatibility across all affected components.
@@ -525,8 +540,8 @@ Example:
 
 These rules combine:
 
-* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS\_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
-* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA\_SVC\_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
+* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
+* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA_SVC_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
 * Additional support for dots (`.`) to allow future use cases like `MeshPassthrough` where DNS-like names are expected
 
 Example:
@@ -541,29 +556,63 @@ backend-kumahq.com
 (([1-9][0-9]{0,4})|([a-z](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
 ```
 
-#### Format: `self_<sectionName>`
+#### Format: `<self_passthrough_ipv<IPVersion>_<direction>>`
 
-This format is used for naming inbound-related resources and stats that exist only in the context of the current `Dataplane`.
+This format is used for naming resources and stats related to transparent proxy passthrough traffic in the context of the current `Dataplane`.
 
 **Structure:**
 
-* Starts with the literal prefix `self_`
-* Followed by a `<sectionName>` value, as defined above
+* Starts with the literal prefix `self_passthrough_`
+* Followed by `ipv4` or `ipv6` to indicate the IP version
+* Ends with either `inbound` or `outbound` to indicate the traffic direction
+
+This format is reserved and fixed for passthrough-related resources.
 
 Examples:
 
 ```
-self_5050
-self_httpport  
-self_backend-kumahq.com
+passthrough_ipv4_inbound  
+passthrough_ipv6_outbound
 ```
 
-#### Usage of this format
+These names are not user-configurable and are generated based on the `Dataplane`'s `transparentProxying` configuration.
 
-The `self_<sectionName>` format will be used in the following cases:
+##### Regular expression
 
-* **Names of non-system Envoy resources and stat names** for inbounds explicitly defined in the `Dataplane`
-* **Names of inbound and outbound transparent proxy passthrough resources**, which do not map to distinct Kuma resources and exist only in the context of the current `Dataplane`
+```
+passthrough_ipv(4|6)_(inbound|outbound)
+```
+
+#### Format: `self_<descriptor>`
+
+This format is used for naming resources and stats that are specific to the context of the current `Dataplane`. The part after `self_` is called a `<descriptor>`, and it identifies the relevant section of the `Dataplane` configuration that the resource belongs to.
+
+**Structure:**
+
+* Starts with the literal prefix `self_`
+* Followed by a `<descriptor>` value
+
+A `<descriptor>` is any string that represents a specific part of the `Dataplane` context and allows policies, resources, and stats to be correlated. For example, in the case of non-system inbounds, the `<descriptor>` is a **section name**, which may be a port number or port name.
+
+All descriptors must follow the common character set rules used for resource names in [MADR-070 Resource Identifier](https://github.com/kumahq/kuma/blob/df678629aa3bdce62a84c0e3752c7e5d45bf1e98/docs/madr/decisions/070-resource-identifier.md#url-query), which defines what is allowed in the URL query component. These characters include lowercase letters (`a–z`), digits (`0–9`), hyphens (`-`), underscores (`_`), and dots (`.`), depending on the specific format.
+
+Examples:
+
+```
+self_5050  
+self_http  
+self_backend-kumahq.com
+self_passthrough_ipv4_outbound
+```
+
+##### Valid formats for `<descriptor>`
+
+The exact format of `<descriptor>` depends on the type of resource:
+
+* **For non-system inbounds**: use a [`<sectionName>`](#format-sectionname), which can be either a port number or a port name
+* **For transparent proxy passthrough resources**: use the [`<passthrough_ipv<IPVersion>_<direction>`](#format-self_passthrough_ipvipversion_direction) format, where `<IPVersion>` is `4` or `6` and `<direction>` is `inbound` or `outbound`
+
+All valid `<descriptor>` values used in `self_<descriptor>` must match one of the formats listed above.
 
 ## Implications for Kong Mesh
 
