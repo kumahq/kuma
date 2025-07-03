@@ -17,7 +17,7 @@ Two main groups are impacted:
 
 ### Kuma GUI
 
-The `Dataplane` view in the GUI shows inbound and outbound endpoints by parsing Envoy stat names such as clusters and listeners, and matching them to the config. Changes to how names are built will affect this matching. The GUI must be updated to support both old and new formats during the migration. This includes handling KRI-based names for outbound and routing resources, and `self_` names for inbounds. Unlike before, stat names and resource names will now match, so GUI logic must reflect that.
+The `Dataplane` view in the GUI shows inbound and outbound endpoints by parsing Envoy stat names such as clusters and listeners, and matching them to the config. Changes to how names are built will affect this matching. The GUI must be updated to support both old and new formats during the migration.
 
 ## Scope
 
