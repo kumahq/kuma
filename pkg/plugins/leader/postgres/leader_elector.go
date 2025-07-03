@@ -98,7 +98,7 @@ func (p *postgresLeaderElector) AddCallbacks(callbacks component.LeaderCallbacks
 }
 
 func (p *postgresLeaderElector) setLeader(leader bool) {
-	var value int32 = 0
+	var value int32
 	if leader {
 		value = 1
 	}
