@@ -21,57 +21,47 @@ The `Dataplane` view in the GUI shows inbound and outbound endpoints by parsing 
 
 ## Scope
 
-The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But while working on it, it became clear that using full KRI names for some resources, like inbounds and passthrough outbounds, would lead to a sharp increase in metrics cardinality without providing real value. As a result, the scope changed. This document now:
+The original goal of this MADR was to describe how to switch all non-system Envoy resources to use the KRI naming format. But during the investigation, it became clear that using full KRI names for some resource types, such as inbounds and transparent proxy passthrough resources, would lead to a sharp increase in metrics cardinality without providing clear value. This would negatively affect observability systems and increase cost. As a result, the scope of the work changed.
 
-* Clearly defines how non-system Envoy resources and stats should be named
-* Specifies which resources should use KRI names and which should use simpler formats
-* Describes a migration path for switching to the new names safely and gradually
+This MADR now:
 
-The goal is to make naming consistent, easy to understand, and better connected to Kuma resources, without causing problems like high metrics cardinality or churn. The new approach builds on the ideas from [MADR-070 Resource Identifier](070-resource-identifier.md) but avoids unnecessary complexity.
+* Defines how non-system Envoy resources and stat names should be structured
+* Introduces and formally defines the `self_<descriptor>` naming format for resources that exist only in the context of the current `Dataplane`
+* Defines valid formats for `<descriptor>`, including:
+   * Port names or values for non-system inbounds
+   * Predefined values for passthrough traffic (e.g., `passthrough-ipv4-inbound`)
+* Specifies which resource types must use the `self_<descriptor>` format
+* Describes when KRI format (defined in [MADR-070](070-resource-identifier.md)) is used for resources tied to distinct Kuma objects
+* Provides a migration path to switch to the new formats safely and gradually
 
-### Service discovery model
-
-This decision applies only to environments using the new service discovery model, which is based on the following resources:
+The decision applies only to environments using the new service discovery model based on the following resources:
 
 * `MeshService`
 * `MeshExternalService`
 * `MeshMultiZoneService`
 
-These resources replace the legacy `kuma.io/service` tag previously used to define services in the mesh. Since the legacy tag is being phased out and will eventually be removed, this decision only affects the naming of resources generated from the new model.
+These resources replace the legacy `kuma.io/service` tag, which is being phased out and will eventually be removed. The new naming formats apply only to resources generated from this new model. Environments still using the legacy tag are out of scope.
 
-### Observability tooling
-
-This decision includes updates to Grafana dashboards installed via `kumactl install observability`.
-
-While there is an open discussion and no final decision yet about the future of these observability components (see [kumahq/kuma#11693](https://github.com/kumahq/kuma/issues/11693)), they have not been officially removed or deprecated. Although current direction leans toward deprecation and shifting responsibility to users to follow setup instructions for each tool individually, this has not been finalized.
-
-Given that:
-
-* the changes needed to align existing dashboards with the new naming scheme are minimal
-* the time effort to make those changes is low
-
-We will update the included Grafana dashboards to use the new resource and stat names introduced in this decision document.
+This decision also includes updates to the Grafana dashboards installed via `kumactl install observability`. While the long-term future of these observability components is still being discussed (see [kumahq/kuma#11693](https://github.com/kumahq/kuma/issues/11693)), they are not yet deprecated or removed. Given the limited scope of changes and the relatively low effort involved, the included dashboards will be updated to support the new naming formats.
 
 ## Out of scope
 
-Renaming Envoy resources and stat names generated using the legacy service discovery model based on the `kuma.io/service` tag is out of scope. This means the new, consistent and well-defined naming, described later in this document, will not apply to those resources even if the related data plane proxy feature flag is enabled.
+The changes described in this document do not apply to all types of Envoy resources. The following are explicitly out of scope:
 
-### Resource exclusions
+* **Legacy service discovery model**: Resources and stat names generated using the `kuma.io/service` tag are excluded. The new naming formats only apply to environments using the new service discovery model (`MeshService`, `MeshExternalService`, `MeshMultiZoneService`). Even if the related data plane proxy feature flag is enabled, legacy-tagged resources will continue using their existing names.
 
-This document does not cover renaming of Envoy resources that:
-
-1. Do not directly map to Kuma resources. This includes system-generated resources, some of which are already covered by [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md), such as:
+* **System-generated resources**: These are not renamed here. Some are already covered by [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md), including:
 
    * Secrets
    * System listeners and clusters
 
-   Others will be covered in a separate MADR, such as:
+  Others will be addressed in a separate MADR, including:
 
-   * Default routes (when no `MeshHTTPRoute` or `MeshTCPRoute` is defined)
+   * Default routes when no `MeshHTTPRoute` or `MeshTCPRoute` is defined
 
-2. Are related to the `MeshPassthrough` resource, which will be addressed separately.
+* **MeshPassthrough**: Resources related to the `MeshPassthrough` policy are not included in this decision and will be addressed separately.
 
-3. Are part of the built-in gateway, which is excluded from this effort and may be handled independently.
+* **Built-in gateway**: Gateway-related resources are excluded from this effort and may be handled independently.
 
 ## Design areas requiring decisions
 
