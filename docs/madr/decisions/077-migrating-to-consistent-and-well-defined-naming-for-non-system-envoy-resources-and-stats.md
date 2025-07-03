@@ -402,7 +402,9 @@ In Kubernetes, the control plane can be configured to auto-inject the annotation
 
 ### Inbound resource naming
 
-Inbound-related Envoy resources and stats will adopt a dedicated naming scheme based on the `self_` prefix. This avoids the high cardinality of full KRI-formatted names (e.g., `kri_dp_default_..._5050`) and uses a more contextual format:
+Inbound-related Envoy resources and stats will adopt a dedicated naming scheme based on the `self_` prefix. This avoids the high cardinality of full KRI-formatted names (e.g., `kri_dp_default_..._5050`) and uses a more contextual format `self_<sectionName>`
+
+Examples:
 
 ```
 self_5050  
@@ -417,9 +419,13 @@ We will use **port name if defined, otherwise fall back to port value** for the 
 
 This ensures alignment between policy `sectionName` references and actual resource names. It allows meaningful, user-defined names where available while still working with unnamed ports. Though it introduces some inconsistency in the format, the added clarity and policy compatibility are more valuable in practice.
 
-#### Formal format definition
+### Formal format definitions
 
-The naming format for inbound resources and stats follows the pattern:
+This section defines the format rules introduced by this decision to ensure consistency and compatibility across all affected components.
+
+#### Format: `self_<sectionName>`
+
+The naming format follows this pattern:
 
 ```
 self_<sectionName>
@@ -429,7 +435,6 @@ Where:
 
 * `self_` is a required literal prefix
 * `<sectionName>` is either:
-
    * A numeric port value in the range **1 to 65535**, or
    * A user-defined port name that follows specific format rules
 
@@ -464,10 +469,11 @@ These constraints are the **combination** of:
 * [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
 * [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA_SVC_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
 
-Example:
+Examples:
 
 ```
 self_httpport
+self_passthrough_transparentproxy_inbound
 ```
 
 ##### Regular expression
@@ -475,6 +481,15 @@ self_httpport
 ```
 ^self_(([1-9][0-9]{0,4})|([a-z](?!.*--)[a-z0-9-]{0,61}[a-z0-9]))$
 ```
+
+This pattern matches either a valid numeric port (1 to 65535) or a valid named port.
+
+#### Usage of this format
+
+The `self_<sectionName>` format will be used in the following cases:
+
+* **Names of non-system Envoy resources and stat names** for inbounds explicitly defined in the `Dataplane`
+* **Names of inbound and outbound transparent proxy passthrough resources**, which do not map to distinct Kuma resources and exist only in the context of the current `Dataplane`
 
 ## Implications for Kong Mesh
 
