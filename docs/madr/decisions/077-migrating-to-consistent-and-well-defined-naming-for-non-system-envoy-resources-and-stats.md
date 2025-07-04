@@ -398,11 +398,10 @@ Apply the same contextual naming structure used for inbounds to passthrough reso
 Transparent proxy passthrough-related Envoy resources and stats will use the contextual format `self_<descriptor>`, where the `<descriptor>` is:
 
 ```
-transparentproxy_passthrough_<direction>_<port>_ipv<IPVersion>
+transparentproxy_passthrough_<direction>_ipv<IPVersion>
 ```
 
 * `<direction>` is `inbound` or `outbound`
-* `<port>` is the port number from the `Dataplane`'s `transparentProxying` config
 * `<IPVersion>` is `4` or `6`
 
 We don’t start the descriptor with `<direction>` here because the config source is already under `networking.transparentProxying.<direction>` in the `Dataplane`. Instead, we use a fixed prefix and then the direction. This is different from non-system inbounds, where the descriptor starts with `inbound` because their config comes from `networking.inbound`.
