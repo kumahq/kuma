@@ -381,8 +381,7 @@ Treat passthrough resources as internal system components and name them using th
 **Drawbacks:**
 
 * These resources may be part of the regular service-to-service traffic path, where treating them as system components would be misleading and using the system format would not accurately reflect their role
-* Using the system format may reduce visibility into traffic users expect to observe
-* Makes it harder to trace and correlate passthrough traffic with `Dataplane` configuration and metrics when relevant
+* Requires awareness in tooling to treat these passthrough resource types appropriately. With the current `system_` format, tooling can safely assume that such resources are not part of the regular service-to-service traffic path and may choose to ignore or not scrape them. However, passthrough resources can be on that path. If named using the `system_` prefix, tooling would need to adjust its assumptions and explicitly handle passthrough-related cases to avoid missing important metrics.
 
 #### Option 2: Use contextual `self_<descriptor>` format
 
@@ -390,15 +389,9 @@ Apply the same contextual naming structure used for inbounds to passthrough reso
 
 **Benefits:**
 
+* **Improves observability and traceability for users monitoring traffic through these paths**
 * Reflects that passthrough traffic is explicitly configured in the `Dataplane`
 * Reuses the same naming logic as other contextual resources, keeping naming consistent
-* Helps users trace and monitor passthrough traffic with familiar patterns
-
-**Drawbacks:**
-
-* Extends use of the contextual format to resources that are not bound to a specific port or service
-* Requires tooling to recognize and handle these new descriptors correctly
-* Introduces new descriptor values for passthrough traffic that must be formally defined and validated
 
 #### Decision: Naming for transparent proxy passthrough resources
 
