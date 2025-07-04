@@ -69,7 +69,7 @@ func (x *KDSSubscription) IsOnline() bool {
 }
 
 func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
-	var result uint64 = 0
+	var result uint64
 	for _, s := range x.GetSubscriptions() {
 		result += v(s)
 	}

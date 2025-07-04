@@ -303,7 +303,7 @@ func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resource
 		ginkgo.By(fmt.Sprintf("when calling: %d %s", i, act))
 		// Given
 		url := fmt.Sprintf("http://%s%s", apiServer.Address(), act.path)
-		var body io.Reader = nil
+		var body io.Reader
 		if act.method == http.MethodPut || act.method == http.MethodPost {
 			requestFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".request.json")
 			if len(actions) > 1 {

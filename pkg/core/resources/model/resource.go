@@ -202,6 +202,8 @@ type ResourceTypeDescriptor struct {
 	HasStatus bool
 	// IsProxy indicates if this resource is a proxy
 	IsProxy bool
+	// IsDestination indicates if this resource is a destination
+	IsDestination bool
 	// Validator contains an OpenAPI validator for this resource
 	Validator *validate.SchemaValidator
 	// StructuralSchema contains an unmarshalled OpenAPI schema of the resource

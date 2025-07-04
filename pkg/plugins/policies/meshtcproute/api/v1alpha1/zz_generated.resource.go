@@ -161,6 +161,7 @@ var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshtcproutes",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh TCP Route",
 	PluralDisplayName:            "Mesh TCP Routes",

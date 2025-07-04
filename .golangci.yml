@@ -18,6 +18,7 @@ linters:
     - misspell
     - nonamedreturns
     - nosprintfhostport
+    - revive
     - staticcheck
     - unconvert
     - unparam
@@ -139,6 +140,10 @@ linters:
         - cancelled
     nonamedreturns:
       report-error-in-defer: false
+    revive:
+      max-open-files: 2048
+      rules:
+        - name: var-declaration
     usestdlibvars:
       http-status-code: false
   exclusions:
@@ -195,7 +200,14 @@ linters:
       - (^|/)vendored($|/)
       - pkg/transparentproxy/iptables/builder
 issues:
+  # Fix found issues (if it's supported by the linter).
   fix: true
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  max-same-issues: 0
 formatters:
   enable:
     - gci

@@ -161,6 +161,7 @@ var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshhealthchecks",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Health Check",
 	PluralDisplayName:            "Mesh Health Checks",
