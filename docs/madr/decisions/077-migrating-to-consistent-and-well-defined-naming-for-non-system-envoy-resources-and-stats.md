@@ -63,11 +63,120 @@ The changes described in this document do not apply to all types of Envoy resour
 
 * **Built-in gateway**: Gateway-related resources are excluded from this effort and may be handled independently.
 
-## Design areas requiring decisions
+## Design areas and decisions
+
+### Naming format for contextual resources
+
+The KRI format from [MADR-070 Resource Identifier](070-resource-identifier.md) is used for resources tied directly to distinct Kuma resources, like `MeshService`. It includes the mesh, zone, namespace, and resource name. While some resources could technically be named using the `KRI` format, this document defines that they should not. Using `KRI` for these context-specific resources leads to unnecessary metric cardinality, longer and less readable names, and extra complexity without real value.
+
+Some Envoy resources are defined and used only in the context of a specific proxy. In this document, the context is the `Dataplane`, but the format is intentionally more general and not strictly tied to that resource type. These resources may be referenced in policies, metrics, and other tooling, so a naming format is needed that reflects their scoped, contextual nature without pretending they are globally distinct Kuma resources.
+
+To solve this, we define a contextual format that uses a `<keyword>_` prefix followed by a descriptor. The descriptor identifies the relevant section of the current proxy context the resource belongs to.
+
+#### Format: `<keyword>_<descriptor>`
+
+* Begins with a keyword that indicates the resource is local to the current proxy context
+* Followed by a descriptor string that identifies the specific part of the proxy context
+
+The descriptor must use only characters allowed in URL queries, as defined in [MADR-070](070-resource-identifier.md#url-query):
+
+* Lowercase letters (`a` to `z`)
+* Numbers (`0` to `9`)
+* Dashes (`-`)
+* Underscores (`_`)
+* Dots (`.`) for future use cases like domain-style or MeshPassthrough naming
+
+#### Keyword options
+
+##### Option 1: Use `self` as the keyword
+
+**Benefits:**
+
+* Clearly indicates the resource belongs to the current proxy context
+* Familiar and widely used in tools and programming languages to refer to the current object or scope
+
+##### Option 2: Use `this` as the keyword
+
+**Benefits:**
+
+* Clearly signals that the resource is tied to this specific proxy context
+* Common in many programming languages for referencing current object or scope
+
+**Drawbacks:**
+
+* Might be confused with general-purpose language in documentation or examples
+* Less commonly used in naming schemes compared to `self`
+
+##### Option 3: Use `local` as the keyword
+
+**Benefits:**
+
+* Suggests the resource is local to the current proxy
+* Has precedent in networking terminology
+
+**Drawbacks:**
+
+* Less familiar than `self` or `this` in naming formats
+* May be confused with other networking terms like `localhost`, implying different meaning (e.g. local to host or machine rather than the proxy)
+
+##### Chosen keyword: `self`
+
+We choose `self` as the keyword in the contextual naming format `<keyword>_<descriptor>`. This makes the final format `self_<descriptor>`.
+
+### Format definition: `<sectionName>`
+
+The `<sectionName>` identifies a specific part of the current context (in this document, the `Dataplane`) that the resource or stat belongs to. It is commonly used as part of descriptors for contextual naming formats such as [`self_inbound_<sectionName>`](#decision-naming-for-non-system-inbound-related-resources).
+
+This format supports both numeric and named values.
+
+**If numeric:**
+
+* Must consist only of digits (`0`–`9`)
+* Must represent a valid port number in the range **1 to 65535**
+* Leading zeros are not allowed
+
+Example:
+
+```
+5050
+```
+
+**If named:**
+
+* Must be **1 to 63 characters** long
+* Can contain:
+
+  * Lowercase letters (`a`–`z`)
+  * Digits (`0`–`9`)
+  * Hyphens (`-`)
+  * Dots (`.`)
+* Must **start with a letter**
+* Must **end with a letter or digit**
+* Must **not contain** consecutive hyphens (`--`)
+* Must **not contain** consecutive dots (`..`)
+* Must **not start or end** with a hyphen or dot
+
+These rules combine:
+
+* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS\_LABEL** from [RFC1123 section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
+* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA\_SVC\_NAME** from [RFC6335 section 5.1](https://www.rfc-editor.org/rfc/rfc6335.html#section-5.1)
+* Additional support for dots (`.`) to allow future formats such as those used by `MeshPassthrough`
+
+Example:
+
+```
+backend-kumahq.com
+```
+
+**Regular expression:**
+
+```
+(([1-9][0-9]{0,4})|([a-z](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
+```
 
 ### Naming for non-system inbound-related resources
 
-The current KRI naming format, as defined in the [MADR-070 Resource Identifier](070-resource-identifier.md), proposes that non-system inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port or name as the `sectionName`. This would result in names like:
+The current KRI naming format, proposes that non-system inbound resources (such as listeners and clusters) use the full KRI name of the originating `Dataplane` plus the inbound port or name as the `sectionName`. This would result in names like:
 
 ```
 kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
@@ -75,84 +184,28 @@ kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 
 While technically correct and traceable, this significantly increases metrics cardinality compared to current formats, such as `localhost_<port>` for clusters and `<address>_<port>` for listeners, which use Envoy’s default format. This would lead to regressions in performance, cost, and compatibility with observability tooling. The following alternatives are considered:
 
-#### Option 1: Introduce a dedicated contextual naming scheme for inbound resources
+#### Option 1: Use the contextual format defined for proxy-local resources
 
-This option proposes a new, distinct naming format specifically for non-system inbound resources. Instead of reusing the full KRI format (which includes the `Dataplane` name) or the system naming (which uses the `system_` prefix), inbound resources would follow a third format with a contextual keyword prefix and either a port number or named port:
+This option proposes that non-system inbounds use the [contextual format](#context-and-problem-statement) with the `inbound_<sectionName>` descriptor:
 
 ```
-<keyword>_5050
-<keyword>_httpport
+self_inbound_<sectionName>
 ```
 
-This approach introduces a clear and purpose-specific naming scheme for inbound resources that are local to the `Dataplane` defining them. The justification is that inbound resources exist only within the context of the owning proxy and are not independently addressable Kuma resources. Using the KRI format without a resource reference would undermine its semantic purpose. A separate naming pattern avoids that problem.
+The `self` keyword refers to the current proxy context. The `<sectionName>` follows the format defined in [section name](#format-sectionname): it uses the port name if present, otherwise the port number.
 
 **Benefits:**
 
-* Avoids increase in metric cardinality
-* Keeps resource and stat names short and easy to read
-* Minimizes tooling impact by keeping formats simple and stable
-* Makes it clear that the resource is local to the proxy, not a system or KRI-based resource
-* Avoids embedding pod-specific details, preventing metric churn in Kubernetes
-* Cleanly separates inbound identity from system or KRI conventions
+* Avoids metric cardinality increase by skipping global identifiers like mesh, zone, or proxy name
+* Keeps names short and focused on local context
+* Prevents metric churn in Kubernetes environments
+* Clearly separates inbounds from KRI or system resources
+* Aligns with how policies reference inbounds via `sectionName`
 
 **Drawbacks:**
 
-* Adds a third naming convention not originally covered in the [MADR-070 Resource Identifier](070-resource-identifier.md)
-* Removes the ability to link the name directly to the originating `Dataplane`
-* Adds a small layer of complexity to tooling that must now recognize this third category
-* Might overlap with user-defined tags or labels in some environments
-
-##### Suboption A: Use `self` as the keyword
-
-Examples:
-
-```
-self_5050
-self_httpport
-```
-
-**Extra benefits:**
-
-* Clearly indicates that the resource belongs to the current `Dataplane`
-* Familiar and widely used keyword in tools and programming languages to refer to the current context
-
-##### Suboption B: Use `this` as the keyword
-
-Examples:
-
-```
-this_5050  
-this_httpport
-```
-
-**Extra benefits:**
-
-* Clearly indicates that the resource belongs to this `Dataplane`
-* Familiar and widely used keyword in tools and programming languages to refer to the current context
-
-**Extra drawbacks:**
-
-* Might be confused with general-purpose wording in documentation or examples
-* Less commonly used than `self` in resource naming contexts
-
-##### Suboption C: Use `local` as the keyword
-
-Examples:
-
-```
-local_5050  
-local_httpport
-```
-
-**Extra benefits:**
-
-* Clearly indicates that the resource is local to the current `Dataplane`
-* Common in networking contexts
-
-**Extra drawbacks:**
-
-* Less familiar as a naming prefix compared to `self` or `this`
-* Might be confused with `localhost` or other network terms, suggesting a different meaning than intended (e.g., local to pod or machine instead of to the current `Dataplane`)
+* No direct reference to the originating `Dataplane`
+* Requires tooling to recognize the contextual format category
 
 #### Option 2: Align resource names with existing `localhost_<port>` inbound clusters stat format
 
@@ -306,75 +359,18 @@ self_5050
 * Requires dual parsing and matching logic in Kuma GUI (e.g., different strategies for xDS config vs. stats)
 * Increases implementation complexity and potential for confusion when debugging or inspecting proxy behavior
 
-### Inbound section naming strategy
+#### Decision: Naming for non-system inbound-related resources
 
-This section describes the problem of how to choose the `<sectionName>` for inbound resource and stat names, and presents the options under consideration.
-
-Kuma policies can target individual inbounds on a `Dataplane` by setting the `sectionName` field in the `targetRef`. This value must match the name or port used in the inbound configuration. This is helpful when a `Dataplane` exposes multiple inbounds and the policy should apply only to one of them.
-
-For example, the following policy applies fault injection **only to the inbound named `backend-api`**:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshFaultInjection
-metadata:
-  name: only-backend-api-inbound
-  namespace: kuma-demo
-spec:
-  targetRef:
-    kind: Dataplane
-    labels:
-      app: backend
-    sectionName: backend-api
-  from:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 500
-          percentage: '2.5'
-```
-
-There are two options for choosing the section name format:
-
-#### Option 1: Always use the port value
-
-Example:
-
-```
-self_5050
-```
-
-**Benefits:**
-
-* Simple and consistent naming
-* All inbounds follow the same format regardless of configuration
-* Easier to recognize and match across resources and stats
-
-**Drawbacks:**
-
-* Does not remove support for targeting inbounds in policies, but creates inconsistency between what values can be used in `sectionName` (name or port) and the actual resource and stat names, which always use the port value in this option
-
-#### Option 2: Use port name if defined, otherwise fall back to port value
+Non-system inbound-related Envoy resources and stats will use the [`self_inbound_<sectionName>`](#format-self_descriptor) format. The `self` keyword marks the resource as scoped to the current proxy context. The `inbound_<sectionName>` descriptor uses the port name if defined, otherwise the port number, following the [section name format](#format-sectionname).
 
 Examples:
 
 ```
-self_httpport
-self_5050
+self_inbound_httpport  
+self_inbound_5050
 ```
 
-**Benefits:**
-
-* Supports both named and unnamed inbounds while preserving the user-defined port name in resource and stat names
-* Aligns with policy `sectionName` values, allowing consistent targeting using either port name or value
-* Produces more meaningful names when users define port names in Universal mode or when taken from Kubernetes service port names
-
-**Drawbacks:**
-
-* Results in mixed naming styles (some with names, some with port numbers), reducing overall consistency
-* Can make it harder to scan and compare resource or metric names across environments where naming practices vary
+This format avoids high cardinality from full KRI names, ensures clarity by keeping the naming local to the proxy, and aligns with how policies reference inbounds using `sectionName`. It also keeps the naming distinct from `kri_` and `system_` resources, reducing tooling complexity.
 
 ### Naming for transparent proxy passthrough resources
 
@@ -423,6 +419,67 @@ Apply the same contextual naming structure used for inbounds to passthrough reso
 * Requires tooling to recognize and handle these new descriptors correctly
 * Introduces new descriptor values for passthrough traffic that must be formally defined and validated
 
+#### Decision: Naming for transparent proxy passthrough resources
+
+Transparent proxy passthrough-related Envoy resources and stats will use the contextual format `self_<descriptor>`, where the `<descriptor>` is:
+
+```
+transparentproxy_passthrough_<direction>_<port>_ipv<IPVersion>
+```
+
+* `<direction>` is `inbound` or `outbound`
+* `<port>` is the port number from the `Dataplane`'s `transparentProxying` config
+* `<IPVersion>` is `4` or `6`
+
+We don’t start the descriptor with `<direction>` here because the config source is already under `networking.transparentProxying.<direction>` in the `Dataplane`. Instead, we use a fixed prefix and then the direction. This is different from non-system inbounds, where the descriptor starts with `inbound` because their config comes from `networking.inbound`.
+
+This format is for passthrough traffic set up in the current `Dataplane`. It’s not always used, but in setups like `MeshPassthrough`, these resources are important and on the main traffic path. The consistent format helps make them easier to understand and observe.
+
+### Enabling the feature per proxy
+
+This decision introduces a breaking change to resource and stat naming. To support a safe and gradual migration, the feature will be controlled by a data plane feature flag. This flag is enabled by setting the appropriate environment variable in the context where `kuma-dp` runs.
+
+In **Universal mode**, this is straightforward. Users are responsible for running `kuma-dp` directly, so setting the environment variable is straightforward and fully under user control.
+
+In **Kubernetes**, the situation is more complex. The `kuma-sidecar` container, which runs `kuma-dp`, is injected by the control plane. Users cannot directly configure its environment. We considered two options for enabling this feature per workload:
+
+#### Option 1: Dedicated annotation per workload
+
+Users add a dedicated annotation to each pod where the feature should be enabled. The sidecar injector detects this annotation and injects the corresponding environment variable into the `kuma-sidecar` container.
+
+**Benefits:**
+
+* Familiar and intuitive UX for Kubernetes users
+* Aligns with common patterns used by other tools
+* Keeps control of the feature close to the workload definition
+
+**Drawbacks:**
+
+* Requires adding new annotation logic in the injector
+* The annotation would become obsolete once the feature becomes the only supported naming scheme and can no longer be disabled
+* No existing feature flags are currently exposed this way
+
+#### Option 2: ContainerPatch-based opt-in
+
+Users apply a `ContainerPatch` in each zone where they want to enable per-proxy opt-in. The patch injects the required environment variable into the `kuma-sidecar` container. Once applied, the feature can be turned on per workload using the standard container patch annotation.
+
+**Benefits:**
+
+* Avoids introducing and maintaining a temporary annotation
+* Uses existing, well-defined `ContainerPatch` mechanism
+* Matches the idea that per-proxy opt-in is a transitional state
+
+**Drawbacks:**
+
+* Users must create and maintain additional resources to enable the feature
+* Slightly more complex and less discoverable for users unfamiliar with container patches
+
+#### Decision: Enabling the feature per proxy
+
+To enable the new naming format on a per-proxy basis, we will use [**Option 2: ContainerPatch-based opt-in**](#option-2-containerpatch-based-opt-in). This avoids introducing a dedicated annotation that would become obsolete once the feature becomes the only supported naming scheme.
+
+Users can enable the feature for specific workloads by applying a `ContainerPatch` resource per zone. Then, they can set the annotation `kuma.io/container-patches: <name>` on selected workloads. This provides a clear migration path without requiring permanent API additions.
+
 ### Impact on `MeshProxyPatch` policies
 
 Enabling the new naming formats may break existing `MeshProxyPatch` policies that rely on old resource names. These patches often target specific cluster or listener names, and any mismatch caused by the updated naming will prevent the patch from applying.
@@ -444,174 +501,18 @@ As part of updating the documentation, we will:
 * Add a strong warning to the `MeshProxyPatch` section explaining that policies must be reviewed and updated when switching to the new naming formats
 * Include a notice in the upgrade notes to alert users of this requirement
 
-## Decision outcome
-
-Introduce a data plane feature flag to enable the new naming scheme for Envoy resources and stats. This includes:
-
-* KRI-based names for resources tied to distinct Kuma resources (as defined in [MADR-070](070-resource-identifier.md))
-* `self_<descriptor>` format for resources that are contextual to the current `Dataplane`, including inbounds and passthrough traffic
-
-The flag can be enabled per proxy by setting an environment variable:
-
-* Directly in Universal mode
-* Indirectly in Kubernetes via a pod annotation, which is converted by the sidecar injector into the same environment variable and applied to the `kuma-sidecar` container
-
-In Kubernetes, the control plane can be configured to auto-inject the annotation into all workloads during sidecar injection, enabling the feature by default for all proxies in the zone.
-
-### Inbound resource naming
-
-Non-system inbound-related Envoy resources and stats will use the `self_<descriptor>` format, where the `<descriptor>` is a [`<sectionName>`](#format-sectionname) derived from the inbound's port.
-
-Examples:
-
-```
-self_httpport
-self_5050  
-```
-
-This approach avoids the high cardinality of full KRI-formatted names and provides a clear, scoped way to refer to inbounds. It also avoids overloading the `kri_` or `system_` prefixes, helping keep observability tooling aligned and reducing complexity.
-
-#### Chosen section naming strategy
-
-The `<sectionName>` will use the **port name if defined, otherwise fall back to the port value**. This keeps resource and stat names aligned with policy references that use `sectionName`. It also supports user-defined port names in Universal mode and Kubernetes (via service port names). While this introduces variation between numeric and named values, it improves clarity and control when writing policies.
-
-### Transparent proxy passthrough resource naming
-
-Passthrough-related Envoy resources and stats will also follow the `self_<descriptor>` format. The descriptor for these will use the [`passthrough_ipv<IPVersion>_<direction>` format](#format-self_passthrough_ipvipversion_direction), where `<IPVersion>` is `4` or `6` and `<direction>` is `inbound` or `outbound`.
-
-These resources are explicitly tied to the current `Dataplane` through the `transparentProxying` configuration. Although they are not active in all environments, in cases like `MeshPassthrough` they play a critical role in traffic flow. Using the contextual `self_` format keeps naming consistent and improves observability in relevant setups.
-
-Final name examples:
-
-```
-self_passthrough_ipv4_inbound
-self_passthrough_ipv4_outbound
-self_passthrough_ipv6_inbound
-self_passthrough_ipv6_outbound
-```
-
-## Formal format definitions
-
-This section defines the format rules introduced by this decision to ensure consistency and compatibility across all affected components.
-
-### Format: `<sectionName>`
-
-The `<sectionName>` is a placeholder used to identify a specific part or section within a given context (such as a `Dataplane`). It is used to label a resource or stat that originates from that section of the context. For example, when used with the `self_` prefix, it refers to an inbound or passthrough-related resource in the context of the current `Dataplane`.
-
-To support future extensibility (such as upcoming support for `MeshPassthrough`), the format allows dots (`.`), which may be useful for representing DNS-like names.
-
-**If numeric:**
-
-* Must consist only of digits (`0`–`9`)
-* Must represent a valid port number in the range **1 to 65535**
-* Leading zeros are not allowed
-
-Example:
-
-```
-5050
-```
-
-**If named:**
-
-* Must be **1 to 63 characters** long
-* Can contain:
-   * Lowercase US-ASCII letters (`a`–`z`)
-   * Digits (`0`–`9`)
-   * Hyphens (`-`)
-   * Dots (`.`)
-* Must **start with a letter**
-* Must **end with a letter or digit**
-* Must **not contain** consecutive hyphens (`--`)
-* Must **not contain** consecutive dots (`..`)
-* Must **not start or end** with a hyphen or dot
-
-These rules combine:
-
-* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS_LABEL** from [RFC1123, section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
-* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA_SVC_NAME** from [RFC6335, section 5.1](https://www.rfc-editor.org/rfc/rfc6335#section-5.1)
-* Additional support for dots (`.`) to allow future use cases like `MeshPassthrough` where DNS-like names are expected
-
-Example:
-
-```
-backend-kumahq.com
-```
-
-**Regular expression:**
-
-```
-(([1-9][0-9]{0,4})|([a-z](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
-```
-
-### Format: `<self_passthrough_ipv<IPVersion>_<direction>>`
-
-This format is used for naming resources and stats related to transparent proxy passthrough traffic in the context of the current `Dataplane`.
-
-**Structure:**
-
-* Starts with the literal prefix `passthrough_`
-* Followed by `ipv4` or `ipv6` to indicate the IP version
-* Ends with either `inbound` or `outbound` to indicate the traffic direction
-
-This format is reserved and fixed for passthrough-related resources.
-
-Examples:
-
-```
-passthrough_ipv4_inbound  
-passthrough_ipv6_outbound
-```
-
-These names are not user-configurable and are generated based on the `Dataplane`'s `transparentProxying` configuration.
-
-#### Regular expression
-
-```
-passthrough_ipv(4|6)_(inbound|outbound)
-```
-
-### Format: `self_<descriptor>`
-
-This format is used for naming resources and stats that are specific to the context of the current `Dataplane`. The part after `self_` is called a `<descriptor>`, and it identifies the relevant section of the `Dataplane` configuration that the resource belongs to.
-
-**Structure:**
-
-* Starts with the literal prefix `self_`
-* Followed by a `<descriptor>` value
-
-A `<descriptor>` is any string that represents a specific part of the `Dataplane` context and allows policies, resources, and stats to be correlated. For example, in the case of non-system inbounds, the `<descriptor>` is a **section name**, which may be a port number or port name.
-
-All descriptors must follow the common character set rules used for resource names in [MADR-070 Resource Identifier](https://github.com/kumahq/kuma/blob/df678629aa3bdce62a84c0e3752c7e5d45bf1e98/docs/madr/decisions/070-resource-identifier.md#url-query), which defines what is allowed in the URL query component. These characters include lowercase letters (`a–z`), digits (`0–9`), hyphens (`-`), underscores (`_`), and dots (`.`), depending on the specific format.
-
-Examples:
-
-```
-self_5050  
-self_http  
-self_backend-kumahq.com
-self_passthrough_ipv4_outbound
-```
-
-#### Valid formats for `<descriptor>`
-
-The exact format of `<descriptor>` depends on the type of resource:
-
-* **For non-system inbounds**: use a [`<sectionName>` format](#format-sectionname), which can be either a port name or a port number
-* **For transparent proxy passthrough resources**: use the [`<passthrough_ipv<IPVersion>_<direction>>` format](#format-self_passthrough_ipvipversion_direction), where `<IPVersion>` is `4` or `6` and `<direction>` is `inbound` or `outbound`
-
 ## Implications for Kong Mesh
 
 The changes introduced by this document, along with those defined in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md), impact the Envoy resources generated by the `MeshGlobalRateLimit` policy. This policy currently adds a cluster with a static name `meshglobalratelimit:service`, which is then referenced in route-level [rate limit configuration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-rate-limits). As a result of these changes, the cluster name will be updated to follow the standard system format, using the valid `kri` of the `MeshGlobalRateLimit` policy that is the source of this cluster:
 
 ```
-system_kri_mglr___<namespace>_<policyName>_
+system_kri_mgrl___<namespace>_<policyName>_
 ```
 
 Example:
 
 ```
-system_kri_mglr___kong-mesh-system_mesh-rate-limit_
+system_kri_mgrl___kong-mesh-system_mesh-rate-limit_
 ```
 
 The `MeshOPA` policy modifies existing non-system inbound listeners but does not rename any existing Envoy resources or create new ones. Therefore, it is not affected by the changes described in this document.
@@ -627,34 +528,54 @@ A new data plane feature flag will control the use of consistent naming for prox
 The flag will be passed from the data plane proxy to the control plane via [xDS metadata](https://github.com/kumahq/kuma/blob/c61baf6110caa40eb3b69f7f635e9506389a7455/app/kuma-dp/cmd/run.go#L172) using:
 
 ```go
-const FeatureUnifiedProxyResourcesAndStatsNaming string = "feature-unified-proxy-resources-and-stats-naming"
+const FeatureUnifiedProxyResourcesAndStatsNaming string = "feature-unified-resource-naming"
 ```
 
 #### Per-proxy opt-in
 
 Users can enable the feature for individual data plane proxies:
 
-| Mode       | How to enable                                                                               |
-|------------|---------------------------------------------------------------------------------------------|
-| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` |
-| Kubernetes | Add annotation: `kuma.io/feature-unified-proxy-resources-and-stats-naming: "enabled"`       |
+| Mode       | How to enable                                                                  |
+|------------|--------------------------------------------------------------------------------|
+| Universal  | Set env var: `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true`     |
+| Kubernetes | Apply `ContainerPatch` and set annotation: `kuma.io/container-patches: <name>` |
 
-In Kubernetes, we cannot rely on setting the environment variable directly because environment variables are container-scoped, not pod-scoped. Since the `kuma-sidecar` container is injected into the pod by the sidecar injector, setting the environment variable on the user’s workload container would not affect the sidecar container. Therefore, the only viable and generic way to control this feature per pod is to use an annotation. The sidecar injector reads the annotation and converts it into the correct environment variable on the `kuma-sidecar` container. `kuma-dp` will then pick up the variable and include the feature flag in the xDS metadata sent to the control plane.
+In Kubernetes, setting the environment variable directly on the workload container does not affect the `kuma-sidecar` container, which runs `kuma-dp`. Instead, users must apply a `ContainerPatch` to inject the environment variable into the sidecar, and enable the patch with a pod annotation. This approach avoids introducing a dedicated annotation and supports gradual migration.
+
+Example `ContainerPatch`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: enable-feature-unified-resource-naming
+  namespace: kuma-system
+spec:
+  sidecarPatch:
+  - op: add
+    path: /env/-
+    value: '{
+      "name": "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
+      "value": "true"
+    }'
+```
 
 #### Zone-wide opt-in for Kubernetes data planes
 
-To enable the naming changes for all injected data plane proxies in a Kubernetes zone, users can configure the control plane to automatically inject the annotation during sidecar injection:
+To enable the naming changes for all injected data plane proxies in a Kubernetes zone, users can configure the control plane with:
 
 ```go
-UnifiedProxyResourcesAndStatsNamingEnabled bool `json:"unifiedProxyResourcesAndStatsNamingEnabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED"`
+UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED"`
 ```
+
+When this setting is enabled, the sidecar injector automatically adds the environment variable to the injected `kuma-sidecar` containers. It does not rely on annotations or `ContainerPatch` resources.
 
 #### ZoneIngress and ZoneEgress
 
-`ZoneIngress` and `ZoneEgress` proxies must also include the feature flag to ensure consistent naming accross the mesh. In both Universal and Kubernetes, this is done by setting the following environment variable in their deployments:
+`ZoneIngress` and `ZoneEgress` proxies must also include the feature flag to ensure consistent naming across the mesh. In both Universal and Kubernetes, this is done by setting the following environment variable in their deployments:
 
 ```env
-KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true
+KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
 ```
 
 #### Helper setting for Kubernetes installations
@@ -664,13 +585,13 @@ To simplify configuration, a new setting will be introduced under the `dataPlane
 ```yaml
 dataPlane:
   features:
-    unifiedProxyResourcesAndStatsNaming: true
+    unifiedResourceNaming: true
 ```
 
 When enabled, it will:
 
-* Add `KUMA_DATAPLANE_RUNTIME_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` to all `ZoneIngress` and `ZoneEgress` deployments
-* Set `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_PROXY_RESOURCES_AND_STATS_NAMING_ENABLED=true` in the control plane deployment
+* Add `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true` to all `ZoneIngress` and `ZoneEgress` deployments
+* Set `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true` in the control plane deployment
 
 When the new naming becomes the default, this setting will also default to `true`. Eventually, it will be removed when the feature can no longer be disabled.
 
@@ -678,7 +599,7 @@ When the new naming becomes the default, this setting will also default to `true
 
 To support the Kuma GUI in adapting to the updated naming formats, `ZoneIngressInsight` and `ZoneEgressInsight` must expose the same feature flag metadata already present in `DataplaneInsight`. These insight resources are exposed through the control plane API and provide metadata and status about each proxy.
 
-We will extend both `ZoneIngressInsight` and `ZoneEgressInsight` to include active feature flags in their metadata section. This enables the GUI to detect if the `feature-unified-proxy-resources-and-stats-naming` flag is active for each proxy and adjust its behavior accordingly, including how it parses and renders resource and stat names.
+We will extend both `ZoneIngressInsight` and `ZoneEgressInsight` to include active feature flags in their metadata section. This enables the GUI to detect if the `feature-unified-resource-naming` flag is active for each proxy and adjust its behavior accordingly, including how it parses and renders resource and stat names.
 
 This work is tracked in [kumahq/kuma#13788](https://github.com/kumahq/kuma/issues/13788).
 
@@ -688,7 +609,7 @@ This work is tracked in [kumahq/kuma#13788](https://github.com/kumahq/kuma/issue
 
 The Kuma GUI relies on Envoy xDS resource names and stat names to display inbound and outbound traffic details for `Dataplane`, `ZoneIngress`, and `ZoneEgress` proxies. These names are used to associate metrics with specific resources and visualize traffic paths in the interface.
 
-To support the updated naming formats introduced in this decision, including both KRI-based and contextual `self_` names, the GUI parsers must be updated. Specifically, when the `feature-unified-proxy-resources-and-stats-naming` flag is present in the metadata of `DataplaneInsight`, `ZoneIngressInsight`, or `ZoneEgressInsight`, the GUI must:
+To support the updated naming formats introduced in this decision, including both KRI-based and contextual `self_` names, the GUI parsers must be updated. Specifically, when the `feature-unified-resource-naming` flag is present in the metadata of `DataplaneInsight`, `ZoneIngressInsight`, or `ZoneEgressInsight`, the GUI must:
 
 * Parse xDS resource names and stat names using:
    * The KRI format for resources tied to distinct Kuma objects (as defined in [MADR-070 Resource Identifier](070-resource-identifier.md))
