@@ -23,7 +23,11 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION = v1.27.16-k3s1
 K8S_MAX_VERSION=v1.32.2-k3s1
+# This should have the same minor version as K8S_MAX_VERSION
+KUBEBUILDER_ASSETS_VERSION=1.32
+
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
+# This needs to rely on version from mise
 export GOLANGCI_LINT_VERSION=v2.1.6
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
@@ -58,8 +62,6 @@ HELM=$(shell $(MISE) which helm)
 K3D_BIN=$(shell $(MISE) which k3d)
 KIND=$(shell $(MISE) which kind)
 KUBEBUILDER=$(shell $(MISE) which kubebuilder)
-# TODO this should be automated with max k8s version
-KUBEBUILDER_ASSETS_VERSION=1.32.0
 SETUP_ENVTEST=$(shell $(MISE) which setup-envtest)
 KUBEBUILDER_ASSETS=$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
 CONTROLLER_GEN=$(shell $(MISE) which controller-gen)
