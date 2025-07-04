@@ -167,7 +167,6 @@ type TrafficRoute_LoadBalancer struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to LbType:
-	//
 	//	*TrafficRoute_LoadBalancer_RoundRobin_
 	//	*TrafficRoute_LoadBalancer_LeastRequest_
 	//	*TrafficRoute_LoadBalancer_RingHash_
@@ -832,7 +831,6 @@ type TrafficRoute_Http_Match_StringMatcher struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to MatcherType:
-	//
 	//	*TrafficRoute_Http_Match_StringMatcher_Prefix
 	//	*TrafficRoute_Http_Match_StringMatcher_Exact
 	//	*TrafficRoute_Http_Match_StringMatcher_Regex
@@ -996,7 +994,6 @@ type TrafficRoute_Http_Modify_Path struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Type:
-	//
 	//	*TrafficRoute_Http_Modify_Path_RewritePrefix
 	//	*TrafficRoute_Http_Modify_Path_Regex
 	Type isTrafficRoute_Http_Modify_Path_Type `protobuf_oneof:"type"`
@@ -1080,7 +1077,6 @@ type TrafficRoute_Http_Modify_Host struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Type:
-	//
 	//	*TrafficRoute_Http_Modify_Host_Value
 	//	*TrafficRoute_Http_Modify_Host_FromPath
 	Type isTrafficRoute_Http_Modify_Host_Type `protobuf_oneof:"type"`
