@@ -23,8 +23,6 @@ const (
 	ListenerName = "_kuma:dynamicconfig"
 )
 
-// Adding a maxDirectResponseBodyPadding provides a safety margin to prevent issues if the actual response size slightly exceeds the calculated size.
-// This helps avoid unexpected errors or truncation in direct responses.
 var maxDirectResponseBodyPadding uint32 = 256 // 256 bytes
 
 func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, bytes []byte) error {
@@ -110,7 +108,9 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 				},
 			},
 		)
-		// set the MaxDirectResponseBodySizeBytes value dynamically
+		// Set the MaxDirectResponseBodySizeBytes value dynamically.
+		// Add a safety margin to the max direct response body size to prevent issues caused by minor size overflows,
+		// such as encoding differences or small variations, which could otherwise lead to response truncation or errors.
 		if routeConfig.MaxDirectResponseBodySizeBytes == nil {
 			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)) + maxDirectResponseBodyPadding)
 		} else {
