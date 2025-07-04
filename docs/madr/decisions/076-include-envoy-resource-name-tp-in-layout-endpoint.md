@@ -52,6 +52,7 @@ There is question on how to name this field, here are the ideas:
 4. generatedName
 5. resourceName
 6. configResourceName
+7. proxyResourceName
 
 Pros and cons on these names:
 
@@ -61,17 +62,18 @@ Pros and cons on these names:
 4. This is also too generic and does not say much
 5. This could work, but most of the time we use resource in the context of Kuma resources Dataplane/MeshService etc. 
 6. This precisely points to what this name, although it might not be obvious at first what it references
+7. This points exactly to what this name is used for and it does not leak Envoy internals
 
 #### Decision
 
-We decided to use `statsName` as this is descriptive enough and does not leak Envoy internals. Inbounds will now look like this:
+We decided to use `proxyResourceName` as this is descriptive enough and does not leak Envoy internals. Inbounds will now look like this:
 
 ```yaml
 inbounds:
   - kri: <resource_identifier> # Inbound KRI
     port: <port_number> # port number
     protocol: http # port protocol
-    statsName: <common_prefix>_sectionName
+    proxyResourceName: <common_prefix>_sectionName
 ```
 
 ### Passthrough inbound/outbound
@@ -88,10 +90,10 @@ outbounds: []
 transparentproxy:
   inbound:
     port: <port_number>
-    name: <generated_name> # generated passthrough inbound name that will be used to match envoy resources and stats
+    proxyResourceName: <generated_name> # generated passthrough inbound name that will be used to match envoy resources and stats
   outbound: 
     port: <port_number>
-    name: <generated_name> # generated passthrough outbound name that will be used to match envoy resources and stats
+    proxyResourceName: <generated_name> # generated passthrough outbound name that will be used to match envoy resources and stats
 ```
 
 With this addition, we will be able to show in GUI these inbound/outbound and correlate it with Envoy resources and stats.
@@ -114,7 +116,7 @@ inbounds:
   - kri: <resource_identifier> # Inbound KRI
     port: <port_number> # port number
     protocol: http # port protocol
-    statsName: <common_prefix>_sectionName
+    proxyResourceName: <common_prefix>_sectionName
 outbounds:
   - kri: <resource_identifier> # MS/MMZS/MES resource identifier
     port: <port_number> # MS/MMZS/MES exposed port number
@@ -122,8 +124,8 @@ outbounds:
 transparentproxy:
   inbound:
     port: <port_number>
-    name: <generated_name> # generated passthrough inbound name that will be used to match envoy resources and stats
+    proxyResourceName: <generated_name> # generated passthrough inbound name that will be used to match envoy resources and stats
   outbound: 
     port: <port_number>
-    name: <generated_name> # generated passthrough outbound name that will be used to match envoy resources and stats
+    proxyResourceName: <generated_name> # generated passthrough outbound name that will be used to match envoy resources and stats
 ```
