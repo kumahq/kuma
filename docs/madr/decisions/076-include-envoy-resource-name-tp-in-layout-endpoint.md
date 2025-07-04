@@ -1,4 +1,4 @@
-# Extending Inspect API with information about transparent proxy 
+# Include Envoy resource name and transparent proxy configuration in `_layout` endpoint 
 
 * Status: accepted
 
@@ -6,8 +6,9 @@ Technical Story: https://github.com/kumahq/kuma/issues/13847
 
 ## Context and Problem Statement
 
-While working on naming resources based on KRI we have discovered that we are missing certain information in Inspect API,
-precisely in `_layout` endpoint.
+While working on naming resources based on KRI ([MADR](https://github.com/kumahq/kuma/pull/13485/files)), 
+we have discovered that we are missing certain information in Inspect API,
+precisely in `_layout` endpoint. Which was designed in [Inspect API redesign MADR](https://docs.google.com/document/d/1EzZpk3wwneIxQNPK7WXJqhW3Y3CS1AWMXIcXix9LEoc/edit?tab=t.g7ooo2ntj4jj)
 
 Right now schema for `_layout` endpoint look like this:
 
@@ -49,6 +50,8 @@ There is question on how to name this field, here are the ideas:
 2. statsName
 3. configurationName
 4. generatedName
+5. resourceName
+6. configResourceName
 
 Pros and cons on these names:
 
@@ -56,6 +59,8 @@ Pros and cons on these names:
 2. This is a good descriptive name as it points to where it can be used, but this omits the aspect of envoy config
 3. This name is too generic, like what configuration we are talking about or how to use it? 
 4. This is also too generic and does not say much
+5. This could work, but most of the time we use resource in the context of Kuma resources Dataplane/MeshService etc. 
+6. This precisely points to what this name, although it might not be obvious at first what it references
 
 #### Decision
 
