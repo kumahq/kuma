@@ -923,6 +923,71 @@ Demo: https://github.com/lukidzi/envoy-spiffe-certs
 
 If we configure `trusted_ca` we don't really validate if the CA which signed it is in the same trust domain. In this case the request will pass validation since we check only if there is a SAN matching it. To avoid this situation we need to configure `custom_validator_config` and assign CA for each trust domain. Once we configure this we can ensure that CA used for validation is in the same trust domain as CA used to sign my certificate.
 
+We need to change the way how we configure validation context. Currently we only set `trusted_ca`, and in this case we need to set a `custom_valdiation_config`:
+
+
+What we do now:
+```golang
+func CreateCaSecret(secret *core_xds.CaSecret, name string) *envoy_auth.Secret {
+	return &envoy_auth.Secret{
+		Name: name,
+		Type: &envoy_auth.Secret_ValidationContext{
+			ValidationContext: &envoy_auth.CertificateValidationContext{
+				TrustedCa: &envoy_core.DataSource{
+					Specifier: &envoy_core.DataSource_InlineBytes{
+						InlineBytes: bytes.Join(secret.PemCerts, []byte("\n")),
+					},
+				},
+			},
+		},
+	}
+}
+```
+
+What we need:
+
+```golang
+  configTrustDomains := []*envoy_auth.SPIFFECertValidatorConfig_TrustDomain{}
+
+	// Create SPIFFE validator config
+	for td, bundle := range bundles {
+		caBytes := pemutil.EncodeCertificates(bundle.RootCAs())
+		configTrustDomains = append(configTrustDomains, &envoy_auth.SPIFFECertValidatorConfig_TrustDomain{
+			Name: td.String(),
+			TrustBundle: &core_v3.DataSource{
+				Specifier: &core_v3.DataSource_InlineBytes{
+					InlineBytes: caBytes,
+				},
+			},
+		})
+	}
+
+	// // Order by trustdomain name to return in consistent order
+	sort.Slice(configTrustDomains, func(i, j int) bool {
+		return configTrustDomains[i].Name < configTrustDomains[j].Name
+	})
+
+	typedConfig, err := anypb.New(&envoy_auth.SPIFFECertValidatorConfig{
+		TrustDomains: configTrustDomains,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &envoy_auth.Secret{
+		Name: name,
+		Type: &envoy_auth.Secret_ValidationContext{
+			ValidationContext: &envoy_auth.CertificateValidationContext{
+				CustomValidatorConfig: &envoy_core.TypedExtensionConfig{
+					Name: "envoy.tls.cert_validator.spiffe",
+					TypedConfig: typedConfig,
+				},
+			},
+		},
+	}
+```
+
+Where `bundles` has each CA by trust domain, in our case it would be `MeshTrust` list.
+
 **Do we do any migration Permissive to Strict?**
 
 * No, currently we don't really check this. 
