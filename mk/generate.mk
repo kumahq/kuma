@@ -29,7 +29,7 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
-generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
+generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies api-lint generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
@@ -135,3 +135,15 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
+
+.PHONY: api-lint/policies
+api-lint/policies:
+	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|') \
+		github.com/kumahq/kuma/api/common/v1alpha1
+
+.PHONY: api-lint/resources
+api-lint/resources:
+	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(RESOURCES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
+
+.PHONY: api-lint
+api-lint: api-lint/policies api-lint/resources

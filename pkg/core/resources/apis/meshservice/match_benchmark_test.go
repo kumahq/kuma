@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // To run, remove X from the prefix
@@ -106,7 +106,7 @@ func naiveMatching(dpps []*mesh.DataplaneResource, meshServices []*v1alpha1.Mesh
 	result := map[*v1alpha1.MeshServiceResource][]*mesh.DataplaneResource{}
 	for _, ms := range meshServices {
 		for _, dpp := range dpps {
-			if dpp.Spec.Matches(mesh_proto.TagSelector(ms.Spec.Selector.DataplaneTags)) {
+			if dpp.Spec.Matches(pointer.Deref(ms.Spec.Selector.DataplaneTags)) {
 				result[ms] = append(result[ms], dpp)
 			}
 		}

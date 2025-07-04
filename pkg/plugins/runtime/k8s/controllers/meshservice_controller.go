@@ -284,7 +284,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 	}
 	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
 	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: dpTags,
+		DataplaneTags: &dpTags,
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{
@@ -383,6 +383,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 			ms.Spec = &meshservice_api.MeshService{}
 		}
 
+		ms.Spec.State = meshservice_api.StateUnavailable
 		ms.Spec.Ports = []meshservice_api.Port{}
 		for _, port := range svc.Spec.Ports {
 			if port.Protocol != kube_core.ProtocolTCP {
@@ -398,9 +399,9 @@ func (r *MeshServiceReconciler) manageMeshService(
 				portName = strconv.Itoa(int(port.Port))
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
-				Name:        portName,
+				Name:        pointer.To(portName),
 				Port:        port.Port,
-				TargetPort:  port.TargetPort,
+				TargetPort:  &port.TargetPort,
 				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}

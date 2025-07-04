@@ -22,7 +22,7 @@ func waitMeshServiceReady(mesh, name string) {
 	Eventually(func(g Gomega) {
 		spec, status, err := GetMeshServiceStatus(universal.Cluster, name, mesh)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+		g.Expect(spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 			{
 				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 				Value: name,

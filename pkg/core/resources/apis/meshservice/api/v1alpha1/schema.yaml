@@ -66,6 +66,8 @@ properties:
             properties:
               name:
                 type: string
+            required:
+              - name
             type: object
           dataplaneTags:
             additionalProperties:
@@ -81,6 +83,9 @@ properties:
           - Available
           - Unavailable
         type: string
+    required:
+      - ports
+      - selector
     type: object
   creationTime:
     readOnly: true

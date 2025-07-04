@@ -6013,6 +6013,8 @@ spec:
                     properties:
                       name:
                         type: string
+                    required:
+                    - name
                     type: object
                   dataplaneTags:
                     additionalProperties:
@@ -6028,6 +6030,9 @@ spec:
                 - Available
                 - Unavailable
                 type: string
+            required:
+            - ports
+            - selector
             type: object
           status:
             description: Status is the current status of the Kuma MeshService resource.
@@ -8759,6 +8764,8 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                    required:
+                    - matchLabels
                     type: object
                   meshMultiZoneService:
                     properties:
@@ -8766,6 +8773,8 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                    required:
+                    - matchLabels
                     type: object
                   meshService:
                     properties:
@@ -8773,10 +8782,14 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                    required:
+                    - matchLabels
                     type: object
                 type: object
               template:
                 type: string
+            required:
+            - template
             type: object
         type: object
     served: true

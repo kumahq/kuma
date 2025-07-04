@@ -16525,6 +16525,8 @@ components:
                       additionalProperties:
                         type: string
                       type: object
+                  required:
+                    - matchLabels
                   type: object
                 meshMultiZoneService:
                   properties:
@@ -16532,6 +16534,8 @@ components:
                       additionalProperties:
                         type: string
                       type: object
+                  required:
+                    - matchLabels
                   type: object
                 meshService:
                   properties:
@@ -16539,10 +16543,14 @@ components:
                       additionalProperties:
                         type: string
                       type: object
+                  required:
+                    - matchLabels
                   type: object
               type: object
             template:
               type: string
+          required:
+            - template
           type: object
         creationTime:
           readOnly: true
@@ -17233,6 +17241,8 @@ components:
                   properties:
                     name:
                       type: string
+                  required:
+                    - name
                   type: object
                 dataplaneTags:
                   additionalProperties:
@@ -17252,6 +17262,9 @@ components:
                 - Available
                 - Unavailable
               type: string
+          required:
+            - ports
+            - selector
           type: object
         creationTime:
           readOnly: true
