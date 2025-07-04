@@ -919,6 +919,10 @@ SPIFFE validator is experimental but SPIRE uses it. It sets a `custom_validator_
 
 Demo: https://github.com/lukidzi/envoy-spiffe-certs
 
+**What if my certificate is signed by the other CA from different trust domain?**
+
+If we configure `trusted_ca` we don't really validate if the CA which signed it is in the same trust domain. In this case the request will pass validation since we check only if there is a SAN matching it. To avoid this situation we need to configure `custom_validator_config` and assign CA for each trust domain. Once we configure this we can ensure that CA used for validation is in the same trust domain as CA used to sign my certificate.
+
 **Do we do any migration Permissive to Strict?**
 
 * No, currently we don't really check this. 
