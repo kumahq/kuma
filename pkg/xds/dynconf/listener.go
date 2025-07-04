@@ -114,7 +114,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 		if routeConfig.MaxDirectResponseBodySizeBytes == nil {
 			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)) + maxDirectResponseBodyPadding)
 		} else {
-			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)) + routeConfig.MaxDirectResponseBodySizeBytes.GetValue())
+			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(max(routeConfig.MaxDirectResponseBodySizeBytes.GetValue(), uint32(len(bytes))+maxDirectResponseBodyPadding))
 		}
 		return nil
 	})
