@@ -24,7 +24,7 @@ build:
       custom:
         buildCommand: |
           platform=$(echo $PLATFORMS | cut -d'/' -f2)
-          make image/kuma-dp/$platform docker/tag/kuma-cp
+          make image/kuma-dp/$platform docker/tag/kuma-dp
         dependencies:
           paths:
             - app/kuma-dp
