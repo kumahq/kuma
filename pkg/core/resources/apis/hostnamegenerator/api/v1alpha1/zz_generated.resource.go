@@ -161,6 +161,7 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "hostnamegenerators",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Hostname Generator",
 	PluralDisplayName:            "Hostname Generators",

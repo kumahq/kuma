@@ -15,6 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -161,6 +162,8 @@ func (l *MeshExternalServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
 
+var _ core.Destination = &MeshExternalServiceResource{}
+
 var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshExternalServiceType,
 	Resource:                     NewMeshExternalServiceResource(),
@@ -172,6 +175,7 @@ var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshexternalservices",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh External Service",
 	PluralDisplayName:            "Mesh External Services",

@@ -161,6 +161,7 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshtraces",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Trace",
 	PluralDisplayName:            "Mesh Traces",
