@@ -100,3 +100,13 @@ func IsValid(s string) bool {
 func Compare(a, b Identifier) int {
 	return strings.Compare(a.String(), b.String())
 }
+
+func (i Identifier) HasSectionName() bool {
+	return i.SectionName != ""
+}
+
+func WithSectionNameFromPort(id Identifier, sectionName string) Identifier {
+	idCopy := id
+	idCopy.SectionName = sectionName
+	return idCopy
+}
