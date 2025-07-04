@@ -26,10 +26,7 @@ The original goal of this MADR was to describe how to switch all non-system Envo
 This MADR now:
 
 * Defines how non-system Envoy resources and stat names should be structured
-* Introduces and formally defines the `self_<descriptor>` naming format for resources that exist only in the context of the current `Dataplane`
-* Defines valid formats for `<descriptor>`, including:
-   * Port names or values for non-system inbounds
-   * Predefined values for passthrough traffic (e.g., `passthrough-ipv4-inbound`)
+* Introduces and formally defines the `self_<descriptor>` contextual naming format
 * Specifies which resource types must use the `self_<descriptor>` format
 * Describes when KRI format (defined in [MADR-070](070-resource-identifier.md)) is used for resources tied to distinct Kuma objects
 * Provides a migration path to switch to the new formats safely and gradually
