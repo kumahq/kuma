@@ -48,7 +48,7 @@ PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
 XDS_VERSION=$(shell go list -f '{{ .Version }}' -m github.com/cncf/xds/go)
 PROTO_XDS=$(shell go mod download github.com/cncf/xds@$(XDS_VERSION) && go list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
 PGV_VERSION=$(shell go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
-PROT_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && go list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
+PROTO_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && go list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
 PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
 PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
