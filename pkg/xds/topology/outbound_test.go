@@ -213,9 +213,7 @@ var _ = Describe("TrafficRoute", func() {
 			externalServices := &core_mesh.ExternalServiceResourceList{}
 
 			// when
-			targets := BuildEdsEndpointMap(
-				context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader,
-			)
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -305,23 +303,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				meshServiceByName := map[kri.Identifier]*meshservice_api.MeshServiceResource{}
-				for _, ms := range given.meshServices {
-					meshServiceByName[kri.From(ms, "")] = ms
-				}
-				endpoints := BuildEdsEndpointMap(
-					context.Background(),
-					given.mesh,
-					"zone-1",
-					meshServiceByName,
-					given.meshMultiZoneService,
-					given.meshExternalServices,
-					given.dataplanes,
-					given.zoneIngresses,
-					given.zoneEgresses,
-					given.externalServices,
-					dataSourceLoader,
-				)
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
 				)

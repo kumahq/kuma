@@ -40,6 +40,7 @@ type PolicyConfig struct {
 	GoModule                     string
 	ResourceDir                  string
 	IsPolicy                     bool
+	IsDestination                bool
 	KDSFlags                     string
 	Scope                        ResourceScope
 	AllowedOnSystemNamespaceOnly bool
@@ -147,6 +148,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		HasFrom:             fields["From"],
 		HasRules:            fields["Rules"],
 		IsPolicy:            true,
+		IsDestination:       false,
 		KDSFlags:            "model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag",
 	}
 
@@ -158,6 +160,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := parseBool(markers, "kuma:policy:is_policy"); ok {
 		res.IsPolicy = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:is_destination"); ok {
+		res.IsDestination = v
 	}
 	if v, ok := parseBool(markers, "kuma:policy:has_status"); ok {
 		res.HasStatus = v

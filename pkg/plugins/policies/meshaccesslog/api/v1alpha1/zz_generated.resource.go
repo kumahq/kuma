@@ -161,6 +161,7 @@ var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshaccesslogs",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Access Log",
 	PluralDisplayName:            "Mesh Access Logs",

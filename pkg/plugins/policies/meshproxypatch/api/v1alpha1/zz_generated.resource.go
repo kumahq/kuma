@@ -161,6 +161,7 @@ var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshproxypatches",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Proxy Patch",
 	PluralDisplayName:            "Mesh Proxy Patches",

@@ -3,10 +3,7 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -24,11 +21,10 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:                        samples.MeshDefault(),
-				EndpointMap:                     map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation:             map[string]*xds_context.ServiceInformation{},
-				MeshExternalServiceByIdentifier: map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource{},
-				MeshServiceByIdentifier:         map[kri.Identifier]*meshservice_api.MeshServiceResource{},
+				Resource:            samples.MeshDefault(),
+				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServicesInformation: map[string]*xds_context.ServiceInformation{},
+				BaseMeshContext:     &xds_context.BaseMeshContext{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -40,12 +36,12 @@ func Context() *ContextBuilder {
 }
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
-	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
-		mc.res.Mesh.MeshServiceByIdentifier[kri.From(ms, "")] = ms
-	}
-	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
-		mc.res.Mesh.MeshExternalServiceByIdentifier[kri.From(mes, "")] = mes
-	}
+	var destinations [][]model.Resource
+	destinations = append(destinations, mc.res.Mesh.Resources.MeshServices().GetItems())
+	destinations = append(destinations, mc.res.Mesh.Resources.MeshExternalServices().GetItems())
+	destinations = append(destinations, mc.res.Mesh.Resources.MeshMultiZoneServices().GetItems())
+
+	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(destinations...)
 	return mc.res
 }
 

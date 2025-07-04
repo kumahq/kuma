@@ -24,10 +24,6 @@ func (rs *ResourceSection) Identifier() kri.Identifier {
 	return kri.From(rs.Resource, rs.SectionName)
 }
 
-type ResourceWithPorts interface {
-	GetPorts() []core.Port
-}
-
 type query struct {
 	byIdentifier *kri.Identifier
 	byLabels     map[string]string
@@ -46,9 +42,6 @@ func (q query) findPort(ports []core.Port) core.Port {
 	case q.sectionName != "":
 		for _, port := range ports {
 			if port.GetName() == q.sectionName {
-				return port
-			}
-			if parsed, ok := tryParsePort(q.sectionName); ok && port.GetName() == "" && port.GetValue() == parsed {
 				return port
 			}
 		}
@@ -124,11 +117,11 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	// filter out resources that don't have requested section name or port
 	var result []*ResourceSection
 	for _, r := range resources {
-		if resourceWithPorts, ok := r.(ResourceWithPorts); ok {
+		if resourceWithPorts, ok := r.(core.Destination); ok {
 			if port := q.findPort(resourceWithPorts.GetPorts()); port != nil {
 				result = append(result, &ResourceSection{
 					Resource:    r,
-					SectionName: port.GetNameOrStringifyPort(),
+					SectionName: port.GetName(),
 				})
 			}
 		} else {
@@ -137,14 +130,6 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	}
 
 	return result
-}
-
-func tryParsePort(s string) (int32, bool) {
-	u, err := strconv.ParseInt(s, 10, 32)
-	if err != nil {
-		return 0, false
-	}
-	return int32(u), true
 }
 
 // parseService is copied from pkg/plugins/runtime/k8s/controllers/outbound_converter.go

@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -20,8 +21,9 @@ func MeshService() *MeshServiceBuilder {
 	return &MeshServiceBuilder{
 		res: &v1alpha1.MeshServiceResource{
 			Meta: &test_model.ResourceMeta{
-				Mesh: core_model.DefaultMesh,
-				Name: "backend",
+				Mesh:   core_model.DefaultMesh,
+				Name:   "backend",
+				Labels: map[string]string{},
 			},
 			Spec:   &v1alpha1.MeshService{},
 			Status: &v1alpha1.MeshServiceStatus{},
@@ -41,6 +43,16 @@ func (m *MeshServiceBuilder) WithName(name string) *MeshServiceBuilder {
 
 func (m *MeshServiceBuilder) WithMesh(mesh string) *MeshServiceBuilder {
 	m.res.Meta.(*test_model.ResourceMeta).Mesh = mesh
+	return m
+}
+
+func (m *MeshServiceBuilder) WithZone(zone string) *MeshServiceBuilder {
+	m.res.Meta.(*test_model.ResourceMeta).Labels[mesh_proto.ZoneTag] = zone
+	return m
+}
+
+func (m *MeshServiceBuilder) WithNamespace(namespace string) *MeshServiceBuilder {
+	m.res.Meta.(*test_model.ResourceMeta).Labels[mesh_proto.KubeNamespaceTag] = namespace
 	return m
 }
 

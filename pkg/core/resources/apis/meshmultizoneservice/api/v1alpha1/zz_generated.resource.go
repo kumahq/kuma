@@ -15,6 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -161,6 +162,8 @@ func (l *MeshMultiZoneServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
 
+var _ core.Destination = &MeshMultiZoneServiceResource{}
+
 var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshMultiZoneServiceType,
 	Resource:                     NewMeshMultiZoneServiceResource(),
@@ -172,6 +175,7 @@ var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshmultizoneservices",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Multi Zone Service",
 	PluralDisplayName:            "Mesh Multi Zone Services",

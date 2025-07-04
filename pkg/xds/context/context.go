@@ -2,22 +2,17 @@ package context
 
 import (
 	"encoding/base64"
-	"fmt"
 	"time"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core2 "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -56,9 +51,10 @@ func (g GlobalContext) Hash() string {
 
 // BaseMeshContext holds for a Mesh a set of resources that are changing less often (policies, external services...)
 type BaseMeshContext struct {
-	Mesh        *core_mesh.MeshResource
-	ResourceMap ResourceMap
-	hash        []byte
+	Mesh             *core_mesh.MeshResource
+	ResourceMap      ResourceMap
+	DestinationIndex *DestinationIndex
+	hash             []byte
 }
 
 // Hash base64 version of the hash mostly useed for testing
@@ -66,38 +62,25 @@ func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)
 }
 
-type LabelValue struct {
-	Label string
-	Value string
-}
-type (
-	LabelsToValuesToResourceIdentifier map[LabelValue]map[kri.Identifier]bool
-)
-
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                                string
-	Resource                            *core_mesh.MeshResource
-	Resources                           Resources
-	DataplanesByName                    map[string]*core_mesh.DataplaneResource
-	MeshServiceByIdentifier             map[kri.Identifier]*meshservice_api.MeshServiceResource
-	MeshServicesByLabelByValue          LabelsToValuesToResourceIdentifier
-	MeshExternalServiceByIdentifier     map[kri.Identifier]*meshexternalservice_api.MeshExternalServiceResource
-	MeshExternalServicesByLabelByValue  LabelsToValuesToResourceIdentifier
-	MeshMultiZoneServiceByIdentifier    map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource
-	MeshMultiZoneServicesByLabelByValue LabelsToValuesToResourceIdentifier
-	EndpointMap                         xds.EndpointMap
-	IngressEndpointMap                  xds.EndpointMap
-	ExternalServicesEndpointMap         xds.EndpointMap
-	CrossMeshEndpoints                  map[xds.MeshName]xds.EndpointMap
-	VIPDomains                          []xds_types.VIPDomains
-	VIPOutbounds                        xds_types.Outbounds
-	ServicesInformation                 map[string]*ServiceInformation
-	DataSourceLoader                    datasource.Loader
-	ReachableServicesGraph              ReachableServicesGraph
+	Hash                        string
+	Resource                    *core_mesh.MeshResource
+	BaseMeshContext             *BaseMeshContext
+	Resources                   Resources
+	DataplanesByName            map[string]*core_mesh.DataplaneResource
+	EndpointMap                 xds.EndpointMap
+	IngressEndpointMap          xds.EndpointMap
+	ExternalServicesEndpointMap xds.EndpointMap
+	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
+	VIPDomains                  []xds_types.VIPDomains
+	VIPOutbounds                xds_types.Outbounds
+	ServicesInformation         map[string]*ServiceInformation
+	DataSourceLoader            datasource.Loader
+	ReachableServicesGraph      ReachableServicesGraph
 }
 
 type ServiceInformation struct {
@@ -117,16 +100,8 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	}
 	var oldestCreationTime *time.Time
 	var oldestTri *kri.Identifier
-	for _, tri := range mc.resolveResourceIdentifiersForLabels(string(resType), labels) {
-		var resource core_model.Resource
-		switch tri.ResourceType {
-		case meshexternalservice_api.MeshExternalServiceType:
-			resource = mc.GetMeshExternalServiceByKRI(tri)
-		case meshservice_api.MeshServiceType:
-			resource = mc.GetMeshServiceByKRI(tri)
-		case meshmzservice_api.MeshMultiZoneServiceType:
-			resource = mc.GetMeshMultiZoneServiceByKRI(tri)
-		}
+	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(labels) {
+		resource := mc.GetServiceByKRI(tri).(core_model.Resource)
 		if resource != nil {
 			resCreationTime := resource.GetMeta().GetCreationTime()
 			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
@@ -138,110 +113,12 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	return oldestTri
 }
 
-func (mc *MeshContext) GetMeshServiceByKRI(id kri.Identifier) *meshservice_api.MeshServiceResource {
-	return mc.MeshServiceByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetMeshExternalServiceByKRI(id kri.Identifier) *meshexternalservice_api.MeshExternalServiceResource {
-	return mc.MeshExternalServiceByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetMeshMultiZoneServiceByKRI(id kri.Identifier) *meshmzservice_api.MeshMultiZoneServiceResource {
-	return mc.MeshMultiZoneServiceByIdentifier[kri.NoSectionName(id)]
+func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core2.Destination {
+	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
-	reachableBackends := dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends()
-	if reachableBackends == nil {
-		if mc.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
-			return &ReachableBackends{}
-		}
-		return nil
-	}
-	out := ReachableBackends{}
-	for _, reachableBackend := range reachableBackends.GetRefs() {
-		if len(reachableBackend.Labels) > 0 {
-			for _, tri := range mc.resolveResourceIdentifiersForLabels(reachableBackend.Kind, reachableBackend.Labels) {
-				if port := reachableBackend.Port; port != nil {
-					tri.SectionName = mc.getSectionName(tri.ResourceType, tri, int32(reachableBackend.Port.GetValue()))
-				}
-				out[tri] = true
-			}
-		} else {
-			key := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
-				Kind:      common_api.TargetRefKind(reachableBackend.Kind),
-				Name:      &reachableBackend.Name,
-				Namespace: &reachableBackend.Namespace,
-			})
-			if port := reachableBackend.Port; port != nil {
-				key.SectionName = mc.getSectionName(key.ResourceType, key, int32(reachableBackend.Port.GetValue()))
-			}
-			out[key] = true
-		}
-	}
-	return &out
-}
-
-func (mc *MeshContext) resolveResourceIdentifiersForLabels(kind string, labels map[string]string) []kri.Identifier {
-	var result []kri.Identifier
-	reachable := mc.getResourceNamesForLabels(kind, labels)
-	for ri, count := range reachable {
-		if count == len(labels) {
-			result = append(result, ri)
-		}
-	}
-	return result
-}
-
-func (mc *MeshContext) getSectionName(kind core_model.ResourceType, key kri.Identifier, port int32) string {
-	switch kind {
-	case meshservice_api.MeshServiceType:
-		ms := mc.GetMeshServiceByKRI(key)
-		if ms == nil {
-			return fmt.Sprintf("%d", port)
-		}
-		if sectionName, portFound := ms.FindSectionNameByPort(port); portFound {
-			return sectionName
-		}
-		return fmt.Sprintf("%d", port)
-	case meshmzservice_api.MeshMultiZoneServiceType:
-		mmzs := mc.GetMeshMultiZoneServiceByKRI(key)
-		if mmzs == nil {
-			return fmt.Sprintf("%d", port)
-		}
-		if sectionName, portFound := mmzs.FindSectionNameByPort(port); portFound {
-			return sectionName
-		}
-		return fmt.Sprintf("%d", port)
-	default:
-		return fmt.Sprintf("%d", port)
-	}
-}
-
-func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[kri.Identifier]int {
-	reachable := map[kri.Identifier]int{}
-	for label, value := range labels {
-		key := LabelValue{
-			Label: label,
-			Value: value,
-		}
-		var matchedResourceIdentifiers map[kri.Identifier]bool
-		var found bool
-		switch kind {
-		case string(meshexternalservice_api.MeshExternalServiceType):
-			matchedResourceIdentifiers, found = mc.MeshExternalServicesByLabelByValue[key]
-		case string(meshservice_api.MeshServiceType):
-			matchedResourceIdentifiers, found = mc.MeshServicesByLabelByValue[key]
-		case string(meshmzservice_api.MeshMultiZoneServiceType):
-			matchedResourceIdentifiers, found = mc.MeshMultiZoneServicesByLabelByValue[key]
-		}
-		if found {
-			for ri := range matchedResourceIdentifiers {
-				reachable[ri]++
-			}
-		}
-	}
-	return reachable
+	return mc.BaseMeshContext.DestinationIndex.GetReachableBackends(mc.BaseMeshContext.Mesh, dataplane)
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
