@@ -62,11 +62,15 @@ Pros and cons on these names:
 4. This is also too generic and does not say much
 5. This could work, but most of the time we use resource in the context of Kuma resources Dataplane/MeshService etc. 
 6. This precisely points to what this name, although it might not be obvious at first what it references
-7. This points exactly to what this name is used for and it does not leak Envoy internals
+7. This points exactly to what this name is used for, and it does not leak Envoy internals
 
 #### Decision
 
-We decided to use `proxyResourceName` as this is descriptive enough and does not leak Envoy internals. Inbounds will now look like this:
+We decided to use `proxyResourceName` as this is descriptive enough and does not leak Envoy internals. Moreover, after 
+discussion with the GUI team, we've decided that this field will be added not only to inbounds but also to outbounds to
+make it consistent and easier to work with. For now, this field in outbound will just have outbound kri
+
+Inbounds and Outbounds will now look like this:
 
 ```yaml
 inbounds:
@@ -74,6 +78,11 @@ inbounds:
     port: <port_number> # port number
     protocol: http # port protocol
     proxyResourceName: <common_prefix>_sectionName
+outbounds:
+  - kri: <resource_identifier> # MS/MMZS/MES resource identifier
+    port: <port_number> # MS/MMZS/MES exposed port number
+    protocol: TCP
+    proxyResourceName: <outbound_kri> # MS/MMZS/MES resource identifier
 ```
 
 ### Passthrough inbound/outbound
@@ -105,7 +114,9 @@ since these have in common only port with actual inbounds/outbounds.
 
 ## Decision outcome
 
-We will extend `_layout` endpoint with generated inbound name and whole new section with transparent proxy configuration.
+We will extend `_layout` endpoint with generated proxyResourceName field in inbounds anb outbounds for easier correlation with 
+Envoy resources names and stats, and whole new section with transparent proxy configuration.
+
 New full schema will look like:
 
 ```yaml
@@ -121,6 +132,7 @@ outbounds:
   - kri: <resource_identifier> # MS/MMZS/MES resource identifier
     port: <port_number> # MS/MMZS/MES exposed port number
     protocol: TCP
+    proxyResourceName: <outbound_kri> # MS/MMZS/MES resource identifier
 transparentproxy:
   inbound:
     port: <port_number>
