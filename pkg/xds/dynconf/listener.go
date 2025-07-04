@@ -10,6 +10,7 @@ import (
 	http_connection_managerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -18,8 +19,9 @@ import (
 )
 
 const (
-	Origin       = "dynamic-config"
-	ListenerName = "_kuma:dynamicconfig"
+	Origin                       = "dynamic-config"
+	ListenerName                 = "_kuma:dynamicconfig"
+	maxDirectResponseBodyPadding = 256
 )
 
 func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, bytes []byte) error {
@@ -105,6 +107,12 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 				},
 			},
 		)
+		// set the MaxDirectResponseBodySizeBytes value dynamically
+		if routeConfig.MaxDirectResponseBodySizeBytes == nil {
+			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)) + maxDirectResponseBodyPadding)
+		} else {
+			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)) + routeConfig.MaxDirectResponseBodySizeBytes.GetValue())
+		}
 		return nil
 	})
 	if err != nil {
