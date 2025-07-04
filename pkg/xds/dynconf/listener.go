@@ -19,10 +19,13 @@ import (
 )
 
 const (
-	Origin                       = "dynamic-config"
-	ListenerName                 = "_kuma:dynamicconfig"
-	maxDirectResponseBodyPadding = 256
+	Origin       = "dynamic-config"
+	ListenerName = "_kuma:dynamicconfig"
 )
+
+// Adding a maxDirectResponseBodyPadding provides a safety margin to prevent issues if the actual response size slightly exceeds the calculated size.
+// This helps avoid unexpected errors or truncation in direct responses.
+var maxDirectResponseBodyPadding uint32 = 256 // 256 bytes
 
 func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, bytes []byte) error {
 	var listener *envoy_listener.Listener
