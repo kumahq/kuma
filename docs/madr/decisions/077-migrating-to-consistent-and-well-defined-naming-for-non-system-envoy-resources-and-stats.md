@@ -123,34 +123,21 @@ The descriptor must use only characters allowed in URL queries, as defined in [M
 
 We choose `self` as the keyword in the contextual naming format `<keyword>_<descriptor>`. This makes the final format `self_<descriptor>`.
 
-### Format definition: `<sectionName>`
+### Format definition: `sectionName`
 
-The `<sectionName>` identifies a specific part of the current context (in this document, the `Dataplane`) that the resource or stat belongs to. It is commonly used as part of descriptors for contextual naming formats such as [`self_inbound_<sectionName>`](#decision-naming-for-non-system-inbound-related-resources).
+The `sectionName` identifies a specific unit within the current context (in this document, the `Dataplane`) that can be referred to by Kuma policies. Currently, this applies to ports (such as outbounds and non-system inbounds), but the format is designed to support future extensions, such as DNS-like labels for `MeshPassthrough`.
 
-This format supports both numeric and named values.
+This format is the same as the `sectionName` used in the KRI naming scheme and is used in contextual naming to label resources tied to a particular part of the proxy's configuration.
 
-**If numeric:**
-
-* Must consist only of digits (`0`–`9`)
-* Must represent a valid port number in the range **1 to 65535**
-* Leading zeros are not allowed
-
-Example:
-
-```
-5050
-```
-
-**If named:**
+**Requirements:**
 
 * Must be **1 to 63 characters** long
 * Can contain:
-
   * Lowercase letters (`a`–`z`)
   * Digits (`0`–`9`)
   * Hyphens (`-`)
   * Dots (`.`)
-* Must **start with a letter**
+* Must **start with a letter or digit**
 * Must **end with a letter or digit**
 * Must **not contain** consecutive hyphens (`--`)
 * Must **not contain** consecutive dots (`..`)
@@ -158,20 +145,14 @@ Example:
 
 These rules combine:
 
-* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core), based on **DNS\_LABEL** from [RFC1123 section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1)
-* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core), based on **IANA\_SVC\_NAME** from [RFC6335 section 5.1](https://www.rfc-editor.org/rfc/rfc6335.html#section-5.1)
-* Additional support for dots (`.`) to allow future formats such as those used by `MeshPassthrough`
-
-Example:
-
-```
-backend-kumahq.com
-```
+* [Kubernetes Service port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#serviceport-v1-core) (based on **DNS_LABEL** from [RFC1123 section 2.1](https://www.rfc-editor.org/rfc/rfc1123#section-2.1))
+* [Kubernetes Container port name requirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#containerport-v1-core) (based on **IANA_SVC_NAME** from [RFC6335 section 5.1](https://www.rfc-editor.org/rfc/rfc6335.html#section-5.1))
+* Added support for `.` to allow future formats (e.g. for `MeshPassthrough`)
 
 **Regular expression:**
 
 ```
-(([1-9][0-9]{0,4})|([a-z](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
+(([1-9][0-9]{0,4})|([a-z0-9](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
 ```
 
 ### Naming for non-system inbound-related resources
