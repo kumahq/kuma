@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"google.golang.org/grpc/reflection"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -85,6 +86,8 @@ func New(
 	)))
 
 	grpcServer := grpc.NewServer(grpcOptions...)
+
+	reflection.Register(grpcServer)
 
 	return &InterCpServer{
 		config:     config,
