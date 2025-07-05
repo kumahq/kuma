@@ -157,7 +157,7 @@ const (
 
 // Regexp used to parse the result of `iptables --version` then used to map to
 // with IptablesMode
-var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables[\w-]*? v([0-9]+(?:\.[0-9]+)+)(?: \((.*?)\))?`)
+var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables[\w-]*? v(\d+(?:\.\d+)+)(?: \((.*?)\))?`)
 
 // IptablesVersionWithLockfileEnv represents the iptables version (1.8.6) where
 // the XTABLES_LOCKFILE environment variable was introduced

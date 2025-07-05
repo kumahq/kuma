@@ -18,7 +18,7 @@ import (
 var (
 	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol), string(MysqlProtocol)}
 	notAllowedProtocolsOnTheSamePort = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
-	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^\.]+`)
+	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^.]+`)
 )
 
 func (r *MeshPassthroughResource) validate() error {

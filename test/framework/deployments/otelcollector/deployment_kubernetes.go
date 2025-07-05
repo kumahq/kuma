@@ -30,10 +30,12 @@ func (k *K8SDeployment) Name() string {
 
 func (k *K8SDeployment) Deploy(cluster framework.Cluster) error {
 	var funcs []framework.InstallFunc
-	funcs = append(funcs, framework.YamlK8sObject(k.serviceAccount()))
-	funcs = append(funcs, framework.YamlK8sObject(k.configMap()))
-	funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
-	funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	funcs = append(funcs,
+		framework.YamlK8sObject(k.serviceAccount()),
+		framework.YamlK8sObject(k.configMap()),
+		framework.YamlK8sObject(k.deployment()),
+		framework.YamlK8sObject(k.service()),
+	)
 	if k.waitingToBeReady {
 		funcs = append(funcs,
 			framework.WaitService(k.namespace, k.Name()),

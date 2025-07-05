@@ -96,7 +96,7 @@ func parsePort(portStr string) (uint16, error) {
 func parsePorts(portsString string) ([]int, error) {
 	portsString = strings.TrimSpace(portsString)
 	ports := make([]int, 0)
-	if len(portsString) > 0 {
+	if portsString != "" {
 		for _, portStr := range splitPorts(portsString) {
 			port, err := parsePort(portStr)
 			if err != nil {

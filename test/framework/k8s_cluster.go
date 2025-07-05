@@ -402,10 +402,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	}
 
 	if Config.IPV6 {
-		args = append(args, "--env-var", "KUMA_DNS_SERVER_CIDR=fd00:fd00::/64")
-		args = append(args, "--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64")
-		args = append(args, "--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64")
-		args = append(args, "--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64")
+		args = append(args,
+			"--env-var", "KUMA_DNS_SERVER_CIDR=fd00:fd00::/64",
+			"--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64",
+			"--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64",
+			"--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64",
+		)
 	}
 
 	if Config.Debug {
@@ -421,8 +423,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	}
 
 	if c.opts.memory != "" {
-		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.resources.limits.memory=%s", Config.HelmSubChartPrefix, c.opts.memory))
-		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.resources.requests.memory=%s", Config.HelmSubChartPrefix, c.opts.memory))
+		args = append(args,
+			"--set", fmt.Sprintf("%scontrolPlane.resources.limits.memory=%s", Config.HelmSubChartPrefix, c.opts.memory),
+			"--set", fmt.Sprintf("%scontrolPlane.resources.requests.memory=%s", Config.HelmSubChartPrefix, c.opts.memory),
+		)
 	}
 
 	return c.controlplane.InstallCP(args...)

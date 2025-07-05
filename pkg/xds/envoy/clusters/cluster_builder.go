@@ -53,7 +53,7 @@ func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 				return nil, err
 			}
 		}
-		if len(cluster.GetName()) == 0 {
+		if cluster.GetName() == "" {
 			return nil, errors.New("cluster name is undefined")
 		}
 		return &cluster, nil

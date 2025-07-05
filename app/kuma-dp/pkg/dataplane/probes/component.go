@@ -21,8 +21,8 @@ import (
 
 var (
 	logger             = core.Log.WithName("application-probe-proxy")
-	tcpGRPCPathPattern = regexp.MustCompile(`^/(tcp|grpc)/(?P<port>[0-9]+)(/.*)?$`)
-	httpPathPattern    = regexp.MustCompile(`^/(?P<port>[0-9]+)(?P<path>/.*)?$`)
+	tcpGRPCPathPattern = regexp.MustCompile(`^/(tcp|grpc)/(?P<port>\d+)(/.*)?$`)
+	httpPathPattern    = regexp.MustCompile(`^/(?P<port>\d+)(?P<path>/.*)?$`)
 	errLimitReached    = errors.New("the read limit is reached")
 
 	// LocalAddrIPv4 and LocalAddrIPv6 are the special IP addresses to prevent the probe traffic from being captured by the transparent proxy
