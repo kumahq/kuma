@@ -12,9 +12,14 @@ KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
 
-CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+ifeq (,$(shell which mise))
+$(error "mise - https://github.com/jdx/mise - not found. Please install it.")
+endif
+MISE := $(shell which mise)
+
+CI_TOOLS_DIR ?= ${HOME}/.local/share/mise/${PROJECT_NAME}
 ifdef XDG_DATA_HOME
-	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+	CI_TOOLS_DIR := ${XDG_DATA_HOME}/.local/share/mise/${PROJECT_NAME}
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
@@ -42,13 +47,8 @@ endef
 # so this is location should not be changed by developers.
 KUBECONFIG_DIR := $(HOME)/.kube
 
-ifeq (,$(shell which mise))
-$(error "mise - https://github.com/jdx/mise - not found. Please install it.")
-endif
-MISE := $(shell which mise)
-
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
-
+# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/issues/13880
 XDS_VERSION=$(shell go list -f '{{ .Version }}' -m github.com/cncf/xds/go)
 PROTO_XDS=$(shell go mod download github.com/cncf/xds@$(XDS_VERSION) && go list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
 PGV_VERSION=$(shell go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
