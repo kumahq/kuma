@@ -45,11 +45,9 @@ Listeners:
 - inbound
   - kuma:envoy:admin
   - _kuma:dynamicconfig
-  - listener./tmp/kuma-dp-728637052/kuma-mesh-metric-config.sock
-  - listener.10.42.0.9_9901
-  - listener.[__]_15001 # ipv6
-  - probe_listener
-  - prometheus_listener
+  - _kuma:metrics:prometheus:default-backend
+  - probe:listener
+  - kuma:metrics:prometheus
 
 Clusters:
 - access_log_sink
@@ -57,7 +55,6 @@ Clusters:
 - kuma:metrics:hijacker
 - kuma:readiness
 - meshtrace_[zipkin|datadog|otel]
-- envoy_grpc_streams (ads)
 
 Virtual Hosts:
 - _kuma:dynamicconfig
@@ -65,6 +62,7 @@ Virtual Hosts:
 
 Routes (not all of them even have a name):
 - _kuma:dynamicconfig:/dns
+- _kuma:dynamicconfig:/meshtrace
 - 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route)
 
 #### Other meshes
@@ -200,29 +198,34 @@ Any new exception and case should result in a MADR which can be linked from here
 
 #### 7. Regex to match system names
 
-We will use `^system_([a-z0-9-]*_?)+$`, here is an example of the usage: https://regex101.com/r/Ic1bk5/2.
+For `system_<KRI>` resources we will use the same regex as used for KRI but prefixed with `system_`.
 
-Make it: `system_KRI` or `system_NOT_KRI`, define only `system_NOT_KRI`.
+For other names we will use `^system_([a-z0-9-]*_?)+$`, here is an example of the usage: https://regex101.com/r/Ic1bk5/2.
 
 ### Currently existing system resources and their new naming
 
-| Resource type | Current Name                            | New Name                                    | Example                                             |
-|---------------|-----------------------------------------|---------------------------------------------|-----------------------------------------------------|
-| Cluster       | kuma:envoy:admin                        | system_envoy_admin                          |                                                     | 
-| Listener      | _kuma:dynamicconfig                     | system_dynamicconfig                        |                                                     | 
-| Route         | _kuma:dynamicconfig/dns                 | system_dynamicconfig_dns                    |                                                     | 
-| Route         | _kuma:dynamicconfig/meshmetric          | system_dynamicconfig_meshmetric             |                                                     | 
-| Listener      | _kuma:metrics:opentelemetry:backendName | system_<kri> (with backend name in section) |                                                     | 
-| Cluster       | _kuma:metrics:opentelemetry:backendName | system_<kri> (with backend name in section) |                                                     | 
-| Cluster       | _kuma:metrics:hijacker                  | system_metrics_hijacker                     |                                                     | 
-| Cluster       | meshtrace:zipkin (datadog, otel)        | system_<kri> (with backend in section name) |                                                     | 
-| Cluster       | meshaccesslog:opentelemetry:0           | system_<kri> (with backend in section name) |                                                     | 
-| Cluster       | meshglobalratelimit:service             | system_<kri>                                | system_kri_mgrl___kong-mesh-system_mesh-rate-limit_ |
-| Listener      | probe:listener                          | system_dp_probe                             |                                                     |
-| Route         | probe:route_configuration               | system_dp_probe                             |                                                     |
-| VirtualHost   | probe                                   | system_dp_probe                             |                                                     |
-| Listener      | kuma:metrics:prometheus                 | system_metrics_prometheus                   |                                                     |
-| VirtualHost   | kuma:metrics:prometheus                 | system_metrics_prometheus                   |                                                     |
+| Resource type | Current Name                                                 | New Name                        | Example                                                      |
+|---------------|--------------------------------------------------------------|---------------------------------|--------------------------------------------------------------|
+| Cluster       | kuma:envoy:admin                                             | system_envoy_admin              |                                                              | 
+| Listener      | _kuma:dynamicconfig                                          | system_dynamicconfig            |                                                              | 
+| Route         | _kuma:dynamicconfig/dns                                      | system_dynamicconfig_dns        |                                                              | 
+| Route         | _kuma:dynamicconfig/meshmetric                               | system_dynamicconfig_meshmetric |                                                              | 
+| Listener      | _kuma:metrics:opentelemetry:backendName                      | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Cluster       | _kuma:metrics:opentelemetry:backendName                      | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Cluster       | _kuma:metrics:hijacker                                       | system_metrics_hijacker         |                                                              | 
+| Listener      | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
+| VirtualHost   | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
+| Cluster       | meshtrace:zipkin (datadog, otel)                             | system_<kri>                    | system_kri_mt_mesh-1_us-east-2_kuma-demo_default_            | 
+| Cluster       | meshaccesslog:opentelemetry:0                                | system_<kri>                    | system_kri_mal_mesh-1_us-east-2_kuma-demo_multiple-backends_ | 
+| Cluster       | meshglobalratelimit:service                                  | system_<kri>                    | system_kri_mgrl___kong-mesh-system_mesh-rate-limit_          |
+| Listener      | probe:listener                                               | system_dp_probe                 |                                                              |
+| Route         | probe:route_configuration                                    | system_dp_probe                 |                                                              |
+| VirtualHost   | probe                                                        | system_dp_probe                 |                                                              |
+| Cluster       | kuma:readiness                                               | system_dp_readiness             |                                                              |
+| Route         | 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route) | system_dp_default_route         |                                                              |
+| Secret        | mesh_ca:secret:all                                           | system_secret_ca_all_meshes     |                                                              |
+| Secret        | mesh_ca:secret:mesh-1                                        | system_secret_ca_mesh-1         |                                                              |
+| Secret        | identity_cert:secret:mesh-1                                  | system_secret_identity_mesh-1   |                                                              |
 
 ### Enforcement
 
