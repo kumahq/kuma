@@ -23,12 +23,19 @@ It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-me
 
 To make it easier to distinguish between the two types we introduce the following definition:
 
-Any Envoy resources that's a result of user defined Kuma resource
+- **User resource** - any Envoy resource that's a result of user defined Kuma resource
+
 Exceptions:
+- Dynamic Config Fetcher listener and routes
+- MeshMetric clusters and listeners
+- Metrics Hijacker cluster
 - MeshTrace clusters
+- MeshAccessLog cluster
 - MeshGlobalRateLimit cluster
-- MeshAccessLog socket
-- MeshMetric dynamic config
+- Dataplane probe listener and route
+- Prometheus listener
+- Kuma DNS listener
+- Kuma readiness cluster
 
 - **System resource** - any resource that is not a user resource (there will be exceptions which will require a MADR)
 
@@ -168,16 +175,15 @@ For example, when a resource is not on a service to service traffic path, is sha
 There are other cases where a resource is the result of merging multiple resources together (MTP rbac filters, MeshPassthrough, etc.).
 This is out of scope and requires a separate MADR.
 
-
 #### 3. System resources that are not related to user resource
 
 When adding such resource the name should be explicit enough to help anyone understand where this is coming from.
+The name should be namespaced so that it groups similar resources together and avoids collisions with other system resources.
+
+For example dynamic config fetcher creates one listener and one route per object type.
+We will namespace it as `system_dynamicconfig` and the DNS route will be `system_dynamicconfig_dns` and MeshMetric route will be `system_dynamicconfig_meshmetric`.
+
 If any related configuration option or annotation name exists it should be taken into account.
-
-For example `kuma:envoy:admin` will become `system_envoy_admin`.
-
-parts of the config should be namespaced in a name where it's coming from
-emphasise the importance of not colliding
 
 #### 4. Resource contextual to the Dataplane
 
@@ -200,7 +206,23 @@ Make it: `system_KRI` or `system_NOT_KRI`, define only `system_NOT_KRI`.
 
 ### Currently existing system resources and their new naming
 
-TBA - add table
+| Resource type | Current Name                            | New Name                                    | Example                                             |
+|---------------|-----------------------------------------|---------------------------------------------|-----------------------------------------------------|
+| Cluster       | kuma:envoy:admin                        | system_envoy_admin                          |                                                     | 
+| Listener      | _kuma:dynamicconfig                     | system_dynamicconfig                        |                                                     | 
+| Route         | _kuma:dynamicconfig/dns                 | system_dynamicconfig_dns                    |                                                     | 
+| Route         | _kuma:dynamicconfig/meshmetric          | system_dynamicconfig_meshmetric             |                                                     | 
+| Listener      | _kuma:metrics:opentelemetry:backendName | system_<kri> (with backend name in section) |                                                     | 
+| Cluster       | _kuma:metrics:opentelemetry:backendName | system_<kri> (with backend name in section) |                                                     | 
+| Cluster       | _kuma:metrics:hijacker                  | system_metrics_hijacker                     |                                                     | 
+| Cluster       | meshtrace:zipkin (datadog, otel)        | system_<kri> (with backend in section name) |                                                     | 
+| Cluster       | meshaccesslog:opentelemetry:0           | system_<kri> (with backend in section name) |                                                     | 
+| Cluster       | meshglobalratelimit:service             | system_<kri>                                | system_kri_mgrl___kong-mesh-system_mesh-rate-limit_ |
+| Listener      | probe:listener                          | system_dp_probe                             |                                                     |
+| Route         | probe:route_configuration               | system_dp_probe                             |                                                     |
+| VirtualHost   | probe                                   | system_dp_probe                             |                                                     |
+| Listener      | kuma:metrics:prometheus                 | system_metrics_prometheus                   |                                                     |
+| VirtualHost   | kuma:metrics:prometheus                 | system_metrics_prometheus                   |                                                     |
 
 ### Enforcement
 
