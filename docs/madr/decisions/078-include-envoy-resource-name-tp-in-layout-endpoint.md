@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/13847
 
 ## Context and Problem Statement
 
-While working on naming resources based on KRI ([MADR](https://github.com/kumahq/kuma/pull/13485/files)), 
+While working on migrating to consistent and well-defined naming for non-system Envoy resources and stats ([MADR](https://github.com/kumahq/kuma/pull/13485)), 
 we have discovered that we are missing certain information in Inspect API,
 precisely in `_layout` endpoint. Which was designed in [Inspect API redesign MADR](https://docs.google.com/document/d/1EzZpk3wwneIxQNPK7WXJqhW3Y3CS1AWMXIcXix9LEoc/edit?tab=t.g7ooo2ntj4jj)
 
@@ -30,14 +30,15 @@ outbounds:
 ```
 
 While trying to name Envoy resources using KRI, we've discovered that this will drastically increase the cardinality of metrics.
-We want to generate a simplified name for inbound that will look like: `<common_prefix>_sectionName`, with this new name
-it will be hard for GUI or other API users to correlate information from `_layout` endpoint with Envoy resources or stats.
+We want to generate a simplified name for inbound that will look like: `<common_prefix>_<sectionName>`, with this new name
+it will be harder for GUI or other API users to correlate information from `_layout` endpoint with Envoy resources or stats.
 
 ### Passthrough inbound/outbound
 
 While using transparent proxy, we add passthrough inbound and outbound which does not fit our current inbound/outbound schema
-since it does not have KRI it is not a real resource and cannot be targeted in policies. We need to include these extra inbound/outbound
-in our current `_layout` endpoint.
+since it does not have KRI currently, and it cannot be targeted in policies. Also, it will use special naming schema:
+`self_transparentproxy_passthrough_[inbound|outbound]_ipv[4|6]` which was defined in this MADR 078. 
+We need to include these extra inbound/outbound in our current `_layout` endpoint.
 
 ## Design
 
@@ -77,7 +78,7 @@ inbounds:
   - kri: <resource_identifier> # Inbound KRI
     port: <port_number> # port number
     protocol: http # port protocol
-    proxyResourceName: <common_prefix>_sectionName
+    proxyResourceName: <common_prefix>_<sectionName>
 outbounds:
   - kri: <resource_identifier> # MS/MMZS/MES resource identifier
     port: <port_number> # MS/MMZS/MES exposed port number
@@ -127,7 +128,7 @@ inbounds:
   - kri: <resource_identifier> # Inbound KRI
     port: <port_number> # port number
     protocol: http # port protocol
-    proxyResourceName: <common_prefix>_sectionName
+    proxyResourceName: <common_prefix>_<sectionName>
 outbounds:
   - kri: <resource_identifier> # MS/MMZS/MES resource identifier
     port: <port_number> # MS/MMZS/MES exposed port number
