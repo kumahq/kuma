@@ -150,13 +150,13 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		ws.Route(ws.GET(pathPrefix+"/{name}/inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(matchedPoliciesToInboundConfig)).
-			Doc(fmt.Sprintf("Get policy config for inbound")).
+			Doc("Get policy config for inbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("inbound_kri", "KRI of a inbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(matchedPoliciesToOutboundPolicy)).
-			Doc(fmt.Sprintf("Get policy config for outbound")).
+			Doc("Get policy config for outbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
