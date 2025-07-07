@@ -267,13 +267,13 @@ spec:
           type: File | Secret | EnvVar
           # OneOf
           secret:
-          path:
+          file:
           envVar:
         privateKey:
           type: File | Secret | EnvVar
           # OneOf
           secret:
-          path:
+          file:
           envVar:
 ```
 
@@ -316,13 +316,13 @@ This gives flexibility for organizations that already have an established PKI or
           type: File | Secret | EnvVar
           # OneOf
           secret:
-          path:
+          file:
           envVar:
         privateKey:
           type: File | Secret | EnvVar
           # OneOf
           secret:
-          path:
+          file:
           envVar:
 ```
 
@@ -814,13 +814,13 @@ spec:
         type: File | Secret | EnvVar
         # OneOf
         secret:
-        path:
+        file:
         envVar:
       privateKey:
         type: File | Secret | EnvVar
         # OneOf
         secret:
-        path:
+        file:
         envVar:
 ```
 
