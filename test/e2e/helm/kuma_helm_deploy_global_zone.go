@@ -12,9 +12,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
+	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	. "github.com/kumahq/kuma/test/framework"
@@ -91,30 +90,20 @@ interCp:
 	})
 
 	It("should deploy Zone and Global on 2 clusters", func() {
-		clustersStatus := api_server.Zones{}
-		Eventually(func() (bool, error) {
-			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobalStatusAPI(), nil)
-			if status != http.StatusOK {
-				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobalStatusAPI(), status)
-			}
-			err := json.Unmarshal([]byte(response), &clustersStatus)
-			if err != nil {
-				return false, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
-			}
-			if len(clustersStatus) != 1 {
-				return false, nil
-			}
-			return clustersStatus[0].Active, nil
-		}, "1m", "1s").Should(BeTrue())
-
-		// then
-		active := true
-		for _, cluster := range clustersStatus {
-			if !cluster.Active {
-				active = false
-			}
+		type overviewOutput struct {
+			Items []v1alpha1.ZoneOverview `json:"items"`
 		}
-		Expect(active).To(BeTrue())
+		zoneOverviews := overviewOutput{}
+		Eventually(func(g Gomega) {
+			path := fmt.Sprintf("%s/zones/_overview", global.GetAPIServerAddress())
+			status, response := http_helper.HttpGet(c1.GetTesting(), path, nil)
+			g.Expect(status).To(Equal(http.StatusOK), "unable to contact server %q", path)
+			err := json.Unmarshal([]byte(response), &zoneOverviews)
+			g.Expect(err).ToNot(HaveOccurred(), "unable to parse response %q with error: %v", response, err)
+			g.Expect(zoneOverviews.Items).To(HaveLen(1))
+			g.Expect(zoneOverviews.Items[0].GetZoneInsight().IsOnline()).To(BeTrue())
+			g.Expect(zoneOverviews.Items[0].GetZone().IsEnabled()).To(BeTrue())
+		}, "1m", "1s").Should(Succeed())
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
