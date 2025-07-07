@@ -256,7 +256,7 @@ spec:
       agent:
         timeout: 1s
     bundled: # to extend in KM
-      trustExtraction: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
+      meshTrustCreation: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
       insecureAllowSelfSigned: true
       certificateParameters: # lets make rotation percentage static for the moment
         expiry: 24h
@@ -277,7 +277,9 @@ spec:
           envVar:
 ```
 
-CP uses a default CA Bundle to validate provided CA.
+CP uses the default CA Bundle to validate provided CA. Currently we don't set it, but we can set it additionally by setting `KUMA_GENERAL_TLS_CA_BUNDLE_FILE`.
+
+`insecureAllowSelfSigned` allows preventing users from using self signed CA either provided by the user or autogenrated.
 
 **ServiceAccount** 
 We are going to set `k8s.kuma.io/service-account` with the name of service account. The length of the possible value is [253 characters](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts) which makes us to put it into the annotation and not a label. That let us resolve SPIFFEID.
@@ -671,7 +673,7 @@ Based on the existing `MeshIdentity`, we should create a `MeshTrust` resource, w
 3. Can be created on the Zone and not synced to global by providing label `kuma.io/kds-sync: disabled`
 4. Can be created on the Zone and synced to all zones (Future release) (`SyncedAcrossZonesFlag`)
 
-We can describe it as KDS flag:
+We can describe it as ResourceDescriptor:
 
 ```golang
 var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -701,7 +703,7 @@ var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 }
 ```
 
-There should also be an option to disable automatic generation in cases where the user does not want cross trust-domain traffic to be allowed by default. `MeshIdentity.spec.provider.bundled.trustExtraction: Disabled` allows to disable auto creation of MeshTrust based on MeshIdentity.
+There should also be an option to disable automatic generation in cases where the user does not want cross trust-domain traffic to be allowed by default. `MeshIdentity.spec.provider.bundled.meshTrustCreation: Disabled` allows to disable auto creation of MeshTrust based on MeshIdentity.
 
 **Model**
 ```yaml
@@ -716,8 +718,8 @@ spec:
   origin:
     kri: kri_mid_mesh-1_us-east-2_kuma-system_identity-1
   caBundles:
-    - caBundle:
-    - caBundle: 
+    - caBundle: # PEM
+    - caBundle: # PEM
   trustDomain: "prod.zone-1.kuma.io"
 ```
 
@@ -732,7 +734,7 @@ If one of the CAs expires, we won't automatically detect and remove it. This fun
 
 **MeshTrust based on MeshIdentity**
 
-When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the `MeshTrust` based on the `MeshIdentity`. This option can be disabled and `MeshTrust` might not be created by setting `MeshIdentity.spec.bundled.trustExtraction: Disabled`.
+When a user creates a `MeshIdentity`, we will automatically create a corresponding `MeshTrust` resource using the CA and trust domain from that identity. We can implement a dedicated generator that creates the `MeshTrust` based on the `MeshIdentity`. This option can be disabled and `MeshTrust` might not be created by setting `MeshIdentity.spec.bundled.meshTrustCreation: Disabled`.
 To avoid issues where a user removes a `MeshIdentity` but an old trust remains in use, we will not remove a `MeshTrust` and we let user to clean it up. Once a user update `MeshIdentity` we will append existing `MeshTrust` with additional entry in the CA list.
 
 **Multizone**
@@ -865,8 +867,7 @@ metadata:
 spec:
   selector:
     dataplane:
-      matchLabels:
-        app: demo-app
+      matchLabels: {}
   spiffeID: # optional
     trustDomain: "prod.zone-1.kuma.io"
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
