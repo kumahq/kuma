@@ -161,6 +161,7 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshtlses",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh TLS",
 	PluralDisplayName:            "Mesh TLSes",

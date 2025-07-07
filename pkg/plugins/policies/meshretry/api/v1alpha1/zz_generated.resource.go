@@ -161,6 +161,7 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshretries",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Retry",
 	PluralDisplayName:            "Mesh Retries",
