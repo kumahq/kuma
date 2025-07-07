@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -85,10 +84,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	}
 
 	inbounds := util_slices.Map(dataplane.Spec.GetNetworking().GetInbound(), func(inbound *v1alpha1.Dataplane_Networking_Inbound) api_common.DataplaneInbound {
-		sectionName := inbound.GetName()
-		if sectionName == "" {
-			sectionName = strconv.Itoa(int(inbound.GetPort()))
-		}
+		sectionName := inbound.GetSectionName()
 
 		return api_common.DataplaneInbound{
 			Kri:      kri.From(dataplane, sectionName).String(),
