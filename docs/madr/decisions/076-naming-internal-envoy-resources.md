@@ -23,7 +23,12 @@ It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-me
 
 To make it easier to distinguish between the two types we introduce the following definition:
 
-- **User resource** - any resource that comes from passthrough, `Mesh*Service`, `Mesh*Route` and user defined `Secret`s
+- **User resource** - any resource that comes from:
+  - [transparent proxy passthrough](https://github.com/kumahq/kuma/blob/52b8f5548739ecd1124181541f105bd6481b7ba5/docs/madr/decisions/077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md?plain=1#L353)
+  - `Dataplane`
+  - `MeshService`, `MeshExternalService`, `MeshMultiZoneService`
+  - `MeshHTTPRoute`, `MeshTCPRoute`
+  - User defined `Secret`s
 - **System resource** - any resource that is not a user resource
 
 ### Kuma system resource names
@@ -34,7 +39,7 @@ Listeners:
   - _kuma:dynamicconfig
   - listener./tmp/kuma-dp-728637052/kuma-mesh-metric-config.sock
   - listener.10.42.0.9_9901
-  - listener.[__]_15001 # is it ipv6?
+  - listener.[__]_15001 # ipv6
   - probe_listener
   - prometheus_listener
 
@@ -148,47 +153,52 @@ See:
 
 ## Design
 
-### Use a `^system_([a-z0-9-]*_?)+$` regex to name system resources
+### Resource naming
 
-All changes will be behind the same feature flag as in [Migrating to consistent and well-defined naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+#### 1. User resources
 
-All system resources will conform to `^system_([a-z0-9-]*_?)+$` regex (we shouldn't use `system:` because of [this issue with `:` as separator](https://github.com/kumahq/kuma/issues/2363)).
+Names for these resources are defined in [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-System resources that can be traced back to a Kuma resource with a valid KRI have the format `system_<KRI>`.
+#### 2. System resources that can be tracked back to user resource
 
-For example:
+When possible, use `system_<KRI>`. It should be justified when designing why a user resource is system and not just `<kri>`.
+For example, when a resource is not on a service to service traffic path, is shared between other parts of the system (like Kong Mesh's `MeshGlobalRateLimit` service) or we want to make it easy to exclude from metrics collection.
 
-```
-system_kri_mtr_mesh-1__kuma-system_my-meshtrace_
-```
+There are other cases where a resource is the result of merging multiple resources together (MTP rbac filters, MeshPassthrough, etc.).
+This is out of scope and requires a separate MADR.
 
-Which indicates a system resource that was created for a `MeshTrace` resource.
 
-Resources that are not correlated with any Kuma resource like:
+#### 3. System resources that are not related to user resource
 
-```
-kuma:envoy:admin
-```
+When adding such resource the name should be explicit enough to help anyone understand where this is coming from.
+If any related configuration option or annotation name exists it should be taken into account.
 
-Will conform with the previously mentioned regex:
+For example `kuma:envoy:admin` will become `system_envoy_admin`.
 
-```
-system_envoy_admin
-```
+#### 4. Resource contextual to the Dataplane
 
-and should describe the resource as accurately and plainly as possible (it **MUST** take into account any related configuration option or annotation if exists).
+These resources are defined in [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-It means that `listener.0.0.0.0_15001` which can be configured by (`kuma.io/transparent-proxying-outbound-port`) will become `system_transparent_proxy_outbound_listener`.
+#### 5. Secrets
 
-#### Secrets
+There is nothing special about secrets, they adhere to the same rules (1-4) and can have exceptions (6).
 
-Secrets are resources like any others but should most likely always be considered system.
-Therefore, they will follow if they are an actual Kuma secret `^system_KRI` and `^system_<someusefulName>` otherwise.
-There are possible exceptions but these should be explicitly called out in MADRs. (.e.g [MeshTrust and MeshIdentity](./073-spiffe-compliance.md)).
+#### 6. Exceptions
 
-#### Enforcement
+We can't control the name of external resources (i.e. SPIRE SDS secrets).
+Any new exception and case should result in a MADR which can be linked from here.
 
-##### Builders
+#### 7. Regex to match system names
+
+We will use `^system_([a-z0-9-]*_?)+$`, here is an example of the usage: https://regex101.com/r/Ic1bk5/2.
+
+### Currently existing system resources and their new naming
+
+TBA - add table
+
+### Enforcement
+
+#### Builders
 
 To enforce these rules we will add checks in resource builders like [ClusterBuilder](https://github.com/kumahq/kuma/blob/dedaba5b9de1bd134dce813ae49b3475d5d24e6b/pkg/xds/envoy/clusters/cluster_builder.go#L80).
 If anyone tries to add a new resource that doesn't conform to any type it will fail tests.
@@ -199,7 +209,7 @@ Pros:
 Cons:
 - Can be easily skipped by not using a builder
 
-##### Inspecting golden files
+#### Inspecting golden files
 
 We could have a target that goes over golden files and checks the names of all resources.
 
@@ -209,7 +219,7 @@ Pros:
 Cons:
 - Can be skipped by a code path not using golden files or not tested
 
-##### Custom linter
+#### Custom linter
 
 A linter that would use `go/ssa` and `callgraph` that would figure out if an Envoy resource with a name that doesn't conform to the regex is created.
 
@@ -219,9 +229,9 @@ Pros:
 Cons:
 - Might be really hard to implement
 
-### Use a `^_kuma_[a-z0-9_]+$` regex to name system resources
+## Rejected alternatives
 
-Same as above, but with `_kuma_` instead of `system_`.
+- [Using `:`](https://github.com/kumahq/kuma/issues/2363)
 
 ## Implications for Kong Mesh
 
