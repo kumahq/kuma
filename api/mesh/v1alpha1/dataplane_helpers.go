@@ -288,6 +288,15 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 	return nil
 }
 
+func (n *Dataplane_Networking) GetInboundForSectionName(sectionName string) *Dataplane_Networking_Inbound {
+	for _, inbound := range n.Inbound {
+		if inbound.Name == sectionName || strconv.Itoa(int(inbound.Port)) == sectionName {
+			return inbound
+		}
+	}
+	return nil
+}
+
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,
