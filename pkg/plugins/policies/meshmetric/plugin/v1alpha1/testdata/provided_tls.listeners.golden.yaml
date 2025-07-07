@@ -21,7 +21,7 @@ resources:
             - addressPrefix: ::1
               prefixLen: 128
           routeConfig:
-            maxDirectResponseBodySizeBytes: 429
+            maxDirectResponseBodySizeBytes: 173
             virtualHosts:
             - domains:
               - '*'

@@ -23,8 +23,6 @@ const (
 	ListenerName = "_kuma:dynamicconfig"
 )
 
-var maxDirectResponseBodyPadding uint32 = 256 // 256 bytes
-
 func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, bytes []byte) error {
 	var listener *envoy_listener.Listener
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
@@ -108,13 +106,10 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 				},
 			},
 		)
-		// Set the MaxDirectResponseBodySizeBytes value dynamically.
-		// Add a safety margin to the max direct response body size to prevent issues caused by minor size overflows,
-		// such as encoding differences or small variations, which could otherwise lead to response truncation or errors.
 		if routeConfig.MaxDirectResponseBodySizeBytes == nil {
-			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)) + maxDirectResponseBodyPadding)
+			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(uint32(len(bytes)))
 		} else {
-			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(max(routeConfig.MaxDirectResponseBodySizeBytes.GetValue(), uint32(len(bytes))+maxDirectResponseBodyPadding))
+			routeConfig.MaxDirectResponseBodySizeBytes = wrapperspb.UInt32(max(routeConfig.MaxDirectResponseBodySizeBytes.GetValue(), uint32(len(bytes))))
 		}
 		return nil
 	})
