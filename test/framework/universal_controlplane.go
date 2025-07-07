@@ -87,10 +87,6 @@ func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
 	return protocol + "://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
 }
 
-func (c *UniversalControlPlane) GetGlobalStatusAPI() string {
-	panic("not implemented")
-}
-
 func (c *UniversalControlPlane) GetAPIServerAddress() string {
 	return "http://localhost:" + c.cpNetworking.ApiServerPort
 }

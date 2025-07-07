@@ -645,7 +645,6 @@ type ControlPlane interface {
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
 	GetXDSServerAddress() string
-	GetGlobalStatusAPI() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)

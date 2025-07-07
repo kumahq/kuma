@@ -6,6 +6,12 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.12.x`
+
+### Removal of `/status/zones` endpoints
+
+These endpoints were deprecated, and are now removed. You can achieve the same functionality with `/zones/_overview`.
+
 ## Upgrade to `2.11.x`
 
 ### Embedded Proxy DNS is Enabled by Default

@@ -144,7 +144,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 	_, err := http_helper.HTTPDoWithRetryE(
 		c.t,
 		"GET",
-		c.GetGlobalStatusAPI(),
+		c.GetAPIServerAddress()+"/zones/_overview",
 		nil,
 		headers,
 		http.StatusOK,
@@ -323,10 +323,6 @@ func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, erro
 func (c *K8sControlPlane) Exec(cmd ...string) (string, string, error) {
 	pod := c.GetKumaCPPods()[0]
 	return c.cluster.Exec(pod.Namespace, pod.Name, "", cmd...)
-}
-
-func (c *K8sControlPlane) GetGlobalStatusAPI() string {
-	return c.GetAPIServerAddress() + "/status/zones"
 }
 
 func (c *K8sControlPlane) generateToken(
