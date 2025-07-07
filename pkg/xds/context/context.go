@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core2 "github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -62,6 +62,10 @@ func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)
 }
 
+func (g BaseMeshContext) GetReachableOutbounds(dataplane *core_mesh.DataplaneResource) map[kri.Identifier]core_resources.Port {
+	return g.DestinationIndex.getReachableOutbounds(g.Mesh, dataplane)
+}
+
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
 // If there is an information that can be precomputed and shared between all data plane proxies
@@ -113,7 +117,7 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	return oldestTri
 }
 
-func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core2.Destination {
+func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
 }
 

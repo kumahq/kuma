@@ -2,7 +2,6 @@ package context
 
 import (
 	"fmt"
-
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
@@ -80,6 +79,49 @@ func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, d
 
 func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
 	return dc.destinationByIdentifier[kri.NoSectionName(id)]
+}
+
+func (dc *DestinationIndex) getReachableOutbounds(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource) map[kri.Identifier]core.Port {
+	if dataplane.Spec.GetNetworking().GetOutbound() != nil {
+		// TODO handle user defined outbounds on universal without transparent proxy
+		return map[kri.Identifier]core.Port{}
+	}
+
+	// handle reachable backend and outbounds when using transparent proxy
+	reachableBackends := dc.GetReachableBackends(mesh, dataplane)
+	return dc.reachablePorts(reachableBackends)
+}
+
+func (dc *DestinationIndex) reachablePorts(reachableBackends *ReachableBackends) map[kri.Identifier]core.Port {
+	outbounds := map[kri.Identifier]core.Port{}
+	if reachableBackends == nil {
+		for destinationKri, destination := range dc.GetAllDestinations() {
+			for _, port := range destination.GetPorts() {
+				outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
+			}
+		}
+		return outbounds
+	}
+
+	for destinationKri := range *reachableBackends {
+		dest := dc.GetDestinationByKri(destinationKri)
+		if dest == nil {
+			continue
+		}
+		if destinationKri.HasSectionName() {
+			port, ok := dest.FindPortByName(destinationKri.SectionName)
+			if !ok {
+				continue
+			}
+			outbounds[destinationKri] = port
+		} else {
+			for _, port := range dest.GetPorts() {
+				outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
+			}
+		}
+	}
+
+	return outbounds
 }
 
 func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(labels map[string]string) []kri.Identifier {

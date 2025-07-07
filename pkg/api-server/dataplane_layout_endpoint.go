@@ -1,7 +1,6 @@
 package api_server
 
 import (
-	"context"
 	"net/http"
 	"slices"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -71,7 +69,8 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		return
 	}
 
-	dataplane, err := dle.getDataplaneResource(request.Request.Context(), meshName, dataplaneName)
+	dataplane := core_mesh.NewDataplaneResource()
+	err = dle.resManager.Get(request.Request.Context(), dataplane, store.GetByKey(dataplaneName, meshName))
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Dataplane")
 		return
@@ -88,12 +87,13 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	})
 
 	var outbounds []api_common.DataplaneOutbound
-	if dataplane.Spec.GetNetworking().GetOutbound() != nil {
-		// TODO handle user defined outbounds on universal without transparent proxy
-	} else {
-		// handle reachable backend and outbounds when using transparent proxy
-		reachableBackends := baseMeshContext.DestinationIndex.GetReachableBackends(baseMeshContext.Mesh, dataplane)
-		outbounds = getOutbounds(baseMeshContext.DestinationIndex, reachableBackends)
+	reachableOutbounds := baseMeshContext.GetReachableOutbounds(dataplane)
+	for outboundKri, port := range reachableOutbounds {
+		outbounds = append(outbounds, api_common.DataplaneOutbound{
+			Kri:      outboundKri.String(),
+			Port:     port.GetValue(),
+			Protocol: string(port.GetProtocol()),
+		})
 	}
 
 	slices.SortStableFunc(outbounds, func(a, b api_common.DataplaneOutbound) int {
@@ -111,57 +111,4 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	if err != nil {
 		log.Error(err, "Could not write response")
 	}
-}
-
-func (dle *dataplaneLayoutEndpoint) getDataplaneResource(ctx context.Context, meshName string, dataplaneName string) (*core_mesh.DataplaneResource, error) {
-	dataplaneResource := core_mesh.NewDataplaneResource()
-	err := dle.resManager.Get(ctx, dataplaneResource, store.GetByKey(dataplaneName, meshName))
-	if err != nil {
-		return nil, err
-	}
-	return dataplaneResource, nil
-}
-
-func getOutbounds(destinationContext *xds_context.DestinationIndex, reachableBackends *xds_context.ReachableBackends) []api_common.DataplaneOutbound {
-	var outbounds []api_common.DataplaneOutbound
-	if reachableBackends == nil {
-		for destinationKri, destination := range destinationContext.GetAllDestinations() {
-			outbounds = append(outbounds, expandDestination(destinationKri, destination)...)
-		}
-		return outbounds
-	}
-
-	for destinationKri := range *reachableBackends {
-		dest := destinationContext.GetDestinationByKri(destinationKri)
-		if dest == nil {
-			continue
-		}
-		if destinationKri.HasSectionName() {
-			port, ok := dest.FindPortByName(destinationKri.SectionName)
-			if !ok {
-				continue
-			}
-			outbounds = append(outbounds, api_common.DataplaneOutbound{
-				Kri:      destinationKri.String(),
-				Port:     port.GetValue(),
-				Protocol: string(port.GetProtocol()),
-			})
-		} else {
-			outbounds = append(outbounds, expandDestination(destinationKri, dest)...)
-		}
-	}
-
-	return outbounds
-}
-
-func expandDestination(destinationKri kri.Identifier, dest core.Destination) []api_common.DataplaneOutbound {
-	var outbounds []api_common.DataplaneOutbound
-	for _, port := range dest.GetPorts() {
-		outbounds = append(outbounds, api_common.DataplaneOutbound{
-			Kri:      kri.WithSectionName(destinationKri, port.GetName()).String(),
-			Port:     port.GetValue(),
-			Protocol: string(port.GetProtocol()),
-		})
-	}
-	return outbounds
 }
