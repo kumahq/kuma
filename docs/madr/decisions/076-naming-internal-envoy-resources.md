@@ -23,13 +23,14 @@ It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-me
 
 To make it easier to distinguish between the two types we introduce the following definition:
 
-- **User resource** - any resource that comes from:
-  - [transparent proxy passthrough](https://github.com/kumahq/kuma/blob/52b8f5548739ecd1124181541f105bd6481b7ba5/docs/madr/decisions/077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md?plain=1#L353)
-  - `Dataplane`
-  - `MeshService`, `MeshExternalService`, `MeshMultiZoneService`
-  - `MeshHTTPRoute`, `MeshTCPRoute`
-  - User defined `Secret`s
-- **System resource** - any resource that is not a user resource
+Any Envoy resources that's a result of user defined Kuma resource
+Exceptions:
+- MeshTrace clusters
+- MeshGlobalRateLimit cluster
+- MeshAccessLog socket
+- MeshMetric dynamic config
+
+- **System resource** - any resource that is not a user resource (there will be exceptions which will require a MADR)
 
 ### Kuma system resource names
 
@@ -175,6 +176,9 @@ If any related configuration option or annotation name exists it should be taken
 
 For example `kuma:envoy:admin` will become `system_envoy_admin`.
 
+parts of the config should be namespaced in a name where it's coming from
+emphasise the importance of not colliding
+
 #### 4. Resource contextual to the Dataplane
 
 These resources are defined in [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
@@ -191,6 +195,8 @@ Any new exception and case should result in a MADR which can be linked from here
 #### 7. Regex to match system names
 
 We will use `^system_([a-z0-9-]*_?)+$`, here is an example of the usage: https://regex101.com/r/Ic1bk5/2.
+
+Make it: `system_KRI` or `system_NOT_KRI`, define only `system_NOT_KRI`.
 
 ### Currently existing system resources and their new naming
 
