@@ -105,7 +105,7 @@ func (i Identifier) HasSectionName() bool {
 	return i.SectionName != ""
 }
 
-func WithSectionNameFromPort(id Identifier, sectionName string) Identifier {
+func WithSectionName(id Identifier, sectionName string) Identifier {
 	idCopy := id
 	idCopy.SectionName = sectionName
 	return idCopy

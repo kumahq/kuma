@@ -61,14 +61,13 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		return
 	}
 
-	mesh, err := dle.getMeshResource(request.Request.Context(), meshName)
+	baseMeshContext, err := dle.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-		return
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
 	}
 
-	if mesh.Spec.GetMeshServices().GetMode() == v1alpha1.Mesh_MeshServices_Disabled {
-		response.WriteHeader(http.StatusBadRequest)
+	if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() == v1alpha1.Mesh_MeshServices_Disabled {
+		rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _layout endpoint without meshService enabled"), "Bad Request")
 		return
 	}
 
@@ -76,11 +75,6 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Dataplane")
 		return
-	}
-
-	baseMeshContext, err := dle.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
-	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
 	}
 
 	inbounds := util_slices.Map(dataplane.Spec.GetNetworking().GetInbound(), func(inbound *v1alpha1.Dataplane_Networking_Inbound) api_common.DataplaneInbound {
@@ -98,8 +92,8 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		// TODO handle user defined outbounds on universal without transparent proxy
 	} else {
 		// handle reachable backend and outbounds when using transparent proxy
-		reachableBackends := baseMeshContext.DestinationIndex.GetReachableBackends(mesh, dataplane)
-		outbounds = dle.getOutbounds(baseMeshContext.DestinationIndex, reachableBackends)
+		reachableBackends := baseMeshContext.DestinationIndex.GetReachableBackends(baseMeshContext.Mesh, dataplane)
+		outbounds = getOutbounds(baseMeshContext.DestinationIndex, reachableBackends)
 	}
 
 	slices.SortStableFunc(outbounds, func(a, b api_common.DataplaneOutbound) int {
@@ -119,15 +113,6 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	}
 }
 
-func (dle *dataplaneLayoutEndpoint) getMeshResource(ctx context.Context, meshName string) (*core_mesh.MeshResource, error) {
-	meshResource := core_mesh.NewMeshResource()
-	err := dle.resManager.Get(ctx, meshResource, store.GetByKey(meshName, core_model.NoMesh))
-	if err != nil {
-		return nil, err
-	}
-	return meshResource, nil
-}
-
 func (dle *dataplaneLayoutEndpoint) getDataplaneResource(ctx context.Context, meshName string, dataplaneName string) (*core_mesh.DataplaneResource, error) {
 	dataplaneResource := core_mesh.NewDataplaneResource()
 	err := dle.resManager.Get(ctx, dataplaneResource, store.GetByKey(dataplaneName, meshName))
@@ -137,7 +122,7 @@ func (dle *dataplaneLayoutEndpoint) getDataplaneResource(ctx context.Context, me
 	return dataplaneResource, nil
 }
 
-func (dle *dataplaneLayoutEndpoint) getOutbounds(destinationContext *xds_context.DestinationIndex, reachableBackends *xds_context.ReachableBackends) []api_common.DataplaneOutbound {
+func getOutbounds(destinationContext *xds_context.DestinationIndex, reachableBackends *xds_context.ReachableBackends) []api_common.DataplaneOutbound {
 	var outbounds []api_common.DataplaneOutbound
 	if reachableBackends == nil {
 		for destinationKri, destination := range destinationContext.GetAllDestinations() {
@@ -173,7 +158,7 @@ func expandDestination(destinationKri kri.Identifier, dest core.Destination) []a
 	var outbounds []api_common.DataplaneOutbound
 	for _, port := range dest.GetPorts() {
 		outbounds = append(outbounds, api_common.DataplaneOutbound{
-			Kri:      kri.WithSectionNameFromPort(destinationKri, port.GetName()).String(),
+			Kri:      kri.WithSectionName(destinationKri, port.GetName()).String(),
 			Port:     port.GetValue(),
 			Protocol: string(port.GetProtocol()),
 		})
