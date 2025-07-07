@@ -48,6 +48,8 @@ Listeners:
   - _kuma:metrics:prometheus:default-backend
   - probe:listener
   - kuma:metrics:prometheus
+  - plugins:bootstrap:k8s:hooks:apiServerBypass
+  - kuma:dns
 
 Clusters:
 - access_log_sink
@@ -55,14 +57,16 @@ Clusters:
 - kuma:metrics:hijacker
 - kuma:readiness
 - meshtrace_[zipkin|datadog|otel]
+- ads_cluster
+- plugins:bootstrap:k8s:hooks:apiServerBypass
 
 Virtual Hosts:
 - _kuma:dynamicconfig
 - kuma:envoy:admin
 
 Routes (not all of them even have a name):
-- _kuma:dynamicconfig:/dns
-- _kuma:dynamicconfig:/meshtrace
+- _kuma:dynamicconfig:dns
+- _kuma:dynamicconfig:meshtrace
 - 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route)
 
 #### Other meshes
@@ -208,15 +212,18 @@ For other names we will use `^system_([a-z0-9-]*_?)+$`, here is an example of th
 |---------------|--------------------------------------------------------------|---------------------------------|--------------------------------------------------------------|
 | Cluster       | kuma:envoy:admin                                             | system_envoy_admin              |                                                              | 
 | Listener      | _kuma:dynamicconfig                                          | system_dynamicconfig            |                                                              | 
-| Route         | _kuma:dynamicconfig/dns                                      | system_dynamicconfig_dns        |                                                              | 
-| Route         | _kuma:dynamicconfig/meshmetric                               | system_dynamicconfig_meshmetric |                                                              | 
-| Listener      | _kuma:metrics:opentelemetry:backendName                      | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
-| Cluster       | _kuma:metrics:opentelemetry:backendName                      | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Route         | _kuma:dynamicconfig:dns                                      | system_dynamicconfig_dns        |                                                              | 
+| Route         | _kuma:dynamicconfig:meshmetric                               | system_dynamicconfig_meshmetric |                                                              | 
+| Listener      | _kuma:metrics:prometheus:backend-default                     | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Listener      | _kuma:metrics:prometheus:<backendName>                       | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Listener      | _kuma:metrics:opentelemetry:<backendName>                    | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Cluster       | _kuma:metrics:opentelemetry:<backendName>                    | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
 | Cluster       | _kuma:metrics:hijacker                                       | system_metrics_hijacker         |                                                              | 
 | Listener      | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
 | VirtualHost   | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
-| Cluster       | meshtrace:zipkin (datadog, otel)                             | system_<kri>                    | system_kri_mt_mesh-1_us-east-2_kuma-demo_default_            | 
-| Cluster       | meshaccesslog:opentelemetry:0                                | system_<kri>                    | system_kri_mal_mesh-1_us-east-2_kuma-demo_multiple-backends_ | 
+| Cluster       | tracing:name                                                 | system_tracing_name             |                                                              | 
+| Cluster       | meshtrace:<type> (zipkin, datadog, otel)                     | system_<kri>                    | system_kri_mt_mesh-1_us-east-2_kuma-demo_default_            | 
+| Cluster       | meshaccesslog:opentelemetry:<index> (0, 1, 2, ...)           | system_<kri>                    | system_kri_mal_mesh-1_us-east-2_kuma-demo_multiple-backends_ | 
 | Cluster       | meshglobalratelimit:service                                  | system_<kri>                    | system_kri_mgrl___kong-mesh-system_mesh-rate-limit_          |
 | Listener      | probe:listener                                               | system_dp_probe                 |                                                              |
 | Route         | probe:route_configuration                                    | system_dp_probe                 |                                                              |
@@ -226,6 +233,10 @@ For other names we will use `^system_([a-z0-9-]*_?)+$`, here is an example of th
 | Secret        | mesh_ca:secret:all                                           | system_secret_ca_all_meshes     |                                                              |
 | Secret        | mesh_ca:secret:mesh-1                                        | system_secret_ca_mesh-1         |                                                              |
 | Secret        | identity_cert:secret:mesh-1                                  | system_secret_identity_mesh-1   |                                                              |
+| Cluster       | ads_cluster                                                  | system_ads_cluster              |                                                              |
+| Cluster       | plugins:bootstrap:k8s:hooks:apiServerBypass                  | system_kube_api_server          |                                                              |
+| Listener      | plugins:bootstrap:k8s:hooks:apiServerBypass                  | system_kube_api_server          |                                                              |
+| Listener      | kuma:dns                                                     | system_dns                      |                                                              |
 
 ### Enforcement
 
