@@ -989,6 +989,10 @@ What we need:
 
 Where `bundles` has each CA by trust domain, in our case it would be `MeshTrust` list.
 
+**Decision: We should use SPIFFECertValidatorConfig by the default and allow to disable it with the configuration**
+
+SPIFFECertValidatorConfig provides more security since we validate if certificate was signed by the CA in my trust domain instead of checking if is only signed by one of CAs.
+
 **Do we do any migration Permissive to Strict?**
 
 * No, currently we don't really check this. 
