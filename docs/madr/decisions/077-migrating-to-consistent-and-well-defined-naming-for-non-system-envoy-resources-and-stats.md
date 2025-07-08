@@ -108,7 +108,7 @@ The descriptor must use only characters allowed in URL queries, as defined in [M
 
 **Benefits:**
 
-* Suggests the resource is local to the current
+* Suggests the resource is local to the current context
 * Has precedent in networking terminology
 
 **Drawbacks:**
