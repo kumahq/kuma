@@ -65,11 +65,7 @@ processors:
 
 A side benefit of this is that profiles implementation is a lot simpler.
 
-### 5. As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
-
-### 6. As a Kuma developer I want to distinguish between system and user resources in Envoy
-
-### 7. As a user I want the cardinality of these resource names to be low
+### 4. As a user I want the cardinality of these resource names to be low
 
 High cardinality is problematic for metrics collection systems and dataplane memory.
 
@@ -79,7 +75,7 @@ Need to avoid:
 
 There is existing solution for `Dataplane` covered by [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-#### 8. Rename existing system resources in well-defined patterns
+#### 5. Rename existing system resources in well-defined patterns
 
 Here is a list of exceptions we will back-fill:
 - Dynamic Config Fetcher listener and routes
