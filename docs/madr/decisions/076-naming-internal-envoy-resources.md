@@ -292,7 +292,7 @@ For MeshOPA it only modifies existing resources and doesn't create any new ones.
 
 ## Decision
 
-We will use a regex on all system resources as described in "Use a `^system_([a-z0-9-]*_?)+$` regex to name system resources" section.
+We will use a naming scheme as described in "Resource naming" section.
 
 ## Notes
 
