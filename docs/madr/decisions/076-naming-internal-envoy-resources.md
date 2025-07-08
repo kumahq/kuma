@@ -139,7 +139,10 @@ processors:
 
 Need to avoid:
 - IPs / non constant bits
-- Avoid dataplane name or kri.
+- Avoid Dataplane name or its KRI.
+
+Note: That’s not a problem for system resources since we control their names.
+Right now, this only affects user resources generated from the Dataplane, which is already covered by [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
 ## Non use cases
 
