@@ -2,7 +2,6 @@ package dataplane
 
 import (
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/exp/constraints"
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -11,7 +10,7 @@ import (
 )
 
 type PortLike interface {
-	constraints.Integer | constraints.Float | tproxy_config.Port
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr | ~float32 | ~float64
 }
 
 type DataplaneConfigGetter interface {
