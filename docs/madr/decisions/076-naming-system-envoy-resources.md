@@ -123,7 +123,7 @@ but it is still related to a Kuma resource (the `MeshGlobalRateLimit` policy).
 The cluster is currently called `meshglobalratelimit:service`, but it will be renamed to `system_kri_mgrl___kong-mesh-system_global-rate-limit-policy_`.
 
 There are other cases where a resource is the result of merging multiple resources together (MeshTrafficPermission RBAC filters, MeshPassthrough, etc.).
-This is out of scope and requires a separate MADR (todo: add link)
+This is out of scope and [requires a separate MADR](https://github.com/kumahq/kuma/issues/13886).
 
 Refer to [currently existing system resources and their new naming](#currently-existing-system-resources-and-their-new-naming) for the full list.
 
