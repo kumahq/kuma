@@ -274,6 +274,10 @@ Pros:
 Cons:
 - Might be really hard to implement
 
+#### Chosen option
+
+We're choosing "Inspecting golden files" as it's the most feasible option that can be implemented quickly and will catch most of the cases.
+
 ## Rejected alternatives
 
 - [Using `:`](https://github.com/kumahq/kuma/issues/2363)
