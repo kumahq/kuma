@@ -15,5 +15,5 @@
  "labels": {
   "kuma.io/zone": "test-zone"
  },
- "outbounds": null
+ "outbounds": []
 }
