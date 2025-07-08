@@ -192,7 +192,7 @@ Trust domain: `{ .Mesh }.{ .Zone }.mesh.local`
 Once a trust domain is defined on the Global control plane, we require it to include the zone name in the template. We are going to implement a validator for this case. Also, we need to validate length of each segment where Mesh and Zone has limit of 63 characters.
 
 Limitation:
-* Mesh and Zone needs to have max length of 63 characters each
+* Mesh and Zone names must each have a maximum length of 63 characters. Since we validate resource names according to RFC-1035([issue](https://github.com/kumahq/kuma/issues/13054)), we want all resource names to be compliant with this standard.
 
 Question:
 * Is there an issue once we rename zone ? Isn't it an edge case that we might don't need to support?
