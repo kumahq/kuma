@@ -35,17 +35,17 @@ make help
 
 ### Installing dev tools
 
-We packaged the remaining dependencies into one target:
+We use [mise](https://mise.jdx.dev) to manage dev tools for Kuma. To install you can run:  
 
 ```bash
-make dev/tools
+make install
 ```
 
-You can install each commands individually if you prefer.
+or use mise directly
 
-ATTENTION: By default, development tools will be installed at `$HOME/.kuma-dev/bin`. Remember to include this directory
-into your `PATH`, e.g. by adding `export PATH=$HOME/.kuma-dev/bin:$PATH` line to the `$HOME/.bashrc` file or `$HOME/.zshrc` if using zsh.
-This can be overridden by setting the env var `CI_TOOLS_DIR`, but it isn't recommended.
+```bash
+mise install
+```
 
 ## Code checks
 
@@ -98,7 +98,8 @@ This could help expedite your development process if you only made changes to th
 With Skaffold we can utilize code live reload on k8s cluster. Everytime you make a change in code Kuma will be rebuild and reinstalled on cluster.
 
 1. Run `make k3d/start`
-2. Run `skaffold dev` 
+2. Run `make dev/fetch-demo` to get the Kuma counter demo app
+3. Run `skaffold dev`
 
 ## Debugging
 

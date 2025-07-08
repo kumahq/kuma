@@ -5,14 +5,17 @@ metadata:
 build:
   local:
     push: false
+  tagPolicy:
+    envTemplate:
+      # Get a tag similar to what we have in regular builds
+      template: '{{cmd "bash" "-c" "make build/info | grep version | cut -d= -f2" }}'
   artifacts:
     - image: kumahq/kuma-cp
       runtimeType: go
       custom:
         buildCommand: |
           platform=$(echo $PLATFORMS | cut -d'/' -f2)
-          image_tag=$(echo $IMAGE | cut -d':' -f2)
-          GOTRACEBACK=all DEBUG=true EXTRA_GOFLAGS='-gcflags="all=-N -l"' SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kuma-cp/$platform
+          GOTRACEBACK=all DEBUG=true EXTRA_GOFLAGS='-gcflags="all=-N -l"' make image/kuma-cp/$platform docker/tag/kuma-cp
         dependencies:
           paths:
             - app/kuma-cp
@@ -21,8 +24,7 @@ build:
       custom:
         buildCommand: |
           platform=$(echo $PLATFORMS | cut -d'/' -f2)
-          image_tag=$(echo $IMAGE | cut -d':' -f2)
-          SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kuma-dp/$platform
+          make image/kuma-dp/$platform docker/tag/kuma-dp
         dependencies:
           paths:
             - app/kuma-dp
@@ -30,8 +32,7 @@ build:
       custom:
         buildCommand: |
           platform=$(echo $PLATFORMS | cut -d'/' -f2)
-          image_tag=$(echo $IMAGE | cut -d':' -f2)
-          SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kumactl/$platform
+          make image/kumactl/$platform docker/tag/kumactl
         dependencies:
           paths:
             - app/kumactl
@@ -39,8 +40,7 @@ build:
       custom:
         buildCommand: |
           platform=$(echo $PLATFORMS | cut -d'/' -f2)
-          image_tag=$(echo $IMAGE | cut -d':' -f2)
-          SKIP_PLATFORM=true BUILD_INFO_VERSION=$image_tag make image/kuma-init/$platform
+          make image/kuma-init/$platform docker/tag/kuma-init
         dependencies:
           paths:
             - app/kumactl
@@ -67,4 +67,4 @@ deploy:
             "debug\\.cloud\\.google\\.com/probe-timeouts": "skip"
 manifests:
   rawYaml:
-    - k8s/demo-kv.yaml
+    - ./build/k8s/001-with-mtls.yaml

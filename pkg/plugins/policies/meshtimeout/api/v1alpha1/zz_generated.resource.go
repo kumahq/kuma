@@ -161,6 +161,7 @@ var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshtimeouts",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Timeout",
 	PluralDisplayName:            "Mesh Timeouts",

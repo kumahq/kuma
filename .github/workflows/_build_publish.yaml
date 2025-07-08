@@ -53,13 +53,7 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
       - run: |
           make build
       - id: annotate-image-tag
@@ -111,15 +105,7 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
@@ -134,7 +120,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@1b7327afc8857748a4d0638262b4d9697ac996b6 # v4.2.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.2.1
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -143,7 +129,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@1b7327afc8857748a4d0638262b4d9697ac996b6 # v4.2.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.2.1
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -234,15 +220,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
       - name: package-helm-chart
         id: package-helm
         env:

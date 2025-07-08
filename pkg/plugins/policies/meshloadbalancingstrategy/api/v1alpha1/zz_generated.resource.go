@@ -161,6 +161,7 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	KumactlListArg:               "meshloadbalancingstrategies",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Load Balancing Strategy",
 	PluralDisplayName:            "Mesh Load Balancing Strategies",

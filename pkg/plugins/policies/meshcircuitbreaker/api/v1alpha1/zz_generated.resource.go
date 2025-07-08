@@ -161,6 +161,7 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshcircuitbreakers",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Circuit Breaker",
 	PluralDisplayName:            "Mesh Circuit Breakers",
