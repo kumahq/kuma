@@ -23,12 +23,12 @@ import (
 )
 
 type dataplaneLayoutEndpoint struct {
-	resManager         manager.ResourceManager
+	resManager         manager.ReadOnlyResourceManager
 	meshContextBuilder xds_context.MeshContextBuilder
 	resourceAccess     access.ResourceAccess
 }
 
-func newDataplaneLayoutEndpoint(resManager manager.ResourceManager, meshContextBuilder xds_context.MeshContextBuilder, resourceAccess access.ResourceAccess) *dataplaneLayoutEndpoint {
+func newDataplaneLayoutEndpoint(resManager manager.ReadOnlyResourceManager, meshContextBuilder xds_context.MeshContextBuilder, resourceAccess access.ResourceAccess) *dataplaneLayoutEndpoint {
 	return &dataplaneLayoutEndpoint{
 		resManager:         resManager,
 		meshContextBuilder: meshContextBuilder,
@@ -77,10 +77,8 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	}
 
 	inbounds := util_slices.Map(dataplane.Spec.GetNetworking().GetInbound(), func(inbound *v1alpha1.Dataplane_Networking_Inbound) api_common.DataplaneInbound {
-		sectionName := inbound.GetSectionName()
-
 		return api_common.DataplaneInbound{
-			Kri:      kri.From(dataplane, sectionName).String(),
+			Kri:      kri.From(dataplane, inbound.GetSectionName()).String(),
 			Port:     int32(inbound.GetPort()),
 			Protocol: inbound.GetProtocol(),
 		}

@@ -106,7 +106,6 @@ func (i Identifier) HasSectionName() bool {
 }
 
 func WithSectionName(id Identifier, sectionName string) Identifier {
-	idCopy := id
-	idCopy.SectionName = sectionName
-	return idCopy
+	id.SectionName = sectionName
+	return id
 }

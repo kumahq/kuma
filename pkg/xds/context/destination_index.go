@@ -44,6 +44,11 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 // GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
 func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
 	outbounds := map[kri.Identifier]core.Port{}
+	if dataplane.Spec.GetNetworking().GetOutbound() != nil {
+		// TODO handle user defined outbounds on universal without transparent proxy: https://github.com/kumahq/kuma/issues/13868
+		return outbounds, true
+	}
+
 	reachableBackends := dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends()
 	if reachableBackends == nil {
 		// return all destinations if reachable backends not configured
