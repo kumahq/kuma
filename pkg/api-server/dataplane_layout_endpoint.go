@@ -87,7 +87,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	})
 
 	var outbounds []api_common.DataplaneOutbound
-	reachableOutbounds := baseMeshContext.GetReachableOutbounds(dataplane)
+	reachableOutbounds, _ := baseMeshContext.GetReachableBackends(dataplane)
 	for outboundKri, port := range reachableOutbounds {
 		outbounds = append(outbounds, api_common.DataplaneOutbound{
 			Kri:      outboundKri.String(),

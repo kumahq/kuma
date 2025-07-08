@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
+	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -127,12 +128,13 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
 	}
 	reachableServices := map[string]bool{}
-	var reachableBackends *xds_context.ReachableBackends
+	var reachableBackends map[kri.Identifier]core_resources.Port
+	var onlySelectedBackends bool
 	if dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
 		for _, reachableService := range dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableServices() {
 			reachableServices[reachableService] = true
 		}
-		reachableBackends = meshContext.GetReachableBackends(dataplane)
+		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.GetReachableBackends(dataplane)
 	}
 
 	// Update the outbound of the dataplane with the generatedVips
@@ -161,12 +163,14 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		} else {
 			// we need to verify if the user has already reachableServices defined, and to don't send additional clusters and ruin the performance
 			// of the dataplane
-			if len(reachableServices) != 0 && reachableBackends == nil {
+			if len(reachableServices) != 0 && !onlySelectedBackends {
 				continue
 			}
-			if reachableBackends != nil {
+			if onlySelectedBackends {
 				// check if there is an entry with specific port or without port
-				if !(*reachableBackends)[pointer.Deref(outbound.Resource)] && !(*reachableBackends)[kri.NoSectionName(pointer.Deref(outbound.Resource))] {
+				_, selected := reachableBackends[pointer.Deref(outbound.Resource)]
+				_, selectedBySectionName := reachableBackends[kri.NoSectionName(pointer.Deref(outbound.Resource))]
+				if !selected && !selectedBySectionName {
 					// ignore VIP outbound if reachableServices is defined and not specified
 					// Reachable services takes precedence over reachable services graph.
 					continue

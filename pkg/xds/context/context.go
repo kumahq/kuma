@@ -62,8 +62,9 @@ func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)
 }
 
-func (g BaseMeshContext) GetReachableOutbounds(dataplane *core_mesh.DataplaneResource) map[kri.Identifier]core_resources.Port {
-	return g.DestinationIndex.getReachableOutbounds(g.Mesh, dataplane)
+// GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
+func (g BaseMeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core_resources.Port, bool) {
+	return g.DestinationIndex.GetReachableBackends(g.Mesh, dataplane)
 }
 
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
@@ -119,10 +120,6 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
-	return mc.BaseMeshContext.DestinationIndex.GetReachableBackends(mc.BaseMeshContext.Mesh, dataplane)
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

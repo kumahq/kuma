@@ -1,10 +1,9 @@
 package context
 
 import (
-	"fmt"
+	"strconv"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -42,87 +41,69 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 	}
 }
 
-func (dc *DestinationIndex) GetAllDestinations() map[kri.Identifier]core.Destination {
-	return dc.destinationByIdentifier
-}
-
-func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource) *ReachableBackends {
+// GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
+func (dc *DestinationIndex) GetReachableBackends(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
+	outbounds := map[kri.Identifier]core.Port{}
 	reachableBackends := dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends()
 	if reachableBackends == nil {
-		if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
-			return &ReachableBackends{}
-		}
-		return nil
-	}
-	out := ReachableBackends{}
-	for _, reachableBackend := range reachableBackends.GetRefs() {
-		if len(reachableBackend.Labels) > 0 {
-			for _, tri := range dc.resolveResourceIdentifiersForLabels(reachableBackend.Labels) {
-				if port := reachableBackend.Port; port != nil {
-					tri.SectionName = dc.getSectionNameForPort(tri, int32(reachableBackend.Port.GetValue()))
-				}
-				out[tri] = true
-			}
-		} else {
-			key := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
-				Kind:      common_api.TargetRefKind(reachableBackend.Kind),
-				Name:      &reachableBackend.Name,
-				Namespace: &reachableBackend.Namespace,
-			})
-			if port := reachableBackend.Port; port != nil {
-				key.SectionName = dc.getSectionNameForPort(key, int32(reachableBackend.Port.GetValue()))
-			}
-			out[key] = true
-		}
-	}
-	return &out
-}
-
-func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
-	return dc.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-func (dc *DestinationIndex) getReachableOutbounds(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource) map[kri.Identifier]core.Port {
-	if dataplane.Spec.GetNetworking().GetOutbound() != nil {
-		// TODO handle user defined outbounds on universal without transparent proxy
-		return map[kri.Identifier]core.Port{}
-	}
-
-	// handle reachable backend and outbounds when using transparent proxy
-	reachableBackends := dc.GetReachableBackends(mesh, dataplane)
-	return dc.reachablePorts(reachableBackends)
-}
-
-func (dc *DestinationIndex) reachablePorts(reachableBackends *ReachableBackends) map[kri.Identifier]core.Port {
-	outbounds := map[kri.Identifier]core.Port{}
-	if reachableBackends == nil {
-		for destinationKri, destination := range dc.GetAllDestinations() {
+		// return all destinations if reachable backends not configured
+		for destinationKri, destination := range dc.destinationByIdentifier {
 			for _, port := range destination.GetPorts() {
 				outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
 			}
 		}
-		return outbounds
+		return outbounds, false
 	}
 
-	for destinationKri := range *reachableBackends {
-		dest := dc.GetDestinationByKri(destinationKri)
-		if dest == nil {
-			continue
-		}
-		if destinationKri.HasSectionName() {
-			port, ok := dest.FindPortByName(destinationKri.SectionName)
-			if !ok {
+	for _, reachableBackend := range reachableBackends.GetRefs() {
+		if len(reachableBackend.Labels) > 0 {
+			for _, destinationKri := range dc.resolveResourceIdentifiersForLabels(reachableBackend.Labels) {
+				dest := dc.destinationByIdentifier[destinationKri]
+				if dest == nil {
+					continue
+				}
+				if port := reachableBackend.Port; port != nil {
+					destPort, ok := dest.FindPortByName(strconv.Itoa(int(reachableBackend.Port.GetValue())))
+					if !ok {
+						continue
+					}
+					destinationKri.SectionName = destPort.GetName()
+					outbounds[destinationKri] = destPort
+				} else {
+					for _, port := range dest.GetPorts() {
+						outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
+					}
+				}
+			}
+		} else {
+			destinationKri := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
+				Kind:      common_api.TargetRefKind(reachableBackend.Kind),
+				Name:      &reachableBackend.Name,
+				Namespace: &reachableBackend.Namespace,
+			})
+			dest := dc.destinationByIdentifier[destinationKri]
+			if dest == nil {
 				continue
 			}
-			outbounds[destinationKri] = port
-		} else {
-			for _, port := range dest.GetPorts() {
-				outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
+			if port := reachableBackend.Port; port != nil {
+				destPort, ok := dest.FindPortByName(strconv.Itoa(int(reachableBackend.Port.GetValue())))
+				if !ok {
+					continue
+				}
+				destinationKri.SectionName = destPort.GetName()
+				outbounds[destinationKri] = destPort
+			} else {
+				for _, port := range dest.GetPorts() {
+					outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
+				}
 			}
 		}
 	}
+	return outbounds, true
+}
 
-	return outbounds
+func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
+	return dc.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
 func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(labels map[string]string) []kri.Identifier {
@@ -134,22 +115,6 @@ func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(labels map[strin
 		}
 	}
 	return result
-}
-
-func (dc *DestinationIndex) getSectionNameForPort(key kri.Identifier, port int32) string {
-	dest := dc.destinationByIdentifier[key]
-	if dest == nil {
-		return fmt.Sprintf("%d", port)
-	}
-
-	ports := dest.GetPorts()
-	for _, destPort := range ports {
-		if destPort.GetValue() == port {
-			return destPort.GetName()
-		}
-	}
-
-	return fmt.Sprintf("%d", port)
 }
 
 func (dc *DestinationIndex) getDestinationsForLabels(labels map[string]string) map[kri.Identifier]int {
