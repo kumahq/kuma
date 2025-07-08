@@ -62,11 +62,6 @@ func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)
 }
 
-// GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
-func (g BaseMeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core_resources.Port, bool) {
-	return g.DestinationIndex.GetReachableBackends(g.Mesh, dataplane)
-}
-
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
 // If there is an information that can be precomputed and shared between all data plane proxies

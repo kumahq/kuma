@@ -134,7 +134,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		for _, reachableService := range dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableServices() {
 			reachableServices[reachableService] = true
 		}
-		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.GetReachableBackends(dataplane)
+		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 
 	// Update the outbound of the dataplane with the generatedVips
