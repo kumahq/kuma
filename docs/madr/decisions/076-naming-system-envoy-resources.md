@@ -1,4 +1,4 @@
-# Standardized Naming for internal xDS Resources
+# Standardized Naming for system xDS Resources
 
 * Status: accepted
 
@@ -8,96 +8,38 @@ Supersedes: https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/036-i
 
 ## Context and Problem Statement
 
-We use resource names to identify listeners, clusters, routes, virtual hosts and secrets in the xDS APIs.
+The point of this document is to define a naming strategy of Envoy resources and guidelines for exceptions.
+
+We use Envoy resource names to identify listeners, clusters, routes, virtual hosts and secrets in the xDS APIs.
 These names appear in metrics, logs, and debug endpoints (config_dump), and they are often used for monitoring, filtering, and diagnostics.
 
-It's important to know the difference between system resources (the ones that are defined by Kuma itself, and they usually do not concern the end users) and user resources (the ones that are defined indirectly by the user and the users are interested in).
-For example, clusters like `kuma:envoy:admin` or `_kuma:dynamicconfig` are system resources, while `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport` cluster is user resource.
+We classify Envoy resources in two groups:
+- System resources - these are internal to Kuma and users are unlikely to be interested in them except when debugging Kuma.
+- User resources - the rest of the resources which are most commonly derived from a Kuma resource and will likely be monitored by users.
 
-Currently, there is inconsistency in how these resource names are formed, some of them have a `_kuma` prefix, some of them just contain `kuma` and some are free form.
+For example a cluster named `kuma:envoy:admin` is a system resource, while a cluster `kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport` is a user resource.
 
-Some internal resources do not map clearly to Kuma resources in the data store, making it difficult to relate metrics to Kuma abstractions.
+From now on when we use "system resource" or "user resource" we're talking about Envoy resources, not Kuma resources.
 
-There are also resources that seem to be in a bit of a gray area, like `meshtrace_datadog` which is a cluster created for `MeshTrace` policy.
-It could be traced down to MeshTrace resource `kri_mtr_mesh-1__kuma-system_my-meshtrace_` and if a cluster operator has problems with tracing collection it might be something to look at.
+Currently, there is no consistency in how these resources are named, see [additional context](#additional-context) for detailed list.
 
-To make it easier to distinguish between the two types we introduce the following definition:
 
-- **User resource** - any Envoy resource that's a result of user defined Kuma resource
 
-Exceptions:
-- Dynamic Config Fetcher listener and routes
-- MeshMetric clusters and listeners
-- Metrics Hijacker cluster
-- MeshTrace clusters
-- MeshAccessLog cluster
-- MeshGlobalRateLimit cluster
-- Dataplane probe listener and route
-- Prometheus listener
-- Kuma DNS listener
-- Kuma readiness cluster
+## Driving factors
 
-- **System resource** - any resource that is not a user resource (there will be exceptions which will require a MADR)
+### 1. All resources should have a name
 
-### Kuma system resource names
+Even though Envoy resource names are sometimes optional we should always set them.
+This can improve debugging, readability and reusability.
 
-Listeners:
-- inbound
-  - kuma:envoy:admin
-  - _kuma:dynamicconfig
-  - _kuma:metrics:prometheus:default-backend
-  - probe:listener
-  - kuma:metrics:prometheus
-  - plugins:bootstrap:k8s:hooks:apiServerBypass
-  - kuma:dns
+### 2. Looking at a resource name I want to easily relate it to Kuma concepts and understand where it's coming from
 
-Clusters:
-- access_log_sink
-- kuma:envoy:admin
-- kuma:metrics:hijacker
-- kuma:readiness
-- meshtrace_[zipkin|datadog|otel]
-- ads_cluster
-- plugins:bootstrap:k8s:hooks:apiServerBypass
+This means that if a resource comes directly from a Kuma resource we should relate to this Kuma resource directly.
+It should be easy when reading a `config_dump` to understand relationship between Envoy resources.
 
-Virtual Hosts:
-- _kuma:dynamicconfig
-- kuma:envoy:admin
+### 3. As a user I want to easily filter out system resources
 
-Routes (not all of them even have a name):
-- _kuma:dynamicconfig:dns
-- _kuma:dynamicconfig:meshtrace
-- 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route)
-
-#### Other meshes
-
-##### Istio
-
-Istio doesn't seem to be following any naming convention:
-- clusters
-  - some are in form of [inbound|outbound]|port (like `outbound|9080`)
-  - PassthroughCluster / InboundPassthroughCluster
-  - BlackHoleCluster
-  - prometheus_stats
-  - sds-grpc
-  - xds-grpc
-  - agent
-- listeners
-  - ip_port
-  - virtualOutbound
-  - virtualInbound
-
-## Use cases
-
-### All resources should have a name even if it's optional
-
-Currently, there are routes that do not have a name - let's add a name for them.
-
-### Looking at a resource name I want to easily relate it to Kuma concepts and understand where it's coming from
-
-### As a user I want to easily exclude all stats related to internal resources from a query
-
-So instead 
+So for example in Prometheus instead of
 
 ``` 
 sum:envoy.cluster.upstream_rq.count{!envoy_cluster:kuma_readiness , !envoy_cluster:access_log_sink , !envoy_cluster:meshtrace_datadog}.as_count()
@@ -109,13 +51,7 @@ we can do:
 sum:envoy.cluster.upstream_rq.count{!envoy_cluster:system_*}.as_count()
 ```
 
-You might be tempted to think that this use case is already covered by the `MeshMetric` profiles, 
-and it partially is (the end result is the same) but this use case compliments it by making the profiles easier to implement and maintain.
-It also allows users to do their own filtering more easily.
-
-### As an operator I want to drop all stats related to internal resources
-
-So I can use a processor like:
+Another example would be to have a processor like this to drop the system related metrics:
 
 ```yaml
 processors:
@@ -129,20 +65,35 @@ processors:
             value: "^system_.*"  # matches if envoy_cluster starts with _
 ```
 
-### As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
+A side benefit of this is that profiles implementation is a lot simpler.
 
-### As a Kuma developer I want to distinguish between system and user resources in Envoy
+### 5. As a Kuma developer I want to have a consistent naming scheme for all resources in Envoy
 
-### As a Kuma developer I want to distinguish between system resources exposed and not exposed in metrics
+### 6. As a Kuma developer I want to distinguish between system and user resources in Envoy
 
-### As a user I want the cardinality of these resource names to be low
+### 7. As a user I want the cardinality of these resource names to be low
+
+High cardinality is problematic for metrics collection systems and dataplane memory.
 
 Need to avoid:
 - IPs / non constant bits
-- Avoid Dataplane name or its KRI.
+- Dataplane name or its KRI.
 
-Note: That’s not a problem for system resources since we control their names.
-Right now, this only affects user resources generated from the Dataplane, which is already covered by [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+There is existing solution for `Dataplane` covered by [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+
+#### 8. Rename existing system resources in well-defined patterns
+
+Here is a list of exceptions we will back-fill:
+- Dynamic Config Fetcher listener and routes
+- MeshMetric clusters and listeners
+- Metrics Hijacker cluster
+- MeshTrace clusters
+- MeshAccessLog cluster
+- MeshGlobalRateLimit cluster
+- Dataplane probe listener and route
+- Prometheus listener
+- Kuma DNS listener
+- Kuma readiness cluster
 
 ## Unsupported use cases
 
@@ -151,36 +102,32 @@ Right now, this only affects user resources generated from the Dataplane, which 
 This is not possible.
 In MeshProxyPatch you can use `name` matcher to match a resource name but if we change the name of the resource, it will not match anymore.
 The feature will be behind a feature flag so that nothing breaks unexpectedly but migration of MeshProxyPatch resources will be required.
+However, this will make `MeshProxyPatch` matches easier to write.
 
-### As a Kuma developer I want to rename resources that are coming from outside Kuma
+### As a Kuma developer I want to rename Envoy resources that are provided by xDS components outside Kuma
 
 This is either not possible or very hard.
-Envoy can connect to many xDS servers to get configuration from.
-If we integrate with systems like Spire (that exposes its own SDS server) we will not be able to rename resources that are coming from there.
-
-See:
-- https://github.com/spiffe/spire/blob/f687bf21e812a4bf027d88136032fc46497e7fe0/pkg/agent/endpoints/sdsv3/handler.go#L395
-- https://github.com/spiffe/spire/blob/f6a11a0ae03353b3444007ecaa8c81b34931bb49/pkg/agent/endpoints/sdsv3/handler.go#L282
-- https://github.com/spiffe/spire/blob/f6a11a0ae03353b3444007ecaa8c81b34931bb49/pkg/agent/endpoints/sdsv3/handler.go#L291
-- https://github.com/spiffe/spire/blob/f6a11a0ae03353b3444007ecaa8c81b34931bb49/pkg/agent/endpoints/sdsv3/handler.go#L312
+Envoy can connect to many xDS servers to get configuration from (example: SPIRE uses its own SDS server).
 
 ## Design
 
 ### Resource naming
 
-#### 1. User resources
+#### 1. System resources that can be tracked back to Kuma resource
 
-Names for these resources are defined in [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+These should be exceptional cases when we consider such resource as system and not user resource.
+Such exceptions should be defined in a MADR and must use `system_<kri>` naming scheme.
 
-#### 2. System resources that can be tracked back to user resource
-
-When possible, use `system_<kri>`. It should be justified when designing why a user resource is system and not just `<kri>`.
-For example, when a resource isn't part of regular service-to-service traffic path, is shared across the system (like Kong Mesh's `MeshGlobalRateLimit` service), or simply needs to be easy to exclude from metrics collection.
+For example the cluster for `MeshGlobalRateLimit` service is a system resource because it is not part of the regular service-to-service traffic path,
+but it is still related to a Kuma resource (the `MeshGlobalRateLimit` policy).
+The cluster is currently called `meshglobalratelimit:service`, but it will be renamed to `system_kri_mgrl___kong-mesh-system_global-rate-limit-policy_`.
 
 There are other cases where a resource is the result of merging multiple resources together (MeshTrafficPermission RBAC filters, MeshPassthrough, etc.).
-This is out of scope and requires a separate MADR.
+This is out of scope and requires a separate MADR (todo: add link)
 
-#### 3. System resources that are not related to user resource
+Refer to [currently existing system resources and their new naming](#currently-existing-system-resources-and-their-new-naming) for the full list.
+
+#### 2. System resources that are not related to Kuma resource
 
 When adding such resource the name should be explicit enough to help anyone understand where this is coming from.
 The name should be namespaced so that it groups similar resources together and avoids collisions with other system resources.
@@ -188,22 +135,22 @@ The name should be namespaced so that it groups similar resources together and a
 For example dynamic config fetcher creates one listener and one route per object type.
 We will namespace it as `system_dynamicconfig` and the DNS route will be `system_dynamicconfig_dns` and MeshMetric route will be `system_dynamicconfig_meshmetric`.
 
-If any related configuration option or annotation name exists it should be taken into account.
+If the name is coming from a reusable component the namespacing is the responsibility of the reusable component.
 
-#### 4. Resource contextual to the Dataplane
+It's important to balance the specificity of the name with the risk of high cardinality.
+For example the socket path of the internal listeners are configurable,
+but we don't want to include it in the name because could lead to high cardinality and prevents reusability of dashboards.
 
-These resources are defined in [Defining and migrating to consistent naming for non-system Envoy resources and stats](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+#### 3. User resources
 
-#### 5. Secrets
+Names for these resources are defined in [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-There is nothing special about secrets, they adhere to the same rules (1-4) and can have exceptions (6).
+### Useful references for naming
 
-#### 6. Exceptions
+- Resource contextual to the Dataplane are defined in [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+- Secrets adhere to the same rules (1-3).
 
-We can't control the name of external resources (i.e. SPIRE SDS secrets).
-Any new exception and case should result in a MADR which can be linked from here.
-
-#### 7. Regex to match system names
+### Regex to match system names
 
 For `system_<kri>` resources we will use the same regex as used for KRI but prefixed with `system_`.
 
@@ -288,17 +235,52 @@ We're choosing "Inspecting golden files" as it's the most feasible option that c
 
 ## Implications for Kong Mesh
 
-The changes introduced by this document impact the Envoy resources generated by the `MeshGlobalRateLimit` policy. This policy currently adds a cluster with a static name `meshglobalratelimit:service`, which is then referenced in route-level [rate limit configuration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-rate-limits). As a result of these changes, the cluster name will be updated to follow the `system_<kri>` format, using the valid `kri` of the `MeshGlobalRateLimit` policy that is the source of this cluster (i.e. `system_kri_mgrl___kong-mesh-system_global-rate-limit-policy_`)
+The changes introduced by this document impact the Envoy resources generated by the `MeshGlobalRateLimit` policy.
+This policy currently adds a cluster with a static name `meshglobalratelimit:service`,
+which is then referenced in route-level [rate limit configuration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-rate-limits). As a result of these changes, the cluster name will be updated to follow the `system_<kri>` format, using the valid `kri` of the `MeshGlobalRateLimit` policy that is the source of this cluster (i.e. `system_kri_mgrl___kong-mesh-system_global-rate-limit-policy_`)
 
-The `MeshOPA` policy modifies existing non-system inbound listeners but does not rename any existing Envoy resources or create new ones. Therefore, it is not affected by the changes described in this document.
+Depending on the changes of `dynamicconfig` `MeshOPA` resource creation might change.
 
 Other Kong Mesh-specific features or policies do not rely on or modify Envoy resource names or stat prefixes that fall within the scope of this document.
 
-## Decision
+## Implications for GUI
 
-We will use a naming scheme as described in "Resource naming" section.
+GUI will need to reflect these new rules because we will ship them at the same time as [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
-## Notes
+## Additional context
+
+### Kuma system resource names
+
+Listeners:
+- inbound
+  - kuma:envoy:admin
+  - _kuma:dynamicconfig
+  - _kuma:metrics:prometheus:default-backend
+  - probe:listener
+  - kuma:metrics:prometheus
+  - plugins:bootstrap:k8s:hooks:apiServerBypass
+  - kuma:dns
+
+Clusters:
+- access_log_sink
+- kuma:envoy:admin
+- kuma:metrics:hijacker
+- kuma:readiness
+- meshtrace_[zipkin|datadog|otel]
+- ads_cluster
+- plugins:bootstrap:k8s:hooks:apiServerBypass
+
+Virtual Hosts:
+- _kuma:dynamicconfig
+- kuma:envoy:admin
+
+Routes (not all of them even have a name):
+- _kuma:dynamicconfig:dns
+- _kuma:dynamicconfig:meshtrace
+- 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route)
+
+Secrets format:
+- https://github.com/kumahq/kuma/blob/9ed757d3e5955ea57d7940badf4468057ed46663/pkg/xds/envoy/secrets.go#L26
 
 Names in codebase:
 - https://github.com/kumahq/kuma/blob/bdc95fb8b8a4da2388948041171d5b9ecf4345a5/pkg/xds/envoy/names/resource_names.go
@@ -308,12 +290,25 @@ Names in codebase:
 - https://github.com/kumahq/kuma/blob/7bafa578aad6e528befcb6c96f025542fd1f6870/pkg/plugins/policies/meshtrace/plugin/xds/configurer.go#L264
 - https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
 
+#### Other meshes
+
+##### Istio
+
+Istio doesn't seem to be following any naming convention:
+- clusters
+  - some are in form of [inbound|outbound]|port (like `outbound|9080`)
+  - PassthroughCluster / InboundPassthroughCluster
+  - BlackHoleCluster
+  - prometheus_stats
+  - sds-grpc
+  - xds-grpc
+  - agent
+- listeners
+  - ip_port
+  - virtualOutbound
+  - virtualInbound
+
 Istio related issues:
 - https://github.com/istio/istio/issues/5311
 - https://github.com/istio/istio/issues/31112#issuecomment-1124049572
 
-Ping FE team because it might change the implementation of:
-- https://github.com/kumahq/kuma-gui/blob/f7f9da37c335ba14151bb4a3e546437b7eae94c7/packages/kuma-gui/src/app/connections/data/index.ts#L125-L137
-
-Secrets format:
-- https://github.com/kumahq/kuma/blob/9ed757d3e5955ea57d7940badf4468057ed46663/pkg/xds/envoy/secrets.go#L26
