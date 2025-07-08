@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
@@ -44,7 +42,7 @@ func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
 		return xds_types.Outbounds{{
 			Address:  t.Status.VIP.IP,
 			Port:     uint32(t.Spec.Match.Port),
-			Resource: pointer.To(kri.From(t, t.Spec.Match.GetName())),
+			Resource: pointer.To(kri.From(t, "")),
 		}}
 	}
 	return nil
@@ -73,7 +71,7 @@ func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bo
 }
 
 func (m Match) GetName() string {
-	return fmt.Sprintf("%d", m.Port)
+	return ""
 }
 
 func (m Match) GetValue() int32 {
