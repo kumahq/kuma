@@ -17,7 +17,7 @@
  },
  "outbounds": [
   {
-   "kri": "kri_extsvc_default___mes-1_9090",
+   "kri": "kri_extsvc_default___mes-1_",
    "port": 9090,
    "protocol": "http"
   },
