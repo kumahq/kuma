@@ -158,10 +158,10 @@ For other names we will use `^system_([a-z0-9-]*_?)+$`, here is an example of th
 | Listener      | _kuma:dynamicconfig                                          | system_dynamicconfig            |                                                              | 
 | Route         | _kuma:dynamicconfig:dns                                      | system_dynamicconfig_dns        |                                                              | 
 | Route         | _kuma:dynamicconfig:meshmetric                               | system_dynamicconfig_meshmetric |                                                              | 
-| Listener      | _kuma:metrics:prometheus:backend-default                     | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
-| Listener      | _kuma:metrics:prometheus:<backendName>                       | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
-| Listener      | _kuma:metrics:opentelemetry:<backendName>                    | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
-| Cluster       | _kuma:metrics:opentelemetry:<backendName>                    | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            | 
+| Listener      | _kuma:metrics:prometheus:backend-default                     | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            |
+| Listener      | _kuma:metrics:prometheus:<sanitizedBackendUrl>               | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            |
+| Listener      | _kuma:metrics:opentelemetry:<sanitizedBackendUrl>            | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            |
+| Cluster       | _kuma:metrics:opentelemetry:<sanitizedBackendUrl>            | system_<kri>                    | system_kri_mm_mesh-1_us-east-2_kuma-demo_default_            |
 | Cluster       | _kuma:metrics:hijacker                                       | system_metrics_hijacker         |                                                              | 
 | Listener      | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
 | VirtualHost   | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
