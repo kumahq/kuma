@@ -49,7 +49,7 @@ we can do:
 sum:envoy.cluster.upstream_rq.count{!envoy_cluster:system_*}.as_count()
 ```
 
-Another example would be to have a processor like this to drop the system related metrics:
+Another example would be to have an OTEL processor like this to drop the system related metrics:
 
 ```yaml
 processors:
