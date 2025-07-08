@@ -637,22 +637,22 @@ type: MeshService
 
 ![Rotation flow](assets/073/rotation-flow.png)
 
-#### Secret naming
-
-We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshIdentity` generates secrets for each dataplane, it should be named based on the KRI to simplify correlation between the Envoy `Secret` and the `MeshIdentity` configuration.
-
+#### Envoy resource naming
+ 
+We want to use a [KRI](070-resource-identifier.md) format for resource naming. Since `MeshIdentity` generates secrets for each dataplane, it should be named based on the KRI to simplify correlation between the Envoy `Secret` and the `MeshIdentity` configuration.
+ 
 Proposed name:
-
+ 
 ```yaml
-kri_mid_mesh-1_us-east-2_kuma-system_identity-1
+kri_mid_mesh-1_us-east-2_kuma-system_identity-1_
 ```
-
+ 
 Also, we need to name the Spire agent cluster, in this case it is internal resource:
+
 Proposed name:
 ```yaml
-system_mid_sds-spire-agent
+system_identity_sds-spire-agent
 ```
-
 > [!WARNING]
 > The naming of secrets is different when using SPIRE, since SPIRE uses SPIFFEID or `default` as a certificate name
 > https://spiffe.io/docs/latest/deploying/spire_agent/#sds-configuration
