@@ -226,7 +226,7 @@ var MeshIdentityResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
-	HasStatus:                    false,
+	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: true,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mid",
@@ -276,11 +276,21 @@ spec:
           secret:
           file:
           envVar:
+status:
+  conditions:
+    type: Generated
+    status: True | False | Unknown
+    message: # message
+    reason: # Collision | Generated | TemplateError
 ```
 
 The control plane uses the default CA bundle to validate the provided CA. By default, it relies on the system CA bundle, as no bundle is set explicitly. However, the user can override this by setting the `KUMA_MESHIDENTITY_TLS_CA_BUNDLE_FILE` environment variable, which defaults to the value of `KUMA_GENERAL_CA_BUNDLE_FILE`.
 
 `insecureAllowSelfSigned` makes using self signed CA an explicit opt-in. This is used with both provided by the user or autogenrated CAs.
+
+**Potential collision**
+
+In scenarios where a user creates a `MeshIdentities` resource that specifies a trustDomain already used by another `MeshIdentity` or legacy trust domain (Mesh name), a conflict may arise. Because it's not always possible to detect this conflict during resource creation, we propose adding a `status` field to `MeshIdentities`. This field will be used to report post-creation validation issues, such as trust domain conflicts, making them visible to the user.
 
 **ServiceAccount** 
 We are going to set `k8s.kuma.io/service-account` with the name of service account. The length of the possible value is [253 characters](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts) which makes us to put it into the annotation and not a label.
