@@ -68,7 +68,7 @@ One important use case is identity rotation or migration. During migration, mult
 
 From a security perspective, assigning separate identities or trust domains per zone provides better isolation. If one trust domain is compromised, it does not impact the others — enabling a stronger and more granular trust model.
 
-Suggestions trust domain on global: `spiffe://<mesh>.<KumaClusterId>.kuma.io/` - is generated on Global, to ensure uniquness
+Suggestions trust domain on global: `spiffe://<mesh>.<KumaClusterId>.mesh.local/` - is generated on Global, to ensure uniquness
 
 ### As a Mesh operator, I want to be able to migrate some workloads to another trust domain without interrupting traffic.
 
@@ -174,6 +174,7 @@ Spire, which is an implementation of SPIFFE, defines a standard way for Subject 
 ```
 spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>
 ```
+
 This default model works for us on Kubernetes but will not be supported in Universal deployments. We therefore need to find a default SPIFFE ID format that works consistently for both Kubernetes and Universal environments.
 
 Unfortunately, we currently lack a native workload identifier in Universal deployments, which prevents us from directly adopting a similar identity model.
@@ -186,9 +187,9 @@ For the current release, we propose defining the default SPIFFE ID for Kubernete
 spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>
 ```
 
-Trust domain: `{ .Mesh }.{ .Zone }.kuma.io`
+Trust domain: `{ .Mesh }.{ .Zone }.mesh.local`
 
-Once a TrustDomain is defined on the Global control plane, we require it to include the zone name in the template. We are going to implement a validator for this case. Also, we need to validate length of each segment where Mesh and Zone has limit of 63 characters.
+Once a trust domain is defined on the Global control plane, we require it to include the zone name in the template. We are going to implement a validator for this case. Also, we need to validate length of each segment where Mesh and Zone has limit of 63 characters.
 
 Limitation:
 * Mesh and Zone needs to have max length of 63 characters each
@@ -248,7 +249,7 @@ spec:
       matchLabels: # move to common structure (golang api)
         app: test 
   spiffeID: # optional
-    trustDomain: "default.zone-1.kuma.io" # { .Mesh }.{ .Zone }.kuma.io
+    trustDomain: "default.zone-1.mesh.local" # { .Mesh }.{ .Zone }.mesh.local
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" # let's use the same templating format as HostnameGenerator
   provider:
     type: Bundled | Spire
@@ -277,19 +278,20 @@ spec:
           envVar:
 ```
 
-CP uses the default CA Bundle to validate provided CA. Currently we don't set it, but we can set it additionally by setting `KUMA_GENERAL_TLS_CA_BUNDLE_FILE`.
+The control plane uses the default CA bundle to validate the provided CA. By default, it relies on the system CA bundle, as no bundle is set explicitly. However, the user can override this by setting the `KUMA_MESHIDENTITY_TLS_CA_BUNDLE_FILE` environment variable, which defaults to the value of `KUMA_GENERAL_CA_BUNDLE_FILE`.
 
-`insecureAllowSelfSigned` allows preventing users from using self signed CA either provided by the user or autogenrated.
+`insecureAllowSelfSigned` makes using self signed CA an explicit opt-in. This is used with both provided by the user or autogenrated CAs..
 
 **ServiceAccount** 
-We are going to set `k8s.kuma.io/service-account` with the name of service account. The length of the possible value is [253 characters](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts) which makes us to put it into the annotation and not a label. That let us resolve SPIFFEID.
+We are going to set `k8s.kuma.io/service-account` with the name of service account. The length of the possible value is [253 characters](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts) which makes us to put it into the annotation and not a label.
+This will be used to generate spiffeId.
 
 #### Provider types
 
-There can be multiple difference identity providers but in the first iteration we would like to focus on:
+There can be multiple identity providers but in the first iteration we would like to focus on:
 
-* bundled
-* spire
+* Bundle
+* Spire
 
 **Bundled**
 
@@ -305,7 +307,7 @@ This gives flexibility for organizations that already have an established PKI or
 
 ```yaml
     bundled: # to extend in KM
-      trustExtraction: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
+      meshTrustCreation: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
       insecureAllowSelfSigned: true
       certificateParameters: # lets make rotation percentage static for the moment
         expiry: 24h
@@ -327,7 +329,7 @@ This gives flexibility for organizations that already have an established PKI or
 ```
 
 Additionally, we could introduce a configuration option called `autogenerate`, which automatically generates a default CA and persists it in the store. This would functionally be equivalent to the current builtin CA.
-Currently, Kuma uses a CA with the RSA algorithm and a key size of 2048 bits, which is widely supported and compatible.
+Currently, Kuma uses a CA with the RSA algorithm and a key size of 2048 bits, which is widely supported and compatible. However, to align with more recent TLS standards, we have decided to use a newer algorithm for the autogenerated CA.
 
 * Algorithm: Ed25519 - it works for newer versions of TLS.
 
@@ -364,7 +366,8 @@ runtime:
         mountPath: /run/spire/sockets
 ```
 
-Annotations always works, `enabled: true | false` take action when there is no annotation.
+The enabled configuration defines the default behavior, which can be overridden on a per-dataplane basis using the `kuma.io/spire-integration: enabled` or `disabled` annotation. When both are set, the annotation takes precedence.
+
 The injector set the following on the Pod:
 
 * creates volume
@@ -383,15 +386,6 @@ volumeMounts:
     mountPath: /run/spire/sockets
     readOnly: true
 ```
-* and inject annotation
-
-```yaml
-kuma.io/spire-integration: enabled
-```
-
-Purpose of the Label:
-* This label signals that the pod has SPIRE integration enabled.
-* It prevents Kuma from delivering Spire-related configuration (e.g., SDS config, identity provider references) to pods that don't have the socket mounted.
 
 1. We could expose the configuration in control-plane to be more generic
 
@@ -452,9 +446,9 @@ runtime:
                 readOnly: true          
 ```
 
-#### Define active identity provider
+#### Selecting active identity provider
 
-Previously, defining the active identity for a group of services was done through a single, perhaps less flexible, mechanism. Now, the `MeshIdentity` resource, leveraging its `selector`, offers a more granular and controlled approach to activate specific configurations.
+Previously, selecting the active identity for a group of services was done through a single, perhaps less flexible, mechanism. Now, the `MeshIdentity` resource, leveraging its `selector`, offers a more granular and controlled approach to activate specific configurations.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -487,8 +481,8 @@ spec:
 The `MeshIdentity` resource’s selector field allows selection based on dataplane labels. Users can define it to apply to either all dataplanes or a specific subset.
 If there are multiple (X) identities selecting the same dataplane, the control plane will resolve the conflict by choosing one based on the following order of precedence:
 
-1. Selector specificity – the identity with most specific selector is preferred.
-2. Lexicographical order – if selector sizes are equal, the identity with the lexicographically smallest name is chosen.
+1. Selector specificity - the identity with the most keys in the selector is preferred.
+2. Lexicographical order - if selector sizes are equal, the identity with the lexicographically smallest name is chosen.
 
 **Examples**
 
@@ -557,7 +551,7 @@ func LabelSelectorAsSelector(ps *LabelSelector) (labels.Selector, error) {
 	}
 ```
 
-#### What would the process of switching backends look like?
+#### What would the process of switching identity providers look like?
 
 1. User has a Mesh with MeshIdentity `identity-1`
 ```yaml
@@ -616,9 +610,9 @@ name: demo-client-65f94cb577-jxrrq-44wfv42db9z44xxf
 spec:
   identities:
   - type: SpiffeID
-    value: spiffe://mesh-1.zone-1.kuma.io/ns/real-resource-ns/sa/default
+    value: spiffe://mesh-1.zone-1.mesh.local/ns/real-resource-ns/sa/default
   - type: SpiffeID
-    value: spiffe://mesh-1.zone-1.kuma.io/ns/real-resource-ns/sa/default/service/demo-client # assume there is different path template
+    value: spiffe://mesh-1.zone-1.mesh.local/ns/real-resource-ns/sa/default/service/demo-client # assume there is different path template
   ports:
   - appProtocol: http
     name: main
@@ -653,14 +647,14 @@ Proposed name:
 kri_mid_mesh-1_us-east-2_kuma-system_identity-1
 ```
 
-Also, we need to name the Spire agent cluster, in this case is it internal or maybe based on MeshIdentity:
+Also, we need to name the Spire agent cluster, in this case it is internal resource:
 Proposed name:
 ```yaml
 system_mid_sds-spire-agent
 ```
 
 > [!WARNING]
-> The naming is different when using SPIRE, since SPIRE uses SPIFFEID or `default` as a certificate name
+> The naming of secrets is different when using SPIRE, since SPIRE uses SPIFFEID or `default` as a certificate name
 > https://spiffe.io/docs/latest/deploying/spire_agent/#sds-configuration
 > https://spiffe.io/docs/latest/microservices/envoy/#tls-certificates
 
@@ -703,7 +697,7 @@ var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 }
 ```
 
-There should also be an option to disable automatic generation in cases where the user does not want cross trust-domain traffic to be allowed by default. `MeshIdentity.spec.provider.bundled.meshTrustCreation: Disabled` allows to disable auto creation of MeshTrust based on MeshIdentity.
+There should also be an option to disable automatic generation in cases where the user does not want cross trust-domain traffic to be allowed by default. `MeshIdentity.spec.provider.bundled.meshTrustCreation: Disabled` allows to disable auto creation of `MeshTrust` based on `MeshIdentity`.
 
 **Model**
 ```yaml
@@ -718,9 +712,13 @@ spec:
   origin:
     kri: kri_mid_mesh-1_us-east-2_kuma-system_identity-1
   caBundles:
-    - caBundle: # PEM
-    - caBundle: # PEM
-  trustDomain: "prod.zone-1.kuma.io"
+    - type: PEM
+      pem:
+        value:
+    - type: PEM
+      pem:
+        value:
+  trustDomain: "prod.zone-1.mesh.local"
 ```
 
 The resource should also be manually creatable by the user. This enables users to define additional trust domains and allows the local sidecar to accept incoming mTLS traffic from services outside the mesh.
@@ -800,10 +798,10 @@ spec:
       matchLabels:
         app: demo-app
   spiffeID: # optional
-    trustDomain: "prod.zone-1.kuma.io"
+    trustDomain: "prod.zone-1.mesh.local"
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
   bundled: # to extend in KM
-    trustExtraction: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
+    meshTrustCreation: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
     insecureAllowSelfSigned: true
     certificateParameters: # lets make rotation percentage static for the moment
       expiry: 24h
@@ -869,7 +867,7 @@ spec:
     dataplane:
       matchLabels: {}
   spiffeID: # optional
-    trustDomain: "prod.zone-1.kuma.io"
+    trustDomain: "prod.zone-1.mesh.local"
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
   provider:
     type: provided
@@ -1031,7 +1029,7 @@ Additionally, the dataplanes must trust the Root CA used by the control plane to
 
 User would be allowed to change it but the default could be:
 ```yaml
-spiffe://system.kuma.io/ns/namespace/sa/serviceAccount
+spiffe://system.mesh.local/ns/namespace/sa/serviceAccount
 ```
 
 #### Admin API certificates
