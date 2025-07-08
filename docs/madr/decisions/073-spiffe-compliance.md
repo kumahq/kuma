@@ -567,8 +567,8 @@ mTLS:
   - kri_mtrust_mesh-1_us-east-2_kuma-system_identity-1
 ...
 ```
-1. User creates MeshTrust with CA of a new MeshIdentity `identity-2`
-2. Trust is propagated. We provide identity and keep the information(supported CA (Trust), and Identity) in DataplaneInsight
+2. User creates MeshTrust with CA of a new MeshIdentity `identity-2`
+3. Trust is propagated. We provide identity and keep the information(supported CA (Trust), and Identity) in DataplaneInsight
 ```yaml
 ...
 name: test-server-65f94cb577-jxrrq-44wfv42db9z44xxf
@@ -585,8 +585,8 @@ mTLS:
 ...
 ```
 
-3. User create a new MeshIdentity `identity-2`
-4. We start deliver new identity provided by `identity-2`
+4. User create a new MeshIdentity `identity-2`
+5. We start deliver new identity provided by `identity-2`
 We reuse existing fields
 ```yaml
 ...
@@ -632,8 +632,8 @@ status:
 type: MeshService
 ```
 
-5. User can remove MeshIdentity `identity-1`
-6. MeshTrust should be removed by the user
+6. User can remove MeshIdentity `identity-1`
+7. MeshTrust should be removed by the user
 
 ![Rotation flow](assets/073/rotation-flow.png)
 
@@ -800,26 +800,28 @@ spec:
   spiffeID: # optional
     trustDomain: "prod.zone-1.mesh.local"
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
-  bundled: # to extend in KM
-    meshTrustCreation: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
-    insecureAllowSelfSigned: true
-    certificateParameters: # lets make rotation percentage static for the moment
-      expiry: 24h
-    autogenerate:
-      enabled: true
-    ca:
-      certificate:
-        type: File | Secret | EnvVar
-        # OneOf
-        secret:
-        file:
-        envVar:
-      privateKey:
-        type: File | Secret | EnvVar
-        # OneOf
-        secret:
-        file:
-        envVar:
+  provider:
+    type: Bundled
+    bundled: # to extend in KM
+      meshTrustCreation: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
+      insecureAllowSelfSigned: true
+      certificateParameters: # lets make rotation percentage static for the moment
+        expiry: 24h
+      autogenerate:
+        enabled: true
+      ca:
+        certificate:
+          type: File | Secret | EnvVar
+          # OneOf
+          secret:
+          file:
+          envVar:
+        privateKey:
+          type: File | Secret | EnvVar
+          # OneOf
+          secret:
+          file:
+          envVar:
 ```
 
 In the meantime the `MeshTrust` is created and propagated to each Dataplane.
@@ -839,7 +841,7 @@ spec:
     default:
       action: Allow
 ```
-or more specific but it's not a part of this MADR
+or more specific but it's not a part of this [MADR](https://github.com/kumahq/kuma/pull/13848)
 ```yaml
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
@@ -853,7 +855,7 @@ spec:
     rules:
     ....
 ```
-4. Enable MeshIdentity for all service
+4. Enable MeshIdentity for all services
 ```yaml
 apiVersion: kuma.io/v1alpha1
 kind: MeshIdentity
@@ -870,23 +872,30 @@ spec:
     trustDomain: "prod.zone-1.mesh.local"
     path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
   provider:
-    type: provided
-    provided:
-      certificate:
-        # one of
-        secret:
-        inline:
-        inlineString:
-      privateKey:
-        # one of
-        secret:
-        inline:
-        inlineString:
-      dataplaneCertificate:
-        duration: 24h
+    type: Bundled
+    bundled: # to extend in KM
+      meshTrustCreation: Disabled | Enabled # allows to disable extraction of CA into MeshTrust
+      insecureAllowSelfSigned: true
+      certificateParameters: # lets make rotation percentage static for the moment
+        expiry: 24h
+      autogenerate:
+        enabled: true
+      ca:
+        certificate:
+          type: File | Secret | EnvVar
+          # OneOf
+          secret:
+          file:
+          envVar:
+        privateKey:
+          type: File | Secret | EnvVar
+          # OneOf
+          secret:
+          file:
+          envVar:
 ```
 5. Check if works by verifing DataplaneInsights
-6. Wait for propagation of values, we caa verify this in `MeshInsights`
+6. Wait for propagation of values, we can verify this in `MeshInsights`
 7. User remove mTLS section from Mesh object once all dataplanes uses new identity
 
 **Does Envoy supports our certs?**
