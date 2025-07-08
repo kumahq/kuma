@@ -243,7 +243,7 @@ components:
             $ref: '#/components/schemas/RouteConf'
     RouteConf:
       type: object
-      required: [ kind, rules, origin ]
+      required: [ kind, rules, origins ]
       properties:
         kind:
           type: string
@@ -251,25 +251,30 @@ components:
           type: array
           description: Computed list of routing rules
           items:
-            type: object
-            required: [ kri, conf, matches ]
-            properties:
-              kri:
-                type: string
-              matches:
-                type: array
-                description: List of matches for which this rule will apply
-                items:
-                  type: object
-                  additionalProperties: true
-                  x-go-type: 'interface{}'
-              conf:
-                description: The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
-                type: object
-                additionalProperties: true
-                x-go-type: 'interface{}'
+            $ref: '#/components/schemas/RouteRules'
         origins:
-          $ref: "#/components/schemas/PolicyOrigin"
+          type: array
+          description: The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+          items:
+            $ref: "#/components/schemas/PolicyOrigin"
+    RouteRules:
+      type: object
+      required: [ kri, conf, matches ]
+      properties:
+        kri:
+          type: string
+        matches:
+          type: array
+          description: List of matches for which this rule will apply
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: 'interface{}'
+        conf:
+          description: The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+          type: object
+          additionalProperties: true
+          x-go-type: 'interface{}'
     PolicyOrigin:
       type: object
       required: [ kri ]
