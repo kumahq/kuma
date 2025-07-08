@@ -278,10 +278,10 @@ spec:
           envVar:
 status:
   conditions:
-    type: Generated
-    status: True | False | Unknown
-    message: # message
-    reason: # Collision | Generated | TemplateError
+    - type: Generated
+      status: True | False | Unknown
+      message: # message
+      reason: # Collision | Generated | TemplateError
 ```
 
 The control plane uses the default CA bundle to validate the provided CA. By default, it relies on the system CA bundle, as no bundle is set explicitly. However, the user can override this by setting the `KUMA_MESHIDENTITY_TLS_CA_BUNDLE_FILE` environment variable, which defaults to the value of `KUMA_GENERAL_CA_BUNDLE_FILE`.
