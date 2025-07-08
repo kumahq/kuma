@@ -8,7 +8,7 @@ Supersedes: https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/036-i
 
 ## Context and Problem Statement
 
-The point of this document is to define a naming strategy of Envoy resources and guidelines for exceptions.
+The point of this document is to define a naming strategy of Envoy resources, existing exceptions and guidelines for future exceptions.
 
 We use Envoy resource names to identify listeners, clusters, routes, virtual hosts and secrets in the xDS APIs.
 These names appear in metrics, logs, and debug endpoints (config_dump), and they are often used for monitoring, filtering, and diagnostics.
@@ -22,8 +22,6 @@ For example a cluster named `kuma:envoy:admin` is a system resource, while a clu
 From now on when we use "system resource" or "user resource" we're talking about Envoy resources, not Kuma resources.
 
 Currently, there is no consistency in how these resources are named, see [additional context](#additional-context) for detailed list.
-
-
 
 ## Driving factors
 
@@ -132,10 +130,10 @@ Refer to [currently existing system resources and their new naming](#currently-e
 When adding such resource the name should be explicit enough to help anyone understand where this is coming from.
 The name should be namespaced so that it groups similar resources together and avoids collisions with other system resources.
 
-For example dynamic config fetcher creates one listener and one route per object type.
+For example dynamic config creates one listener and one route per object type.
 We will namespace it as `system_dynamicconfig` and the DNS route will be `system_dynamicconfig_dns` and MeshMetric route will be `system_dynamicconfig_meshmetric`.
 
-If the name is coming from a reusable component the namespacing is the responsibility of the reusable component.
+If the name is coming from a reusable component like it is now the namespacing is the responsibility of the reusable component, not the user of it.
 
 It's important to balance the specificity of the name with the risk of high cardinality.
 For example the socket path of the internal listeners are configurable,
