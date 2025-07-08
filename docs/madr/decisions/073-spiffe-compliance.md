@@ -280,11 +280,11 @@ spec:
 
 The control plane uses the default CA bundle to validate the provided CA. By default, it relies on the system CA bundle, as no bundle is set explicitly. However, the user can override this by setting the `KUMA_MESHIDENTITY_TLS_CA_BUNDLE_FILE` environment variable, which defaults to the value of `KUMA_GENERAL_CA_BUNDLE_FILE`.
 
-`insecureAllowSelfSigned` makes using self signed CA an explicit opt-in. This is used with both provided by the user or autogenrated CAs..
+`insecureAllowSelfSigned` makes using self signed CA an explicit opt-in. This is used with both provided by the user or autogenrated CAs.
 
 **ServiceAccount** 
 We are going to set `k8s.kuma.io/service-account` with the name of service account. The length of the possible value is [253 characters](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts) which makes us to put it into the annotation and not a label.
-This will be used to generate spiffeId.
+This will be used to generate SPIFFE ID.
 
 #### Provider types
 
@@ -348,7 +348,6 @@ This approach allows Kuma to leverage SPIFFE-compliant identities issued by SPIR
 ```yaml
     spire:
       agent:
-        addresss: "/run/spire/sockets/agent.sock"
         timeout: 1s
 ``` 
 
@@ -387,7 +386,7 @@ volumeMounts:
     readOnly: true
 ```
 
-1. We could expose the configuration in control-plane to be more generic
+2. We could expose the configuration in control-plane to be more generic
 
 ```yaml
 runtime:
