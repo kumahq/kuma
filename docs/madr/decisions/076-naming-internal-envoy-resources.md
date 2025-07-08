@@ -221,22 +221,25 @@ For other names we will use `^system_([a-z0-9-]*_?)+$`, here is an example of th
 | Cluster       | _kuma:metrics:hijacker                                       | system_metrics_hijacker         |                                                              | 
 | Listener      | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
 | VirtualHost   | kuma:metrics:prometheus                                      | system_metrics_prometheus       |                                                              |
-| Cluster       | tracing:name                                                 | system_tracing_name             |                                                              | 
+| Cluster       | tracing:<name>                                               | system_tracing_<name>           |                                                              | 
 | Cluster       | meshtrace:<type> (zipkin, datadog, otel)                     | system_<kri>                    | system_kri_mt_mesh-1_us-east-2_kuma-demo_default_            | 
 | Cluster       | meshaccesslog:opentelemetry:<index> (0, 1, 2, ...)           | system_<kri>                    | system_kri_mal_mesh-1_us-east-2_kuma-demo_multiple-backends_ | 
 | Cluster       | meshglobalratelimit:service                                  | system_<kri>                    | system_kri_mgrl___kong-mesh-system_mesh-rate-limit_          |
-| Listener      | probe:listener                                               | system_dp_probe                 |                                                              |
-| Route         | probe:route_configuration                                    | system_dp_probe                 |                                                              |
-| VirtualHost   | probe                                                        | system_dp_probe                 |                                                              |
-| Cluster       | kuma:readiness                                               | system_dp_readiness             |                                                              |
-| Route         | 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route) | system_dp_default_route         |                                                              |
-| Secret        | mesh_ca:secret:all                                           | system_secret_ca_all_meshes     |                                                              |
-| Secret        | mesh_ca:secret:mesh-1                                        | system_secret_ca_mesh-1         |                                                              |
-| Secret        | identity_cert:secret:mesh-1                                  | system_secret_identity_mesh-1   |                                                              |
-| Cluster       | ads_cluster                                                  | system_ads_cluster              |                                                              |
-| Cluster       | plugins:bootstrap:k8s:hooks:apiServerBypass                  | system_kube_api_server          |                                                              |
-| Listener      | plugins:bootstrap:k8s:hooks:apiServerBypass                  | system_kube_api_server          |                                                              |
-| Listener      | kuma:dns                                                     | system_dns                      |                                                              |
+| Cluster       | kuma:readiness                                               | system_probe_readiness          |                                                              |
+| Route         | 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo= (default route) | system_route_default            |                                                              |
+| Secret        | mesh_ca:secret:all                                           | system_mtls_ca_all_meshes       |                                                              |
+| Secret        | mesh_ca:secret:<mesh>                                        | system_mtls_ca_<mesh>           |                                                              |
+| Secret        | identity_cert:secret:<mesh>                                  | system_mtls_identity_<mesh>     |                                                              |
+| Cluster       | ads_cluster                                                  | system_ads                      |                                                              |
+| Cluster       | plugins:bootstrap:k8s:hooks:apiServerBypass                  | system_kube_api_server_bypass   |                                                              |
+| Listener      | plugins:bootstrap:k8s:hooks:apiServerBypass                  | system_kube_api_server_bypass   |                                                              |
+| Listener      | kuma:dns                                                     | system_dns_builtin              |                                                              |
+
+Deprecated features which resource names won't be changed:
+- virtual probes:
+  - probe:listener
+  - probe:route_configuration
+  - probe
 
 ### Enforcement
 
