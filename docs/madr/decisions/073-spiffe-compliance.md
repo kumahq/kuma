@@ -739,7 +739,7 @@ To avoid issues where a user removes a `MeshIdentity` but an old trust remains i
 
 In the first iteration, `MeshTrust` will not be synced between zones. This means that if a user wants to create a multizone setup, they must manually create a `MeshTrust` resource in each zone.
 
-**Secret naming**
+**Envoy resource naming**
 
 We want to use a [KRI](070-resource-identifier.md) for resource naming. Since `MeshTrust` creates a separate resource (Secret), it should be named based on the KRI to simplify correlation between the `Secret` and the `MeshTrust` configuration.
 Since there might be multiple MeshTrusts and we need to aggregate them into one bundle we might use a different naming.
@@ -747,7 +747,7 @@ Since there might be multiple MeshTrusts and we need to aggregate them into one 
 Proposed name:
 
 ```yaml
-system_mtrust_cabundle
+system_trust_cabundle
 ```
 
 > [!WARNING]
