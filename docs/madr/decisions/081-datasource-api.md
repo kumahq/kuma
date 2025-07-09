@@ -177,50 +177,50 @@ To resolve the ambiguity around how and where a `DataSource` is accessed (i.e., 
 type CPType string
 
 const (
-	FileType   CPType = "File"
-	SecretType CPType = "Secret"
-	EnvVarType CPType = "EnvVar"
+    FileType   CPType = "File"
+    SecretType CPType = "Secret"
+    EnvVarType CPType = "EnvVar"
 )
 
 type ControlPlaneDataSource struct {
-	Type      CPType       `json:"type,omitempty"`
-	File      *File      `json:"file,omitempty"`
-	SecretRef *SecretRef `json:"secretRef,omitempty"`
-	EnvVar    *EnvVar    `json:"envVar,omitempty"`
+    Type      CPType       `json:"type,omitempty"`
+    File      *File      `json:"file,omitempty"`
+    SecretRef *SecretRef `json:"secretRef,omitempty"`
+    EnvVar    *EnvVar    `json:"envVar,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=File;EnvVar
 type DpType string
 
 const (
-	FileType   DpType = "File"
-	EnvVarType DpType = "EnvVar"
+    FileType   DpType = "File"
+    EnvVarType DpType = "EnvVar"
 )
 
 type DataplaneDataSource struct {
-	Type      DpType       `json:"type,omitempty"`
-	File      *File      `json:"file,omitempty"`
-	EnvVar    *EnvVar    `json:"envVar,omitempty"`
+    Type      DpType       `json:"type,omitempty"`
+    File      *File      `json:"file,omitempty"`
+    EnvVar    *EnvVar    `json:"envVar,omitempty"`
 }
 
 type File struct {
-	Path string `json:"path,omitempty"`
+    Path string `json:"path,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Secret
 type RefType string
 
 const (
-	SecretRefType RefType = "Secret"
+    SecretRefType RefType = "Secret"
 )
 
 type SecretRef struct {
     Kind RefType `json:"kind,omitempty"`
-	Name string  `json:"name,omitempty"`
+    Name string  `json:"name,omitempty"`
 }
 
 type EnvVar struct {
-	Name string `json:"name,omitempty"`
+    Name string `json:"name,omitempty"`
 }
 ```
 
