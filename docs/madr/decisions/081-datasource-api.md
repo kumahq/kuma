@@ -235,7 +235,7 @@ The proposed model addresses the issues found in the previous approach, as it cl
 * Two similar but separate structures — which adds some duplication and potential maintenance overhead.
 * No explicit support for Secret in data plane context — users would need to manually mount secrets as files or environment variables.
 * Lack of inline
-* Might be problem with rotation - Envoy might not read if it's rotated
+* Might be problem with rotation - Envoy might not read if it's rotated - might be support by: https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret#key-rotation
 
 ## Security implications and review
 
