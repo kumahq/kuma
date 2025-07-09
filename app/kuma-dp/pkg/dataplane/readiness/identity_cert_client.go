@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	envoy_admin "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -93,9 +94,13 @@ func certSecretReady(resp []byte) (bool, error) {
 			return false, fmt.Errorf("failed to unmarshal tls secret: %w", err)
 		}
 
-		certBytes := tlsSecret.GetTlsCertificate().GetCertificateChain().GetInlineBytes()
+		pemBytes := tlsSecret.GetTlsCertificate().GetCertificateChain().GetInlineBytes()
+		pemBlock, _ := pem.Decode(pemBytes)
+		if pemBlock == nil {
+			return false, fmt.Errorf("invalid PEM block: %w", err)
+		}
 		var x509Cert *x509.Certificate
-		x509Cert, err = x509.ParseCertificate(certBytes)
+		x509Cert, err = x509.ParseCertificate(pemBlock.Bytes)
 		return x509Cert != nil && x509Cert.NotAfter.After(time.Now().UTC()), err
 	}
 }

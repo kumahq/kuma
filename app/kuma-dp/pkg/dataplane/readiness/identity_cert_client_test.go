@@ -68,7 +68,7 @@ var _ = Describe("IdentityCertClient", func() {
 		ready, err := checkClient.CheckIfReady()
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ready).To(BeTrue())
+		Expect(ready).To(BeFalse())
 	})
 
 	It("should return not ready identity cert is uninitialized", func() {
@@ -76,6 +76,7 @@ var _ = Describe("IdentityCertClient", func() {
 {
  "configs": [
     {
+      "@type": "type.googleapis.com/envoy.admin.v3.SecretsConfigDump.DynamicSecret",
       "name": "identity_cert:secret:mesh-dev",
       "version_info": "uninitialized",
       "last_updated": "2025-07-09T01:39:32.075Z",
@@ -85,14 +86,14 @@ var _ = Describe("IdentityCertClient", func() {
       }
     }
  ]
-} 
+}
 `
 		checkClient := createCheckClient(9901, true, identityCertNotInitializedResp)
 
 		ready, err := checkClient.CheckIfReady()
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ready).To(BeTrue())
+		Expect(ready).To(BeFalse())
 	})
 })
 
