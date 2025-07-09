@@ -224,13 +224,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
-			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+			adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			runLog.Info("received bootstrap configuration", "adminPort", adminPort)
 
 			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
 			if err != nil {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
-			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			opts.AdminPort = adminPort
 
 			confFetcher := configfetcher.NewConfigFetcher(
 				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
@@ -304,7 +305,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.Dataplane.ReadinessPort > 0 {
 				readinessReporter = readiness.NewReporter(
 					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
-					cfg.Dataplane.ReadinessPort)
+					cfg.Dataplane.ReadinessPort,
+					adminPort)
 				components = append(components, readinessReporter)
 			}
 

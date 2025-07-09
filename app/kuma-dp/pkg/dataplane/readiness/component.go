@@ -18,22 +18,29 @@ import (
 const (
 	pathPrefixReady  = "/ready"
 	stateReady       = "READY"
+	stateNotReady    = "NOT_READY"
 	stateTerminating = "TERMINATING"
 )
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
-	localListenAddr string
-	localListenPort uint32
-	isTerminating   atomic.Bool
+	localListenAddr    string
+	localListenPort    uint32
+	identityCertClient *IdentityCertClient
+	isTerminating      atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(localIPAddr string, localListenPort uint32) *Reporter {
+func NewReporter(localIPAddr string, localListenPort uint32, adminPort uint32) *Reporter {
 	return &Reporter{
 		localListenPort: localListenPort,
 		localListenAddr: localIPAddr,
+		identityCertClient: &IdentityCertClient{
+			EnvoyAdminAddress: localIPAddr,
+			EnvoyAdminPort:    adminPort,
+			HttpClient:        &http.Client{},
+		},
 	}
 }
 
@@ -89,6 +96,15 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	if r.isTerminating.Load() {
 		state = stateTerminating
 		stateHTTPStatus = http.StatusServiceUnavailable
+	} else {
+		identityCertReady, err := r.identityCertClient.CheckIfReady()
+		if err != nil {
+			logger.Info("[WARNING] could not check identity cert readiness", "err", err)
+		}
+		if !identityCertReady {
+			state = stateNotReady
+			stateHTTPStatus = http.StatusServiceUnavailable
+		}
 	}
 
 	stateBytes := []byte(state)
