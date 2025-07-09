@@ -34,7 +34,7 @@ type RootContext struct {
 // config.
 func defaultDataplaneTokenGenerator(cfg *kumadp.Config) (component.Component, error) {
 	if cfg.DataplaneRuntime.Token != "" {
-		path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
+		path := filepath.Join(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name)
 		if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0o600); err != nil {
 			runLog.Error(err, "unable to create file with dataplane token")
 			return nil, err

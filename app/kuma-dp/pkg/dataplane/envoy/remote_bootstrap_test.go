@@ -334,6 +334,6 @@ func newOptsBuilder() optsBuilder {
 	cfg.Dataplane.Name = "sample"
 	cfg.DataplaneRuntime.Token = "token"
 	cfg.DataplaneRuntime.BinaryPath = filepath.Join("testdata", "envoy-mock.exit-0.sh")
-	cfg.DataplaneRuntime.SocketDir = "/tmp"
+	cfg.DataplaneRuntime.WorkDir = "/tmp"
 	return optsBuilder{Config: cfg}
 }

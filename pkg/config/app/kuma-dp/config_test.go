@@ -92,7 +92,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.Dataplane.Name).To(Equal("example"))
 			Expect(cfg.Dataplane.DrainTime.Duration).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
-			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
+			Expect(cfg.DataplaneRuntime.WorkDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 			Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
 			Expect(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration).To(Equal(5 * time.Second))
