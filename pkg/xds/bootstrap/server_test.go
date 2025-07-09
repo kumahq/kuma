@@ -204,26 +204,26 @@ var _ = Describe("Bootstrap Server", func() {
 		Entry("minimal data provided with no port in host", testCase{
 			dataplaneName:      "dp-1",
 			dataplane:          defaultDataplane,
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", "workdir": "/tmp", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", "workdir": "/tmp", "appProbeProxyDisabled": true, %s }`, version),
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 			overrideReqHost:    "localhost",
 		}),
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
 			dataplane:          defaultDataplane,
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", "workdir": "/tmp", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", "workdir": "/tmp", "appProbeProxyDisabled": true, %s }`, version),
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			dataplaneName:      "dp-1.default",
 			dataplane:          defaultDataplane,
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", "workdir": "/tmp", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", "workdir": "/tmp", "appProbeProxyDisabled": true, %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("with max heap size", testCase{
 			dataplaneName:      "gateway-1.default",
 			dataplane:          gatewayDataplane,
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "gateway-1.default", "dataplaneToken": "token", "workdir": "/tmp", "resources": { "maxHeapSizeBytes": 2000000 }, %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "gateway-1.default", "dataplaneToken": "token", "workdir": "/tmp", "appProbeProxyDisabled": true, "resources": { "maxHeapSizeBytes": 2000000 }, %s }`, version),
 			expectedConfigFile: "bootstrap.gateway.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
@@ -233,7 +233,7 @@ var _ = Describe("Bootstrap Server", func() {
 				dp.Spec.Networking.Admin.Port = 1234
 				return dp
 			},
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", "workdir": "/tmp", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", "workdir": "/tmp", "appProbeProxyDisabled": true, %s }`, version),
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)
