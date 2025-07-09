@@ -290,7 +290,7 @@ The control plane uses the default CA bundle to validate the provided CA. By def
 
 **Potential collision**
 
-In scenarios where a user creates a `MeshIdentities` resource that specifies a trustDomain already used by another `MeshIdentity` or legacy trust domain (Mesh name), a conflict may arise. Because it's not always possible to detect this conflict during resource creation, we propose adding a `status` field to `MeshIdentities`. This field will be used to report post-creation validation issues, such as trust domain conflicts, making them visible to the user.
+In scenarios where a user creates a `MeshIdentities` resource that specifies a trustDomain already used by another `MeshIdentity` or legacy trust domain (Mesh name), a conflict may arise. Because it's not possible to detect this conflict during resource creation, we propose adding a `status` field to `MeshIdentities`. This field will be used to report post-creation validation issues, such as trust domain conflicts, making them visible to the user. The status will be synced to the global, as we do for all resources with `status` field.
 
 **ServiceAccount** 
 We are going to set `k8s.kuma.io/service-account` with the name of service account. The length of the possible value is [253 characters](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts) which makes us to put it into the annotation and not a label.
