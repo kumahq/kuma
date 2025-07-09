@@ -1,0 +1,357 @@
+# SPIFFE ID matches for MeshTrafficPermission
+
+* Status: accepted
+
+Technical Story: https://github.com/kumahq/kuma/issues/12374
+
+## Context and Problem Statement
+
+### Problems
+
+#### Problem 1
+
+Current MeshTrafficPermission relies on client's cert with client's DPP tags encoded as URI SANs.
+As we're moving towards SPIFFE compliant certs we won't be able to use DPP tags in MeshTrafficPermission anymore.
+
+#### Problem 2
+
+In the [Inbound Policies MADR](https://docs.google.com/document/d/1tdIOVVYObHbGKX1AFhbPH3ZQKYvpQG-2s6ShHSECaXM) we said:
+
+> #### Merging behaviour
+> Same as MeshHTTPRoute merging:
+> 1. Pick policies that select the DPP with top-level targetRef
+> 2. Sort these policies by top-level targetRef
+> 3. Concatenate all “rules” arrays from these policies
+> 4. Merge rules items with the same “hash(rules[i].matches)”
+> the new rule position is the highest of two merged rules
+> 5. Stable sort rules based on the Extended GAPI matches order
+> we need to split individual matches into separate rules
+
+But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://github.com/kumahq/kuma/issues/13440):
+
+1. Targeting routes by policies results in surprising behaviour
+
+    > * `timeout-1` applies to `route-1`
+    > * `timeout-2` applies to `route-2`
+    > 
+    > Since the merged configuration is attributed only to `route-2`, we would apply only `timeout-2`, ignoring `timeout-1`.
+
+2. Merging is not aligned with the Gateway API approach that [states](https://gateway-api.sigs.k8s.io/api-types/httproute/#merging):
+    > Multiple HTTPRoutes can be attached to a single Gateway resource. Importantly, only one Route rule may match each request.
+
+### User Stories
+
+#### Mesh Operator
+
+1. I want all requests in the mesh to be denied by default (2.12)
+
+2. I want to declare a group of identities as explicitly denied,
+   so that Service Owner can't override or bypass that decision,
+   ensuring enforcement of critical security boundaries across the mesh. (2.12) 
+
+3. I want to allow all clients in the `observability` namespace to access all services by default,
+   so that telemetry and monitoring tools function automatically,
+   while still allowing Service Owners to explicitly opt out by applying deny policies. (2.12)
+
+4. I want to allow all clients in the `observability` namespace to access the `/metrics` endpoint on all services,
+   so that monitoring tools can collect metrics without requiring each Service Owner to configure access individually.
+
+#### Service Owner
+
+1. I want to grant access to my service to any client I choose,
+   so that I can support integrations and collaboration with other teams,
+   unless the Mesh Operator has explicitly denied that client,
+   ensuring I remain in control while respecting mesh-wide security boundaries. (2.12)
+
+2. I want to opt out of mesh-wide `observability` access,
+   by denying requests from the `observability` namespace,
+   so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
+
+3. I want to block malicious/abusive client even if previously it was allowed,
+   so I can prevent my service from overloading until client's service team reacts to the incident. (2.12)
+
+4. I want to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
+   so that read operations are public but write operations are gated.
+
+### Design
+
+According to [MADR-078](078-special-mtp-algo.md) MeshTrafficPermission's algorithm and API is different from other inbound policies.
+
+#### MeshTrafficPermission is a single-item policy
+
+Pros:
+* Inspect API works out-of-the-box!
+* No need to introduce a new type of policy
+* `allowRules`, `denyRules` reuse `rules[].matches[]` schema
+* No intermediate representation is required, `rbac_configurer.go` generates Envoy configuration directly from `conf`
+
+Cons:
+* action in envoy can't be correlated with a single MTP kri
+
+##### Schema
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-mesh-operator
+spec:
+  targetRef: {}
+  default: 
+    deny:
+      - spiffeId:
+           type: Exact
+           value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+      - spiffeId:
+           type: Exact
+           value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+      - dataplane: # TODO: think more about it
+          matchLabels: 
+            app: frontend
+    allowWithShadowDeny:
+       - spiffeId:
+           type: Prefix
+           value: "spiffe://trust-domain.mesh/ns/legacy"
+    allow:
+       - spiffeId:
+            type: Prefix
+            value: "spiffe://trust-domain.mesh/"
+```
+
+##### Algorithm
+
+1. Collect all MeshTrafficPermissions that target the inbound
+2. Concat all `deny`, `allowWithShadowDeny` and `allow` lists
+3. Convert to the following Matching API structure
+
+```yaml
+extensions.filters.network.rbac.v3.RBAC:
+  rules: []
+  shadow_rules: []
+  matcher:
+    matcher_list:
+       - predicate:
+           or_matcher:
+              - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/frontend
+              - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
+           on_match: 
+             action: Deny 
+             name: kri_mtp_
+       - predicate:
+            or_matcher:
+               - spiffeId prefix spiffe://trust-domain.mesh/
+               - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy # for 'allowWithShadowDeny'
+            on_match: Allow
+    no_match: Deny
+  shadow_matcher: # not enforced, just logged
+    matcher_list:
+     - predicate:
+          or_matcher:
+             - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy
+          on_match: Deny
+    no_match: Deny
+```
+
+##### Inspect API
+
+Same as singe-item policies (we call them proxy policy in the new Inspect API).
+
+```
+GET :5681/meshes/{mesh}/dataplanes/{name}/_policies
+```
+```yaml
+policies:
+   - kind: MeshTrafficPermission
+     conf:
+       deny: [...]
+       allowWithShadowDeny: [...]
+       allow: [...]
+     origins:
+        - kri: kri_mtp_...
+        - kri: kri_mtp_...
+```
+
+#### MeshTrafficPermission is a special case of inbound policy
+
+Pros:
+* the concept is extendable to other policies if we'll need similar semantic
+* structurally looks similar to other inbound policies with `matches`
+
+Cons:
+* it works well only when the number of possible `confs` is limited
+* requires IR and as a result Inspect API is not that straightforward
+* the algorithm is more complex, still might produce suboptimal envoy structs due to presence of `AllowWithShadowDeny`
+
+##### Schema
+
+While inbound policies have the following schema
+
+```yaml
+type: MeshRateLimit
+mesh: default
+spec:
+   rules:
+      - matches: # sort by priorities and first-matched wins (same as Gateway API)
+           - spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/"
+             method: GET
+        default: $conf
+```
+
+MeshTrafficPermission uses `conditions` instead of `matches` to emphasize ALL of them need to be evaluated:
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+spec:
+   rules:
+      - conditions:
+           - spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+        default:
+           action: Deny
+---
+type: MeshTrafficPermission
+mesh: default
+spec:
+  rules:
+    - conditions:
+         - spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+      default:
+        action: Deny
+    - conditions:
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/"
+      default:
+        action: Allow
+    - conditions:
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/ns/legacy"
+      default:
+         action: AllowWithShadowDeny
+```
+
+##### Algorithm
+
+1. Collect all MeshTrafficPermissions that target the inbound
+2. Concat all `rules` lists
+3. Without peeking into confs, group `conditions` by the same confs (either compare conf's hashes or marshalled content).
+With MTP we're getting at most 3 unique confs – `action: Deny`, `action: AllowWithShadowDeny` and `action: Allow`
+
+```yaml
+rules:
+  - conditions: # condition_1
+       - spiffeId:
+            type: Exact
+            value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+       - spiffeId:
+            type: Exact
+            value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+    default:
+      action: Deny # conf1
+  - conditions: # condition_2
+       - spiffeId:
+            type: Prefix
+            value: "spiffe://trust-domain.mesh/"
+    default:
+      action: Allow # conf2
+  - conditions: # condition_3
+       - spiffeId:
+            type: Prefix
+            value: "spiffe://trust-domain.mesh/ns/legacy"
+    default:
+       action: AllowWithShadowDeny # conf3
+```
+
+4. Build the intermediate representation that'll be used both in Inspect API and Envoy generator.
+Roughly it's going to look like:
+
+```yaml
+condition_1 ?
+  - true
+    condition_2 ?
+      - true
+        condition_3 ?
+          - true -> merge(conf1,conf2,conf3) # Deny
+          - false -> merge(conf1,conf2) # Deny
+      - false
+        condition_3 ?
+        - true -> merge(conf1,conf3) # Deny
+        - false -> merge(conf1) # Deny
+  - false
+    condition_2 ?
+      - true
+        condition_3 ?
+          - true -> merge(conf2,conf3) # AllowWithShadowDeny
+          - false -> merge(conf2) # Allow
+      - false
+        condition_3 ?
+          - true -> merge(conf3) # AllowWithShadowDeny
+          - false -> merge() # Deny
+```
+But final schema for this is yet to be written.
+
+5. Prune the IR structure
+
+```yaml
+condition_1 ?
+  - true -> Deny
+  - false
+    condition_2 ?
+      - true
+        condition_3 ?
+          - true -> merge(conf2,conf3) # AllowWithShadowDeny
+          - false -> merge(conf2) # Allow
+      - false
+        condition_3 ?
+          - true -> merge(conf3) # AllowWithShadowDeny
+          - false -> merge() # Deny
+```
+
+
+6. Based on IR build envoy config
+
+```yaml
+extensions.filters.network.rbac.v3.RBAC:
+  matcher:
+    matcher_list:
+       - predicate: condition_1
+         on_match:
+           action: Deny
+    no_match:
+      matcher_list:
+         - predicate: condition_2
+           on_match:
+             matcher_list:
+                - predicate: condition_3
+                  on_match: Allow
+             no_match: Allow
+      no_match:
+        matcher_list:
+           - predicate: condition_3
+             on_match: Allow
+        no_match: Deny
+  shadow_matcher:
+     matcher_list:
+        - predicate: condition_1
+          on_match:
+             action: Deny
+     no_match:
+        matcher_list:
+           - predicate: condition_2
+             on_match:
+                matcher_list:
+                   - predicate: condition_3
+                     on_match: Deny
+                no_match: Allow
+        no_match:
+           matcher_list:
+              - predicate: condition_3
+                on_match: Deny
+           no_match: Deny
+```
