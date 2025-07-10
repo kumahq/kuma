@@ -23,8 +23,8 @@ type DataplaneRef struct {
 
 type Port struct {
 	// +kuma:nolint
-	Name       string             `json:"name,omitempty"`
-	Port       int32              `json:"port"`
+	Name string `json:"name,omitempty"`
+	Port int32  `json:"port"`
 	// +kuma:nolint
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
@@ -55,7 +55,7 @@ type MeshService struct {
 	// +listMapKey=port
 	// +listMapKey=appProtocol
 	// +kuma:nolint
-	Ports      []Port                `json:"ports,omitempty"`
+	Ports []Port `json:"ports,omitempty"`
 	// +kuma:nolint
 	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }

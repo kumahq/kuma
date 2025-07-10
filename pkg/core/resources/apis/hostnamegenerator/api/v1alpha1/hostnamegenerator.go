@@ -40,7 +40,7 @@ type HostnameGenerator struct {
 	// +kuma:nolint
 	Selector Selector `json:"selector,omitempty"`
 	// +kuma:nolint
-	Template string   `json:"template,omitempty"`
+	Template string `json:"template,omitempty"`
 	// Extension struct for a plugin configuration
 	Extension *Extension `json:"extension,omitempty"`
 }
