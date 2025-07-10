@@ -93,7 +93,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 			portName = strconv.Itoa(int(inbound.Port))
 		}
 		port := meshservice_api.Port{
-			Name:        portName,
+			Name:        &portName,
 			Port:        int32(inbound.Port),
 			TargetPort:  intstr.FromInt(int(inbound.Port)),
 			AppProtocol: core_mesh.Protocol(appProtocol),

@@ -96,7 +96,7 @@ func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol cor
 			IntVal: target,
 		},
 		AppProtocol: protocol,
-		Name:        name,
+		Name:        &name,
 	})
 	return m
 }

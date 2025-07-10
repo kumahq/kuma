@@ -20,8 +20,7 @@ type DataplaneRef struct {
 }
 
 type Port struct {
-	// +kuma:nolint
-	Name string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
 	Port int32  `json:"port"`
 	// +kuma:nolint
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
