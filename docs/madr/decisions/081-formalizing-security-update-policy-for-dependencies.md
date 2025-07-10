@@ -4,9 +4,7 @@
 
 ## Context and problem statement
 
-There is currently no formal policy for patching insecure dependencies in Kuma. Our goal has been to patch all vulnerabilities classified as **High** or **Critical** based on CVSS 3.1 for all supported versions. Supported versions are defined by the release branches listed in [`active-branches.json`](../../../active-branches.json).
-
-A consistent and scoped policy is needed to ensure we handle security updates effectively, especially across multiple release branches, without introducing unnecessary noise or instability.
+There is currently no formal policy for patching insecure dependencies in Kuma. While the general goal has been to address all vulnerabilities classified as [**High** or **Critical** under CVSS 3.1](#cvss-31-severity-definitions-used-in-this-policy), this has been done informally and inconsistently across versions. A consistent and scoped policy is needed to ensure we handle security updates effectively, especially across multiple release branches, without introducing unnecessary noise or instability.
 
 ## Scope of coverage
 
@@ -14,7 +12,7 @@ This policy applies to three categories of code:
 
 * Kuma's own source code
 * Third-party code directly linked by Kuma (e.g. Envoy, CoreDNS)
-* Third-party code bundled in the convenience Docker image (e.g. Python, Perl, cURL)
+* Third-party code bundled in the convenience Docker image (e.g. Bash, cURL or iptables)
 
 For third-party code directly linked by Kuma, we only act on vulnerabilities that have a [confirmed CVE](#confirmed-cves).
 
@@ -55,7 +53,7 @@ We adopt the following best-effort policy for patching security vulnerabilities.
 
 ### What we patch
 
-For all supported release branches, we aim to patch:
+For all active release branches defined in [`active-branches.json`](../../../active-branches.json), which represent supported Kuma versions, we aim to patch:
 
 * CVEs classified as **Critical** or **High**
 * Confirmed CVEs only (for third-party code linked directly by Kuma)
