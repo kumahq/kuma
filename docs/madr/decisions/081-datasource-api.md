@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/13875
 
 ## Context and Problem Statement
 
-While working on SPIFFE Compliance we noticed that we have a `DataSource` common structure which doesn't cover all possible ways of providing external informations and might have security implications. Currently our model looks:
+While working on SPIFFE compliance, we identified limitations in our existing `DataSource` structure. It currently supports only inline values or secret references:
 
 [Source](https://github.com/kumahq/kuma/blob/master/api/common/v1alpha1/datasource.go)
 ```golang
@@ -21,21 +21,72 @@ type DataSource struct {
 }
 ```
 
-It's easy for the user to configure, but there are some limitations:
-* The user cannot provide the information via a file path or environment variable.
-* Defining the private key as an inline value does not seem secure. Since the resource is synced to the Global control-plane, the value is also presented on the global control-plane.
+The current solution has following limitations:
+* Users cannot provide values via file path or environment variable.
+* Defining private keys inline is insecure, especially since these values are synced to the global control plane.
 
-Additionally, we want to design a structure that is reusable across multiple resources, rather than something tailored to a single specific use case.
 
-The main goals is:
-* Provide a reusable structure that can be consistently applied across different resources.
-* Clearly define whether the data source should be:
-  * Loaded by the data plane (e.g., via `File` or `EnvVar`), or
-  * Delivered by the control plane (e.g., via `Secret` or other resolved sources).
+There is another issue when user wants to explicitly use the `DataSource` in the resource. It's not clear if value provided
+by the data source should be accessed by the data plane or control plane. In some resources it makes sense to have it on the control plane
+while for others on the data plane.
+
+**Example**
+
+`MeshIdentity` - When a user creates a `MeshIdentity`, they provide a certificate authority (CA) and a private key. These values are read by the control plane and used to sign workload certificates.
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  ...
+  provider:
+    type: Bundled
+    bundled: # to extend in KM
+      ca:
+        certificate:
+          inline: "my-cert"
+        privateKey:
+          secret: my-private-key
+```
+
+`MeshExternalService` - In contrast, it's unclear how the `DataSource` should behave. Should:
+* The control plane read and deliver the data (e.g., via SDS), or
+* The Envoy proxy (`ZoneEgress`) directly reference local file paths or environment variables?
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: mes-tcp-mtls
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  ...
+  tls:
+    enabled: true
+    verification:
+      serverName: tcpbin.com
+      clientCert:
+        inline: "123"
+      clientKey:
+        secret: my-secret
+```
+
+This ambiguity in resolution context leads to confusion and potential misconfiguration, particularly when reusing the same structure across diverse resource types.
+
+**Goal**
+* Create a reusable structure applicable across different resources.
+* Clearly define where the `DataSource` should be resolved:
+  * On the control plane (e.g., secrets)
+  * On the data plane (e.g., files or environment variables)
 
 ## Design
 
-### Create a one DataSource structure
+### Option 1: Unified DataSource Structure
 
 ```golang
 // +kubebuilder:validation:Enum=File;Secret;EnvVar
@@ -75,108 +126,23 @@ type EnvVar struct {
 }
 ```
 
-This model is extensible and allows defining one of several specific sources. It also follows the Kubernetes convention by referencing other resources using `SecretRef`.
-
-> Do we need a namespace?
-Since we only list secrets from the system namespace (default: `kuma-system`), we likely don't need the namespace field for now.
-
-**Problem**
-
-While attempting to apply this `DataSource` structure, I’ve noticed some ambiguities in the API's behavior.
-Let’s consider two examples: `MeshIdentity` and `MeshExternalService`.
-
-`MeshIdentity`
-When a user creates a `MeshIdentity`, they are expected to provide a certificate authority (CA) and a private key. These values are read by the control plane and used to sign workload certificates.
-This behavior is control-plane centric and secure by design.
-
-`MeshExternalService`
-In contrast, for `MeshExternalService`, it's unclear whether:
-* The control plane should resolve the DataSource (e.g., read `Secret`, `File`, or `EnvVar`) and pass it to Envoy via SDS, or
-* The generated Envoy config should directly reference local paths or environment variables (which must be pre-mounted or pre-set on the ZoneEgress proxy).
-
-This inconsistency makes the API harder to reason about, especially when using a shared structure.
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshIdentity
-metadata:
-  name: identity
-  namespace: kuma-system # only in system namespace
-  labels:
-    kuma.io/mesh: default
-spec:
-  ...
-  provider:
-    type: Bundled
-    bundled: # to extend in KM
-      ca:
-        certificate:
-          type: File
-          file:
-            path: "/etc/ssl/certs/my-cert.crt"
-        privateKey:
-          type: Secret
-          secretRef:
-            kind: Secret
-            name: kuma-private-key
-```
-
-In case of `MeshExternalServie` it doesn't seem to be clear if control-plane should read the DataSource or maybe it should be handled by the Envoy.
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshExternalService
-metadata:
-  name: mes-tcp-mtls
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  ...
-  tls:
-    enabled: true
-    verification:
-      serverName: tcpbin.com
-      clientCert:
-        type: File
-        file:
-          path: "/etc/ssl/certs/my-cert.crt"
-      clientKey:
-        type: Secret
-        secretRef:
-          kind: Secret
-          name: kuma-private-key
-```
-
-The API is not fully clear in this case. Specifically, it’s unclear whether the resource needs to be provided. Should it be:
-* Read by the control plane and delivered to `ZoneEgress` via `SDS`, or
-* Used to generate Envoy configuration where:
-  * EnvVar and File result in a cluster referencing the path or environment variable on the `ZoneEgress` (pod/VM),
-  * Secret is read by the control plane and passed via SDS.
-
-This results in a divergence in behavior across resources. For example:
-* In MeshIdentity, the control plane always reads the source and delivers it.
-* In MeshExternalService, it’s unclear whether the control plane or the data plane (`ZoneEgress`) is responsible.
-
-**How can we solve it?**
-
-To resolve the ambiguity around how and where a `DataSource` is accessed (i.e., control plane vs data plane), we could introduce a resource specific ResourceDescriptor parameter. This parameter would define whether the `DataSource` should be:
-
-* Resolved by the control plane (e.g., for signing certificates in `MeshIdentity`)
-* Accessed at runtime by the data plane (e.g., for mutual TLS in `MeshExternalService` on `ZoneEgress`)
+This model is extensible and aligns with Kubernetes conventions (e.g., `SecretRef`). However, it introduces ambiguity regarding where the value should be resolved.
+To address this, we could introduce a resource-specific `ResourceDescriptor` parameter that defines where the `DataSource` should be resolved:
+* Control plane - for example, when signing certificates in `MeshIdentity`.
+* Data plane - for example, when performing mutual TLS in `MeshExternalService` via `ZoneEgress`.
 
 #### Pros
-* One unified structure
-* Can be reused consistently across different resources
-* Inline secrets are not synced to the global anymore
+* Provides a unified structure.
+* Can be reused consistently across different resources.
+* Inline secrets are no longer synced to the global control plane, improving security.
 
 #### Cons
-* Unclear who is responsible for delivering the configuration (control plane or ZoneEgress)
-* Not obvious where values like file paths or environment variables need to be set (control plane or data plane context)
-* Potential security risk: private keys might be delivered by the control plane
+* Responsibility for resolving the configuration (control plane vs. data plane) is ambiguous.
+* It's unclear where values like file paths or environment variables should be configured - in the control plane or data plane context.
+* There's a potential security risk if private keys are delivered by the control plane.
+* The API is not self-explanatory: the resolution behavior is only discoverable by reading the code.
 
-
-### Create different DataSources based on where should be accessed
+### Option 2: Split Structures by Resolution Context
 
 ```golang
 // +kubebuilder:validation:Enum=File;Secret;EnvVar
@@ -189,7 +155,7 @@ const (
 )
 
 type ControlPlaneDataSource struct {
-    Type      CPType       `json:"type,omitempty"`
+    Type      CPType     `json:"type,omitempty"`
     File      *File      `json:"file,omitempty"`
     SecretRef *SecretRef `json:"secretRef,omitempty"`
     EnvVar    *EnvVar    `json:"envVar,omitempty"`
@@ -204,9 +170,9 @@ const (
 )
 
 type DataplaneDataSource struct {
-    Type      DpType       `json:"type,omitempty"`
-    File      *File      `json:"file,omitempty"`
-    EnvVar    *EnvVar    `json:"envVar,omitempty"`
+    Type   DpType  `json:"type,omitempty"`
+    File   *File   `json:"file,omitempty"`
+    EnvVar *EnvVar `json:"envVar,omitempty"`
 }
 
 type File struct {
@@ -230,89 +196,112 @@ type EnvVar struct {
 }
 ```
 
-The proposed model addresses the issues found in the previous approach, as it clearly defines where the DataSource should be resolved (control plane or data plane). It also avoids exposing irrelevant options (e.g., using a Secret where it can’t be accessed by the data plane).
+The proposed model addresses the issues of the previous approach by clearly specifying where the `DataSource` should be resolved - either on the control plane or the data plane. It also avoids exposing unsupported options, such as referencing a `Secret` in contexts where it cannot be accessed by the data plane.
 
 #### Pros
 * Clear API boundaries — it’s explicitly defined what can be configured for each resource type.
-* Improved security — avoids delivering sensitive material like private keys to the data plane via SDS.
-* Inline secrets are not synced to the global anymore
+* Improved security — avoids delivering sensitive materials like private keys to the data plane via SDS.
+* Inline secrets are no longer synced to the global control plane.
 
 #### Cons
-* Two similar but separate structures — which adds some duplication and potential maintenance overhead.
-* No explicit support for Secret in data plane context — users would need to manually mount secrets as files or environment variables.
-* Lack of inline
-* Might be problem with rotation - Envoy might not read if it's rotated - might be support by: https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret#key-rotation
+* Requires maintaining two similar but separate structures, which introduces duplication and potential maintenance overhead.
+* No explicit support for Secret in the data plane context — users must manually mount secrets as files or environment variables.
+* No support for inline values.
 
-### Use one DataSource with resolveMode
+### Option 3: Separate Structures for Secrets and Other Data Sources with an Explicit Resolution Context
 
 ```golang
-// +kubebuilder:validation:Enum=File;Secret;EnvVar
-type Type string
+// +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
+type SecretDataSourceType string
 
 const (
-    FileType   Type = "File"
-    SecretType Type = "Secret"
-    EnvVarType Type = "EnvVar"
+	SecretDataSourceFile      SecretDataSourceType = "File"
+	SecretDataSourceSecretRef SecretDataSourceType = "Secret"
+	SecretDataSourceEnvVar    SecretDataSourceType = "EnvVar"
+	SecretDataSourceInline    SecretDataSourceType = "InsecureInline"
 )
 
-type ControlPlaneDataSource struct {
-    Type      Type       `json:"type,omitempty"`
-    File      *File      `json:"file,omitempty"`
-    SecretRef *SecretRef `json:"secretRef,omitempty"`
-    EnvVar    *EnvVar    `json:"envVar,omitempty"`
+type SecretDataSource struct {
+	Type           SecretDataSourceType `json:"type,omitempty"`
+	File           *File                `json:"file,omitempty"`
+	SecretRef      *SecretRef           `json:"secretRef,omitempty"`
+	EnvVar         *EnvVar              `json:"envVar,omitempty"`
+	InsecureInline *Inline              `json:"insecureInline,omitempty"`
 }
 
-type ResolveMode string
+// +kubebuilder:validation:Enum=File;EnvVar;Inline
+type DataSourceType string
 
 const (
-    CPResolveMode ResolveMode = "Cp"
-    DPResolveMode ResolveMode = "Dp"
+	DataSourceFile   DataSourceType = "File"
+	DataSourceEnvVar DataSourceType = "EnvVar"
+	DataSourceInline DataSourceType = "InsecureInline"
+)
+
+type DataSource struct {
+	Type   DataSourceType `json:"type,omitempty"`
+	File   *File          `json:"file,omitempty"`
+	EnvVar *EnvVar        `json:"envVar,omitempty"`
+	Inline *Inline        `json:"inline,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=ControlPlane;DataPlane
+// default: ControlPlane
+type ResolveOn string
+
+const (
+	ResolveOnCP ResolveOn = "ControlPlane"
+	ResolveOnDP ResolveOn = "DataPlane"
 )
 
 type File struct {
-    ResolveMode ResolveMode `json:"resolveMode,omitempty"`
-    Path        string      `json:"path,omitempty"`
+	ResolveOn ResolveOn `json:"resolveOn,omitempty"`
+	Path      string    `json:"path,omitempty"`
+}
+
+type EnvVar struct {
+	ResolveOn ResolveOn `json:"resolveOn,omitempty"`
+	Name      string    `json:"name,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Secret
 type RefType string
 
 const (
-    SecretRefType RefType = "Secret"
+	SecretRefType RefType = "Secret"
 )
 
 type SecretRef struct {
-    Kind RefType `json:"kind,omitempty"`
-    Name string  `json:"name,omitempty"`
+	Kind RefType `json:"kind,omitempty"`
+	Name string  `json:"name,omitempty"`
 }
 
-type EnvVar struct {
-    ResolveMode ResolveMode `json:"resolveMode,omitempty"`
-    Name        string      `json:"name,omitempty"`
+type Inline struct {
+	Value string `json:"value,omitempty"`
 }
 ```
 
-The proposed model introduces clear semantics for resource resolution, allowing users to specify whether a file (or other data source) should be loaded by the control plane or the data plane.
+The proposed model introduces clear semantics for resource resolution, allowing users to specify whether a file (or other data source) should be loaded by the control plane or the data plane. Additionally, it separates secret-related data sources from general ones, making it clearer which options are allowed in which contexts.
 
 #### Pros
-* Clear API boundaries — user can configure where the resource should be loaded
-* Inline secrets are not synced to the global anymore
+* Clear API boundaries - users can explicitly configure where the resource should be loaded.
+* Inline secrets are clearly marked as insecure, improving visibility and security awareness.
 
 #### Cons
-* Additional parameter which needs to be set by the user
+* Two separate models, which may introduce some code duplication and increase maintenance overhead.
 
 ## Security implications and review
 
-Following changes increses security:
-* secrets are not more visiable in global control-plane
-* In case of 2nd option, private key is not delivered by the network to the dataplane
+Following changes increases security:
+* Inline secrets are explicitly marked as `insecure`, helping to discourage their use in production environments.
+* In Option 2, the private key is not transmitted over the network to the data plane.
 
 ## Reliability implications
 
 ## Implications for Kong Mesh
 
-`MeshOPA` uses current API, if we decide to change current we should probably update it (breaking change), or just maintain current.
+`MeshOPA` currently uses the existing API. If we decide to change it, we should either update `MeshOPA` accordingly (introducing a breaking change), or maintain the existing API for backward compatibility.
 
 ## Decision
 
-Option 3 offers the most flexibility, enabling users to explicitly choose whether a value is resolved by the control plane or accessed directly by the data plane.
+Option 3 offers the most flexibility, enabling users to explicitly choose whether a value is resolved by the control plane or accessed directly by the data plane. Additionally, by providing two separate models, it becomes easier to understand which options are available and valid in each API context.
