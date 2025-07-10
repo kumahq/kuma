@@ -3924,8 +3924,6 @@ spec:
                         description: MatchLabels matches multiple MeshServices by
                           labels
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                 required:
                 - meshService
@@ -8764,8 +8762,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                   meshMultiZoneService:
                     properties:
@@ -8773,8 +8769,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                   meshService:
                     properties:
@@ -8782,8 +8776,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                 type: object
               template:

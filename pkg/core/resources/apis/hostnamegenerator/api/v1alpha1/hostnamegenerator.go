@@ -7,7 +7,7 @@ import (
 )
 
 type LabelSelector struct {
-	MatchLabels map[string]string `json:"matchLabels"`
+	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
 type Selector struct {

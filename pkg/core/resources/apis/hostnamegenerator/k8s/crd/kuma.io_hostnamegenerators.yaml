@@ -62,8 +62,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                   meshMultiZoneService:
                     properties:
@@ -71,8 +69,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                   meshService:
                     properties:
@@ -80,8 +76,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                    required:
-                    - matchLabels
                     type: object
                 type: object
               template:
