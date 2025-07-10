@@ -87,6 +87,8 @@ We usually do not attempt to patch or modify vulnerable third-party components o
 
 These exceptional actions will be considered only when the issue is significant, no upstream fix is available in a timely manner, and the patch is feasible with limited impact.
 
+**Each exception must be covered in a separate, small MADR**. That MADR should document the context, options considered, pros, cons, risks, and the final decision. This ensures transparency and consistency when deviating from the standard policy.
+
 ### Other CVEs
 
 The following types of updates are evaluated and accepted by the team on a case-by-case basis. They will not trigger a patch release on their own and will only be included if other important changes are already planned:
