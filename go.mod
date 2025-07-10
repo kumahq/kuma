@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma
 
-go 1.24.4
+go 1.24.5
 
 require (
 	cirello.io/pglock v1.16.1
@@ -77,7 +77,7 @@ require (
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	helm.sh/helm/v3 v3.18.3
+	helm.sh/helm/v3 v3.18.4
 	k8s.io/api v0.33.2
 	k8s.io/apiextensions-apiserver v0.33.2
 	k8s.io/apimachinery v0.33.2
