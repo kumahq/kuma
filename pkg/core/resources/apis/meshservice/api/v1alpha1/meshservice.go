@@ -11,6 +11,7 @@ import (
 type DataplaneTags map[string]string
 
 type Selector struct {
+	// MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so we can't add more
 	// +kuma:nolint
 	DataplaneTags DataplaneTags `json:"dataplaneTags,omitempty"`
 	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`

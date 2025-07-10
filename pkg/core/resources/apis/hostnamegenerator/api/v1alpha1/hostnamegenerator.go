@@ -4,11 +4,12 @@ package v1alpha1
 import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type LabelSelector struct {
-	// +kuma:nolint
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+	MatchLabels *map[string]string `json:"matchLabels,omitempty"`
 }
 
 type Selector struct {
@@ -18,7 +19,7 @@ type Selector struct {
 }
 
 func (s LabelSelector) Matches(labels map[string]string) bool {
-	for tag, matchValue := range s.MatchLabels {
+	for tag, matchValue := range pointer.Deref(s.MatchLabels) {
 		labelValue, exist := labels[tag]
 		if !exist {
 			return false
@@ -37,10 +38,8 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 // hostname generators to not get synced across zones
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 type HostnameGenerator struct {
-	// +kuma:nolint
 	Selector Selector `json:"selector,omitempty"`
-	// +kuma:nolint
-	Template string `json:"template,omitempty"`
+	Template string `json:"template"`
 	// Extension struct for a plugin configuration
 	Extension *Extension `json:"extension,omitempty"`
 }
