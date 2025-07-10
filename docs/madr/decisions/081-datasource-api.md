@@ -27,6 +27,12 @@ It's easy for the user to configure, but there are some limitations:
 
 Additionally, we want to design a structure that is reusable across multiple resources, rather than something tailored to a single specific use case.
 
+The main goals is:
+* Provide a reusable structure that can be consistently applied across different resources.
+* Clearly define whether the data source should be:
+  * Loaded by the data plane (e.g., via `File` or `EnvVar`), or
+  * Delivered by the control plane (e.g., via `Secret` or other resolved sources).
+
 ## Design
 
 ### Create a one DataSource structure
@@ -237,6 +243,64 @@ The proposed model addresses the issues found in the previous approach, as it cl
 * Lack of inline
 * Might be problem with rotation - Envoy might not read if it's rotated - might be support by: https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret#key-rotation
 
+### Use one DataSource with resolveMode
+
+```golang
+// +kubebuilder:validation:Enum=File;Secret;EnvVar
+type Type string
+
+const (
+    FileType   Type = "File"
+    SecretType Type = "Secret"
+    EnvVarType Type = "EnvVar"
+)
+
+type ControlPlaneDataSource struct {
+    Type      Type       `json:"type,omitempty"`
+    File      *File      `json:"file,omitempty"`
+    SecretRef *SecretRef `json:"secretRef,omitempty"`
+    EnvVar    *EnvVar    `json:"envVar,omitempty"`
+}
+
+type ResolveMode string
+
+const (
+    CPResolveMode ResolveMode = "Cp"
+    DPResolveMode ResolveMode = "Dp"
+)
+
+type File struct {
+    ResolveMode ResolveMode `json:"resolveMode,omitempty"`
+    Path        string      `json:"path,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Secret
+type RefType string
+
+const (
+    SecretRefType RefType = "Secret"
+)
+
+type SecretRef struct {
+    Kind RefType `json:"kind,omitempty"`
+    Name string  `json:"name,omitempty"`
+}
+
+type EnvVar struct {
+    ResolveMode ResolveMode `json:"resolveMode,omitempty"`
+    Name        string      `json:"name,omitempty"`
+}
+```
+
+The proposed model introduces clear semantics for resource resolution, allowing users to specify whether a file (or other data source) should be loaded by the control plane or the data plane.
+
+#### Pros
+* Clear API boundaries — user can configure where the resource should be loaded
+* Inline secrets are not synced to the global anymore
+
+#### Cons
+* Additional parameter which needs to be set by the user
+
 ## Security implications and review
 
 Following changes increses security:
@@ -251,6 +315,4 @@ Following changes increses security:
 
 ## Decision
 
-Personally, I feel that Option 2 is clearer and easier to understand. The API is explicit, and it prevents users from specifying configuration options that aren't actually supported or available in the target context (e.g., referencing a secret in a data plane resolved setting).
-
-By separating control-plane and data plane resolved data sources, we make the model more predictable and user-friendly, while avoiding accidental misconfiguration or security issues.
+Option 3 offers the most flexibility, enabling users to explicitly choose whether a value is resolved by the control plane or accessed directly by the data plane.
