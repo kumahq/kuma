@@ -4,7 +4,7 @@
 
 ## Context and problem statement
 
-There is currently no formal policy for patching insecure dependencies in Kuma. Our goal has been to patch all vulnerabilities classified as **High** or **Critical** based on CVSS 3.0 for all supported versions. Supported versions are defined by the release branches listed in [`active-branches.json`](../../../active-branches.json).
+There is currently no formal policy for patching insecure dependencies in Kuma. Our goal has been to patch all vulnerabilities classified as **High** or **Critical** based on CVSS 3.1 for all supported versions. Supported versions are defined by the release branches listed in [`active-branches.json`](../../../active-branches.json).
 
 A consistent and scoped policy is needed to ensure we handle security updates effectively, especially across multiple release branches, without introducing unnecessary noise or instability.
 
@@ -30,7 +30,7 @@ This MADR does not cover whether we are using the slimmest possible base images 
 
 This policy uses the [Common Vulnerability Scoring System v3.1](https://www.first.org/cvss/v3-1/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
 
-| Severity | CVSS 3.0 Score Range | Notes                                                         |
+| Severity | CVSS 3.1 Score Range | Notes                                                         |
 |----------|----------------------|---------------------------------------------------------------|
 | Critical | 9.0–10.0             | Severe impact, often easily exploitable, requires urgent fix  |
 | High     | 7.0–8.9              | Major impact, exploitable under certain conditions            |
