@@ -68,18 +68,6 @@ In this policy, a **Confirmed CVE** is a vulnerability that has an assigned CVE 
 * It is published in the [GitHub Advisory Database](https://github.com/advisories), in which case it must have been reviewed by GitHub
 * It is published in the [OSV Vulnerability Database](https://osv.dev/list)
 
-### Evaluating impact on Kuma
-
-When no patch is available or cannot be adopted, we evaluate the impact of the vulnerability on Kuma using the following steps:
-
-* Investigate whether the vulnerability is relevant to Kuma.
-* Analyze if the issue is realistically exploitable in the context of a typical Kuma deployment.
-* Identify the required conditions, configuration, or paths that must exist for the exploit to be possible.
-* Recommend workarounds, mitigations, or usage guidance where applicable.
-* Summarize findings in a [GitHub security advisory](https://github.com/kumahq/kuma/security/advisories) if applicable.
-
-The structure and format of advisories will be defined as part of a separate effort tracked in [kumahq/kuma#13917](https://github.com/kumahq/kuma/issues/13917).
-
 ### Handling linked third-party components
 
 When we refer to a CVE as **Critical** or **High** in linked third-party components, we mean the severity assigned to the original CVE in that component. This is based on [CVSS 3.0](https://www.first.org/cvss/v3-0/specification-document). The severity reflects the impact of the vulnerability in the context of the third-party component itself, not in Kuma.
@@ -123,6 +111,18 @@ We will not accept updates that:
 
 * Only address **Medium** or **Low** severity CVEs or non-exploitable issues and introduce broad or disruptive dependency changes
 * Introduce incompatibilities or regressions inappropriate for a patch release without justification
+
+### Evaluating impact on Kuma
+
+When no patch is available or cannot be adopted, we evaluate the impact of the vulnerability on Kuma using the following steps:
+
+* Investigate whether the vulnerability is relevant to Kuma.
+* Analyze if the issue is realistically exploitable in the context of a typical Kuma deployment.
+* Identify the required conditions, configuration, or paths that must exist for the exploit to be possible.
+* Recommend workarounds, mitigations, or usage guidance where applicable.
+* Summarize findings in a [GitHub security advisory](https://github.com/kumahq/kuma/security/advisories) if applicable.
+
+The structure and format of advisories will be defined as part of a separate effort tracked in [kumahq/kuma#13917](https://github.com/kumahq/kuma/issues/13917).
 
 ## Consequences
 
