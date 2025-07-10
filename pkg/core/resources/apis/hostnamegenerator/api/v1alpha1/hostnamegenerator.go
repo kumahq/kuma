@@ -7,6 +7,7 @@ import (
 )
 
 type LabelSelector struct {
+	// +kuma:nolint
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
@@ -36,7 +37,9 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 // hostname generators to not get synced across zones
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 type HostnameGenerator struct {
+	// +kuma:nolint
 	Selector Selector `json:"selector,omitempty"`
+	// +kuma:nolint
 	Template string   `json:"template,omitempty"`
 	// Extension struct for a plugin configuration
 	Extension *Extension `json:"extension,omitempty"`

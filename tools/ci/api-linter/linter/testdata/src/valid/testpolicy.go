@@ -27,6 +27,9 @@ type Conf struct {
     NonMergeableStruct NonMergeableStruct `json:"non_mergeable_struct"` // OK
 
     Discriminator Discriminator `json:"discriminator"` // OK
+
+    // +kuma:nolint
+    InvalidNolint *string `json:"invalid_nolint_ptr"` // OK
 }
 
 type Discriminator struct {
