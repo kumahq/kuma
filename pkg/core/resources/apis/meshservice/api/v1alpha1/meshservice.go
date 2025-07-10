@@ -8,22 +8,18 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-type DataplaneTags map[string]string
-
 type Selector struct {
-	// MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so we can't add more
-	// +kuma:nolint
-	DataplaneTags DataplaneTags `json:"dataplaneTags,omitempty"`
+	DataplaneTags *map[string]string `json:"dataplaneTags,omitempty"`
 	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`
 }
 
 type DataplaneRef struct {
+	// It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	Name string `json:"name,omitempty"`
 }
 
 type Port struct {
-	// +kuma:nolint
 	Name string `json:"name,omitempty"`
 	Port int32  `json:"port"`
 	// +kuma:nolint
@@ -47,16 +43,21 @@ type MeshService struct {
 	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
 	// It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
 	// +kubebuilder:default=Unavailable
+	// It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	State    State    `json:"state,omitempty"`
+	// It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
+	// +kuma:nolint
 	Selector Selector `json:"selector,omitempty"`
 	// +patchMergeKey=port
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=port
 	// +listMapKey=appProtocol
+	// It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	Ports []Port `json:"ports,omitempty"`
+	// It should be optional but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }

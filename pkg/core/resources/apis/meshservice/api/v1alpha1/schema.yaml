@@ -65,6 +65,7 @@ properties:
           dataplaneRef:
             properties:
               name:
+                description: MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so we can't add more
                 type: string
             type: object
           dataplaneTags:

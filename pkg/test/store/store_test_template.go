@@ -119,7 +119,7 @@ func ExecuteStoreTests(
 				created := meshservice_api.MeshServiceResource{
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{
-							DataplaneTags: map[string]string{
+							DataplaneTags: &map[string]string{
 								"a": "b",
 							},
 						},
@@ -265,7 +265,7 @@ func ExecuteStoreTests(
 				updated := meshservice_api.MeshServiceResource{
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{
-							DataplaneTags: map[string]string{
+							DataplaneTags: &map[string]string{
 								"a": "b",
 							},
 						},

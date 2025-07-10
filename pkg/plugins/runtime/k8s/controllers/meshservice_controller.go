@@ -284,7 +284,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 	}
 	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
 	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: dpTags,
+		DataplaneTags: &dpTags,
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{

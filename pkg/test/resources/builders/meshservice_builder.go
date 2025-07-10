@@ -67,7 +67,7 @@ func (m *MeshServiceBuilder) WithDataplaneRefNameSelector(name string) *MeshServ
 
 func (m *MeshServiceBuilder) WithDataplaneTagsSelector(selector map[string]string) *MeshServiceBuilder {
 	m.res.Spec.Selector = v1alpha1.Selector{
-		DataplaneTags: selector,
+		DataplaneTags: &selector,
 	}
 	return m
 }
