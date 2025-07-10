@@ -2,6 +2,7 @@ package generate
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"maps"
 	"reflect"
 	"slices"
@@ -95,7 +96,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		port := meshservice_api.Port{
 			Name:        &portName,
 			Port:        int32(inbound.Port),
-			TargetPort:  intstr.FromInt(int(inbound.Port)),
+			TargetPort:  pointer.To(intstr.FromInt(int(inbound.Port))),
 			AppProtocol: core_mesh.Protocol(appProtocol),
 		}
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)

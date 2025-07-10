@@ -22,8 +22,7 @@ type DataplaneRef struct {
 type Port struct {
 	Name *string `json:"name,omitempty"`
 	Port int32   `json:"port"`
-	// +kuma:nolint
-	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
+	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kuma:comment It should be without omitempty but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so if it was ever persisted empty this would cause a nack
 	// +kubebuilder:default=tcp
 	// +kuma:nolint
@@ -58,8 +57,6 @@ type MeshService struct {
 	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	Ports []Port `json:"ports,omitempty"`
-	// +kuma:comment It should be optional but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
-	// +kuma:nolint
 	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }
 

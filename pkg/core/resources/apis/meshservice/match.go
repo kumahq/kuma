@@ -145,11 +145,11 @@ func matchByTags(
 }
 
 func MatchInboundWithMeshServicePort(inbound *mesh_proto.Dataplane_Networking_Inbound, meshServicePort meshservice_api.Port) bool {
-	switch meshServicePort.TargetPort.Type {
+	switch pointer.Deref(meshServicePort.TargetPort).Type {
 	case intstr.Int:
-		return uint32(meshServicePort.TargetPort.IntVal) == inbound.Port
+		return uint32(pointer.Deref(meshServicePort.TargetPort).IntVal) == inbound.Port
 	case intstr.String:
-		return meshServicePort.TargetPort.StrVal == inbound.Name
+		return pointer.Deref(meshServicePort.TargetPort).StrVal == inbound.Name
 	}
 	return false
 }

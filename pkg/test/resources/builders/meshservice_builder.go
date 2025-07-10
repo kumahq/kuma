@@ -79,7 +79,7 @@ func (m *MeshServiceBuilder) WithDataplaneTagsSelectorKV(selectorKV ...string) *
 func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_mesh.Protocol) *MeshServiceBuilder {
 	m.res.Spec.Ports = append(m.res.Spec.Ports, v1alpha1.Port{
 		Port: port,
-		TargetPort: intstr.IntOrString{
+		TargetPort: &intstr.IntOrString{
 			Type:   intstr.Int,
 			IntVal: target,
 		},
@@ -91,7 +91,7 @@ func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_mesh.P
 func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol core_mesh.Protocol, name string) *MeshServiceBuilder {
 	m.res.Spec.Ports = append(m.res.Spec.Ports, v1alpha1.Port{
 		Port: port,
-		TargetPort: intstr.IntOrString{
+		TargetPort: &intstr.IntOrString{
 			Type:   intstr.Int,
 			IntVal: target,
 		},

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"reflect"
 	"time"
 
@@ -126,7 +127,7 @@ func ExecuteStoreTests(
 						Ports: []meshservice_api.Port{
 							{
 								Port:        80,
-								TargetPort:  intstr.FromInt(80),
+								TargetPort:  pointer.To(intstr.FromInt(80)),
 								AppProtocol: "http",
 							},
 						},
@@ -272,7 +273,7 @@ func ExecuteStoreTests(
 						Ports: []meshservice_api.Port{
 							{
 								Port:        80,
-								TargetPort:  intstr.FromInt(80),
+								TargetPort:  pointer.To(intstr.FromInt(80)),
 								AppProtocol: "http",
 							},
 						},

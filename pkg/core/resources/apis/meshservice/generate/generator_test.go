@@ -97,7 +97,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -166,7 +166,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("main"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -185,7 +185,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -209,7 +209,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -228,7 +228,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -246,7 +246,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("81"),
 					Port:        81,
-					TargetPort:  intstr.FromInt(81),
+					TargetPort:  pointer.To(intstr.FromInt(81)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -265,7 +265,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -303,7 +303,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
@@ -349,7 +349,7 @@ var _ = Describe("MeshService generator", func() {
 				{
 					Name:        pointer.To("80"),
 					Port:        80,
-					TargetPort:  intstr.FromInt(80),
+					TargetPort:  pointer.To(intstr.FromInt(80)),
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))

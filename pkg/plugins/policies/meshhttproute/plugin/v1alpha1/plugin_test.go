@@ -210,7 +210,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 					}},
 					Identities: []meshservice_api.MeshServiceIdentity{
@@ -288,7 +288,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 					}},
 					Identities: []meshservice_api.MeshServiceIdentity{
@@ -763,7 +763,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
@@ -892,7 +892,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
@@ -922,7 +922,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8084),
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
@@ -1778,7 +1778,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
-						TargetPort:  intstr.FromInt(8080),
+						TargetPort:  pointer.To(intstr.FromInt(8080)),
 						AppProtocol: core_mesh.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
