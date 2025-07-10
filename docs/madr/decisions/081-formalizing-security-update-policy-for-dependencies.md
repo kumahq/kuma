@@ -28,7 +28,7 @@ This MADR does not cover whether we are using the slimmest possible base images 
 
 ## CVSS 3.0 severity definitions used in this policy
 
-This policy uses the [Common Vulnerability Scoring System v3.0](https://www.first.org/cvss/v3-0/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
+This policy uses the [Common Vulnerability Scoring System v3.1](https://www.first.org/cvss/v3-1/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
 
 | Severity | CVSS 3.0 Score Range | Notes                                                         |
 |----------|----------------------|---------------------------------------------------------------|
@@ -70,7 +70,7 @@ In this policy, a **Confirmed CVE** is a vulnerability that has an assigned CVE 
 
 ### Handling linked third-party components
 
-When we refer to a CVE as **Critical** or **High** in linked third-party components, we mean the severity assigned to the original CVE in that component. This is based on [CVSS 3.0](https://www.first.org/cvss/v3-0/specification-document). The severity reflects the impact of the vulnerability in the context of the third-party component itself, not in Kuma.
+When we refer to a CVE as **Critical** or **High** in linked third-party components, we mean the severity assigned to the original CVE in that component. The severity reflects the impact of the vulnerability in the context of the third-party component itself, not in Kuma.
 
 We handle these situations on a best-effort basis:
 
