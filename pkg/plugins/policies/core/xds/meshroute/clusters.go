@@ -175,7 +175,7 @@ func ServiceTagIdentities(
 		if ms == nil {
 			return result
 		}
-		for _, identity := range ms.(*meshservice_api.MeshServiceResource).Spec.Identities {
+		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, identity.Value)
 			}
@@ -198,7 +198,7 @@ func ServiceTagIdentities(
 			if ms == nil {
 				continue
 			}
-			for _, identity := range ms.(*meshservice_api.MeshServiceResource).Spec.Identities {
+			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
 				if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 					identities[identity.Value] = struct{}{}
 				}

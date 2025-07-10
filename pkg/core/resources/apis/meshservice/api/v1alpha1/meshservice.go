@@ -57,7 +57,7 @@ type MeshService struct {
 	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	Ports []Port `json:"ports,omitempty"`
-	Identities []MeshServiceIdentity `json:"identities,omitempty"`
+	Identities *[]MeshServiceIdentity `json:"identities,omitempty"`
 }
 
 type VIP struct {
