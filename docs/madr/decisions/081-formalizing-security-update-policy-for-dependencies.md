@@ -26,7 +26,7 @@ For this document, we refer to a **Kuma vulnerability** as a vulnerability in Ku
 
 This MADR does not cover whether we are using the slimmest possible base images for our convenience images. That investigation, including the possibility of switching to slimmer base images to reduce exposure, will be handled in a separate technical story and addressed by a different MADR.
 
-## CVSS 3.0 severity definitions used in this policy
+## CVSS 3.1 severity definitions used in this policy
 
 This policy uses the [Common Vulnerability Scoring System v3.1](https://www.first.org/cvss/v3-1/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
 
