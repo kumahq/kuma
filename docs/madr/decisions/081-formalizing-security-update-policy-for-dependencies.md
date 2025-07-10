@@ -59,7 +59,26 @@ For all supported release branches, we aim to patch:
 
 * CVEs classified as **Critical** or **High**
 * Confirmed CVEs only (for third-party code linked directly by Kuma)
-* Vulnerabilities in the convenience Docker image components, but only during scheduled releases
+* Vulnerabilities in the convenience Docker image components, but only during scheduled patch releases
+
+### Confirmed CVEs
+
+In this policy, a **Confirmed CVE** is a vulnerability that has an assigned CVE ID and meets at least one of the following conditions:
+
+* It is published in the [GitHub Advisory Database](https://github.com/advisories), in which case it must have been reviewed by GitHub
+* It is published in the [OSV Vulnerability Database](https://osv.dev/list)
+
+### Evaluating impact on Kuma
+
+When no patch is available or cannot be adopted, we evaluate the impact of the vulnerability on Kuma using the following steps:
+
+* Investigate whether the vulnerability is relevant to Kuma.
+* Analyze if the issue is realistically exploitable in the context of a typical Kuma deployment.
+* Identify the required conditions, configuration, or paths that must exist for the exploit to be possible.
+* Recommend workarounds, mitigations, or usage guidance where applicable.
+* Summarize findings in a [GitHub security advisory](https://github.com/kumahq/kuma/security/advisories) if applicable.
+
+The structure and format of advisories will be defined as part of a separate effort tracked in [kumahq/kuma#13917](https://github.com/kumahq/kuma/issues/13917).
 
 ### Handling linked third-party components
 
@@ -68,13 +87,7 @@ When we refer to a CVE as **Critical** or **High** in linked third-party compone
 We handle these situations on a best-effort basis:
 
 * If an upstream fix is released, we will update the component.
-
-* If no fix is available in a timely manner, we will:
-
-   * Investigate whether the vulnerability is relevant to Kuma.
-   * Determine if it is exploitable in the context of a typical Kuma deployment.
-   * Identify and recommend workarounds when possible.
-   * Document the findings in a [GitHub security advisory](https://github.com/kumahq/kuma/security/advisories).
+* If no fix is available within a reasonable timeframe, or if the available fix cannot be adopted in timely manner, we follow a process of due diligence (see [Evaluating impact on Kuma](#evaluating-impact-on-kuma)).
 
 Decisions around what qualifies as a vulnerability **in Kuma**, how CVEs are assigned, and how advisories are structured will be covered in separate MADRs.
 
@@ -89,15 +102,14 @@ We usually do not attempt to patch or modify vulnerable third-party components o
 
 These exceptional actions will be considered only when the issue is significant, no upstream fix is available in a timely manner, and the patch is feasible with limited impact.
 
-**Each exception must be covered in a separate, small MADR**. That MADR should document the context, options considered, pros, cons, risks, and the final decision. This ensures transparency and consistency when deviating from the standard policy.
+**Each exception must be covered in a separate, simple MADR**. That document should describe the context, options considered, pros, cons, risks, and the final decision. It must also include a plan for removing the fork or reverting the exception once the upstream fix is available or the reason for the deviation no longer applies. This ensures transparency and consistency when deviating from the standard policy.
 
 ### Other CVEs
 
 The following types of updates are evaluated and accepted by the team on a case-by-case basis. They will not trigger a patch release on their own and will only be included if other important changes are already planned:
 
 * CVEs classified as **Medium** or **Low**, if the update is clean, does not involve disruptive cascading updates, does not introduce breaking changes, and does not require refactoring
-
-* CVEs that are non-exploitable in the context of Kuma, if the patch is minimal and non-disruptive
+* CVEs determined to be non-exploitable in the context of Kuma, based on the process described in [Evaluating impact on Kuma](#evaluating-impact-on-kuma), if the patch is minimal and non-disruptive
 
 ### Update acceptance criteria
 
