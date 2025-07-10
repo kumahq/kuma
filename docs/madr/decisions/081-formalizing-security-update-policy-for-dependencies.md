@@ -99,8 +99,6 @@ The following types of updates are evaluated and accepted by the team on a case-
 
 * CVEs that are non-exploitable in the context of Kuma, if the patch is minimal and non-disruptive
 
-CVEs classified as **None** severity are not considered vulnerabilities and are not covered by this policy.
-
 ### Update acceptance criteria
 
 We will accept dependency updates that meet one or more of the following conditions:
