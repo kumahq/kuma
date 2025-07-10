@@ -30,11 +30,13 @@ This MADR does not cover whether we are using the slimmest possible base images 
 
 This policy uses the [Common Vulnerability Scoring System v3.0](https://www.first.org/cvss/v3-0/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
 
-* **Critical**: CVSS score 9.0–10.0
-* **High**: CVSS score 7.0–8.9
-* **Medium**: CVSS score 4.0–6.9
-* **Low**: CVSS score 0.1–3.9
-* **None**: CVSS score 0.0 (informational, not considered a vulnerability)
+| Severity | CVSS 3.0 Score Range | Notes                                         |
+|----------|----------------------|-----------------------------------------------|
+| Critical | 9.0–10.0             |                                               |
+| High     | 7.0–8.9              |                                               |
+| Medium   | 4.0–6.9              |                                               |
+| Low      | 0.1–3.9              |                                               |
+| None     | 0.0                  | Informational, not considered a vulnerability |
 
 CVEs classified as **None** severity are excluded from this policy.
 
