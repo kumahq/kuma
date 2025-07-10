@@ -279,7 +279,7 @@ func stripExtension(filename string) string {
 func isIntegerFieldInt32OrInt64(fieldPath string, field *ast.Field, pass *analysis.Pass) {
 	ident := &ast.Ident{}
 
-	if i, ok := field.Type.(*ast.Ident); ok{
+	if i, ok := field.Type.(*ast.Ident); ok {
 		ident = i
 	} else if ptrType, ok := field.Type.(*ast.StarExpr); ok {
 		if i, ok := ptrType.X.(*ast.Ident); ok {
