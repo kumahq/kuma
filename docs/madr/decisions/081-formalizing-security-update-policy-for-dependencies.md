@@ -2,33 +2,20 @@
 
 * Status: accepted
 
-## Context and problem statement
+## Terminology and criteria used in this policy
 
-There is currently no formal policy for patching insecure dependencies in Kuma. While the general goal has been to address all vulnerabilities classified as [**High** or **Critical** under CVSS 3.1](#cvss-31-severity-definitions-used-in-this-policy), this has been done informally and inconsistently across versions. A consistent and scoped policy is needed to ensure we handle security updates effectively, especially across multiple release branches, without introducing unnecessary noise or instability.
+### Common Vulnerabilitity and Exposure (CVE)
 
-## Scope of coverage
+In this policy, a **CVE** (or **Confirmed CVE**, used interchangeably) refers to a vulnerability with an assigned CVE Identifier that meets at least one of the following criteria:
 
-This policy applies to three categories of code:
+* It is published in the [GitHub Advisory Database](https://github.com/advisories), in which case it must have been reviewed by GitHub
+* It is listed in the [OSV Vulnerability Database](https://osv.dev/list)
 
-* Kuma's own source code
-* Third-party code directly linked by Kuma (e.g. Envoy, CoreDNS)
-* Third-party code bundled in the convenience Docker image (e.g. Bash, cURL or iptables)
+### CVSS 4.0 severity levels
 
-For third-party code directly linked by Kuma, we only act on vulnerabilities that have a [confirmed CVE](#confirmed-cves).
+This policy uses the [Common Vulnerability Scoring System v4.0](https://www.first.org/cvss/v4-0/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
 
-For third-party code bundled in the convenience Docker image, vulnerabilities are only addressed during the regular release process. These components are not part of Kuma itself, and vulnerabilities in them are not considered exploitable during normal operation. Convenience images are rebuilt with all available patches during each release, but may accumulate vulnerabilities over time. Users are encouraged to build their own images using secure, trusted base images. Users relying on the provided images should always upgrade to the latest patch release of their Kuma version to receive the most recently rebuilt and patched images. We do not patch convenience images outside the release cycle, except in rare cases reviewed by the team, such as a CVE with clearly critical impact in a base image. These are exceptions, and there are no guarantees or formal promises.
-
-### Out of scope
-
-For this document, we refer to a **Kuma vulnerability** as a vulnerability in Kuma's own source code. Whether a vulnerability in a third-party component should also be classified as a Kuma vulnerability (and whether it should be assigned a Kuma CVE) is out of scope for this MADR and will be handled separately if needed.
-
-This MADR does not cover whether we are using the slimmest possible base images for our convenience images. That investigation, including the possibility of switching to slimmer base images to reduce exposure, will be handled in a separate technical story and addressed by a different MADR.
-
-## CVSS 3.1 severity definitions used in this policy
-
-This policy uses the [Common Vulnerability Scoring System v3.1](https://www.first.org/cvss/v3-1/specification-document) to assess the severity of vulnerabilities. The following thresholds apply:
-
-| Severity | CVSS 3.1 Score Range | Notes                                                         |
+| Severity | CVSS 4.0 Score Range | Notes                                                         |
 |----------|----------------------|---------------------------------------------------------------|
 | Critical | 9.0–10.0             | Severe impact, often easily exploitable, requires urgent fix  |
 | High     | 7.0–8.9              | Major impact, exploitable under certain conditions            |
@@ -37,6 +24,28 @@ This policy uses the [Common Vulnerability Scoring System v3.1](https://www.firs
 | None     | 0.0                  | Informational only, not considered a vulnerability            |
 
 CVEs classified as **None** severity are excluded from this policy.
+
+## Context and problem statement
+
+There is currently no formal policy for patching insecure dependencies in Kuma. While the general goal has been to address all vulnerabilities classified as [**High** or **Critical** under CVSS 4.0](#cvss-40-severity-levels), this has been done informally and inconsistently across versions. A consistent and scoped policy is needed to ensure we handle security updates effectively, especially across multiple release branches, without introducing unnecessary noise or instability.
+
+## Scope of coverage
+
+This policy defines how we handle **security updates for dependencies** in response to vulnerabilities classified as [Confirmed CVEs](#common-vulnerabilitity-and-exposure-cve). It applies to the following categories of code:
+
+* Kuma's own source code
+* Third-party code directly linked by Kuma (e.g. Envoy, CoreDNS)
+* Third-party code bundled in the convenience Docker image (e.g. Bash, cURL, iptables)
+
+For third-party code bundled in the convenience Docker image, vulnerabilities are only addressed during the regular release process. These components are not part of Kuma itself, and vulnerabilities in them are not considered exploitable during normal operation. Convenience images are rebuilt with all available patches during each release, but may accumulate vulnerabilities over time. Users are encouraged to build their own images using secure, trusted base images. Users relying on the provided images should always upgrade to the latest patch release of their Kuma version to receive the most recently rebuilt and patched images.
+
+We do not patch convenience images outside the release cycle, except in rare cases reviewed by the team on case-by-case basis. These are exceptions, and there are no guarantees or formal promises.
+
+### Out of scope
+
+For this document, we refer to a **Kuma vulnerability** as a vulnerability in Kuma's own source code. Whether a vulnerability in a third-party component should also be classified as a Kuma vulnerability (and whether it should be assigned a Kuma CVE) is out of scope for this MADR and will be handled separately.
+
+This MADR does not cover whether we are using the slimmest possible base images for our convenience images. That investigation, including the possibility of switching to slimmer base images to reduce exposure, will be handled in a separate technical story and addressed by a different MADR.
 
 ## Driving factors
 
@@ -53,29 +62,25 @@ We adopt the following best-effort policy for patching security vulnerabilities.
 
 ### What we patch
 
-For all active release branches defined in [`active-branches.json`](../../../active-branches.json), which represent supported Kuma versions, we aim to patch:
+For all active release branches defined in [`active-branches.json`](../../../active-branches.json), which represent supported Kuma versions, we aim to apply security patches in the following cases:
 
-* CVEs classified as **Critical** or **High**
-* Confirmed CVEs only (for third-party code linked directly by Kuma)
-* Vulnerabilities in the convenience Docker image components, but only during scheduled patch releases
+* Vulnerabilities discovered in Kuma's own source code, whether or not they are assigned a Confirmed CVE
 
-### Confirmed CVEs
+* **Confirmed CVEs** classified as **Critical** or **High**:
 
-In this policy, a **Confirmed CVE** is a vulnerability that has an assigned CVE ID and meets at least one of the following conditions:
+  * Affecting dependencies used in Kuma’s own source code
+  * Affecting third-party components directly linked by Kuma (such as Envoy or CoreDNS), as described in [Handling linked third-party components](#handling-linked-third-party-components)
 
-* It is published in the [GitHub Advisory Database](https://github.com/advisories), in which case it must have been reviewed by GitHub
-* It is published in the [OSV Vulnerability Database](https://osv.dev/list)
+* Vulnerabilities in components bundled in the convenience Docker image, addressed only during scheduled patch releases
 
 ### Handling linked third-party components
 
-When we refer to a CVE as **Critical** or **High** in linked third-party components, we mean the severity assigned to the original CVE in that component. The severity reflects the impact of the vulnerability in the context of the third-party component itself, not in Kuma.
+When we refer to a CVE in linked third-party components, we mean the severity assigned to the original CVE in that component. The severity reflects the impact of the vulnerability in the context of the third-party component itself, not in Kuma.
 
 We handle these situations on a best-effort basis:
 
-* If an upstream fix is released, we will update the component.
-* If no fix is available within a reasonable timeframe, or if the available fix cannot be adopted in timely manner, we follow a process of due diligence (see [Evaluating impact on Kuma](#evaluating-impact-on-kuma)).
-
-Decisions around what qualifies as a vulnerability **in Kuma**, how CVEs are assigned, and how advisories are structured will be covered in separate MADRs.
+* If an upstream fix is released, we will update the component
+* If no fix is available within a reasonable timeframe, or if the available fix cannot be adopted in timely manner, we follow a process of due diligence (see [Process for assessing vulnerability impact on Kuma](#process-for-assessing-vulnerability-impact-on-kuma))
 
 ### Exceptions: patching or forking components
 
@@ -90,51 +95,59 @@ These exceptional actions will be considered only when the issue is significant,
 
 **Each exception must be covered in a separate, simple MADR**. That document should describe the context, options considered, pros, cons, risks, and the final decision. It must also include a plan for removing the fork or reverting the exception once the upstream fix is available or the reason for the deviation no longer applies. This ensures transparency and consistency when deviating from the standard policy.
 
-### Other CVEs
+### Dependency update acceptance criteria
 
-The following types of updates are evaluated and accepted by the team on a case-by-case basis. They will not trigger a patch release on their own and will only be included if other important changes are already planned:
-
-* CVEs classified as **Medium** or **Low**, if the update is clean, does not involve disruptive cascading updates, does not introduce breaking changes, and does not require refactoring
-* CVEs determined to be non-exploitable in the context of Kuma, based on the process described in [Evaluating impact on Kuma](#evaluating-impact-on-kuma), if the patch is minimal and non-disruptive
-
-### Update acceptance criteria
-
-We will accept dependency updates that meet one or more of the following conditions:
+We will accept dependency security updates that meet one or more of the following conditions:
 
 * Fix a CVE classified as **Critical** or **High**. For such updates, the team is committed to adopting the fix, even if it requires breaking changes, disruptive cascading updates, or significant refactoring.
 
-* Fix a **Medium** or **Low** severity CVE, or a CVE that is [non-exploitable in the context of Kuma](#evaluating-impact-on-kuma), **only if** all the following apply:
+* Fix a **Medium** or **Low** severity CVE, or a CVE that is [non-exploitable in the context of Kuma](#process-for-assessing-vulnerability-impact-on-kuma), **only if** all the following apply:
 
-   * The update is minimal and well-scoped.
-   * No major dependency, toolchain, or language runtime upgrades are needed.
-   * The patch applies cleanly and does not require breaking changes or significant refactoring.
+  * The update is minimal and well-scoped.
+  * No major dependency, toolchain, or language runtime upgrades are needed.
+  * The patch applies cleanly and does not require breaking changes or significant refactoring.
 
 * Apply cleanly to the target branch without introducing instability, regressions, or compatibility issues.
 
 We will not accept updates that:
 
-* Only address **Medium** or **Low** severity CVEs, or [non-exploitable issues](#evaluating-impact-on-kuma), **and**:
+* Only address **Medium** or **Low** severity CVEs
 
-   * Require large or disruptive dependency changes.
-   * Introduce any instability, regressions, or breaking changes without justification.
+* Address vulnerabilities that are non-exploitable in regular Kuma deployments, **and**:
 
-### Evaluating impact on Kuma
+  * Require large or disruptive dependency changes.
+  * Introduce any instability, regressions, or breaking changes without justification.
 
-When no patch is available or cannot be adopted, we evaluate the impact of the vulnerability on Kuma using the following steps:
+  In these cases, the findings based on the due diligence process described in [Process for assessing vulnerability impact on Kuma](#process-for-assessing-vulnerability-impact-on-kuma) will be documented in a dedicated GitHub issue. This issue can be used to share details, justification, and reference for future discussions.
 
-* Investigate whether the vulnerability is relevant to Kuma.
-* Analyze if the issue is realistically exploitable in the context of a typical Kuma deployment.
-* Identify the required conditions, configuration, or paths that must exist for the exploit to be possible.
-* Recommend workarounds, mitigations, or usage guidance where applicable.
-* Summarize findings in a [GitHub security advisory](https://github.com/kumahq/kuma/security/advisories) if applicable.
+### Triggering the patch release process
 
-The structure and format of advisories will be defined as part of a separate effort tracked in [kumahq/kuma#13917](https://github.com/kumahq/kuma/issues/13917).
+A patch release will be initiated when one or more of the following conditions are met:
+
+* A **High** or **Critical** severity vulnerability in Kuma’s own source code is fixed, based on the process outlined in the [Process for assessing vulnerability impact on Kuma](#process-for-assessing-vulnerability-impact-on-kuma) section
+* A **Confirmed CVE** classified as **High** or **Critical** is fixed in a third-party component directly linked by Kuma, and an official upstream fix is publicly available
+* A patch release is already planned for other reasons, and eligible security fixes are available and can be included
+
+In rare cases, the team may choose to initiate a patch release for other types of fixes. These decisions are made on a case-by-case basis and must be justified by a strong technical or security rationale.
+
+### Process for assessing vulnerability impact on Kuma
+
+To evaluate whether a vulnerability in a dependency affects Kuma, the team should follow a structured process to assess its relevance and the conditions under which it could be exploited. This includes:
+
+* Reviewing the vulnerability details and identifying if the affected component is used by Kuma
+* Assessing whether the vulnerability is reachable or exploitable in typical Kuma deployments
+* Outlining the required conditions, configuration, or runtime paths needed for exploitation to be possible in Kuma
+* Determining whether the vulnerability could pose a practical risk in production environments
+* Identifying and recommending mitigations, configuration changes, or usage guidelines if applicable* Summarizing the findings in a [GitHub security advisory](https://github.com/kumahq/kuma/security/advisories), if applicable, or in a dedicated GitHub issue documenting the due diligence. The format and structure of advisories will be defined separately as part of [kumahq/kuma#13917](https://github.com/kumahq/kuma/issues/13917)
+
+This process applies regardless of whether a patch is available or can be adopted.
 
 ## Consequences
 
-* We have a clear, written policy on what security updates we will address
-* This policy applies uniformly across all supported release branches
-* **Critical** and **High** severity updates are prioritized even if complex or disruptive
-* **Medium** and **Low** severity or non-exploitable issues are only accepted when minimal and non-invasive
-* Patch releases are not triggered by non-exploitable or lower severity CVEs unless other important updates are included
-* Users of the convenience Docker image are responsible for adopting updated images or building their own using secure base layers
+* This policy provides a clear and consistent approach to handling security updates for dependencies.
+* It applies uniformly across all active and supported release branches listed in `active-branches.json`.
+* **Critical** and **High** severity vulnerabilities are prioritized and addressed, even when the fix is complex, disruptive, or requires significant effort.
+* **Medium**, **Low**, or non-exploitable vulnerabilities are only accepted when the fix is minimal, non-invasive, and does not require major changes.
+* Patch releases are only triggered by high-impact fixes, such as those for vulnerabilities in Kuma’s own code or confirmed issues in linked third-party components.
+* Vulnerabilities determined to be non-exploitable or lower severity do not trigger a release on their own.
+* Users relying on the provided convenience Docker images are responsible for upgrading to the latest patched version or building their own using secure base images.
