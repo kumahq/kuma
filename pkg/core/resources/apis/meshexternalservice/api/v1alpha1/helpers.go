@@ -71,6 +71,7 @@ func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bo
 }
 
 func (m Match) GetName() string {
+        // MES can only have one port so there's no point in naming it.
 	return ""
 }
 
