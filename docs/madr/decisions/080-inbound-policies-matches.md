@@ -287,7 +287,7 @@ spec:
              value: "/metrics"
 ```
 
-#### Service Owner
+###### Service Owner
 
 1. I want to grant access to my service to any client I choose,
    so that I can support integrations and collaboration with other teams,
