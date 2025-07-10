@@ -103,14 +103,22 @@ The following types of updates are evaluated and accepted by the team on a case-
 
 We will accept dependency updates that meet one or more of the following conditions:
 
-* Fix a CVE classified as **Critical** or **High**. For such updates, the team is committed to making the necessary effort to adopt the fix, even if it involves breaking changes, disruptive cascading updates, or requires significant refactoring
-* Address **Medium** or **Low** severity vulnerabilities, or CVEs non-exploitable in the context of Kuma, **only if** the update is minimal, well-scoped, and does not require broad dependency changes (such as major library or toolchain upgrades)
-* Apply cleanly to the target branch without introducing instability, meaning no breaking changes, refactoring, or compatibility issues are required
+* Fix a CVE classified as **Critical** or **High**. For such updates, the team is committed to adopting the fix, even if it requires breaking changes, disruptive cascading updates, or significant refactoring.
+
+* Fix a **Medium** or **Low** severity CVE, or a CVE that is [non-exploitable in the context of Kuma](#evaluating-impact-on-kuma), **only if** all the following apply:
+
+   * The update is minimal and well-scoped.
+   * No major dependency, toolchain, or language runtime upgrades are needed.
+   * The patch applies cleanly and does not require breaking changes or significant refactoring.
+
+* Apply cleanly to the target branch without introducing instability, regressions, or compatibility issues.
 
 We will not accept updates that:
 
-* Only address **Medium** or **Low** severity CVEs or non-exploitable issues and introduce broad or disruptive dependency changes
-* Introduce incompatibilities or regressions inappropriate for a patch release without justification
+* Only address **Medium** or **Low** severity CVEs, or [non-exploitable issues](#evaluating-impact-on-kuma), **and**:
+
+   * Require large or disruptive dependency changes.
+   * Introduce any instability, regressions, or breaking changes without justification.
 
 ### Evaluating impact on Kuma
 
