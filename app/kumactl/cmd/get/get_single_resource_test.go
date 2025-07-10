@@ -162,4 +162,51 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		},
 		entries,
 	)
+	Describe("happy path (--context <ctx>)", func() {
+		DescribeTable("kumactl get [resource] [name] -otable",
+			func(resource string) {
+				// setup - add resource to store
+				resourceYAML := fmt.Sprintf("get-%s.golden.yaml", resource)
+				rootCmd.SetArgs([]string{"apply", "--context", "local", "-f", filepath.Join("testdata/get", resourceYAML)})
+				Expect(rootCmd.Execute()).To(Succeed())
+
+				// given
+				resourceTable := fmt.Sprintf("get-%s.golden.txt", resource)
+
+				// when
+				resourceName := fmt.Sprintf("%s-1", resource)
+				rootCmd.SetArgs([]string{"get", "--context", "local", resource, resourceName, "-otable"})
+				outbuf.Reset()
+				err := rootCmd.Execute()
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(outbuf.String()).To(MatchGoldenEqual("testdata/get", resourceTable))
+			},
+			entries,
+		)
+	})
+	Describe("error case (--context <ctx>) - random context provided", func() {
+		DescribeTable("kumactl get [resource] [name] -otable",
+			func(resource string) {
+				// setup - add resource to store
+				resourceYAML := fmt.Sprintf("get-%s.golden.yaml", resource)
+				rootCmd.SetArgs([]string{"apply", "--context", "random", "-f", filepath.Join("testdata/get", resourceYAML)})
+				// when
+				err := rootCmd.Execute()
+				// then
+				Expect(err.Error()).To(ContainSubstring("apparently, configuration is broken"))
+
+				// when
+				resourceName := fmt.Sprintf("%s-1", resource)
+				rootCmd.SetArgs([]string{"get", "--context", "random", resource, resourceName, "-otable"})
+				outbuf.Reset()
+				// when
+				err = rootCmd.Execute()
+				// then
+				Expect(err.Error()).To(ContainSubstring("apparently, configuration is broken"))
+			},
+			entries,
+		)
+	})
 }, Ordered)
