@@ -18,7 +18,7 @@ This policy applies to three categories of code:
 
 For third-party code directly linked by Kuma, we only act on vulnerabilities that have a confirmed CVE.
 
-For third-party code bundled in the convenience Docker image, vulnerabilities are only addressed during the regular release process. These components are not part of Kuma itself, and vulnerabilities in them are not considered exploitable during normal operation. Convenience images are rebuilt with all available patches during each release, but may accumulate vulnerabilities over time. Users are encouraged to build their own images using secure, trusted base images. Users relying on the provided images should always upgrade to the latest patch release of their Kuma version to receive the most recently rebuilt and patched images. We do not patch convenience images outside the release cycle.
+For third-party code bundled in the convenience Docker image, vulnerabilities are only addressed during the regular release process. These components are not part of Kuma itself, and vulnerabilities in them are not considered exploitable during normal operation. Convenience images are rebuilt with all available patches during each release, but may accumulate vulnerabilities over time. Users are encouraged to build their own images using secure, trusted base images. Users relying on the provided images should always upgrade to the latest patch release of their Kuma version to receive the most recently rebuilt and patched images. We do not patch convenience images outside the release cycle, except in rare cases reviewed by the team, such as a CVE with clearly critical impact in a base image. These are exceptions, and there are no guarantees or formal promises.
 
 ### Out of scope
 
