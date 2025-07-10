@@ -6,38 +6,8 @@ Technical Story: https://github.com/kumahq/kuma/issues/12374
 
 ## Context and Problem Statement
 
-### Problems
-
-#### Problem 1
-
 Current MeshTrafficPermission relies on client's cert with client's DPP tags encoded as URI SANs.
 As we're moving towards SPIFFE compliant certs we won't be able to use DPP tags in MeshTrafficPermission anymore.
-
-#### Problem 2
-
-In the [Inbound Policies MADR](https://docs.google.com/document/d/1tdIOVVYObHbGKX1AFhbPH3ZQKYvpQG-2s6ShHSECaXM) we said:
-
-> #### Merging behaviour
-> Same as MeshHTTPRoute merging:
-> 1. Pick policies that select the DPP with top-level targetRef
-> 2. Sort these policies by top-level targetRef
-> 3. Concatenate all “rules” arrays from these policies
-> 4. Merge rules items with the same “hash(rules[i].matches)”
-> the new rule position is the highest of two merged rules
-> 5. Stable sort rules based on the Extended GAPI matches order
-> we need to split individual matches into separate rules
-
-But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://github.com/kumahq/kuma/issues/13440):
-
-1. Targeting routes by policies results in surprising behaviour
-
-    > * `timeout-1` applies to `route-1`
-    > * `timeout-2` applies to `route-2`
-    > 
-    > Since the merged configuration is attributed only to `route-2`, we would apply only `timeout-2`, ignoring `timeout-1`.
-
-2. Merging is not aligned with the Gateway API approach that [states](https://gateway-api.sigs.k8s.io/api-types/httproute/#merging):
-    > Multiple HTTPRoutes can be attached to a single Gateway resource. Importantly, only one Route rule may match each request.
 
 ### User Stories
 
@@ -76,8 +46,10 @@ But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://gi
 ### Design
 
 According to [MADR-078](078-special-mtp-algo.md) MeshTrafficPermission's algorithm and API is different from other inbound policies.
+Current MADR suggests 2 options to implement the design. 
+Chosen option is "Option 1: MeshTrafficPermission is a single-item policy".
 
-#### MeshTrafficPermission is a single-item policy
+#### Option 1: MeshTrafficPermission is a single-item policy
 
 Pros:
 * Inspect API works out-of-the-box!
@@ -86,27 +58,35 @@ Pros:
 * No intermediate representation is required, `rbac_configurer.go` generates Envoy configuration directly from `conf`
 
 Cons:
-* action in envoy can't be correlated with a single MTP kri
+* Action in Envoy can't be correlated with a single MTP kri, 
+but that's the problem exists for other single-item policies (i.e. [MeshPassthrough](https://github.com/kumahq/kuma/issues/13886)).
 
 ##### Schema
+
+The idea is to make MeshTrafficPermission a simple single-item policy:
 
 ```yaml
 type: MeshTrafficPermission
 mesh: default
 name: by-mesh-operator
 spec:
+   targetRef: {}
+   default:
+      deny:
+         - spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+---
+type: MeshTrafficPermission
+mesh: default
+name: by-service-owner
+spec:
   targetRef: {}
   default: 
     deny:
       - spiffeId:
            type: Exact
-           value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
-      - spiffeId:
-           type: Exact
            value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
-      - dataplane: # TODO: think more about it
-          matchLabels: 
-            app: frontend
     allowWithShadowDeny:
        - spiffeId:
            type: Prefix
@@ -116,6 +96,50 @@ spec:
             type: Prefix
             value: "spiffe://trust-domain.mesh/"
 ```
+
+##### Merging
+
+Normally in Kuma policies mergeable arrays override each other, for example:
+
+```
+name: policy-1
+spec:
+  default:
+    myArray: [1,2,3]
+---
+name: policy-1
+spec:
+  default:
+    myArray: [4]
+```
+
+results in `spec.default.myArray: [4]`.
+
+Switching merging array behaviour from overriding to concatenation normally requires prefixing fields with `append`:
+
+```
+name: policy-1
+spec:
+  default:
+    appendArray: [1,2,3]
+---
+name: policy-1
+spec:
+  default:
+    appendArray: [4]
+```
+
+results in `spec.default.appendArray: [1,2,3,4]`.
+
+Instead of naming fields `appendDeny` and `appendAllow` we need to add a new value `concat` for the existing `policyMerge` struct tag:
+
+```go
+type Conf struct {
+    Allow *[]Matcher `json:"allow,omitempty" policyMerge:"concat"`
+}
+```
+
+When used on fields prefixed with `append` the struct tag `concat` won't have any additional effect.
 
 ##### Algorithm
 
@@ -170,7 +194,192 @@ policies:
         - kri: kri_mtp_...
 ```
 
-#### MeshTrafficPermission is a special case of inbound policy
+##### Extensibility with DPP labels selector
+
+Today, MeshTrafficPermission allows specifying DPP tags of the workloads we want to allow or deny requests from. 
+This works because DPP tags are currently encoded as URI SANs in the workload certificate. 
+However, making workload certificates SPIFFE-compliant requires us to retain only a single URI SAN, which must be the SPIFFE ID.
+
+Ability to grant access to workloads based on the labels rather than identity provides nicer UX.
+That's why potentially, we're thinking on introducing workload selector alongside `spiffeId`:
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-service-owner
+spec:
+   targetRef: {}
+   default:
+      allow:
+         - spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+         - dataplaneLabels:
+             app: frontend
+```
+
+The `dataplaneLabels` will be resolved on CP and replaced with a list of `spiffeId` corresponding to matched DPPs.
+
+Though, without a label-enforcement mechanism, the feature isn’t truly secure: 
+if clients can add or remove any labels on their own workloads, they can simply insert themselves into the allow list.
+
+##### Verify user stories
+
+###### Mesh Operator
+
+1. I want all requests in the mesh to be denied by default (2.12)
+
+No MeshTrafficPermission policies means requests are denied by default.
+
+2. I want to declare a group of identities as explicitly denied,
+   so that Service Owner can't override or bypass that decision,
+   ensuring enforcement of critical security boundaries across the mesh. (2.12)
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-mesh-operator
+spec:
+   default:
+      deny:
+         - spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+         - spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/legacy-workload"
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://legacy.mesh/"
+```
+
+3. I want to allow all clients in the `observability` namespace to access all services by default,
+   so that telemetry and monitoring tools function automatically,
+   while still allowing Service Owners to explicitly opt out by applying deny policies. (2.12)
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-mesh-operator
+spec:
+   default:
+      allow:
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/ns/observability"
+```
+
+4. I want to allow all clients in the `observability` namespace to access the `/metrics` endpoint on all services,
+   so that monitoring tools can collect metrics without requiring each Service Owner to configure access individually.
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-mesh-operator
+spec:
+   default:
+      allow:
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/ns/observability"
+           path:
+             type: Prefix
+             value: "/metrics"
+```
+
+#### Service Owner
+
+1. I want to grant access to my service to any client I choose,
+   so that I can support integrations and collaboration with other teams,
+   unless the Mesh Operator has explicitly denied that client,
+   ensuring I remain in control while respecting mesh-wide security boundaries. (2.12)
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-backend-owner
+spec:
+   targetRef:
+      kind: Dataplane
+      labels:
+         app: backend
+   default:
+      allow:
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/"
+```
+
+2. I want to opt out of mesh-wide `observability` access,
+   by denying requests from the `observability` namespace,
+   so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-backend-owner
+spec:
+   targetRef:
+      kind: Dataplane
+      labels:
+         app: backend
+   default:
+      deny:
+         - spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/ns/observability"
+```
+
+3. I want to block malicious/abusive client even if previously it was allowed,
+   so I can prevent my service from overloading until client's service team reacts to the incident. (2.12)
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-backend-owner
+spec:
+   targetRef:
+      kind: Dataplane
+      labels:
+         app: backend
+   default:
+      deny:
+         - spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/malicious"
+```
+
+4. I want to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
+   so that read operations are public but write operations are gated.
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: by-backend-owner
+spec:
+   targetRef:
+      kind: Dataplane
+      labels:
+         app: backend
+   default:
+      allow:
+         - method: GET
+      deny:
+         - method: POST
+           spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/writer-1"
+         - method: POST
+           spiffeId:
+              type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/writer-2"
+         - method: POST
+           spiffeId:
+              type: Prefix
+              value: "spiffe://trust-domain.mesh/ns/writers"
+```
+
+#### Option 2: MeshTrafficPermission is a special case of inbound policy
 
 Pros:
 * the concept is extendable to other policies if we'll need similar semantic
@@ -312,7 +521,6 @@ condition_1 ?
           - true -> merge(conf3) # AllowWithShadowDeny
           - false -> merge() # Deny
 ```
-
 
 6. Based on IR build envoy config
 
