@@ -2,7 +2,6 @@ package status
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"reflect"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
