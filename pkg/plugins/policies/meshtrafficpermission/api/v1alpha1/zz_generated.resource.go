@@ -161,6 +161,7 @@ var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshtrafficpermissions",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Traffic Permission",
 	PluralDisplayName:            "Mesh Traffic Permissions",

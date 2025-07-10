@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -100,12 +101,14 @@ func GenerateClusters(
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
 						tlsReady = true // tls readiness is only relevant for MeshService
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							if ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(realResourceRef.Resource)); ms != nil {
+							dest := meshCtx.GetServiceByKRI(pointer.Deref(realResourceRef.Resource))
+							if dest != nil {
+								ms := dest.(*meshservice_api.MeshServiceResource)
 								// we only check TLS status for local service
 								// services that are synced can be accessed only with TLS through ZoneIngress
 								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 								if port, found := ms.FindPortByName(realResourceRef.Resource.SectionName); found {
-									protocol = port.AppProtocol
+									protocol = port.GetProtocol()
 								}
 							}
 						}
@@ -147,30 +150,17 @@ func SniForBackendRef(
 	meshCtx xds_context.MeshContext,
 	systemNamespace string,
 ) string {
-	var resource core_model.Resource
-	var name string
 	var port int32
-	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
-	case common_api.MeshService:
-		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(backendRef.Resource))
-		resource = ms
-		name = ms.SNIName(systemNamespace)
-		if p, ok := ms.FindPortByName(backendRef.Resource.SectionName); ok {
-			port = p.Port
-		}
-	case common_api.MeshExternalService:
-		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(backendRef.Resource))
-		resource = mes
-		name = core_model.GetDisplayName(resource.GetMeta())
-		port = mes.Spec.Match.Port
-	case common_api.MeshMultiZoneService:
-		mzms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(backendRef.Resource))
-		resource = mzms
-		name = core_model.GetDisplayName(resource.GetMeta())
-		if p, ok := mzms.FindPortByName(backendRef.Resource.SectionName); ok {
-			port = p.Port
-		}
+	dest := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+	if p, ok := dest.FindPortByName(backendRef.Resource.SectionName); ok {
+		port = p.GetValue()
 	}
+	resource := dest.(core_model.Resource)
+	name := core_model.GetDisplayName(resource.GetMeta())
+	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
+		name = resource.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
+	}
+
 	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, port, nil)
 }
 
@@ -181,16 +171,22 @@ func ServiceTagIdentities(
 	var result []string
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
-		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(backendRef.Resource))
-		for _, identity := range pointer.Deref(ms.Spec.Identities) {
+		ms := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+		if ms == nil {
+			return result
+		}
+		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, identity.Value)
 			}
 		}
 	case common_api.MeshMultiZoneService:
-		svc := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(backendRef.Resource))
+		svc := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+		if svc == nil {
+			return result
+		}
 		identities := map[string]struct{}{}
-		for _, matchedMs := range svc.Status.MeshServices {
+		for _, matchedMs := range svc.(*meshmultizoneservice_api.MeshMultiZoneServiceResource).Status.MeshServices {
 			ri := kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Name:         matchedMs.Name,
@@ -198,11 +194,11 @@ func ServiceTagIdentities(
 				Zone:         matchedMs.Zone,
 				Mesh:         matchedMs.Mesh,
 			}
-			ms := meshCtx.GetMeshServiceByKRI(ri)
+			ms := meshCtx.GetServiceByKRI(ri)
 			if ms == nil {
 				continue
 			}
-			for _, identity := range pointer.Deref(ms.Spec.Identities) {
+			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
 				if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 					identities[identity.Value] = struct{}{}
 				}

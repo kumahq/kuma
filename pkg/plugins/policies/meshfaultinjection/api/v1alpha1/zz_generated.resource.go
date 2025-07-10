@@ -161,6 +161,7 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshfaultinjections",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Fault Injection",
 	PluralDisplayName:            "Mesh Fault Injections",

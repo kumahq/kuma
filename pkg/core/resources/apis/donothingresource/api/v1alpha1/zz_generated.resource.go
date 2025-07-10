@@ -160,6 +160,7 @@ var DoNothingResourceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "donothingresources",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Do Nothing Resource",
 	PluralDisplayName:            "Do Nothing Resources",

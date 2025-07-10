@@ -59,6 +59,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+{{- if .IsDestination }}
+    "github.com/kumahq/kuma/pkg/core/resources/apis/core"
+{{- end }}
 )
 
 {{- if not .SkipRegistration }}
@@ -220,6 +223,10 @@ func (l *{{.Name}}ResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
 
+{{- if .IsDestination }}
+var _ core.Destination = &{{.Name}}Resource{}
+{{- end }}
+
 var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.Name}}Type,
 		Resource: New{{.Name}}Resource(),
@@ -231,6 +238,7 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlListArg: "{{.Path}}",
 		AllowToInspect: {{.IsPolicy}},
 		IsPolicy: {{.IsPolicy}},
+        IsDestination: {{.IsDestination}},
 		IsExperimental: false,
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",

@@ -44,7 +44,7 @@ func (l *LeaderInfoComponent) NeedLeaderElection() bool {
 }
 
 func (p *LeaderInfoComponent) setLeader(leader bool) {
-	var value int32 = 0
+	var value int32
 	if leader {
 		value = 1
 	}

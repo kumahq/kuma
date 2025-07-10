@@ -111,7 +111,7 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 	}
 
 	url := fmt.Sprintf("https://%s/%s", dataplane.AdminAddress(a.defaultAdminPort), quitquitquit)
-	request, err := http.NewRequestWithContext(ctx, "POST", url, http.NoBody)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 	u.Host = proxy.AdminAddress(a.defaultAdminPort)
 	u.Path = path
 	u.RawQuery = query.Encode()
-	request, err := http.NewRequestWithContext(ctx, "GET", u.String(), http.NoBody)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
