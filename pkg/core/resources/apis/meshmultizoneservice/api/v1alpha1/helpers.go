@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -28,23 +29,7 @@ func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-func (m *MeshMultiZoneServiceResource) findPort(port uint32) (Port, bool) {
-	for _, p := range m.Spec.Ports {
-		if p.Port == port {
-			return p, true
-		}
-	}
-	return Port{}, false
-}
-
-func (m *MeshMultiZoneServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
-	if port, found := m.findPort(port); found {
-		return port.GetNameOrStringifyPort(), true
-	}
-	return "", false
-}
-
-func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) {
+func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if pointer.Deref(p.Name) == name {
 			return p, true
@@ -56,7 +41,7 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) 
 	return Port{}, false
 }
 
-func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
+func (m *MeshMultiZoneServiceResource) DestinationName(port int32) string {
 	return destinationname.LegacyName(kri.From(m, ""), MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
 }
 
@@ -66,8 +51,8 @@ func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {
 		for _, port := range m.Spec.Ports {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
-				Port:     port.Port,
-				Resource: pointer.To(kri.From(m, port.GetNameOrStringifyPort())),
+				Port:     uint32(port.Port),
+				Resource: pointer.To(kri.From(m, port.GetName())),
 			})
 		}
 	}
@@ -96,17 +81,17 @@ func (t *MeshMultiZoneServiceResource) GetPorts() []core.Port {
 	return ports
 }
 
-func (p Port) GetNameOrStringifyPort() string {
+func (p Port) GetName() string {
 	if pointer.Deref(p.Name) != "" {
 		return pointer.Deref(p.Name)
 	}
 	return fmt.Sprintf("%d", p.Port)
 }
 
-func (p Port) GetName() string {
-	return pointer.Deref(p.Name)
+func (p Port) GetValue() int32 {
+	return p.Port
 }
 
-func (p Port) GetValue() uint32 {
-	return p.Port
+func (p Port) GetProtocol() core_mesh.Protocol {
+	return p.AppProtocol
 }

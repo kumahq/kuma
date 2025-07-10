@@ -161,6 +161,7 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshhttproutes",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh HTTP Route",
 	PluralDisplayName:            "Mesh HTTP Routes",

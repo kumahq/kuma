@@ -1,17 +1,21 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
+func (m *MeshExternalServiceResource) DestinationName(port int32) string {
 	if port == 0 {
-		port = uint32(m.Spec.Match.Port)
+		port = m.Spec.Match.Port
 	}
 	return destinationname.LegacyName(kri.From(m, ""), MeshExternalServiceResourceTypeDescriptor.ShortName, port)
 }
@@ -58,4 +62,24 @@ func (t *MeshExternalServiceResource) Domains() *xds_types.VIPDomains {
 		}
 	}
 	return nil
+}
+
+func (t *MeshExternalServiceResource) GetPorts() []core.Port {
+	return []core.Port{t.Spec.Match}
+}
+
+func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bool) {
+	return t.Spec.Match, true
+}
+
+func (m Match) GetName() string {
+	return fmt.Sprintf("%d", m.Port)
+}
+
+func (m Match) GetValue() int32 {
+	return m.Port
+}
+
+func (m Match) GetProtocol() core_mesh.Protocol {
+	return m.Protocol
 }

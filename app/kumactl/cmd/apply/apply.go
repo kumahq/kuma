@@ -74,7 +74,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					client := &http.Client{
 						Timeout: timeout,
 					}
-					req, err := http.NewRequest("GET", ctx.args.file, nil)
+					req, err := http.NewRequest(http.MethodGet, ctx.args.file, http.NoBody)
 					if err != nil {
 						return errors.Wrap(err, "error creating new http request")
 					}
@@ -102,7 +102,8 @@ $ kumactl apply -f https://example.com/resource.yaml
 			}
 			var resources []model.Resource
 			rawResources := yaml.SplitYAML(string(b))
-			for _, rawResource := range rawResources {
+			var hasErrors bool
+			for i, rawResource := range rawResources {
 				if len(rawResource) == 0 {
 					continue
 				}
@@ -110,14 +111,21 @@ $ kumactl apply -f https://example.com/resource.yaml
 				if len(ctx.args.vars) > 0 {
 					bytes = template.Render(rawResource, ctx.args.vars)
 				}
-				res, err := rest_types.YAML.UnmarshalCore(bytes)
-				if err != nil {
-					return errors.Wrap(err, "YAML contains invalid resource")
+				res, pErr := rest_types.YAML.UnmarshalCore(bytes)
+				if pErr != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "resource[%d]: failed to parse resource: %+v\n", i, pErr)
+					hasErrors = true
+					continue
 				}
-				if err := mesh.ValidateMeta(res.GetMeta(), res.Descriptor().Scope); err.HasViolations() {
-					return err.OrNil()
+				if vErr := mesh.ValidateMeta(res.GetMeta(), res.Descriptor().Scope); vErr.HasViolations() {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "resource[%d]: failed to read meta: %+v\n", i, vErr.OrNil())
+					hasErrors = true
+					continue
 				}
 				resources = append(resources, res)
+			}
+			if hasErrors {
+				return errors.New("failed to validate some resources")
 			}
 			var rs store.ResourceStore
 			if !ctx.args.dryRun {
@@ -133,10 +141,15 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 				} else {
-					warnings, err := upsert(cmd.Context(), pctx.Runtime.Registry, rs, resource)
+					warnings, isUpdate, err := upsert(cmd.Context(), pctx.Runtime.Registry, rs, resource)
 					if err != nil {
-						return err
+						return fmt.Errorf("resource type=%q mesh=%q name=%q: failed server side: %s", resource.Descriptor().Name, resource.GetMeta().GetMesh(), resource.GetMeta().GetName(), err.Error())
 					}
+					action := "Created"
+					if isUpdate {
+						action = "Updated"
+					}
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "resource type=%q mesh=%q name=%q %s\n", resource.Descriptor().Name, resource.GetMeta().GetMesh(), resource.GetMeta().GetName(), action)
 					for _, w := range warnings {
 						if _, err := fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", w); err != nil {
 							return err
@@ -154,10 +167,10 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) ([]string, error) {
+func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) ([]string, bool, error) {
 	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	var warnings []string
@@ -169,14 +182,14 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsNotFound(err) {
 			cerr := rs.Create(warnContext, res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreateWithLabels(meta.GetLabels()))
-			return warnings, cerr
+			return warnings, false, cerr
 		} else {
-			return nil, err
+			return nil, false, err
 		}
 	}
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	uerr := rs.Update(warnContext, newRes, store.UpdateWithLabels(meta.GetLabels()))
-	return warnings, uerr
+	return warnings, true, uerr
 }

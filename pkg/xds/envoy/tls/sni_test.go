@@ -98,7 +98,7 @@ var _ = Describe("SNI", func() {
 		resName        string
 		meshName       string
 		resType        model.ResourceType
-		port           uint32
+		port           int32
 		additionalData map[string]string
 		expected       string
 	}

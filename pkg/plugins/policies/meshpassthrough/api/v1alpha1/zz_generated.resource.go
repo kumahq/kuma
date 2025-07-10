@@ -161,6 +161,7 @@ var MeshPassthroughResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshpassthroughs",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Passthrough",
 	PluralDisplayName:            "Mesh Passthroughs",

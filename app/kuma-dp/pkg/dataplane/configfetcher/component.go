@@ -125,7 +125,7 @@ func (cf *ConfigFetcher) Step() {
 func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cf.perHandlerTimeout)
 	defer cancel()
-	r, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost%s", h.path), nil)
+	r, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://localhost%s", h.path), http.NoBody)
 	if err != nil {
 		return false, fmt.Errorf("failed to build request: %w", err)
 	}

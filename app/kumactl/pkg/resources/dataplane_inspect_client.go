@@ -34,7 +34,7 @@ func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, 
 	if err != nil {
 		return api_server_types.DataplaneInspectResponse{}, errors.Wrap(err, "could not construct the url")
 	}
-	req, err := http.NewRequest("GET", resUrl.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, resUrl.String(), http.NoBody)
 	if err != nil {
 		return api_server_types.DataplaneInspectResponse{}, err
 	}

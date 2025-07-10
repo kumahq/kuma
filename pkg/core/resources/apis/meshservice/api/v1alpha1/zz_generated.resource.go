@@ -15,6 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -161,6 +162,8 @@ func (l *MeshServiceResourceList) SetPagination(p model.Pagination) {
 	l.Pagination = p
 }
 
+var _ core.Destination = &MeshServiceResource{}
+
 var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshServiceType,
 	Resource:                     NewMeshServiceResource(),
@@ -172,6 +175,7 @@ var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshservices",
 	AllowToInspect:               false,
 	IsPolicy:                     false,
+	IsDestination:                true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Service",
 	PluralDisplayName:            "Mesh Services",

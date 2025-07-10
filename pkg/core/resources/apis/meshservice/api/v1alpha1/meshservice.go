@@ -21,7 +21,7 @@ type DataplaneRef struct {
 
 type Port struct {
 	Name       string             `json:"name,omitempty"`
-	Port       uint32             `json:"port"`
+	Port       int32              `json:"port"`
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
 	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
@@ -35,6 +35,7 @@ const maxNameLength = 63
 // +kuma:policy:kds_flags=model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag
 // +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=msvc
+// +kuma:policy:is_destination=true
 // +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string
 type MeshService struct {
 	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.

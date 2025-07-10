@@ -161,6 +161,7 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshratelimits",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Rate Limit",
 	PluralDisplayName:            "Mesh Rate Limits",

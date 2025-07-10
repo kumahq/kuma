@@ -8,31 +8,17 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func (m *MeshServiceResource) DestinationName(port uint32) string {
+func (m *MeshServiceResource) DestinationName(port int32) string {
 	return destinationname.LegacyName(kri.From(m, ""), MeshServiceResourceTypeDescriptor.ShortName, port)
 }
 
-func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
-	for _, p := range m.Spec.Ports {
-		if p.Port == port {
-			return p, true
-		}
-	}
-	return Port{}, false
-}
-
-func (m *MeshServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
-	if port, found := m.findPort(port); found {
-		return port.GetNameOrStringifyPort(), true
-	}
-	return "", false
-}
-
-func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
+// FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
+func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Name == name {
 			return p, true
@@ -100,8 +86,8 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 		for _, port := range t.Spec.Ports {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
-				Port:     port.Port,
-				Resource: pointer.To(kri.From(t, port.GetNameOrStringifyPort())),
+				Port:     uint32(port.Port),
+				Resource: pointer.To(kri.From(t, port.GetName())),
 			})
 		}
 	}
@@ -130,17 +116,17 @@ func (t *MeshServiceResource) GetPorts() []core.Port {
 	return ports
 }
 
-func (p Port) GetNameOrStringifyPort() string {
+func (p Port) GetName() string {
 	if p.Name != "" {
 		return p.Name
 	}
 	return fmt.Sprintf("%d", p.Port)
 }
 
-func (p Port) GetName() string {
-	return p.Name
+func (p Port) GetValue() int32 {
+	return p.Port
 }
 
-func (p Port) GetValue() uint32 {
-	return p.Port
+func (p Port) GetProtocol() core_mesh.Protocol {
+	return p.AppProtocol
 }

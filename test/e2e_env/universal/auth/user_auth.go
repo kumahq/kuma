@@ -61,7 +61,7 @@ func UserAuth() {
 	DescribeTable("should ignore auth data on unauthorized endpoints",
 		func(endpoint string) {
 			// given
-			req, err := http.NewRequest("GET", universal.Cluster.GetKuma().GetAPIServerAddress()+endpoint, nil)
+			req, err := http.NewRequest(http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress()+endpoint, http.NoBody)
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("authorization", "Bearer invliddata")
 

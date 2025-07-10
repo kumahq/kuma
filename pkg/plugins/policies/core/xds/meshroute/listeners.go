@@ -6,7 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -90,16 +90,14 @@ func CollectServices(
 	for _, outbound := range proxy.Outbounds {
 		var destinationService *DestinationService
 		if outbound.LegacyOutbound != nil {
-			destinationService = collectServiceTagService(outbound, meshCtx)
-		} else {
-			switch outbound.Resource.ResourceType {
-			case core_model.ResourceType(common_api.MeshService):
-				destinationService = collectMeshService(outbound, meshCtx)
-			case core_model.ResourceType(common_api.MeshExternalService):
-				destinationService = collectMeshExternalService(outbound, meshCtx)
-			case core_model.ResourceType(common_api.MeshMultiZoneService):
-				destinationService = collectMeshMultiZoneService(outbound, meshCtx)
+			serviceName := outbound.LegacyOutbound.GetService()
+			destinationService = &DestinationService{
+				Outbound:    outbound,
+				Protocol:    meshCtx.GetServiceProtocol(serviceName),
+				ServiceName: serviceName,
 			}
+		} else {
+			destinationService = createServiceFromRealResource(outbound, meshCtx)
 		}
 		if destinationService != nil {
 			dests = append(dests, *destinationService)
@@ -108,126 +106,46 @@ func CollectServices(
 	return dests
 }
 
-func collectMeshService(
+func createServiceFromRealResource(
 	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(outbound.Resource))
-	if ms == nil {
+	service := meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource))
+	if service == nil {
 		// we want to ignore service which is not found. Logging might be excessive here.
-		// We don't have other mechanism to bubble up warnings yet.
+		// We don't have another mechanism to bubble up warnings yet.
 		return nil
 	}
-	port, ok := ms.FindPortByName(outbound.Resource.SectionName)
+	port, ok := service.FindPortByName(outbound.Resource.SectionName)
 	if !ok {
 		return nil
 	}
 	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if port.AppProtocol != "" {
-		protocol = port.AppProtocol
+	if port.GetProtocol() != "" {
+		protocol = port.GetProtocol()
 	}
 	return &DestinationService{
 		Outbound:    outbound,
 		Protocol:    protocol,
-		ServiceName: ms.DestinationName(port.Port),
-	}
-}
-
-func collectMeshExternalService(
-	outbound *xds_types.Outbound,
-	meshCtx xds_context.MeshContext,
-) *DestinationService {
-	mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(outbound.Resource))
-	if mes == nil {
-		return nil
-	}
-	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if mes.Spec.Match.Protocol != "" {
-		protocol = mes.Spec.Match.Protocol
-	}
-	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    protocol,
-		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
-	}
-}
-
-func collectMeshMultiZoneService(
-	outbound *xds_types.Outbound,
-	meshCtx xds_context.MeshContext,
-) *DestinationService {
-	svc := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(outbound.Resource))
-	if svc == nil {
-		return nil
-	}
-	port, ok := svc.FindPortByName(outbound.Resource.SectionName)
-	if !ok {
-		return nil
-	}
-	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if port.AppProtocol != "" {
-		protocol = port.AppProtocol
-	}
-	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    protocol,
-		ServiceName: svc.DestinationName(port.Port),
-	}
-}
-
-func collectServiceTagService(
-	outbound *xds_types.Outbound,
-	meshCtx xds_context.MeshContext,
-) *DestinationService {
-	serviceName := outbound.LegacyOutbound.GetService()
-	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    meshCtx.GetServiceProtocol(serviceName),
-		ServiceName: serviceName,
+		ServiceName: service.DestinationName(port.GetValue()),
 	}
 }
 
 func GetServiceProtocolPortFromRef(
 	meshCtx xds_context.MeshContext,
 	ref *resolve.RealResourceBackendRef,
-) (string, core_mesh.Protocol, uint32, bool) {
-	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
-	case common_api.MeshExternalService:
-		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource))
-		if mes == nil {
-			return "", "", 0, false
-		}
-		port := uint32(mes.Spec.Match.Port)
-		service := mes.DestinationName(port)
-		protocol := mes.Spec.Match.Protocol
-		return service, protocol, port, true
-	case common_api.MeshMultiZoneService:
-		ms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource))
-		if ms == nil {
-			return "", "", 0, false
-		}
-		port, ok := ms.FindPortByName(ref.Resource.SectionName)
-		if !ok {
-			return "", "", 0, false
-		}
-		service := ms.DestinationName(port.Port)
-		protocol := port.AppProtocol
-		return service, protocol, port.Port, true
-	case common_api.MeshService:
-		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource))
-		if ms == nil {
-			return "", "", 0, false
-		}
-		port, ok := ms.FindPortByName(ref.Resource.SectionName)
-		if !ok {
-			return "", "", 0, false
-		}
-		service := ms.DestinationName(port.Port)
-		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		return service, protocol, port.Port, true
-	default:
+) (string, core_mesh.Protocol, int32, bool) {
+	dest := meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource))
+	if dest == nil {
 		return "", "", 0, false
 	}
+	port, ok := dest.FindPortByName(ref.Resource.SectionName)
+	if !ok {
+		return "", "", 0, false
+	}
+	service := dest.DestinationName(port.GetValue())
+	protocol := port.GetProtocol()
+	return service, protocol, port.GetValue(), true
 }
 
 func makeSplit(
@@ -273,18 +191,9 @@ func handleRealResources(
 		return nil
 	}
 
-	var clusterName string
-	var isExternalService bool
-
-	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
-	case common_api.MeshExternalService:
-		clusterName = meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
-		isExternalService = true
-	case common_api.MeshMultiZoneService:
-		clusterName = meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
-	case common_api.MeshService:
-		clusterName = meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
-	}
+	dest := meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource))
+	clusterName := dest.DestinationName(port)
+	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
 	refHash := common_api.BackendRefHash(ref.Resource.String())

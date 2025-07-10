@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
-    timeout-minutes: 25
+    timeout-minutes: 30
     runs-on: ubuntu-24.04
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
@@ -99,7 +99,7 @@ jobs:
           make clean/build
       - name: "Generate SBOM and CVE report (Software Composition Analysis)"
         id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@a18abf762d6e2444bcbfd20de70451ea1e3bc1b1 # v4.1.1
+        uses: Kong/public-shared-actions/security-actions/sca@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.1.2
         env:
           SYFT_SOURCE_NAME: ${{ github.repository }}
           SYFT_SOURCE_VERSION: ${{ steps.metadata.outputs.version }}

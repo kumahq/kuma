@@ -161,6 +161,7 @@ var MeshMetricResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlListArg:               "meshmetrics",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
+	IsDestination:                false,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh Metric",
 	PluralDisplayName:            "Mesh Metrics",

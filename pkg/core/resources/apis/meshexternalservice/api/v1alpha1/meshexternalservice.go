@@ -18,6 +18,7 @@ import (
 // +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=extsvc
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+// +kuma:policy:is_destination=true
 // +kubebuilder:printcolumn:name=Hostname,type=string,JSONPath=".status.addresses[0].hostname"
 type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.
@@ -43,7 +44,9 @@ type Match struct {
 	// +kubebuilder:default=HostnameGenerator
 	Type MatchType `json:"type"`
 	// Port defines a port to which a user does request.
-	Port Port `json:"port"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
@@ -58,10 +61,6 @@ type Extension struct {
 	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 
-// +kubebuilder:validation:Minimum=1
-// +kubebuilder:validation:Maximum=65535
-type Port int
-
 type Endpoint struct {
 	// Address defines an address to which a user want to send a request. Is possible to provide `domain`, `ip`.
 	// +kubebuilder:example="127.0.0.1"
@@ -69,7 +68,9 @@ type Endpoint struct {
 	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 	// Port of the endpoint
-	Port Port `json:"port"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
 }
 
 type Tls struct {

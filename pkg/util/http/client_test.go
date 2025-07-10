@@ -37,7 +37,7 @@ var _ = Describe("Http Util", func() {
 				Expect(client).ToNot(BeIdenticalTo(delegate))
 
 				// when
-				req, err := http.NewRequest("GET", given.requestURL, nil)
+				req, err := http.NewRequest(http.MethodGet, given.requestURL, http.NoBody)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

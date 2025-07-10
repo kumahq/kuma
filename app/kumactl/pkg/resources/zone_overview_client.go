@@ -27,7 +27,7 @@ type httpZoneOverviewClient struct {
 }
 
 func (d *httpZoneOverviewClient) List(ctx context.Context) (*system.ZoneOverviewResourceList, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("/%s/_overview", system.ZoneResourceTypeDescriptor.WsPath), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/%s/_overview", system.ZoneResourceTypeDescriptor.WsPath), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -83,7 +83,7 @@ func buildMeshServiceDestinations(
 	return msDestinations
 }
 
-func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType, port uint32) common_api.BackendRef {
+func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType, port int32) common_api.BackendRef {
 	id := kri.From(r, "")
 	return common_api.BackendRef{
 		TargetRef: common_api.TargetRef{
@@ -91,7 +91,7 @@ func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType
 			Name:      pointer.To(id.Name),
 			Namespace: pointer.To(id.Namespace),
 		},
-		Port: pointer.To(port),
+		Port: pointer.To(uint32(port)),
 	}
 }
 
@@ -105,16 +105,16 @@ func buildMeshExternalServiceDestinations(
 			core_model.GetDisplayName(mes.GetMeta()),
 			mes.GetMeta().GetMesh(),
 			meshexternalservice_api.MeshExternalServiceType,
-			uint32(mes.Spec.Match.Port),
+			mes.Spec.Match.Port,
 			nil,
 		)
 		mesDestinations = append(mesDestinations, BackendRefDestination{
 			Mesh:            mes.GetMeta().GetMesh(),
-			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
+			DestinationName: mes.DestinationName(mes.Spec.Match.Port),
 			SNI:             sni,
 			Resource: resolve.BackendRefOrNil(
 				mes.Meta,
-				resourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, uint32(mes.Spec.Match.Port)),
+				resourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, mes.Spec.Match.Port),
 				resolveResourceIdentifier,
 			),
 		})

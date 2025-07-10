@@ -22,7 +22,7 @@ func (fn ApiServerClientFn) GetVersion(ctx context.Context) (*types.IndexRespons
 
 func NewAPIServerClient(client util_http.Client) ApiServerClient {
 	return ApiServerClientFn(func(ctx context.Context) (*types.IndexResponse, error) {
-		req, err := http.NewRequest("GET", "/", nil)
+		req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
 		if err != nil {
 			return nil, err
 		}
