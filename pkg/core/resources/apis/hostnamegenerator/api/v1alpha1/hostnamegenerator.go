@@ -39,7 +39,7 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 type HostnameGenerator struct {
 	Selector Selector `json:"selector,omitempty"`
-	Template string `json:"template"`
+	Template string   `json:"template"`
 	// Extension struct for a plugin configuration
 	Extension *Extension `json:"extension,omitempty"`
 }

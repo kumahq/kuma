@@ -10,7 +10,7 @@ import (
 
 type Selector struct {
 	DataplaneTags *map[string]string `json:"dataplaneTags,omitempty"`
-	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`
+	DataplaneRef  *DataplaneRef      `json:"dataplaneRef,omitempty"`
 }
 
 type DataplaneRef struct {
@@ -21,7 +21,7 @@ type DataplaneRef struct {
 
 type Port struct {
 	Name *string `json:"name,omitempty"`
-	Port int32  `json:"port"`
+	Port int32   `json:"port"`
 	// +kuma:nolint
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kuma:comment It should be without omitempty but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so if it was ever persisted empty this would cause a nack
@@ -46,7 +46,7 @@ type MeshService struct {
 	// +kubebuilder:default=Unavailable
 	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
-	State    State    `json:"state,omitempty"`
+	State State `json:"state,omitempty"`
 	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	// +kuma:nolint
 	Selector Selector `json:"selector,omitempty"`
