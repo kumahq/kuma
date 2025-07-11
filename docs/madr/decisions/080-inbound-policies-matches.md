@@ -59,7 +59,7 @@ Pros:
 
 Cons:
 * Action in Envoy can't be correlated with a single MTP kri, 
-but that's the problem exists for other single-item policies (i.e. [MeshPassthrough](https://github.com/kumahq/kuma/issues/13886)).
+but that's a problem that exists for other single-item policies (i.e. [MeshPassthrough](https://github.com/kumahq/kuma/issues/13886)).
 
 ##### Schema
 
@@ -115,7 +115,7 @@ spec:
 
 results in `spec.default.myArray: [4]`.
 
-Switching merging array behaviour from overriding to concatenation normally requires prefixing fields with `append`:
+Switching array merging behaviour from overriding to concatenation normally requires prefixing fields with `append`:
 
 ```
 name: policy-1
@@ -388,7 +388,7 @@ Pros:
 Cons:
 * it works well only when the number of possible `confs` is limited
 * requires IR and as a result Inspect API is not that straightforward
-* the algorithm is more complex, still might produce suboptimal envoy structs due to presence of `AllowWithShadowDeny`
+* the algorithm is more complex, still might produce suboptimal envoy structs due to the presence of `AllowWithShadowDeny`
 
 ##### Schema
 
