@@ -12,14 +12,14 @@ const (
 // DataplaneInbound defines model for DataplaneInbound.
 type DataplaneInbound struct {
 	Kri      string `json:"kri"`
-	Port     int    `json:"port"`
+	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
 }
 
 // DataplaneOutbound defines model for DataplaneOutbound.
 type DataplaneOutbound struct {
 	Kri      string `json:"kri"`
-	Port     int    `json:"port"`
+	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
 }
 

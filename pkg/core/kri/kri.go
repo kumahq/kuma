@@ -100,3 +100,12 @@ func IsValid(s string) bool {
 func Compare(a, b Identifier) int {
 	return strings.Compare(a.String(), b.String())
 }
+
+func (i Identifier) HasSectionName() bool {
+	return i.SectionName != ""
+}
+
+func WithSectionName(id Identifier, sectionName string) Identifier {
+	id.SectionName = sectionName
+	return id
+}

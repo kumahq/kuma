@@ -267,6 +267,8 @@ func addResourcesEndpoints(
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
+	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess).addEndpoint(ws)
+
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
 	switch cfg.Store.Type {

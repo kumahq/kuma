@@ -376,6 +376,17 @@ func (d *Dataplane_Networking_Inbound) GetProtocol() string {
 	return d.Tags[ProtocolTag]
 }
 
+// GetSectionName returns either inbound name or stringified port value
+func (d *Dataplane_Networking_Inbound) GetSectionName() string {
+	if d == nil {
+		return ""
+	}
+	if d.Name != "" {
+		return d.Name
+	}
+	return strconv.Itoa(int(d.Port))
+}
+
 // GetService returns a service name represented by this outbound interface.
 //
 // The purpose of this method is to encapsulate implementation detail
