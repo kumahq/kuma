@@ -224,11 +224,12 @@ var _ = Describe("bootstrapGenerator", func() {
 				return dp
 			},
 			request: types.BootstrapRequest{
-				Mesh:     "mesh",
-				Name:     "name.namespace",
-				Version:  defaultVersion,
-				Workdir:  "/tmp",
-				Features: []string{xds_types.FeatureUnifiedResourceNaming},
+				Mesh:                  "mesh",
+				Name:                  "name.namespace",
+				Version:               defaultVersion,
+				Workdir:               "/tmp",
+				Features:              []string{xds_types.FeatureUnifiedResourceNaming},
+				AppProbeProxyDisabled: true,
 			},
 			expectedConfigFile: "generator.custom-config-minimal-request-with-unified-resource-naming-feature-flag.golden.yaml",
 			hdsEnabled:         false,
