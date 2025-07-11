@@ -364,7 +364,6 @@ spec:
    default:
       allow:
          - method: GET
-      deny:
          - method: POST
            spiffeId:
               type: Exact
