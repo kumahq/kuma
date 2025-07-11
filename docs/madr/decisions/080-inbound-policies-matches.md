@@ -17,7 +17,7 @@ As we're moving towards SPIFFE compliant certs we won't be able to use DPP tags 
 
 2. I want to declare a group of identities as explicitly denied,
    so that Service Owner can't override or bypass that decision,
-   ensuring enforcement of critical security boundaries across the mesh. (2.12) 
+   ensuring enforcement of critical security boundaries across the mesh. (2.12)
 
 3. I want to allow all clients in the `observability` namespace to access all services by default,
    so that telemetry and monitoring tools function automatically,
@@ -46,7 +46,7 @@ As we're moving towards SPIFFE compliant certs we won't be able to use DPP tags 
 ### Design
 
 According to [MADR-078](078-special-mtp-algo.md) MeshTrafficPermission's algorithm and API is different from other inbound policies.
-Current MADR suggests 2 options to implement the design. 
+Current MADR suggests 2 options to implement the design.
 Chosen option is "Option 1: MeshTrafficPermission is a single-item policy".
 
 #### Option 1: MeshTrafficPermission is a single-item policy
@@ -58,7 +58,7 @@ Pros:
 * No intermediate representation is required, `rbac_configurer.go` generates Envoy configuration directly from `conf`
 
 Cons:
-* Action in Envoy can't be correlated with a single MTP kri, 
+* Action in Envoy can't be correlated with a single MTP kri,
 but that's a problem that exists for other single-item policies (i.e. [MeshPassthrough](https://github.com/kumahq/kuma/issues/13886)).
 
 ##### Schema
@@ -82,7 +82,7 @@ mesh: default
 name: by-service-owner
 spec:
   targetRef: {}
-  default: 
+  default:
     deny:
       - spiffeId:
            type: Exact
@@ -96,6 +96,11 @@ spec:
             type: Prefix
             value: "spiffe://trust-domain.mesh/"
 ```
+
+Evaluation rules:
+1. If the incoming request matches at least one matcher in `deny` list – the result is DENY.
+2. If the incoming request matches at least one matcher in either `allow` or `allowWithShadowDeny` list – the result is ALLOW.
+3. If the incoming request doesn't match anything – the result is DENY.
 
 ##### Merging
 
@@ -141,6 +146,11 @@ type Conf struct {
 
 When used on fields prefixed with `append` the struct tag `concat` won't have any additional effect.
 
+Kubernetes has similar approach in their API with [merge-strategy](https://kubernetes.io/docs/reference/using-api/server-side-apply/#merge-strategy).
+We don't have to adopt their exact annotations as we won't gain anything from it.
+But it shows that the concept is viable
+and potentially we can update `MeshPassthrough`, `MeshProxyPatch` and `MeshOPA` to use struct tags instead of `append` prefix.
+
 ##### Algorithm
 
 1. Collect all MeshTrafficPermissions that target the inbound
@@ -157,8 +167,8 @@ extensions.filters.network.rbac.v3.RBAC:
            or_matcher:
               - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/frontend
               - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
-           on_match: 
-             action: Deny 
+           on_match:
+             action: Deny
              name: kri_mtp_
        - predicate:
             or_matcher:
@@ -196,8 +206,8 @@ policies:
 
 ##### Extensibility with DPP labels selector
 
-Today, MeshTrafficPermission allows specifying DPP tags of the workloads we want to allow or deny requests from. 
-This works because DPP tags are currently encoded as URI SANs in the workload certificate. 
+Today, MeshTrafficPermission allows specifying DPP tags of the workloads we want to allow or deny requests from.
+This works because DPP tags are currently encoded as URI SANs in the workload certificate.
 However, making workload certificates SPIFFE-compliant requires us to retain only a single URI SAN, which must be the SPIFFE ID.
 
 Ability to grant access to workloads based on the labels rather than identity provides nicer UX.
@@ -220,8 +230,13 @@ spec:
 
 The `dataplaneLabels` will be resolved on CP and replaced with a list of `spiffeId` corresponding to matched DPPs.
 
-Though, without a label-enforcement mechanism, the feature isn’t truly secure: 
+Though, without a label-enforcement mechanism, the feature isn't truly secure:
 if clients can add or remove any labels on their own workloads, they can simply insert themselves into the allow list.
+
+Additionally, what if several pods share the same `spiffeId`, but only one of them has `app: frontend`?
+Service owner might either potentially "open the door" too wide or unintentionally cut someones access.
+
+Without answering these security questions it seems like we won't be able to introduce DPP labels selector.
 
 ##### Verify user stories
 
