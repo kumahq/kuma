@@ -34,25 +34,25 @@ resources:
                   path: /mzms
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: default_backend___mzsvc_80
                   timeout: 0s
               - match:
                   prefix: /mzms/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: default_backend___mzsvc_80
                   timeout: 0s
               - match:
                   path: /ms
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend___mzsvc_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /ms/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: default_backend___mzsvc_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /
