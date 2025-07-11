@@ -117,10 +117,7 @@ func (t *MeshServiceResource) GetPorts() []core.Port {
 }
 
 func (p Port) GetName() string {
-	if pointer.Deref(p.Name) != "" {
-		return pointer.Deref(p.Name)
-	}
-	return fmt.Sprintf("%d", p.Port)
+	return pointer.DerefOr(p.Name, fmt.Sprintf("%d", p.Port))
 }
 
 func (p Port) GetValue() int32 {
