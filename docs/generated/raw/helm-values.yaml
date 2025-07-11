@@ -447,6 +447,19 @@ dataPlane:
     # -- Kuma DP init image tag When not specified, the value is copied from global.tag
     tag:
 
+  features:
+    # -- Enables automatic injection of the unified naming for Envoy resources and stats feature flag.
+    # When set to true, it sets the environment variable
+    # KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane,
+    # which causes the sidecar injector to add
+    # KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container.
+    # It also adds the same KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true environment variable
+    # to all ZoneIngress and ZoneEgress deployments.
+    # This option only automates setting the required flags and does not enable or disable the feature itself.
+    # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
+    # in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch
+    unifiedResourceNaming: false
+
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
   enabled: false
