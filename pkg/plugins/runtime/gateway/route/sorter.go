@@ -67,7 +67,7 @@ func isMoreSpecific(lhs *Match, rhs *Match) bool {
 		if len(lhs.RegexPath) < len(rhs.RegexPath) {
 			return false
 		}
-		fallthrough
+		return false
 	case rhs.RegexPath != "":
 		return false
 	}

@@ -291,13 +291,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			components = append(components, envoyComponent)
-			components = append(components, component.NewResilientComponent(
-				runLog.WithName("configfetcher"),
-				confFetcher,
-				cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
-				cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
-			))
+			components = append(components,
+				envoyComponent,
+				component.NewResilientComponent(
+					runLog.WithName("configfetcher"),
+					confFetcher,
+					cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+					cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
+				),
+			)
 
 			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
 			if err != nil {

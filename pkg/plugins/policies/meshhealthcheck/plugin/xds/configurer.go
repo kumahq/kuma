@@ -325,12 +325,13 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 }
 
 func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interface{}) *envoy_core.HealthCheck {
-	if httpHc, ok := healthChecker.(*envoy_core.HealthCheck_HttpHealthCheck_); ok {
-		healthCheck.HealthChecker = httpHc
-	} else if tcpHc, ok := healthChecker.(*envoy_core.HealthCheck_TcpHealthCheck_); ok {
-		healthCheck.HealthChecker = tcpHc
-	} else if grpcHc, ok := healthChecker.(*envoy_core.HealthCheck_GrpcHealthCheck_); ok {
-		healthCheck.HealthChecker = grpcHc
+	switch hc := healthChecker.(type) {
+	case *envoy_core.HealthCheck_HttpHealthCheck_:
+		healthCheck.HealthChecker = hc
+	case *envoy_core.HealthCheck_TcpHealthCheck_:
+		healthCheck.HealthChecker = hc
+	case *envoy_core.HealthCheck_GrpcHealthCheck_:
+		healthCheck.HealthChecker = hc
 	}
 
 	return healthCheck

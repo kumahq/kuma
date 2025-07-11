@@ -57,33 +57,21 @@ linters:
     gocritic:
       disabled-checks:
         - appendAssign
-        - appendCombine
         - builtinShadow
         - commentedOutCode
         - deferInLoop
         - docStub
-        - emptyFallthrough
-        - emptyStringTest
         - exposedSyncMutex
         - filepathJoin
         - hugeParam
         - importShadow
-        - nestingReduce
         - nilValReturn
         - paramTypeCombine
-        - preferStringWriter
         - rangeValCopy
-        - regexpSimplify
         - singleCaseSwitch
         - sloppyReassign
-        - sprintfQuotedString
-        - stringConcatSimplify
-        - stringXbytes
-        - typeAssertChain
-        - typeDefFirst
         - unnamedResult
         - whyNoLint
-        - yodaStyleExpr
       enable-all: true
     gomodguard:
       blocked:

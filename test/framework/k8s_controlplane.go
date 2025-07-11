@@ -309,7 +309,7 @@ func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, erro
 		c.t,
 		"POST",
 		madsEndpoint+"/v3/discovery:monitoringassignments",
-		[]byte(fmt.Sprintf(`{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": "%s"}}`, clientId)),
+		[]byte(fmt.Sprintf(`{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId)),
 		map[string]string{
 			"content-type": "application/json",
 		},
@@ -357,7 +357,7 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 	}
 
 	data := fmt.Sprintf(
-		`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`,
+		`{"mesh": %q, "type": %q, "tags": {"kuma.io/service": [%q]}}`,
 		mesh,
 		dpType,
 		service,
@@ -367,13 +367,13 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 }
 
 func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": "%s", "scope": ["ingress"]}`, zone)
+	data := fmt.Sprintf(`{"zone": %q, "scope": ["ingress"]}`, zone)
 
 	return c.generateToken("/zone", data)
 }
 
 func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": "%s", "scope": ["egress"]}`, zone)
+	data := fmt.Sprintf(`{"zone": %q, "scope": ["egress"]}`, zone)
 
 	return c.generateToken("/zone", data)
 }
@@ -384,7 +384,7 @@ func (c *K8sControlPlane) GenerateZoneToken(zone string, scope []string) (string
 		return "", err
 	}
 
-	data := fmt.Sprintf(`'{"zone": "%s", "scope": %s}'`, zone, scopeJson)
+	data := fmt.Sprintf(`'{"zone": %q, "scope": %s}'`, zone, scopeJson)
 
 	return c.generateToken("/zone", data)
 }

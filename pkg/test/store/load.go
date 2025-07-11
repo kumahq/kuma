@@ -91,7 +91,7 @@ func ExtractResources(ctx context.Context, rs store.ResourceStore) (string, erro
 			entry := rest.From.Resource(resource)
 			y, err := yaml.Marshal(entry)
 			// Hardcore way to replace all times with 0001-01-01T00:00:00Z
-			y = regexp.MustCompile(`[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9][^"]+`).ReplaceAll(y, []byte("0001-01-01T00:00:00Z"))
+			y = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d[^"]+`).ReplaceAll(y, []byte("0001-01-01T00:00:00Z"))
 			// Hardcore way to replace uuids
 			y = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`).ReplaceAll(y, []byte("STRIPPED_UUID"))
 			// Hardcore way to replace versions

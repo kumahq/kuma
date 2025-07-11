@@ -468,9 +468,7 @@ func (c *Executables) InitializeIPv4(
 		return legacy, nil
 	case nft.Functionality.Rules.ExistingRules && legacy.Functionality.Rules.ExistingRules:
 		switch {
-		case nft.Functionality.Chains.DockerOutput && legacy.Functionality.Chains.DockerOutput:
-			fallthrough
-		case !nft.Functionality.Chains.DockerOutput && !legacy.Functionality.Chains.DockerOutput:
+		case nft.Functionality.Chains.DockerOutput == legacy.Functionality.Chains.DockerOutput:
 			l.Warn("conflicting iptables modes detected; both iptables-nft and iptables-legacy have existing rules and/or custom chains. To avoid potential conflicts, iptables-legacy will be ignored, and iptables-nft will be used")
 			return nft, nil
 		case legacy.Functionality.Chains.DockerOutput:
