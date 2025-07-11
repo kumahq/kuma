@@ -36,7 +36,7 @@ var DefaultConfig = func() Config {
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
-			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
+			WorkDir:    "", // if left empty, a temporary directory will be generated automatically
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
@@ -193,8 +193,8 @@ type DataplaneRuntime struct {
 
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
-	// Dir to store auto-generated Envoy bootstrap config in.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	// WorkDir to store auto-generated Envoy bootstrap config in.
+	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
@@ -216,8 +216,6 @@ type DataplaneRuntime struct {
 	EnvoyComponentLogLevel string `json:"envoyComponentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_component_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
-	// SocketDir dir to store socket used between Envoy and the dp process
-	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
 	// DynamicConfiguration defines properties of dataplane dynamic configuration

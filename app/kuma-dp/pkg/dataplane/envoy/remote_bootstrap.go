@@ -192,7 +192,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		OperatingSystem:      b.operatingSystem,
 		Features:             features,
 		Resources:            resources,
-		Workdir:              opts.Config.DataplaneRuntime.SocketDir,
+		Workdir:              opts.Config.DataplaneRuntime.WorkDir,
 		MetricsResources: types.MetricsResources{
 			CertPath: opts.Config.DataplaneRuntime.Metrics.CertPath,
 			KeyPath:  opts.Config.DataplaneRuntime.Metrics.KeyPath,

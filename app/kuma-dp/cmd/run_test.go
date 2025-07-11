@@ -214,7 +214,7 @@ var _ = Describe("run", func() {
 					"--name", "example",
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					"--config-dir", tmpDir,
+					"--work-dir", tmpDir,
 					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
