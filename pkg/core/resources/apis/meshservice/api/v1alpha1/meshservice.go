@@ -14,8 +14,7 @@ type Selector struct {
 }
 
 type DataplaneRef struct {
-	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
-	// +kuma:nolint
+	// +kuma:nolint // it should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	Name string `json:"name,omitempty"`
 }
 
@@ -23,9 +22,8 @@ type Port struct {
 	Name       *string             `json:"name,omitempty"`
 	Port       int32               `json:"port"`
 	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
-	// +kuma:comment It should be without omitempty but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so if it was ever persisted empty this would cause a nack
 	// +kubebuilder:default=tcp
-	// +kuma:nolint
+	// +kuma:nolint // it should be without omitempty but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so if it was ever persisted empty this would cause a nack
 	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
 }
 
@@ -43,19 +41,16 @@ type MeshService struct {
 	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
 	// It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
 	// +kubebuilder:default=Unavailable
-	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
-	// +kuma:nolint
+	// +kuma:nolint // it should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	State State `json:"state,omitempty"`
-	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
-	// +kuma:nolint
+	// +kuma:nolint // it should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	Selector Selector `json:"selector,omitempty"`
 	// +patchMergeKey=port
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=port
 	// +listMapKey=appProtocol
-	// +kuma:comment It should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
-	// +kuma:nolint
+	// +kuma:nolint // it should be required but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so adding validation here would be a breaking change
 	Ports      []Port                 `json:"ports,omitempty"`
 	Identities *[]MeshServiceIdentity `json:"identities,omitempty"`
 }
