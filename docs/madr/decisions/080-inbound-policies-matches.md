@@ -6,8 +6,8 @@ Technical Story: https://github.com/kumahq/kuma/issues/12374
 
 ## Context and Problem Statement
 
-Current MeshTrafficPermission relies on client's cert with client's DPP tags encoded as URI SANs.
-As we're moving towards SPIFFE compliant certs we won't be able to use DPP tags in MeshTrafficPermission anymore.
+The current MeshTrafficPermission implementation uses the client’s certificate, with the client’s data plane proxy tags encoded in its URI SANs.
+As we're moving towards SPIFFE compliant certificates, we won't be able to use data plane proxy tags in MeshTrafficPermission policy anymore.
 
 ### User Stories
 
@@ -15,32 +15,32 @@ As we're moving towards SPIFFE compliant certs we won't be able to use DPP tags 
 
 1. I want all requests in the mesh to be denied by default (2.12)
 
-2. I want to declare a group of identities as explicitly denied,
+2. I want to be able to declare a group of identities as explicitly denied,
    so that Service Owner can't override or bypass that decision,
    ensuring enforcement of critical security boundaries across the mesh. (2.12)
 
-3. I want to allow all clients in the `observability` namespace to access all services by default,
+3. I want to be able to allow all clients in the `observability` namespace to access all services by default,
    so that telemetry and monitoring tools function automatically,
    while still allowing Service Owners to explicitly opt out by applying deny policies. (2.12)
 
-4. I want to allow all clients in the `observability` namespace to access the `/metrics` endpoint on all services,
+4. I want to be able to allow all clients in the `observability` namespace to access the `/metrics` endpoint on all services,
    so that monitoring tools can collect metrics without requiring each Service Owner to configure access individually.
 
 #### Service Owner
 
-1. I want to grant access to my service to any client I choose,
+1. I want to be able to grant access to my service to any client I choose,
    so that I can support integrations and collaboration with other teams,
    unless the Mesh Operator has explicitly denied that client,
    ensuring I remain in control while respecting mesh-wide security boundaries. (2.12)
 
-2. I want to opt out of mesh-wide `observability` access,
+2. I want to be able to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
    so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
 
-3. I want to block malicious/abusive client even if previously it was allowed,
-   so I can prevent my service from overloading until client's service team reacts to the incident. (2.12)
+3. I want to be able to block malicious/abusive client even if previously it was allowed,
+   so I can prevent my service from overloading until the client's service team responds to the incident (2.12)
 
-4. I want to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
+4. I want to be able to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
    so that read operations are public but write operations are gated.
 
 ### Design
