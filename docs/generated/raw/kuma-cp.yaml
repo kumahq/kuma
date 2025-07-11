@@ -376,6 +376,14 @@ runtime:
       ignoredServiceSelectorLabels: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS
       # nodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
       nodeLabelsToCopy: ["topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY
+      # TransparentProxyConfigMapName is used to specify the name of the ConfigMap that contains transparent proxy
+      # configuration. If this value is left empty, the transparent proxy configuration will not be loaded from
+      # a ConfigMap. The actual value is expected to be provided via an environment variable
+      transparentProxyConfigMap: "" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
+      # unifiedResourceNamingEnabled enables automatic injection of the unified naming feature flag into all sidecar-injected workloads.
+      # When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
+      # This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
+      unifiedResourceNamingEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
     # Kubernetes's resources reconciliation concurrency configuration
     controllersConcurrency:
