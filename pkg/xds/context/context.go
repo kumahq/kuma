@@ -102,7 +102,7 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	var oldestTri *kri.Identifier
 	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(labels) {
 		resource := mc.GetServiceByKRI(tri).(core_model.Resource)
-		if resource != nil {
+		if resource != nil && resType == tri.ResourceType {
 			resCreationTime := resource.GetMeta().GetCreationTime()
 			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
 				oldestCreationTime = &resCreationTime
