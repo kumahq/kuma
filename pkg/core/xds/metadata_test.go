@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -63,7 +64,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				AdminPort:            1234,
 				DNSPort:              8000,
 				SystemCaPath:         "/etc/certs/cert.pem",
-				ReadinessPort:        9300,
+				ReadinessPort:        pointer.To(uint32(9300)),
 				AppProbeProxyEnabled: true,
 			},
 		}),

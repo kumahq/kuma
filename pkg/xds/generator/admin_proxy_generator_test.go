@@ -13,6 +13,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -54,7 +55,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 				Metadata: &xds.DataplaneMetadata{
 					AdminPort:     9901,
 					AdminAddress:  given.adminAddress,
-					ReadinessPort: given.readinessPort,
+					ReadinessPort: pointer.To(given.readinessPort),
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),

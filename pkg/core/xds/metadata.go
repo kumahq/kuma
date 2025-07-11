@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -21,8 +22,9 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 
 const (
 	// Supported Envoy node metadata fields.
-	FieldDataplaneAdminPort            = "dataplane.admin.port"
-	FieldDataplaneAdminAddress         = "dataplane.admin.address"
+	FieldDataplaneAdminPort    = "dataplane.admin.port"
+	FieldDataplaneAdminAddress = "dataplane.admin.address"
+	// Deprecated: this property is no longer supported and will be removed in the future
 	FieldDataplaneReadinessPort        = "dataplane.readinessReporter.port"
 	FieldDataplaneAppProbeProxyEnabled = "dataplane.appProbeProxy.enabled"
 	FieldDataplaneDNSPort              = "dataplane.dns.port"
@@ -54,10 +56,11 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	Resource             model.Resource
-	AdminPort            uint32
-	AdminAddress         string
-	ReadinessPort        uint32
+	Resource     model.Resource
+	AdminPort    uint32
+	AdminAddress string
+	// Deprecated: this field is no longer supported and will be removed in the future
+	ReadinessPort        *uint32
 	AppProbeProxyEnabled bool
 	DNSPort              uint32
 	DynamicMetadata      map[string]string
@@ -121,9 +124,10 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
-func (m *DataplaneMetadata) GetReadinessPort() uint32 {
+// Deprecated: remove this method in 2.15.*
+func (m *DataplaneMetadata) GetReadinessPort() *uint32 {
 	if m == nil {
-		return 0
+		return nil
 	}
 	return m.ReadinessPort
 }
@@ -195,11 +199,11 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	if field := xdsMetadata.Fields[FieldDataplaneProxyType]; field != nil {
 		metadata.ProxyType = mesh_proto.ProxyType(field.GetStringValue())
 	}
-	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
+	metadata.AdminPort = uint32Metadata[uint32](xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
-	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
+	metadata.ReadinessPort = uint32Metadata[*uint32](xdsMetadata, FieldDataplaneReadinessPort)
 	metadata.AppProbeProxyEnabled = boolMetadata(xdsMetadata, FieldDataplaneAppProbeProxyEnabled)
-	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
+	metadata.DNSPort = uint32Metadata[uint32](xdsMetadata, FieldDataplaneDNSPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.YAML.UnmarshalCore([]byte(value.GetStringValue()))
 		if err != nil {
@@ -269,17 +273,28 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	return &metadata
 }
 
-func uint32Metadata(xdsMetadata *structpb.Struct, field string) uint32 {
+func uint32Metadata[T uint32 | *uint32](xdsMetadata *structpb.Struct, field string) T {
+	var zero T
+
 	value := xdsMetadata.Fields[field]
 	if value == nil {
-		return 0
+		return zero
 	}
 	port, err := strconv.ParseInt(value.GetStringValue(), 10, 32)
 	if err != nil {
 		metadataLog.Error(err, "invalid value in dataplane metadata", "field", field, "value", value)
-		return 0
+		return zero
 	}
-	return uint32(port)
+
+	var result any
+	switch any(zero).(type) {
+	case uint32:
+		result = uint32(port)
+	case *uint32:
+		result = pointer.To(uint32(port))
+	}
+
+	return result.(T)
 }
 
 func boolMetadata(xdsMetadata *structpb.Struct, field string) bool {

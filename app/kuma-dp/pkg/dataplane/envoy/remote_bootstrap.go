@@ -187,7 +187,6 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		},
 		DynamicMetadata:      metadata,
 		DNSPort:              opts.Config.DNS.EnvoyDNSPort,
-		ReadinessPort:        opts.Config.Dataplane.ReadinessPort,
 		AppProbeProxyEnabled: opts.Config.ApplicationProbeProxyServer.Port > 0,
 		OperatingSystem:      b.operatingSystem,
 		Features:             features,
