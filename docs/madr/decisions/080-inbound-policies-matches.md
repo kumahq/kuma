@@ -11,6 +11,8 @@ As we're moving towards SPIFFE compliant certificates, we won't be able to use d
 
 ### User Stories
 
+Version in parenthesis indicates which Kuma release is going to support the user story.
+
 #### Mesh Operator
 
 1. I want all requests in the mesh to be denied by default (2.12)
@@ -58,7 +60,7 @@ Pros:
 * No intermediate representation is required, `rbac_configurer.go` generates Envoy configuration directly from `conf`
 
 Cons:
-* Action in Envoy can't be correlated with a single MTP kri,
+* Action in Envoy can't be correlated with a KRI of a single MeshTrafficPermission policy,
 but that's a problem that exists for other single-item policies (i.e. [MeshPassthrough](https://github.com/kumahq/kuma/issues/13886)).
 
 ##### Schema
