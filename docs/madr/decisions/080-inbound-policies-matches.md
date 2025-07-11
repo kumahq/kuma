@@ -57,7 +57,8 @@ Pros:
 * Inspect API works out-of-the-box!
 * No need to introduce a new type of policy
 * `allowRules`, `denyRules` reuse `rules[].matches[]` schema
-* No intermediate representation is required, `rbac_configurer.go` generates Envoy configuration directly from `conf`
+* MeshTrafficPermission policy plugin works directly with `conf` which is a merging product of all matched MeshTrafficPermissions.
+No additional data structure (so called "intermediate representation") is needed.
 
 Cons:
 * Action in Envoy can't be correlated with a KRI of a single MeshTrafficPermission policy,
