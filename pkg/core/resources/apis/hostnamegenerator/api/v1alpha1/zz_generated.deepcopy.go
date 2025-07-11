@@ -121,9 +121,13 @@ func (in *LabelSelector) DeepCopyInto(out *LabelSelector) {
 	*out = *in
 	if in.MatchLabels != nil {
 		in, out := &in.MatchLabels, &out.MatchLabels
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = new(map[string]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]string, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
 		}
 	}
 }
