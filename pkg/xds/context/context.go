@@ -62,6 +62,13 @@ func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)
 }
 
+func (g BaseMeshContext) Resources() Resources {
+	return Resources{
+		CrossMeshResources: map[xds.MeshName]ResourceMap{},
+		MeshLocalResources: g.ResourceMap,
+	}
+}
+
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
 // If there is an information that can be precomputed and shared between all data plane proxies

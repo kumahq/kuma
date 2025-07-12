@@ -1,0 +1,33 @@
+{
+ "policies": [
+  {
+   "conf": {
+    "backends": [
+     {
+      "type": "Zipkin",
+      "zipkin": {
+       "url": "http://jaeger-collector:9411/api/v2/spans",
+       "traceId128bit": false,
+       "apiVersion": "httpJson",
+       "sharedSpanContext": true
+      }
+     }
+    ],
+    "sampling": {
+     "overall": 80,
+     "client": 40,
+     "random": 60
+    }
+   },
+   "kind": "MeshTrace",
+   "origins": [
+    {
+     "kri": "kri_mtr_default___default-1_"
+    },
+    {
+     "kri": "kri_mtr_default___default_"
+    }
+   ]
+  }
+ ]
+}
