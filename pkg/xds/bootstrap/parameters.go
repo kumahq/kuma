@@ -27,10 +27,11 @@ type AggregateMetricsConfig struct {
 }
 
 type configParameters struct {
-	Id                   string
-	Service              string
-	AdminAddress         string
-	AdminPort            uint32
+	Id           string
+	Service      string
+	AdminAddress string
+	AdminPort    uint32
+	// Deprecated: this field is no longer supported and will be removed in the future
 	ReadinessPort        uint32
 	AppProbeProxyEnabled bool
 	AdminAccessLogPath   string

@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/bakito/go-log-logr-adapter/adapter"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 const (
@@ -23,28 +23,21 @@ const (
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
-	localListenAddr string
-	localListenPort uint32
-	isTerminating   atomic.Bool
+	socketDir     string
+	isTerminating atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(localIPAddr string, localListenPort uint32) *Reporter {
+func NewReporter(socketDir string) *Reporter {
 	return &Reporter{
-		localListenPort: localListenPort,
-		localListenAddr: localIPAddr,
+		socketDir: socketDir,
 	}
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
-	protocol := "tcp"
-	addr := r.localListenAddr
-	if govalidator.IsIPv6(addr) {
-		protocol = "tcp6"
-		addr = fmt.Sprintf("[%s]", addr)
-	}
-	lis, err := net.Listen(protocol, fmt.Sprintf("%s:%d", addr, r.localListenPort))
+	socketPath := core_xds.ReadinessReporterSocketName(r.socketDir)
+	lis, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return err
 	}
