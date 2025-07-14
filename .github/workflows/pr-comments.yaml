@@ -61,6 +61,7 @@ jobs:
       - name: "Auto-format code"
         if: contains(github.event.comment.body, '/format')
         run: make clean/generated check
+        continue-on-error: true
 
       # Update all golden files except transparent proxy tests if /golden_files is in the comment
       - name: "Update golden files (excluding transparent proxy)"
