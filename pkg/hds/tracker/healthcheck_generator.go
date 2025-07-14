@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	v3 "github.com/kumahq/kuma/pkg/hds/v3"
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/util/net"
@@ -56,8 +57,15 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		return nil, err
 	}
 
+	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
+	unifiedNamingEnabled := md.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	clusterName := names.GetEnvoyAdminClusterName()
+	if unifiedNamingEnabled {
+		clusterName = names.SystemGetAdminResourceName()
+	}
+
 	healthChecks := []*envoy_service_health.ClusterHealthCheck{
-		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort)),
+		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort), clusterName),
 	}
 
 	for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
@@ -147,9 +155,9 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 }
 
 // envoyHealthCheck builds a HC for Envoy itself so when Envoy is in draining state HDS can report that DP is offline
-func (g *SnapshotGenerator) envoyHealthCheck(port uint32) *envoy_service_health.ClusterHealthCheck {
+func (g *SnapshotGenerator) envoyHealthCheck(port uint32, clusterName string) *envoy_service_health.ClusterHealthCheck {
 	return &envoy_service_health.ClusterHealthCheck{
-		ClusterName: names.GetEnvoyAdminClusterName(),
+		ClusterName: clusterName,
 		LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 			Endpoints: []*envoy_endpoint.Endpoint{{
 				Address: &envoy_core.Address{

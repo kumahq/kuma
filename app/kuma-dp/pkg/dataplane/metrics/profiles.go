@@ -167,6 +167,10 @@ var basicProfile = []selectorFunction{
 var basicProfileLabels = []selectorFunction{
 	selectorToFilterFunction(v1alpha1.Selector{
 		Type:  v1alpha1.PrefixSelectorType,
+		Match: names.SystemPrefix,
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
 		Match: names.GetInternalClusterNamePrefix(),
 	}),
 	selectorToFilterFunction(v1alpha1.Selector{

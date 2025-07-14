@@ -2,12 +2,15 @@ package tracker
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -34,6 +37,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 	type testCase struct {
 		goldenFile string
 		dataplane  string
+		metadata   *structpb.Struct
 		hdsConfig  *dp_server.HdsConfig
 	}
 
@@ -48,7 +52,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901)
 
 			// when
-			Expect(generator.GenerateSnapshot(context.Background(), &envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})).Should(
+			Expect(generator.GenerateSnapshot(context.Background(), &envoy_config_core_v3.Node{Id: "mesh-1.dp-1", Metadata: given.metadata})).Should(
 				WithTransform(func(snapshot envoy_cache.ResourceSnapshot) ([]byte, error) {
 					return util_proto.ToYAML(snapshot.GetResources(v3.HealthCheckSpecifierType)[""])
 				}, matchers.MatchGoldenYAML("testdata", given.goldenFile)),
@@ -126,6 +130,41 @@ networking:
     redirectPortInbound: 15006
     redirectPortOutbound: 15001
 `,
+			hdsConfig: &dp_server.HdsConfig{
+				Interval: config_types.Duration{Duration: 8 * time.Second},
+				Enabled:  true,
+				CheckDefaults: &dp_server.HdsCheck{
+					Interval:           config_types.Duration{Duration: 1 * time.Second},
+					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
+					Timeout:            config_types.Duration{Duration: 3 * time.Second},
+					HealthyThreshold:   4,
+					UnhealthyThreshold: 5,
+				},
+			},
+		}),
+		Entry("should generate HealthCheckSpecifier with new cluster name", testCase{
+			goldenFile: "hds.4.golden.yaml",
+			dataplane: `
+networking:
+  address: 10.20.0.1
+  inbound:
+    - port: 9000
+      serviceAddress: 192.168.0.1
+      servicePort: 80
+      serviceProbe: 
+        tcp: {}
+      tags:
+        kuma.io/service: backend
+`,
+			metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.FieldFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{Kind: &structpb.Value_StringValue{StringValue: types.FeatureUnifiedResourceNaming}},
+						},
+					}}},
+				},
+			},
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
 				Enabled:  true,

@@ -175,7 +175,7 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		status := clusterHealth.LocalityEndpointsHealth[0].EndpointsHealth[0].HealthStatus
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
 
-		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() {
+		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() || clusterHealth.ClusterName == names.SystemGetAdminResourceName() {
 			envoyHealth = health
 		} else {
 			port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)

@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -58,6 +59,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 
 	adminPort := proxy.Metadata.GetAdminPort()
 	readinessPort := proxy.Metadata.GetReadinessPort()
+	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
 	// the only reasonable alternatives are `::1`, `0.0.0.0` or `::`).
@@ -65,6 +67,9 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	// since it would allow a malicious user to manipulate that value and use Prometheus endpoint
 	// as a gateway to another host.
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
+	if unifiedNamingEnabled {
+		envoyAdminClusterName = envoy_names.SystemGetAdminResourceName()
+	}
 	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
 	if _, ok := adminAddressAllowedValues[adminAddress]; !ok {
@@ -117,19 +122,23 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	resources := core_xds.NewResourceSet()
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if g.getAddress(proxy) != adminAddress {
+		adminListenerName := envoy_names.GetAdminListenerName()
+		if unifiedNamingEnabled {
+			adminListenerName = envoy_names.SystemGetAdminResourceName()
+		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(adminListenerName, staticEndpointPaths)),
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).
-			Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticTlsEndpointPaths)).
+			Configure(envoy_listeners.StaticEndpoints(adminListenerName, staticTlsEndpointPaths)).
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
 		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
-			WithOverwriteName(envoy_names.GetAdminListenerName()).
+			WithOverwriteName(adminListenerName).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).
 			Build()
