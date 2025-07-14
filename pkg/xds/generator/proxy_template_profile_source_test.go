@@ -2,7 +2,6 @@ package generator_test
 
 import (
 	"context"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"path/filepath"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
@@ -172,7 +172,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
-					WorkDir: "/tmp",
+					WorkDir:  "/tmp",
 					Features: given.features,
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{

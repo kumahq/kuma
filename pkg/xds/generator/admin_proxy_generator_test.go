@@ -2,7 +2,6 @@ package generator_test
 
 import (
 	"context"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"os"
 	"path/filepath"
 
@@ -11,6 +10,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"

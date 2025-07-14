@@ -3,13 +3,13 @@ package generator
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
