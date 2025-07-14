@@ -124,7 +124,7 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
-// Deprecated: remove this method in 2.15.*
+// TODO: should be removed in 2 versions after 2.12.*
 func (m *DataplaneMetadata) GetReadinessPort() *uint32 {
 	if m == nil {
 		return nil
