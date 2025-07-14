@@ -24,7 +24,7 @@ const (
 	// Supported Envoy node metadata fields.
 	FieldDataplaneAdminPort    = "dataplane.admin.port"
 	FieldDataplaneAdminAddress = "dataplane.admin.address"
-	// Deprecated: this property is no longer supported and will be removed in the future
+	// TODO: should be removed in 2 versions after 2.12.*
 	FieldDataplaneReadinessPort        = "dataplane.readinessReporter.port"
 	FieldDataplaneAppProbeProxyEnabled = "dataplane.appProbeProxy.enabled"
 	FieldDataplaneDNSPort              = "dataplane.dns.port"
@@ -59,7 +59,7 @@ type DataplaneMetadata struct {
 	Resource     model.Resource
 	AdminPort    uint32
 	AdminAddress string
-	// Deprecated: this field is no longer supported and will be removed in the future
+	// TODO: should be removed in 2 versions after 2.12.*
 	ReadinessPort        *uint32
 	AppProbeProxyEnabled bool
 	DNSPort              uint32

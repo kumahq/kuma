@@ -305,8 +305,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, observabilityComponents...)
 
-			var readinessReporter *readiness.Reporter
-			readinessReporter = readiness.NewReporter(cfg.DataplaneRuntime.SocketDir)
+			readinessReporter := readiness.NewReporter(cfg.DataplaneRuntime.SocketDir)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

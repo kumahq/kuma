@@ -31,7 +31,7 @@ type configParameters struct {
 	Service      string
 	AdminAddress string
 	AdminPort    uint32
-	// Deprecated: this field is no longer supported and will be removed in the future
+	// TODO: should be removed in 2 versions after 2.12.*
 	ReadinessPort        uint32
 	AppProbeProxyEnabled bool
 	AdminAccessLogPath   string

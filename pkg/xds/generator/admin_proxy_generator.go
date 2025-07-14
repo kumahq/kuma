@@ -93,8 +93,8 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	}
 
 	useUnixSocket := readinessPort == nil
-	readinessReporterDisabled := (readinessPort != nil) && pointer.Deref(readinessPort) == 0
-	readinessReporterEnabled := (readinessPort != nil) && pointer.Deref(readinessPort) > 0
+	tcpReadinessReporterDisabled := (readinessPort != nil) && pointer.Deref(readinessPort) == 0
+	tcpReadinessReporterEnabled := (readinessPort != nil) && pointer.Deref(readinessPort) > 0
 
 	assignReadinessPort := func(se *envoy_common.StaticEndpointPath) {
 		switch {
@@ -103,14 +103,11 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			se.ClusterName = dppReadinessClusterName
 			return
 
-			// existing behavior is to use envoy admin cluster if readinessPort is 0
-		case readinessReporterDisabled:
-			// we only have /ready for now, so assign it to the readiness cluster directly
+		case tcpReadinessReporterEnabled:
 			se.ClusterName = dppReadinessClusterName
 
-		case readinessReporterEnabled:
-			// we keep the previous behavior if readinessPort is not set
-			// this can happen when an existing DPP is connecting to this CP, it does not have this metadata
+		// if readinessPort is set to 0, we use envoy admin cluster for readiness check
+		case tcpReadinessReporterDisabled:
 			se.ClusterName = envoyAdminClusterName
 		}
 	}
@@ -169,13 +166,13 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		xdsEndpoint = core_xds.Endpoint{
 			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}
-	case readinessReporterEnabled:
+	case tcpReadinessReporterEnabled:
 		xdsEndpoint = core_xds.Endpoint{
 			Target: adminAddr,
 			Port:   pointer.Deref(readinessPort),
 		}
-	// For compatibility with older versions of Kuma, once if readinessPort is 0, it goes into envoy admin API.
-	case readinessReporterDisabled:
+	// For compatibility with older versions of Kuma, once if readinessPort is 0, it goes into the Envoy admin API.
+	case tcpReadinessReporterDisabled:
 		return resources, nil
 	}
 
