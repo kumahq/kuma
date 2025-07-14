@@ -2,6 +2,7 @@ package generator_test
 
 import (
 	"context"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"path/filepath"
 	"time"
 
@@ -27,6 +28,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		dataplane string
 		profile   string
 		expected  string
+		features  xds_types.Features
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -171,6 +173,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 					WorkDir: "/tmp",
+					Features: given.features,
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -338,6 +341,36 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "4-envoy-config.golden.yaml",
+		}),
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming", testCase{
+			mesh: `
+            mtls:
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
+`,
+			dataplane: `
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 80
+                  servicePort: 8080
+                  tags:
+                    kuma.io/service: backend
+              outbound:
+              - port: 54321
+                tags:
+                  kuma.io/service: db
+              - port: 59200
+                tags:
+                  kuma.io/service: elastic
+`,
+			profile:  core_mesh.ProfileDefaultProxy,
+			expected: "5-envoy-config.golden.yaml",
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
 		}),
 	)
 })
