@@ -84,6 +84,28 @@ This ambiguity in resolution context leads to confusion and potential misconfigu
   * On the control plane (e.g., secrets)
   * On the data plane (e.g., files or environment variables)
 
+## User stories
+
+### As a Mesh Operator, I want to provide a CA and private key for `MeshIdentity` using a file or environment variable
+
+Mesh Operator should be able to configure `MeshIdentity` by referencing a file path or environment variable instead of using inline data.
+
+### As a Mesh Operator, I want to configure mTLS for MeshExternalService securely
+
+It should be possible to configure a specific `MeshExternalService` to use a certificate and private key mounted from a file or injected via an environment variable on the `ZoneEgress` - without transmitting them over the network.
+
+### As a Mesh Operator, I want to define a MeshExternalService with mTLS settings once and use it across all zones
+
+It should be feasible to define a `MeshExternalService` with all required mTLS configuration in a single location, allowing it to be synced and consumed across multiple zones without additional configuration.
+
+### As a Mesh Operator, I want to prevent users from seeing private keys in the GUI
+
+`Inline` DataSource values can expose sensitive information like private keys in the user interface. For security, `inline` definitions should be discouraged or clearly marked as insecure for use with private keys.
+
+### As a Mesh Operator, I want to configure mTLS for MeshExternalService using a Secret
+
+To maintain a strong security boundary, the control plane should only access `Secrets` from the system namespace (e.g., kuma-system). When a `MeshExternalService` is configured with a `Secret`, it makes sense for the control plane to read that `Secret` and securely deliver it to the data plane via SDS.
+
 ## Design
 
 ### Option 1: Unified DataSource Structure
