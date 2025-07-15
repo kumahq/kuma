@@ -86,7 +86,7 @@ func Inspect() {
 			Entry("of clusters for a dataplane using Global CP", testCase{
 				cluster:     GlobalCluster,
 				args:        []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a dataplane using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
