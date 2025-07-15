@@ -121,30 +121,30 @@ const (
 )
 
 type DataSource struct {
-	Type      Type       `json:"type,omitempty"`
-	File      *File      `json:"file,omitempty"`
-	SecretRef *SecretRef `json:"secretRef,omitempty"`
-	EnvVar    *EnvVar    `json:"envVar,omitempty"`
+    Type      Type       `json:"type,omitempty"`
+    File      *File      `json:"file,omitempty"`
+    SecretRef *SecretRef `json:"secretRef,omitempty"`
+    EnvVar    *EnvVar    `json:"envVar,omitempty"`
 }
 
 type File struct {
-	Path string `json:"path,omitempty"`
+    Path string `json:"path,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Secret
 type RefType string
 
 const (
-	SecretRefType RefType = "Secret"
+    SecretRefType RefType = "Secret"
 )
 
 type SecretRef struct {
     Kind RefType `json:"kind,omitempty"`
-	Name string  `json:"name,omitempty"`
+    Name string  `json:"name,omitempty"`
 }
 
 type EnvVar struct {
-	Name string `json:"name,omitempty"`
+    Name string `json:"name,omitempty"`
 }
 ```
 
