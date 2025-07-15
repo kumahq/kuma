@@ -12,7 +12,7 @@ import (
 )
 
 // DestinationIndex indexes destinations by KRI and labels. It provides optimized access to Kuma destinations. It should
-// be used when working with referencable destination resources like MeshServices, MeshExternalServices or MeshMultizoneServices
+// be used when working with referenceable destination resources like MeshServices, MeshExternalServices or MeshMultiZoneServices
 type DestinationIndex struct {
 	destinationByIdentifier    map[kri.Identifier]core.Destination
 	destinationsByLabelByValue labelsToValuesToResourceIdentifier
@@ -62,7 +62,7 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	for _, reachableBackend := range reachableBackends.GetRefs() {
 		if len(reachableBackend.Labels) > 0 {
-			for _, destinationKri := range dc.resolveResourceIdentifiersForLabels(reachableBackend.Labels) {
+			for _, destinationKri := range dc.resolveResourceIdentifiersForLabels(core_model.ResourceType(reachableBackend.Kind), reachableBackend.Labels) {
 				dest := dc.destinationByIdentifier[destinationKri]
 				if dest == nil {
 					continue
@@ -111,9 +111,9 @@ func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destinat
 	return dc.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
-func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(labels map[string]string) []kri.Identifier {
+func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_model.ResourceType, labels map[string]string) []kri.Identifier {
 	var result []kri.Identifier
-	reachable := dc.getDestinationsForLabels(labels)
+	reachable := dc.getDestinationsForLabels(resType, labels)
 	for ri, count := range reachable {
 		if count == len(labels) {
 			result = append(result, ri)
@@ -122,7 +122,7 @@ func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(labels map[strin
 	return result
 }
 
-func (dc *DestinationIndex) getDestinationsForLabels(labels map[string]string) map[kri.Identifier]int {
+func (dc *DestinationIndex) getDestinationsForLabels(resType core_model.ResourceType, labels map[string]string) map[kri.Identifier]int {
 	reachable := map[kri.Identifier]int{}
 	for label, value := range labels {
 		key := labelValue{
@@ -133,7 +133,9 @@ func (dc *DestinationIndex) getDestinationsForLabels(labels map[string]string) m
 		matchedDestinations, found := dc.destinationsByLabelByValue[key]
 		if found {
 			for ri := range matchedDestinations {
-				reachable[ri]++
+				if ri.ResourceType == resType {
+					reachable[ri]++
+				}
 			}
 		}
 	}

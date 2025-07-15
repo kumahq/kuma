@@ -192,11 +192,13 @@ func (s *dataplaneInsightStore) Upsert(
 	case core_mesh.ZoneIngressType:
 		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
+			insight.Spec.Metadata = xdsMetadata
 			return insight.Spec.UpdateSubscription(subscription)
 		})
 	case core_mesh.ZoneEgressType:
 		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneEgressInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.ZoneEgressInsightResource)
+			insight.Spec.Metadata = xdsMetadata
 			return insight.Spec.UpdateSubscription(subscription)
 		})
 	case core_mesh.DataplaneType:

@@ -16545,6 +16545,8 @@ components:
               type: object
             template:
               type: string
+          required:
+            - template
           type: object
         creationTime:
           readOnly: true

@@ -138,6 +138,7 @@ A Helm chart for the Kuma Control Plane
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | dataPlane.initImage.tag | string | `nil` | Kuma DP init image tag When not specified, the value is copied from global.tag |
+| dataPlane.features.unifiedResourceNaming | bool | `false` | Enables automatic injection of the unified naming for Envoy resources and stats feature flag. When set to true, it sets the environment variable KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane, which causes the sidecar injector to add KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container. It also adds the same KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true environment variable to all ZoneIngress and ZoneEgress deployments. This option only automates setting the required flags and does not enable or disable the feature itself. You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch |
 | ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
 | ingress.extraLabels | object | `{}` | Labels to add to resources, in addition to default labels |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
@@ -217,7 +218,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.33.1@sha256:35f792b0f0b8b3072bb01cd50a23d2dc1ba2488eed70a1a951a1789a8e3bc994"` | The kubectl image tag |
+| kubectl.image.tag | string | `"1.33.2@sha256:e706851b19c0c4e668614b7c5a6b0c5bbcfbe7fb73f5d999250e0da8bfff42c6"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
