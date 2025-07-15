@@ -9,6 +9,12 @@
 * fix(dynconfig): change the direct response body size dynamically (backport of #13853) [#13897](https://github.com/kumahq/kuma/pull/13897) @kumahq
 
 
+## 2.10.3
+> Released on 2025/07/15
+
+* chore(deps): security update [#13901](https://github.com/kumahq/kuma/pull/13901) @kumahq
+
+
 ## 2.11.1
 > Released on 2025/06/25
 
