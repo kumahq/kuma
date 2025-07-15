@@ -125,36 +125,30 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
-		}, "30s", "500ms").Should(Succeed())
 
-		// and
-		// can access test-server-2 from service in the mesh
-		Eventually(func(g Gomega) {
-			responses, err := client.CollectEchoResponse(
+			// and
+			// can access test-server-2 from service in the mesh
+			responses, err = client.CollectEchoResponse(
 				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
-		}, "30s", "500ms").Should(Succeed())
 
-		// and
-		// can access test-server from service outside of the mesh
-		Eventually(func(g Gomega) {
-			responses, err := client.CollectEchoResponse(
+			// and
+			// can access test-server from service outside of the mesh
+			responses, err = client.CollectEchoResponse(
 				universal.Cluster, "mesh-tls-demo-client-no-mesh", testServerContainerName,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
-		}, "30s", "500ms").Should(Succeed())
 
-		// and
-		// cannot access test-server-2 from service outside of the mesh
-		Eventually(func(g Gomega) {
-			responses, err := client.CollectFailure(
+			// and
+			// cannot access test-server-2 from service outside of the mesh
+			failureResponses, err := client.CollectFailure(
 				universal.Cluster, "mesh-tls-demo-client-no-mesh", testServer2ContainerName,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(responses.Exitcode).To(Equal(52))
+			g.Expect(failureResponses.Exitcode).To(Equal(52))
 		}, "30s", "500ms").Should(Succeed())
 	})
 
@@ -231,32 +225,26 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
-		}, "30s", "500ms").Should(Succeed())
 
-		// and
-		// can access test-server-2 from service in the mesh
-		Eventually(func(g Gomega) {
-			responses, err := client.CollectEchoResponse(
+			// and
+			// can access test-server-2 from service in the mesh
+			responses, err = client.CollectEchoResponse(
 				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
-		}, "30s", "500ms").Should(Succeed())
 
-		// and
-		// can access test-server from service outside of the mesh
-		Eventually(func(g Gomega) {
-			responses, err := client.CollectFailure(
+			// and
+			// can access test-server from service outside of the mesh
+			failureResponses, err := client.CollectFailure(
 				universal.Cluster, "mesh-tls-demo-client-no-mesh", testServerContainerName,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(responses.Exitcode).To(Equal(52))
-		}, "30s", "500ms").Should(Succeed())
+			g.Expect(failureResponses.Exitcode).To(Equal(52))
 
-		// and
-		// cannot access test-server-2 from service outside of the mesh
-		Eventually(func(g Gomega) {
-			responses, err := client.CollectEchoResponse(
+			// and
+			// cannot access test-server-2 from service outside of the mesh
+			responses, err = client.CollectEchoResponse(
 				universal.Cluster, "mesh-tls-demo-client-no-mesh", testServer2ContainerName,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -318,15 +306,13 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
-		// and
-		// uses tls version 1.3
-		Eventually(func(g Gomega) {
+			// and
+			// uses tls version 1.3
 			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.3")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
-		}, "30s", "1s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 	})
 
 	It("should set cypher and version", func() {
@@ -393,22 +379,18 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
-		// and
-		// uses tls version 1.2
-		Eventually(func(g Gomega) {
+			// and
+			// uses tls version 1.2
 			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.2")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
-		}, "30s", "1s").Should(Succeed())
 
-		// and
-		// doesn't uses specific cypher
-		Eventually(func(g Gomega) {
-			s, err := admin.GetStats("listener.(.*)_80.ssl.ciphers.ECDHE-RSA-AES256-GCM-SHA384")
+			// and
+			// uses specific cypher
+			s, err = admin.GetStats("listener.(.*)_80.ssl.ciphers.ECDHE-RSA-AES256-GCM-SHA384")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
-		}, "30s", "1s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 	})
 }
