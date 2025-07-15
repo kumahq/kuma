@@ -26,7 +26,8 @@ In the [Inbound Policies MADR](https://docs.google.com/document/d/1tdIOVVYObHbGK
      > the new rule position is the highest of two merged rules
 > 5. Stable sort rules based on the Extended GAPI matches order
      > we need to split individual matches into separate rules
-     But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://github.com/kumahq/kuma/issues/13440):
+
+But later I discovered [MeshHTTPRoute merging behaviour is not ideal](https://github.com/kumahq/kuma/issues/13440):
 
 1. Targeting routes by policies results in surprising behaviour
 
@@ -73,15 +74,15 @@ Version in parentheses indicates which Kuma release is going to support the user
 4. I want to be able to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
    so that read operations are public but write operations are gated.
 
-5. I want to apply a MeshTrafficPermission to just one of my multiple inbounds
+5. I want to apply a MeshTrafficPermission to just one of my multiple inbounds.
 
-### Design
+## Design
 
-According to [MADR-078](078-special-mtp-algo.md) MeshTrafficPermission's algorithm and API is different from other inbound policies.
-Current MADR suggests 2 options to implement the design.
-Chosen option is "Option 1: MeshTrafficPermission is a single-item policy".
+According to [MADR-078](078-special-mtp-algo.md), the MeshTrafficPermission algorithm and API are different from other inbound policies.
+This MADR suggests three options to implement the design.
+The chosen option is "Option 1: MeshTrafficPermission is an inbound policy without 'matches'".
 
-#### Option 1: MeshTrafficPermission is an inbound policy without 'matches'
+### Option 1: MeshTrafficPermission is an inbound policy without 'matches'
 
 Pros:
 * Inspect API works with minimal adjustments
@@ -157,7 +158,7 @@ spec:
   default: {} # matches all requests
 ```
 
-With syntactic sugar MeshTrafficPermission will look exactly as we've planned in [Option 2](#option-2-meshtrafficpermission-is-a-single-item-policy)
+With syntactic sugar, MeshTrafficPermission will look exactly as described in [Option 2](#option-2-meshtrafficpermission-is-a-single-item-policy)
 
 ```yaml
 type: MeshTrafficPermission
@@ -189,7 +190,7 @@ Evaluation rules:
 2. If the incoming request matches at least one matcher in either `allow` or `allowWithShadowDeny` list – the result is ALLOW.
 3. If the incoming request doesn't match anything – the result is DENY.
 
-##### Algorithm
+#### Algorithm
 
 1. Collect all MeshTrafficPermissions that target the inbound
 2. Concat all `rules` arrays (we don't want to merge `default` confs to solve the [Problem 2](#problem-2))
@@ -254,7 +255,7 @@ extensions.filters.network.rbac.v3.RBAC:
     no_match: Deny
 ```
 
-##### Inspect API
+#### Inspect API
 
 Inspect API for inbound rules:
 
@@ -294,9 +295,9 @@ Currently, Inspect API is missing `policies[].rules[].origin`.
 As we don't want to merge `rules` to fix the [Problem 2](#problem-2) we can unambiguously match what policy KRI contributed what rule.
 This change needs to be covered in a separate MADR.
 
-##### Verify user stories
+#### Verify user stories
 
-###### Mesh Operator
+##### Mesh Operator
 
 1. I want all requests in the mesh to be denied by default (2.12)
 
@@ -358,7 +359,7 @@ spec:
              value: "/metrics"
 ```
 
-###### Service Owner
+##### Service Owner
 
 1. I want to grant access to my service to any client I choose,
    so that I can support integrations and collaboration with other teams,
@@ -464,7 +465,7 @@ spec:
    default: {}
 ```
 
-##### Extensibility to other authentication methods
+#### Extensibility to other authentication methods
 
 Current `spiffeId` authentication method is translated to the following Matching API predicate:
 
@@ -487,7 +488,7 @@ there is no issues with extensibility.
 
 Currently supported `input` extensions could be found on [Envoy Matching API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api) page.
 
-#### Option 2: MeshTrafficPermission is a single-item policy
+### Option 2: MeshTrafficPermission is a single-item policy
 
 Pros:
 * Inspect API works out-of-the-box!
@@ -547,7 +548,7 @@ Evaluation rules:
 2. If the incoming request matches at least one matcher in either `allow` or `allowWithShadowDeny` list – the result is ALLOW.
 3. If the incoming request doesn't match anything – the result is DENY.
 
-##### Merging
+#### Merging
 
 Normally in Kuma policies mergeable arrays override each other, for example:
 
@@ -596,7 +597,7 @@ We don't have to adopt their exact annotations as we won't gain anything from it
 But it shows that the concept is viable,
 and potentially we can update `MeshPassthrough`, `MeshProxyPatch` and `MeshOPA` to use struct tags instead of `append` prefix.
 
-##### Algorithm
+#### Algorithm
 
 1. Collect all MeshTrafficPermissions that target the inbound
 2. Concat all `deny`, `allowWithShadowDeny` and `allow` lists
@@ -629,7 +630,7 @@ extensions.filters.network.rbac.v3.RBAC:
     no_match: Deny
 ```
 
-##### Inspect API
+#### Inspect API
 
 Same as single-item policies (we call them proxy policy in the new Inspect API).
 
@@ -648,9 +649,9 @@ policies:
         - kri: kri_mtp_...
 ```
 
-##### Verify user stories
+#### Verify user stories
 
-###### Mesh Operator
+##### Mesh Operator
 
 1. I want all requests in the mesh to be denied by default (2.12)
 
@@ -712,7 +713,7 @@ spec:
              value: "/metrics"
 ```
 
-###### Service Owner
+##### Service Owner
 
 1. I want to grant access to my service to any client I choose,
    so that I can support integrations and collaboration with other teams,
@@ -820,7 +821,7 @@ spec:
    default: {}
 ```
 
-#### Option 3: MeshTrafficPermission is a special case of inbound policy with `conditions` instead of `matches`
+### Option 3: MeshTrafficPermission is a special case of inbound policy with `conditions` instead of `matches`
 
 Pros:
 * the concept is extendable to other policies if we'll need similar semantic
@@ -831,7 +832,7 @@ Cons:
 * requires IR and as a result Inspect API is not that straightforward
 * the algorithm is more complex, still might produce suboptimal envoy structs due to the presence of `AllowWithShadowDeny`
 
-##### Schema
+#### Schema
 
 While inbound policies have the following schema
 
@@ -886,7 +887,7 @@ spec:
          action: AllowWithShadowDeny
 ```
 
-##### Algorithm
+#### Algorithm
 
 1. Collect all MeshTrafficPermissions that target the inbound
 2. Concat all `rules` lists
