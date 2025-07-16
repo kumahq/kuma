@@ -322,37 +322,35 @@ The idea is to avoid embedding the resolution logic (i.e., where the resource sh
 
 ```golang
 // +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
-type SecretDataSourceType string
+type ControlPlaneDataSourceType string
 
 const (
-	SecretDataSourceFile      SecretDataSourceType = "File"
-	SecretDataSourceSecretRef SecretDataSourceType = "Secret"
-	SecretDataSourceEnvVar    SecretDataSourceType = "EnvVar"
-	SecretDataSourceInline    SecretDataSourceType = "InsecureInline"
+	CPDataSourceFile      ControlPlaneDataSourceType = "File"
+	CPDataSourceSecretRef ControlPlaneDataSourceType = "Secret"
+	CPDataSourceEnvVar    ControlPlaneDataSourceType = "EnvVar"
+	CPDataSourceInline    ControlPlaneDataSourceType = "InsecureInline"
 )
 
-type SecretDataSource struct {
-	Type           SecretDataSourceType `json:"type,omitempty"`
-	File           *File                `json:"file,omitempty"`
-	SecretRef      *SecretRef           `json:"secretRef,omitempty"`
-	EnvVar         *EnvVar              `json:"envVar,omitempty"`
-	InsecureInline *Inline              `json:"insecureInline,omitempty"`
+type ControlPlaneDataSource struct {
+	Type           ControlPlaneDataSourceType `json:"type,omitempty"`
+	File           *File                      `json:"file,omitempty"`
+	SecretRef      *SecretRef                 `json:"secretRef,omitempty"`
+	EnvVar         *EnvVar                    `json:"envVar,omitempty"`
+	InsecureInline *Inline                    `json:"insecureInline,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=File;EnvVar;Inline
+// +kubebuilder:validation:Enum=File;EnvVar
 type DataSourceType string
 
 const (
 	DataSourceFile   DataSourceType = "File"
 	DataSourceEnvVar DataSourceType = "EnvVar"
-	DataSourceInline DataSourceType = "InsecureInline"
 )
 
 type DataSource struct {
 	Type   DataSourceType `json:"type,omitempty"`
 	File   *File          `json:"file,omitempty"`
 	EnvVar *EnvVar        `json:"envVar,omitempty"`
-	Inline *Inline        `json:"inline,omitempty"`
 }
 
 type File struct {
