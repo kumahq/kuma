@@ -86,13 +86,17 @@ This ambiguity in resolution context leads to confusion and potential misconfigu
 
 ## User stories
 
-### As a Mesh Operator, I want to provide a CA and private key for `MeshIdentity` using a file or environment variable
+### As a Mesh Operator, I want to provide a CA and private key for `MeshIdentity` using a file, environment variable or secret
 
-Mesh Operator should be able to configure `MeshIdentity` by referencing a file path or environment variable instead of using inline data.
+Mesh Operators should be able to configure a `MeshIdentity` by referencing a file path, environment variable, or `Secret`. This avoids the need to embed sensitive data inline, improving security and aligning with best practices for secret management.
 
 ### As a Mesh Operator, I want to configure mTLS for MeshExternalService securely
 
 It should be possible to configure a specific `MeshExternalService` to use a certificate and private key mounted from a file or injected via an environment variable on the `ZoneEgress` - without transmitting them over the network.
+
+### As a Mesh Operator, I want to configure TLS for MeshExternalService
+
+It should be possible to configure only the CA bundle (inline) for verifying the upstream server, as it is safe to expose this information to users.
 
 ### As a Mesh Operator, I want to define a MeshExternalService with mTLS settings once and use it across all zones
 
@@ -312,6 +316,156 @@ The proposed model introduces clear semantics for resource resolution, allowing 
 #### Cons
 * Two separate models, which may introduce some code duplication and increase maintenance overhead.
 
+### Option 4: Separate Structures for Secrets and Other Data Sources with an Resolution Context directly in the resource
+
+The idea is to avoid embedding the resolution logic (i.e., where the resource should be resolved) into the `DataSource` itself. Instead, this responsibility should remain with the resource that uses it. This way, we keep the `DataSource` object clean and focused.
+
+```golang
+// +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
+type SecretDataSourceType string
+
+const (
+	SecretDataSourceFile      SecretDataSourceType = "File"
+	SecretDataSourceSecretRef SecretDataSourceType = "Secret"
+	SecretDataSourceEnvVar    SecretDataSourceType = "EnvVar"
+	SecretDataSourceInline    SecretDataSourceType = "InsecureInline"
+)
+
+type SecretDataSource struct {
+	Type           SecretDataSourceType `json:"type,omitempty"`
+	File           *File                `json:"file,omitempty"`
+	SecretRef      *SecretRef           `json:"secretRef,omitempty"`
+	EnvVar         *EnvVar              `json:"envVar,omitempty"`
+	InsecureInline *Inline              `json:"insecureInline,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=File;EnvVar;Inline
+type DataSourceType string
+
+const (
+	DataSourceFile   DataSourceType = "File"
+	DataSourceEnvVar DataSourceType = "EnvVar"
+	DataSourceInline DataSourceType = "InsecureInline"
+)
+
+type DataSource struct {
+	Type   DataSourceType `json:"type,omitempty"`
+	File   *File          `json:"file,omitempty"`
+	EnvVar *EnvVar        `json:"envVar,omitempty"`
+	Inline *Inline        `json:"inline,omitempty"`
+}
+
+type File struct {
+	Path string `json:"path,omitempty"`
+}
+
+type EnvVar struct {
+	Name string `json:"name,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Secret
+type RefType string
+
+const (
+	SecretRefType RefType = "Secret"
+)
+
+type SecretRef struct {
+	Kind RefType `json:"kind,omitempty"`
+	Name string  `json:"name,omitempty"`
+}
+
+type Inline struct {
+	Value string `json:"value,omitempty"`
+}
+```
+
+#### How would it looks for `MeshExternalService`?
+
+> [!NOTE]
+> This is not a finalized design for `MeshExternalService` and should be covered by a separate design document.
+
+For `MeshExternalService`, we could introduce an additional field in the certificate definition, such as `type`, with values like `ZoneEgress` or `ControlPlane`. This field would indicate where the resource should be resolved.
+
+By doing so, we can:
+
+* Keep the DataSource structure small and focused.
+* Avoid embedding resolution logic directly inside `DataSource`.
+* Allow individual resources (like `MeshExternalService`) to define resolution semantics explicitly and contextually.
+
+This approach promotes cleaner separation of concerns and aligns better with the needs of different resource types.
+
+```yaml
+      clientCert:
+        type: ControlPlane
+        controlPlane:
+          type: File | EnvVar | Secret | InsecureInline
+          file:
+            path: "/cert"
+      clientKey:
+        zoneEgress:
+          type: EnvVar
+          envVar:
+            name: "PRIVATE_KEY"
+```
+or
+```yaml
+    auth:  
+      type: ZoneEgress | ControlPlane
+      zoneEgress:
+        clientCert:
+          type: File
+          file:
+            path: "/cert"
+        clientKey:
+          type: EnvVar
+          envVar:
+            name: "PRIVATE_KEY"
+      controlPlane:
+        clientCert:
+          type: File
+          file:
+            path: "/cert"
+        clientKey:
+          type: EnvVar
+          envVar:
+            name: "PRIVATE_KEY"
+```
+
+In the case of `MeshIdentity`, we don’t need a `type` field because the data is always accessed by the Control Plane, and there’s no need to control or vary the resolution behavior.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity
+  namespace: kuma-system # only in system namespace
+  labels:
+    kuma.io/mesh: default
+spec:
+  ...
+  provider:
+    type: Bundled
+    bundled: # to extend in KM
+      ca:
+        certificate:
+          type: EnvVar
+          envVar:
+            name: "PRIVATE_KEY"
+        privateKey:
+          type: EnvVar
+          envVar:
+            name: "PRIVATE_KEY"
+```
+
+#### Pros
+* Clear API boundaries - users can explicitly define where the resource should be resolved (control plane or data plane).
+* Inline secrets are clearly marked as insecure, improving security visibility and awareness.
+* Resolution logic is embedded in the object itself, making it clear what is supported and expected for each resource.
+
+#### Cons
+* Two separate models, which may introduce some code duplication and increase maintenance overhead.
+
 ## Security implications and review
 
 Following changes increases security:
@@ -326,4 +480,4 @@ Following changes increases security:
 
 ## Decision
 
-Option 3 offers the most flexibility, enabling users to explicitly choose whether a value is resolved by the control plane or accessed directly by the data plane. Additionally, by providing two separate models, it becomes easier to understand which options are available and valid in each API context.
+Option 4 offers the most flexibility, enabling users to explicitly (on specific resource) choose whether a value is resolved by the control plane or accessed directly by the data plane. Additionally, by providing two separate models, it becomes easier to understand which options are available and valid in each API context.
