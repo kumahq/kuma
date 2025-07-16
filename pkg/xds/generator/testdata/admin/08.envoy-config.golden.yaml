@@ -11,7 +11,7 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: ::1
+                address: 127.0.0.1
                 portValue: 9901
     name: kuma:envoy:admin
     type: STATIC
@@ -26,9 +26,8 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              socketAddress:
-                address: ::1
-                portValue: 9400
+              pipe:
+                path: kuma-readiness-reporter.sock
     name: kuma:readiness
     type: STATIC
 - name: kuma:envoy:admin

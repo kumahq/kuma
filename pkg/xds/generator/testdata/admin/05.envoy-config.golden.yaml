@@ -48,7 +48,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: kuma:readiness
+                  cluster: kuma:envoy:admin
                   prefixRewrite: /ready
           statPrefix: kuma_envoy_admin
     - filterChainMatch:
@@ -77,7 +77,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: kuma:readiness
+                  cluster: kuma:envoy:admin
                   prefixRewrite: /ready
               - match:
                   prefix: /

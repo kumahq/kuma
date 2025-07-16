@@ -10,7 +10,6 @@ import (
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -92,20 +91,14 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
-	useUnixSocket := readinessPort == nil
-	tcpReadinessReporterDisabled := (readinessPort != nil) && pointer.Deref(readinessPort) == 0
-	tcpReadinessReporterEnabled := (readinessPort != nil) && pointer.Deref(readinessPort) > 0
+	unixSocketEnabled := proxy.Metadata.GetReadinessUnixSocketEnabled()
+	tcpReadinessReporterDisabled := readinessPort == 0
+	tcpReadinessReporterEnabled := readinessPort > 0
 
 	assignReadinessPort := func(se *envoy_common.StaticEndpointPath) {
 		switch {
-		// If readinessPort is not set, we use unix socket for readiness check, so the cluster is always the readiness reporter
-		case useUnixSocket:
+		case unixSocketEnabled, tcpReadinessReporterEnabled:
 			se.ClusterName = dppReadinessClusterName
-			return
-
-		case tcpReadinessReporterEnabled:
-			se.ClusterName = dppReadinessClusterName
-
 		// if readinessPort is set to 0, we use envoy admin cluster for readiness check
 		case tcpReadinessReporterDisabled:
 			se.ClusterName = envoyAdminClusterName
@@ -159,25 +152,23 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		Resource: envoyAdminCluster,
 	})
 
-	adminAddr := proxy.Metadata.GetAdminAddress()
 	var xdsEndpoint core_xds.Endpoint
 	switch {
-	case useUnixSocket:
+	case unixSocketEnabled:
 		xdsEndpoint = core_xds.Endpoint{
 			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}
 	case tcpReadinessReporterEnabled:
 		xdsEndpoint = core_xds.Endpoint{
-			Target: adminAddr,
-			Port:   pointer.Deref(readinessPort),
+			Target: adminAddress,
+			Port:   readinessPort,
 		}
-	// For compatibility with older versions of Kuma, once if readinessPort is 0, it goes into the Envoy admin API.
 	case tcpReadinessReporterDisabled:
 		return resources, nil
 	}
 
 	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
-		Configure(envoy_clusters.ProvidedEndpointCluster(govalidator.IsIPv6(adminAddr), xdsEndpoint)).
+		Configure(envoy_clusters.ProvidedEndpointCluster(govalidator.IsIPv6(adminAddress), xdsEndpoint)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {

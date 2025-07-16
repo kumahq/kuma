@@ -13,7 +13,6 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -24,10 +23,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile string
-		expected      string
-		adminAddress  string
-		readinessPort uint32
+		dataplaneFile              string
+		expected                   string
+		adminAddress               string
+		readinessPort              uint32
+		readinessUnixSocketEnabled bool
 	}
 
 	DescribeTable("should generate envoy config",
@@ -53,9 +53,10 @@ var _ = Describe("AdminProxyGenerator", func() {
 			proxy := &xds.Proxy{
 				Id: *xds.BuildProxyId("default", "test-admin-dpp"),
 				Metadata: &xds.DataplaneMetadata{
-					AdminPort:     9901,
-					AdminAddress:  given.adminAddress,
-					ReadinessPort: pointer.To(given.readinessPort),
+					AdminPort:                  9901,
+					AdminAddress:               given.adminAddress,
+					ReadinessPort:              given.readinessPort,
+					ReadinessUnixSocketEnabled: given.readinessUnixSocketEnabled,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -119,6 +120,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 			expected:      "07.envoy-config.golden.yaml",
 			adminAddress:  "::1",
 			readinessPort: 9400,
+		}),
+		Entry("should generate admin resources, Unix socket enabled", testCase{
+			dataplaneFile:              "05.dataplane.input.yaml",
+			expected:                   "08.envoy-config.golden.yaml",
+			adminAddress:               "127.0.0.1",
+			readinessPort:              9902,
+			readinessUnixSocketEnabled: true,
 		}),
 	)
 
