@@ -1,0 +1,13 @@
+#/meshes/default/dataplanes/dp-1/_layout 400
+type: Mesh
+name: default
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
