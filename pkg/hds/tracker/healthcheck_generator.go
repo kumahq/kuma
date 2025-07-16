@@ -61,7 +61,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	unifiedNamingEnabled := md.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	clusterName := names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
-		clusterName = names.SystemGetAdminResourceName()
+		clusterName = generator.AdminResourceName
 	}
 
 	healthChecks := []*envoy_service_health.ClusterHealthCheck{

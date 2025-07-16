@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 type streams struct {
@@ -175,7 +176,7 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		status := clusterHealth.LocalityEndpointsHealth[0].EndpointsHealth[0].HealthStatus
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
 
-		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() || clusterHealth.ClusterName == names.SystemGetAdminResourceName() {
+		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() || clusterHealth.ClusterName == generator.AdminResourceName {
 			envoyHealth = health
 		} else {
 			port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)

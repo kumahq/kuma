@@ -8,6 +8,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
@@ -20,6 +21,8 @@ import (
 
 // OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginAdmin = "admin"
+
+var AdminResourceName = system_names.AsSystemName("envoy_admin")
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
@@ -68,7 +71,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	// as a gateway to another host.
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
-		envoyAdminClusterName = envoy_names.SystemGetAdminResourceName()
+		envoyAdminClusterName = AdminResourceName
 	}
 	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
@@ -124,7 +127,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	if g.getAddress(proxy) != adminAddress {
 		adminListenerName := envoy_names.GetAdminListenerName()
 		if unifiedNamingEnabled {
-			adminListenerName = envoy_names.SystemGetAdminResourceName()
+			adminListenerName = AdminResourceName
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
