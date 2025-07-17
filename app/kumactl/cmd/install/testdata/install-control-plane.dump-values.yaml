@@ -521,6 +521,8 @@ ingress:
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
     loadBalancerIP:
+    # -- A list of CIDRs or IPs for the cloud-provider load balancer to allow access from.
+    loadBalancerSourceRanges: []
     # -- Additional annotations to put on the Ingress service
     annotations: { }
     # -- Port on which Ingress is exposed
