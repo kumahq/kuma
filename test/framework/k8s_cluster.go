@@ -358,12 +358,9 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--dataplane-init-version"] = Config.KumaImageTag
 	}
 
-	switch mode {
-	case core.Zone:
-		if c.opts.globalAddress != "" {
-			argsMap["--zone"] = c.ZoneName()
-			argsMap["--kds-global-address"] = c.opts.globalAddress
-		}
+	if mode == core.Zone && c.opts.globalAddress != "" {
+		argsMap["--zone"] = c.ZoneName()
+		argsMap["--kds-global-address"] = c.opts.globalAddress
 	}
 	if !Config.UseLoadBalancer {
 		argsMap["--use-node-port"] = ""
@@ -582,8 +579,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, c.opts.apiHeaders)
 
-	switch mode {
-	case core.Zone:
+	if mode == core.Zone {
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 

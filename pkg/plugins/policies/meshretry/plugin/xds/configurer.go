@@ -85,8 +85,7 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 				}
 				policy = defaultPolicy
 			}
-			switch a := route.GetAction().(type) {
-			case *envoy_route.Route_Route:
+			if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
 				a.Route.RetryPolicy = policy
 			}
 		}
@@ -467,8 +466,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	}
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
-			switch a := route.GetAction().(type) {
-			case *envoy_route.Route_Route:
+			if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
 				a.Route.RetryPolicy = policy
 			}
 		}

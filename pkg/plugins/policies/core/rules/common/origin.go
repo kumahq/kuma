@@ -65,8 +65,7 @@ func OriginByMatches[B BaseEntry, T interface {
 				RuleIndex: item.GetRuleIndex(),
 			}
 
-			switch conf := item.GetEntry().GetDefault().(type) {
-			case meshhttproute_api.PolicyDefault:
+			if conf, ok := item.GetEntry().GetDefault().(meshhttproute_api.PolicyDefault); ok {
 				for _, rule := range conf.Rules {
 					rv[meshhttproute_api.HashMatches(rule.Matches)] = origin
 				}
