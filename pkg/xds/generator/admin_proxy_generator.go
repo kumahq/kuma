@@ -91,13 +91,16 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
+	unixSocketEnabled := proxy.Metadata.GetReadinessUnixSocketEnabled()
+	tcpReadinessReporterDisabled := readinessPort == 0
+	tcpReadinessReporterEnabled := readinessPort > 0
+
 	assignReadinessPort := func(se *envoy_common.StaticEndpointPath) {
-		if readinessPort > 0 {
-			// we only have /ready for now, so assign it to the readiness cluster directly
+		switch {
+		case unixSocketEnabled, tcpReadinessReporterEnabled:
 			se.ClusterName = dppReadinessClusterName
-		} else {
-			// we keep the previous behavior if readinessPort is not set
-			// this can happen when an existing DPP is connecting to this CP, it does not have this metadata
+		// if readinessPort is set to 0, we use envoy admin cluster for readiness check
+		case tcpReadinessReporterDisabled:
 			se.ClusterName = envoyAdminClusterName
 		}
 	}
@@ -149,24 +152,34 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		Resource: envoyAdminCluster,
 	})
 
-	if readinessPort > 0 {
-		adminAddr := proxy.Metadata.GetAdminAddress()
-		readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
-			Configure(envoy_clusters.ProvidedEndpointCluster(
-				govalidator.IsIPv6(adminAddr),
-				core_xds.Endpoint{Target: adminAddr, Port: readinessPort})).
-			Configure(envoy_clusters.DefaultTimeout()).
-			Build()
-		if err != nil {
-			return nil, err
+	var xdsEndpoint core_xds.Endpoint
+	switch {
+	case unixSocketEnabled:
+		xdsEndpoint = core_xds.Endpoint{
+			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}
-
-		resources.Add(&core_xds.Resource{
-			Name:     readinessCluster.GetName(),
-			Origin:   OriginAdmin,
-			Resource: readinessCluster,
-		})
+	case tcpReadinessReporterEnabled:
+		xdsEndpoint = core_xds.Endpoint{
+			Target: adminAddress,
+			Port:   readinessPort,
+		}
+	case tcpReadinessReporterDisabled:
+		return resources, nil
 	}
+
+	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
+		Configure(envoy_clusters.ProvidedEndpointCluster(govalidator.IsIPv6(adminAddress), xdsEndpoint)).
+		Configure(envoy_clusters.DefaultTimeout()).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	resources.Add(&core_xds.Resource{
+		Name:     readinessCluster.GetName(),
+		Origin:   OriginAdmin,
+		Resource: readinessCluster,
+	})
 
 	return resources, nil
 }
