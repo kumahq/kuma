@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -29,7 +30,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 	if cfg.Mode == core.Global {
 		spec := hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
-				MeshMultiZoneService: &hostnamegenerator_api.LabelSelector{
+				MeshMultiZoneService: &common_api.LabelSelector{
 					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 					},
@@ -43,7 +44,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
-				MeshService: &hostnamegenerator_api.LabelSelector{
+				MeshService: &common_api.LabelSelector{
 					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						metadata.HeadlessService:       "false",
@@ -59,7 +60,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
-				MeshService: &hostnamegenerator_api.LabelSelector{
+				MeshService: &common_api.LabelSelector{
 					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						metadata.HeadlessService:       "true",
@@ -75,7 +76,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
-				MeshService: &hostnamegenerator_api.LabelSelector{
+				MeshService: &common_api.LabelSelector{
 					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
@@ -90,7 +91,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
-				MeshExternalService: &hostnamegenerator_api.LabelSelector{
+				MeshExternalService: &common_api.LabelSelector{
 					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 					},
@@ -109,7 +110,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		}
 		spec := hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
-				MeshExternalService: &hostnamegenerator_api.LabelSelector{
+				MeshExternalService: &common_api.LabelSelector{
 					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 					},
@@ -124,7 +125,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		if cfg.Environment == core.UniversalEnvironment {
 			spec = hostnamegenerator_api.HostnameGenerator{
 				Selector: hostnamegenerator_api.Selector{
-					MeshService: &hostnamegenerator_api.LabelSelector{
+					MeshService: &common_api.LabelSelector{
 						MatchLabels: &map[string]string{
 							mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 						},

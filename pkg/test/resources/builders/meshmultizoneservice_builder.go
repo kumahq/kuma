@@ -45,7 +45,7 @@ func (m *MeshMultiZoneServiceBuilder) WithMesh(mesh string) *MeshMultiZoneServic
 }
 
 func (m *MeshMultiZoneServiceBuilder) WithServiceLabelSelector(labels map[string]string) *MeshMultiZoneServiceBuilder {
-	m.res.Spec.Selector.MeshService.MatchLabels = labels
+	m.res.Spec.Selector.MeshService.MatchLabels = &labels
 	return m
 }
 
