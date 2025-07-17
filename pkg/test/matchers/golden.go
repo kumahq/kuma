@@ -59,7 +59,7 @@ func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
 		if actualContent == "" { // If there's no actual content, we remove the golden file
 			_ = os.Remove(g.GoldenFilePath)
 		} else {
-			if len(actualContent) > 0 && actualContent[len(actualContent)-1] != '\n' {
+			if actualContent != "" && actualContent[len(actualContent)-1] != '\n' {
 				actualContent += "\n"
 			}
 			err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0o600)

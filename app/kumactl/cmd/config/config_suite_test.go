@@ -12,5 +12,5 @@ func TestConfigCmd(t *testing.T) {
 }
 
 func requiredFlagNotSet(name string) string {
-	return fmt.Sprintf(`required flag\(s\) .*"%s".* not set`, name)
+	return fmt.Sprintf(`required flag\(s\) .*%q.* not set`, name)
 }

@@ -37,9 +37,11 @@ func Context() *ContextBuilder {
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
 	var destinations [][]model.Resource
-	destinations = append(destinations, mc.res.Mesh.Resources.MeshServices().GetItems())
-	destinations = append(destinations, mc.res.Mesh.Resources.MeshExternalServices().GetItems())
-	destinations = append(destinations, mc.res.Mesh.Resources.MeshMultiZoneServices().GetItems())
+	destinations = append(destinations,
+		mc.res.Mesh.Resources.MeshServices().GetItems(),
+		mc.res.Mesh.Resources.MeshExternalServices().GetItems(),
+		mc.res.Mesh.Resources.MeshMultiZoneServices().GetItems(),
+	)
 
 	mc.res.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex(destinations...)
 	return mc.res

@@ -292,7 +292,7 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		var result validators.ValidationError
 		if protocol, exist := selector[mesh_proto.ProtocolTag]; exist {
 			if protocol != ProtocolTCP {
-				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf(`other values than tcp are not allowed, provided value "%s"`, protocol))
+				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf(`other values than tcp are not allowed, provided value %q`, protocol))
 			}
 		}
 		return result

@@ -29,13 +29,14 @@ func DescribeValidCases[T core_model.Resource](generator func() T, cases ...Tabl
 		"should pass validation",
 		func(anyGiven any) {
 			var given ResourceValidationCase
-			if resource, ok := anyGiven.(string); ok {
+			switch c := anyGiven.(type) {
+			case string:
 				given = ResourceValidationCase{
-					Resource: resource,
+					Resource: c,
 				}
-			} else if c, ok := anyGiven.(ResourceValidationCase); ok {
+			case ResourceValidationCase:
 				given = c
-			} else {
+			default:
 				panic("invalid DescribeValidCases case")
 			}
 			// setup

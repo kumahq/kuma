@@ -897,7 +897,7 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
-		if len(opts.protocol) == 0 {
+		if opts.protocol == "" {
 			opts.protocol = "http"
 		}
 		if opts.serviceVersion == "" {

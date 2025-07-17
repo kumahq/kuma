@@ -129,7 +129,7 @@ func validateHttpStatus(path validators.PathBuilder, httpStatus *wrapperspb.UInt
 		return err
 	}
 
-	if status := http.StatusText(int(httpStatus.GetValue())); len(status) == 0 {
+	if status := http.StatusText(int(httpStatus.GetValue())); status == "" {
 		err.AddViolationAt(path.Field("httpStatus"), "http status code is incorrect")
 	}
 	return err

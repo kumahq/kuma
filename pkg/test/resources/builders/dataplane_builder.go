@@ -192,10 +192,6 @@ func ipFamilyModeEnumValue(mode string) mesh_proto.Dataplane_Networking_Transpar
 	switch mode {
 	case "ipv4":
 		return mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-	case "dualstack":
-		fallthrough
-	case "ipv6":
-		fallthrough
 	default:
 		return mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
 	}
