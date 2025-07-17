@@ -54,13 +54,13 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 			return err
 		}
 
-		any, err := anypb.New(msg)
+		typedConfig, err := anypb.New(msg)
 		if err != nil {
 			return err
 		}
 
 		filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-			TypedConfig: any,
+			TypedConfig: typedConfig,
 		}
 	}
 	return nil

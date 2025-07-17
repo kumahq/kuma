@@ -40,11 +40,11 @@ func (c *virtualHostModificator) apply(resources *core_xds.ResourceSet) error {
 				if err := c.applyHCMModification(hcm, virtualHost); err != nil {
 					return err
 				}
-				any, err := util_proto.MarshalAnyDeterministic(hcm)
+				a, err := util_proto.MarshalAnyDeterministic(hcm)
 				if err != nil {
 					return err
 				}
-				networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
+				networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = a
 			}
 		}
 	}

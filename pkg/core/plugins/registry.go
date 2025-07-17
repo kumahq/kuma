@@ -220,7 +220,7 @@ func noSuchPluginError(typ pluginType, name PluginName) error {
 	return errors.Errorf("there is no plugin registered with type=%q and name=%s", typ, name)
 }
 
-func pluginAlreadyRegisteredError(typ pluginType, name PluginName, old, new Plugin) error {
+func pluginAlreadyRegisteredError(typ pluginType, name PluginName, old, n Plugin) error {
 	return errors.Errorf("plugin with type=%q and name=%s has already been registered: old=%#v new=%#v",
-		typ, name, old, new)
+		typ, name, old, n)
 }

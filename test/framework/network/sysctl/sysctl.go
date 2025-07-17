@@ -15,9 +15,9 @@ func set(path, value string) error {
 //
 // IPv6 stack is using this setting as well
 // ref. https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s03.html
-func SetLocalPortRange(min, max uint16) func() error {
+func SetLocalPortRange(minimum, maximum uint16) func() error {
 	return func() error {
-		return set("/proc/sys/net/ipv4/ip_local_port_range", fmt.Sprintf("%d\t%d", min, max))
+		return set("/proc/sys/net/ipv4/ip_local_port_range", fmt.Sprintf("%d\t%d", minimum, maximum))
 	}
 }
 
