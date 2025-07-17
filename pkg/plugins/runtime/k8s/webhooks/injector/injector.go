@@ -420,12 +420,12 @@ func (i *KumaInjector) getTransparentProxyConfigMap(
 	namespacedName := kube_types.NamespacedName{Name: name, Namespace: namespace}
 
 	var cm kube_core.ConfigMap
-	if err = i.client.Get(ctx, namespacedName, &cm); err != nil {
+	if err := i.client.Get(ctx, namespacedName, &cm); err != nil {
 		return tproxy_config.Config{}, err
 	}
 
 	if c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]; c != "" {
-		if err = loader.LoadBytes([]byte(c)); err != nil {
+		if err := loader.LoadBytes([]byte(c)); err != nil {
 			return tproxy_config.Config{}, err
 		}
 

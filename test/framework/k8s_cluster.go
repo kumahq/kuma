@@ -544,7 +544,7 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 
 	// create the namespace if it does not exist
 	if _, err = k8s.GetNamespaceE(c.t, c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
-		if err = k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
+		if err := k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
 			return err
 		}
 	}
