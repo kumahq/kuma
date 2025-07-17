@@ -5,12 +5,13 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshMultiZoneServiceResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	if len(r.Spec.Selector.MeshService.MatchLabels) == 0 {
+	if len(pointer.Deref(r.Spec.Selector.MeshService.MatchLabels)) == 0 {
 		verr.AddViolationAt(path.Field("selector").Field("meshService").Field("matchLabels"), "cannot be empty")
 	}
 	if len(r.Spec.Ports) == 0 {

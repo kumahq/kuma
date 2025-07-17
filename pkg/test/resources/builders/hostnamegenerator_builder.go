@@ -3,6 +3,7 @@ package builders
 import (
 	"context"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -42,7 +43,7 @@ func (m *HostnameGeneratorBuilder) WithTemplate(template string) *HostnameGenera
 
 func (m *HostnameGeneratorBuilder) WithMeshServiceMatchLabels(labels map[string]string) *HostnameGeneratorBuilder {
 	m.res.Spec.Selector = hostnamegenerator_api.Selector{
-		MeshService: &hostnamegenerator_api.LabelSelector{
+		MeshService: &common_api.LabelSelector{
 			MatchLabels: &labels,
 		},
 	}
@@ -51,7 +52,7 @@ func (m *HostnameGeneratorBuilder) WithMeshServiceMatchLabels(labels map[string]
 
 func (m *HostnameGeneratorBuilder) WithMeshExternalServiceMatchLabels(labels map[string]string) *HostnameGeneratorBuilder {
 	m.res.Spec.Selector = hostnamegenerator_api.Selector{
-		MeshExternalService: &hostnamegenerator_api.LabelSelector{
+		MeshExternalService: &common_api.LabelSelector{
 			MatchLabels: &labels,
 		},
 	}
@@ -60,7 +61,7 @@ func (m *HostnameGeneratorBuilder) WithMeshExternalServiceMatchLabels(labels map
 
 func (m *HostnameGeneratorBuilder) WithMeshMultiZoneServiceMatchLabels(labels map[string]string) *HostnameGeneratorBuilder {
 	m.res.Spec.Selector = hostnamegenerator_api.Selector{
-		MeshMultiZoneService: &hostnamegenerator_api.LabelSelector{
+		MeshMultiZoneService: &common_api.LabelSelector{
 			MatchLabels: &labels,
 		},
 	}
