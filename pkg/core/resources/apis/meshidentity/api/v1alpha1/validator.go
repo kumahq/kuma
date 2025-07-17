@@ -1,0 +1,78 @@
+package v1alpha1
+
+import (
+	"fmt"
+	"text/template"
+
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
+)
+
+func (r *MeshIdentityResource) validate() error {
+	var verr validators.ValidationError
+	path := validators.RootedAt("spec")
+	verr.AddErrorAt(path.Field("spiffeID"), validateSPIFFEID(pointer.Deref(r.Spec.SpiffeID)))
+	verr.AddErrorAt(path.Field("provider"), validateProvider(r.Spec.Provider))
+	return verr.OrNil()
+}
+
+func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {
+	var verr validators.ValidationError
+	if pointer.Deref(spiffeID.TrustDomain) != "" {
+		_, err := template.New("").
+			Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
+			Parse(pointer.Deref(spiffeID.TrustDomain))
+		if err != nil {
+			verr.AddViolation("trustDomain", errors.Wrap(err, "couldn't parse template").Error())
+		}
+	}
+	if pointer.Deref(spiffeID.Path) != "" {
+		_, err := template.New("").
+			Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
+			Parse(pointer.Deref(spiffeID.TrustDomain))
+		if err != nil {
+			verr.AddViolation("path", errors.Wrap(err, "couldn't parse template").Error())
+		}
+	}
+	return verr
+}
+
+func validateProvider(provider Provider) validators.ValidationError {
+	var verr validators.ValidationError
+	switch provider.Type {
+	case BundledType:
+		verr.Add(validateBundled(validators.RootedAt("bundled"), provider.Bundled))
+	case SpireType:
+		verr.Add(validateSpire(validators.RootedAt("spire"), provider.Spire))
+	default:
+		verr.AddViolation("type", fmt.Sprintf("type: %s is not supported", provider.Type))
+	}
+	return verr
+}
+
+func validateBundled(path validators.PathBuilder, b *Bundled) validators.ValidationError {
+	var verr validators.ValidationError
+	if b == nil {
+		verr.AddViolationAt(path, "configuration needs to be defined")
+		return verr
+	}
+	if b.MeshTrustCreation != nil {
+		switch *b.MeshTrustCreation {
+		case MeshTrustCreationEnabled:
+		case MeshTrustCreationDisabled:
+		default:
+			verr.AddViolationAt(path.Field("meshTrustCreation"), fmt.Sprintf("has incorrect value: %s", pointer.Deref(b.MeshTrustCreation)))
+		}
+	}
+	return verr
+}
+
+func validateSpire(path validators.PathBuilder, b *Spire) validators.ValidationError {
+	var verr validators.ValidationError
+	if b == nil {
+		verr.AddViolationAt(path, "configuration needs to be defined")
+	}
+	return verr
+}

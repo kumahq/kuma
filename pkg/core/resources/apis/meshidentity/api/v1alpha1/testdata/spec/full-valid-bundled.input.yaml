@@ -1,0 +1,21 @@
+selector:
+  dataplane:
+    matchLabels:
+      app: test 
+spiffeID:
+  trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+provider:
+  type: Bundled
+  bundled:
+    meshTrustCreation: Disabled
+    insecureAllowSelfSigned: true
+    certificateParameters:
+      expiry: 24h
+    autogenerate:
+      enabled: true
+    ca:
+      certificate:
+        inlineString: "123"
+      privateKey:
+        inlineString: "123"

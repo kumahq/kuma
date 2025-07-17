@@ -3259,6 +3259,140 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceList'
+  /meshes/{mesh}/meshidentities/{name}:
+    get:
+      operationId: getMeshIdentity
+      summary: Returns MeshIdentity entity
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshIdentity
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshIdentityItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshIdentity
+      summary: Creates or Updates MeshIdentity entity
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshIdentity
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshIdentityItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshIdentityCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshIdentityCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshIdentity
+      summary: Deletes MeshIdentity entity
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshIdentity
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshIdentityDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshidentities:
+    get:
+      operationId: getMeshIdentityList
+      summary: Returns a list of MeshIdentity in the mesh.
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshIdentityList'
   /meshes/{mesh}/meshmultizoneservices/{name}:
     get:
       operationId: getMeshMultiZoneService
@@ -16942,6 +17076,239 @@ components:
     MeshExternalServiceDeleteSuccessResponse:
       type: object
       properties: {}
+    MeshIdentityItem:
+      type: object
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshIdentity
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshIdentity resource.
+          properties:
+            provider:
+              properties:
+                bundled:
+                  description: >-
+                    Bundled provides information about certificates that are
+                    generated by the control plane,
+
+                    either autogenerated or provided by the user.
+                  properties:
+                    autogenerate:
+                      description: >-
+                        Autogenerate configures the control plane to use
+                        self-signed certificates.
+                      properties:
+                        enabled:
+                          type: boolean
+                      type: object
+                    certificate:
+                      description: >-
+                        Certificate allows the user to specify a custom
+                        certificate.
+                      properties:
+                        inline:
+                          description: Data source is inline bytes.
+                          format: byte
+                          type: string
+                        inlineString:
+                          description: Data source is inline string`
+                          type: string
+                        secret:
+                          description: Data source is a secret with given Secret key.
+                          type: string
+                      type: object
+                    certificateParameters:
+                      description: >-
+                        CertificateParameters allows users to define certificate
+                        generation parameters.
+                      properties:
+                        expiry:
+                          type: string
+                      type: object
+                    insecureAllowSelfSigned:
+                      description: >-
+                        InsecureAllowSelfSigned allows users to enable the use
+                        of self-signed certificates.
+                      type: boolean
+                    meshTrustCreation:
+                      description: >-
+                        MeshTrustCreation defines whether a MeshTrust resource
+                        should be automatically created
+
+                        from an existing MeshIdentity. If not defined, the
+                        control plane automatically generates a MeshTrust.
+                      enum:
+                        - Enabled
+                        - Disabled
+                      type: string
+                    privateKey:
+                      description: >-
+                        PrivateKey allows the user to specify a custom private
+                        key.
+                      properties:
+                        inline:
+                          description: Data source is inline bytes.
+                          format: byte
+                          type: string
+                        inlineString:
+                          description: Data source is inline string`
+                          type: string
+                        secret:
+                          description: Data source is a secret with given Secret key.
+                          type: string
+                      type: object
+                  type: object
+                spire:
+                  description: Spire indicates that SPIRE is used for certificate delivery.
+                  properties:
+                    agent:
+                      description: Spire agent configuration
+                      properties:
+                        timeout:
+                          description: >-
+                            Connection timeout to the socket exposed by Spire
+                            agent
+
+                            Default 1 second.
+                          type: string
+                      type: object
+                  type: object
+                type:
+                  description: Type specifies the type of certificate provider.
+                  enum:
+                    - Bundled
+                    - Spire
+                  type: string
+              required:
+                - type
+              type: object
+            selector:
+              properties:
+                dataplane:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+              type: object
+            spiffeID:
+              properties:
+                path:
+                  type: string
+                trustDomain:
+                  type: string
+              type: object
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        status:
+          description: Status is the current status of the Kuma MeshIdentity resource.
+          properties:
+            conditions:
+              description: Conditions is an array of hostname generator conditions.
+              items:
+                properties:
+                  message:
+                    description: >-
+                      message is a human readable message indicating details
+                      about the transition.
+
+                      This may be an empty string.
+                    maxLength: 32768
+                    type: string
+                  reason:
+                    description: >-
+                      reason contains a programmatic identifier indicating the
+                      reason for the condition's last transition.
+
+                      Producers of specific condition types may define expected
+                      values and meanings for this field,
+
+                      and whether the values are considered a guaranteed API.
+
+                      The value should be a CamelCase string.
+
+                      This field may not be empty.
+                    maxLength: 1024
+                    minLength: 1
+                    pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                    type: string
+                  status:
+                    description: status of the condition, one of True, False, Unknown.
+                    enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
+                    type: string
+                  type:
+                    description: >-
+                      type of condition in CamelCase or in
+                      foo.example.com/CamelCase.
+                    maxLength: 316
+                    pattern: >-
+                      ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                    type: string
+                required:
+                  - message
+                  - reason
+                  - status
+                  - type
+                type: object
+              type: array
+              x-kubernetes-list-map-keys:
+                - type
+              x-kubernetes-list-type: map
+          type: object
+          readOnly: true
+    MeshIdentityCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          readOnly: true
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    MeshIdentityDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshMultiZoneServiceItem:
       type: object
       required:
@@ -18024,6 +18391,29 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshExternalServiceItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshIdentityItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshIdentityItem'
+    MeshIdentityList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshIdentityItem'
               total:
                 type: number
                 description: The total number of entities
