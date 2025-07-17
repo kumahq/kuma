@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func comparePath(a *PathMatch, b *PathMatch) int {
+func comparePath(a, b *PathMatch) int {
 	switch {
 	case a != nil && b == nil:
 		return -1
@@ -45,7 +45,7 @@ func comparePath(a *PathMatch, b *PathMatch) int {
 	return 0
 }
 
-func compareMethod(a *Method, b *Method) int {
+func compareMethod(a, b *Method) int {
 	switch {
 	case a != nil && b == nil:
 		return -1
@@ -58,13 +58,13 @@ func compareMethod(a *Method, b *Method) int {
 	return 0
 }
 
-func compareHeaders(a []common_api.HeaderMatch, b []common_api.HeaderMatch) int {
+func compareHeaders(a, b []common_api.HeaderMatch) int {
 	// Note this is intentionally "flipped" because more header matches
 	// means a lesser match
 	return cmp.Compare(len(b), len(a))
 }
 
-func compareQueryParams(a []QueryParamsMatch, b []QueryParamsMatch) int {
+func compareQueryParams(a, b []QueryParamsMatch) int {
 	// Note this is intentionally "flipped" because more query params matches
 	// means a lesser match
 	return cmp.Compare(len(b), len(a))
@@ -74,7 +74,7 @@ func compareQueryParams(a []QueryParamsMatch, b []QueryParamsMatch) int {
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
 // We treat RegularExpression matches, which are implementation-specific, the
 // same as prefix matches, the longer length match has priority.
-func CompareMatch(a Match, b Match) int {
+func CompareMatch(a, b Match) int {
 	if p := comparePath(a.Path, b.Path); p != 0 {
 		return p
 	}

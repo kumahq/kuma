@@ -46,7 +46,7 @@ func (v *ValidationError) AddViolationAt(path PathBuilder, message string) {
 	v.AddViolation(path.String(), message)
 }
 
-func (v *ValidationError) AddViolation(field string, message string) {
+func (v *ValidationError) AddViolation(field, message string) {
 	violation := Violation{
 		Field:   field,
 		Message: message,

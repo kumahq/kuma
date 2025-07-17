@@ -19,7 +19,7 @@ func MeshSpiffeIDPrefix(mesh string) string {
 	return fmt.Sprintf("spiffe://%s/", mesh)
 }
 
-func ServiceSpiffeID(mesh string, service string) string {
+func ServiceSpiffeID(mesh, service string) string {
 	return fmt.Sprintf("spiffe://%s/%s", mesh, service)
 }
 

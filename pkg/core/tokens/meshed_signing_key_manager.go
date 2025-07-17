@@ -18,7 +18,7 @@ import (
 // NewMeshedSigningKeyManager builds SigningKeyManager that is bound to a Mesh.
 // Some tokens like Dataplane Token are bound to a mesh.
 // In this case, singing key is also stored as a Secret in the Mesh, not as GlobalSecret.
-func NewMeshedSigningKeyManager(manager manager.ResourceManager, signingKeyPrefix string, mesh string) SigningKeyManager {
+func NewMeshedSigningKeyManager(manager manager.ResourceManager, signingKeyPrefix, mesh string) SigningKeyManager {
 	return &meshedSigningKeyManager{
 		manager:          manager,
 		signingKeyPrefix: signingKeyPrefix,

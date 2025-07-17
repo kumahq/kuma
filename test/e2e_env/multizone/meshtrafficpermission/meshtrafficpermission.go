@@ -16,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
-func externalService(mesh string, ip string) InstallFunc {
+func externalService(mesh, ip string) InstallFunc {
 	return YamlUniversal(fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"

@@ -135,7 +135,7 @@ func (k *KumactlOptions) KumactlApplyFromString(configData string) error {
 	return k.KumactlApply(tmpfile)
 }
 
-func storeConfigToTempFile(name string, configData string) (string, error) {
+func storeConfigToTempFile(name, configData string) (string, error) {
 	escapedTestName := url.PathEscape(name)
 
 	tmpfile, err := os.CreateTemp("", escapedTestName)

@@ -17,7 +17,7 @@ func NewDataplaneTokenClient(client util_http.Client) DataplaneTokenClient {
 }
 
 type DataplaneTokenClient interface {
-	Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error)
+	Generate(name, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error)
 }
 
 type httpDataplaneTokenClient struct {
@@ -26,7 +26,7 @@ type httpDataplaneTokenClient struct {
 
 var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
-func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
+func (h *httpDataplaneTokenClient) Generate(name, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
 	if validFor == 0 {
 		return "", errors.Errorf("You must set a token validFor value")
 	}

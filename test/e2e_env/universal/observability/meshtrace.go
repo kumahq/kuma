@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
-func traceAll(meshName string, url string) string {
+func traceAll(meshName, url string) string {
 	return fmt.Sprintf(`
 type: MeshTrace
 name: trace-all

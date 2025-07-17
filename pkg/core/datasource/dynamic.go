@@ -45,7 +45,7 @@ func (l *dynamicLoader) Load(ctx context.Context, mesh string, source *system_pr
 	return data, nil
 }
 
-func (l *dynamicLoader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
+func (l *dynamicLoader) loadSecret(ctx context.Context, mesh, secret string) ([]byte, error) {
 	if l.secretManager == nil {
 		return nil, errors.New("no resource manager")
 	}

@@ -79,7 +79,7 @@ data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBM3ZWM1cvNX
 	})
 
 	DescribeTable("Generate Envoy xDS resources",
-		func(golden string, gateway string) {
+		func(golden, gateway string) {
 			snap, err := Do(gateway)
 			Expect(err).To(Succeed())
 

@@ -17,7 +17,7 @@ func (r *ExternalServiceValidator) ValidateCreate(ctx context.Context, mesh stri
 	return r.validateRateLimits(ctx, mesh, resource.Spec.GetTags()[mesh_proto.ServiceTag])
 }
 
-func (r *ExternalServiceValidator) ValidateUpdate(ctx context.Context, previousExternalService *core_mesh.ExternalServiceResource, newExternalService *core_mesh.ExternalServiceResource) error {
+func (r *ExternalServiceValidator) ValidateUpdate(ctx context.Context, previousExternalService, newExternalService *core_mesh.ExternalServiceResource) error {
 	return r.validateRateLimits(ctx, previousExternalService.GetMeta().GetMesh(), newExternalService.Spec.GetTags()[mesh_proto.ServiceTag])
 }
 
@@ -25,7 +25,7 @@ func (r *ExternalServiceValidator) ValidateDelete(ctx context.Context, name stri
 	return nil
 }
 
-func (r *ExternalServiceValidator) validateRateLimits(ctx context.Context, mesh string, service string) error {
+func (r *ExternalServiceValidator) validateRateLimits(ctx context.Context, mesh, service string) error {
 	validationErr := &validators.ValidationError{}
 	// If referenced by a ratelimit, that ratelimit must only match kuma.io/service destinations
 
