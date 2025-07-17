@@ -141,15 +141,16 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 	restItems := []rest.Resource{} // Needs to be set to avoid returning nil and have the api return []
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, service := range insight.Spec.Services {
-			if strings.Contains(serviceName, nameContains) && filterFn(service) {
-				s.fillStaticInfo(serviceName, service)
-				out := rest.From.Resource(insight)
-				res := out.(*rest_unversioned.Resource)
-				res.Meta.Name = serviceName
-				res.Spec = service
-				removeDisplayNameLabel(res)
-				restItems = append(restItems, out)
+			if !strings.Contains(serviceName, nameContains) || !filterFn(service) {
+				continue
 			}
+			s.fillStaticInfo(serviceName, service)
+			out := rest.From.Resource(insight)
+			res := out.(*rest_unversioned.Resource)
+			res.Meta.Name = serviceName
+			res.Spec = service
+			removeDisplayNameLabel(res)
+			restItems = append(restItems, out)
 		}
 	}
 

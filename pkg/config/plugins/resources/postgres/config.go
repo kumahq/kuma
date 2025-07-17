@@ -167,9 +167,7 @@ type TLSPostgresStoreConfig struct {
 
 func (s TLSPostgresStoreConfig) Validate() error {
 	switch s.Mode {
-	case VerifyFull:
-		fallthrough
-	case VerifyCa:
+	case VerifyFull, VerifyCa:
 		if s.CAPath == "" {
 			return errors.New("CAPath cannot be empty")
 		}

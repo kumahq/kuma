@@ -39,27 +39,28 @@ func UpdateTCPProxy(filterChain *envoy_listener.FilterChain, updateFunc func(*en
 
 func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName string, updateFunc func(proto.Message) error) error {
 	for i, filter := range filterChain.Filters {
-		if filter.Name == filterName {
-			if filter.GetTypedConfig() == nil {
-				return errors.Errorf("filters[%d]: config cannot be 'nil'", i)
-			}
+		if filter.Name != filterName {
+			continue
+		}
+		if filter.GetTypedConfig() == nil {
+			return errors.Errorf("filters[%d]: config cannot be 'nil'", i)
+		}
 
-			msg, err := filter.GetTypedConfig().UnmarshalNew()
-			if err != nil {
-				return err
-			}
-			if err := updateFunc(msg); err != nil {
-				return err
-			}
+		msg, err := filter.GetTypedConfig().UnmarshalNew()
+		if err != nil {
+			return err
+		}
+		if err := updateFunc(msg); err != nil {
+			return err
+		}
 
-			any, err := anypb.New(msg)
-			if err != nil {
-				return err
-			}
+		any, err := anypb.New(msg)
+		if err != nil {
+			return err
+		}
 
-			filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-				TypedConfig: any,
-			}
+		filter.ConfigType = &envoy_listener.Filter_TypedConfig{
+			TypedConfig: any,
 		}
 	}
 	return nil
