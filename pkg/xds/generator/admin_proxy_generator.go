@@ -8,7 +8,6 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
@@ -17,12 +16,11 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 // OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginAdmin = "admin"
-
-var AdminResourceName = system_names.AsSystemName("envoy_admin")
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
@@ -62,6 +60,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 
 	adminPort := proxy.Metadata.GetAdminPort()
 	readinessPort := proxy.Metadata.GetReadinessPort()
+	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
@@ -71,7 +70,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	// as a gateway to another host.
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
-		envoyAdminClusterName = AdminResourceName
+		envoyAdminClusterName = system_names.EnvoyAdminResourceName
 	}
 	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
@@ -125,23 +124,24 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	resources := core_xds.NewResourceSet()
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if g.getAddress(proxy) != adminAddress {
-		adminListenerName := envoy_names.GetAdminListenerName()
+		// TODO(unified-resource-naming): adjust when legacy naming is removed
+		envoyAdminListenerName := envoy_names.GetAdminListenerName()
 		if unifiedNamingEnabled {
-			adminListenerName = AdminResourceName
+			envoyAdminListenerName = system_names.EnvoyAdminResourceName
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(adminListenerName, staticEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(envoyAdminListenerName, staticEndpointPaths)),
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).
-			Configure(envoy_listeners.StaticEndpoints(adminListenerName, staticTlsEndpointPaths)).
+			Configure(envoy_listeners.StaticEndpoints(envoyAdminListenerName, staticTlsEndpointPaths)).
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
 		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
-			WithOverwriteName(adminListenerName).
+			WithOverwriteName(envoyAdminListenerName).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).
 			Build()

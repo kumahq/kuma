@@ -26,6 +26,7 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 type SnapshotGenerator struct {
@@ -57,11 +58,12 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		return nil, err
 	}
 
+	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
 	unifiedNamingEnabled := md.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	clusterName := names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
-		clusterName = generator.AdminResourceName
+		clusterName = system_names.EnvoyAdminResourceName
 	}
 
 	healthChecks := []*envoy_service_health.ClusterHealthCheck{
