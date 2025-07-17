@@ -65,7 +65,6 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - nilValReturn
         - paramTypeCombine
         - rangeValCopy
         - singleCaseSwitch
