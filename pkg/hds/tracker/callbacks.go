@@ -177,7 +177,7 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
 
 		// TODO(unified-resource-naming): adjust when legacy naming is removed
-		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() || clusterHealth.ClusterName == system_names.EnvoyAdminResourceName {
+		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() || clusterHealth.ClusterName == system_names.SystemResourceNameEnvoyAdmin {
 			envoyHealth = health
 		} else {
 			port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)

@@ -70,7 +70,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	// as a gateway to another host.
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
-		envoyAdminClusterName = system_names.EnvoyAdminResourceName
+		envoyAdminClusterName = system_names.SystemResourceNameEnvoyAdmin
 	}
 	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
@@ -127,7 +127,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		// TODO(unified-resource-naming): adjust when legacy naming is removed
 		envoyAdminListenerName := envoy_names.GetAdminListenerName()
 		if unifiedNamingEnabled {
-			envoyAdminListenerName = system_names.EnvoyAdminResourceName
+			envoyAdminListenerName = system_names.SystemResourceNameEnvoyAdmin
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
