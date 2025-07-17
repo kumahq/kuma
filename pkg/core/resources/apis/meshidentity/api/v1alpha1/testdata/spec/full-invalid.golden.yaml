@@ -1,0 +1,9 @@
+violations:
+- field: spec.spiffeID.trustDomain
+  message: 'couldn''t parse template: template: :1: non executable command in pipeline
+    stage 2'
+- field: spec.spiffeID.path
+  message: 'couldn''t parse template: template: :1: non executable command in pipeline
+    stage 2'
+- field: spec.provider.bundled.meshTrustCreation
+  message: 'has incorrect value: Test'

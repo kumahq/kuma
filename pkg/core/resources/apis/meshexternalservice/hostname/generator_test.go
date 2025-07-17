@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -164,10 +165,10 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
 				hostnamegenerator_api.HostnameGeneratorStatus{
 					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []hostnamegenerator_api.Condition{{
-						Type:    hostnamegenerator_api.GeneratedCondition,
+					Conditions: []common_api.Condition{{
+						Type:    common_api.GeneratedCondition,
 						Status:  kube_meta.ConditionFalse,
-						Reason:  hostnamegenerator_api.CollisionReason,
+						Reason:  common_api.CollisionReason,
 						Message: "Hostname collision with MeshExternalService: other",
 					}},
 				},
@@ -176,10 +177,10 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 			g.Expect(exampleStatus.HostnameGenerators).Should(ConsistOf(
 				hostnamegenerator_api.HostnameGeneratorStatus{
 					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []hostnamegenerator_api.Condition{{
-						Type:   hostnamegenerator_api.GeneratedCondition,
+					Conditions: []common_api.Condition{{
+						Type:   common_api.GeneratedCondition,
 						Status: kube_meta.ConditionTrue,
-						Reason: hostnamegenerator_api.GeneratedReason,
+						Reason: common_api.GeneratedReason,
 					}},
 				},
 			))
