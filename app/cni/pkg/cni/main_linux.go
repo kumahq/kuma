@@ -60,9 +60,9 @@ type PluginConf struct {
 type K8sArgs struct {
 	types.CommonArgs
 	IP                         net.IP
-	K8S_POD_NAME               types.UnmarshallableString // nolint: golint, stylecheck
-	K8S_POD_NAMESPACE          types.UnmarshallableString // nolint: golint, stylecheck
-	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString // nolint: golint, stylecheck
+	K8S_POD_NAME               types.UnmarshallableString //nolint:golint,stylecheck
+	K8S_POD_NAMESPACE          types.UnmarshallableString //nolint:golint,stylecheck
+	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString //nolint:golint,stylecheck
 }
 
 // parseConfig parses the supplied configuration (and prevResult) from stdin

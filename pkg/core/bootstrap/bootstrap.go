@@ -162,7 +162,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		))
 	}
 
-	xdsCtx, err := xds_runtime.WithDefaults(builder) //nolint:contextcheck
+	xdsCtx, err := xds_runtime.WithDefaults(builder)
 	if err != nil {
 		return nil, err
 	}
