@@ -54,7 +54,7 @@ The changes described in this document do not apply to all types of Envoy resour
 
   Others will be addressed in a separate MADR, including:
 
-   * Default routes when no `MeshHTTPRoute` or `MeshTCPRoute` is defined
+   * Default routes when no `MeshHTTPRoute` is defined
 
 * **MeshPassthrough**: Resources related to the `MeshPassthrough` policy are not included in this decision and will be addressed separately.
 
@@ -68,17 +68,17 @@ The KRI format from [MADR-070 Resource Identifier](070-resource-identifier.md) i
 
 Some Envoy resources are defined and used only in the context of a specific proxy. In this document, the context is the `Dataplane`, but the format is intentionally more general and not strictly tied to that resource type. These resources may be referenced in policies, metrics, and other tooling, so a naming format is needed that reflects their scoped, contextual nature without pretending they are globally distinct Kuma resources.
 
-To solve this, we define a contextual format that uses a `<keyword>_` prefix followed by a descriptor. The descriptor identifies the relevant section of the current proxy context the resource belongs to.
+To solve this, we define a contextual format that uses a `<keyword>_` prefix followed by a descriptor. The descriptor identifies the relevant section of the current context the resource belongs to.
 
 #### Format: `<keyword>_<descriptor>`
 
-* Begins with a keyword that indicates the resource is local to the current proxy context
-* Followed by a descriptor string that identifies the specific part of the proxy context
+* Begins with a keyword that indicates the resource is local to the current context
+* Followed by a descriptor string that identifies the specific part of the context
 
 The descriptor must use only characters allowed in URL queries, as defined in [MADR-070](070-resource-identifier.md#url-query):
 
-* Lowercase letters (`a` to `z`)
-* Numbers (`0` to `9`)
+* Lowercase letters (`a-z`)
+* Numbers (`0-9`)
 * Dashes (`-`)
 * Underscores (`_`)
 * Dots (`.`) for future use cases like domain-style or MeshPassthrough naming
@@ -89,14 +89,14 @@ The descriptor must use only characters allowed in URL queries, as defined in [M
 
 **Benefits:**
 
-* Clearly indicates the resource belongs to the current proxy context
+* Clearly indicates the resource belongs to the current context
 * Familiar and widely used in tools and programming languages to refer to the current object or scope
 
 ##### Option 2: Use `this` as the keyword
 
 **Benefits:**
 
-* Clearly signals that the resource is tied to this specific proxy context
+* Clearly signals that the resource is tied to this specific context
 * Common in many programming languages for referencing current object or scope
 
 **Drawbacks:**
@@ -108,7 +108,7 @@ The descriptor must use only characters allowed in URL queries, as defined in [M
 
 **Benefits:**
 
-* Suggests the resource is local to the current proxy
+* Suggests the resource is local to the current context
 * Has precedent in networking terminology
 
 **Drawbacks:**
@@ -128,10 +128,9 @@ This format is the same as the `sectionName` used in the KRI naming scheme and i
 
 **Requirements:**
 
-* Must be **1 to 63 characters** long
 * Can contain:
-  * Lowercase letters (`a`–`z`)
-  * Digits (`0`–`9`)
+  * Lowercase letters (`a-z`)
+  * Digits (`0-9`)
   * Hyphens (`-`)
   * Dots (`.`)
 * Must **start with a letter or digit**
@@ -149,7 +148,7 @@ These rules combine:
 **Regular expression:**
 
 ```
-(([1-9][0-9]{0,4})|([a-z0-9](?!.*--)(?!.*\.\.)[a-z0-9.-]{0,61}[a-z0-9]))
+(([1-9][0-9]{0,4})|([a-z0-9](?!.*--)(?!.*\.\.)[a-z0-9.-]*[a-z0-9]))
 ```
 
 ### Naming for non-system inbound-related resources
@@ -170,7 +169,7 @@ This option proposes that non-system inbounds use the [contextual format](#conte
 self_inbound_<sectionName>
 ```
 
-The `self` keyword refers to the current proxy context. The `<sectionName>` follows the format defined in [section name](#format-sectionname): it uses the port name if present, otherwise the port number.
+The `self` keyword refers to the current proxy context. The `<sectionName>` follows the format defined in [section name](#format-definition-sectionname): it uses the port name if present, otherwise the port number.
 
 **Benefits:**
 
@@ -291,17 +290,17 @@ kri_dp_-_-_-_-_5050
 * Requires KRI specification to explicitly allow this pattern and define its meaning
 * Still includes the `kri_` prefix, which might falsely suggest the name is fully qualified and traceable
 
-#### Option 4: Treat inbounds as "system" resources and use `system_<prefix>_<sectionName>` format
+#### Option 4: Treat inbounds as "system" resources and use `system_<keyword>_inbound_<sectionName>` format
 
 Adjust the [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md) and [MADR-070 Resource Identifier](070-resource-identifier.md) by:
 
 * Including non-system inbounds in the `system` category
-* Using names like `system_self_5050` or `system_this_5050`
+* Using names like `system_self_inbound_5050` or `system_this_inbound_5050`
 
 **Benefits:**
 
 * No increase in metric cardinality
-* Small changes to tools (e.g., replace `localhost_*` with `system_self_*`)
+* Small changes to tools (e.g., replace `localhost_*` with `system_self_inbound_*`)
 
 **Drawbacks:**
 
@@ -321,7 +320,7 @@ kri_dp_default_kuma-2_kuma-demo_demo-app-ddd8546d5-vg5ql_5050
 However, the stat names would use a simplified format as described in earlier options, for example:
 
 ```
-self_5050
+self_inbound_5050
 ```
 
 **Benefits:**
@@ -339,7 +338,7 @@ self_5050
 
 #### Decision: Naming for non-system inbound-related resources
 
-Non-system inbound-related Envoy resources and stats will use the [`self_inbound_<sectionName>`](#format-self_descriptor) format. The `self` keyword marks the resource as scoped to the current proxy context. The `inbound_<sectionName>` descriptor uses the port name if defined, otherwise the port number, following the [section name format](#format-sectionname).
+Non-system inbound-related Envoy resources and stats will use the [`self_inbound_<sectionName>`](#format-keyword_descriptor) format. The `self` keyword marks the resource as scoped to the current proxy context. The `inbound_<sectionName>` descriptor uses the port name if defined, otherwise the port number, following the [section name format](#format-definition-sectionname).
 
 Examples:
 
@@ -407,7 +406,7 @@ This format is for passthrough traffic set up in the current `Dataplane`. It’s
 
 ### Enabling the feature per proxy
 
-This decision introduces a breaking change to resource and stat naming. To support a safe and gradual migration, the feature will be controlled by a data plane feature flag. This flag is enabled by setting the appropriate environment variable in the context where `kuma-dp` runs.
+This MADR introduces a breaking change to resource and stat naming. To support a safe and gradual migration, the feature will be controlled by a data plane feature flag. This flag is enabled by setting the appropriate environment variable in the context where `kuma-dp` runs.
 
 In **Universal mode**, this is straightforward. Users are responsible for running `kuma-dp` directly, so setting the environment variable is straightforward and fully under user control.
 
@@ -473,32 +472,20 @@ As part of updating the documentation, we will:
 
 ## Implications for Kong Mesh
 
-The changes introduced by this document, along with those defined in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md), impact the Envoy resources generated by the `MeshGlobalRateLimit` policy. This policy currently adds a cluster with a static name `meshglobalratelimit:service`, which is then referenced in route-level [rate limit configuration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-rate-limits). As a result of these changes, the cluster name will be updated to follow the standard system format, using the valid `kri` of the `MeshGlobalRateLimit` policy that is the source of this cluster:
+The changes introduced by this document do not affect resources generated by Kong Mesh-specific features or policies. The `MeshOPA` policy modifies existing non-system inbound listeners but does not rename or create Envoy resources, so it remains unaffected.
 
-```
-system_kri_mgrl___<namespace>_<policyName>_
-```
-
-Example:
-
-```
-system_kri_mgrl___kong-mesh-system_mesh-rate-limit_
-```
-
-The `MeshOPA` policy modifies existing non-system inbound listeners but does not rename any existing Envoy resources or create new ones. Therefore, it is not affected by the changes described in this document.
-
-Other Kong Mesh–specific features or policies do not rely on or modify Envoy resource names or stat prefixes that fall within the scope of this document.
+The `MeshGlobalRateLimit` policy is impacted by system resource naming changes introduced in [MADR-076 Standardized Naming for internal xDS Resources](076-naming-internal-envoy-resources.md). Those changes are addressed in that document.
 
 ## Implementation details
 
 ### Data plane feature flag and propagation
 
-A new data plane feature flag will control the use of consistent naming for proxy resources and stats, including both KRI-based formats and the new `self_` format for inbounds. It will be optional at first, with a deprecation path: the new naming will become the default in the future, and the flag will eventually be removed. This gives users time to migrate without breaking existing setups.
+A new data plane feature flag will control the use of consistent naming for proxy resources and stats, including both KRI-based formats and the new `self_inbound_<sectionName>` format for inbounds. It will be optional at first, with a deprecation path: the new naming will become the default in the future, and the flag will eventually be removed. This gives users time to migrate without breaking existing setups.
 
 The flag will be passed from the data plane proxy to the control plane via [xDS metadata](https://github.com/kumahq/kuma/blob/c61baf6110caa40eb3b69f7f635e9506389a7455/app/kuma-dp/cmd/run.go#L172) using:
 
 ```go
-const FeatureUnifiedProxyResourcesAndStatsNaming string = "feature-unified-resource-naming"
+const FeatureUnifiedResourceNaming string = "feature-unified-resource-naming"
 ```
 
 #### Per-proxy opt-in
@@ -567,7 +554,7 @@ When the new naming becomes the default, this setting will also default to `true
 
 ### Updating `ZoneIngressInsight` and `ZoneEgressInsight` with feature flags
 
-To support the Kuma GUI in adapting to the updated naming formats, `ZoneIngressInsight` and `ZoneEgressInsight` must expose the same feature flag metadata already present in `DataplaneInsight`. These insight resources are exposed through the control plane API and provide metadata and status about each proxy.
+To support the Kuma GUI in adapting to the updated naming formats, `ZoneIngressInsight` and `ZoneEgressInsight` must expose the same feature flag metadata already present in `DataplaneInsight`.
 
 We will extend both `ZoneIngressInsight` and `ZoneEgressInsight` to include active feature flags in their metadata section. This enables the GUI to detect if the `feature-unified-resource-naming` flag is active for each proxy and adjust its behavior accordingly, including how it parses and renders resource and stat names.
 
@@ -581,12 +568,11 @@ The Kuma GUI relies on Envoy xDS resource names and stat names to display inboun
 
 To support the updated naming formats introduced in this decision, including both KRI-based and contextual `self_` names, the GUI parsers must be updated. Specifically, when the `feature-unified-resource-naming` flag is present in the metadata of `DataplaneInsight`, `ZoneIngressInsight`, or `ZoneEgressInsight`, the GUI must:
 
+* Use the new Inspect API (described in [MADR-075 Inspect API Redesign](075-inspect-api-redesign.md)) to fetch resource and stat names, instead of parsing raw metrics or xDS config
 * Parse xDS resource names and stat names using:
    * The KRI format for resources tied to distinct Kuma objects (as defined in [MADR-070 Resource Identifier](070-resource-identifier.md))
    * The `self_<descriptor>` format for contextual `Dataplane`-scoped resources such as inbounds and transparent proxy passthrough
-* Drop legacy assumptions like the presence of `inbound:` or `outbound:` prefixes
 * Match stat names directly to xDS resource names, which now have a 1:1 correspondence
-* Use the new Inspect API (described in [MADR-075](075-inspect-api-redesign.md)) to fetch resource and stat names, instead of parsing raw metrics or xDS config
 
 ### Examples
 
@@ -602,22 +588,22 @@ kri_extsvc_mesh-1__kuma-system_es1_
 **Contextual `self_` resource names:**
 
 ```
-self_8080
-self_http
-self_passthrough-ipv4-inbound
-self_passthrough-ipv6-outbound
+self_inbound_httpport
+self_inbound_8080
+self_transparentproxy_passthrough_inbound_ipv4
+self_transparentproxy_passthrough_outbound_ipv6
 ```
 
 **Corresponding stat names:**
 
 ```
-cluster.self_8080.upstream_cx_active: 0
-cluster.self_passthrough-ipv4-inbound.upstream_cx_active: 0
+cluster.self_inbound_8080.upstream_cx_active: 0
+cluster.self_transparentproxy_passthrough_inbound_ipv4.upstream_cx_active: 0
 cluster.kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport.upstream_cx_active: 0
 
-http.self_8080.downstream_cx_active: 0
+http.self_inbound_8080.downstream_cx_active: 0
 http.kri_mzsvc_mesh-1__kuma-system_backend-app_8080.downstream_cx_active: 0
 
-listener.self_8080.downstream_cx_active: 0
+listener.self_inbound_8080.downstream_cx_active: 0
 listener.kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport.downstream_cx_active: 0
 ```

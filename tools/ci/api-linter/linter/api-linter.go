@@ -19,6 +19,7 @@ const (
 	optionalAnnotation      = "+kubebuilder:validation:Optional"
 	nonMergableAnotation    = "+kuma:non-mergeable-struct"
 	discriminatorAnnotation = "+kuma:discriminator"
+	nolintAnnotation        = "+kuma:nolint"
 )
 
 var eql = func(a, b string) bool { return a == b }
@@ -138,6 +139,13 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 					analyzeStructFields(pass, namedStruct, fieldPath+"[]", false)
 				}
 			}
+		}
+
+		if hasAnnotations(field, nolintAnnotation) {
+			if *debugLog {
+				fmt.Println("DEBUG: skipping field do to "+nolintAnnotation, fieldPath)
+			}
+			continue
 		}
 
 		// Process the field normally
