@@ -141,7 +141,7 @@ func ApplyToGateway(
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info) // nolint: contextcheck
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info) //nolint:contextcheck
 		if err != nil {
 			return err
 		}
