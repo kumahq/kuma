@@ -510,8 +510,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				}
 
 				for typ, resources := range typedResources {
-					switch typ {
-					case envoy_resource.ClusterType:
+					if typ == envoy_resource.ClusterType {
 						for _, cluster := range resources {
 							if err := NewModifier(cluster.Resource.(*envoy_cluster.Cluster)).Configure(clusterConfigurer(conf.Conf[0].(api.Conf))).Modify(); err != nil {
 								return err

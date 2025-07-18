@@ -157,8 +157,7 @@ func applyToRealResources(
 			continue
 		}
 		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ListenerType:
+			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
 					if err := configureListener(rules, proxy.Dataplane, listener.Resource.(*envoy_listener.Listener), service); err != nil {
 						return err

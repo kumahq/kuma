@@ -215,7 +215,7 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceRe
 	}
 	for _, item := range matchedPolicies.GetItems() {
 		if item.GetSpec().(core_model.Policy).GetTargetRef().Kind != common_api.MeshHTTPRoute {
-			if err = excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
+			if err := excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
 				return ToRules{}, err
 			}
 		}
