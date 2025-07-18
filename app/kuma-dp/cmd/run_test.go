@@ -220,6 +220,35 @@ var _ = Describe("run", func() {
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
 		}),
+		Entry("can be launched with args and given config dir", func() testCase {
+			return testCase{
+				envVars: map[string]string{},
+				args: []string{
+					"--cp-address", "http://localhost:1234",
+					"--name", "example",
+					"--mesh", "default",
+					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"--work-dir", tmpDir,
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
+				},
+				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
+			}
+		}),
+		Entry("can be launched with args and given config dir", func() testCase {
+			return testCase{
+				envVars: map[string]string{},
+				args: []string{
+					"--cp-address", "http://localhost:1234",
+					"--name", "example",
+					"--mesh", "default",
+					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"--config-dir", filepath.Join(tmpDir, "config-dir"),
+					"--work-dir", tmpDir,
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
+				},
+				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
+			}
+		}),
 		Entry("can be launched with args and dataplane token", func() testCase {
 			return testCase{
 				envVars: map[string]string{},

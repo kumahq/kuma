@@ -10,7 +10,7 @@ import (
 )
 
 func GenerateBootstrapFile(cfg kuma_dp.DataplaneRuntime, config []byte) (string, error) {
-	configFile := filepath.Join(cfg.ConfigDir, "bootstrap.yaml")
+	configFile := filepath.Join(cfg.WorkDir, "bootstrap.yaml")
 	if err := writeFile(configFile, config, 0o600); err != nil {
 		return "", errors.Wrap(err, "failed to persist Envoy bootstrap config on disk")
 	}
