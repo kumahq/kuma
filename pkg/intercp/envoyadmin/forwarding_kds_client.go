@@ -160,7 +160,7 @@ func (f *forwardingKdsEnvoyAdminClient) logIntendedAction(proxy core_model.Resou
 	}
 }
 
-func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zone string, rpcName string) (string, error) {
+func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zone, rpcName string) (string, error) {
 	zoneInsightRes := core_system.NewZoneInsightResource()
 	if err := f.resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
 		return "", err

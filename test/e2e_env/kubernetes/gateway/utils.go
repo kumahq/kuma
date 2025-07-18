@@ -17,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) func(Gomega) {
+func SuccessfullyProxyRequestToGateway(cluster Cluster, instance, gatewayAddr, namespace string) func(Gomega) {
 	return func(g Gomega) {
 		target := fmt.Sprintf("http://%s/%s",
 			gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
@@ -33,7 +33,7 @@ func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gateway
 	}
 }
 
-func FailToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace string) func(Gomega) {
+func FailToProxyRequestToGateway(cluster Cluster, gatewayAddr, namespace string) func(Gomega) {
 	return func(g Gomega) {
 		Logf("expecting failure from %q", gatewayAddr)
 		target := fmt.Sprintf("http://%s/%s",

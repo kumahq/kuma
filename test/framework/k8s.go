@@ -23,7 +23,7 @@ import (
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 )
 
-func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error) {
+func PodNameOfApp(cluster Cluster, name, namespace string) (string, error) {
 	pod, err := PodOfApp(cluster, name, namespace)
 	if err != nil {
 		return "", err
@@ -32,7 +32,7 @@ func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error
 	return pod.Name, nil
 }
 
-func PodOfApp(cluster Cluster, name string, namespace string) (v1.Pod, error) {
+func PodOfApp(cluster Cluster, name, namespace string) (v1.Pod, error) {
 	pods, err := k8s.ListPodsE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(namespace),
@@ -49,7 +49,7 @@ func PodOfApp(cluster Cluster, name string, namespace string) (v1.Pod, error) {
 	return pods[0], nil
 }
 
-func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) {
+func PodIPOfApp(cluster Cluster, name, namespace string) (string, error) {
 	pods, err := k8s.ListPodsE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(namespace),
@@ -258,7 +258,7 @@ type simplifiedEvent struct {
 	Message  string `json:"message,omitempty"`
 }
 
-func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, kind string, name string) []*simplifiedEvent {
+func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, kind, name string) []*simplifiedEvent {
 	events, _ := k8s.ListEventsE(testingT, kubectlOptions, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name),
 	})

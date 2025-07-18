@@ -140,7 +140,7 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Complete(r)
 }
 
-func podToNodeMapper(log logr.Logger, cniApp string, cniNamespace string) kube_handler.MapFunc {
+func podToNodeMapper(log logr.Logger, cniApp, cniNamespace string) kube_handler.MapFunc {
 	return func(_ context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
@@ -194,7 +194,7 @@ func podEvents() predicate.Funcs {
 	}
 }
 
-func shouldTriggerReconciliation(obj kube_client.Object, cniApp string, cniNamespace string) bool {
+func shouldTriggerReconciliation(obj kube_client.Object, cniApp, cniNamespace string) bool {
 	pod, ok := obj.(*kube_core.Pod)
 	if !ok {
 		return false

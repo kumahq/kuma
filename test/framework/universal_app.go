@@ -534,6 +534,6 @@ done
 	return "", errors.Errorf("couldn't find a valid IP address usingV6=%v output=%q", isipv6, stdout)
 }
 
-func (s *UniversalApp) newSession(name string, cmd string) (*kssh.Session, error) {
+func (s *UniversalApp) newSession(name, cmd string) (*kssh.Session, error) {
 	return s.universalNetworking.NewSession(path.Join(s.clusterName, "universal", "exec", s.containerName), name, s.verbose, cmd)
 }

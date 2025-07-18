@@ -18,7 +18,7 @@ func (s Sorter) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func isMoreSpecific(lhs *Match, rhs *Match) bool {
+func isMoreSpecific(lhs, rhs *Match) bool {
 	switch {
 	case lhs.ExactPath != "":
 		// Exact match is more specific that prefix or regex.
