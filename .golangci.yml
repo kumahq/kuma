@@ -97,7 +97,9 @@ linters:
                 - os
     gosec:
       excludes:
+        - G104 # Errors unhandled
         - G115
+        - G301 # Expect directory permissions to be 0750 or less
     importas:
       alias:
         - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
@@ -132,6 +134,12 @@ linters:
       max-open-files: 2048
       rules:
         - name: var-declaration
+    staticcheck:
+      checks:
+        - all
+        - -ST1003 # Poorly chosen identifier
+        - -ST1016 # Use consistent method receiver names
+        - -SA4011 # Break statement with no effect. Did you mean to break out of an outer loop?
     usestdlibvars:
       http-status-code: false
   exclusions:
@@ -139,7 +147,6 @@ linters:
     presets:
       - comments
       - common-false-positives
-      - legacy
       - std-error-handling
     rules:
       - linters:
@@ -147,25 +154,7 @@ linters:
         text: 'SA1019: "github.com/golang/protobuf/jsonpb"'
       - linters:
           - staticcheck
-        text: 'SA1019: l.UseOriginalDst is deprecated: Do not use.'
-      - linters:
-          - staticcheck
-        text: 'IsIngress is deprecated: use ZoneIngress'
-      - linters:
-          - staticcheck
-        text: 'SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated'
-      - linters:
-          - staticcheck
-        text: 'SA1019: l.ReusePort is deprecated'
-      - linters:
-          - staticcheck
         text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
-      - linters:
-          - staticcheck
-        text: 'SA1019: kumaCPConfig.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
-      - linters:
-          - staticcheck
-        text: 'SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
       - linters:
           - staticcheck
         text: 'SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go'
@@ -182,11 +171,8 @@ linters:
           - staticcheck
         text: 'ST1001: should not use dot imports'
     paths:
-      - app/kumactl/pkg/k8s/kubectl_proxy.go
-      - pkg/xds/server/server.go
-      - pkg/xds/server/server_test.go
-      - (^|/)vendored($|/)
       - pkg/transparentproxy/iptables/builder
+    warn-unused: true
 issues:
   # Fix found issues (if it's supported by the linter).
   fix: true
@@ -207,10 +193,3 @@ formatters:
         - default
         - prefix(github.com/kumahq/kuma)
       custom-order: true
-  exclusions:
-    generated: lax
-    paths:
-      - app/kumactl/pkg/k8s/kubectl_proxy.go
-      - pkg/xds/server/server.go
-      - pkg/xds/server/server_test.go
-      - (^|/)vendored($|/)
