@@ -150,6 +150,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.enabled | bool | `true` | Whether to create a Service resource. |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
+| ingress.service.loadBalancerSourceRanges | list | `[]` | A list of CIDRs or IPs for the cloud-provider load balancer to allow access from. |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
