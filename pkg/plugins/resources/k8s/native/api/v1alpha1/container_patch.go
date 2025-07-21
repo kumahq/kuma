@@ -67,9 +67,9 @@ func init() {
 func ToJsonPatch(in []JsonPatchBlock) jsonpatch.Patch {
 	var res []jsonpatch.Operation
 	for _, o := range in {
-		op := json.RawMessage(fmt.Sprintf(`"%s"`, o.Op))
-		path := json.RawMessage(fmt.Sprintf(`"%s"`, o.Path))
-		from := json.RawMessage(fmt.Sprintf(`"%s"`, o.From))
+		op := json.RawMessage(fmt.Sprintf(`%q`, o.Op))
+		path := json.RawMessage(fmt.Sprintf(`%q`, o.Path))
+		from := json.RawMessage(fmt.Sprintf(`%q`, o.From))
 		value := json.RawMessage(o.Value)
 		res = append(res, jsonpatch.Operation{
 			"op":    &op,

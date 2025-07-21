@@ -75,8 +75,6 @@ func ToTlsVersion(version *TlsVersion) tlsv3.TlsParameters_TlsProtocol {
 		return tlsv3.TlsParameters_TLSv1_1
 	case TLSVersion10:
 		return tlsv3.TlsParameters_TLSv1_0
-	case TLSVersionAuto:
-		fallthrough
 	default:
 		return tlsv3.TlsParameters_TLS_AUTO
 	}

@@ -123,7 +123,7 @@ spec:
           weight: 100
 `, name, mesh, name, backendService)
 
-	return strings.Join([]string{meshGateway, route}, "\n---\n")
+	return meshGateway + "\n---\n" + route
 }
 
 func mkGatewayDataplane(name, mesh, serviceName string) InstallFunc {

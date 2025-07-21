@@ -19,7 +19,7 @@ var log = core.Log.WithName("rms-graph")
 func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) map[kri.Identifier]core_rules.Rules {
 	rules := map[kri.Identifier]core_rules.Rules{}
 	for _, ms := range meshServices {
-		dpTags := maps.Clone(ms.Spec.Selector.DataplaneTags)
+		dpTags := maps.Clone(pointer.Deref(ms.Spec.Selector.DataplaneTags))
 		if origin, ok := core_model.ResourceOrigin(ms.GetMeta()); ok {
 			dpTags[mesh_proto.ResourceOriginLabel] = string(origin)
 		}

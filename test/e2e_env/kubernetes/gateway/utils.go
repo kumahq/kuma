@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -91,7 +90,7 @@ spec:
         - destination:
             kuma.io/service: %s # Matches the echo-server we deployed.
 `, resourceName, mesh, serviceName, backendService)
-	return strings.Join([]string{meshGateway, route}, "\n---\n")
+	return meshGateway + "\n---\n" + route
 }
 
 func MkGatewayInstance(name, namespace, mesh string) string {

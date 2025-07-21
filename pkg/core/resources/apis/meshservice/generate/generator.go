@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -93,9 +94,9 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 			portName = strconv.Itoa(int(inbound.Port))
 		}
 		port := meshservice_api.Port{
-			Name:        portName,
+			Name:        &portName,
 			Port:        int32(inbound.Port),
-			TargetPort:  intstr.FromInt(int(inbound.Port)),
+			TargetPort:  pointer.To(intstr.FromInt(int(inbound.Port))),
 			AppProtocol: core_mesh.Protocol(appProtocol),
 		}
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
@@ -105,7 +106,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	for serviceTag, ports := range portsByService {
 		ms := meshservice_api.MeshService{
 			Selector: meshservice_api.Selector{
-				DataplaneTags: meshservice_api.DataplaneTags{
+				DataplaneTags: &map[string]string{
 					mesh_proto.ServiceTag: serviceTag,
 				},
 			},

@@ -1,0 +1,19 @@
+{
+ "inbounds": [
+  {
+   "kri": "kri_dp_default_test-zone__dp-1_main-port",
+   "port": 8080,
+   "protocol": "http"
+  },
+  {
+   "kri": "kri_dp_default_test-zone__dp-1_secondary-port",
+   "port": 8081,
+   "protocol": "tcp"
+  }
+ ],
+ "kri": "kri_dp_default_test-zone__dp-1_",
+ "labels": {
+  "kuma.io/zone": "test-zone"
+ },
+ "outbounds": []
+}

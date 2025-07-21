@@ -695,19 +695,21 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 					if r.descriptor.IsTargetRefBased {
 						res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
 						return res
-					} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
-						for _, s := range dpPolicy.Selectors() {
+					}
+					switch pr := policyResource.(type) {
+					case policy.DataplanePolicy:
+						for _, s := range pr.Selectors() {
 							if dpp.Spec.Matches(s.GetMatch()) {
 								return true
 							}
 						}
-					} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
-						for _, s := range connPolicy.Sources() {
+					case policy.ConnectionPolicy:
+						for _, s := range pr.Sources() {
 							if dpp.Spec.Matches(s.GetMatch()) {
 								return true
 							}
 						}
-						for _, s := range connPolicy.Destinations() {
+						for _, s := range pr.Destinations() {
 							if dpp.Spec.Matches(s.GetMatch()) {
 								return true
 							}

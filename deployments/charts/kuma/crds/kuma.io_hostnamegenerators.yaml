@@ -80,6 +80,8 @@ spec:
                 type: object
               template:
                 type: string
+            required:
+            - template
             type: object
         type: object
     served: true
