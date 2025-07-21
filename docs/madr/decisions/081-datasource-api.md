@@ -322,23 +322,23 @@ The idea is to avoid embedding the resolution logic (i.e., where the resource sh
 
 ```golang
 // +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
-type ControlPlaneDataSourceType string
+type SecureDataSourceType string
 
 const (
-	CPDataSourceFile      ControlPlaneDataSourceType = "File"
-	CPDataSourceSecretRef ControlPlaneDataSourceType = "Secret"
-	CPDataSourceEnvVar    ControlPlaneDataSourceType = "EnvVar"
-	CPDataSourceInline    ControlPlaneDataSourceType = "InsecureInline"
+	CPDataSourceFile      SecureDataSourceType = "File"
+	CPDataSourceSecretRef SecureDataSourceType = "Secret"
+	CPDataSourceEnvVar    SecureDataSourceType = "EnvVar"
+	CPDataSourceInline    SecureDataSourceType = "InsecureInline"
 )
 
-type ControlPlaneDataSource struct {
-	Type           ControlPlaneDataSourceType `json:"type,omitempty"`
-	File           *File                      `json:"file,omitempty"`
-	SecretRef      *SecretRef                 `json:"secretRef,omitempty"`
-	EnvVar         *EnvVar                    `json:"envVar,omitempty"`
-	InsecureInline *Inline                    `json:"insecureInline,omitempty"`
+// SecureDataSource is a way to securely provide data to the component
+type SecureDataSource struct {
+	Type              SecureDataSourceType `json:"type,omitempty"`
+	File              *File                `json:"file,omitempty"`
+	EnvVar            *EnvVar              `json:"envVar,omitempty"`
+	InsecureInline    *Inline              `json:"insecureInline,omitempty"`
+	SecretRef         *SecretRef           `json:"secretRef,omitempty"`
 }
-
 // +kubebuilder:validation:Enum=File;EnvVar
 type DataSourceType string
 
@@ -351,6 +351,7 @@ type DataSource struct {
 	Type   DataSourceType `json:"type,omitempty"`
 	File   *File          `json:"file,omitempty"`
 	EnvVar *EnvVar        `json:"envVar,omitempty"`
+	Inline *Inline        `json:"inline,omitempty"`
 }
 
 type File struct {
