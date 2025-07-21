@@ -325,19 +325,19 @@ The idea is to avoid embedding the resolution logic (i.e., where the resource sh
 type SecureDataSourceType string
 
 const (
-	CPDataSourceFile      SecureDataSourceType = "File"
-	CPDataSourceSecretRef SecureDataSourceType = "Secret"
-	CPDataSourceEnvVar    SecureDataSourceType = "EnvVar"
-	CPDataSourceInline    SecureDataSourceType = "InsecureInline"
+	SecureDataSourceFile      SecureDataSourceType = "File"
+	SecureDataSourceSecretRef SecureDataSourceType = "Secret"
+	SecureDataSourceEnvVar    SecureDataSourceType = "EnvVar"
+	SecureDataSourceInline    SecureDataSourceType = "InsecureInline"
 )
 
 // SecureDataSource is a way to securely provide data to the component
 type SecureDataSource struct {
-	Type              SecureDataSourceType `json:"type,omitempty"`
-	File              *File                `json:"file,omitempty"`
-	EnvVar            *EnvVar              `json:"envVar,omitempty"`
-	InsecureInline    *Inline              `json:"insecureInline,omitempty"`
-	SecretRef         *SecretRef           `json:"secretRef,omitempty"`
+	Type           SecureDataSourceType `json:"type,omitempty"`
+	File           *File                `json:"file,omitempty"`
+	EnvVar         *EnvVar              `json:"envVar,omitempty"`
+	InsecureInline *Inline              `json:"insecureInline,omitempty"`
+	SecretRef      *SecretRef           `json:"secretRef,omitempty"`
 }
 // +kubebuilder:validation:Enum=File;EnvVar
 type DataSourceType string
@@ -345,8 +345,11 @@ type DataSourceType string
 const (
 	DataSourceFile   DataSourceType = "File"
 	DataSourceEnvVar DataSourceType = "EnvVar"
+  DataSourceEnvVar DataSourceType = "Inline"
 )
 
+// DataSource is just a way to provide data. Not necessarily secrets, 
+// can be any data, i.e. certs, configs, OPA policies written in rego, lua plugins etc.
 type DataSource struct {
 	Type   DataSourceType `json:"type,omitempty"`
 	File   *File          `json:"file,omitempty"`
