@@ -31,10 +31,8 @@ import (
 )
 
 func GenerateOutboundListener(
-	apiVersion core_xds.APIVersion,
+	proxy *core_xds.Proxy,
 	svc meshroute_xds.DestinationService,
-	isTransparent bool,
-	internalAddresses []core_xds.InternalAddress,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
 ) (*core_xds.Resource, error) {
@@ -43,15 +41,18 @@ func GenerateOutboundListener(
 		routeConfigName = envoy_names.GetOutboundRouteName(svc.ServiceName)
 	}
 
-	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TransparentProxying(isTransparent)).
+	bindOutboundsEnabled := proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds)
+	transparentProxyEnabled := !bindOutboundsEnabled && proxy.GetTransparentProxy().Enabled()
+
+	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
 				StatsName:                svc.ServiceName,
 				ForwardClientCertDetails: false,
 				NormalizePath:            true,
-				InternalAddresses:        internalAddresses,
+				InternalAddresses:        proxy.InternalAddresses,
 			})).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
 				VirtualHostName: svc.ServiceName,
@@ -116,9 +117,7 @@ func generateFromService(
 		dpTags = proxy.Dataplane.Spec.TagSet()
 	}
 
-	isTransparent := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
-
-	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, proxy.InternalAddresses, routes, dpTags)
+	listener, err := GenerateOutboundListener(proxy, svc, routes, dpTags)
 	if err != nil {
 		return nil, err
 	}

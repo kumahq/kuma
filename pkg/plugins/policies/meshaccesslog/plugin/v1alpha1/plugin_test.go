@@ -765,7 +765,9 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 
 func otherServiceHTTPListener() core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address: "127.0.0.1",
@@ -774,8 +776,6 @@ func otherServiceHTTPListener() core_xds.Resource {
 			Protocol:    core_mesh.ProtocolHTTP,
 			ServiceName: "other-service-http",
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		[]meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
 				xds.NewSplitBuilder().WithClusterName("other-service-http").Build(),
@@ -809,7 +809,9 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 
 func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
@@ -819,8 +821,6 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Protocol:    core_mesh.ProtocolHTTP,
 			ServiceName: serviceName(serviceResourceKRI, port),
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)

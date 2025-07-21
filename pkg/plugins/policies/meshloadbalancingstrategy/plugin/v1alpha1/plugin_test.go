@@ -1828,7 +1828,9 @@ func backendListener() envoy_common.NamedResource {
 
 func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
@@ -1838,8 +1840,6 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Protocol:    core_mesh.ProtocolHTTP,
 			ServiceName: serviceName(serviceResourceKRI, port),
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
