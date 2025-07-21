@@ -16,7 +16,7 @@ These endpoints were deprecated, and are now removed. You can achieve the same f
 
 The readiness reporter TCP port is deprecated and will be removed in a future release. 
 
-The Unix socket is introduced to the readiness reporter, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_ENABLED:true` for `kuma-dp` to enable it.
+The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_ENABLED:false` for `kuma-dp` to disable it.
 
 ## Upgrade to `2.11.x`
 

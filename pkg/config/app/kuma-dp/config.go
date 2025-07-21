@@ -30,7 +30,7 @@ var DefaultConfig = func() Config {
 			Name:                          "", // Dataplane name must be set explicitly
 			DrainTime:                     config_types.Duration{Duration: 30 * time.Second},
 			ProxyType:                     "dataplane",
-			ReadinessUnixSocketEnabled:    false,
+			ReadinessUnixSocketEnabled:    true,
 			ReadinessPort:                 9902,
 			ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
 			ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},

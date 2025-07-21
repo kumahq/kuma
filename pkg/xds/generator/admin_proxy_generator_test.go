@@ -112,13 +112,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 			expected:      "05.envoy-config.golden.yaml",
 			adminAddress:  "::",
 		}),
-		Entry("should generate admin resources, IPv4 with readiness port 9902", testCase{
+		Entry("should generate admin resources, Unix socket disabled, IPv4 with readiness port 9902", testCase{
 			dataplaneFile: "04.dataplane.input.yaml",
 			expected:      "06.envoy-config.golden.yaml",
 			adminAddress:  "127.0.0.1",
 			readinessPort: 9902,
 		}),
-		Entry("should generate admin resources, IPv6 with readiness port 9400", testCase{
+		Entry("should generate admin resources, Unix socket disabled, IPv6 with readiness port 9400", testCase{
 			dataplaneFile: "05.dataplane.input.yaml",
 			expected:      "07.envoy-config.golden.yaml",
 			adminAddress:  "::1",
@@ -133,7 +133,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			},
 		}),
 		Entry("should generate admin resources, Unix socket enabled", testCase{
-			dataplaneFile:              "05.dataplane.input.yaml",
+			dataplaneFile:              "09.dataplane.input.yaml",
 			expected:                   "09.envoy-config.golden.yaml",
 			adminAddress:               "127.0.0.1",
 			readinessPort:              9902,
