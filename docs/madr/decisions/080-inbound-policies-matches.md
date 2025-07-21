@@ -218,7 +218,7 @@ rules:
 ```
 
 3. Starting this step MTP plugin is in charge, it receives the struct from step 2 and generates Envoy config.
-For each item in `rules` generate appropriate `matcher_list` and then concat `matcher_list` from old rules prioritizing `Deny`:
+For each item in `rules` generate appropriate `matcher_list` and then concat `matcher_list` from all rules prioritizing `Deny`:
 
 ```yaml
 extensions.filters.network.rbac.v3.RBAC:
