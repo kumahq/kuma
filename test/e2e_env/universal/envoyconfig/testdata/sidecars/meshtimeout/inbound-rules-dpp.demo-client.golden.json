@@ -187,9 +187,8 @@
                 {
                   "endpoint": {
                     "address": {
-                      "socketAddress": {
-                        "address": "IP_REDACTED",
-                        "portValue": 9902
+                      "pipe": {
+                        "path": "/tmp/kuma-dp-3050814591/kuma-readiness-reporter.sock"
                       }
                     }
                   }

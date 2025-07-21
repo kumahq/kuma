@@ -10,6 +10,7 @@ dataplane:
   drainTime: 30s
   proxyType: dataplane
   readinessPort: 9902
+  readinessUnixSocketEnabled: true
   resilientComponentBaseBackoff: 5s
   resilientComponentMaxBackoff: 1m0s
 dataplaneRuntime:
