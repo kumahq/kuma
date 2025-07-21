@@ -76,11 +76,14 @@ Version in parentheses indicates which Kuma release is going to support the user
 
 5. I want to apply a MeshTrafficPermission to just one of my multiple inbounds.
 
+## Decision Outcome
+
+The chosen option is "Option 1: MeshTrafficPermission is an inbound policy without 'matches'".
+
 ## Design
 
 According to [MADR-078](078-special-mtp-algo.md), the MeshTrafficPermission algorithm and API are different from other inbound policies.
 This MADR presents three options for implementing the design.
-The chosen option is "Option 1: MeshTrafficPermission is an inbound policy without 'matches'".
 
 ### Option 1: MeshTrafficPermission is an inbound policy without 'matches'
 
@@ -307,57 +310,57 @@ No MeshTrafficPermission policies means requests are denied by default.
    so that Service Owner can't override or bypass that decision,
    ensuring enforcement of critical security boundaries across the mesh. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-mesh-operator
-spec:
-   default:
-      deny:
-         - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
-         - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/legacy-workload"
-         - spiffeId:
-              type: Prefix
-              value: "spiffe://legacy.mesh/"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-mesh-operator
+   spec:
+      default:
+         deny:
+            - spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+            - spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/legacy-workload"
+            - spiffeId:
+                type: Prefix
+                value: "spiffe://legacy.mesh/"
+   ```
 
 3. I want to allow all clients in the `observability` namespace to access all services by default,
    so that telemetry and monitoring tools function automatically,
    while still allowing Service Owners to explicitly opt out by applying deny policies. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-mesh-operator
-spec:
-   default:
-      allow:
-         - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/observability"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-mesh-operator
+   spec:
+      default:
+         allow:
+            - spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/ns/observability"
+   ```
 
 4. I want to allow all clients in the `observability` namespace to access the `/metrics` endpoint on all services,
    so that monitoring tools can collect metrics without requiring each Service Owner to configure access individually.
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-mesh-operator
-spec:
-   default:
-      allow:
-         - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/observability"
-           path:
-             type: Prefix
-             value: "/metrics"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-mesh-operator
+   spec:
+      default:
+         allow:
+            - spiffeId:
+                 type: Prefix
+                 value: "spiffe://trust-domain.mesh/ns/observability"
+              path:
+                type: Prefix
+                value: "/metrics"
+   ```
 
 ##### Service Owner
 
@@ -366,104 +369,104 @@ spec:
    unless the Mesh Operator has explicitly denied that client,
    ensuring I remain in control while respecting mesh-wide security boundaries. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      allow:
-         - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         allow:
+            - spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/"
+   ```
 
 2. I want to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
    so that my service's sensitive endpoints remain private unless explicitly allowed. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      deny:
-         - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/observability"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         deny:
+            - spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/ns/observability"
+   ```
 
 3. I want to block malicious/abusive client even if previously it was allowed,
    so I can prevent my service from overloading until client's service team reacts to the incident. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      deny:
-         - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/malicious"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         deny:
+            - spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/malicious"
+   ```
 
 4. I want to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
    so that read operations are public but write operations are gated.
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      allow:
-         - method: GET
-         - method: POST
-           spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/writer-1"
-         - method: POST
-           spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/writer-2"
-         - method: POST
-           spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/writers"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         allow:
+            - method: GET
+            - method: POST
+              spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/writer-1"
+            - method: POST
+              spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/writer-2"
+            - method: POST
+              spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/ns/writers"
+   ```
 
 5. I want to apply a MeshTrafficPermission to just one of my multiple inbounds
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-      sectionName: http-port # applies only to the inbound with 'http-port' name
-   default: {}
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+         sectionName: http-port # applies only to the inbound with 'http-port' name
+      default: {}
+   ```
 
 #### Extensibility to other authentication methods
 
@@ -516,8 +519,8 @@ spec:
    default:
       deny:
          - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+             type: Exact
+             value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
 ---
 type: MeshTrafficPermission
 mesh: default
@@ -531,16 +534,16 @@ spec:
   default:
     deny:
       - spiffeId:
-           type: Exact
-           value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+          type: Exact
+          value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
     allowWithShadowDeny:
-       - spiffeId:
-           type: Prefix
-           value: "spiffe://trust-domain.mesh/ns/legacy"
+      - spiffeId:
+          type: Prefix
+          value: "spiffe://trust-domain.mesh/ns/legacy"
     allow:
-       - spiffeId:
-            type: Prefix
-            value: "spiffe://trust-domain.mesh/"
+      - spiffeId:
+          type: Prefix
+          value: "spiffe://trust-domain.mesh/"
 ```
 
 Evaluation rules:
@@ -740,69 +743,69 @@ policies:
    by denying requests from the `observability` namespace,
    so that my service's sensitive endpoints remain private unless explicitly allowed. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      deny:
-         - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/observability"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         deny:
+           - spiffeId:
+               type: Prefix
+               value: "spiffe://trust-domain.mesh/ns/observability"
+   ```
 
 3. I want to block malicious/abusive client even if previously it was allowed,
    so I can prevent my service from overloading until client's service team reacts to the incident. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      deny:
-         - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/malicious"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         deny:
+           - spiffeId:
+               type: Exact
+               value: "spiffe://trust-domain.mesh/ns/default/sa/malicious"
+   ```
 
 4. I want to allow `GET` requests to my service from any client, but restrict `POST` requests to a group of identities,
    so that read operations are public but write operations are gated.
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
-         app: backend
-   default:
-      allow:
-         - method: GET
-         - method: POST
-           spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/writer-1"
-         - method: POST
-           spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/writer-2"
-         - method: POST
-           spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/writers"
-```
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+      targetRef:
+         kind: Dataplane
+         labels:
+            app: backend
+      default:
+         allow:
+            - method: GET
+            - method: POST
+              spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/writer-1"
+            - method: POST
+              spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/writer-2"
+            - method: POST
+              spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/ns/writers"
+   ```
 
 5. I want to apply a MeshTrafficPermission to just one of my multiple inbounds
 
@@ -858,8 +861,8 @@ spec:
    rules:
       - conditions:
            - spiffeId:
-                type: Exact
-                value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+               type: Exact
+              value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
         default:
            action: Deny
 ---
@@ -869,20 +872,20 @@ spec:
   rules:
     - conditions:
          - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+             type: Exact
+             value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
       default:
         action: Deny
     - conditions:
          - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/"
+             type: Prefix
+             value: "spiffe://trust-domain.mesh/"
       default:
         action: Allow
     - conditions:
          - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/legacy"
+             type: Prefix
+             value: "spiffe://trust-domain.mesh/ns/legacy"
       default:
          action: AllowWithShadowDeny
 ```
@@ -897,23 +900,23 @@ spec:
 rules:
   - conditions: # condition_1
        - spiffeId:
-            type: Exact
-            value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+           type: Exact
+           value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
        - spiffeId:
-            type: Exact
-            value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+           type: Exact
+           value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
     default:
       action: Deny # conf1
   - conditions: # condition_2
        - spiffeId:
-            type: Prefix
-            value: "spiffe://trust-domain.mesh/"
+           type: Prefix
+           value: "spiffe://trust-domain.mesh/"
     default:
       action: Allow # conf2
   - conditions: # condition_3
        - spiffeId:
-            type: Prefix
-            value: "spiffe://trust-domain.mesh/ns/legacy"
+           type: Prefix
+           value: "spiffe://trust-domain.mesh/ns/legacy"
     default:
        action: AllowWithShadowDeny # conf3
 ```
