@@ -10,7 +10,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/12374
 
 #### Problem 1
 
-The current MeshTrafficPermission implementation uses the client’s certificate, with the client’s data plane proxy tags encoded in its URI SANs.
+The current MeshTrafficPermission implementation uses the client's certificate, with the client's data plane proxy tags encoded in its URI SANs.
 As we're moving towards SPIFFE compliant certificates, we won't be able to use data plane proxy tags in MeshTrafficPermission policy anymore.
 
 #### Problem 2
@@ -66,7 +66,7 @@ Version in parentheses indicates which Kuma release is going to support the user
 
 2. I want to be able to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
-   so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
+   so that my service's sensitive endpoints remain private unless explicitly allowed. (2.12)
 
 3. I want to be able to block malicious/abusive client even if previously it was allowed,
    so I can prevent my service from overloading until the client's service team responds to the incident (2.12)
@@ -384,7 +384,7 @@ spec:
 
 2. I want to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
-   so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
+   so that my service's sensitive endpoints remain private unless explicitly allowed. (2.12)
 
 ```yaml
 type: MeshTrafficPermission
@@ -738,7 +738,7 @@ spec:
 
 2. I want to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
-   so that my service’s sensitive endpoints remain private unless explicitly allowed. (2.12)
+   so that my service's sensitive endpoints remain private unless explicitly allowed. (2.12)
 
 ```yaml
 type: MeshTrafficPermission
