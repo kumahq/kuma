@@ -113,9 +113,11 @@ message Dataplane {
       // ServiceProbe defines parameters for probing service's port
       message ServiceProbe {
         // Interval between consecutive health checks.
-        google.protobuf.Duration interval=1;
+        google.protobuf.Duration interval = 1;
+
         // Maximum time to wait for a health check response.
-        google.protobuf.Duration timeout=2;
+        google.protobuf.Duration timeout = 2;
+
         // Number of consecutive unhealthy checks before considering a host
         // unhealthy.
         google.protobuf.UInt32Value unhealthy_threshold = 3;
@@ -156,6 +158,7 @@ message Dataplane {
       // Name adds another way of referencing this port, usable with MeshService
       string name = 10;
     }
+
     // Outbound describes a service consumed by the data plane proxy.
     // For every defined Outbound there is a corresponding Envoy Listener.
     message Outbound {
