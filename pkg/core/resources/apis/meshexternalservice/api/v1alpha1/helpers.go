@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
@@ -73,7 +71,8 @@ func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bo
 }
 
 func (m Match) GetName() string {
-	return fmt.Sprintf("%d", m.Port)
+	// MES can only have one port so there's no point in naming it.
+	return ""
 }
 
 func (m Match) GetValue() int32 {

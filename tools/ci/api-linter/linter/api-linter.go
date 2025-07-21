@@ -19,6 +19,7 @@ const (
 	optionalAnnotation      = "+kubebuilder:validation:Optional"
 	nonMergableAnotation    = "+kuma:non-mergeable-struct"
 	discriminatorAnnotation = "+kuma:discriminator"
+	nolintAnnotation        = "+kuma:nolint"
 )
 
 var eql = func(a, b string) bool { return a == b }
@@ -140,6 +141,13 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			}
 		}
 
+		if hasAnnotations(field, nolintAnnotation) {
+			if *debugLog {
+				fmt.Println("DEBUG: skipping field do to "+nolintAnnotation, fieldPath)
+			}
+			continue
+		}
+
 		// Process the field normally
 		if isMergeable {
 			if isKumaDiscriminator(field) {
@@ -152,7 +160,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
 			if hasAnnotations(field, defaultAnnotation, optionalAnnotation) {
-				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation, optionalAnnotation}, ", "))
+				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, defaultAnnotation+", "+optionalAnnotation)
 			}
 		} else {
 			_, isValid := determineNonMergeableCategory(field)

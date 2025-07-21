@@ -120,7 +120,7 @@ func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, al
 		var matchNames []*envoy_tls.SubjectAltNameMatcher
 		if !skipHostnameVerification {
 			subjectAltNameMatch := hostname
-			if len(sni) > 0 {
+			if sni != "" {
 				subjectAltNameMatch = sni
 			}
 			for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{

@@ -188,6 +188,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			case "DELTA_GRPC":
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)
 			}
+
+			if cfg.DataplaneRuntime.UnifiedResourceNamingEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
+			}
+
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
@@ -286,13 +291,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			components = append(components, envoyComponent)
-			components = append(components, component.NewResilientComponent(
-				runLog.WithName("configfetcher"),
-				confFetcher,
-				cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
-				cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
-			))
+			components = append(components,
+				envoyComponent,
+				component.NewResilientComponent(
+					runLog.WithName("configfetcher"),
+					confFetcher,
+					cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+					cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
+				),
+			)
 
 			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
 			if err != nil {

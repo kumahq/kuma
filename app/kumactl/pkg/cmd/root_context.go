@@ -40,6 +40,7 @@ type RootArgs struct {
 	ConfigType ConfigType
 	Mesh       string
 	ApiTimeout time.Duration
+	Context    string
 }
 
 type RootRuntime struct {
@@ -164,6 +165,9 @@ func (rc *RootContext) CurrentControlPlane() (*config_proto.ControlPlane, error)
 	currentContext, err := rc.CurrentContext()
 	if err != nil {
 		return nil, err
+	}
+	if rc.Args.Context != "" {
+		currentContext.ControlPlane = rc.Args.Context
 	}
 	_, controlPlane := rc.Config().GetControlPlane(currentContext.ControlPlane)
 	if controlPlane == nil {

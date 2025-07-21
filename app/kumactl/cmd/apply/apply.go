@@ -104,7 +104,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 			rawResources := yaml.SplitYAML(string(b))
 			var hasErrors bool
 			for i, rawResource := range rawResources {
-				if len(rawResource) == 0 {
+				if rawResource == "" {
 					continue
 				}
 				bytes := []byte(rawResource)

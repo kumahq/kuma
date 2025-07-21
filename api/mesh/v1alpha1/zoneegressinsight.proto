@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/dataplane_insight.proto";
+import "google/protobuf/struct.proto";
 
 // ZoneEgressInsight defines the observed state of a Zone Egress.
 message ZoneEgressInsight {
@@ -21,4 +22,10 @@ message ZoneEgressInsight {
 
   // List of ADS subscriptions created by a given Zone Kuma CP.
   repeated DiscoverySubscription subscriptions = 1;
+
+  // Metadata contains arbitrary xDS metadata reported by the Zone Egress proxy.
+  // This may include feature flags and other proxy-specific metadata.
+  // It is functionally equivalent to the `metadata` field in DataplaneInsight,
+  // but specific to Zone Egress proxies.
+  google.protobuf.Struct metadata = 2;
 }
