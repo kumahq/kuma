@@ -7,6 +7,7 @@ import (
 	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {
@@ -24,7 +25,8 @@ func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.Ht
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		Service: serviceName,
+		VirtualHostName: serviceName,
+		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{
 			{
 				Split: []envoy_common.Split{
@@ -64,7 +66,8 @@ func RealMeshHTTPRouteOutboundRoutes(serviceName string, meshHTTPRoute kri.Ident
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		Service: serviceName,
+		VirtualHostName: serviceName,
+		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{
 			{
 				Split: []envoy_common.Split{
@@ -97,7 +100,8 @@ func MeshHttpOutboudWithSingleRoute(serviceName string) *meshhttproute_xds.HttpO
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		Service: serviceName,
+		VirtualHostName: serviceName,
+		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{
 			{
 				Split: []envoy_common.Split{

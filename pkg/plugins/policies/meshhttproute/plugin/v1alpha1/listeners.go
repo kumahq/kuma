@@ -25,6 +25,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -37,6 +38,11 @@ func GenerateOutboundListener(
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
 ) (*core_xds.Resource, error) {
+	routeConfigName := svc.Outbound.NameOrEmpty()
+	if routeConfigName == "" {
+		routeConfigName = envoy_names.GetOutboundRouteName(svc.ServiceName)
+	}
+
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(isTransparent)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
@@ -48,10 +54,10 @@ func GenerateOutboundListener(
 				InternalAddresses:        internalAddresses,
 			})).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
-				Name:    svc.Outbound.NameOrEmpty(),
-				Service: svc.ServiceName,
-				Routes:  routes,
-				DpTags:  originDPPTags,
+				VirtualHostName: svc.ServiceName,
+				RouteConfigName: routeConfigName,
+				Routes:          routes,
+				DpTags:          originDPPTags,
 			})).
 			ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
 		Build()
