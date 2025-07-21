@@ -79,7 +79,7 @@ Version in parentheses indicates which Kuma release is going to support the user
 ## Design
 
 According to [MADR-078](078-special-mtp-algo.md), the MeshTrafficPermission algorithm and API are different from other inbound policies.
-This MADR suggests three options to implement the design.
+This MADR presents three options for implementing the design.
 The chosen option is "Option 1: MeshTrafficPermission is an inbound policy without 'matches'".
 
 ### Option 1: MeshTrafficPermission is an inbound policy without 'matches'
@@ -166,23 +166,23 @@ mesh: default
 name: by-service-owner
 spec:
   targetRef:
-     kind: Dataplane
-     labels:
-       app: backend
-     sectionName: http-port
+    kind: Dataplane
+    labels:
+      app: backend
+    sectionName: http-port
   default:
     deny:
       - spiffeId:
-           type: Exact
-           value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+          type: Exact
+          value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
     allowWithShadowDeny:
-       - spiffeId:
-           type: Prefix
-           value: "spiffe://trust-domain.mesh/ns/legacy"
+      - spiffeId:
+          type: Prefix
+          value: "spiffe://trust-domain.mesh/ns/legacy"
     allow:
-       - spiffeId:
-            type: Prefix
-            value: "spiffe://trust-domain.mesh/"
+      - spiffeId:
+          type: Prefix
+          value: "spiffe://trust-domain.mesh/"
 ```
 
 Evaluation rules:
@@ -197,24 +197,24 @@ Evaluation rules:
 
 ```yaml
 rules:
-   - default: # from 'by-mesh-operator' MTP
-       deny:
-          - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
-   - default: # from 'by-service-owner' MTP
-        deny:
-           - spiffeId:
-                type: Exact
-                value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
-        allowWithShadowDeny:
-           - spiffeId:
-                type: Prefix
-                value: "spiffe://trust-domain.mesh/ns/legacy"
-        allow:
-           - spiffeId:
-                type: Prefix
-                value: "spiffe://trust-domain.mesh/"
+  - default: # from 'by-mesh-operator' MTP
+      deny:
+        - spiffeId:
+            type: Exact
+            value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+  - default: # from 'by-service-owner' MTP
+      deny:
+        - spiffeId:
+            type: Exact
+            value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+      allowWithShadowDeny:
+        - spiffeId:
+            type: Prefix
+            value: "spiffe://trust-domain.mesh/ns/legacy"
+      allow:
+        - spiffeId:
+            type: Prefix
+            value: "spiffe://trust-domain.mesh/"
 ```
 
 3. Starting this step MTP plugin is in charge, it receives the struct from step 2 and generates Envoy config.
@@ -226,30 +226,30 @@ extensions.filters.network.rbac.v3.RBAC:
   shadow_rules: []
   matcher:
     matcher_list:
-       - predicate:
-           or_matcher:
-              - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
-           on_match:
-             action: Deny
-             name: kri_mtp_default___by-mesh-operator_
-       - predicate:
-            or_matcher:
-               - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
-            on_match:
-               action: Deny
-               name: kri_mtp_default___by-service-owner_
-       - predicate:
-            or_matcher:
-               - spiffeId prefix spiffe://trust-domain.mesh/
-               - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy # for 'allowWithShadowDeny'
-            on_match: Allow
+      - predicate:
+          or_matcher:
+            - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
+          on_match:
+            action: Deny
+            name: kri_mtp_default___by-mesh-operator_
+      - predicate:
+          or_matcher:
+            - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
+          on_match:
+            action: Deny
             name: kri_mtp_default___by-service-owner_
+      - predicate:
+          or_matcher:
+            - spiffeId prefix spiffe://trust-domain.mesh/
+            - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy # for 'allowWithShadowDeny'
+          on_match: Allow
+          name: kri_mtp_default___by-service-owner_
     no_match: Deny
   shadow_matcher: # not enforced, just logged
     matcher_list:
-     - predicate:
+      - predicate:
           or_matcher:
-             - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy
+            - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy
           on_match: Deny
           name: kri_mtp_default___by-service-owner_
     no_match: Deny
@@ -268,27 +268,27 @@ policies:
     rules:
       - conf:
           deny:
-             - spiffeId:
-                 type: Exact
-                 value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
+            - spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/frontend"
         origin: kri_mtp_default___by-mesh-operator_ # current Inspect API missing 'origin' inside each 'rule'
       - conf:
           deny:
-             - spiffeId:
-                  type: Exact
-                  value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+            - spiffeId:
+                type: Exact
+                value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
           allowWithShadowDeny:
-             - spiffeId:
-                  type: Prefix
-                  value: "spiffe://trust-domain.mesh/ns/legacy"
+            - spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/ns/legacy"
           allow:
-             - spiffeId:
-                  type: Prefix
-                  value: "spiffe://trust-domain.mesh/"
+            - spiffeId:
+                type: Prefix
+                value: "spiffe://trust-domain.mesh/"
         origin: kri_mtp_default___by-service-owner_
     origins:
-       - kri: kri_mtp_...
-       - kri: kri_mtp_...
+      - kri: kri_mtp_...
+      - kri: kri_mtp_...
 ```
 
 Currently, Inspect API is missing `policies[].rules[].origin`.
@@ -552,7 +552,7 @@ Evaluation rules:
 
 Normally in Kuma policies mergeable arrays override each other, for example:
 
-```
+```yaml
 name: policy-1
 spec:
   default:
@@ -568,7 +568,7 @@ results in `spec.default.myArray: [4]`.
 
 Switching array merging behaviour from overriding to concatenation normally requires prefixing fields with `append`:
 
-```
+```yaml
 name: policy-1
 spec:
   default:
@@ -609,23 +609,23 @@ extensions.filters.network.rbac.v3.RBAC:
   shadow_rules: []
   matcher:
     matcher_list:
-       - predicate:
-           or_matcher:
-              - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/frontend
-              - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
-           on_match:
-             action: Deny
-       - predicate:
-            or_matcher:
-               - spiffeId prefix spiffe://trust-domain.mesh/
-               - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy # for 'allowWithShadowDeny'
-            on_match: Allow
+      - predicate:
+          or_matcher:
+            - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/frontend
+            - spiffeId exact spiffe://trust-domain.mesh/ns/default/sa/api-gateway
+          on_match:
+            action: Deny
+      - predicate:
+          or_matcher:
+            - spiffeId prefix spiffe://trust-domain.mesh/
+            - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy # for 'allowWithShadowDeny'
+          on_match: Allow
     no_match: Deny
   shadow_matcher: # not enforced, just logged
     matcher_list:
-     - predicate:
+      - predicate:
           or_matcher:
-             - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy
+            - spiffeId prefix spiffe://trust-domain.mesh/ns/legacy
           on_match: Deny
     no_match: Deny
 ```
@@ -639,14 +639,14 @@ GET :5681/meshes/{mesh}/dataplanes/{name}/_policies
 ```
 ```yaml
 policies:
-   - kind: MeshTrafficPermission
-     conf:
-       deny: [...]
-       allowWithShadowDeny: [...]
-       allow: [...]
-     origins:
-        - kri: kri_mtp_...
-        - kri: kri_mtp_...
+  - kind: MeshTrafficPermission
+    conf:
+      deny: [...]
+      allowWithShadowDeny: [...]
+      allow: [...]
+    origins:
+      - kri: kri_mtp_...
+      - kri: kri_mtp_...
 ```
 
 #### Verify user stories
@@ -655,63 +655,63 @@ policies:
 
 1. I want all requests in the mesh to be denied by default (2.12)
 
-No MeshTrafficPermission policies means requests are denied by default.
+   No MeshTrafficPermission policies means requests are denied by default.
 
 2. I want to declare a group of identities as explicitly denied,
    so that Service Owner can't override or bypass that decision,
    ensuring enforcement of critical security boundaries across the mesh. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-mesh-operator
-spec:
-   default:
-      deny:
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-mesh-operator
+   spec:
+     default:
+       deny:
          - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
+             type: Exact
+             value: "spiffe://trust-domain.mesh/ns/default/sa/api-gateway"
          - spiffeId:
-              type: Exact
-              value: "spiffe://trust-domain.mesh/ns/default/sa/legacy-workload"
+             type: Exact
+             value: "spiffe://trust-domain.mesh/ns/default/sa/legacy-workload"
          - spiffeId:
-              type: Prefix
-              value: "spiffe://legacy.mesh/"
-```
+             type: Prefix
+             value: "spiffe://legacy.mesh/"
+   ```
 
 3. I want to allow all clients in the `observability` namespace to access all services by default,
    so that telemetry and monitoring tools function automatically,
    while still allowing Service Owners to explicitly opt out by applying deny policies. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-mesh-operator
-spec:
-   default:
-      allow:
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-mesh-operator
+   spec:
+     default:
+       allow:
          - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/observability"
-```
+             type: Prefix
+             value: "spiffe://trust-domain.mesh/ns/observability"
+     ```
 
 4. I want to allow all clients in the `observability` namespace to access the `/metrics` endpoint on all services,
    so that monitoring tools can collect metrics without requiring each Service Owner to configure access individually.
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-mesh-operator
-spec:
-   default:
-      allow:
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-mesh-operator
+   spec:
+     default:
+       allow:
          - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/ns/observability"
+             type: Prefix
+             value: "spiffe://trust-domain.mesh/ns/observability"
            path:
              type: Prefix
              value: "/metrics"
-```
+     ```
 
 ##### Service Owner
 
@@ -720,21 +720,21 @@ spec:
    unless the Mesh Operator has explicitly denied that client,
    ensuring I remain in control while respecting mesh-wide security boundaries. (2.12)
 
-```yaml
-type: MeshTrafficPermission
-mesh: default
-name: by-backend-owner
-spec:
-   targetRef:
-      kind: Dataplane
-      labels:
+   ```yaml
+   type: MeshTrafficPermission
+   mesh: default
+   name: by-backend-owner
+   spec:
+     targetRef:
+       kind: Dataplane
+       labels:
          app: backend
-   default:
-      allow:
+     default:
+       allow:
          - spiffeId:
-              type: Prefix
-              value: "spiffe://trust-domain.mesh/"
-```
+             type: Prefix
+             value: "spiffe://trust-domain.mesh/"
+     ```
 
 2. I want to opt out of mesh-wide `observability` access,
    by denying requests from the `observability` namespace,
@@ -891,8 +891,7 @@ spec:
 
 1. Collect all MeshTrafficPermissions that target the inbound
 2. Concat all `rules` lists
-3. Without peeking into confs, group `conditions` by the same confs (either compare conf's hashes or marshalled content).
-With MTP we're getting at most 3 unique confs – `action: Deny`, `action: AllowWithShadowDeny` and `action: Allow`
+3. Group conditions by identical confs without inspecting them directly (use either their hash or marshalled content). With MeshTrafficPermission, there can be at most 3 unique confs: `action: Deny`, `action: AllowWithShadowDeny`, and `action: Allow`.
 
 ```yaml
 rules:
