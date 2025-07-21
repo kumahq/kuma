@@ -96,7 +96,7 @@ func (c *ClusterImpl) validate() error {
 func WithService(service string) NewClusterOpt {
 	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.service = service
-		if len(cluster.name) == 0 {
+		if cluster.name == "" {
 			cluster.name = service
 		}
 	})
@@ -105,7 +105,7 @@ func WithService(service string) NewClusterOpt {
 func WithName(name string) NewClusterOpt {
 	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.name = name
-		if len(cluster.service) == 0 {
+		if cluster.service == "" {
 			cluster.service = name
 		}
 	})

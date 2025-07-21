@@ -10,6 +10,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -28,6 +29,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 		adminAddress               string
 		readinessPort              uint32
 		readinessUnixSocketEnabled bool
+		features                   xds_types.Features
 	}
 
 	DescribeTable("should generate envoy config",
@@ -57,6 +59,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminAddress:               given.adminAddress,
 					ReadinessPort:              given.readinessPort,
 					ReadinessUnixSocketEnabled: given.readinessUnixSocketEnabled,
+					Features:                   given.features,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -121,9 +124,17 @@ var _ = Describe("AdminProxyGenerator", func() {
 			adminAddress:  "::1",
 			readinessPort: 9400,
 		}),
+		Entry("should generate admin resources, unified naming", testCase{
+			dataplaneFile: "08.dataplane.input.yaml",
+			expected:      "08.envoy-config.golden.yaml",
+			adminAddress:  "",
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+		}),
 		Entry("should generate admin resources, Unix socket enabled", testCase{
 			dataplaneFile:              "05.dataplane.input.yaml",
-			expected:                   "08.envoy-config.golden.yaml",
+			expected:                   "09.envoy-config.golden.yaml",
 			adminAddress:               "127.0.0.1",
 			readinessPort:              9902,
 			readinessUnixSocketEnabled: true,

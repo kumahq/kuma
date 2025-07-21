@@ -87,7 +87,7 @@ func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 				return "docker logs command failed", err
 			}
 
-			if !r.Match([]byte(containerLogs)) {
+			if !r.MatchString(containerLogs) {
 				return "Postgres is not ready yet", fmt.Errorf("failed to match against %q", containerLogs)
 			}
 			return "Postgres is ready", nil

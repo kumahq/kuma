@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	v3 "github.com/kumahq/kuma/pkg/hds/v3"
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/util/net"
@@ -25,6 +26,7 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 type SnapshotGenerator struct {
@@ -56,8 +58,16 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		return nil, err
 	}
 
+	// TODO(unified-resource-naming): adjust when legacy naming is removed
+	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
+	unifiedNamingEnabled := md.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	clusterName := names.GetEnvoyAdminClusterName()
+	if unifiedNamingEnabled {
+		clusterName = system_names.SystemResourceNameEnvoyAdmin
+	}
+
 	healthChecks := []*envoy_service_health.ClusterHealthCheck{
-		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort)),
+		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort), clusterName),
 	}
 
 	for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
@@ -147,9 +157,9 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 }
 
 // envoyHealthCheck builds a HC for Envoy itself so when Envoy is in draining state HDS can report that DP is offline
-func (g *SnapshotGenerator) envoyHealthCheck(port uint32) *envoy_service_health.ClusterHealthCheck {
+func (g *SnapshotGenerator) envoyHealthCheck(port uint32, clusterName string) *envoy_service_health.ClusterHealthCheck {
 	return &envoy_service_health.ClusterHealthCheck{
-		ClusterName: names.GetEnvoyAdminClusterName(),
+		ClusterName: clusterName,
 		LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 			Endpoints: []*envoy_endpoint.Endpoint{{
 				Address: &envoy_core.Address{

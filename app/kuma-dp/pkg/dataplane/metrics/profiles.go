@@ -7,6 +7,7 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
+	"github.com/kumahq/kuma/pkg/core/system_names"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -165,6 +166,10 @@ var basicProfile = []selectorFunction{
 }
 
 var basicProfileLabels = []selectorFunction{
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: system_names.SystemPrefix,
+	}),
 	selectorToFilterFunction(v1alpha1.Selector{
 		Type:  v1alpha1.PrefixSelectorType,
 		Match: names.GetInternalClusterNamePrefix(),

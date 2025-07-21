@@ -3,7 +3,6 @@ package gateway
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,7 +61,7 @@ spec:
 		httpsSecret := func() string {
 			cert, key, err := CreateCertsFor("example.kuma.io")
 			Expect(err).To(Succeed())
-			secretData := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+			secretData := base64.StdEncoding.EncodeToString([]byte(key + "\n" + cert))
 			return fmt.Sprintf(`
 apiVersion: v1
 kind: Secret
