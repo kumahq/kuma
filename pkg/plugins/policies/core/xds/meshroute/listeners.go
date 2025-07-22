@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -82,53 +83,76 @@ func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 	}
 }
 
-func CollectServices(
-	proxy *core_xds.Proxy,
-	meshCtx xds_context.MeshContext,
-) []DestinationService {
-	var dests []DestinationService
+// CollectServices builds a slice of DestinationService from proxy.Outbounds
+//
+// It handles two types of outbounds:
+// - Legacy outbounds: resolved using service name and protocol from mesh context
+// - Real-resource outbounds: resolved by matching KRI identifier and port name
+//
+// Skips outbounds that are incomplete or invalid:
+// - nil entries
+// - real-resource outbounds with missing resource reference
+// - no service found for the given KRI
+// - no port matching the SectionName
+//
+// When protocol is unset, it defaults to TCP
+func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []DestinationService {
+	var result []DestinationService
+
 	for _, outbound := range proxy.Outbounds {
-		var destinationService *DestinationService
+		if outbound == nil {
+			continue
+		}
+
 		if outbound.LegacyOutbound != nil {
 			serviceName := outbound.LegacyOutbound.GetService()
-			destinationService = &DestinationService{
-				Outbound:    outbound,
-				Protocol:    meshCtx.GetServiceProtocol(serviceName),
-				ServiceName: serviceName,
-			}
-		} else {
-			destinationService = createServiceFromRealResource(outbound, meshCtx)
-		}
-		if destinationService != nil {
-			dests = append(dests, *destinationService)
-		}
-	}
-	return dests
-}
 
-func createServiceFromRealResource(
-	outbound *xds_types.Outbound,
-	meshCtx xds_context.MeshContext,
-) *DestinationService {
-	service := meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource))
-	if service == nil {
-		// we want to ignore service which is not found. Logging might be excessive here.
-		// We don't have another mechanism to bubble up warnings yet.
-		return nil
+			result = append(
+				result,
+				DestinationService{
+					Outbound:    outbound,
+					Protocol:    meshCtx.GetServiceProtocol(serviceName),
+					ServiceName: serviceName,
+				},
+			)
+
+			continue
+		}
+
+		var svc core.Destination
+		var port core.Port
+		var protocol core_mesh.Protocol
+		var ok bool
+
+		// ignore outbound when no service matches the KRI identifier
+		// TODO: Add a clear way to pass warnings up when needed. Right now
+		//  we skip logging to avoid too much noise, and there’s no system
+		//  for handling warnings yet
+		if svc = meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource)); svc == nil {
+			continue
+		}
+
+		// skip outbounds when no port matches SectionName
+		if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
+			continue
+		}
+
+		// determine protocol, default to TCP if unspecified
+		if protocol = port.GetProtocol(); protocol == "" {
+			protocol = core_mesh.ProtocolTCP
+		}
+
+		result = append(
+			result,
+			DestinationService{
+				Outbound:    outbound,
+				Protocol:    protocol,
+				ServiceName: svc.DestinationName(port.GetValue()),
+			},
+		)
 	}
-	port, ok := service.FindPortByName(outbound.Resource.SectionName)
-	if !ok {
-		return nil
-	}
-	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if port.GetProtocol() != "" {
-		protocol = port.GetProtocol()
-	}
-	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    protocol,
-		ServiceName: service.DestinationName(port.GetValue()),
-	}
+
+	return result
 }
 
 func GetServiceProtocolPortFromRef(
