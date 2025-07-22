@@ -136,19 +136,17 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
-			if cfg.DataplaneRuntime.WorkDir == "" {
-				if cfg.DataplaneRuntime.ConfigDir != "" {
-					runLog.Info("configDir(--config-dir) in config file is deprecated, use workDir(--work-dir) instead")
-					cfg.DataplaneRuntime.WorkDir = cfg.DataplaneRuntime.ConfigDir
-				}
-				if cfg.DataplaneRuntime.SocketDir != "" {
-					runLog.Info("socketDir in config file is deprecated, use workDir(--work-dir) instead")
-				}
+			if cfg.DataplaneRuntime.WorkDir == "" && cfg.DataplaneRuntime.ConfigDir != "" {
+				runLog.Info("ConfigDir is deprecated, please use WorkDir instead")
+				cfg.DataplaneRuntime.WorkDir = cfg.DataplaneRuntime.ConfigDir
+			}
+			if cfg.DataplaneRuntime.SocketDir != "" {
+				runLog.Info("SocketDir is deprecated, please use WorkDir instead")
 			} else {
 				cfg.DataplaneRuntime.SocketDir = cfg.DataplaneRuntime.WorkDir
 			}
 
-			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DNS.ConfigDir == "" {
+			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" || cfg.DNS.ConfigDir == "" {
 				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
@@ -245,7 +243,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
 			confFetcher := configfetcher.NewConfigFetcher(
-				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.WorkDir),
+				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
@@ -429,8 +427,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
 	)
 
-	err := cmd.PersistentFlags().MarkDeprecated("config-dir", "use --work-dir instead")
-	if err != nil {
+	if err := cmd.PersistentFlags().MarkDeprecated("config-dir", "use --work-dir instead"); err != nil {
 		runLog.Error(err, "could not mark config-dir as deprecated")
 	}
 
@@ -479,7 +476,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
 		accesslogs.NewAccessLogStreamer(
-			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
 		cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
 		cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
@@ -495,7 +492,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		tpEnabled,
 	)
 	metricsServer := metrics.New(
-		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		baseApplicationsToScrape,
 		tpEnabled,
 		openTelemetryProducer,

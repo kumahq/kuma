@@ -220,7 +220,7 @@ var _ = Describe("run", func() {
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
 		}),
-		Entry("can be launched with args and given config dir", func() testCase {
+		Entry("can be launched with args and given work dir", func() testCase {
 			return testCase{
 				envVars: map[string]string{},
 				args: []string{
