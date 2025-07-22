@@ -1,0 +1,31 @@
+clusterHealthChecks:
+- clusterName: system_envoy_admin
+  healthChecks:
+  - healthyThreshold: 4
+    httpHealthCheck:
+      path: /ready
+    interval: 1s
+    noTrafficInterval: 2s
+    timeout: 3s
+    unhealthyThreshold: 5
+  localityEndpoints:
+  - endpoints:
+    - address:
+        socketAddress:
+          address: 127.0.0.1
+          portValue: 9901
+- clusterName: localhost:80
+  healthChecks:
+  - healthyThreshold: 4
+    interval: 1s
+    noTrafficInterval: 2s
+    tcpHealthCheck: {}
+    timeout: 3s
+    unhealthyThreshold: 5
+  localityEndpoints:
+  - endpoints:
+    - address:
+        socketAddress:
+          address: 192.168.0.1
+          portValue: 80
+interval: 8s

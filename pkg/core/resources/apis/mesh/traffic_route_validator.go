@@ -186,7 +186,7 @@ func (d *TrafficRouteResource) validateHTTPMatch(pathBuilder validators.PathBuil
 	}
 	for key, matcher := range match.GetHeaders() {
 		path := pathBuilder.Field("headers").Key(key)
-		if len(key) == 0 {
+		if key == "" {
 			err.AddViolationAt(path, "cannot be empty")
 		}
 		err.Add(d.validateStringMatcher(path, matcher))
@@ -199,11 +199,11 @@ func (d *TrafficRouteResource) validateStringMatcher(pathBuilder validators.Path
 	switch matcher.GetMatcherType().(type) {
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Exact:
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Prefix:
-		if len(matcher.GetPrefix()) == 0 {
+		if matcher.GetPrefix() == "" {
 			err.AddViolationAt(pathBuilder.Field("prefix"), `cannot be empty`)
 		}
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex:
-		if len(matcher.GetRegex()) == 0 {
+		if matcher.GetRegex() == "" {
 			err.AddViolationAt(pathBuilder.Field("regex"), `cannot be empty`)
 		}
 	default:

@@ -26,6 +26,9 @@ func Inspect() {
 
 		err := multizone.UniZone1.Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "echo"}),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
+			}),
 		))
 		Expect(err).ToNot(HaveOccurred())
 		// remove default
@@ -83,7 +86,7 @@ func Inspect() {
 			Entry("of clusters for a dataplane using Global CP", testCase{
 				cluster:     GlobalCluster,
 				args:        []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a dataplane using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
@@ -98,7 +101,7 @@ func Inspect() {
 			Entry("of clusters for a dataplane using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
 				args:        []string{"dataplane", "test-server", "--type", "clusters", "--mesh", meshName},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,

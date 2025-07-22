@@ -85,7 +85,7 @@ func LeaderElectionPostgres() {
 		Eventually(func(g Gomega) {
 			out, err := follower.GetKuma().GetMetrics()
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).To(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 1`, follower.Name())))
+			g.Expect(out).To(ContainSubstring(fmt.Sprintf(`leader{zone=%q} 1`, follower.Name())))
 		}, "30s", "1s").Should(Succeed())
 
 		// Shut down PostgreSQL
@@ -95,7 +95,7 @@ func LeaderElectionPostgres() {
 		Eventually(func(g Gomega) {
 			out, err := follower.GetKuma().GetMetrics()
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).To(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 0`, follower.Name())))
+			g.Expect(out).To(ContainSubstring(fmt.Sprintf(`leader{zone=%q} 0`, follower.Name())))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

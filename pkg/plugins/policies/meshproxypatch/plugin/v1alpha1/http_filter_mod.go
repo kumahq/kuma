@@ -26,21 +26,22 @@ func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 			listener := resource.Resource.(*envoy_listener.Listener)
 			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				for _, networkFilter := range chain.Filters {
-					if networkFilter.Name == "envoy.filters.network.http_connection_manager" {
-						hcm := &envoy_hcm.HttpConnectionManager{}
-						err := util_proto.UnmarshalAnyTo(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
-						if err != nil {
-							return err
-						}
-						if err := h.applyHCMModification(hcm); err != nil {
-							return err
-						}
-						any, err := util_proto.MarshalAnyDeterministic(hcm)
-						if err != nil {
-							return err
-						}
-						networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
+					if networkFilter.Name != "envoy.filters.network.http_connection_manager" {
+						continue
 					}
+					hcm := &envoy_hcm.HttpConnectionManager{}
+					err := util_proto.UnmarshalAnyTo(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
+					if err != nil {
+						return err
+					}
+					if err := h.applyHCMModification(hcm); err != nil {
+						return err
+					}
+					any, err := util_proto.MarshalAnyDeterministic(hcm)
+					if err != nil {
+						return err
+					}
+					networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
 				}
 			}
 		}
@@ -78,23 +79,24 @@ func (h *httpFilterModificator) applyHCMModification(hcm *envoy_hcm.HttpConnecti
 
 func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filterPatch *envoy_hcm.HttpFilter) error {
 	for _, filter := range hcm.HttpFilters {
-		if h.filterMatches(filter) {
-			var merged *anypb.Any
-			var err error
+		if !h.filterMatches(filter) {
+			continue
+		}
+		var merged *anypb.Any
+		var err error
 
-			if len(pointer.Deref(h.JsonPatches)) > 0 {
-				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), pointer.Deref(h.JsonPatches))
-			} else {
-				merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
-			}
+		if len(pointer.Deref(h.JsonPatches)) > 0 {
+			merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), pointer.Deref(h.JsonPatches))
+		} else {
+			merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+		}
 
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
+		}
 
-			filter.ConfigType = &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: merged,
-			}
+		filter.ConfigType = &envoy_hcm.HttpFilter_TypedConfig{
+			TypedConfig: merged,
 		}
 	}
 	return nil

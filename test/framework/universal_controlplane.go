@@ -87,10 +87,6 @@ func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
 	return protocol + "://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
 }
 
-func (c *UniversalControlPlane) GetGlobalStatusAPI() string {
-	panic("not implemented")
-}
-
 func (c *UniversalControlPlane) GetAPIServerAddress() string {
 	return "http://localhost:" + c.cpNetworking.ApiServerPort
 }
@@ -172,7 +168,7 @@ func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
 
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
 	data := fmt.Sprintf(
-		`'{"mesh": "%s", "tags": {"kuma.io/service":["%s"]}}'`,
+		`'{"mesh": %q, "tags": {"kuma.io/service":[%q]}}'`,
 		mesh,
 		service,
 	)
@@ -181,13 +177,13 @@ func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, e
 }
 
 func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["ingress"]}'`, zone)
+	data := fmt.Sprintf(`'{"zone": %q, "scope": ["ingress"]}'`, zone)
 
 	return c.generateToken("/zone", data)
 }
 
 func (c *UniversalControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["egress"]}'`, zone)
+	data := fmt.Sprintf(`'{"zone": %q, "scope": ["egress"]}'`, zone)
 
 	return c.generateToken("/zone", data)
 }
@@ -201,7 +197,7 @@ func (c *UniversalControlPlane) GenerateZoneToken(
 		return "", err
 	}
 
-	data := fmt.Sprintf(`'{"zone": "%s", "scope": %s}'`, zone, scopeJson)
+	data := fmt.Sprintf(`'{"zone": %q, "scope": %s}'`, zone, scopeJson)
 
 	return c.generateToken("/zone", data)
 }

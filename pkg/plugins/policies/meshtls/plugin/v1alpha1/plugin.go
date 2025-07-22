@@ -58,7 +58,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	log.V(1).Info("applying", "proxy-name", proxy.Dataplane.GetMeta().GetName())
 	policies, ok := proxy.Policies.Dynamic[api.MeshTLSType]
-	if !ok {
+	// Check if MeshTLS policy is present and relevant to the current Dataplane.
+	// - len(policies.FromRules.InboundRules) == 0 and len(policies.GatewayRules.InboundRules) == 0
+	//   means none of the matched policies apply to this specific Dataplane
+	//   (either as a gateway or a regular inbound)
+	// This avoids unnecessary processing and ensures that xDS config is only generated
+	// when there is an actual policy that affects this proxy.
+	if !ok || len(policies.FromRules.InboundRules) == 0 && len(policies.GatewayRules.InboundRules) == 0 {
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)

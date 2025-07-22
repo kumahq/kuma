@@ -88,23 +88,24 @@ func (n *networkFilterModificator) remove(chain *envoy_listener.FilterChain) {
 
 func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filterPatch *envoy_listener.Filter) error {
 	for _, filter := range chain.Filters {
-		if n.filterMatches(filter) {
-			var merged *anypb.Any
-			var err error
+		if !n.filterMatches(filter) {
+			continue
+		}
+		var merged *anypb.Any
+		var err error
 
-			if len(pointer.Deref(n.JsonPatches)) > 0 {
-				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), pointer.Deref(n.JsonPatches))
-			} else {
-				merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
-			}
+		if len(pointer.Deref(n.JsonPatches)) > 0 {
+			merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), pointer.Deref(n.JsonPatches))
+		} else {
+			merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+		}
 
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
+		}
 
-			filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-				TypedConfig: merged,
-			}
+		filter.ConfigType = &envoy_listener.Filter_TypedConfig{
+			TypedConfig: merged,
 		}
 	}
 	return nil

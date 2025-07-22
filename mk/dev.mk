@@ -7,7 +7,7 @@ GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
-ENVOY_VERSION ?= 1.34.1
+ENVOY_VERSION ?= 1.34.2
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -33,7 +33,7 @@ KUBEBUILDER_ASSETS_VERSION=1.32
 
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 # This needs to rely on version from mise
-export GOLANGCI_LINT_VERSION=v2.1.6
+export GOLANGCI_LINT_VERSION=v2.2.2
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 

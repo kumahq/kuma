@@ -32,9 +32,7 @@ func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) adm
 	switch req.Operation {
 	case admissionv1.Delete:
 		return v.handleDelete(ctx, req)
-	case admissionv1.Create:
-		fallthrough
-	case admissionv1.Update:
+	case admissionv1.Create, admissionv1.Update:
 		return v.handleUpdate(ctx, req)
 	}
 	return admission.Allowed("")

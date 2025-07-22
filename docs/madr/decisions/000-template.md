@@ -17,6 +17,10 @@ objective as possible only describing current state and what we need.}
 - Add advantages and disadvantages sections to proposed solutions.
 - When writing design remember to include history of how it evolved. This doc should be understandable without looking into git history.}
 
+## Security implications and review
+
+## Reliability implications
+
 ## Implications for Kong Mesh
 
 {In this section we should look into how this changes affect Kong Mesh. For example we might need to update Kong Mesh policies to new API.}
