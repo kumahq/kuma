@@ -132,13 +132,16 @@ func (Dataplane_Networking_Gateway_GatewayType) EnumDescriptor() ([]byte, []int)
 type Dataplane_Networking_TransparentProxying_IpFamilyMode int32
 
 const (
-	// This value is to support backward compatibility and should not be used in new data plane objects.
+	// This value is to support backward compatibility and should not be
+	// used in new data plane objects.
 	Dataplane_Networking_TransparentProxying_UnSpecified Dataplane_Networking_TransparentProxying_IpFamilyMode = 0
-	// Enables transparent proxying for both IPv4 and IPv6 traffic, This is the default.
+	// Enables transparent proxying for both IPv4 and IPv6 traffic, This is
+	// the default.
 	Dataplane_Networking_TransparentProxying_DualStack Dataplane_Networking_TransparentProxying_IpFamilyMode = 1
 	// Enables transparent proxying for IPv4 traffic only.
 	Dataplane_Networking_TransparentProxying_IPv4 Dataplane_Networking_TransparentProxying_IpFamilyMode = 2
-	// Enables transparent proxying for IPv6 traffic only. This mode is to be supported in the future.
+	// Enables transparent proxying for IPv6 traffic only. This mode is to
+	// be supported in the future.
 	Dataplane_Networking_TransparentProxying_IPv6 Dataplane_Networking_TransparentProxying_IpFamilyMode = 3
 )
 
