@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -63,6 +64,72 @@ type DestinationService struct {
 	Outbound    *xds_types.Outbound
 	Protocol    core_mesh.Protocol
 	ServiceName string
+}
+
+type IdentifierCallback func(ds *DestinationService, id kri.Identifier) string
+
+// IdentifierConstraintDefault is a type constraint for allowed types that can be used as a default value or callback function
+type IdentifierConstraintDefault interface {
+	~string |
+	func() string |
+	func(string) string |
+	func(string, uint32) string |
+	func(kri.Identifier) string
+}
+
+// IdentifierOrCallback returns a function that resolves the identifier for the destination service.
+// If Outbound has an associated resource and unified naming is enabled, it returns the KRI identifier
+// string. Otherwise, it runs each provided IdentifierCallback in order and returns the first non-empty
+// result. Callbacks do not need to check the unified naming flag. They are used for special cases,
+// like always preferring KRI regardless of naming mode.
+func (ds *DestinationService) IdentifierOrCallback(unifiedNamingEnabled bool) func(fns ...IdentifierCallback) string {
+	return func(fns ...IdentifierCallback) string {
+		var id kri.Identifier
+		var resourceExists bool
+
+		if ds.Outbound != nil {
+			if id, resourceExists = ds.Outbound.AssociatedServiceResource(); resourceExists && unifiedNamingEnabled {
+				return id.String()
+			}
+		}
+
+		for _, fn := range fns {
+			if name := fn(ds, id); name != "" {
+				return name
+			}
+		}
+
+		return ""
+	}
+}
+
+// DefaultTo returns an IdentifierCallback based on the given default logic.
+// It supports several fallback strategies:
+//   - string: return the string directly
+//   - func() string: call the function with no arguments
+//   - func(string) string: call with ds.ServiceName
+//   - func(string, uint32) string: call with ds.Outbound.GetAddress() and GetPort()
+//   - func(kri.Identifier) string: call with the resolved kri.Identifier
+// If the input does not match any supported type or required data is missing, it returns an empty string.
+func DefaultTo[T IdentifierConstraintDefault](def T) IdentifierCallback {
+	return func(ds *DestinationService, id kri.Identifier) string {
+		switch fn := any(def).(type) {
+		case string:
+			return fn
+		case func() string:
+			return fn()
+		case func(string) string:
+			return fn(ds.ServiceName)
+		case func(string, uint32) string:
+			if ds.Outbound != nil {
+				return fn(ds.Outbound.GetAddress(), ds.Outbound.GetPort())
+			}
+		case func(kri.Identifier) string:
+			return fn(id)
+		}
+
+		return ""
+	}
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {

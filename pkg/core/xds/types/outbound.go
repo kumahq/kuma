@@ -33,6 +33,15 @@ func (o *Outbound) GetAddress() string {
 	return o.Address
 }
 
+// GetAddressOrDefault returns the outbound address from either LegacyOutbound or Address field.
+// If both are empty, it returns the fallback value
+func (o *Outbound) GetAddressOrDefault(def string) string {
+	if address := o.GetAddress(); address != "" {
+		return address
+	}
+	return def
+}
+
 // TagsOrNil returns tags if Outbound is defined using 'kuma.io/service' tag and so LegacyOutbound field is set.
 // Otherwise, it returns nil.
 func (o *Outbound) TagsOrNil() map[string]string {
