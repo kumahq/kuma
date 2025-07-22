@@ -31,7 +31,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		rs := core_xds.NewResourceSet()
 		body := make([]byte, 1024)
-		err := dynconf.AddConfigRoute(proxy, rs, "/meshmetric", body)
+		err := dynconf.AddConfigRoute(proxy, rs, "/meshmetric", "/meshmetric", body)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -71,12 +71,12 @@ var _ = Describe("AddConfigRoute", func() {
 		}
 		rs := core_xds.NewResourceSet()
 		body := make([]byte, 1024)
-		err := dynconf.AddConfigRoute(proxy, rs, "/meshmetric", body)
+		err := dynconf.AddConfigRoute(proxy, rs, "meshmetric", "/meshmetric", body)
 		Expect(err).ToNot(HaveOccurred())
 
 		// again with a different body size
 		newBody := make([]byte, 2048)
-		err = dynconf.AddConfigRoute(proxy, rs, "/dns", newBody)
+		err = dynconf.AddConfigRoute(proxy, rs, "dns", "/dns", newBody)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

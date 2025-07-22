@@ -26,7 +26,7 @@ const (
 	ListenerName = "_kuma:dynamicconfig"
 )
 
-func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, bytes []byte) error {
+func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, path string, bytes []byte) error {
 	var listener *envoy_listener.Listener
 	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
@@ -68,7 +68,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 				Match: &envoy_route.RouteMatch{
 					// Add a route for etag matching
 					PathSpecifier: &envoy_route.RouteMatch_Path{
-						Path: name,
+						Path: path,
 					},
 					Headers: []*envoy_route.HeaderMatcher{
 						{
@@ -96,7 +96,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 				),
 				Match: &envoy_route.RouteMatch{
 					PathSpecifier: &envoy_route.RouteMatch_Path{
-						Path: name,
+						Path: path,
 					},
 				},
 				ResponseHeadersToAdd: []*envoy_core_v3.HeaderValueOption{
