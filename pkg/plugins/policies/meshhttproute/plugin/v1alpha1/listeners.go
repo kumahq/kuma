@@ -44,12 +44,12 @@ func GenerateOutboundListener(
 	address := svc.Outbound.GetAddressOrDefault(defaultListenerAddress)
 	port := svc.Outbound.GetPort()
 
-	getIdentifier := svc.IdentifierOrCallback(unifiedNamingEnabled)
+	getIdentifierOrFallback := svc.ResolveIdentifierWithFallback(unifiedNamingEnabled)
 
-	routeConfigName := svc.IdentifierOrCallback(true)(meshroute_xds.DefaultTo(envoy_names.GetOutboundRouteName))
-	virtualHostName := getIdentifier(meshroute_xds.DefaultTo(svc.ServiceName))
-	listenerName := getIdentifier(meshroute_xds.DefaultTo(envoy_names.GetOutboundListenerName(address, port)))
-	listenerStatPrefix := getIdentifier()
+	routeConfigName := svc.ResolveIdentifierWithFallback(true)(envoy_names.GetOutboundRouteName(svc.ServiceName))
+	virtualHostName := getIdentifierOrFallback(svc.ServiceName)
+	listenerName := getIdentifierOrFallback(envoy_names.GetOutboundListenerName(address, port))
+	listenerStatPrefix := getIdentifierOrFallback("")
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
