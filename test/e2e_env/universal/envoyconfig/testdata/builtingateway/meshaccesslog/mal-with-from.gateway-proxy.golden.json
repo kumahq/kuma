@@ -123,7 +123,7 @@
                   "endpoint": {
                     "address": {
                       "pipe": {
-                        "path": "/tmp/kuma-dp-399413355/kuma-readiness-reporter.sock"
+                        "path": "/tmp/kuma-readiness-reporter.sock"
                       }
                     }
                   }

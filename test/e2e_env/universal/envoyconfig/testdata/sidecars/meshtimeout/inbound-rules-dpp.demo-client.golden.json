@@ -188,7 +188,7 @@
                   "endpoint": {
                     "address": {
                       "pipe": {
-                        "path": "/tmp/kuma-dp-3050814591/kuma-readiness-reporter.sock"
+                        "path": "/tmp/kuma-readiness-reporter.sock"
                       }
                     }
                   }
