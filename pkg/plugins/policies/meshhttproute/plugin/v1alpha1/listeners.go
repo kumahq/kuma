@@ -30,46 +30,62 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+const defaultListenerAddress = "127.0.0.1"
+
 func GenerateOutboundListener(
 	proxy *core_xds.Proxy,
 	svc meshroute_xds.DestinationService,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
 ) (*core_xds.Resource, error) {
-	routeConfigName := svc.Outbound.NameOrEmpty()
-	if routeConfigName == "" {
-		routeConfigName = envoy_names.GetOutboundRouteName(svc.ServiceName)
+	unifiedNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	transparentProxyEnabled := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
+
+	address := svc.Outbound.GetAddressOrDefault(defaultListenerAddress)
+	port := svc.Outbound.GetPort()
+
+	getIdentifier := svc.IdentifierOrCallback(unifiedNamingEnabled)
+
+	routeConfigName := svc.IdentifierOrCallback(true)(meshroute_xds.DefaultTo(envoy_names.GetOutboundRouteName))
+	virtualHostName := getIdentifier(meshroute_xds.DefaultTo(svc.ServiceName))
+	listenerName := getIdentifier(meshroute_xds.DefaultTo(envoy_names.GetOutboundListenerName(address, port)))
+	listenerStatPrefix := getIdentifier()
+
+	route := &xds.HttpOutboundRouteConfigurer{
+		RouteConfigName: routeConfigName,
+		VirtualHostName: virtualHostName,
+		Routes:          routes,
+		DpTags:          originDPPTags,
 	}
 
-	bindOutboundsEnabled := proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds)
-	transparentProxyEnabled := !bindOutboundsEnabled && proxy.GetTransparentProxy().Enabled()
+	hcm := &envoy_listeners_v3.HttpConnectionManagerConfigurer{
+		StatsName:                virtualHostName,
+		ForwardClientCertDetails: false,
+		NormalizePath:            true,
+		InternalAddresses:        proxy.InternalAddresses,
+	}
 
-	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.AddFilterChainConfigurer(hcm)).
+		Configure(envoy_listeners.AddFilterChainConfigurer(route)).
+		ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()) // TODO: https://github.com/kumahq/kuma/issues/3325
+
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
+		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
-				StatsName:                svc.ServiceName,
-				ForwardClientCertDetails: false,
-				NormalizePath:            true,
-				InternalAddresses:        proxy.InternalAddresses,
-			})).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
-				VirtualHostName: svc.ServiceName,
-				RouteConfigName: routeConfigName,
-				Routes:          routes,
-				DpTags:          originDPPTags,
-			})).
-			ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()))). // TODO: https://github.com/kumahq/kuma/issues/3325
-		Build()
+		Configure(envoy_listeners.FilterChain(filterChain))
+
+	resource, err := listener.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	return &core_xds.Resource{
-		Name:           listener.GetName(),
+		Name:           resource.GetName(),
 		Origin:         generator.OriginOutbound,
-		Resource:       listener,
+		Resource:       resource,
 		ResourceOrigin: svc.Outbound.Resource,
 		Protocol:       svc.Protocol,
 	}, nil
