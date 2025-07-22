@@ -72,7 +72,7 @@ func startTrace(ctx context.Context, tracer trace.Tracer, name string) (context.
 	return ctx, span
 }
 
-func doRequest[T message]( // nolint:nonamedreturns
+func doRequest[T message]( //nolint:nonamedreturns
 	ctx context.Context,
 	tracer trace.Tracer,
 	resManager manager.ReadOnlyResourceManager,

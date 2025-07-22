@@ -92,7 +92,7 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID c
 	}
 
 	// we need to use appCtx here, "ctx" should not be used because it has the same lifetime with the underlying gRPC stream itself and the gRPC stream is terminating now
-	d.deregister(d.appCtx, streamID, proxyKey) // nolint: contextcheck
+	d.deregister(d.appCtx, streamID, proxyKey) //nolint:contextcheck
 }
 
 func (d *DataplaneLifecycle) register(
