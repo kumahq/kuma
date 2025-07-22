@@ -925,7 +925,7 @@ func (r *resourceEndpoints) getPoliciesConf(mapToResponse matchedPoliciesToRespo
 
 		out, err := mapToResponse(matchedPolicies, request, dataplane, baseMeshContext.Resources())
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to TODO")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed building response")
 			return
 		}
 
@@ -979,14 +979,13 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 	if err != nil {
 		return nil, err
 	}
-	inbound := dataplane.Spec.GetNetworking().GetInboundForSectionName(inboundKri.SectionName)
-	if inbound == nil {
+	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
+	if len(inbounds) == 0 {
 		return nil, errors.New("inbound not found")
 	}
-	inboundInterface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 	inboundKey := core_rules.InboundListener{
-		Address: inboundInterface.DataplaneIP,
-		Port:    inboundInterface.DataplanePort,
+		Address: inbounds[0].DataplaneIP,
+		Port:    inbounds[0].DataplanePort,
 	}
 
 	var conf []api_common.InboundPolicyConf

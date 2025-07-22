@@ -288,13 +288,17 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 	return nil
 }
 
-func (n *Dataplane_Networking) GetInboundForSectionName(sectionName string) *Dataplane_Networking_Inbound {
+func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
+	var selectedInbounds []InboundInterface
 	for _, inbound := range n.Inbound {
-		if inbound.Name == sectionName || strconv.Itoa(int(inbound.Port)) == sectionName {
-			return inbound
+		if inbound.State == Dataplane_Networking_Inbound_Ignored {
+			continue
+		}
+		if sectionName == "" || inbound.GetSectionName() == sectionName {
+			selectedInbounds = append(selectedInbounds, n.ToInboundInterface(inbound))
 		}
 	}
-	return nil
+	return selectedInbounds
 }
 
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
