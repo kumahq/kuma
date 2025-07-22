@@ -3,7 +3,11 @@ fmt: golangci-lint-fmt fmt/proto fmt/ci ## Dev: Run various format tools
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
+ifndef CI
 	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT) -i
+else
+	@echo "skipping clang-format as it's done as a github action"
+endif
 
 .PHONY: tidy
 tidy:
