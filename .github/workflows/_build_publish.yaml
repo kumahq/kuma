@@ -54,6 +54,8 @@ jobs:
         with:
           go-version-file: go.mod
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        env:
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       - run: |
           make build
       - id: annotate-image-tag
@@ -106,6 +108,8 @@ jobs:
         with:
           go-version-file: go.mod
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        env:
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
@@ -221,6 +225,8 @@ jobs:
           cache-dependency-path: |
             go.sum
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        env:
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       - name: package-helm-chart
         id: package-helm
         env:

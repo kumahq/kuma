@@ -48,6 +48,8 @@ jobs:
         with:
           go-version-file: go.mod
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        env:
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
         if: contains(github.event.comment.body, '/format')

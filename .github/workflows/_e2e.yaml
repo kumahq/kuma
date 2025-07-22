@@ -35,6 +35,8 @@ jobs:
         with:
           go-version-file: go.mod
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        env:
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
