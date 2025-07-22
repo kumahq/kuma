@@ -85,13 +85,13 @@ func (n *networkFilterModificator) remove(chain *envoy_listener.FilterChain) {
 func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filterPatch *envoy_listener.Filter) error {
 	for _, filter := range chain.Filters {
 		if n.filterMatches(filter) {
-			any, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+			typedConfig, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
 			if err != nil {
 				return err
 			}
 
 			filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-				TypedConfig: any,
+				TypedConfig: typedConfig,
 			}
 		}
 	}

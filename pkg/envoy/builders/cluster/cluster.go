@@ -81,16 +81,16 @@ func NewRingHashConfig() *Builder[envoy_cluster.Cluster_RingHashLbConfig] {
 	return &Builder[envoy_cluster.Cluster_RingHashLbConfig]{}
 }
 
-func MinRingSize(min uint32) Configurer[envoy_cluster.Cluster_RingHashLbConfig] {
+func MinRingSize(minimum uint32) Configurer[envoy_cluster.Cluster_RingHashLbConfig] {
 	return func(c *envoy_cluster.Cluster_RingHashLbConfig) error {
-		c.MinimumRingSize = util_proto.UInt64(uint64(min))
+		c.MinimumRingSize = util_proto.UInt64(uint64(minimum))
 		return nil
 	}
 }
 
-func MaxRingSize(max uint32) Configurer[envoy_cluster.Cluster_RingHashLbConfig] {
+func MaxRingSize(maximum uint32) Configurer[envoy_cluster.Cluster_RingHashLbConfig] {
 	return func(c *envoy_cluster.Cluster_RingHashLbConfig) error {
-		c.MaximumRingSize = util_proto.UInt64(uint64(max))
+		c.MaximumRingSize = util_proto.UInt64(uint64(maximum))
 		return nil
 	}
 }

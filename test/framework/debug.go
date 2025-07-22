@@ -249,8 +249,7 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 
 			dpName := dpObj.Name
 			args := []string{"inspect", string(dpType), dpName, "--type", inspectType}
-			switch inspectType {
-			case "get":
+			if inspectType == "get" {
 				if dpType == zoneingressType {
 					args = []string{"get", "zone-ingress", dpName, "-oyaml"}
 				} else {

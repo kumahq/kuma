@@ -57,7 +57,6 @@ linters:
     gocritic:
       disabled-checks:
         - appendAssign
-        - builtinShadow
         - commentedOutCode
         - deferInLoop
         - docStub
@@ -65,11 +64,8 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - nilValReturn
         - paramTypeCombine
         - rangeValCopy
-        - singleCaseSwitch
-        - sloppyReassign
         - unnamedResult
         - whyNoLint
       enable-all: true

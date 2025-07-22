@@ -338,13 +338,13 @@ func InternalAddressesFromCIDRs(cidrs []string) []InternalAddress {
 	return internalAddresses
 }
 
-func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
+func (s TagSelectorSet) Add(n mesh_proto.TagSelector) TagSelectorSet {
 	for _, old := range s {
-		if new.Equal(old) {
+		if n.Equal(old) {
 			return s
 		}
 	}
-	return append(s, new)
+	return append(s, n)
 }
 
 func (s TagSelectorSet) Matches(tags map[string]string) bool {

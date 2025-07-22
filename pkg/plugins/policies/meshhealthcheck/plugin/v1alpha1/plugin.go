@@ -209,8 +209,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				}
 
 				for typ, resources := range typedResources {
-					switch typ {
-					case envoy_resource.ClusterType:
+					if typ == envoy_resource.ClusterType {
 						err := configureClusters(resources, conf.Conf[0].(api.Conf), mesh_proto.MultiValueTagSet{})
 						if err != nil {
 							return err
@@ -230,8 +229,7 @@ func applyToRealResource(meshCtx xds_context.MeshContext, rules outbound.Resourc
 	}
 
 	for typ, resources := range resourcesByType {
-		switch typ {
-		case envoy_resource.ClusterType:
+		if typ == envoy_resource.ClusterType {
 			err := configureClusters(resources, conf.Conf[0].(api.Conf), tagSet)
 			if err != nil {
 				return err
