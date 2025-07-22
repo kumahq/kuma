@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"slices"
 
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/dpapi"
@@ -66,7 +67,8 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 		if err != nil {
 			return nil, err
 		}
-		err = dynconf.AddConfigRoute(proxy, rs, dpapi.PATH, bytes)
+		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+		err = dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes)
 		if err != nil {
 			return nil, err
 		}
