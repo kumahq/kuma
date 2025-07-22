@@ -7,6 +7,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 )
 
+// DEPRECATED
 // DataSource defines the source of bytes to use.
 type DataSource struct {
 	// Data source is a secret with given Secret key.
