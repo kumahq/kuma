@@ -193,6 +193,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
 			}
 
+			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
+			}
+
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
@@ -308,7 +312,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			components = append(components, observabilityComponents...)
 
 			readinessReporter := readiness.NewReporter(
-				cfg.Dataplane.ReadinessUnixSocketEnabled,
+				cfg.Dataplane.ReadinessUnixSocketDisabled,
 				cfg.DataplaneRuntime.SocketDir,
 				bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
 				cfg.Dataplane.ReadinessPort)

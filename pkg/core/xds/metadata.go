@@ -21,23 +21,22 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 
 const (
 	// Supported Envoy node metadata fields.
-	FieldDataplaneAdminPort                  = "dataplane.admin.port"
-	FieldDataplaneAdminAddress               = "dataplane.admin.address"
-	FieldDataplaneReadinessUnixSocketEnabled = "dataplane.readinessUnixSocket.enabled"
-	FieldDataplaneReadinessPort              = "dataplane.readinessReporter.port"
-	FieldDataplaneAppProbeProxyEnabled       = "dataplane.appProbeProxy.enabled"
-	FieldDataplaneDNSPort                    = "dataplane.dns.port"
-	FieldDataplaneDataplaneResource          = "dataplane.resource"
-	FieldDynamicMetadata                     = "dynamicMetadata"
-	FieldDataplaneProxyType                  = "dataplane.proxyType"
-	FieldVersion                             = "version"
-	FieldPrefixDependenciesVersion           = "version.dependencies"
-	FieldFeatures                            = "features"
-	FieldWorkdir                             = "workdir"
-	FieldMetricsCertPath                     = "metricsCertPath"
-	FieldMetricsKeyPath                      = "metricsKeyPath"
-	FieldSystemCaPath                        = "systemCaPath"
-	FieldTransparentProxy                    = "transparentProxy"
+	FieldDataplaneAdminPort            = "dataplane.admin.port"
+	FieldDataplaneAdminAddress         = "dataplane.admin.address"
+	FieldDataplaneReadinessPort        = "dataplane.readinessReporter.port"
+	FieldDataplaneAppProbeProxyEnabled = "dataplane.appProbeProxy.enabled"
+	FieldDataplaneDNSPort              = "dataplane.dns.port"
+	FieldDataplaneDataplaneResource    = "dataplane.resource"
+	FieldDynamicMetadata               = "dynamicMetadata"
+	FieldDataplaneProxyType            = "dataplane.proxyType"
+	FieldVersion                       = "version"
+	FieldPrefixDependenciesVersion     = "version.dependencies"
+	FieldFeatures                      = "features"
+	FieldWorkdir                       = "workdir"
+	FieldMetricsCertPath               = "metricsCertPath"
+	FieldMetricsKeyPath                = "metricsKeyPath"
+	FieldSystemCaPath                  = "systemCaPath"
+	FieldTransparentProxy              = "transparentProxy"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -55,22 +54,21 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	Resource                   model.Resource
-	AdminPort                  uint32
-	AdminAddress               string
-	ReadinessUnixSocketEnabled bool
-	ReadinessPort              uint32
-	AppProbeProxyEnabled       bool
-	DNSPort                    uint32
-	DynamicMetadata            map[string]string
-	ProxyType                  mesh_proto.ProxyType
-	Version                    *mesh_proto.Version
-	Features                   xds_types.Features
-	WorkDir                    string
-	MetricsCertPath            string
-	MetricsKeyPath             string
-	SystemCaPath               string
-	TransparentProxy           *tproxy_dp.DataplaneConfig
+	Resource             model.Resource
+	AdminPort            uint32
+	AdminAddress         string
+	ReadinessPort        uint32
+	AppProbeProxyEnabled bool
+	DNSPort              uint32
+	DynamicMetadata      map[string]string
+	ProxyType            mesh_proto.ProxyType
+	Version              *mesh_proto.Version
+	Features             xds_types.Features
+	WorkDir              string
+	MetricsCertPath      string
+	MetricsKeyPath       string
+	SystemCaPath         string
+	TransparentProxy     *tproxy_dp.DataplaneConfig
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -121,13 +119,6 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 		return 0
 	}
 	return m.AdminPort
-}
-
-func (m *DataplaneMetadata) GetReadinessUnixSocketEnabled() bool {
-	if m == nil {
-		return false
-	}
-	return m.ReadinessUnixSocketEnabled
 }
 
 func (m *DataplaneMetadata) GetReadinessPort() uint32 {
@@ -206,7 +197,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
-	metadata.ReadinessUnixSocketEnabled = boolMetadata(xdsMetadata, FieldDataplaneReadinessUnixSocketEnabled)
 	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
 	metadata.AppProbeProxyEnabled = boolMetadata(xdsMetadata, FieldDataplaneAppProbeProxyEnabled)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)

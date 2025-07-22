@@ -20,7 +20,6 @@
  "caCert": "",
  "dynamicMetadata": null,
  "dnsPort": 15054,
- "readinessUnixSocketEnabled": true,
  "readinessPort": 9902,
  "operatingSystem": "linux",
  "features": [

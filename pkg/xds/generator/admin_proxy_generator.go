@@ -98,7 +98,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
-	unixSocketEnabled := proxy.Metadata.GetReadinessUnixSocketEnabled()
+	unixSocketEnabled := proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket)
 	tcpReadinessReporterDisabled := readinessPort == 0
 	tcpReadinessReporterEnabled := readinessPort > 0
 

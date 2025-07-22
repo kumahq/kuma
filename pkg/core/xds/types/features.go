@@ -33,3 +33,5 @@ const FeatureBindOutbounds string = "feature-bind-outbounds"
 // proxy passthrough, and system format for internal Kuma resources that users typically
 // don't need to care about unless debugging Kuma.
 const FeatureUnifiedResourceNaming string = "feature-unified-resource-naming"
+
+const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"

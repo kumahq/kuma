@@ -24,21 +24,21 @@ const (
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
-	unixSocketEnabled bool
-	socketDir         string
-	localListenAddr   string
-	localListenPort   uint32
-	isTerminating     atomic.Bool
+	unixSocketDisabled bool
+	socketDir          string
+	localListenAddr    string
+	localListenPort    uint32
+	isTerminating      atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketEnabled bool, socketDir string, localIPAddr string, localListenPort uint32) *Reporter {
+func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32) *Reporter {
 	return &Reporter{
-		unixSocketEnabled: unixSocketEnabled,
-		socketDir:         socketDir,
-		localListenPort:   localListenPort,
-		localListenAddr:   localIPAddr,
+		unixSocketDisabled: unixSocketDisabled,
+		socketDir:          socketDir,
+		localListenPort:    localListenPort,
+		localListenAddr:    localIPAddr,
 	}
 }
 
@@ -47,7 +47,7 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 	addr := fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
 
 	switch {
-	case r.unixSocketEnabled:
+	case !r.unixSocketDisabled:
 		protocol = "unix"
 		socketPath := core_xds.ReadinessReporterSocketName(r.socketDir)
 		addr = socketPath

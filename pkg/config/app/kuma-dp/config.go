@@ -30,7 +30,6 @@ var DefaultConfig = func() Config {
 			Name:                          "", // Dataplane name must be set explicitly
 			DrainTime:                     config_types.Duration{Duration: 30 * time.Second},
 			ProxyType:                     "dataplane",
-			ReadinessUnixSocketEnabled:    true,
 			ReadinessPort:                 9902,
 			ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
 			ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
@@ -141,8 +140,8 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// ReadinessUnixSocketEnabled enables readiness check via Unix socket.
-	ReadinessUnixSocketEnabled bool `json:"readinessUnixSocketEnabled,omitempty" envconfig:"kuma_readiness_unix_socket_enabled"`
+	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
+	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
