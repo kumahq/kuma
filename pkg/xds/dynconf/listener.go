@@ -12,6 +12,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/xds/dynconf/system_names"
@@ -27,17 +28,9 @@ const (
 
 func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, bytes []byte) error {
 	var listener *envoy_listener.Listener
-	listenerName := ListenerName
-	routeNameFn := routeName
 	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
-	notModifiedRouteName := func(name string) string { return "" }
-
-	// TODO(unified-resource-naming): adjust when legacy naming is removed
-	if unifiedNamingEnabled {
-		listenerName = system_names.SystemResourceNameDynamicConfigListener
-		routeNameFn = system_names.SystemResourceNameDynamicConfigRoute
-		notModifiedRouteName = system_names.SystemResourceNameDynamicConfigRouteNotModified
-	}
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
+	listenerName := getNameOrDefault(system_names.SystemResourceNameDynamicConfigListener, ListenerName)
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin == Origin {
@@ -71,7 +64,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 		routeConfig := manager.GetRouteConfig()
 		routeConfig.VirtualHosts[0].Routes = append(routeConfig.VirtualHosts[0].Routes,
 			&envoy_route.Route{
-				Name: notModifiedRouteName(name),
+				Name: getNameOrDefault(system_names.SystemResourceNameDynamicConfigRouteNotModified(name), ""),
 				Match: &envoy_route.RouteMatch{
 					// Add a route for etag matching
 					PathSpecifier: &envoy_route.RouteMatch_Path{
@@ -97,7 +90,10 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 				},
 			},
 			&envoy_route.Route{
-				Name: routeNameFn(name),
+				Name: getNameOrDefault(
+					system_names.SystemResourceNameDynamicConfigRoute(name),
+					ListenerName+":"+name,
+				),
 				Match: &envoy_route.RouteMatch{
 					PathSpecifier: &envoy_route.RouteMatch_Path{
 						Path: name,
@@ -133,8 +129,4 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 	}
 
 	return nil
-}
-
-func routeName(name string) string {
-	return ListenerName + ":" + name
 }

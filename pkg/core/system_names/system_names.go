@@ -26,3 +26,12 @@ func Join(parts ...string) string {
 func cleanName(name string) string {
 	return cleanNameRegex.ReplaceAllString(name, "")
 }
+
+func GetNameOrDefault(predicate bool) func(name string, defaultName string) string {
+	return func(name string, defaultName string) string {
+		if predicate {
+			return name
+		}
+		return defaultName
+	}
+}
