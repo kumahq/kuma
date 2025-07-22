@@ -22,6 +22,7 @@ jobs:
           go-version-file: go.mod
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       - run: |
           git config --global user.email "110050114+kumahq[bot]@users.noreply.github.com"
