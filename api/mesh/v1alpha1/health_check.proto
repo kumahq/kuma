@@ -22,8 +22,7 @@ message HealthCheck {
 
   // List of selectors to match dataplanes that should be configured to do
   // health checks.
-  repeated Selector sources = 1
-      [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
 
   // List of selectors to match services that need to be health checked.
   repeated Selector destinations = 2
@@ -32,29 +31,23 @@ message HealthCheck {
   // Conf defines configuration for various types of health checking.
   message Conf {
     // Interval between consecutive health checks.
-    google.protobuf.Duration interval = 1 [
-      (validate.rules).duration = {
-        required : true,
-        gt {}
-      }
-    ];
+    google.protobuf.Duration interval = 1 [ (validate.rules).duration = {
+      required : true,
+      gt {}
+    } ];
 
     // Maximum time to wait for a health check response.
-    google.protobuf.Duration timeout = 2 [
-      (validate.rules).duration = {
-        required : true,
-        gt {}
-      }
-    ];
+    google.protobuf.Duration timeout = 2 [ (validate.rules).duration = {
+      required : true,
+      gt {}
+    } ];
 
     // Number of consecutive unhealthy checks before considering a host
     // unhealthy.
-    uint32 unhealthy_threshold = 3
-        [ (validate.rules).uint32 = {gt : 0} ];
+    uint32 unhealthy_threshold = 3 [ (validate.rules).uint32 = {gt : 0} ];
 
     // Number of consecutive healthy checks before considering a host healthy.
-    uint32 healthy_threshold = 4
-        [ (validate.rules).uint32 = {gt : 0} ];
+    uint32 healthy_threshold = 4 [ (validate.rules).uint32 = {gt : 0} ];
 
     // If specified, Envoy will start health checking after for a random time in
     // ms between 0 and initial_jitter. This only applies to the first health
