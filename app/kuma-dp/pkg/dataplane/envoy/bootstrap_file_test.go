@@ -36,7 +36,7 @@ var _ = Describe("Bootstrap File", func() {
 `
 			// and
 			runtime := kuma_dp.DataplaneRuntime{
-				ConfigDir: configDir,
+				WorkDir: configDir,
 			}
 
 			// when
