@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: can't use _policies endpoint without meshService enabled",
+ "details": "bad request: can't use _policies endpoint without meshService enabled"
+}

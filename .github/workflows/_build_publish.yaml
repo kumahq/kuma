@@ -134,7 +134,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.2.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b5b91fe7aca381f8d31a30c1916151e7eaa7f16a # v4.2.3
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -143,7 +143,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.2.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b5b91fe7aca381f8d31a30c1916151e7eaa7f16a # v4.2.3
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -165,7 +165,7 @@ jobs:
           make docker/push/${{ matrix.image }}
           make docker/manifest/${{ matrix.image }}
       - name: Install regctl
-        uses: regclient/actions/regctl-installer@0a960cee89b1ef446f3d33b58064083fdd7728cb
+        uses: regclient/actions/regctl-installer@91a43cffe6e8c0c49ff25e11ede826a3c6f45dbd
       - name: image digest
         id: image_digest
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
@@ -192,7 +192,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a18abf762d6e2444bcbfd20de70451ea1e3bc1b1 # v4.1.1
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@80442c24d193f2a116f9305723ac144a297a8c6a # v4.1.2
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}

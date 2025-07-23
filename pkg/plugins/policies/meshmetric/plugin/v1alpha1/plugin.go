@@ -16,7 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/mads"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -190,7 +192,8 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 	if err != nil {
 		return err
 	}
-	return dynconf.AddConfigRoute(proxy, rs, dpapi.PATH, marshal)
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	return dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
 }
 
 func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {

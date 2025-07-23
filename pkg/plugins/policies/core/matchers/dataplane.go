@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -191,7 +192,10 @@ func DppSelectedByPolicy(
 			return []core_rules.InboundListener{}, nil, false, nil
 		}
 		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
-			inbounds := inboundsSelectedBySectionName(pointer.Deref(ref.SectionName), dpp)
+			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
+			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
+				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
+			})
 			return inbounds, nil, false, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -234,23 +238,6 @@ func DppSelectedByPolicy(
 
 func allDataplanesSelected(ref common_api.TargetRef) bool {
 	return pointer.Deref(ref.Name) == "" && pointer.Deref(ref.Namespace) == "" && pointer.Deref(ref.Labels) == nil
-}
-
-func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
-	var selectedInbounds []core_rules.InboundListener
-	for _, inbound := range dpp.Spec.GetNetworking().Inbound {
-		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-			continue
-		}
-		if sectionName == "" || inbound.Name == sectionName {
-			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
-			selectedInbounds = append(selectedInbounds, core_rules.InboundListener{
-				Address: intf.DataplaneIP,
-				Port:    intf.DataplanePort,
-			})
-		}
-	}
-	return selectedInbounds
 }
 
 // TODO this is common functionality with selecting MeshService by labels, we should refactor this and extract to some common function
