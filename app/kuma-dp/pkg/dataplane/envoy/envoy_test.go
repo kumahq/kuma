@@ -84,7 +84,7 @@ var _ = Describe("Envoy", func() {
 				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath:    filepath.Join("testdata", "envoy-mock.exit-0.sh"),
-					ConfigDir:     configDir,
+					WorkDir:       configDir,
 					EnvoyLogLevel: "off",
 				},
 			}
@@ -144,7 +144,7 @@ var _ = Describe("Envoy", func() {
 				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath:    filepath.Join("testdata", "envoy-mock.exit-0.sh"),
-					ConfigDir:     configDir,
+					WorkDir:       configDir,
 					Concurrency:   9,
 					EnvoyLogLevel: "off",
 				},
@@ -185,7 +185,7 @@ var _ = Describe("Envoy", func() {
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath: filepath.Join("testdata", "envoy-mock.exit-1.sh"),
-					ConfigDir:  configDir,
+					WorkDir:    configDir,
 				},
 			}
 
@@ -220,7 +220,7 @@ var _ = Describe("Envoy", func() {
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath: "nonexistent",
-					ConfigDir:  configDir,
+					WorkDir:    configDir,
 				},
 			}
 			_, err := envoy.New(envoy.Opts{
