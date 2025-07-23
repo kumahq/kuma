@@ -1,0 +1,41 @@
+#/meshes/default/dataplanes/dp-1/_policies 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: MeshTrace
+name: default
+mesh: default
+spec:
+  default:
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector:9411/api/v2/spans
+          apiVersion: httpJson
+---
+type: MeshTrace
+name: default-1
+mesh: default
+spec:
+  default:
+    sampling:
+      overall: 80
+      random: 60
+      client: 40
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector:9411/api/v2/spans
+          apiVersion: httpJson
