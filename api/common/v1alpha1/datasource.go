@@ -7,7 +7,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 )
 
-// Deprecated: use api/common/v1alpha1/datasource/datasource.go
+// TODO: replace usage with api/common/v1alpha1/datasource/datasource.go and deprecate this
 // DataSource defines the source of bytes to use.
 type DataSource struct {
 	// Data source is a secret with given Secret key.
