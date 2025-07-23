@@ -15,7 +15,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -1850,7 +1849,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 func serviceName(id kri.Identifier, port int32) string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	Expect(err).ToNot(HaveOccurred())
-	return destinationname.LegacyName(id, desc.ShortName, port)
+	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, desc.ShortName, port)
 }
 
 func contextWithEgressEnabled() xds_context.Context {

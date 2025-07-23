@@ -4,19 +4,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
-
-func (m *MeshExternalServiceResource) DestinationName(port int32) string {
-	if port == 0 {
-		port = m.Spec.Match.Port
-	}
-	return destinationname.LegacyName(kri.From(m, ""), MeshExternalServiceResourceTypeDescriptor.ShortName, port)
-}
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {
 	return m.GetMeta().GetLabels() == nil || m.GetMeta().GetLabels()[mesh_proto.ZoneTag] == "" || m.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone

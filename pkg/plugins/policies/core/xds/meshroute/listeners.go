@@ -6,6 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -160,7 +161,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			DestinationService{
 				Outbound:    outbound,
 				Protocol:    protocol,
-				ServiceName: svc.DestinationName(port.GetValue()),
+				ServiceName: destinationname.MustResolve(false, svc, port),
 			},
 		)
 	}
@@ -168,21 +169,23 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 	return result
 }
 
-func GetServiceProtocolPortFromRef(
+func DestinationPortFromRef(
 	meshCtx xds_context.MeshContext,
 	ref *resolve.RealResourceBackendRef,
-) (string, core_mesh.Protocol, int32, bool) {
-	dest := meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource))
-	if dest == nil {
-		return "", "", 0, false
+) (core.Destination, core.Port, bool) {
+	var dest core.Destination
+	var port core.Port
+	var ok bool
+
+	if dest = meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource)); dest == nil {
+		return dest, port, false
 	}
-	port, ok := dest.FindPortByName(ref.Resource.SectionName)
-	if !ok {
-		return "", "", 0, false
+
+	if port, ok = dest.FindPortByName(ref.Resource.SectionName); !ok {
+		return dest, port, false
 	}
-	service := dest.DestinationName(port.GetValue())
-	protocol := port.GetProtocol()
-	return service, protocol, port.GetValue(), true
+
+	return dest, port, true
 }
 
 func makeSplit(
@@ -220,16 +223,18 @@ func handleRealResources(
 		return nil
 	}
 
-	service, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref)
+	dest, port, ok := DestinationPortFromRef(meshCtx, ref)
 	if !ok {
 		return nil
 	}
-	if _, ok := protocols[protocol]; !ok {
+
+	if _, ok := protocols[port.GetProtocol()]; !ok {
 		return nil
 	}
 
-	dest := meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource))
-	clusterName := dest.DestinationName(port)
+	service := destinationname.MustResolve(false, dest, port)
+	clusterName := service
+
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
