@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
@@ -121,9 +122,9 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		var changeReasons []string
 
 		identities := buildIdentities(dpps)
-		if !reflect.DeepEqual(ms.Spec.Identities, identities) {
+		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
-			ms.Spec.Identities = identities
+			ms.Spec.Identities = &identities
 		}
 
 		mesh := meshByKey[core_model.ResourceKey{Name: ms.Meta.GetMesh()}]

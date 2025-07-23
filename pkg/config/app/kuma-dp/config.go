@@ -36,7 +36,7 @@ var DefaultConfig = func() Config {
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
-			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
+			WorkDir:    "", // if left empty, a temporary directory will be generated automatically
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
@@ -193,8 +193,12 @@ type DataplaneRuntime struct {
 
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
-	// Dir to store auto-generated Envoy bootstrap config in.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	// ConfigDir was used to store Envoy bootstrap config.
+	// Deprecated: use WorkDir instead.
+	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir" deprecated:"use WorkDir instead"`
+	// WorkDir is the directory to store auto-generated Envoy bootstrap config.
+	// It overrides values from deprecated ConfigDir and SocketDir.
+	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir" overrides:"ConfigDir,SocketDir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
@@ -217,6 +221,7 @@ type DataplaneRuntime struct {
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process
+	// Deprecated: use WorkDir instead
 	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
@@ -232,6 +237,12 @@ type DataplaneRuntime struct {
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
 	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
 	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
+	// UnifiedResourceNamingEnabled enables the new naming format for Envoy resource and stat names.
+	// When set to true, the data plane proxy uses:
+	// - KRI-based format for resources tied to distinct Kuma resources
+	// - System format for internal Kuma resources that users typically don't need to care about unless debugging Kuma
+	// - Contextual format for proxy-scoped resources like inbounds and transparent proxy passthrough
+	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_unified_resource_naming_enabled"`
 }
 
 type Metrics struct {

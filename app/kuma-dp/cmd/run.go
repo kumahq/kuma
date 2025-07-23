@@ -136,15 +136,25 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
-			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
+			if cfg.DataplaneRuntime.WorkDir == "" && cfg.DataplaneRuntime.ConfigDir != "" {
+				runLog.Info("ConfigDir is deprecated, please use WorkDir instead")
+				cfg.DataplaneRuntime.WorkDir = cfg.DataplaneRuntime.ConfigDir
+			}
+			if cfg.DataplaneRuntime.SocketDir != "" {
+				runLog.Info("SocketDir is deprecated, please use WorkDir instead")
+			} else {
+				cfg.DataplaneRuntime.SocketDir = cfg.DataplaneRuntime.WorkDir
+			}
+
+			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" || cfg.DNS.ConfigDir == "" {
 				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
 
-				if cfg.DataplaneRuntime.ConfigDir == "" {
-					cfg.DataplaneRuntime.ConfigDir = tmpDir
+				if cfg.DataplaneRuntime.WorkDir == "" {
+					cfg.DataplaneRuntime.WorkDir = tmpDir
 				}
 
 				if cfg.DataplaneRuntime.SocketDir == "" {
@@ -188,6 +198,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			case "DELTA_GRPC":
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)
 			}
+
+			if cfg.DataplaneRuntime.UnifiedResourceNamingEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
+			}
+
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
@@ -286,13 +301,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			components = append(components, envoyComponent)
-			components = append(components, component.NewResilientComponent(
-				runLog.WithName("configfetcher"),
-				confFetcher,
-				cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
-				cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
-			))
+			components = append(components,
+				envoyComponent,
+				component.NewResilientComponent(
+					runLog.WithName("configfetcher"),
+					confFetcher,
+					cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+					cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
+				),
+			)
 
 			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
 			if err != nil {
@@ -384,6 +401,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.WorkDir, "work-dir", cfg.DataplaneRuntime.WorkDir, "Directory in which Kuma DP config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Resource, "dataplane", "", "Dataplane template to apply (YAML or JSON)")
@@ -415,6 +433,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			"Later values override earlier ones when merging. "+
 			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
 	)
+
+	if err := cmd.PersistentFlags().MarkDeprecated("config-dir", "use --work-dir instead"); err != nil {
+		runLog.Error(err, "could not mark config-dir as deprecated")
+	}
 
 	return cmd
 }

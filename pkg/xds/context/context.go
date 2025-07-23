@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core2 "github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -107,7 +107,7 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	}
 	var oldestCreationTime *time.Time
 	var oldestTri *kri.Identifier
-	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(labels) {
+	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(resType, labels) {
 		resource := mc.GetServiceByKRI(tri).(core_model.Resource)
 		if resource != nil {
 			resCreationTime := resource.GetMeta().GetCreationTime()
@@ -120,12 +120,8 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 	return oldestTri
 }
 
-func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core2.Destination {
+func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
-	return mc.BaseMeshContext.DestinationIndex.GetReachableBackends(mc.BaseMeshContext.Mesh, dataplane)
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

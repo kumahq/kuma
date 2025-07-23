@@ -1,5 +1,5 @@
 # Internal listeners naming convention
-* status: accepted
+* status: **superseded by [MADR-076](./076-naming-system-envoy-resources.md)**
 
 ## Context and Problem statement
 At the moment we don't clearly distinguish between listeners used for service to service communication

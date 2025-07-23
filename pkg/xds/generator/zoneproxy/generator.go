@@ -214,7 +214,7 @@ func AddFilterChains(
 }
 
 func GenerateEmptyDirectResponseListener(proxy *core_xds.Proxy, address string, port uint32) (envoy_common.NamedResource, error) {
-	response := fmt.Sprintf(`{"proxy":"%s","zone":"%s"}`, proxy.Id.String(), proxy.Zone)
+	response := fmt.Sprintf(`{"proxy":%q,"zone":%q}`, proxy.Id.String(), proxy.Zone)
 	filterChain := envoy_listeners.FilterChain(
 		envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.NetworkDirectResponse(response)))

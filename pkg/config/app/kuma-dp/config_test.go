@@ -59,9 +59,12 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_PROXY_TYPE":                                     "ingress",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                            "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                             "/var/run/envoy",
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":                             "/var/run/envoy",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":                               "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                             "/tmp/token",
 				"KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL":                        "trace",
 				"KUMA_DATAPLANE_RUNTIME_DYNAMIC_CONFIGURATION_REFRESH_INTERVAL": "5s",
+				"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED":        "true",
 				"KUMA_DNS_ENABLED":                                              "true",
 				"KUMA_DNS_CORE_DNS_PORT":                                        "5300",
 				"KUMA_DNS_ENVOY_DNS_PORT":                                       "5302",
@@ -93,9 +96,12 @@ var _ = Describe("Config", func() {
 			Expect(cfg.Dataplane.DrainTime.Duration).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
+			Expect(cfg.DataplaneRuntime.SocketDir).To(Equal("/var/run/envoy"))
+			Expect(cfg.DataplaneRuntime.WorkDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 			Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
 			Expect(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration).To(Equal(5 * time.Second))
+			Expect(cfg.DataplaneRuntime.UnifiedResourceNamingEnabled).To(BeTrue())
 			Expect(cfg.DNS.Enabled).To(BeTrue())
 			Expect(cfg.DNS.CoreDNSPort).To(Equal(uint32(5300)))
 			Expect(cfg.DNS.EnvoyDNSPort).To(Equal(uint32(5302)))

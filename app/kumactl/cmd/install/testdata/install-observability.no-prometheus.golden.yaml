@@ -11448,7 +11448,7 @@ spec:
         runAsUser: 1472
       initContainers:
         - name: init-plugins
-          image: alpine@sha256:8a1f59ffb675680d47db6337b49d22281a139e9d709335b492be023728e11715
+          image: alpine@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
           command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.1.1/kumahq-kuma-datasource-0.1.1.zip && unzip -o /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
           volumeMounts:
             - name: plugins-volume
@@ -12079,7 +12079,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:3.5.1@sha256:65bfae480b572854180c78f7dc567a4ad2ba548b0c410e696baa1e0fa6381299"
+          image: "grafana/promtail:3.5.2@sha256:15dcebad41596201c6e6df8cbf9d48daa1d2e9f2752ecde5d6a53cab32c982bf"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -12179,7 +12179,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:3.5.1@sha256:a74594532eec4cc313401beedc4dd2708c43674c032084b1aeb87c14a5be1745"
+          image: "grafana/loki:3.5.2@sha256:d0a95e651bb7d0a5a6468035c5b49c52f4678d90d598f853c06716bca102686b"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
@@ -12275,7 +12275,7 @@ items:
                     value: "9411"
                   - name: COLLECTOR_OTLP_ENABLED
                     value: "true"
-                image: jaegertracing/all-in-one:1.70.0@sha256:c73bec5e6220b91eeda2574ec6aabbb8232f531e6b0bd11819f53548eefa6424
+                image: jaegertracing/all-in-one:1.71.0@sha256:beb31282a9c5d0d10cb78dd168945dab9887acebb42fcc0bd738b08c36b68bc0
                 name: jaeger
                 ports:
                   - containerPort: 5775

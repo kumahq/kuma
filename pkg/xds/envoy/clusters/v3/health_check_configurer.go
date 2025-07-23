@@ -165,10 +165,11 @@ func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck
 }
 
 func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interface{}) *envoy_core.HealthCheck {
-	if httpHc, ok := healthChecker.(*envoy_core.HealthCheck_HttpHealthCheck_); ok {
-		healthCheck.HealthChecker = httpHc
-	} else if tcpHc, ok := healthChecker.(*envoy_core.HealthCheck_TcpHealthCheck_); ok {
-		healthCheck.HealthChecker = tcpHc
+	switch hc := healthChecker.(type) {
+	case *envoy_core.HealthCheck_HttpHealthCheck_:
+		healthCheck.HealthChecker = hc
+	case *envoy_core.HealthCheck_TcpHealthCheck_:
+		healthCheck.HealthChecker = hc
 	}
 
 	return healthCheck

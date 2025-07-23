@@ -10,6 +10,11 @@
                     },
                     "type": "array",
                     "description": "List of ADS subscriptions created by a given Zone Kuma CP."
+                },
+                "metadata": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Metadata contains arbitrary xDS metadata reported by the Zone Ingress proxy. This may include feature flags and other proxy-specific metadata. It is functionally equivalent to the `metadata` field in DataplaneInsight, but specific to Zone Ingress proxies."
                 }
             },
             "additionalProperties": true,

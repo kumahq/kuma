@@ -45,6 +45,10 @@ var _ = Describe("Endpoints", func() {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/inspect/meshgateways/_rules"))
 
+	DescribeTable("inspect dataplane layout /meshes/{mesh}/dataplanes/{dpName}/_layout", func(inputFile string) {
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("resources/inspect/dataplanes/_layout"))
+
 	DescribeTable("resources CRUD", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/crud"))
@@ -52,6 +56,14 @@ var _ = Describe("Endpoints", func() {
 	DescribeTable("inspect dataplane policies /meshes/{mesh}/dataplanes/{dpName}/*/_policies", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/inspect/dataplanes/_policies"))
+
+	DescribeTable("inspect inbound policies /meshes/{mesh}/dataplanes/{dpName}/inbounds/{inboundKri}/_policies", func(inputFile string) {
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("resources/inspect/dataplanes/_policies/inbounds"))
+
+	DescribeTable("inspect inbound policies /meshes/{mesh}/dataplanes/{dpName}/outbounds/{outboundKri}/_policies", func(inputFile string) {
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("resources/inspect/dataplanes/_policies/outbounds"))
 
 	DescribeTable("inspect dataplane outbound routes  /meshes/{mesh}/dataplanes/{dpName}/outbounds/*/_routes", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)

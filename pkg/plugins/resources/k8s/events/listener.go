@@ -136,10 +136,10 @@ func (k *listener) addTypeInformationToObject(obj runtime.Object) error {
 	}
 
 	for _, gvk := range gvks {
-		if len(gvk.Kind) == 0 {
+		if gvk.Kind == "" {
 			continue
 		}
-		if len(gvk.Version) == 0 || gvk.Version == runtime.APIVersionInternal {
+		if gvk.Version == "" || gvk.Version == runtime.APIVersionInternal {
 			continue
 		}
 		obj.GetObjectKind().SetGroupVersionKind(gvk)

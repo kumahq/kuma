@@ -288,13 +288,19 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 	return nil
 }
 
-func (n *Dataplane_Networking) GetInboundForSectionName(sectionName string) *Dataplane_Networking_Inbound {
+// InboundsSelectedBySectionName returns the list of inbound interfaces selected by sectionName. It returns all inbounds if
+// sectionName is empty
+func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
+	var selectedInbounds []InboundInterface
 	for _, inbound := range n.Inbound {
-		if inbound.Name == sectionName || strconv.Itoa(int(inbound.Port)) == sectionName {
-			return inbound
+		if inbound.State == Dataplane_Networking_Inbound_Ignored {
+			continue
+		}
+		if sectionName == "" || inbound.GetSectionName() == sectionName {
+			selectedInbounds = append(selectedInbounds, n.ToInboundInterface(inbound))
 		}
 	}
-	return nil
+	return selectedInbounds
 }
 
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
@@ -383,6 +389,17 @@ func (d *Dataplane_Networking_Inbound) GetProtocol() string {
 		return ""
 	}
 	return d.Tags[ProtocolTag]
+}
+
+// GetSectionName returns either inbound name or stringified port value
+func (d *Dataplane_Networking_Inbound) GetSectionName() string {
+	if d == nil {
+		return ""
+	}
+	if d.Name != "" {
+		return d.Name
+	}
+	return strconv.Itoa(int(d.Port))
 }
 
 // GetService returns a service name represented by this outbound interface.

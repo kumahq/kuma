@@ -48,13 +48,13 @@
   endOfLifeDate: "2025-10-22"
   branch: release-2.9
 - edition: kuma
-  version: 2.10.2
+  version: 2.10.3
   release: 2.10.x
   releaseDate: "2025-03-20"
   endOfLifeDate: "2026-03-20"
   branch: release-2.10
 - edition: kuma
-  version: 2.11.1
+  version: 2.11.2
   release: 2.11.x
   latest: true
   releaseDate: "2025-06-10"

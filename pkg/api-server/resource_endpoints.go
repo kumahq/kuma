@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"io"
 	"net/http"
 	"slices"
@@ -44,6 +43,7 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -708,19 +708,21 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 					if r.descriptor.IsTargetRefBased {
 						res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
 						return res
-					} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
-						for _, s := range dpPolicy.Selectors() {
+					}
+					switch pr := policyResource.(type) {
+					case policy.DataplanePolicy:
+						for _, s := range pr.Selectors() {
 							if dpp.Spec.Matches(s.GetMatch()) {
 								return true
 							}
 						}
-					} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
-						for _, s := range connPolicy.Sources() {
+					case policy.ConnectionPolicy:
+						for _, s := range pr.Sources() {
 							if dpp.Spec.Matches(s.GetMatch()) {
 								return true
 							}
 						}
-						for _, s := range connPolicy.Destinations() {
+						for _, s := range pr.Destinations() {
 							if dpp.Spec.Matches(s.GetMatch()) {
 								return true
 							}
@@ -916,7 +918,7 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 		}
 
 		if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() == mesh_proto.Mesh_MeshServices_Disabled {
-			response.WriteHeader(http.StatusBadRequest)
+			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _policies endpoint without meshService enabled"), "Bad Request")
 			return
 		}
 
@@ -936,7 +938,7 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 
 		out, err := mapToResponse(matchedPolicies, request, dataplane, baseMeshContext.Resources())
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to TODO")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed building response")
 			return
 		}
 
@@ -990,14 +992,13 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 	if err != nil {
 		return nil, err
 	}
-	inbound := dataplane.Spec.GetNetworking().GetInboundForSectionName(inboundKri.SectionName)
-	if inbound == nil {
+	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
+	if len(inbounds) == 0 {
 		return nil, errors.New("inbound not found")
 	}
-	inboundInterface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 	inboundKey := core_rules.InboundListener{
-		Address: inboundInterface.DataplaneIP,
-		Port:    inboundInterface.DataplanePort,
+		Address: inbounds[0].DataplaneIP,
+		Port:    inbounds[0].DataplanePort,
 	}
 
 	var conf []api_common.InboundPolicyConf

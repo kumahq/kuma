@@ -20,21 +20,22 @@ func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 			listener := resource.Resource.(*envoy_listener.Listener)
 			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				for _, networkFilter := range chain.Filters {
-					if networkFilter.Name == "envoy.filters.network.http_connection_manager" {
-						hcm := &envoy_hcm.HttpConnectionManager{}
-						err := util_proto.UnmarshalAnyTo(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
-						if err != nil {
-							return err
-						}
-						if err := h.applyHCMModification(hcm); err != nil {
-							return err
-						}
-						any, err := util_proto.MarshalAnyDeterministic(hcm)
-						if err != nil {
-							return err
-						}
-						networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
+					if networkFilter.Name != "envoy.filters.network.http_connection_manager" {
+						continue
 					}
+					hcm := &envoy_hcm.HttpConnectionManager{}
+					err := util_proto.UnmarshalAnyTo(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
+					if err != nil {
+						return err
+					}
+					if err := h.applyHCMModification(hcm); err != nil {
+						return err
+					}
+					any, err := util_proto.MarshalAnyDeterministic(hcm)
+					if err != nil {
+						return err
+					}
+					networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
 				}
 			}
 		}

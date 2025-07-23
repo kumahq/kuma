@@ -30,7 +30,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		spec := hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshMultiZoneService: &hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
+					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 					},
 				},
@@ -44,7 +44,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshService: &hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
+					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						metadata.HeadlessService:       "false",
 						mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
@@ -60,7 +60,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshService: &hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
+					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						metadata.HeadlessService:       "true",
 						mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
@@ -76,7 +76,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshService: &hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
+					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
 					},
@@ -91,7 +91,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		spec = hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshExternalService: &hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
+					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 					},
 				},
@@ -110,7 +110,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 		spec := hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshExternalService: &hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
+					MatchLabels: &map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 					},
 				},
@@ -125,7 +125,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			spec = hostnamegenerator_api.HostnameGenerator{
 				Selector: hostnamegenerator_api.Selector{
 					MeshService: &hostnamegenerator_api.LabelSelector{
-						MatchLabels: map[string]string{
+						MatchLabels: &map[string]string{
 							mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 						},
 					},

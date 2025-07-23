@@ -155,7 +155,6 @@ func NewApiServer(
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager())
 	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
-	addZoneEndpoints(ws, rt.ResourceManager())
 	guiUrl := ""
 	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
 		guiUrl = cfg.ApiServer.GUI.BasePath
@@ -267,6 +266,8 @@ func addResourcesEndpoints(
 		globalInsightService: globalInsightService,
 	}
 	globalInsightEndpoint.addEndpoint(ws)
+
+	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess).addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
