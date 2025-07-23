@@ -13,6 +13,7 @@ const (
 
 // SecureDataSource is a way to securely provide data to the component
 type SecureDataSource struct {
+	// +kuma:discriminator
 	Type           SecureDataSourceType `json:"type,omitempty"`
 	File           *File                `json:"file,omitempty"`
 	EnvVar         *EnvVar              `json:"envVar,omitempty"`
@@ -32,6 +33,7 @@ const (
 // DataSource is just a way to provide data. Not necessarily secrets,
 // can be any data, i.e. certs, configs, OPA policies written in rego, lua plugins etc.
 type DataSource struct {
+	// +kuma:discriminator
 	Type   DataSourceType `json:"type"`
 	File   *File          `json:"file,omitempty"`
 	EnvVar *EnvVar        `json:"envVar,omitempty"`
@@ -39,11 +41,11 @@ type DataSource struct {
 }
 
 type File struct {
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
 }
 
 type EnvVar struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 }
 
 // +kubebuilder:validation:Enum=Secret
@@ -54,10 +56,10 @@ const (
 )
 
 type SecretRef struct {
-	Kind RefType `json:"kind,omitempty"`
-	Name string  `json:"name,omitempty"`
+	Kind RefType `json:"kind"`
+	Name string  `json:"name"`
 }
 
 type Inline struct {
-	Value string `json:"value,omitempty"`
+	Value string `json:"value"`
 }
