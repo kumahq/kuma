@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -133,7 +134,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 	}
 	type status struct {
 		hostname   string
-		conditions []hostnamegenerator_api.Condition
+		conditions []common_api.Condition
 	}
 	for _, generatorType := range g.generators {
 		resourceList, err := generatorType.GetResources(ctx)
@@ -162,25 +163,25 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 
 				generated, err := generatorType.GenerateHostname(g.zone, generator, service)
 
-				var conditions []hostnamegenerator_api.Condition
+				var conditions []common_api.Condition
 				if generated != "" || err != nil {
 					generationConditionStatus := kube_meta.ConditionUnknown
 					reason := "Pending"
 					var message string
 					if err != nil {
 						generationConditionStatus = kube_meta.ConditionFalse
-						reason = hostnamegenerator_api.TemplateErrorReason
+						reason = common_api.TemplateErrorReason
 						message = err.Error()
 					}
 					if generated != "" {
 						if svcName, ok := generatedHostnames[meshName(serviceKey.mesh)][hostname(generated)]; ok && string(svcName) != serviceKey.name {
 							generationConditionStatus = kube_meta.ConditionFalse
-							reason = hostnamegenerator_api.CollisionReason
+							reason = common_api.CollisionReason
 							message = fmt.Sprintf("Hostname collision with %s: %s", resourceList.GetItemType(), serviceKey.name)
 							generated = ""
 						} else {
 							generationConditionStatus = kube_meta.ConditionTrue
-							reason = hostnamegenerator_api.GeneratedReason
+							reason = common_api.GeneratedReason
 							meshHostnames, ok := generatedHostnames[meshName(serviceKey.mesh)]
 							if !ok {
 								meshHostnames = map[hostname]serviceName{}
@@ -189,13 +190,13 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 							generatedHostnames[meshName(serviceKey.mesh)] = meshHostnames
 						}
 					}
-					condition := hostnamegenerator_api.Condition{
-						Type:    hostnamegenerator_api.GeneratedCondition,
+					condition := common_api.Condition{
+						Type:    common_api.GeneratedCondition,
 						Status:  generationConditionStatus,
 						Reason:  reason,
 						Message: message,
 					}
-					conditions = []hostnamegenerator_api.Condition{
+					conditions = []common_api.Condition{
 						condition,
 					}
 				}

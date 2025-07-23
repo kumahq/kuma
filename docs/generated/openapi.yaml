@@ -17000,10 +17000,7 @@ components:
                     matchLabels:
                       additionalProperties:
                         type: string
-                      description: MatchLabels matches multiple MeshServices by labels
                       type: object
-                  required:
-                    - matchLabels
                   type: object
               required:
                 - meshService
