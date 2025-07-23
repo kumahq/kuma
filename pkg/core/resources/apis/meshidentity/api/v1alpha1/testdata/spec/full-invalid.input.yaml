@@ -5,3 +5,13 @@ provider:
   type: Bundled
   bundled:
     meshTrustCreation: Test
+    autogenerate:
+      enabled: true
+    certificate:
+      type: File
+      file:
+        path: "/cert"
+    privateKey:
+      type: EnvVar
+      envVar:
+        name: "MY_PRIVATE_KEY"

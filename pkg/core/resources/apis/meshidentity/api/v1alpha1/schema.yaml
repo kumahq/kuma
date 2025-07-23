@@ -37,15 +37,45 @@ properties:
               certificate:
                 description: Certificate allows the user to specify a custom certificate.
                 properties:
-                  inline:
-                    description: Data source is inline bytes.
-                    format: byte
-                    type: string
-                  inlineString:
-                    description: Data source is inline string`
-                    type: string
-                  secret:
-                    description: Data source is a secret with given Secret key.
+                  envVar:
+                    properties:
+                      name:
+                        type: string
+                    required:
+                      - name
+                    type: object
+                  file:
+                    properties:
+                      path:
+                        type: string
+                    required:
+                      - path
+                    type: object
+                  insecureInline:
+                    properties:
+                      value:
+                        type: string
+                    required:
+                      - value
+                    type: object
+                  secretRef:
+                    properties:
+                      kind:
+                        enum:
+                          - Secret
+                        type: string
+                      name:
+                        type: string
+                    required:
+                      - kind
+                      - name
+                    type: object
+                  type:
+                    enum:
+                      - File
+                      - Secret
+                      - EnvVar
+                      - InsecureInline
                     type: string
                 type: object
               certificateParameters:
@@ -68,15 +98,45 @@ properties:
               privateKey:
                 description: PrivateKey allows the user to specify a custom private key.
                 properties:
-                  inline:
-                    description: Data source is inline bytes.
-                    format: byte
-                    type: string
-                  inlineString:
-                    description: Data source is inline string`
-                    type: string
-                  secret:
-                    description: Data source is a secret with given Secret key.
+                  envVar:
+                    properties:
+                      name:
+                        type: string
+                    required:
+                      - name
+                    type: object
+                  file:
+                    properties:
+                      path:
+                        type: string
+                    required:
+                      - path
+                    type: object
+                  insecureInline:
+                    properties:
+                      value:
+                        type: string
+                    required:
+                      - value
+                    type: object
+                  secretRef:
+                    properties:
+                      kind:
+                        enum:
+                          - Secret
+                        type: string
+                      name:
+                        type: string
+                    required:
+                      - kind
+                      - name
+                    type: object
+                  type:
+                    enum:
+                      - File
+                      - Secret
+                      - EnvVar
+                      - InsecureInline
                     type: string
                 type: object
             type: object

@@ -13,9 +13,12 @@ provider:
     certificateParameters:
       expiry: 24h
     autogenerate:
-      enabled: true
-    ca:
-      certificate:
-        inlineString: "123"
-      privateKey:
-        inlineString: "123"
+      enabled: false
+    certificate:
+      type: InsecureInline
+      insecureInline: 
+        value: "123"
+    privateKey:
+      type: File
+      file: 
+        path: "/tmp/key"

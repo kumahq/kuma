@@ -6,6 +6,7 @@ package v1alpha1
 
 import (
 	commonv1alpha1 "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/api/common/v1alpha1/datasource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,12 +50,12 @@ func (in *Bundled) DeepCopyInto(out *Bundled) {
 	}
 	if in.Certificate != nil {
 		in, out := &in.Certificate, &out.Certificate
-		*out = new(commonv1alpha1.DataSource)
+		*out = new(datasource.SecureDataSource)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.PrivateKey != nil {
 		in, out := &in.PrivateKey, &out.PrivateKey
-		*out = new(commonv1alpha1.DataSource)
+		*out = new(datasource.SecureDataSource)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.CertificateParameters != nil {

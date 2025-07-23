@@ -5,6 +5,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/api/common/v1alpha1/datasource"
 )
 
 type Selector struct {
@@ -73,11 +74,9 @@ type Bundled struct {
 	// Autogenerate configures the control plane to use self-signed certificates.
 	Autogenerate *Autogenerate `json:"autogenerate,omitempty"`
 	// Certificate allows the user to specify a custom certificate.
-	// TODO: replace with a new datasource after MADR is approved
-	Certificate *common_api.DataSource `json:"certificate,omitempty"`
+	Certificate *datasource_api.SecureDataSource `json:"certificate,omitempty"`
 	// PrivateKey allows the user to specify a custom private key.
-	// TODO: replace with a new datasource after MADR is approved
-	PrivateKey *common_api.DataSource `json:"privateKey,omitempty"`
+	PrivateKey *datasource_api.SecureDataSource `json:"privateKey,omitempty"`
 	// CertificateParameters allows users to define certificate generation parameters.
 	CertificateParameters *CertificateParameters `json:"certificateParameters,omitempty"`
 }
