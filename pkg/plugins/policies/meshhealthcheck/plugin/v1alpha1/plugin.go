@@ -80,7 +80,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(dataplane, rules.Rules, subsetutils.MeshServiceElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, subsetutils.KumaServiceTagElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -125,7 +125,7 @@ func applyToGateways(
 					if err := configure(
 						proxy.Dataplane,
 						rules.Rules,
-						subsetutils.MeshServiceElement(serviceName),
+						subsetutils.KumaServiceTagElement(serviceName),
 						toProtocol(listenerInfo.Listener.Protocol),
 						cluster,
 					); err != nil {

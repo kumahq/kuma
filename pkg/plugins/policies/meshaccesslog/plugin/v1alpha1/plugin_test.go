@@ -772,8 +772,8 @@ func otherServiceHTTPListener() core_xds.Resource {
 				Address: "127.0.0.1",
 				Port:    27777,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: "other-service-http",
+			Protocol:            core_mesh.ProtocolHTTP,
+			KumaServiceTagValue: "other-service-http",
 		},
 		[]meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
@@ -794,8 +794,8 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 				Address: "127.0.0.1",
 				Port:    port,
 			},
-			Protocol:    core_mesh.ProtocolTCP,
-			ServiceName: service,
+			Protocol:            core_mesh.ProtocolTCP,
+			KumaServiceTagValue: service,
 		},
 		false,
 		[]envoy_common.Split{
@@ -817,8 +817,8 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Port:     uint32(port),
 				Resource: &serviceResourceKRI,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: serviceName(serviceResourceKRI, port),
+			Protocol:            core_mesh.ProtocolHTTP,
+			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},

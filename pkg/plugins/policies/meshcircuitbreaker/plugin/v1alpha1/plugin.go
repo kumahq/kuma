@@ -120,7 +120,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(rules.Rules, subsetutils.MeshServiceElement(serviceName), cluster); err != nil {
+		if err := configure(rules.Rules, subsetutils.KumaServiceTagElement(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -162,7 +162,7 @@ func applyToGateways(
 
 					if err := configure(
 						rules.Rules,
-						subsetutils.MeshServiceElement(serviceName),
+						subsetutils.KumaServiceTagElement(serviceName),
 						cluster,
 					); err != nil {
 						return err

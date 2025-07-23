@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+	"net"
 	"reflect"
 	"slices"
 
@@ -25,12 +27,9 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-const defaultListenerAddress = "127.0.0.1"
 
 func GenerateOutboundListener(
 	proxy *core_xds.Proxy,
@@ -41,15 +40,16 @@ func GenerateOutboundListener(
 	unifiedNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	transparentProxyEnabled := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
 
-	address := svc.Outbound.GetAddressOrDefault(defaultListenerAddress)
+	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
 	port := svc.Outbound.GetPort()
 
-	getIdentifierOrFallback := svc.ResolveIdentifierWithFallback(unifiedNamingEnabled)
+	legacyRouteConfigName := fmt.Sprintf("outbound:%s", svc.KumaServiceTagValue)
+	legacyListenerName := fmt.Sprintf("outbound:%s", net.JoinHostPort(address, fmt.Sprintf("%d", port)))
 
-	routeConfigName := svc.ResolveIdentifierWithFallback(true)(envoy_names.GetOutboundRouteName(svc.ServiceName))
-	virtualHostName := getIdentifierOrFallback(svc.ServiceName)
-	listenerName := getIdentifierOrFallback(envoy_names.GetOutboundListenerName(address, port))
-	listenerStatPrefix := getIdentifierOrFallback("")
+	routeConfigName := svc.ResolveKRIWithFallback(legacyRouteConfigName)
+	virtualHostName := svc.MaybeResolveKRIWithFallback(unifiedNamingEnabled, svc.KumaServiceTagValue)
+	listenerStatPrefix := svc.MaybeResolveKRI(unifiedNamingEnabled)
+	listenerName := svc.MaybeResolveKRIWithFallback(unifiedNamingEnabled, legacyListenerName)
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -170,27 +170,29 @@ func generateListeners(
 	return resources, nil
 }
 
-func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[common_api.MatchesHash]core_model.ResourceMeta) {
-	// compute for old MeshService
-	var conf *api.PolicyDefault
-	originByMatches := map[common_api.MatchesHash]core_model.ResourceMeta{}
-
-	ruleHTTP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
-	if ruleHTTP != nil {
-		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
-		originByMatches = ruleHTTP.OriginByMatches
-	}
+func ComputeHTTPRouteConf(
+	toRules rules.ToRules,
+	svc meshroute_xds.DestinationService,
+	meshCtx xds_context.MeshContext,
+) (*api.PolicyDefault, map[common_api.MatchesHash]core_model.ResourceMeta) {
 	// check if there is configuration for real MeshService and prioritize it
 	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
-		resourceConf := toRules.ResourceRules.Compute(r, meshCtx.Resources)
-		if resourceConf != nil && len(resourceConf.Conf) != 0 {
-			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
-			originByMatches = util_maps.MapValues(resourceConf.OriginByMatches, func(_ common_api.MatchesHash, o common.Origin) core_model.ResourceMeta {
-				return o.Resource
-			})
+		if rule := toRules.ResourceRules.Compute(r, meshCtx.Resources); rule != nil && len(rule.Conf) > 0 {
+			return pointer.To(rule.Conf[0].(api.PolicyDefault)), util_maps.MapValues(
+				rule.OriginByMatches,
+				func(_ common_api.MatchesHash, o common.Origin) core_model.ResourceMeta {
+					return o.Resource
+				},
+			)
 		}
 	}
-	return conf, originByMatches
+
+	// compute for old MeshService
+	if rule := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue)); rule != nil {
+		return pointer.To(rule.Conf.(api.PolicyDefault)), rule.OriginByMatches
+	}
+
+	return nil, make(map[common_api.MatchesHash]core_model.ResourceMeta)
 }
 
 // prepareRoutes handles the always present, catch all default route

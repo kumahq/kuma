@@ -61,22 +61,36 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound    *xds_types.Outbound
-	Protocol    core_mesh.Protocol
-	ServiceName string
+	Outbound            *xds_types.Outbound
+	Protocol            core_mesh.Protocol
+	KumaServiceTagValue string
 }
 
-// ResolveIdentifierWithFallback returns the identifier for this DestinationService.
-// If unified naming is enabled and the Outbound has an associated real resource,
+// MaybeResolveKRIWithFallback returns the identifier for this DestinationService.
+// If provided condition is met and the Outbound has an associated real resource,
 // the identifier is derived from that resource (KRI). Otherwise, the given fallback
-// is returned.
-func (ds *DestinationService) ResolveIdentifierWithFallback(unifiedNaming bool) func(fallback string) string {
-	return func(fallback string) string {
-		if id, ok := ds.Outbound.AssociatedServiceResource(); ok && unifiedNaming {
+// is returned
+func (ds *DestinationService) MaybeResolveKRIWithFallback(condition bool, fallback string) string {
+	if condition && ds.Outbound != nil {
+		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 			return id.String()
 		}
-		return fallback
 	}
+	return fallback
+}
+
+// ResolveKRIWithFallback returns the identifier for this DestinationService.
+// If the Outbound has an associated real resource, the identifier is derived
+// from it (KRI). Otherwise, the given fallback is returned
+func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
+	return ds.MaybeResolveKRIWithFallback(true, fallback)
+}
+
+// MaybeResolveKRI returns the identifier for this DestinationService if the
+// condition is met and the Outbound has an associated real resource. Otherwise,
+// an empty string is returned
+func (ds *DestinationService) MaybeResolveKRI(condition bool) string {
+	return ds.MaybeResolveKRIWithFallback(condition, "")
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
@@ -119,14 +133,14 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 		}
 
 		if outbound.LegacyOutbound != nil {
-			serviceName := outbound.LegacyOutbound.GetService()
+			legacyServiceName := outbound.LegacyOutbound.GetService()
 
 			result = append(
 				result,
 				DestinationService{
-					Outbound:    outbound,
-					Protocol:    meshCtx.GetServiceProtocol(serviceName),
-					ServiceName: serviceName,
+					Outbound:            outbound,
+					Protocol:            meshCtx.GetServiceProtocol(legacyServiceName),
+					KumaServiceTagValue: legacyServiceName,
 				},
 			)
 
@@ -159,9 +173,9 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 		result = append(
 			result,
 			DestinationService{
-				Outbound:    outbound,
-				Protocol:    protocol,
-				ServiceName: destinationname.MustResolve(false, svc, port),
+				Outbound:            outbound,
+				Protocol:            protocol,
+				KumaServiceTagValue: destinationname.MustResolve(false, svc, port),
 			},
 		)
 	}

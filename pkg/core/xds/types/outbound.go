@@ -27,19 +27,20 @@ func (o *Outbound) AssociatedServiceResource() (kri.Identifier, bool) {
 }
 
 func (o *Outbound) GetAddress() string {
-	if o.LegacyOutbound != nil {
-		return o.LegacyOutbound.Address
-	}
-	return o.Address
+	return o.GetAddressWithFallback("")
 }
 
-// GetAddressOrDefault returns the outbound address from either LegacyOutbound or Address field.
-// If both are empty, it returns the fallback value
-func (o *Outbound) GetAddressOrDefault(def string) string {
-	if address := o.GetAddress(); address != "" {
-		return address
+// GetAddressWithFallback returns the address from LegacyOutbound if set,
+// otherwise from Address. If both are empty, it returns the fallback value.
+func (o *Outbound) GetAddressWithFallback(fallback string) string {
+	switch {
+	case o.LegacyOutbound != nil && o.LegacyOutbound.Address != "":
+		return o.LegacyOutbound.Address
+	case o.Address != "":
+		return o.Address
+	default:
+		return fallback
 	}
-	return def
 }
 
 // TagsOrNil returns tags if Outbound is defined using 'kuma.io/service' tag and so LegacyOutbound field is set.
@@ -49,15 +50,6 @@ func (o *Outbound) TagsOrNil() map[string]string {
 		return o.LegacyOutbound.Tags
 	}
 	return nil
-}
-
-// NameOrEmpty returns Outbound's name based on KRI if the Outbound has an associated service resource.
-// Otherwise, it returns an empty string.
-func (o *Outbound) NameOrEmpty() string {
-	if id, ok := o.AssociatedServiceResource(); ok {
-		return id.String()
-	}
-	return ""
 }
 
 func (o *Outbound) GetPort() uint32 {
