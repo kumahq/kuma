@@ -60,6 +60,27 @@ spec:
                   kuma.io/display-name: test-server-1
                 port: 80
 ---
+type: MeshHTTPRoute
+name: the-http-route-1
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /api/v2
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server-1
+                port: 8080
+---
 type: Dataplane
 name: dp-1
 mesh: default

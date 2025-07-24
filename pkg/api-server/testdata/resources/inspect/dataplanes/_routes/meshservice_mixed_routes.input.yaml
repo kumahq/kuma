@@ -39,6 +39,29 @@ spec:
         http:
           requestTimeout: 20s
 ---
+type: MeshTCPRoute
+name: the-tcp-route
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      rules:
+        - default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server-1
+                port: 80
+                weight: 90
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server-1
+                port: 8080
+                weight: 10
+---
 type: MeshHTTPRoute
 name: the-http-route
 mesh: default
