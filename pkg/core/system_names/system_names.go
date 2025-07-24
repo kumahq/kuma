@@ -15,6 +15,10 @@ func IsSystem(name string) bool {
 	return strings.HasPrefix(SystemPrefix, name)
 }
 
+func AsSystemName(name string) string {
+	return SystemPrefix + name
+}
+
 func MustBeSystemName(name string) string {
 	if !cleanNameRegex.MatchString(name) {
 		panic("Invalid system name: " + name + ". Only lowercase letters, numbers, hyphens, and underscores are allowed.")

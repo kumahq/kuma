@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"net/url"
 	"strconv"
 	"strings"
@@ -64,6 +65,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	conf := policies.SingleItemRules.Rules[0].Conf.(api.Conf)
+	var kriWithoutSection *kri.Identifier
+	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
+		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshMetricType, ""))
+	}
 
 	if len(pointer.Deref(conf.Backends)) == 0 {
 		return nil
@@ -76,11 +81,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	prometheusBackends := filterPrometheusBackends(conf.Backends)
 	openTelemetryBackends := filterOpenTelemetryBackends(conf.Backends)
 
-	err := configurePrometheus(rs, proxy, prometheusBackends)
+	err := configurePrometheus(rs, proxy, prometheusBackends, kriWithoutSection)
 	if err != nil {
 		return err
 	}
-	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends)
+	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, kriWithoutSection)
 	if err != nil {
 		return err
 	}
@@ -100,17 +105,27 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, kriWithoutSection *kri.Identifier) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
 
 	for _, backend := range prometheusBackends {
+		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
+		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
+		systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), backendName).String())
+
 		configurer := &plugin_xds.PrometheusConfigurer{
 			Backend:         backend,
-			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
+			ListenerName:    getNameOrDefault(
+				systemName,
+				fmt.Sprintf("%s:%s", PrometheusListenerName, backendName),
+			),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
+			ClusterName:     getNameOrDefault(
+				systemName,
+				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
+			),
 			StatsPath:       PrometheusDataplaneStatsPath,
 		}
 
@@ -138,9 +153,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, kriWithoutSection *kri.Identifier) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, kriWithoutSection)
 		if err != nil {
 			return err
 		}
@@ -148,17 +163,19 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, kriWithoutSection *kri.Identifier) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
+	systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), backendNameFrom(openTelemetryBackend.Endpoint)).String())
 	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
 	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
 		Endpoint:     endpoint,
-		ListenerName: envoy_names.GetOpenTelemetryListenerName(backendName),
-		ClusterName:  envoy_names.GetOpenTelemetryClusterName(backendName),
+		ListenerName: getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
+		ClusterName:  getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
 	}
