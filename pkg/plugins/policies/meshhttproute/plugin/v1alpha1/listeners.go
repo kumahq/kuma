@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-	"net"
 	"reflect"
 	"slices"
 
@@ -27,6 +25,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -43,8 +42,8 @@ func GenerateOutboundListener(
 	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
 	port := svc.Outbound.GetPort()
 
-	legacyRouteConfigName := fmt.Sprintf("outbound:%s", svc.KumaServiceTagValue)
-	legacyListenerName := fmt.Sprintf("outbound:%s", net.JoinHostPort(address, fmt.Sprintf("%d", port)))
+	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
+	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
 	routeConfigName := svc.ResolveKRIWithFallback(legacyRouteConfigName)
 	virtualHostName := svc.MaybeResolveKRIWithFallback(unifiedNamingEnabled, svc.KumaServiceTagValue)

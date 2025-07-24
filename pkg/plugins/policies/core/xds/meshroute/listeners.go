@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -25,7 +26,7 @@ func MakeTCPSplit(
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
-	return makeSplit(
+	return makeSplits(
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolUnknown: {},
 			core_mesh.ProtocolKafka:   {},
@@ -47,7 +48,7 @@ func MakeHTTPSplit(
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
-	return makeSplit(
+	return makeSplits(
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolHTTP:  {},
 			core_mesh.ProtocolHTTP2: {},
@@ -132,15 +133,13 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			continue
 		}
 
-		if outbound.LegacyOutbound != nil {
-			legacyServiceName := outbound.LegacyOutbound.GetService()
-
+		if lo := outbound.LegacyOutbound; lo != nil {
 			result = append(
 				result,
 				DestinationService{
 					Outbound:            outbound,
-					Protocol:            meshCtx.GetServiceProtocol(legacyServiceName),
-					KumaServiceTagValue: legacyServiceName,
+					Protocol:            meshCtx.GetServiceProtocol(lo.GetService()),
+					KumaServiceTagValue: lo.GetService(),
 				},
 			)
 
@@ -202,28 +201,34 @@ func DestinationPortFromRef(
 	return dest, port, true
 }
 
-func makeSplit(
+func makeSplits(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
-	var split []envoy_common.Split
+	var result []envoy_common.Split
 
-	for _, ref := range refs {
+	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			if s := handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx); s != nil {
-				split = append(split, s)
-			}
-		} else {
-			if s := handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx); s != nil {
-				split = append(split, s)
-			}
+			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
+
+		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
 	}
 
-	return split
+	for _, ref := range refs {
+		result = append(result, splitFromRef(ref))
+	}
+
+	// return only non-nil splits
+	return util_slices.Filter(
+		result,
+		func(s envoy_common.Split) bool {
+			return s != nil
+		},
+	)
 }
 
 func handleRealResources(
