@@ -67,11 +67,11 @@ type DestinationService struct {
 	KumaServiceTagValue string
 }
 
-// MaybeResolveKRIWithFallback returns the identifier for this DestinationService.
+// ConditionallyResolveKRIWithFallback returns the identifier for this DestinationService.
 // If provided condition is met and the Outbound has an associated real resource,
 // the identifier is derived from that resource (KRI). Otherwise, the given fallback
 // is returned
-func (ds *DestinationService) MaybeResolveKRIWithFallback(condition bool, fallback string) string {
+func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool, fallback string) string {
 	if condition && ds.Outbound != nil {
 		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 			return id.String()
