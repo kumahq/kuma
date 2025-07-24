@@ -281,7 +281,7 @@ Changes that are to be backported should only be critical bug fixes of one of th
 - CI/CD (anything related to the release process)
 
 If you think your PR applies and should be backported please add the label: `backport`.
-Once the PR is approved and merged the action `backport.yaml` will open a new PR with the backport for each of the maintained branches. If you backport a change it's your responsibility to make sure the backports goes through.
+Once the PR is approved and merged. Please make sure someone runs the [backport.yaml](https://github.com/kumahq/kuma/actions/workflows/backport.yaml) action with your PR as a parameter to create backport PRs for all supported branches. If a change should not land on branches, just close to PR associated and delete the branch.
 
 #### Reviewing
 
