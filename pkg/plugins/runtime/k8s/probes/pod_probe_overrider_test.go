@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("ApplicationProbeProxyPort", func() {
 	DescribeTable("GetApplicationProbeProxyPort",
-		func(annotations map[string]string, defaultPort int, expected int, expectedErr string) {
+		func(annotations map[string]string, defaultPort, expected int, expectedErr string) {
 			port, err := probes.GetApplicationProbeProxyPort(annotations, uint32(defaultPort))
 
 			if expectedErr != "" {

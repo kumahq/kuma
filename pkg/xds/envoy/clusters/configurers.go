@@ -65,7 +65,7 @@ func ClientSideMultiIdentitiesMTLS(tracker core_xds.SecretsTracker, mesh *core_m
 	})
 }
 
-func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
+func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
@@ -129,7 +129,7 @@ func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) Clust
 	})
 }
 
-func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
+func ProvidedCustomEndpointCluster(hasIPv6, allowsMixingEndpoints bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
 			Name:                           builder.name,

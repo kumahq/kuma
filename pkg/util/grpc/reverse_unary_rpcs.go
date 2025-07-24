@@ -16,8 +16,8 @@ type ReverseUnaryMessage interface {
 // ReverseUnaryRPCs helps to implement reverse unary rpcs where server sends requests to a client and receives responses from the client.
 type ReverseUnaryRPCs interface {
 	Send(client string, req ReverseUnaryMessage) error
-	WatchResponse(client string, reqID string, resp chan ReverseUnaryMessage) error
-	DeleteWatch(client string, reqID string)
+	WatchResponse(client, reqID string, resp chan ReverseUnaryMessage) error
+	DeleteWatch(client, reqID string)
 
 	ClientConnected(client string, stream grpc.ServerStream)
 	ClientDisconnected(client string)
@@ -89,7 +89,7 @@ func (x *clientStreams) Send(client string, req ReverseUnaryMessage) error {
 	return stream.stream.SendMsg(req)
 }
 
-func (x *clientStreams) WatchResponse(client string, reqID string, resp chan ReverseUnaryMessage) error {
+func (x *clientStreams) WatchResponse(client, reqID string, resp chan ReverseUnaryMessage) error {
 	stream, err := x.clientStream(client)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (x *clientStreams) WatchResponse(client string, reqID string, resp chan Rev
 	return nil
 }
 
-func (x *clientStreams) DeleteWatch(client string, reqID string) {
+func (x *clientStreams) DeleteWatch(client, reqID string) {
 	stream, err := x.clientStream(client)
 	if err != nil {
 		return // client was already deleted

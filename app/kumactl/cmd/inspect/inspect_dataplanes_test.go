@@ -32,7 +32,7 @@ type testDataplaneOverviewClient struct {
 	overviews       []*core_mesh.DataplaneOverviewResource
 }
 
-func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool, ingress bool) (*core_mesh.DataplaneOverviewResourceList, error) {
+func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway, ingress bool) (*core_mesh.DataplaneOverviewResourceList, error) {
 	c.receivedTags = tags
 	c.receivedGateway = gateway
 	c.receivedIngress = ingress

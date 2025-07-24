@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
-func zoneExternalService(mesh string, ip string, name string, zone string) string {
+func zoneExternalService(mesh, ip, name, zone string) string {
 	return fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"

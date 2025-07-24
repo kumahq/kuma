@@ -65,7 +65,7 @@ type PolicyInspectGatewayEntry struct {
 func (*PolicyInspectGatewayEntry) policyInspectEntry() {
 }
 
-func NewPolicyInspectGatewayEntry(key ResourceKeyEntry, gateway ResourceKeyEntry) PolicyInspectGatewayEntry {
+func NewPolicyInspectGatewayEntry(key, gateway ResourceKeyEntry) PolicyInspectGatewayEntry {
 	return PolicyInspectGatewayEntry{
 		DataplaneKey: key,
 		Gateway:      gateway,

@@ -52,7 +52,7 @@ func InterpolateKumaValues(format string, values KumaValues) string {
 	return format
 }
 
-func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*envoy_accesslog.AccessLog, error) {
+func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection, sourceService, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*envoy_accesslog.AccessLog, error) {
 	if backend == nil {
 		return nil, nil
 	}
@@ -89,7 +89,7 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 	}
 }
 
-func fileAccessLog(format string, path string) (*envoy_accesslog.AccessLog, error) {
+func fileAccessLog(format, path string) (*envoy_accesslog.AccessLog, error) {
 	fileAccessLog := &access_loggers_file.FileAccessLog{
 		AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
 			LogFormat: &envoy_core.SubstitutionFormatString{

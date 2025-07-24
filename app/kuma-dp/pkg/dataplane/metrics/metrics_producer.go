@@ -29,7 +29,7 @@ type AggregatedProducer struct {
 
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
-func NewAggregatedMetricsProducer(mesh string, dataplane string, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *AggregatedProducer {
+func NewAggregatedMetricsProducer(mesh, dataplane, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *AggregatedProducer {
 	return &AggregatedProducer{
 		mesh:                      mesh,
 		dataplane:                 dataplane,

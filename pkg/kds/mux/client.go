@@ -44,7 +44,7 @@ type client struct {
 	envoyAdminProcessor service.EnvoyAdminProcessor
 }
 
-func NewClient(ctx context.Context, globalURL string, clientID string, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
+func NewClient(ctx context.Context, globalURL, clientID string, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
 	return &client{
 		ctx:                 ctx,
 		globalToZoneCb:      globalToZoneCb,

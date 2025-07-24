@@ -123,7 +123,7 @@ func (s *Networking) Close() error {
 	return s.sshClient.Close()
 }
 
-func (s *Networking) NewSession(reportPath string, cmdName string, verbose bool, cmd string) (*kssh.Session, error) {
+func (s *Networking) NewSession(reportPath, cmdName string, verbose bool, cmd string) (*kssh.Session, error) {
 	id, err := s.initSSH()
 	if err != nil {
 		return nil, err
