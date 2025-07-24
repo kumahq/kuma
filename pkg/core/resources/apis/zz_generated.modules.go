@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{
@@ -15,4 +16,5 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshexternalservices":  {InitFn: meshexternalservice.InitPlugin, Initialized: false},
 	"meshmultizoneservices": {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
 	"meshservices":          {InitFn: meshservice.InitPlugin, Initialized: false},
+	"meshtrusts":            {InitFn: meshtrust.InitPlugin, Initialized: false},
 }

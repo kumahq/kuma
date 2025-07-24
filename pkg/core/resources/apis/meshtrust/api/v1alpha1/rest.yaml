@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "MeshTrust"
+
+paths:
+  /meshes/{mesh}/meshtrusts/{name}:
+    get:
+      operationId: getMeshTrust
+      summary: Returns MeshTrust entity
+      tags: [ "MeshTrust" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshTrustItem"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+    put:
+      operationId: putMeshTrust
+      summary: Creates or Updates MeshTrust entity
+      tags: [ "MeshTrust" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTrustItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+
+    delete:
+      operationId: deleteMeshTrust
+      summary: Deletes MeshTrust entity
+      tags: [ "MeshTrust" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+  /meshes/{mesh}/meshtrusts:
+    get:
+      operationId: getMeshTrustList
+      summary: Returns a list of MeshTrust in the mesh.
+      tags: [ "MeshTrust" ]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshTrustList"
+
+components:
+  schemas:
+    MeshTrustItem:
+      $ref: 'schema.yaml'
+    MeshTrustCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          readOnly: true
+          description: |
+            warnings is a list of warning messages to return to the requesting Kuma API clients.
+            Warning messages describe a problem the client making the API request should correct or be aware of.
+          items:
+            type: string
+    MeshTrustDeleteSuccessResponse:
+      type: object
+      properties: {}
+
+  responses:
+    MeshTrustItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTrustItem'
+    MeshTrustList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshTrustItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
