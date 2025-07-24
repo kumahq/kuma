@@ -26,6 +26,9 @@ default:
     - color: ffaa00
       name: triage/not-reproducible
       description: "Couldn't reproduce this issue. If you add information remove this label and reopen the issue"
+    - color: ffaa00
+      name: triage/needs-mgmt
+      description: "This issue needs input for Product management to figure if this may need to be tracked as project ideas instead of issues."
     - color: c7def8
       name: kind/bug
       description: "A bug"
