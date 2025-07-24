@@ -20,14 +20,12 @@ func Resolve(unifiedNaming bool, dest core.Destination, port core.Port) (string,
 	switch {
 	case dest == nil:
 		return "", errors.New("dest is nil: expected a non-nil dest implementing core.Destination")
-	case unifiedNaming && port != nil && port.GetValue() > 0:
-		return kri.From(dest, port.GetName()).String(), nil
+	case port == nil:
+		return "", errors.New("port is nil: expected a non-nil port implementing core.Port")
 	case unifiedNaming:
-		return kri.From(dest, "").String(), nil
-	case port != nil && port.GetValue() > 0:
-		return ResolveLegacyFromDestination(dest, port), nil
+		return kri.From(dest, port.GetName()).String(), nil
 	default:
-		return "", errors.New("destination port is required and must be greater than 0 when unified naming is disabled")
+		return ResolveLegacyFromDestination(dest, port), nil
 	}
 }
 
