@@ -26,21 +26,13 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
-<<<<<<< HEAD
 K8S_MIN_VERSION = v1.25.16-k3s4
 K8S_MAX_VERSION = v1.31.1-k3s1
-export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-export GOLANGCI_LINT_VERSION=v1.64.5
-=======
-K8S_MIN_VERSION = v1.27.16-k3s1
-K8S_MAX_VERSION=v1.32.2-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
-KUBEBUILDER_ASSETS_VERSION=1.32
+KUBEBUILDER_ASSETS_VERSION=1.31
 
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-# This needs to rely on version from mise
-export GOLANGCI_LINT_VERSION=v2.2.2
->>>>>>> a10cd165d (feat(tools): move to Mise from our custom scripts (#14027))
+export GOLANGCI_LINT_VERSION=v1.64.5
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
@@ -63,31 +55,6 @@ PROTO_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PG
 PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
 PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
-<<<<<<< HEAD
-CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
-YQ=$(CI_TOOLS_BIN_DIR)/yq
-HELM=$(CI_TOOLS_BIN_DIR)/helm
-K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
-KIND=$(CI_TOOLS_BIN_DIR)/kind
-KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
-KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
-CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
-KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
-PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
-SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
-CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
-# from go-deps
-PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
-PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
-PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
-PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
-PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
-GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
-GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
-HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
-KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
-HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
-=======
 CLANG_FORMAT=$(shell $(MISE) which clang-format)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
@@ -111,7 +78,6 @@ HELM_DOCS=$(shell $(MISE) which helm-docs)
 KUBE_LINTER=$(shell $(MISE) which kube-linter)
 HADOLINT=$(shell $(MISE) which hadolint)
 OAPI_CODEGEN=$(shell $(MISE) which oapi-codegen)
->>>>>>> a10cd165d (feat(tools): move to Mise from our custom scripts (#14027))
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
