@@ -60,6 +60,9 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 
 	adminPort := proxy.Metadata.GetAdminPort()
 	readinessPort := proxy.Metadata.GetReadinessPort()
+	if readinessPort == 0 {
+		return nil, errors.New("ReadinessPort has to be in (0, 65353] range")
+	}
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 	// We assume that Admin API must be available on a loopback interface (while users
@@ -98,27 +101,13 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
-	unixSocketEnabled := proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket)
-	tcpReadinessReporterDisabled := readinessPort == 0
-	tcpReadinessReporterEnabled := readinessPort > 0
-
-	assignReadinessPort := func(se *envoy_common.StaticEndpointPath) {
-		switch {
-		case unixSocketEnabled, tcpReadinessReporterEnabled:
-			se.ClusterName = dppReadinessClusterName
-		// if readinessPort is set to 0, we use envoy admin cluster for readiness check
-		case tcpReadinessReporterDisabled:
-			se.ClusterName = envoyAdminClusterName
-		}
-	}
-
 	for _, se := range staticEndpointPaths {
-		assignReadinessPort(se)
+		se.ClusterName = dppReadinessClusterName
 	}
 	for _, se := range staticTlsEndpointPaths {
 		switch se.Path {
 		case "/ready":
-			assignReadinessPort(se)
+			se.ClusterName = dppReadinessClusterName
 		default:
 			se.ClusterName = envoyAdminClusterName
 		}
@@ -165,18 +154,15 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	var xdsEndpoint core_xds.Endpoint
-	switch {
-	case unixSocketEnabled:
+	if proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket) {
 		xdsEndpoint = core_xds.Endpoint{
 			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}
-	case tcpReadinessReporterEnabled:
+	} else {
 		xdsEndpoint = core_xds.Endpoint{
 			Target: adminAddress,
 			Port:   readinessPort,
 		}
-	case tcpReadinessReporterDisabled:
-		return resources, nil
 	}
 
 	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).

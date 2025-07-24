@@ -34,4 +34,6 @@ const FeatureBindOutbounds string = "feature-bind-outbounds"
 // don't need to care about unless debugging Kuma.
 const FeatureUnifiedResourceNaming string = "feature-unified-resource-naming"
 
+// FeatureReadinessUnixSocket indicates the readiness probe of kuma-sidecar is responded from the kuma-dp process via Unix socket.
+// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
 const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"

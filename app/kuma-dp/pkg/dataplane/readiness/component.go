@@ -43,25 +43,19 @@ func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, 
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
-	protocol := "tcp"
-	addr := fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
-
-	switch {
-	case !r.unixSocketDisabled:
-		protocol = "unix"
-		socketPath := core_xds.ReadinessReporterSocketName(r.socketDir)
-		addr = socketPath
-
-	case r.localListenPort == 0:
-		return nil
-
-	case r.localListenPort != 0:
+	var lis net.Listener
+	var protocol, addr string
+	if r.unixSocketDisabled {
+		protocol = "tcp"
+		addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
 		if govalidator.IsIPv6(addr) {
 			protocol = "tcp6"
 			addr = fmt.Sprintf("[%s]:%d", addr, r.localListenPort)
 		}
+	} else {
+		protocol = "unix"
+		addr = core_xds.ReadinessReporterSocketName(r.socketDir)
 	}
-
 	lis, err := net.Listen(protocol, addr)
 	if err != nil {
 		return err
