@@ -45,9 +45,9 @@ func GenerateOutboundListener(
 	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
 	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
-	routeConfigName := svc.ResolveKRIWithFallback(legacyRouteConfigName)
+	routeConfigName := svc.MaybeResolveKRIWithFallback(true, legacyRouteConfigName)
 	virtualHostName := svc.MaybeResolveKRIWithFallback(unifiedNamingEnabled, svc.KumaServiceTagValue)
-	listenerStatPrefix := svc.MaybeResolveKRI(unifiedNamingEnabled)
+	listenerStatPrefix := svc.MaybeResolveKRIWithFallback(unifiedNamingEnabled, "")
 	listenerName := svc.MaybeResolveKRIWithFallback(unifiedNamingEnabled, legacyListenerName)
 
 	route := &xds.HttpOutboundRouteConfigurer{
@@ -229,9 +229,12 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 				Name:    getRouteName(rule.Matches),
 				Match:   match,
 				Filters: pointer.Deref(rule.Default.Filters),
-				BackendRefs: util_slices.FilterMap(pointer.Deref(rule.Default.BackendRefs), func(br common_api.BackendRef) (resolve.ResolvedBackendRef, bool) {
-					return resolve.BackendRef(getOrigin(rule.Matches), br, meshCtx.ResolveResourceIdentifier)
-				}),
+				BackendRefs: util_slices.FilterMap(
+					pointer.Deref(rule.Default.BackendRefs),
+					func(br common_api.BackendRef) (resolve.ResolvedBackendRef, bool) {
+						return resolve.BackendRef(getOrigin(rule.Matches), br, meshCtx.ResolveResourceIdentifier)
+					},
+				),
 			})
 		}
 		return routes

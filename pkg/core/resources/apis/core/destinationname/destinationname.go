@@ -25,24 +25,28 @@ func Resolve(unifiedNaming bool, dest core.Destination, port core.Port) (string,
 	case unifiedNaming:
 		return kri.From(dest, "").String(), nil
 	case port != nil && port.GetValue() > 0:
-		return legacyName(dest, port), nil
+		return ResolveLegacyFromDestination(dest, port), nil
 	default:
 		return "", errors.New("destination port is required and must be greater than 0 when unified naming is disabled")
 	}
 }
 
-// legacyName is a current way of naming envoy resources until https://github.com/kumahq/kuma/pull/12756
-// is fully implemented
-func legacyName(dest core.Destination, port core.Port) string {
-	id := kri.From(dest, "")
+func ResolveLegacyFromDestination(dest core.Destination, port core.Port) string {
+	return ResolveLegacyFromKRI(
+		kri.From(dest, ""),
+		dest.Descriptor().ShortName,
+		port.GetValue(),
+	)
+}
 
+func ResolveLegacyFromKRI(id kri.Identifier, resourceTypeShortName string, port int32) string {
 	return fmt.Sprintf(
 		"%s_%s_%s_%s_%s_%d",
 		id.Mesh,
 		id.Name,
 		id.Namespace,
 		id.Zone,
-		dest.Descriptor().ShortName,
-		port.GetValue(),
+		resourceTypeShortName,
+		port,
 	)
 }

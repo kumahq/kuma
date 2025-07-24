@@ -80,20 +80,6 @@ func (ds *DestinationService) MaybeResolveKRIWithFallback(condition bool, fallba
 	return fallback
 }
 
-// ResolveKRIWithFallback returns the identifier for this DestinationService.
-// If the Outbound has an associated real resource, the identifier is derived
-// from it (KRI). Otherwise, the given fallback is returned
-func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
-	return ds.MaybeResolveKRIWithFallback(true, fallback)
-}
-
-// MaybeResolveKRI returns the identifier for this DestinationService if the
-// condition is met and the Outbound has an associated real resource. Otherwise,
-// an empty string is returned
-func (ds *DestinationService) MaybeResolveKRI(condition bool) string {
-	return ds.MaybeResolveKRIWithFallback(condition, "")
-}
-
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 	if r, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
