@@ -358,17 +358,14 @@ type HealthCheck_Conf_Http struct {
 
 	// The HTTP path which will be requested during the health check
 	// (ie. /health)
-	//
-	//	+required
+	//  +required
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	// The list of HTTP headers which should be added to each health check
 	// request
-	//
-	//	+optional
+	//  +optional
 	RequestHeadersToAdd []*HealthCheck_Conf_Http_HeaderValueOption `protobuf:"bytes,2,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
 	// List of HTTP response statuses which are considered healthy
-	//
-	//	+optional
+	//  +optional
 	ExpectedStatuses []*wrapperspb.UInt32Value `protobuf:"bytes,3,rep,name=expected_statuses,json=expectedStatuses,proto3" json:"expected_statuses,omitempty"`
 }
 
@@ -431,12 +428,10 @@ type HealthCheck_Conf_Http_HeaderValue struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Header name
-	//
-	//	+required
+	//  +required
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	// Header value
-	//
-	//	+optional
+	//  +optional
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
@@ -492,13 +487,11 @@ type HealthCheck_Conf_Http_HeaderValueOption struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Key/Value representation of the HTTP header
-	//
-	//	+required
+	//  +required
 	Header *HealthCheck_Conf_Http_HeaderValue `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// The bool value which if true (default) will mean the header values
 	// should be appended to already present ones
-	//
-	//	+optional
+	//  +optional
 	Append *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
 }
 

@@ -12,19 +12,35 @@ KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
 
-CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+ifeq (,$(shell which mise))
+$(error "mise - https://github.com/jdx/mise - not found. Please install it.")
+endif
+MISE := $(shell which mise)
+
+CI_TOOLS_DIR ?= ${HOME}/.local/share/mise/${PROJECT_NAME}
 ifdef XDG_DATA_HOME
-	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+	CI_TOOLS_DIR := ${XDG_DATA_HOME}/.local/share/mise/${PROJECT_NAME}
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
+<<<<<<< HEAD
 K8S_MIN_VERSION = v1.25.16-k3s4
 K8S_MAX_VERSION = v1.31.1-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v1.60.3
+=======
+K8S_MIN_VERSION = v1.27.16-k3s1
+K8S_MAX_VERSION=v1.32.2-k3s1
+# This should have the same minor version as K8S_MAX_VERSION
+KUBEBUILDER_ASSETS_VERSION=1.32
+
+export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
+# This needs to rely on version from mise
+export GOLANGCI_LINT_VERSION=v2.2.2
+>>>>>>> a10cd165d (feat(tools): move to Mise from our custom scripts (#14027))
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
@@ -38,8 +54,16 @@ endef
 # so this is location should not be changed by developers.
 KUBECONFIG_DIR := $(HOME)/.kube
 
-PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
+PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
+# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/issues/13880
+XDS_VERSION=$(shell go list -f '{{ .Version }}' -m github.com/cncf/xds/go)
+PROTO_XDS=$(shell go mod download github.com/cncf/xds@$(XDS_VERSION) && go list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
+PGV_VERSION=$(shell go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
+PROTO_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && go list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
+PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
+PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
+<<<<<<< HEAD
 CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
 YQ=$(CI_TOOLS_BIN_DIR)/yq
 HELM=$(CI_TOOLS_BIN_DIR)/helm
@@ -63,6 +87,31 @@ GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
 HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
 KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
 HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
+=======
+CLANG_FORMAT=$(shell $(MISE) which clang-format)
+YQ=$(shell $(MISE) which yq)
+HELM=$(shell $(MISE) which helm)
+K3D_BIN=$(shell $(MISE) which k3d)
+KIND=$(shell $(MISE) which kind)
+SETUP_ENVTEST=$(shell $(MISE) which setup-envtest)
+KUBEBUILDER_ASSETS=$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
+CONTROLLER_GEN=$(shell $(MISE) which controller-gen)
+KUBECTL=$(shell $(MISE) which kubectl)
+PROTOC_BIN=$(shell $(MISE) which protoc)
+SHELLCHECK=$(shell $(MISE) which shellcheck)
+CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
+PROTOC_GEN_GO=$(shell $(MISE) which protoc-gen-go)
+PROTOC_GEN_GO_GRPC=$(shell $(MISE) which protoc-gen-go-grpc)
+PROTOC_GEN_VALIDATE=$(shell $(MISE) which protoc-gen-validate)
+PROTOC_GEN_KUMADOC=$(shell $(MISE) which protoc-gen-kumadoc)
+PROTOC_GEN_JSONSCHEMA=$(shell $(MISE) which protoc-gen-jsonschema)
+GINKGO=$(shell $(MISE) which ginkgo)
+GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
+HELM_DOCS=$(shell $(MISE) which helm-docs)
+KUBE_LINTER=$(shell $(MISE) which kube-linter)
+HADOLINT=$(shell $(MISE) which hadolint)
+OAPI_CODEGEN=$(shell $(MISE) which oapi-codegen)
+>>>>>>> a10cd165d (feat(tools): move to Mise from our custom scripts (#14027))
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
@@ -71,16 +120,9 @@ TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
 
 # Install all dependencies on tools and protobuf files
-# We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles
-# ideally the tool should be idempotent to make things quick to rerun.
-# it's important that everything lands in $(CI_TOOLS_DIR) to be able to cache this folder in CI and speed up the build.
-.PHONY: dev/tools
-dev/tools: ## Bootstrap: Install all development tools
-	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH) $(TOOLS_MAKEFILE)
-
-.PHONY: dev/tools/clean
-dev/tools/clean: ## Bootstrap: Remove all development tools
-	rm -rf $(CI_TOOLS_DIR)
+.PHONY: install
+install: ## Bootstrap: Install all development tools
+	$(MISE) install
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)
@@ -140,7 +182,7 @@ dev/sync-demo:
 
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
-	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+	$(HELM) repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
 
 .PHONY: clean
 clean: clean/build clean/generated clean/docs ## Dev: Clean
