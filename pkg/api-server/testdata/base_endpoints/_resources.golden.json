@@ -208,6 +208,15 @@
    "singularDisplayName": "Mesh Health Check"
   },
   {
+   "includeInFederation": true,
+   "name": "MeshIdentity",
+   "path": "meshidentities",
+   "pluralDisplayName": "Mesh Identities",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Identity"
+  },
+  {
    "includeInFederation": false,
    "name": "MeshInsight",
    "path": "mesh-insights",

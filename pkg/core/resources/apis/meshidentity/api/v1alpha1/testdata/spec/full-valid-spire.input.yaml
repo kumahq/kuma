@@ -1,0 +1,13 @@
+
+selector:
+  dataplane:
+    matchLabels:
+      app: test 
+spiffeID:
+  trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+provider:
+  type: Spire
+  spire:
+    agent:
+      timeout: 1s

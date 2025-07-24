@@ -158,6 +158,7 @@ rules:
       - meshtrafficpermissions
       - hostnamegenerators
       - meshexternalservices
+      - meshidentities
       - meshmultizoneservices
       - meshservices
     verbs:
@@ -462,7 +463,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: 31ccdb889e36588739118978c96c7a8a4ff5568e08d0e1eb47562cdbf16698de
+        checksum/tls-secrets: f81883603ed8f7ab5f34032225ef790a8dc6034e74af7155b8e6604fb3a3bfab
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -713,6 +714,7 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
     sideEffects: None
@@ -774,6 +776,7 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
   
@@ -916,6 +919,7 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
     
