@@ -1046,7 +1046,9 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 				}
 			}
 		case meshtcproute_api.MeshTCPRouteType:
-			// TODO
+			for _, rule := range conf.Conf {
+				apiRules = append(apiRules, api_common.RouteRules{Conf: rule.(meshtcproute_api.Rule).Default})
+			}
 		}
 
 		routeConfs = append(routeConfs, api_common.RouteConf{
