@@ -20,8 +20,10 @@ jobs:
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
-      - run: |
-          make dev/tools
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
       - run: |
           git config --global user.email "110050114+kumahq[bot]@users.noreply.github.com"
           git config --global user.name "kumahq[bot]"

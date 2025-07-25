@@ -129,10 +129,9 @@ type MonitoringAssignment_Target struct {
 	// Arbitrary labels associated with that particular target.
 	//
 	// E.g.,
-	//
-	//	`{
-	//	   "commit_hash" : "620506a88",
-	//	 }`.
+	// `{
+	//    "commit_hash" : "620506a88",
+	//  }`.
 	Labels map[string]string `protobuf:"bytes,5,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
