@@ -95,7 +95,7 @@ cmd/check/%:
 
 # Install all dependencies on tools and protobuf files
 .PHONY: install
-install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/go cmd/check/jq cmd/check/yq cmd/check/ninja
+install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/go cmd/check/ninja
 	$(MISE) install
 
 $(KUBECONFIG_DIR):
