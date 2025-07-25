@@ -10,7 +10,8 @@
     "github-actions",
     "gomod",
     "helm-values",
-    "kubernetes"
+    "kubernetes",
+    "mise"
   ],
   "ignorePaths": [],
   "kubernetes": {
