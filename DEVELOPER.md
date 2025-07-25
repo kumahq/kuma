@@ -16,8 +16,6 @@ for any tools/libraries that you may be missing.
 - [`unzip`](http://infozip.sourceforge.net/UnZip.html)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://golang.org/)
-- [`jq`](https://jqlang.github.io/jq/download/)
-- [`yq`](https://mikefarah.gitbook.io/yq)
 - [`ninja`](https://github.com/ninja-build/ninja)
 - [`mise`](https://mise.jdx.dev)
 
