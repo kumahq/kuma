@@ -86,9 +86,16 @@ TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 
 LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
 
+.PHONY: cmd/check/%
+cmd/check/%:
+	@command -v "$*" >/dev/null 2>&1 || { \
+		echo >&2 "Error: required command '$*' is not in PATH"; \
+		exit 1; \
+	}
+
 # Install all dependencies on tools and protobuf files
 .PHONY: install
-install: ## Bootstrap: Install all development tools
+install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/go cmd/check/jq cmd/check/yq cmd/check/ninja
 	$(MISE) install
 
 $(KUBECONFIG_DIR):
