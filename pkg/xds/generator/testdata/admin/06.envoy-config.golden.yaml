@@ -11,7 +11,7 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: 127.0.0.1
+                address: ::1
                 portValue: 9901
     name: kuma:envoy:admin
     type: STATIC
@@ -27,8 +27,8 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: 127.0.0.1
-                portValue: 9902
+                address: ::1
+                portValue: 9400
     name: kuma:readiness
     type: STATIC
 - name: kuma:envoy:admin
