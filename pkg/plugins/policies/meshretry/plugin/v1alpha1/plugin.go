@@ -79,7 +79,7 @@ func applyToOutbounds(
 		serviceName := outbound.LegacyOutbound.GetService()
 
 		configurer := plugin_xds.DeprecatedConfigurer{
-			Element:  subsetutils.MeshServiceElement(serviceName),
+			Element:  subsetutils.KumaServiceTagElement(serviceName),
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}

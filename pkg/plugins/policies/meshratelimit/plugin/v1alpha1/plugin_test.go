@@ -42,6 +42,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -1000,7 +1001,8 @@ func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteC
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		Service: serviceName,
+		VirtualHostName: serviceName,
+		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
 				plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),

@@ -143,7 +143,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.DeprecatedListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
-			Element:  subsetutils.MeshServiceElement(serviceName),
+			Element:  subsetutils.KumaServiceTagElement(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -160,7 +160,7 @@ func applyToClusters(
 	protocol core_mesh.Protocol,
 	clusters ...*envoy_cluster.Cluster,
 ) error {
-	conf, _ := getConf(rules, subsetutils.MeshServiceElement(serviceName))
+	conf, _ := getConf(rules, subsetutils.KumaServiceTagElement(serviceName))
 	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
 	for _, cluster := range clusters {
 		if err := configurer.Configure(cluster); err != nil {

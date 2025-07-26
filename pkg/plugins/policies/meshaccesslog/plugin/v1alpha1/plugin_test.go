@@ -765,17 +765,17 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 
 func otherServiceHTTPListener() core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address: "127.0.0.1",
 				Port:    27777,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: "other-service-http",
+			Protocol:            core_mesh.ProtocolHTTP,
+			KumaServiceTagValue: "other-service-http",
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		[]meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
 				xds.NewSplitBuilder().WithClusterName("other-service-http").Build(),
@@ -795,8 +795,8 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 				Address: "127.0.0.1",
 				Port:    port,
 			},
-			Protocol:    core_mesh.ProtocolTCP,
-			ServiceName: service,
+			Protocol:            core_mesh.ProtocolTCP,
+			KumaServiceTagValue: service,
 		},
 		false,
 		[]envoy_common.Split{
@@ -809,18 +809,18 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 
 func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
 				Resource: &serviceResourceKRI,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: serviceName(serviceResourceKRI, port),
+			Protocol:            core_mesh.ProtocolHTTP,
+			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
@@ -831,7 +831,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 func serviceName(id kri.Identifier, port int32) string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	Expect(err).ToNot(HaveOccurred())
-	return destinationname.LegacyName(id, desc.ShortName, port)
+	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)
 }
 
 func routeKRI(name string) kri.Identifier {

@@ -238,7 +238,7 @@ func MeshElement() Element {
 	return Element{}
 }
 
-func MeshServiceElement(name string) Element {
+func KumaServiceTagElement(name string) Element {
 	return Element{mesh_proto.ServiceTag: name}
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -152,11 +153,14 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	systemNamespace string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, string, error) {
-	service, destProtocol, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, backendRef)
+	dest, port, ok := meshroute.DestinationPortFromRef(meshCtx, backendRef)
 	if !ok {
 		return nil, "", nil
 	}
-	protocol := route.InferServiceProtocol(destProtocol, routeProtocol)
+
+	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
+
+	service := destinationname.MustResolve(false, dest, port)
 
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
@@ -180,13 +184,18 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	default:
 	}
 	// Note: these tags are just used to get a cluster name!
-	tags := map[string]string{
+	destinationTags := map[string]string{
 		mesh_proto.ServiceTag: service,
 	}
-	cluster, err := buildClusterResource(tags, edsClusterBuilder, identifyingTags)
+	cluster, err := buildClusterResource(destinationTags, edsClusterBuilder, identifyingTags)
+	if err != nil {
+		return nil, "", err
+	}
+
 	cluster.ResourceOrigin = backendRef.Resource
 	cluster.Protocol = routeProtocol
-	return cluster, service, err
+
+	return cluster, service, nil
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
