@@ -1,10 +1,16 @@
+####################################################################################
+# ⚠️ IMPORTANT: DO NOT EXCEED 100 CHARACTERS IN LABEL DESCRIPTIONS
+#    GitHub will reject labels if their descriptions are longer than 100 characters
+#    Anyone adding or editing labels MUST check description lengths carefully
+####################################################################################
+
 # Repo labels common to all repositories in https://github.com/kumahq
 # This file is automatically synced from https://github.com/kumahq/.github/blob/main/org_labels.yml and will be overridden if modified elsewhere.
 default:
   labels:
     - color: ffaa00
       name: triage/pending
-      description: "This issue will be looked at on the next triage meeting"
+      description: "This issue will be reviewed during the next triage meeting"
     - color: ffaa00
       name: triage/accepted
       description: "The issue was reviewed and is complete enough to start working on it"
@@ -25,10 +31,10 @@ default:
       description: "Someone else should try to reproduce this"
     - color: ffaa00
       name: triage/not-reproducible
-      description: "Couldn't reproduce this issue. If you add information remove this label and reopen the issue"
+      description: "Couldn't reproduce this issue. If you add information, remove this label and reopen the issue"
     - color: ffaa00
       name: triage/needs-mgmt
-      description: "This issue needs input for Product management to figure if this may need to be tracked as project ideas instead of issues."
+      description: "Needs input from Product Management to decide if this should be a project idea instead of an issue"
     - color: c7def8
       name: kind/bug
       description: "A bug"
