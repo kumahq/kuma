@@ -9,6 +9,22 @@
 * chore(deps): use latest kumahq/kuma-gui [#13954](https://github.com/kumahq/kuma/pull/13954) @kumahq
 
 
+## 2.9.7
+> Released on 2025/07/28
+
+* chore(deps): bump CoreDNS from v1.12.0 to v1.12.2 [#13977](https://github.com/kumahq/kuma/pull/13977) @bartsmykla
+* chore(deps): bump envoy from v1.31.8 to v1.31.10 [#13944](https://github.com/kumahq/kuma/pull/13944) [#14017](https://github.com/kumahq/kuma/pull/14017) @lukidzi
+* feat(helm): define loadBalancerSourceRanges for ZoneIngress k8s service (backport of #13965) [#13982](https://github.com/kumahq/kuma/pull/13982) @kumahq
+
+
+## 2.7.15
+> Released on 2025/07/28
+
+* chore(deps): bump CoreDNS from v1.12.0 to v1.12.2 [#13976](https://github.com/kumahq/kuma/pull/13976) @bartsmykla
+* chore(deps): bump envoy from v1.31.8 to v1.31.10 [#13943](https://github.com/kumahq/kuma/pull/13943) [#14018](https://github.com/kumahq/kuma/pull/14018) @lukidzi
+* feat(helm): define loadBalancerSourceRanges for ZoneIngress k8s service (backport of #13965) [#13983](https://github.com/kumahq/kuma/pull/13983) @kumahq
+
+
 ## 2.10.4
 > Released on 2025/07/25
 

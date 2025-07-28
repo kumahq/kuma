@@ -2,10 +2,8 @@
 experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
-clang-format = "13.0.0"
 container-structure-test = "1.15.0"
 ginkgo = "2.23.4"
-golangci-lint = "2.2.2"
 hadolint = "2.12.0"
 helm = "3.18.4"
 helm-docs = "1.11.0"
@@ -13,10 +11,8 @@ kind = "0.24.0"
 kubectl = "1.32.6"
 protoc = "3.20.0"
 shellcheck = "0.10.0"
-skaffold = "2.16.1"
 yq = "4.47.1"
 "aqua:bufbuild/protoc-gen-validate" = "1.2.1"
-"aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.1.0"
 "aqua:helm/chart-releaser" = "1.7.0"
 "aqua:k3d-io/k3d" = "5.8.1"
 "aqua:protocolbuffers/protobuf-go/protoc-gen-go" = "1.28.1"
@@ -25,3 +21,17 @@ yq = "4.47.1"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.4.1"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.18.0"
 "go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250630142431-4c2e9cec2954"
+# === tools excluded from GitHub Actions installs ===
+# ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
+#     .github/workflows/_build_publish.yaml
+#     .github/workflows/_e2e.yaml
+#     .github/workflows/_test.yaml
+#     .github/workflows/build-test-distribute.yaml
+#     .github/workflows/merge-release-to-master.yaml
+#     .github/workflows/pr-comments.yaml
+#     .github/workflows/transparentproxy-tests.yaml
+clang-format = "13.0.0"
+golangci-lint = "2.2.2"
+skaffold = "2.16.1"
+# ⚠️ If you change this name, also update `MISE_DISABLE_TOOLS` in .github/workflows/_e2e.yaml
+"aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.1.0"

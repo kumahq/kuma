@@ -29,7 +29,7 @@
   endOfLifeDate: "2025-02-01"
   branch: release-2.6
 - edition: kuma
-  version: 2.7.14
+  version: 2.7.15
   release: 2.7.x
   releaseDate: "2024-04-19"
   endOfLifeDate: "2026-04-19"
@@ -42,7 +42,7 @@
   endOfLifeDate: "2025-06-24"
   branch: release-2.8
 - edition: kuma
-  version: 2.9.6
+  version: 2.9.7
   release: 2.9.x
   releaseDate: "2024-10-22"
   endOfLifeDate: "2025-10-22"
