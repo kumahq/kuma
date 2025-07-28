@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: jdx/mise-action@eb2f5cb41b0a8175dad2f797e3daca6fe7795a19 # v2.4.2
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
