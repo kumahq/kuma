@@ -30,6 +30,7 @@ yq = "4.47.1"
 #     .github/workflows/merge-release-to-master.yaml
 #     .github/workflows/pr-comments.yaml
 #     .github/workflows/transparentproxy-tests.yaml
+#     .github/workflows/update-insecure-dependencies.yaml
 clang-format = "13.0.0"
 golangci-lint = "2.2.2"
 skaffold = "2.16.1"
