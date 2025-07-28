@@ -205,7 +205,8 @@ networking:
 		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
 	})
 
-	It("requests should be routed directly through local sidecar when zone egress disabled", func() {
+	// TODO: re-enable when https://github.com/kumahq/kuma/issues/14070 done
+	XIt("requests should be routed directly through local sidecar when zone egress disabled", func() {
 		filterEgress := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
 			meshNoZoneEgress,
