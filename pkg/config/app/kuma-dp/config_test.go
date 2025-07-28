@@ -57,6 +57,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_NAME":                                           "example",
 				"KUMA_DATAPLANE_DRAIN_TIME":                                     "60s",
 				"KUMA_DATAPLANE_PROXY_TYPE":                                     "ingress",
+				"KUMA_READINESS_PORT":                                           "9902",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                            "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                             "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":                             "/var/run/envoy",
