@@ -37,7 +37,7 @@ jobs:
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold,protoc-gen-go-grpc"
+          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold,aqua:grpc/grpc-go/protoc-gen-go-grpc"
       - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
