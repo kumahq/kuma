@@ -61,7 +61,7 @@ jobs:
           gomemlimit=$((mem_total_bytes * 8 / 10))
           echo "GOMEMLIMIT=${gomemlimit}" >> $GITHUB_ENV
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec $gomemlimit)"
-      - uses: jdx/mise-action@eb2f5cb41b0a8175dad2f797e3daca6fe7795a19 # v2.4.2
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
