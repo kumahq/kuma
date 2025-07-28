@@ -2,7 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "Kong/public-shared-renovate:backend",
-    "kumahq/kuma//.renovate/go-control-plane"
+    "kumahq/kuma//.renovate/go-control-plane",
+    "kumahq/kuma//.renovate/mise"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -10,7 +11,8 @@
     "github-actions",
     "gomod",
     "helm-values",
-    "kubernetes"
+    "kubernetes",
+    "mise"
   ],
   "ignorePaths": [],
   "kubernetes": {
@@ -26,7 +28,7 @@
         "github-actions"
       ],
       "extends": [
-        "local>kumahq/kuma//.renovate/github-actions"
+        "kumahq/kuma//.renovate/github-actions"
       ]
     },
     {
@@ -38,7 +40,7 @@
         "Kong/public-shared-actions/**"
       ],
       "extends": [
-        "local>kumahq/kuma//.renovate/github-actions"
+        "kumahq/kuma//.renovate/github-actions"
       ]
     },
     {

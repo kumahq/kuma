@@ -6,16 +6,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
-
-func (m *MeshServiceResource) DestinationName(port int32) string {
-	return destinationname.LegacyName(kri.From(m, ""), MeshServiceResourceTypeDescriptor.ShortName, port)
-}
 
 // FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
 func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {

@@ -14864,21 +14864,32 @@ components:
                       items:
                         properties:
                           kind:
-                            description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                            description: >-
+                              Type of the backend: MeshService or
+                              MeshExternalService
+                               +required
                             type: string
                           labels:
                             additionalProperties:
                               type: string
-                            description: "Labels used to select backends\n\n\t+optional"
+                            description: |-
+                              Labels used to select backends
+                               +optional
                             type: object
                           name:
-                            description: "Name of the backend.\n\n\t+optional"
+                            description: |-
+                              Name of the backend.
+                               +optional
                             type: string
                           namespace:
-                            description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                            description: |-
+                              Namespace of the backend. Might be empty
+                               +optional
                             type: string
                           port:
-                            description: "Port of the backend.\n\n\t+optional"
+                            description: |-
+                              Port of the backend.
+                               +optional
                             format: uint32
                             type: integer
                         type: object
@@ -15560,21 +15571,32 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                                description: >-
+                                  Type of the backend: MeshService or
+                                  MeshExternalService
+                                   +required
                                 type: string
                               labels:
                                 additionalProperties:
                                   type: string
-                                description: "Labels used to select backends\n\n\t+optional"
+                                description: |-
+                                  Labels used to select backends
+                                   +optional
                                 type: object
                               name:
-                                description: "Name of the backend.\n\n\t+optional"
+                                description: |-
+                                  Name of the backend.
+                                   +optional
                                 type: string
                               namespace:
-                                description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                                description: |-
+                                  Namespace of the backend. Might be empty
+                                   +optional
                                 type: string
                               port:
-                                description: "Port of the backend.\n\n\t+optional"
+                                description: |-
+                                  Port of the backend.
+                                   +optional
                                 format: uint32
                                 type: integer
                             type: object
@@ -16236,14 +16258,14 @@ components:
         cert:
           properties:
             Type:
-              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+              description: "Types that are assignable to Type:\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
           required:
             - Type
           type: object
         key:
           properties:
             Type:
-              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+              description: "Types that are assignable to Type:\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
           required:
             - Type
           type: object
@@ -16389,7 +16411,7 @@ components:
                           description: DataSource defines the source of bytes to use.
                           properties:
                             Type:
-                              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                              description: "Types that are assignable to Type:\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
                           required:
                             - Type
                           type: object
@@ -17000,10 +17022,7 @@ components:
                     matchLabels:
                       additionalProperties:
                         type: string
-                      description: MatchLabels matches multiple MeshServices by labels
                       type: object
-                  required:
-                    - matchLabels
                   type: object
               required:
                 - meshService

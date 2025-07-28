@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -145,7 +146,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, meshExtSvc.DestinationName(meshExtSvc.Spec.Match.Port))
+			mesNames = append(mesNames, destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match))
 		}
 
 		for _, esName := range esNames {

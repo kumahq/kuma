@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -164,9 +165,9 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := mzSvc.DestinationName(port.Port)
+				serviceName := destinationname.MustResolve(false, mzSvc, port)
 
-				existingEndpoints := outbound[ms.DestinationName(port.Port)]
+				existingEndpoints := outbound[destinationname.MustResolve(false, ms, port)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -224,7 +225,7 @@ func fillRemoteMeshServices(
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		for _, port := range ms.Spec.Ports {
-			serviceName := ms.DestinationName(port.Port)
+			serviceName := destinationname.MustResolve(false, ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -244,27 +245,6 @@ func fillRemoteMeshServices(
 type MeshServiceIdentity struct {
 	Resource   *meshservice_api.MeshServiceResource
 	Identities map[string]struct{}
-}
-
-func BuildMeshServiceIdentityMap(
-	meshServices []*meshservice_api.MeshServiceResource,
-	endpointMap core_xds.EndpointMap,
-) map[string]MeshServiceIdentity {
-	serviceIdentities := map[string]MeshServiceIdentity{}
-	for _, meshSvc := range meshServices {
-		identities := map[string]struct{}{}
-		for _, port := range meshSvc.Spec.Ports {
-			name := meshSvc.DestinationName(port.Port)
-			for _, endpoint := range endpointMap[name] {
-				identities[endpoint.Tags[mesh_proto.ServiceTag]] = struct{}{}
-			}
-		}
-		serviceIdentities[meshSvc.GetMeta().GetName()] = MeshServiceIdentity{
-			Resource:   meshSvc,
-			Identities: identities,
-		}
-	}
-	return serviceIdentities
 }
 
 // endpointWeight defines default weight for in-cluster endpoint.
@@ -345,7 +325,7 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := maps.Clone(inbound.GetTags())
-					serviceName := meshSvc.DestinationName(port.Port)
+					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -674,7 +654,8 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
-		outbounds[mes.DestinationName(mes.Spec.Match.Port)] = append(outbounds[mes.DestinationName(mes.Spec.Match.Port)], *outboundEndpoint)
+		legacyName := destinationname.MustResolve(false, mes, mes.Spec.Match)
+		outbounds[legacyName] = append(outbounds[legacyName], *outboundEndpoint)
 	}
 	return nil
 }
@@ -803,7 +784,7 @@ func fillExternalServicesOutboundsThroughEgress(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := mes.DestinationName(mes.Spec.Match.Port)
+		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{

@@ -19,7 +19,7 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 	var tcpConf *api.Rule
 	var origin core_model.ResourceMeta
 
-	ruleTCP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
+	ruleTCP := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue))
 	if ruleTCP != nil {
 		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
 		origin = impactfulMeta(ruleTCP.Origin)

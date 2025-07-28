@@ -17,6 +17,12 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OriginalDstForwarderConfigurer{})
 }
 
+func StatPrefix(prefix string) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.StatPrefixConfigurer{
+		StatPrefix: prefix,
+	})
+}
+
 func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
 		Protocol: protocol,

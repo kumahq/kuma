@@ -5,6 +5,8 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -12,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -23,7 +26,7 @@ func MakeTCPSplit(
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
-	return makeSplit(
+	return makeSplits(
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolUnknown: {},
 			core_mesh.ProtocolKafka:   {},
@@ -45,7 +48,7 @@ func MakeHTTPSplit(
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
-	return makeSplit(
+	return makeSplits(
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolHTTP:  {},
 			core_mesh.ProtocolHTTP2: {},
@@ -59,9 +62,22 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound    *xds_types.Outbound
-	Protocol    core_mesh.Protocol
-	ServiceName string
+	Outbound            *xds_types.Outbound
+	Protocol            core_mesh.Protocol
+	KumaServiceTagValue string
+}
+
+// ConditionallyResolveKRIWithFallback returns the identifier for this DestinationService.
+// If provided condition is met and the Outbound has an associated real resource,
+// the identifier is derived from that resource (KRI). Otherwise, the given fallback
+// is returned
+func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool, fallback string) string {
+	if condition && ds.Outbound != nil {
+		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
+			return id.String()
+		}
+	}
+	return fallback
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
@@ -82,94 +98,123 @@ func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 	}
 }
 
-func CollectServices(
-	proxy *core_xds.Proxy,
-	meshCtx xds_context.MeshContext,
-) []DestinationService {
-	var dests []DestinationService
+// CollectServices builds a slice of DestinationService from proxy.Outbounds
+//
+// It handles two types of outbounds:
+// - Legacy outbounds: resolved using service name and protocol from mesh context
+// - Real-resource outbounds: resolved by matching KRI identifier and port name
+//
+// Skips outbounds that are incomplete or invalid:
+// - nil entries
+// - real-resource outbounds with missing resource reference
+// - no service found for the given KRI
+// - no port matching the SectionName
+//
+// When protocol is unset, it defaults to TCP
+func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []DestinationService {
+	var result []DestinationService
+
 	for _, outbound := range proxy.Outbounds {
-		var destinationService *DestinationService
-		if outbound.LegacyOutbound != nil {
-			serviceName := outbound.LegacyOutbound.GetService()
-			destinationService = &DestinationService{
-				Outbound:    outbound,
-				Protocol:    meshCtx.GetServiceProtocol(serviceName),
-				ServiceName: serviceName,
-			}
-		} else {
-			destinationService = createServiceFromRealResource(outbound, meshCtx)
+		if outbound == nil {
+			continue
 		}
-		if destinationService != nil {
-			dests = append(dests, *destinationService)
+
+		if lo := outbound.LegacyOutbound; lo != nil {
+			result = append(
+				result,
+				DestinationService{
+					Outbound:            outbound,
+					Protocol:            meshCtx.GetServiceProtocol(lo.GetService()),
+					KumaServiceTagValue: lo.GetService(),
+				},
+			)
+
+			continue
 		}
+
+		var svc core.Destination
+		var port core.Port
+		var protocol core_mesh.Protocol
+		var ok bool
+
+		// ignore outbound when no service matches the KRI identifier
+		// TODO: Add a clear way to pass warnings up when needed. Right now
+		//  we skip logging to avoid too much noise, and there’s no system
+		//  for handling warnings yet
+		if svc = meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource)); svc == nil {
+			continue
+		}
+
+		// skip outbounds when no port matches SectionName
+		if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
+			continue
+		}
+
+		// determine protocol, default to TCP if unspecified
+		if protocol = port.GetProtocol(); protocol == "" {
+			protocol = core_mesh.ProtocolTCP
+		}
+
+		result = append(
+			result,
+			DestinationService{
+				Outbound:            outbound,
+				Protocol:            protocol,
+				KumaServiceTagValue: destinationname.MustResolve(false, svc, port),
+			},
+		)
 	}
-	return dests
+
+	return result
 }
 
-func createServiceFromRealResource(
-	outbound *xds_types.Outbound,
-	meshCtx xds_context.MeshContext,
-) *DestinationService {
-	service := meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource))
-	if service == nil {
-		// we want to ignore service which is not found. Logging might be excessive here.
-		// We don't have another mechanism to bubble up warnings yet.
-		return nil
-	}
-	port, ok := service.FindPortByName(outbound.Resource.SectionName)
-	if !ok {
-		return nil
-	}
-	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-	if port.GetProtocol() != "" {
-		protocol = port.GetProtocol()
-	}
-	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    protocol,
-		ServiceName: service.DestinationName(port.GetValue()),
-	}
-}
-
-func GetServiceProtocolPortFromRef(
+func DestinationPortFromRef(
 	meshCtx xds_context.MeshContext,
 	ref *resolve.RealResourceBackendRef,
-) (string, core_mesh.Protocol, int32, bool) {
-	dest := meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource))
-	if dest == nil {
-		return "", "", 0, false
+) (core.Destination, core.Port, bool) {
+	var dest core.Destination
+	var port core.Port
+	var ok bool
+
+	if dest = meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource)); dest == nil {
+		return dest, port, false
 	}
-	port, ok := dest.FindPortByName(ref.Resource.SectionName)
-	if !ok {
-		return "", "", 0, false
+
+	if port, ok = dest.FindPortByName(ref.Resource.SectionName); !ok {
+		return dest, port, false
 	}
-	service := dest.DestinationName(port.GetValue())
-	protocol := port.GetProtocol()
-	return service, protocol, port.GetValue(), true
+
+	return dest, port, true
 }
 
-func makeSplit(
+func makeSplits(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
-	var split []envoy_common.Split
+	var result []envoy_common.Split
 
-	for _, ref := range refs {
+	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			if s := handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx); s != nil {
-				split = append(split, s)
-			}
-		} else {
-			if s := handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx); s != nil {
-				split = append(split, s)
-			}
+			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
+
+		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
 	}
 
-	return split
+	for _, ref := range refs {
+		result = append(result, splitFromRef(ref))
+	}
+
+	// return only non-nil splits
+	return util_slices.Filter(
+		result,
+		func(s envoy_common.Split) bool {
+			return s != nil
+		},
+	)
 }
 
 func handleRealResources(
@@ -183,16 +228,18 @@ func handleRealResources(
 		return nil
 	}
 
-	service, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref)
+	dest, port, ok := DestinationPortFromRef(meshCtx, ref)
 	if !ok {
 		return nil
 	}
-	if _, ok := protocols[protocol]; !ok {
+
+	if _, ok := protocols[port.GetProtocol()]; !ok {
 		return nil
 	}
 
-	dest := meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource))
-	clusterName := dest.DestinationName(port)
+	service := destinationname.MustResolve(false, dest, port)
+	clusterName := service
+
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
