@@ -3,7 +3,8 @@
   "extends": [
     "Kong/public-shared-renovate:backend",
     "kumahq/kuma//.renovate/go-control-plane",
-    "kumahq/kuma//.renovate/mise"
+    "kumahq/kuma//.renovate/mise",
+    "kumahq/kuma//.renovate/makefile"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -14,6 +15,15 @@
     "kubernetes",
     "mise"
   ],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "addLabels": [
+      "area/security"
+    ],
+    "assignees": [
+      "@kumahq/kuma-security-managers"
+    ]
+  },
   "ignorePaths": [],
   "kubernetes": {
     "description": "Update image versions in Kubernetes manifests from 'kumactl install demo|observability'",
