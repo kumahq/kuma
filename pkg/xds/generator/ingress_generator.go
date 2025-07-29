@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
