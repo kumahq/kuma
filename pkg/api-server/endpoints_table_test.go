@@ -61,9 +61,13 @@ var _ = Describe("Endpoints", func() {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/inspect/dataplanes/_policies/inbounds"))
 
-	DescribeTable("inspect inbound policies /meshes/{mesh}/dataplanes/{dpName}/outbounds/{outboundKri}/_policies", func(inputFile string) {
+	DescribeTable("inspect outbound policies /meshes/{mesh}/dataplanes/{dpName}/outbounds/{outboundKri}/_policies", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/inspect/dataplanes/_policies/outbounds"))
+
+	DescribeTable("inspect outbound policies targeting routes /meshes/{mesh}/dataplanes/{dpName}/outbounds/{outboundKri}/_routes/{routeKri}/_policies", func(inputFile string) {
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("resources/inspect/dataplanes/_policies/routes"))
 
 	DescribeTable("inspect dataplane outbound routes  /meshes/{mesh}/dataplanes/{dpName}/outbounds/*/_routes", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)

@@ -174,6 +174,13 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
+		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToRouteConfig)).
+			Doc("Get policy config for route").
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
+			Param(ws.PathParameter("route_kri", "KRI of a route").DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(404, "Not found", nil))
 	}
 }
 
@@ -1059,6 +1066,29 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 	}
 
 	return api_common.RoutesList{Routes: routeConfs}, nil
+}
+
+func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
+	routeKri, err := kri.FromString(request.PathParameter("route_kri"))
+	if err != nil {
+		return nil, err
+	}
+
+	var conf []api_common.PolicyConf
+	for _, matched := range matchedPolicies {
+		computed := matched.ToRules.ResourceRules.Compute(routeKri, resources)
+		if computed == nil {
+			continue
+		}
+
+		conf = append(conf, api_common.PolicyConf{
+			Conf:    computed.Conf,
+			Kind:    string(matched.Type),
+			Origins: policyOriginsToKRIOrigins(matched.Type, util_slices.Map(computed.Origin, func(o common.Origin) core_model.ResourceMeta { return o.Resource })),
+		})
+	}
+
+	return conf, nil
 }
 
 func policyOriginsToKRIOrigins(policyType core_model.ResourceType, origins []core_model.ResourceMeta) []api_common.PolicyOrigin {
