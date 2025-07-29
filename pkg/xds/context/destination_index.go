@@ -2,6 +2,7 @@ package context
 
 import (
 	"strconv"
+	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
@@ -9,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // DestinationIndex indexes destinations by KRI and labels. It provides optimized access to Kuma destinations. It should
@@ -44,8 +46,35 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 // GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
 func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
 	outbounds := map[kri.Identifier]core.Port{}
+	// Handle user defined outbound without a transparent proxy
 	if dataplane.Spec.GetNetworking().GetOutbound() != nil {
-		// TODO handle user defined outbounds on universal without transparent proxy: https://github.com/kumahq/kuma/issues/13868
+		for _, outbound := range dataplane.Spec.GetNetworking().GetOutbound() {
+			if outbound.BackendRef == nil {
+				continue
+			}
+			backendRef := common_api.BackendRef{
+				TargetRef: common_api.TargetRef{
+					Kind:   common_api.TargetRefKind(outbound.BackendRef.Kind),
+					Name:   pointer.To(outbound.BackendRef.Name),
+					Labels: pointer.To(outbound.BackendRef.Labels),
+				},
+				Port: pointer.To(outbound.BackendRef.Port),
+			}
+			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, dc.ResolveResourceIdentifier)
+			if !ok || !ref.ReferencesRealResource() {
+				continue
+			}
+			outboundKri := pointer.Deref(ref.ResourceOrNil())
+			dest, ok := dc.destinationByIdentifier[kri.NoSectionName(outboundKri)]
+			if !ok {
+				continue
+			}
+			port, ok := dest.FindPortByName(outboundKri.SectionName)
+			if !ok {
+				continue
+			}
+			outbounds[outboundKri] = port
+		}
 		return outbounds, true
 	}
 
@@ -109,6 +138,28 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
 	return dc.destinationByIdentifier[kri.NoSectionName(id)]
+}
+
+// ResolveResourceIdentifier resolves one resource identifier based on the labels.
+// If multiple resources match the labels, the oldest one is returned.
+// The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
+func (dc *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *kri.Identifier {
+	if len(labels) == 0 {
+		return nil
+	}
+	var oldestCreationTime *time.Time
+	var oldestTri *kri.Identifier
+	for _, tri := range dc.resolveResourceIdentifiersForLabels(resType, labels) {
+		resource := dc.destinationByIdentifier[kri.NoSectionName(tri)].(core_model.Resource)
+		if resource != nil {
+			resCreationTime := resource.GetMeta().GetCreationTime()
+			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
+				oldestCreationTime = &resCreationTime
+				oldestTri = &tri
+			}
+		}
+	}
+	return oldestTri
 }
 
 func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_model.ResourceType, labels map[string]string) []kri.Identifier {

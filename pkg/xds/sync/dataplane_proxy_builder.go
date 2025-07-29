@@ -125,7 +125,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	bindOutbounds bool,
 ) []*xds_types.Outbound {
 	if !tpEnabled && !bindOutbounds {
-		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
+		return asOutbounds(dataplane, meshContext.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier)
 	}
 	reachableServices := map[string]bool{}
 	var reachableBackends map[kri.Identifier]core_resources.Port

@@ -54,7 +54,7 @@ func (i IngressGenerator) Generate(
 			meshResources.MeshMultiZoneServices().Items,
 			nil,
 			xdsCtx.ControlPlane.SystemNamespace,
-			xdsCtx.Mesh.ResolveResourceIdentifier,
+			xdsCtx.Mesh.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier,
 		)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
