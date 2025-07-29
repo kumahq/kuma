@@ -2,7 +2,6 @@ package context
 
 import (
 	"encoding/base64"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -10,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
