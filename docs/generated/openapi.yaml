@@ -4369,7 +4369,10 @@ components:
       type: object
       required:
         - conf
+        - kri
       properties:
+        kri:
+          type: string
         conf:
           description: >-
             The final computed configuration for the data plane proxy, derived
