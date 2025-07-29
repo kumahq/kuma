@@ -38,7 +38,7 @@ func (g *ExternalServicesGenerator) Generate(
 		nil,
 		localResources.MeshExternalServices().Items,
 		"",
-		xdsCtx.Mesh.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier,
+		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
 	services := g.buildServices(endpointMap)
 

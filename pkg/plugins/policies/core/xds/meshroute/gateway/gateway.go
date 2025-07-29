@@ -104,7 +104,7 @@ func CollectListenerInfos(
 			listener.listener.GetPort(),
 			listener.listener.GetProtocol(),
 			listener.sublisteners,
-			meshCtx.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier,
+			meshCtx.ResolveResourceIdentifier,
 		)
 
 		infos[port] = plugin_gateway.GatewayListenerInfo{

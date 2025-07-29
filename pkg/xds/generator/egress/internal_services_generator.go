@@ -2,7 +2,6 @@ package egress
 
 import (
 	"context"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -33,7 +32,6 @@ func (g *InternalServicesGenerator) Generate(
 	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)
 
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
-
 	destinations := zoneproxy.BuildMeshDestinations(
 		availableServices,
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
@@ -41,7 +39,7 @@ func (g *InternalServicesGenerator) Generate(
 		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
 		nil,
 		"",
-		xdsCtx.Mesh.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier,
+		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
 
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)

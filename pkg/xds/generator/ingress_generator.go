@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -54,7 +53,7 @@ func (i IngressGenerator) Generate(
 			meshResources.MeshMultiZoneServices().Items,
 			nil,
 			xdsCtx.ControlPlane.SystemNamespace,
-			xdsCtx.Mesh.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier,
+			xdsCtx.Mesh.ResolveResourceIdentifier,
 		)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)

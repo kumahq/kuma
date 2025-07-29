@@ -2,6 +2,7 @@ package context
 
 import (
 	"encoding/base64"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -95,6 +96,13 @@ type ServiceInformation struct {
 }
 
 type ReachableBackends map[kri.Identifier]bool
+
+// ResolveResourceIdentifier resolves one resource identifier based on the labels.
+// If multiple resources match the labels, the oldest one is returned.
+// The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
+func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *kri.Identifier {
+	return mc.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier(resType, labels)
+}
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
