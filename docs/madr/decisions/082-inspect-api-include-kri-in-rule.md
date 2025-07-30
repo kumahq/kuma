@@ -82,3 +82,5 @@ policies:
       - kri: kri_mtp_mesh-1___mesh-operator_
       - kri: kri_mtp_mesh-1__kuma-demo_service-owner_
 ```
+
+Here is the draft pr with schema change according to this MADR: https://github.com/kumahq/kuma/pull/14084
