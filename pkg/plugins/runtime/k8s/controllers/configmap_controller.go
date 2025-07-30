@@ -93,7 +93,6 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&mesh_k8s.MeshGatewayRoute{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayRouteToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Complete(r)
 }
 
