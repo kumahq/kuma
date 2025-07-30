@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/types"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -60,6 +61,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 			continue
 		}
+		hasRunForFile := false
 		ast.Inspect(file, func(n ast.Node) bool {
 			typeSpec, ok := n.(*ast.TypeSpec)
 			if !ok {
@@ -79,9 +81,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 
 			analyzeStructFields(pass, structType, typeSpec.Name.Name, false)
+			hasRunForFile = true
 
 			return false
 		})
+		if !hasRunForFile {
+			if *debugLog {
+				fmt.Println("DEBUG: No struct with the same name as filename found in file", fileNameWithoutExtension)
+			}
+		}
 	}
 	return nil, nil
 }
@@ -127,11 +135,10 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 				} else {
 					analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
 				}
-				continue
 			}
 		}
 
-		// Handle pointers to slices (*[]T)
+		// Handle slices ([]T)
 		if arrayType, ok := baseType.(*ast.ArrayType); ok {
 			if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
 				namedStruct := findStructByName(pass, elemIdent.Name)
@@ -139,6 +146,22 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 					analyzeStructFields(pass, namedStruct, fieldPath+"[]", false)
 				}
 			}
+
+			// Resolve the type of the slice element using type information
+			elemType := pass.TypesInfo.TypeOf(arrayType.Elt)
+
+			// Dereference named types to get to the struct
+			if named, ok := elemType.(*types.Named); ok {
+				namedStruct := findStructByName(pass, named.String())
+				if namedStruct != nil {
+					analyzeStructFields(pass, namedStruct, fieldPath+"[]", false)
+				}
+			}
+		}
+
+		// we do not lint default field
+		if fieldName == "Default" {
+			continue
 		}
 
 		if hasAnnotations(field, nolintAnnotation) {
@@ -163,7 +186,11 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, defaultAnnotation+", "+optionalAnnotation)
 			}
 		} else {
-			_, isValid := determineNonMergeableCategory(field)
+			category, isValid := determineNonMergeableCategory(field)
+
+			if *debugLog {
+				fmt.Println("DEBUG: Field", fieldPath, "is in non-mergeable category:", category)
+			}
 
 			if !isValid {
 				pass.Reportf(field.Pos(), "field %s does not match any allowed non-mergeable category", fieldPath)
@@ -172,8 +199,17 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 	}
 }
 
+var CommonTypes = map[string]*ast.StructType{}
+
 func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 	var foundStruct *ast.StructType
+
+	if CommonTypes[structName] != nil {
+		if *debugLog {
+			fmt.Println("DEBUG: Found struct in CommonTypes:", structName)
+		}
+		return CommonTypes[structName]
+	}
 
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {

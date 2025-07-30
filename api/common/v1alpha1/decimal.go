@@ -17,3 +17,5 @@ func NewDecimalFromIntOrString(intOrString intstr.IntOrString) (decimal.Decimal,
 		return decimal.Zero, fmt.Errorf("invalid IntOrString '%s'", intOrString.String())
 	}
 }
+
+type Decimal struct {}
