@@ -2,9 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "Kong/public-shared-renovate:backend",
+    "Kong/public-shared-renovate:makefile",
     "kumahq/kuma//.renovate/go-control-plane",
-    "kumahq/kuma//.renovate/mise",
-    "kumahq/kuma//.renovate/makefile"
+    "kumahq/kuma//.renovate/mise"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -22,7 +22,8 @@
     ],
     "assignees": [
       "@kumahq/kuma-security-managers"
-    ]
+    ],
+    "commitMessageSuffix": ""
   },
   "ignorePaths": [],
   "kubernetes": {
@@ -60,6 +61,13 @@
       "matchFileNames": [
         "app/kumactl/data/install/k8s/**"
       ]
+    },
+    {
+      "description": "Change commit message topic to 'envoy' for kumahq/envoy-builds, which are our own builds of released Envoy versions. This dependency is managed by the custom regex manager for Makefiles. We only change the topic to better reflect the component being updated",
+      "matchDepNames": [
+        "kumahq/envoy-builds"
+      ],
+      "commitMessageTopic": "envoy"
     }
   ]
 }
