@@ -35,4 +35,4 @@ clang-format = "13.0.0"
 golangci-lint = "2.2.2"
 skaffold = "2.16.1"
 # ⚠️ If you change this name, also update `MISE_DISABLE_TOOLS` in .github/workflows/_e2e.yaml
-"aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.1.0"
+"aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.5.1"
