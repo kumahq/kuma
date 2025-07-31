@@ -21,7 +21,10 @@ func main() {
 		Fset: token.NewFileSet(),
 	}
 
-	entries, _ := os.ReadDir("api/common/v1alpha1")
+	entries, err := os.ReadDir("api/common/v1alpha1")
+	if err != nil {
+		entries = []os.DirEntry{}
+	}
 	commonPackages := []string{"github.com/kumahq/kuma/api/common/v1alpha1"}
 	for _, entry := range entries {
 		if entry.IsDir() {
