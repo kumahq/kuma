@@ -42,6 +42,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -1008,12 +1009,19 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 			continue
 		}
 
+		var policyRules []api_common.PolicyRule
+		for _, rule := range rules {
+			policyRules = append(policyRules, api_common.PolicyRule{
+				Conf: rule.Conf.GetDefault(),
+			})
+		}
+
+		originResources := util_slices.Map(rules, func(rule *inbound.Rule) core_model.ResourceMeta { return rule.Origin.Resource })
+
 		conf = append(conf, api_common.InboundPolicyConf{
-			Rules: []api_common.PolicyRule{{
-				Conf: rules[0].Conf,
-			}},
+			Rules:   policyRules,
 			Kind:    string(matched.Type),
-			Origins: policyOriginsToKRIOrigins(matched.Type, util_slices.Map(rules[0].Origin, func(o common.Origin) core_model.ResourceMeta { return o.Resource })),
+			Origins: policyOriginsToKRIOrigins(matched.Type, originResources),
 		})
 	}
 
@@ -1224,8 +1232,8 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				rs := make([]api_common.InboundRule, len(rulesForInbound))
 				for i := range rulesForInbound {
 					rs[i] = api_common.InboundRule{
-						Conf:   rulesForInbound[i].Conf,
-						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, rulesForInbound[i].Origin),
+						Conf:   []interface{}{rulesForInbound[i].Conf.GetDefault()},
+						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}
 				var tags map[string]string
