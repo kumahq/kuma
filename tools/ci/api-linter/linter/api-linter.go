@@ -107,7 +107,13 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 	for _, field := range structType.Fields.List {
 		fieldName := ""
 		if len(field.Names) != 1 {
-			pass.Reportf(field.Pos(), "field must have exactly one name")
+			var names []string
+			for _, name := range field.Names {
+				names = append(names, name.Name)
+			}
+			if !hasAnnotations(field, nolintAnnotation) {
+				pass.Reportf(field.Pos(), "field in struct %s must have exactly one name, got [%s]", parentPath, strings.Join(names, ","))
+			}
 			continue
 		}
 		fieldName = field.Names[0].Name
