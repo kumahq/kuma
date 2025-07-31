@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"log"
+	"os"
+
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 	"golang.org/x/tools/go/packages"
-	"log"
-	"os"
 
 	"github.com/kumahq/kuma/tools/ci/api-linter/linter"
 )
@@ -16,12 +17,11 @@ import (
 func main() {
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
-		Dir:  ".", // optional
+		Dir:  ".",
 		Fset: token.NewFileSet(),
 	}
 
-	// Load packages in the order you want
-	entries, err := os.ReadDir("api/common/v1alpha1")
+	entries, _ := os.ReadDir("api/common/v1alpha1")
 	commonPackages := []string{"github.com/kumahq/kuma/api/common/v1alpha1"}
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -37,7 +37,7 @@ func main() {
 	for _, pkg := range pkgs {
 		pass := &analysis.Pass{
 			Analyzer:  linter.Analyzer,
-			Fset:      cfg.Fset,
+			Fset:      pkg.Fset,
 			Pkg:       pkg.Types,
 			Files:     pkg.Syntax,
 			TypesInfo: pkg.TypesInfo,
