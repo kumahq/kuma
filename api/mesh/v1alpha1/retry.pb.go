@@ -161,7 +161,7 @@ type Retry struct {
 	Sources []*Selector `protobuf:"bytes,1,rep,name=sources,proto3" json:"sources,omitempty"`
 	// List of selectors to match services that need to be health checked.
 	Destinations []*Selector `protobuf:"bytes,2,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	// +required
+	//  +required
 	Conf *Retry_Conf `protobuf:"bytes,3,opt,name=conf,proto3" json:"conf,omitempty"`
 }
 
@@ -286,9 +286,9 @@ type Retry_Conf_BackOff struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// +required
+	//  +required
 	BaseInterval *durationpb.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
-	// +optional
+	//  +optional
 	MaxInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
 }
 
@@ -343,17 +343,17 @@ type Retry_Conf_Http struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// +optional
+	//  +optional
 	NumRetries *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
-	// +optional
+	//  +optional
 	PerTryTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
-	// +optional
+	//  +optional
 	BackOff *Retry_Conf_BackOff `protobuf:"bytes,4,opt,name=back_off,json=backOff,proto3" json:"back_off,omitempty"`
-	// +optional
+	//  +optional
 	RetriableStatusCodes []uint32 `protobuf:"varint,5,rep,packed,name=retriable_status_codes,json=retriableStatusCodes,proto3" json:"retriable_status_codes,omitempty"`
-	// +optional
+	//  +optional
 	RetriableMethods []HttpMethod `protobuf:"varint,6,rep,packed,name=retriable_methods,json=retriableMethods,proto3,enum=kuma.mesh.v1alpha1.HttpMethod" json:"retriable_methods,omitempty"`
-	// +optional
+	//  +optional
 	RetryOn []HttpRetryOn `protobuf:"varint,7,rep,packed,name=retry_on,json=retryOn,proto3,enum=kuma.mesh.v1alpha1.HttpRetryOn" json:"retry_on,omitempty"`
 }
 
@@ -436,7 +436,7 @@ type Retry_Conf_Tcp struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// +optional
+	//  +optional
 	MaxConnectAttempts uint32 `protobuf:"varint,1,opt,name=max_connect_attempts,json=maxConnectAttempts,proto3" json:"max_connect_attempts,omitempty"`
 }
 
@@ -484,13 +484,13 @@ type Retry_Conf_Grpc struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// +optional
+	//  +optional
 	RetryOn []Retry_Conf_Grpc_RetryOn `protobuf:"varint,1,rep,packed,name=retry_on,json=retryOn,proto3,enum=kuma.mesh.v1alpha1.Retry_Conf_Grpc_RetryOn" json:"retry_on,omitempty"`
-	// +optional
+	//  +optional
 	NumRetries *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
-	// +optional
+	//  +optional
 	PerTryTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
-	// +optional
+	//  +optional
 	BackOff *Retry_Conf_BackOff `protobuf:"bytes,4,opt,name=back_off,json=backOff,proto3" json:"back_off,omitempty"`
 }
 
