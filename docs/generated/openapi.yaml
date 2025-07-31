@@ -4286,6 +4286,7 @@ components:
         - kri
         - port
         - protocol
+        - proxyResourceName
       properties:
         kri:
           type: string
@@ -4293,6 +4294,8 @@ components:
           type: integer
           x-go-type: int32
         protocol:
+          type: string
+        proxyResourceName:
           type: string
     DataplaneOutbound:
       type: object
@@ -4300,6 +4303,7 @@ components:
         - kri
         - port
         - protocol
+        - proxyResourceName
       properties:
         kri:
           type: string
@@ -4307,6 +4311,8 @@ components:
           type: integer
           x-go-type: int32
         protocol:
+          type: string
+        proxyResourceName:
           type: string
     PolicyOrigin:
       type: object
