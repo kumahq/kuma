@@ -130,7 +130,7 @@ func newEchoHTTPCmd() *cobra.Command {
 			secondInboundMux := http.NewServeMux()
 			secondInboundMux.HandleFunc("/", handleEcho)
 			go func() {
-				_ = http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(secondaryInboundPort)), secondInboundMux) // nolint: gosec
+				_ = http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(secondaryInboundPort)), secondInboundMux) //nolint:gosec
 			}()
 			return srv.ListenAndServe()
 		},

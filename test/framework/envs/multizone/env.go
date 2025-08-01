@@ -187,7 +187,7 @@ func SetupAndGetState() []byte {
 		},
 	}
 	// govet complains of marshaling with mutex, we know what we're doing here
-	bytes, err := json.Marshal(state) // nolint:govet
+	bytes, err := json.Marshal(state) //nolint:govet
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
 }

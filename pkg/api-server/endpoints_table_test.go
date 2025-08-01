@@ -84,7 +84,7 @@ var _ = Describe("Endpoints", func() {
 	DescribeTable("base_endpoints",
 		func(path string) {
 			url := fmt.Sprintf("http://%s%s", apiServer.Address(), path)
-			res, err := http.Get(url) // nolint:gosec
+			res, err := http.Get(url) //nolint:gosec
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(res).To(HaveHTTPStatus(http.StatusOK))

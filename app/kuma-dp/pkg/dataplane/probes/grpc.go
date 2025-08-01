@@ -49,7 +49,7 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 	client := grpchealth.NewHealthClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), getTimeout(req))
 	defer cancel()
-	resp, err := client.Check(metadata.NewOutgoingContext(ctx, make(metadata.MD)), // nolint: contextcheck
+	resp, err := client.Check(metadata.NewOutgoingContext(ctx, make(metadata.MD)), //nolint:contextcheck
 		&grpchealth.HealthCheckRequest{
 			Service: getGRPCService(req),
 		})
