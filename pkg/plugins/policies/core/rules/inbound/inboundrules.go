@@ -5,17 +5,27 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 )
 
 type Rule struct {
-	Conf   []interface{}   `json:"conf"`
-	Origin []common.Origin `json:"origin"`
+	Conf   RuleEntry     `json:"conf"`
+	Origin common.Origin `json:"origin"`
 }
 
 func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
 	var result T
-	if len(rules) > 0 && len(rules[0].Conf) > 0 {
-		result = rules[0].Conf[0].(T)
+	if len(rules) > 0 {
+		entries := util_slices.Map(rules, func(a *Rule) common.WithPolicyAttributes[RuleEntry] {
+			return common.WithPolicyAttributes[RuleEntry]{Entry: a.Conf}
+		})
+		conf, err := merge.Entries(entries)
+		if err != nil {
+			return result
+		}
+		if len(conf) > 0 {
+			result = conf[0].(T)
+		}
 	}
 	return result
 }
@@ -105,15 +115,18 @@ func buildRules[T interface {
 
 	Sort(list)
 
-	merged, err := merge.Entries(list)
-	if err != nil {
-		return nil, err
+	var rules []*Rule
+	for _, entry := range list {
+		rules = append(rules, &Rule{
+			Conf: entry.GetEntry(),
+			Origin: common.Origin{
+				Resource:  entry.GetResourceMeta(),
+				RuleIndex: entry.GetRuleIndex(),
+			},
+		})
 	}
 
-	return []*Rule{{
-		Conf:   merged,
-		Origin: common.Origins(list, true),
-	}}, nil
+	return rules, nil
 }
 
 func AffectsInbounds(p core_model.Policy) bool {

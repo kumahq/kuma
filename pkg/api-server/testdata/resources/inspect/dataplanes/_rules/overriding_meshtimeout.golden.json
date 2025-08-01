@@ -56,7 +56,7 @@
       {
        "conf": [
         {
-         "connectionTimeout": "20s",
+         "connectionTimeout": "2s",
          "idleTimeout": "20s",
          "http": {
           "requestTimeout": "5s"
@@ -72,7 +72,16 @@
           "type": "MeshTimeout"
          },
          "ruleIndex": 0
-        },
+        }
+       ]
+      },
+      {
+       "conf": [
+        {
+         "connectionTimeout": "20s"
+        }
+       ],
+       "origin": [
         {
          "resourceMeta": {
           "labels": {},

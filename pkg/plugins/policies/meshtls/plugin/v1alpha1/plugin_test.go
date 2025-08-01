@@ -20,6 +20,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -377,49 +378,55 @@ func getPolicy(caseName string) *api.MeshTLSResource {
 }
 
 func getFromRules(froms []api.From) core_rules.FromRules {
-	var rules []*core_rules.Rule
-	var confs []interface{}
+	var legacyRules []*core_rules.Rule
+	var rules []*inbound.Rule
 
 	for _, from := range froms {
-		rules = append(rules, &core_rules.Rule{
+		legacyRules = append(legacyRules, &core_rules.Rule{
 			Subset: subsetutils.Subset{},
 			Conf:   from.Default,
 		})
-		confs = append(confs, from.Default)
+		rules = append(rules, &inbound.Rule{
+			Conf:   &from,
+			Origin: common.Origin{},
+		})
 	}
 
 	return core_rules.FromRules{
 		Rules: map[core_rules.InboundListener]core_rules.Rules{
-			{Address: "127.0.0.1", Port: 17777}: rules,
-			{Address: "127.0.0.1", Port: 17778}: rules,
+			{Address: "127.0.0.1", Port: 17777}: legacyRules,
+			{Address: "127.0.0.1", Port: 17778}: legacyRules,
 		},
 		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-			{Address: "127.0.0.1", Port: 17777}: {{Conf: confs}},
-			{Address: "127.0.0.1", Port: 17778}: {{Conf: confs}},
+			{Address: "127.0.0.1", Port: 17777}: rules,
+			{Address: "127.0.0.1", Port: 17778}: rules,
 		},
 	}
 }
 
 func getGatewayRules(froms []api.From) core_rules.GatewayRules {
-	var rules []*core_rules.Rule
-	var confs []interface{}
+	var legacyRules []*core_rules.Rule
+	var rules []*inbound.Rule
 
 	for _, from := range froms {
-		rules = append(rules, &core_rules.Rule{
+		legacyRules = append(legacyRules, &core_rules.Rule{
 			Subset: subsetutils.Subset{},
 			Conf:   from.Default,
 		})
-		confs = append(confs, from.Default)
+		rules = append(rules, &inbound.Rule{
+			Conf:   &from,
+			Origin: common.Origin{},
+		})
 	}
 
 	return core_rules.GatewayRules{
 		FromRules: map[core_rules.InboundListener]core_rules.Rules{
-			{Address: "127.0.0.1", Port: 17777}: rules,
-			{Address: "127.0.0.1", Port: 17778}: rules,
+			{Address: "127.0.0.1", Port: 17777}: legacyRules,
+			{Address: "127.0.0.1", Port: 17778}: legacyRules,
 		},
 		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-			{Address: "127.0.0.1", Port: 17777}: {{Conf: confs}},
-			{Address: "127.0.0.1", Port: 17778}: {{Conf: confs}},
+			{Address: "127.0.0.1", Port: 17777}: rules,
+			{Address: "127.0.0.1", Port: 17778}: rules,
 		},
 	}
 }
