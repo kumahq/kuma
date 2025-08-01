@@ -1,0 +1,8 @@
+ingress:
+  enabled: true
+  replicas: 3
+  service:
+    loadBalancerSourceRanges:
+    - 10.0.0.0/8
+    - 11.12.13.14/32
+    - 15.16.17.18/24
