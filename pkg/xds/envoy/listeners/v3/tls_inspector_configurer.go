@@ -17,14 +17,14 @@ type TLSInspectorConfigurer struct {
 var _ ListenerConfigurer = &TLSInspectorConfigurer{}
 
 func (c *TLSInspectorConfigurer) Configure(l *envoy_listener.Listener) error {
-	any, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_listener_tls_inspector_v3.TlsInspector{})
+	typedConfig, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_listener_tls_inspector_v3.TlsInspector{})
 	if err != nil {
 		return err
 	}
 	listenerFilter := &envoy_listener.ListenerFilter{
 		Name: TlsInspectorName,
 		ConfigType: &envoy_listener.ListenerFilter_TypedConfig{
-			TypedConfig: any,
+			TypedConfig: typedConfig,
 		},
 	}
 	if len(c.DisabledPorts) > 0 {

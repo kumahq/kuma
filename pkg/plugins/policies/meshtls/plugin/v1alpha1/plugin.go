@@ -190,8 +190,7 @@ func applyToRealResources(
 		}
 
 		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ClusterType:
+			if typ == envoy_resource.ClusterType {
 				for _, cluster := range resources {
 					if err := configureParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
 						return err
