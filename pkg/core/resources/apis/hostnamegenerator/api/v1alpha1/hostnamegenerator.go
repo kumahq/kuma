@@ -20,7 +20,7 @@ type Selector struct {
 // hostname generators to not get synced across zones
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 type HostnameGenerator struct {
-	// +kuma:nolint
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Selector Selector `json:"selector,omitempty"`
 	Template string   `json:"template"`
 	// Extension struct for a plugin configuration
