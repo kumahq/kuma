@@ -71,9 +71,11 @@ default:
       name: good first issue
       description: "Good for newcomers"
     - color: e11d21
-      name: security
-      delete: true
+      name: area/security
+      description: "Related to security issues, fixes, or improvements"
     # a bunch of labels to remove
+    - name: security
+      delete: true
     - name: bug
       delete: true
     - name: feature

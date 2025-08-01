@@ -10,56 +10,18 @@
       "prFooter": "> Changelog: skip"
     },
     {
-      "description": "Allow protoc updates only within the 3.20.x version range",
-      "matchManagers": ["mise"],
-      "matchDepNames": ["protoc"],
-      "allowedVersions": "/^3\\.20\\.[0-9]+$/"
-    },
-    {
-      "description": "Disable updates for clang-format since we're using a legacy version and protobufs in Kuma are deprecated, so upgrading is not worth the effort",
-      "matchDepNames": ["clang-format"],
+      "description": "Disable updates for clang-format and protoc since we're using a legacy versions and protobufs in Kuma are deprecated, so upgrading is not worth the effort",
+      "matchDepNames": ["clang-format", "protoc"],
       "enabled": false
     },
     {
-      "matchDepNames": ["aqua:helm/chart-releaser"],
-      "overrideDepName": "helm-cr"
-    },
-    {
-      "matchDepNames": ["aqua:k3d-io/k3d"],
-      "overrideDepName": "k3d"
-    },
-    {
-      "matchDepNames": ["aqua:stackrox/kube-linter"],
-      "overrideDepName": "kube-linter"
-    },
-    {
-      "matchDepNames": ["aqua:protocolbuffers/protobuf-go/protoc-gen-go"],
-      "overrideDepName": "protoc-gen-go"
+      "description": "Simplify commit message topic for aqua and go packages by stripping namespace prefix",
+      "matchDepNames": ["/^(?:aqua|go):/"],
+      "commitMessageTopic": "{{{replace '([^\\/]*?\\/)*' '' depName}}}"
     },
     {
       "matchDepNames": ["aqua:grpc/grpc-go/protoc-gen-go-grpc"],
-      "overrideDepName": "protoc-gen-go-grpc",
       "extractVersion": "^cmd/protoc-gen-go-grpc/(?<version>.*)$"
-    },
-    {
-      "matchDepNames": ["aqua:bufbuild/protoc-gen-validate"],
-      "overrideDepName": "protoc-gen-validate"
-    },
-    {
-      "matchDepNames": ["go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema"],
-      "overrideDepName": "protoc-gen-jsonschema"
-    },
-    {
-      "matchDepNames": ["go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"],
-      "overrideDepName": "oapi-codegen"
-    },
-    {
-      "matchDepNames": ["go:sigs.k8s.io/controller-tools/cmd/controller-gen"],
-      "overrideDepName": "controller-gen"
-    },
-    {
-      "matchDepNames": ["go:sigs.k8s.io/controller-runtime/tools/setup-envtest"],
-      "overrideDepName": "setup-envtest"
     }
   ]
 }
