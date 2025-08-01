@@ -1,0 +1,10 @@
+selector:
+  dataplane:
+    matchLabels: {}
+provider:
+  type: Bundled
+  bundled:
+    meshTrustCreation: Disabled
+    insecureAllowSelfSigned: true
+    autogenerate:
+      enabled: true
