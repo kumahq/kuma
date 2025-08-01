@@ -11,16 +11,18 @@ const (
 
 // DataplaneInbound defines model for DataplaneInbound.
 type DataplaneInbound struct {
-	Kri      string `json:"kri"`
-	Port     int32  `json:"port"`
-	Protocol string `json:"protocol"`
+	Kri               string `json:"kri"`
+	Port              int32  `json:"port"`
+	Protocol          string `json:"protocol"`
+	ProxyResourceName string `json:"proxyResourceName"`
 }
 
 // DataplaneOutbound defines model for DataplaneOutbound.
 type DataplaneOutbound struct {
-	Kri      string `json:"kri"`
-	Port     int32  `json:"port"`
-	Protocol string `json:"protocol"`
+	Kri               string `json:"kri"`
+	Port              int32  `json:"port"`
+	Protocol          string `json:"protocol"`
+	ProxyResourceName string `json:"proxyResourceName"`
 }
 
 // FromRule defines model for FromRule.

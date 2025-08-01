@@ -63,6 +63,15 @@ func (rc *ResourceContext[T]) Conf() T {
 	return rc.fallback
 }
 
+func (rc *ResourceContext[T]) ResourceRule() *ResourceRule {
+	for _, id := range rc.ids {
+		if rule, ok := rc.rules[id]; ok {
+			return &rule
+		}
+	}
+	return nil
+}
+
 func (rc *ResourceContext[T]) DirectConf() (T, bool) {
 	if len(rc.ids) != 0 {
 		if rule, ok := rc.rules[rc.ids[0]]; ok {
