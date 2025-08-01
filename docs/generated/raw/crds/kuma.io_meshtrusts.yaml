@@ -1,0 +1,91 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: meshtrusts.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTrust
+    listKind: MeshTrustList
+    plural: meshtrusts
+    shortNames:
+    - mtrust
+    singular: meshtrust
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTrust resource.
+            properties:
+              caBundles:
+                description: |-
+                  CABundles contains a list of CA bundles supported by this TrustDomain.
+                  At least one CA bundle must be specified.
+                items:
+                  properties:
+                    pem:
+                      description: Pem contains the PEM-encoded CA bundle if the Type
+                        is set to a PEM-based format.
+                      properties:
+                        value:
+                          description: Value holds the PEM-encoded CA bundle as a
+                            string.
+                          type: string
+                      required:
+                      - value
+                      type: object
+                    type:
+                      description: Type specifies the format or source type of the
+                        CA bundle.
+                      enum:
+                      - Pem
+                      type: string
+                  required:
+                  - type
+                  type: object
+                minItems: 1
+                type: array
+              origin:
+                description: Origin specifies whether the resource was created from
+                  a MeshIdentity.
+                properties:
+                  kri:
+                    description: Resource identifier
+                    type: string
+                type: object
+              trustDomain:
+                description: TrustDomain is the trust domain associated with this
+                  resource.
+                type: string
+            required:
+            - caBundles
+            - trustDomain
+            type: object
+        type: object
+    served: true
+    storage: true

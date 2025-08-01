@@ -931,6 +931,7 @@ plugins:
     meshexternalservices: true
     meshmultizoneservices: true
     meshservices: true
+    meshtrusts: true
   policies:
     meshaccesslogs: true
     meshcircuitbreakers: true
