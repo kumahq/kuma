@@ -64,7 +64,7 @@ func (c *TracingConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 	})
 }
 
-func datadogConfig(cfgStr *structpb.Struct, backendName string, serviceName string, direction envoy_common.TrafficDirection, destination string) (*envoy_trace.Tracing_Http, error) {
+func datadogConfig(cfgStr *structpb.Struct, backendName, serviceName string, direction envoy_common.TrafficDirection, destination string) (*envoy_trace.Tracing_Http, error) {
 	cfg := mesh_proto.DatadogTracingBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
 		return nil, errors.Wrap(err, "could not convert backend")

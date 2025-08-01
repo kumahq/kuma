@@ -389,7 +389,7 @@ spec:
 	})
 }
 
-func collectMetric(cluster Cluster, name string, namespace string, metricName string) (int, error) {
+func collectMetric(cluster Cluster, name, namespace, metricName string) (int, error) {
 	resp, _, err := client.CollectResponse(cluster, name, fmt.Sprintf("http://localhost:9901/stats?filter=%s", metricName), client.FromKubernetesPod(namespace, name))
 	if err != nil {
 		return -1, err
@@ -406,7 +406,7 @@ func collectMetric(cluster Cluster, name string, namespace string, metricName st
 	}
 }
 
-func resetCounter(cluster Cluster, name string, namespace string) error {
+func resetCounter(cluster Cluster, name, namespace string) error {
 	_, _, err := client.CollectResponse(
 		cluster, name, "http://localhost:9901/reset_counters",
 		client.FromKubernetesPod(namespace, name),
@@ -416,7 +416,7 @@ func resetCounter(cluster Cluster, name string, namespace string) error {
 }
 
 // TODO(lukidzi): use test-server implementation: https://github.com/kumahq/kuma/issues/8245
-func DeleteK8sApp(c Cluster, name string, namespace string) error {
+func DeleteK8sApp(c Cluster, name, namespace string) error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "service", name); err != nil {
 		return err
 	}

@@ -72,7 +72,7 @@ func DumpReport(report ginkgo.Report) {
 		}
 	}
 	logf("saving report to %q DumpOnSuccess: %v", basePath, DumpOnSuccess)
-	writeEntry := func(path string, data string) {
+	writeEntry := func(path, data string) {
 		err := os.MkdirAll(filepath.Dir(path), 0o755)
 		if err != nil {
 			logf("[WARNING]: failed to create directory %q: %v", path, err)

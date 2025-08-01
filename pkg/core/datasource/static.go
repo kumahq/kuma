@@ -51,7 +51,7 @@ func (s *staticLoader) Load(_ context.Context, mesh string, source *system_proto
 	return data, nil
 }
 
-func (s *staticLoader) loadSecret(mesh string, name string) ([]byte, error) {
+func (s *staticLoader) loadSecret(mesh, name string) ([]byte, error) {
 	key := model.ResourceKey{
 		Mesh: mesh,
 		Name: name,

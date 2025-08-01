@@ -89,7 +89,7 @@ func (v *SecretValidator) handleDelete(ctx context.Context, req admission.Reques
 	return admission.Allowed("")
 }
 
-func (v *SecretValidator) validate(ctx context.Context, secret *kube_core.Secret, oldSecret *kube_core.Secret) error {
+func (v *SecretValidator) validate(ctx context.Context, secret, oldSecret *kube_core.Secret) error {
 	verr := &validators.ValidationError{}
 
 	switch secret.Type {
@@ -104,7 +104,7 @@ func (v *SecretValidator) validate(ctx context.Context, secret *kube_core.Secret
 	return verr.OrNil()
 }
 
-func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validators.ValidationError, secret *kube_core.Secret, oldSecret *kube_core.Secret) error {
+func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validators.ValidationError, secret, oldSecret *kube_core.Secret) error {
 	// validate mesh exists
 	mesh := mesh_k8s.Mesh{}
 	key := kube_types.NamespacedName{

@@ -164,7 +164,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	return nil
 }
 
-func assertFound(r core_model.Resource, secret *kube_core.Secret, name string, mesh string) error {
+func assertFound(r core_model.Resource, secret *kube_core.Secret, name, mesh string) error {
 	switch r.Descriptor().Name {
 	case secret_model.SecretType:
 		// secret must match mesh and be a proper type, otherwise return not found

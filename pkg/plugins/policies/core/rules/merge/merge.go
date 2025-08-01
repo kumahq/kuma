@@ -336,7 +336,7 @@ func clearAppendSlices(val reflect.Value) {
 }
 
 // dst and src has to be of a same type
-func appendSlices(dst reflect.Value, src reflect.Value) {
+func appendSlices(dst, src reflect.Value) {
 	strDst := mustUnwrapStruct(dst)
 	strSrc := mustUnwrapStruct(src)
 	if strSrc == reflect.ValueOf(nil) || strDst == reflect.ValueOf(nil) {

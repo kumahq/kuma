@@ -80,7 +80,7 @@ func Inspect() {
 	})
 
 	DescribeTable("should execute inspect of policies",
-		func(policyType string, policyName string) {
+		func(policyType, policyName string) {
 			Eventually(func(g Gomega) {
 				r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName))
 				g.Expect(err).ToNot(HaveOccurred())

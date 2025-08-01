@@ -370,7 +370,7 @@ var _ = Describe("run", func() {
 	})
 }, Ordered)
 
-func verifyComponentProcess(processDescription, pidfile string, cmdlinefile string, argsVerifier func(expectedArgs []string)) int64 {
+func verifyComponentProcess(processDescription, pidfile, cmdlinefile string, argsVerifier func(expectedArgs []string)) int64 {
 	var pid int64
 	By(fmt.Sprintf("waiting for dataplane (%s) to get started", processDescription))
 	Eventually(func() bool {
