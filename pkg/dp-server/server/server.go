@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"google.golang.org/grpc/reflection"
 	"net"
 	"net/http"
 	"strings"
@@ -59,6 +60,9 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 	}
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
 	grpcServer := grpc.NewServer(grpcOptions...)
+
+	// adding reflection server in dp server
+	reflection.Register(grpcServer)
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
