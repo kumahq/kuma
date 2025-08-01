@@ -352,7 +352,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneReadinessPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.ReadinessPort)))
 	}
 	// a request from an old DP will not include this field, so defaults to false
-	if parameters.AppProbeProxyEnabled {
+	if !parameters.AppProbeProxyDisabled {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneAppProbeProxyEnabled] = util_proto.MustNewValueForStruct("true")
 	}
 	if parameters.ProxyType != "" {
