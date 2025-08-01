@@ -22,7 +22,10 @@ GH_PAGES_BRANCH="gh-pages"
 #    from the repository. `cr` fetches explicit dependencies and they take
 #    precedence over embedded files.
 function update_version {
-  dev=${1}
+  local dev=$1
+  local kuma_version
+  local chart
+
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
       continue
@@ -49,6 +52,8 @@ function update_version {
 }
 
 function package {
+  local f
+
   # First package all the charts
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
@@ -88,22 +93,32 @@ function package {
 }
 
 function release {
+  local CHART_TAR
+  local CHART_FILE
+  local CHART_VERSION
+
   if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
-    msg_err "GH_TOKEN, GH_USER and GH_EMAIL required"
-  fi
-  if [ -n "${GITHUB_APP}" ]; then
-    [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
-  else
-    [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+    msg_err "GH_TOKEN, GH_USER and GH_EMAIL are required"
   fi
 
-  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
+  # This line assigns a default value to GH_REPO_URL only if it is unset or empty.
+  # Syntax: ${VAR:=default} sets VAR to 'default' if VAR is unset or null.
+  #
+  # It constructs the GitHub HTTPS URL using the provided token for authentication.
+  # The expression ${GITHUB_APP:+x-access-token:} conditionally inserts the prefix
+  # "x-access-token:" only when GITHUB_APP is set and non-empty.
+  # This is required for GitHub App tokens, while personal access tokens omit the prefix.
+  #
+  # The leading colon ':' is a no-op command used here to enable safe default assignment.
+  : "${GH_REPO_URL:=https://${GITHUB_APP:+x-access-token:}${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git}"
+
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "${GH_REPO_URL}"
 
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
   CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
-  pushd ${GH_REPO}
+  pushd "${GH_REPO}"
 
   # First upload the packaged charts to the release
   cr upload \
@@ -127,7 +142,7 @@ function release {
   git push
 
   popd
-  rm -rf ${GH_REPO}
+  rm -rf "${GH_REPO}"
 }
 
 
@@ -138,8 +153,11 @@ function usage {
 
 
 function main {
+  local flag=$1
+  local op
+  local dev
+
   while [[ $# -gt 0 ]]; do
-    flag=$1
     case $flag in
       --help)
         usage
@@ -158,7 +176,6 @@ function main {
         ;;
       *)
         usage
-        break
         ;;
     esac
     shift
