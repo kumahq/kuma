@@ -1,0 +1,28 @@
+{
+ "inbounds": [
+  {
+   "kri": "kri_dp_default_test-zone__dp-1_main-port",
+   "port": 8080,
+   "protocol": "http",
+   "proxyResourceName": ""
+  },
+  {
+   "kri": "kri_dp_default_test-zone__dp-1_secondary-port",
+   "port": 8081,
+   "protocol": "tcp",
+   "proxyResourceName": ""
+  }
+ ],
+ "kri": "kri_dp_default_test-zone__dp-1_",
+ "labels": {
+  "kuma.io/zone": "test-zone"
+ },
+ "outbounds": [
+  {
+   "kri": "kri_msvc_default_test-zone__test-server_80",
+   "port": 80,
+   "protocol": "http",
+   "proxyResourceName": ""
+  }
+ ]
+}

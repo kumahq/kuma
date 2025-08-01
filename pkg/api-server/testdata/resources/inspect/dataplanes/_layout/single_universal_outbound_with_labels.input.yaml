@@ -1,0 +1,47 @@
+#/meshes/default/dataplanes/dp-1/_layout 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: Dataplane
+name: dp-1
+mesh: default
+labels:
+  kuma.io/zone: test-zone
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      name: main-port
+      tags:
+        kuma.io/service: foo
+        kuma.io/protocol: http
+    - port: 8081
+      name: secondary-port
+      tags:
+        kuma.io/service: foo
+        kuma.io/protocol: tcp
+  outbound:
+    - port: 8080
+      backendRef:
+        kind: MeshService
+        port: 80
+        labels:
+          kuma.io/display-name: test-server
+---
+type: MeshService
+name: test-server-syncedhash
+mesh: default
+labels:
+  kuma.io/display-name: test-server
+  kuma.io/zone: test-zone
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
