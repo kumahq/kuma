@@ -112,7 +112,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 				names = append(names, name.Name)
 			}
 			if !hasAnnotations(field, nolintAnnotation) {
-				pass.Reportf(field.Pos(), "field in struct %s must have exactly one name, got [%s]", parentPath, strings.Join(names, ","))
+				pass.Reportf(field.Pos(), "field in struct %s must have exactly one name, got '%s'", parentPath, strings.Join(names, ","))
 			}
 			continue
 		}
@@ -137,10 +137,9 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			namedStruct := findStructByName(pass, ident.Name)
 			if namedStruct != nil {
 				if hasAnnotations(field, nonMergableAnotation) {
-					analyzeStructFields(pass, namedStruct, fieldPath, false)
-				} else {
-					analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
+					isMergeable = false
 				}
+				analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
 			}
 		}
 
