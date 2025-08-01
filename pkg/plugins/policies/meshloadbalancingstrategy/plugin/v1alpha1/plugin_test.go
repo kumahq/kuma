@@ -1016,6 +1016,59 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				).
 				Build(),
 		}),
+		Entry("locality_aware_cross_zone_cross_mesh_egress_enabled", testCase{
+			resources: []core_xds.Resource{
+				{
+					Name:   "mesh-1:eds-cluster",
+					Origin: egress.OriginEgress,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:eds-cluster").
+						Configure(clusters.EdsCluster()).
+						MustBuild(),
+				},
+			},
+			proxy: &core_xds.Proxy{
+				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
+				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+					MeshResourcesList: []*core_xds.MeshResources{
+						{
+							Mesh:    builders.Mesh().WithName("mesh-1").Build(),
+							Dynamic: nil,
+						},
+						{
+							Mesh: builders.Mesh().WithName("mesh-2").Build(),
+							Dynamic: core_xds.ExternalServiceDynamicPolicies{
+								"eds-cluster": {
+									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+										FromRules: core_rules.FromRules{
+											Rules: map[core_rules.InboundListener]core_rules.Rules{
+												{}: {
+													{
+														Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+															Disabled: pointer.To(false),
+															CrossZone: &v1alpha1.CrossZone{
+																Failover: []v1alpha1.Failover{
+																	{
+																		To: v1alpha1.ToZone{
+																			Type: v1alpha1.AnyExcept,
+																		},
+																	},
+																},
+															},
+														}},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			context: contextWithEgressEnabled(),
+		}),
 		Entry("locality_aware_split", testCase{
 			resources: []core_xds.Resource{
 				{
