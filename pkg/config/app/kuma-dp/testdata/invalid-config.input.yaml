@@ -10,5 +10,6 @@ dataplane:
   # and `Validate()` method is not be called at all.
   drainTime: 0
   proxyType: not-a-proxy
+  readinessPort: 0
 dataplaneRuntime:
   binaryPath:

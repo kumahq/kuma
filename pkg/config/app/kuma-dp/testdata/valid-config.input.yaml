@@ -8,6 +8,7 @@ dataplane:
   name: example
   drainTime: 60s
   proxyType: ingress
+  readinessPort: 9902
 dataplaneRuntime:
   binaryPath: envoy.sh
   configDir: /var/run/envoy

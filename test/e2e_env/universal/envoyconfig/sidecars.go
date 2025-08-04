@@ -91,10 +91,17 @@ func SetupSidecarCluster() {
 		).
 		Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 		Install(DemoClientUniversal("demo-client", meshName,
-			WithTransparentProxy(true)),
+			WithTransparentProxy(true),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR": "/tmp",
+			})),
 		).
 		Install(TestServerUniversal("test-server", meshName,
-			WithArgs([]string{"echo", "--instance", "universal-1"})),
+			WithArgs([]string{"echo", "--instance", "universal-1"}),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR": "/tmp",
+			}),
+		),
 		).
 		Setup(universal.Cluster)
 	Expect(err).ToNot(HaveOccurred())

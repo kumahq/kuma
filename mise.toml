@@ -13,14 +13,15 @@ protoc = "3.20.0"
 shellcheck = "0.10.0"
 yq = "4.47.1"
 "aqua:bufbuild/protoc-gen-validate" = "1.2.1"
+"aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.5.1"
 "aqua:helm/chart-releaser" = "1.7.0"
-"aqua:k3d-io/k3d" = "5.8.1"
+"aqua:k3d-io/k3d" = "5.8.3"
 "aqua:protocolbuffers/protobuf-go/protoc-gen-go" = "1.28.1"
 "aqua:stackrox/kube-linter" = "0.7.1"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.4.1"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.18.0"
-"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250630142431-4c2e9cec2954"
+"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250731065915-e8c5c5445a20"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/workflows/_build_publish.yaml
@@ -30,8 +31,7 @@ yq = "4.47.1"
 #     .github/workflows/merge-release-to-master.yaml
 #     .github/workflows/pr-comments.yaml
 #     .github/workflows/transparentproxy-tests.yaml
+#     .github/workflows/update-insecure-dependencies.yaml
 clang-format = "13.0.0"
-golangci-lint = "2.2.2"
+golangci-lint = "2.3.1"
 skaffold = "2.16.1"
-# ⚠️ If you change this name, also update `MISE_DISABLE_TOOLS` in .github/workflows/_e2e.yaml
-"aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.1.0"

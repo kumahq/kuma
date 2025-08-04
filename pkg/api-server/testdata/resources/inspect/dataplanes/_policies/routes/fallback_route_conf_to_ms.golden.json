@@ -1,0 +1,17 @@
+[
+ {
+  "conf": [
+   {
+    "http": {
+     "streamIdleTimeout": "10s"
+    }
+   }
+  ],
+  "kind": "MeshTimeout",
+  "origins": [
+   {
+    "kri": "kri_mt_default___mt-2_"
+   }
+  ]
+ }
+]

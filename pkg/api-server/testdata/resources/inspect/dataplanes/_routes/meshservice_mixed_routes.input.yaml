@@ -1,0 +1,94 @@
+#/meshes/default/dataplanes/dp-1/outbounds/kri_msvc_default_test-zone__test-server-1_main-port/_routes 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: MeshService
+name: test-server-1
+mesh: default
+labels:
+  kuma.io/display-name: test-server-1
+  kuma.io/zone: test-zone
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+    - port: 8080
+      targetPort: 8080
+      appProtocol: tcp
+      name: secondary-port
+---
+type: MeshTimeout
+name: on-service
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      default:
+        http:
+          requestTimeout: 20s
+---
+type: MeshTCPRoute
+name: the-tcp-route
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      rules:
+        - default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server-1
+                port: 80
+                weight: 90
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server-1
+                port: 8080
+                weight: 10
+---
+type: MeshHTTPRoute
+name: the-http-route
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /api
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server-1
+                port: 80
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-1
