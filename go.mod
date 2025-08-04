@@ -64,7 +64,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
-	go.opentelemetry.io/proto/otlp v1.7.0
+	go.opentelemetry.io/proto/otlp v1.7.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.42.0
@@ -72,8 +72,8 @@ require (
 	golang.org/x/sys v0.34.0
 	golang.org/x/text v0.27.0
 	gonum.org/v1/gonum v0.16.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822
+	google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250728155136-f173205681a0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
