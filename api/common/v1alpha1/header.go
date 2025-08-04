@@ -26,6 +26,7 @@ type HeaderMatch struct {
 	// +optional
 	// +kubebuilder:default=Exact
 	// +kubebuilder:validation:Enum=Exact;Present;RegularExpression;Absent;Prefix
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Type *HeaderMatchType `json:"type,omitempty"`
 
 	// Name is the name of the HTTP Header to be matched. Name MUST be lower case
@@ -33,5 +34,6 @@ type HeaderMatch struct {
 	Name HeaderName `json:"name"`
 
 	// Value is the value of HTTP Header to be matched.
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Value HeaderValue `json:"value,omitempty"`
 }
