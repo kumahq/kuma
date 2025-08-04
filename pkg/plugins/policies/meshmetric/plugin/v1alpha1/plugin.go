@@ -115,7 +115,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	for _, backend := range prometheusBackends {
 		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
 		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
-		systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), backendName).String())
+		systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), backendName))
 
 		configurer := &plugin_xds.PrometheusConfigurer{
 			Backend: backend,
@@ -170,7 +170,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		return nil
 	}
 	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
-	systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), core_system_names.CleanName(openTelemetryBackend.Endpoint)).String())
+	systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), core_system_names.CleanName(openTelemetryBackend.Endpoint)))
 	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
 	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
 

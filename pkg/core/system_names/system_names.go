@@ -1,6 +1,7 @@
 package system_names
 
 import (
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"regexp"
 	"strings"
 )
@@ -22,8 +23,17 @@ func CleanName(name string) string {
 	return strings.Join(matches, sectionPartsSeparator)
 }
 
-func AsSystemName(name string) string {
-	return SystemPrefix + name
+func AsSystemName[T string | kri.Identifier](name T) string {
+	switch v := any(name).(type) {
+	case kri.Identifier:
+		if v != (kri.Identifier{}) {
+			return SystemPrefix + v.String()
+		}
+		return ""
+	case string:
+		return SystemPrefix + v
+	}
+	panic("Unsupported type for AsSystemName: " + any(name).(string))
 }
 
 func MustBeSystemName(name string) string {
