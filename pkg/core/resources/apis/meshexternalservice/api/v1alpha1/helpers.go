@@ -34,7 +34,7 @@ func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
 		return xds_types.Outbounds{{
 			Address:  t.Status.VIP.IP,
 			Port:     uint32(t.Spec.Match.Port),
-			Resource: pointer.To(kri.From(t, "")),
+			Resource: pointer.To(kri.From(t)),
 		}}
 	}
 	return nil

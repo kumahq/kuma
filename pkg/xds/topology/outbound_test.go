@@ -1542,8 +1542,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
 					samples.MeshMultiZoneServiceBackendBuilder().
-						AddMatchedMeshServiceName(kri.From(samples.MeshServiceBackend(), "")).
-						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend(), "")).
+						AddMatchedMeshServiceName(kri.From(samples.MeshServiceBackend())).
+						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend())).
 						Build(),
 				},
 				mesh: defaultMeshWithMTLS,

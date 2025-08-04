@@ -21,7 +21,7 @@ type ResourceSection struct {
 }
 
 func (rs *ResourceSection) Identifier() kri.Identifier {
-	return kri.From(rs.Resource, rs.SectionName)
+	return kri.WithSectionName(kri.From(rs.Resource), rs.SectionName)
 }
 
 type query struct {

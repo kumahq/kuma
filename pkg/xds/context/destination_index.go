@@ -29,7 +29,7 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 	destinationsByLabelByValue := labelsToValuesToResourceIdentifier{}
 	for _, destinations := range resources {
 		for _, item := range destinations {
-			ri := kri.From(item, "")
+			ri := kri.From(item)
 			destinationByIdentifier[ri] = item.(core.Destination)
 			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, item.GetMeta().GetLabels())
 		}

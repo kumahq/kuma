@@ -85,7 +85,7 @@ func buildMeshServiceDestinations(
 }
 
 func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType, port int32) common_api.BackendRef {
-	id := kri.From(r, "")
+	id := kri.From(r)
 	return common_api.BackendRef{
 		TargetRef: common_api.TargetRef{
 			Kind:      common_api.TargetRefKind(resType),

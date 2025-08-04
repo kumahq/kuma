@@ -217,7 +217,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 
 	getRouteName := func(ms []api.Match) string {
 		if _, ok := svc.Outbound.AssociatedServiceResource(); ok {
-			return kri.FromResourceMeta(getOrigin(ms), api.MeshHTTPRouteType, "").String()
+			return kri.FromResourceMeta(getOrigin(ms), api.MeshHTTPRouteType).String()
 		}
 		return string(api.HashMatches(ms))
 	}

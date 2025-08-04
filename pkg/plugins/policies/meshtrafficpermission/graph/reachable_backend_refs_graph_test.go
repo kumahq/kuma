@@ -58,7 +58,7 @@ var _ = Describe("Reachable Backends Graph", func() {
 					_, conn := given.expectedConnections[from.Meta.GetName()][to.Meta.GetName()]
 					Expect(g.CanReachBackend(
 						map[string]string{"app": from.Meta.GetName()},
-						kri.From(to, ""),
+						kri.From(to),
 					)).To(Equal(fromAll || conn))
 				}
 			}

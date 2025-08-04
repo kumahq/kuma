@@ -354,20 +354,20 @@ var _ = Describe("MeshRetry", func() {
 				{
 					Name:           "outbound",
 					Origin:         generator.OriginOutbound,
-					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, "")),
-					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, "")),
+					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
+					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType)),
 					Protocol:       core_mesh.ProtocolHTTP,
 				},
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, ""): {
+					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType): {
 						Resource: testMeshHTTPRouteMeta(),
 						Conf: []interface{}{
 							testFirstHTTPRetryConf(),
 						},
 					},
-					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, ""): {
+					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType): {
 						Resource: testMeshServiceMeta(),
 						Conf: []interface{}{
 							testSecondHTTPRetryConf(),

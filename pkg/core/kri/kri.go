@@ -33,18 +33,25 @@ func (i Identifier) String() string {
 	return fmt.Sprintf("kri_%s_%s_%s_%s_%s_%s", desc.ShortName, i.Mesh, i.Zone, i.Namespace, i.Name, i.SectionName)
 }
 
-func From(r core_model.Resource, sectionName string) Identifier {
-	return FromResourceMeta(r.GetMeta(), r.Descriptor().Name, sectionName)
+func (i Identifier) IsEmpty() bool {
+	return i == (Identifier{})
 }
 
-func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType, sectionName string) Identifier {
+func From(r core_model.Resource) Identifier {
+	return FromResourceMeta(r.GetMeta(), r.Descriptor().Name)
+}
+
+func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType) Identifier {
+	if rm == nil {
+		return Identifier{}
+	}
+
 	return Identifier{
 		ResourceType: resourceType,
 		Mesh:         rm.GetMesh(),
 		Zone:         rm.GetLabels()[mesh_proto.ZoneTag],
 		Namespace:    rm.GetLabels()[mesh_proto.KubeNamespaceTag],
 		Name:         core_model.GetDisplayName(rm),
-		SectionName:  sectionName,
 	}
 }
 
@@ -106,6 +113,9 @@ func (i Identifier) HasSectionName() bool {
 }
 
 func WithSectionName(id Identifier, sectionName string) Identifier {
+	if id.IsEmpty() {
+		return id
+	}
 	id.SectionName = sectionName
 	return id
 }
