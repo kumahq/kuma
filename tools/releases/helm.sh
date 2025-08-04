@@ -11,6 +11,7 @@ CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
+GH_REPO_URL=""
 
 # This updates Chart.yaml with:
 #  appVersion equal to the kuma version
@@ -22,10 +23,6 @@ GH_PAGES_BRANCH="gh-pages"
 #    from the repository. `cr` fetches explicit dependencies and they take
 #    precedence over embedded files.
 function update_version {
-  local dev=$1
-  local kuma_version
-  local chart
-
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
       continue
@@ -34,11 +31,14 @@ function update_version {
     # Fail if there are uncommitted changes
     git diff --exit-code HEAD -- "${dir}"
 
+    local kuma_version
     kuma_version=$("${SCRIPT_DIR}/version.sh" | cut -d " " -f 1)
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
+    local dev=$1
     if [ -n "${dev}" ]; then
+      local chart
       for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
           if [ ! -d "${dir}/charts/${chart}" ]; then
               continue
@@ -52,8 +52,6 @@ function update_version {
 }
 
 function package {
-  local f
-
   # First package all the charts
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
@@ -74,6 +72,7 @@ function package {
       "${dir}"
 
     # repackage archive to remove potential duplicates
+    local f
     for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
       local tmpdir
       tmpdir=$(mktemp --directory)
@@ -93,29 +92,22 @@ function package {
 }
 
 function release {
-  local CHART_TAR
-  local CHART_FILE
-  local CHART_VERSION
-
   if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
-    msg_err "GH_TOKEN, GH_USER and GH_EMAIL are required"
+    msg_err "GH_TOKEN, GH_USER and GH_EMAIL required"
   fi
-
-  # This line assigns a default value to GH_REPO_URL only if it is unset or empty.
-  # Syntax: ${VAR:=default} sets VAR to 'default' if VAR is unset or null.
-  #
-  # It constructs the GitHub HTTPS URL using the provided token for authentication.
-  # The expression ${GITHUB_APP:+x-access-token:} conditionally inserts the prefix
-  # "x-access-token:" only when GITHUB_APP is set and non-empty.
-  # This is required for GitHub App tokens, while personal access tokens omit the prefix.
-  #
-  # The leading colon ':' is a no-op command used here to enable safe default assignment.
-  : "${GH_REPO_URL:=https://${GITHUB_APP:+x-access-token:}${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git}"
+  if [ -n "${GITHUB_APP}" ]; then
+    [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+  else
+    [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+  fi
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "${GH_REPO_URL}"
 
+  local CHART_TAR
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
+  local CHART_FILE
   CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  local CHART_VERSION
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
   pushd "${GH_REPO}"
