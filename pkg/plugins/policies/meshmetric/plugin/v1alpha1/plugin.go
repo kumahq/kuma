@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	"net/url"
 	"strconv"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
@@ -66,6 +66,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	conf := policies.SingleItemRules.Rules[0].Conf.(api.Conf)
 	var kriWithoutSection *kri.Identifier
+	// we only handle a case where there is one origin because
+	// we do not yet have a mechanism to name resources that have more than one origin https://github.com/kumahq/kuma/issues/13886
 	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
 		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshMetricType, ""))
 	}
@@ -168,7 +170,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		return nil
 	}
 	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
-	systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), backendNameFrom(openTelemetryBackend.Endpoint)).String())
+	systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), core_system_names.CleanName(openTelemetryBackend.Endpoint)).String())
 	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
 	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
 

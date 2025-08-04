@@ -87,7 +87,7 @@ resources:
           statPrefix: system_kri_mm_default___meshmetric1_default-backend
     name: system_kri_mm_default___meshmetric1_default-backend
     trafficDirection: INBOUND
-- name: system_kri_mm_default___meshmetric1_otel-collector.observability.svc-4317
+- name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -117,11 +117,11 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: system_kri_mm_default___meshmetric1_otel-collector.observability.svc-4317
+              name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: system_kri_mm_default___meshmetric1_otel-collector.observability.svc-4317
-          statPrefix: system_kri_mm_default___meshmetric1_otel-collector_observability_svc-4317
-    name: system_kri_mm_default___meshmetric1_otel-collector.observability.svc-4317
+                  cluster: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+          statPrefix: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+    name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
