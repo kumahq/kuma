@@ -26,8 +26,8 @@ func GenerateOutboundListener(
 		Configure(envoy_listeners.TransparentProxying(isTransparent)).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-			ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(svc.ServiceName)).
-			Configure(envoy_listeners.TCPProxy(svc.ServiceName, splits...)))).
+			ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(svc.KumaServiceTagValue)).
+			Configure(envoy_listeners.TCPProxy(svc.KumaServiceTagValue, splits...)))).
 		Build()
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -79,7 +80,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(dataplane, rules.Rules, subsetutils.MeshServiceElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, subsetutils.KumaServiceTagElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -124,7 +125,7 @@ func applyToGateways(
 					if err := configure(
 						proxy.Dataplane,
 						rules.Rules,
-						subsetutils.MeshServiceElement(serviceName),
+						subsetutils.KumaServiceTagElement(serviceName),
 						toProtocol(listenerInfo.Listener.Protocol),
 						cluster,
 					); err != nil {
@@ -194,7 +195,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			policies, ok := meshResources.Dynamic[meshExtSvc.DestinationName(meshExtSvc.Spec.Match.Port)]
+			policies, ok := meshResources.Dynamic[destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)]
 			if !ok {
 				continue
 			}

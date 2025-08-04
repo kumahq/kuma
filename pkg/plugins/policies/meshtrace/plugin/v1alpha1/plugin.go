@@ -10,6 +10,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -150,7 +151,7 @@ func applyToRealResources(
 	proxy *xds.Proxy,
 ) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
-		service, _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
+		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: &uri,
 		})
 		if !found {
@@ -160,7 +161,12 @@ func applyToRealResources(
 			switch typ {
 			case envoy_resource.ListenerType:
 				for _, listener := range resources {
-					if err := configureListener(rules, proxy.Dataplane, listener.Resource.(*envoy_listener.Listener), service); err != nil {
+					if err := configureListener(
+						rules,
+						proxy.Dataplane,
+						listener.Resource.(*envoy_listener.Listener),
+						destinationname.MustResolve(false, service, port),
+					); err != nil {
 						return err
 					}
 				}

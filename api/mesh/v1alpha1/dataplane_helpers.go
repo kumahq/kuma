@@ -288,6 +288,8 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 	return nil
 }
 
+// InboundsSelectedBySectionName returns the list of inbound interfaces selected by sectionName. It returns all inbounds if
+// sectionName is empty
 func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
 	var selectedInbounds []InboundInterface
 	for _, inbound := range n.Inbound {

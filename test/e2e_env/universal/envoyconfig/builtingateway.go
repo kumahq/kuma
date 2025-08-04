@@ -125,7 +125,9 @@ func SetupGatewayCluster() {
 		Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 		Install(GatewayClientAppUniversal("gateway-client")).
 		Install(EchoServerApp(mesh, "echo-server", "echo-service", "universal")).
-		Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
+		Install(GatewayProxyUniversal(mesh, "gateway-proxy", WithDpEnvs(map[string]string{
+			"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR": "/tmp",
+		}))).
 		Install(YamlUniversal(meshGateway())).
 		Install(YamlUniversal(meshHTTPRoute()))
 

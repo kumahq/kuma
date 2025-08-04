@@ -8,12 +8,16 @@ import (
 )
 
 type FailingStore struct {
-	Err error
+	Err       error
+	CreateErr error
 }
 
 var _ core_store.ResourceStore = &FailingStore{}
 
 func (f *FailingStore) Create(context.Context, model.Resource, ...core_store.CreateOptionsFunc) error {
+	if f.CreateErr != nil {
+		return f.CreateErr
+	}
 	return f.Err
 }
 
