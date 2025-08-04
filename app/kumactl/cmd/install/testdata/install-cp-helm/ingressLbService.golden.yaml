@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: kuma-system
   labels:
-    kuma.io/sidecar-injection: "false"
+    kuma.io/system-namespace: "true"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -51,34 +51,36 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
-  # Kubernetes resources
   - apiGroups:
       - ""
     resources:
       - namespaces
       - pods
+      - configmaps
       - nodes
-      - services
     verbs:
       - get
       - list
       - watch
   - apiGroups:
-      - "discovery.k8s.io"
+    - ""
     resources:
-      - endpointslices
+      - secrets
     verbs:
-      - get
-      - list
-      - watch
+    - list
+    - watch
   - apiGroups:
       - "apps"
     resources:
       - deployments
       - replicasets
     verbs:
+      - create
+      - delete
       - get
       - list
+      - patch
+      - update
       - watch
   - apiGroups:
       - "batch"
@@ -88,20 +90,13 @@ rules:
       - get
       - list
       - watch
-  - apiGroups: # Gateway API
-      - gateway.networking.k8s.io
-    resources:
-      - gateways
-      - referencegrants
-      - httproutes
-    verbs:
-      - get
-      - list
-      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses # ClusterScope
+      - gatewayclasses
+      - gateways
+      - referencegrants
+      - httproutes
     verbs:
       - create
       - delete
@@ -113,11 +108,44 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses/status # ClusterScope
+      - gatewayclasses/status
+      - gateways/status
+      - httproutes/status
     verbs:
       - get
       - patch
       - update
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
   - apiGroups:
       - kuma.io
     resources:
@@ -157,18 +185,13 @@ rules:
       - meshhttproutes
       - meshloadbalancingstrategies
       - meshmetrics
-      - meshpassthroughs
       - meshproxypatches
       - meshratelimits
       - meshretries
       - meshtcproutes
       - meshtimeouts
-      - meshtlses
       - meshtraces
       - meshtrafficpermissions
-      - hostnamegenerators
-      - meshexternalservices
-      - meshmultizoneservices
       - meshservices
     verbs:
       - get
@@ -189,6 +212,14 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -198,90 +229,6 @@ rules:
       - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kuma-control-plane-workloads
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
-    # required by MeshGateway
-      - "apps"
-    resources:
-      - deployments
-      - replicasets
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - "batch"
-    resources:
-      - jobs
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-    # required by MeshGateway
-      - ""
-    resources:
-      - services
-    verbs:
-      - get
-      - delete
-      - list
-      - watch
-      - create
-      - update
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - pods/finalizers
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-    # Gateway API
-      - gateway.networking.k8s.io
-    resources:
-      - gateways
-      - referencegrants
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gateways/status
-      - httproutes/status
-    verbs:
-      - get
-      - patch
-      - update
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-control-plane
@@ -293,23 +240,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kuma-control-plane
-subjects:
-  - kind: ServiceAccount
-    name: kuma-control-plane
-    namespace: kuma-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kuma-control-plane-workloads
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma-control-plane-workloads
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
@@ -326,9 +256,9 @@ metadata:
     app.kubernetes.io/instance: kuma
 rules:
   - apiGroups:
-      - coordination.k8s.io
+      - ""
     resources:
-      - leases
+      - secrets
     verbs:
       - get
       - list
@@ -341,22 +271,14 @@ rules:
       - ""
     resources:
       - configmaps
-      - secrets
     verbs:
       - get
-      - delete
       - list
       - watch
       - create
       - update
       - patch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
+      - delete
   # leader-for-life election deletes Pods in some circumstances
   - apiGroups:
       - ""
@@ -364,29 +286,6 @@ rules:
       - pods
     verbs:
       - delete
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gateways
-      - referencegrants
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gateways/status
-      - httproutes/status
-    verbs:
-      - get
-      - patch
-      - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -497,7 +396,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: dd07006d086abef5b112a0f450a4969e01fcadcf605cdf25ad749b4099d111ec
+        checksum/tls-secrets: eb1e9f5d49326fa9ef721f20fa81eee9b696c7e8abe3861fcc0e14256d454be5
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -532,7 +431,6 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
-      
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -559,13 +457,11 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
-              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
-            - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
-              value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
               value: "kuma-control-plane"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
@@ -574,6 +470,8 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
+            - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
+              value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
@@ -582,16 +480,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: GOMEMLIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.memory
-            - name: GOMAXPROCS
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.cpu
           args:
             - run
             - --log-level=info
@@ -709,7 +597,6 @@ spec:
       
         kubernetes.io/os: linux
       terminationGracePeriodSeconds: 40
-      
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
@@ -740,7 +627,6 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10001
-            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
@@ -798,12 +684,9 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kuma.io/sidecar-injection
-          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values:
-          - kube-system
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -820,16 +703,7 @@ webhooks:
           - UPDATE
         resources:
           - meshes
-          - dataplanes
-          - dataplaneinsights
           - meshgateways
-          - zoneingresses
-          - zoneingressinsights
-          - zoneegresses
-          - zoneegressinsights
-          - serviceinsights
-          - zone
-          - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -837,18 +711,13 @@ webhooks:
           - meshhttproutes
           - meshloadbalancingstrategies
           - meshmetrics
-          - meshpassthroughs
           - meshproxypatches
           - meshratelimits
           - meshretries
           - meshtcproutes
           - meshtimeouts
-          - meshtlses
           - meshtraces
           - meshtrafficpermissions
-          - hostnamegenerators
-          - meshexternalservices
-          - meshmultizoneservices
           - meshservices
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -856,12 +725,9 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kuma.io/sidecar-injection
-          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values:
-          - kube-system
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -898,18 +764,13 @@ webhooks:
           - meshhttproutes
           - meshloadbalancingstrategies
           - meshmetrics
-          - meshpassthroughs
           - meshproxypatches
           - meshratelimits
           - meshretries
           - meshtcproutes
           - meshtimeouts
-          - meshtlses
           - meshtraces
           - meshtrafficpermissions
-          - hostnamegenerators
-          - meshexternalservices
-          - meshmultizoneservices
           - meshservices
   
       
@@ -919,16 +780,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kuma.io/sidecar-injection
-          operator: In
-          values:
-          - enabled
-          - "true"
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values:
-          - kube-system
-          - kuma-system
+          values: ["kube-system"]
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values: ["enabled", "true"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -950,13 +807,9 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kuma.io/sidecar-injection
-          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values:
-          - kube-system
-          - kuma-system
+          values: ["kube-system"]
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
@@ -992,12 +845,9 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kuma.io/sidecar-injection
-          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values:
-          - kube-system
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -1018,7 +868,7 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - meshgatewayinstances
+          - gatewayinstances
           - healthchecks
           - meshes
           - meshgateways
@@ -1040,30 +890,47 @@ webhooks:
           - meshhttproutes
           - meshloadbalancingstrategies
           - meshmetrics
-          - meshpassthroughs
           - meshproxypatches
           - meshratelimits
           - meshretries
           - meshtcproutes
           - meshtimeouts
-          - meshtlses
           - meshtraces
           - meshtrafficpermissions
-          - hostnamegenerators
-          - meshexternalservices
-          - meshmultizoneservices
           - meshservices
     
       
     sideEffects: None
-  - name: secret.validator.kuma-admission.kuma.io
+  - name: service.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
-          operator: In
-          values:
-          - kuma-system
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services
+    sideEffects: None
+  - name: secret.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    namespaceSelector:
+      matchLabels:
+        kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
@@ -1082,4 +949,28 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
+  - name: gateway.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-gatewayclass
+    rules:
+      - apiGroups:
+          - "gateway.networking.k8s.io"
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+        resources:
+          - gatewayclasses
     sideEffects: None
