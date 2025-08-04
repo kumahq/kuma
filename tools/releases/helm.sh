@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
+GH_REPO_URL=""
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
@@ -22,7 +23,7 @@ GH_PAGES_BRANCH="gh-pages"
 #    from the repository. `cr` fetches explicit dependencies and they take
 #    precedence over embedded files.
 function update_version {
-  dev=${1}
+  local dev=${1}
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
       continue
@@ -31,11 +32,13 @@ function update_version {
     # Fail if there are uncommitted changes
     git diff --exit-code HEAD -- "${dir}"
 
+    local kuma_version
     kuma_version=$("${SCRIPT_DIR}/version.sh" | cut -d " " -f 1)
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
     if [ -n "${dev}" ]; then
+      local chart
       for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
           if [ ! -d "${dir}/charts/${chart}" ]; then
               continue
@@ -69,6 +72,7 @@ function package {
       "${dir}"
 
     # repackage archive to remove potential duplicates
+    local f
     for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
       local tmpdir
       tmpdir=$(mktemp --directory)
@@ -99,11 +103,14 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+  local CHART_TAR
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
+  local CHART_FILE
   CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  local CHART_VERSION
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
-  pushd ${GH_REPO}
+  pushd "${GH_REPO}"
 
   # First upload the packaged charts to the release
   cr upload \
@@ -127,7 +134,7 @@ function release {
   git push
 
   popd
-  rm -rf ${GH_REPO}
+  rm -rf "${GH_REPO}"
 }
 
 
@@ -138,8 +145,11 @@ function usage {
 
 
 function main {
+  local op
+  local dev
+
   while [[ $# -gt 0 ]]; do
-    flag=$1
+    local flag=$1
     case $flag in
       --help)
         usage
@@ -158,7 +168,6 @@ function main {
         ;;
       *)
         usage
-        break
         ;;
     esac
     shift
