@@ -42,6 +42,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -176,8 +177,8 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									HTTP: &api.LocalHTTP{
 										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
@@ -208,8 +209,8 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									HTTP: &api.LocalHTTP{
 										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
@@ -306,8 +307,8 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									HTTP: &api.LocalHTTP{
 										RequestRate: &api.Rate{
@@ -398,8 +399,8 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									TCP: &api.LocalTCP{
 										Disabled:       pointer.To(true),
@@ -452,8 +453,8 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									HTTP: &api.LocalHTTP{
 										Disabled:    pointer.To(true),
@@ -492,8 +493,8 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									TCP: &api.LocalTCP{
 										ConnectionRate: nil,
@@ -544,8 +545,8 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								Local: &api.Local{
 									HTTP: &api.LocalHTTP{
 										RequestRate: nil,
@@ -1000,7 +1001,8 @@ func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteC
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		Service: serviceName,
+		VirtualHostName: serviceName,
+		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
 				plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),

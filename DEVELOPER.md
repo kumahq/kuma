@@ -16,13 +16,8 @@ for any tools/libraries that you may be missing.
 - [`unzip`](http://infozip.sourceforge.net/UnZip.html)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://golang.org/)
-- [`jq`](https://jqlang.github.io/jq/download/)
-- [`yq`](https://mikefarah.gitbook.io/yq)
-- [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) # normally included in
-  system's clang package with some exceptions, please check with the following command:
-  ```bash
-  clang-format --version
-  ```
+- [`ninja`](https://github.com/ninja-build/ninja)
+- [`mise`](https://mise.jdx.dev)
 
 ### Helper commands
 
@@ -35,17 +30,22 @@ make help
 
 ### Installing dev tools
 
-We packaged the remaining dependencies into one target:
+We use [mise](https://mise.jdx.dev) to manage dev tools for Kuma.
+If you had mise installed previously we recommend running:
 
 ```bash
-make dev/tools
+mise cache clear
+rm -rf ~/.local/share/mise/{installs,plugins}/kubectl
 ```
 
-You can install each commands individually if you prefer.
+If you're experiencing errors with installing `kubectl` or `container-structure-test`.
+Please see https://github.com/jdx/mise/issues/3110 for details.
 
-ATTENTION: By default, development tools will be installed at `$HOME/.kuma-dev/bin`. Remember to include this directory
-into your `PATH`, e.g. by adding `export PATH=$HOME/.kuma-dev/bin:$PATH` line to the `$HOME/.bashrc` file or `$HOME/.zshrc` if using zsh.
-This can be overridden by setting the env var `CI_TOOLS_DIR`, but it isn't recommended.
+To install dev tools you can run:
+
+```bash
+make install
+```
 
 ## Code checks
 

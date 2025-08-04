@@ -4420,6 +4420,7 @@ components:
         - kri
         - port
         - protocol
+        - proxyResourceName
       properties:
         kri:
           type: string
@@ -4427,6 +4428,8 @@ components:
           type: integer
           x-go-type: int32
         protocol:
+          type: string
+        proxyResourceName:
           type: string
     DataplaneOutbound:
       type: object
@@ -4434,6 +4437,7 @@ components:
         - kri
         - port
         - protocol
+        - proxyResourceName
       properties:
         kri:
           type: string
@@ -4441,6 +4445,8 @@ components:
           type: integer
           x-go-type: int32
         protocol:
+          type: string
+        proxyResourceName:
           type: string
     PolicyOrigin:
       type: object
@@ -4554,12 +4560,40 @@ components:
             policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/InboundPolicyConf'
+    RouteRules:
+      type: object
+      required:
+        - kri
+        - conf
+        - matches
+      properties:
+        kri:
+          type: string
+        matches:
+          type: array
+          description: List of matches for which this rule will apply
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: interface{}
+        conf:
+          description: >-
+            The final computed configuration for the data plane proxy, derived
+            by merging all policies whose 'targetRef' field matches the proxy.
+            The merging process follows [RFC 7396 (JSON Merge
+            Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the
+            order of merging influenced by factors such as where the policy was
+            applied (e.g., custom namespace, system, or global control plane),
+            policy role, and targetRef specificity.
+          type: object
+          additionalProperties: true
+          x-go-type: interface{}
     RouteConf:
       type: object
       required:
         - kind
         - rules
-        - origin
+        - origins
       properties:
         kind:
           type: string
@@ -4567,35 +4601,15 @@ components:
           type: array
           description: Computed list of routing rules
           items:
-            type: object
-            required:
-              - kri
-              - conf
-              - matches
-            properties:
-              kri:
-                type: string
-              matches:
-                type: array
-                description: List of matches for which this rule will apply
-                items:
-                  type: object
-                  additionalProperties: true
-                  x-go-type: interface{}
-              conf:
-                description: >-
-                  The final computed configuration for the data plane proxy,
-                  derived by merging all policies whose 'targetRef' field
-                  matches the proxy. The merging process follows [RFC 7396 (JSON
-                  Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396),
-                  with the order of merging influenced by factors such as where
-                  the policy was applied (e.g., custom namespace, system, or
-                  global control plane), policy role, and targetRef specificity.
-                type: object
-                additionalProperties: true
-                x-go-type: interface{}
+            $ref: '#/components/schemas/RouteRules'
         origins:
-          $ref: '#/components/schemas/PolicyOrigin'
+          type: array
+          description: >-
+            The list of policies KRI that contributed to the 'conf'. The order
+            is important as it reflects in what order confs were merged to get
+            the resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/PolicyOrigin'
     RoutesList:
       type: object
       required:
@@ -14998,21 +15012,32 @@ components:
                       items:
                         properties:
                           kind:
-                            description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                            description: >-
+                              Type of the backend: MeshService or
+                              MeshExternalService
+                               +required
                             type: string
                           labels:
                             additionalProperties:
                               type: string
-                            description: "Labels used to select backends\n\n\t+optional"
+                            description: |-
+                              Labels used to select backends
+                               +optional
                             type: object
                           name:
-                            description: "Name of the backend.\n\n\t+optional"
+                            description: |-
+                              Name of the backend.
+                               +optional
                             type: string
                           namespace:
-                            description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                            description: |-
+                              Namespace of the backend. Might be empty
+                               +optional
                             type: string
                           port:
-                            description: "Port of the backend.\n\n\t+optional"
+                            description: |-
+                              Port of the backend.
+                               +optional
                             format: uint32
                             type: integer
                         type: object
@@ -15694,21 +15719,32 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                                description: >-
+                                  Type of the backend: MeshService or
+                                  MeshExternalService
+                                   +required
                                 type: string
                               labels:
                                 additionalProperties:
                                   type: string
-                                description: "Labels used to select backends\n\n\t+optional"
+                                description: |-
+                                  Labels used to select backends
+                                   +optional
                                 type: object
                               name:
-                                description: "Name of the backend.\n\n\t+optional"
+                                description: |-
+                                  Name of the backend.
+                                   +optional
                                 type: string
                               namespace:
-                                description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                                description: |-
+                                  Namespace of the backend. Might be empty
+                                   +optional
                                 type: string
                               port:
-                                description: "Port of the backend.\n\n\t+optional"
+                                description: |-
+                                  Port of the backend.
+                                   +optional
                                 format: uint32
                                 type: integer
                             type: object
@@ -16370,14 +16406,14 @@ components:
         cert:
           properties:
             Type:
-              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+              description: "Types that are assignable to Type:\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
           required:
             - Type
           type: object
         key:
           properties:
             Type:
-              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+              description: "Types that are assignable to Type:\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
           required:
             - Type
           type: object
@@ -16523,7 +16559,7 @@ components:
                           description: DataSource defines the source of bytes to use.
                           properties:
                             Type:
-                              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                              description: "Types that are assignable to Type:\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
                           required:
                             - Type
                           type: object

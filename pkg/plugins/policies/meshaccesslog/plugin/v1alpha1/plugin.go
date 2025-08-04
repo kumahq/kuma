@@ -161,7 +161,7 @@ func applyToOutbounds(
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
 
-		conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.MeshServiceElement(serviceName))
+		conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(serviceName))
 		if conf == nil {
 			continue
 		}
@@ -179,7 +179,7 @@ func applyToTransparentProxyListeners(
 	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.MeshServiceElement(core_mesh.PassThroughService))
+	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_mesh.PassThroughService))
 	if conf == nil {
 		return nil
 	}
@@ -209,7 +209,7 @@ func applyToDirectAccess(
 	rules core_rules.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.MeshServiceElement(core_mesh.PassThroughService))
+	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_mesh.PassThroughService))
 	if conf == nil {
 		return nil
 	}

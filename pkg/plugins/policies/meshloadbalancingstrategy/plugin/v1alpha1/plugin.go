@@ -17,6 +17,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -116,7 +117,7 @@ func (p plugin) configureDPP(
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		computed := toRules.Rules.Compute(subsetutils.MeshServiceElement(serviceName))
+		computed := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(serviceName))
 		if computed == nil {
 			continue
 		}
@@ -416,7 +417,7 @@ func (p plugin) configureGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.MeshServiceElement(serviceName)); localityConf != nil {
+					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(serviceName)); localityConf != nil {
 						perServiceConfiguration[serviceName] = localityConf
 
 						err := NewModifier(cluster).
@@ -494,7 +495,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			destinationName := meshExtSvc.DestinationName(meshExtSvc.Spec.Match.Port)
+			destinationName := destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)
 			policies, ok := meshResources.Dynamic[destinationName]
 			if !ok {
 				continue

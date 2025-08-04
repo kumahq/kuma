@@ -1,6 +1,9 @@
 package core
 
-import core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+import (
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+)
 
 // Port is a common abstraction for a destination port. It provides us basic information about port
 type Port interface {
@@ -14,8 +17,8 @@ type Port interface {
 
 // Destination interface creates abstraction for Kuma destinations like MeshService, MeshMultiZoneService or MeshExternalService
 type Destination interface {
-	// DestinationName returns destination name in format of legacy kuma.io/service
-	DestinationName(port int32) string
+	core_model.Resource
+
 	// GetPorts returns all ports from a destination
 	GetPorts() []Port
 	// FindPortByName return single port and information if port was found. This method accepts either port name or

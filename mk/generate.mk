@@ -138,8 +138,7 @@ generate/envoy-imports:
 
 .PHONY: api-lint/policies
 api-lint/policies:
-	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|') \
-		github.com/kumahq/kuma/api/common/v1alpha1
+	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
 
 .PHONY: api-lint/resources
 api-lint/resources:

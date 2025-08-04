@@ -1,0 +1,9 @@
+type: Dataplane
+name: web-1
+mesh: default
+networking:
+  address: 192.168.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: web

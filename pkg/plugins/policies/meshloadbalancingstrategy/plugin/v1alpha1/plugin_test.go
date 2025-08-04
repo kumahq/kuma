@@ -1828,18 +1828,18 @@ func backendListener() envoy_common.NamedResource {
 
 func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
 				Resource: &serviceResourceKRI,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: serviceName(serviceResourceKRI, port),
+			Protocol:            core_mesh.ProtocolHTTP,
+			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
@@ -1850,7 +1850,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 func serviceName(id kri.Identifier, port int32) string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	Expect(err).ToNot(HaveOccurred())
-	return destinationname.LegacyName(id, desc.ShortName, port)
+	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)
 }
 
 func contextWithEgressEnabled() xds_context.Context {

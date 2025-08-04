@@ -111,6 +111,22 @@ resources:
                 portValue: 9902
     name: kuma:envoy:admin
     type: STATIC
+- name: kuma:readiness
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_readiness
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: kuma:readiness
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 9903
+    name: kuma:readiness
+    type: STATIC
 - name: localhost:8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -270,7 +286,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: kuma:envoy:admin
+                  cluster: kuma:readiness
                   prefixRewrite: /ready
           statPrefix: kuma_envoy_admin
     - filterChainMatch:
@@ -299,7 +315,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: kuma:envoy:admin
+                  cluster: kuma:readiness
                   prefixRewrite: /ready
               - match:
                   prefix: /

@@ -7,6 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -70,7 +71,7 @@ func buildMeshServiceDestinations(
 			)
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
-				DestinationName: ms.DestinationName(port.Port),
+				DestinationName: destinationname.MustResolve(false, ms, port),
 				SNI:             sni,
 				Resource: resolve.BackendRefOrNil(
 					ms.Meta,
@@ -110,7 +111,7 @@ func buildMeshExternalServiceDestinations(
 		)
 		mesDestinations = append(mesDestinations, BackendRefDestination{
 			Mesh:            mes.GetMeta().GetMesh(),
-			DestinationName: mes.DestinationName(mes.Spec.Match.Port),
+			DestinationName: destinationname.MustResolve(false, mes, mes.Spec.Match),
 			SNI:             sni,
 			Resource: resolve.BackendRefOrNil(
 				mes.Meta,
@@ -131,7 +132,7 @@ func buildMeshMultiZoneServiceDestinations(
 		for _, port := range ms.Spec.Ports {
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
-				DestinationName: ms.DestinationName(port.Port),
+				DestinationName: destinationname.MustResolve(false, ms, port),
 				Resource: resolve.BackendRefOrNil(
 					ms.Meta,
 					resourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
