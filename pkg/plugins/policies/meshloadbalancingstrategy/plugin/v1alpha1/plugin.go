@@ -163,8 +163,8 @@ func (p plugin) configureDPP(
 	rctx := rules_outbound.RootContext[api.Conf](meshCtx.Resource, toRules.ResourceRules)
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
 		svcCtx := rctx.
-			WithID(kri.NoSectionName(*r.ResourceOrigin)).
-			WithID(*r.ResourceOrigin)
+			WithID(kri.NoSectionName(r.ResourceOrigin)).
+			WithID(r.ResourceOrigin)
 		if err := p.applyToRealResource(svcCtx, r, proxy); err != nil {
 			return err
 		}
@@ -438,11 +438,11 @@ func (p plugin) configureGateway(
 					if dest.BackendRef == nil {
 						continue
 					}
-					if realRef := dest.BackendRef.ResourceOrNil(); realRef != nil {
+					if realRef := dest.BackendRef.Resource(); !realRef.IsEmpty() {
 						svcCtx := rctx.
-							WithID(kri.NoSectionName(*realRef)).
-							WithID(*realRef)
-						for _, rs := range resourcesByOrigin[*realRef] {
+							WithID(kri.NoSectionName(realRef)).
+							WithID(realRef)
+						for _, rs := range resourcesByOrigin[realRef] {
 							for _, r := range rs {
 								if err := p.applyToRealResource(svcCtx, r, proxy); err != nil {
 									return err

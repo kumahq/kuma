@@ -355,7 +355,7 @@ var _ = Describe("MeshRetry", func() {
 					Name:           "outbound",
 					Origin:         generator.OriginOutbound,
 					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
-					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType)),
+					ResourceOrigin: kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType),
 					Protocol:       core_mesh.ProtocolHTTP,
 				},
 			},
@@ -382,7 +382,7 @@ var _ = Describe("MeshRetry", func() {
 				Name:           "outbound",
 				Origin:         generator.OriginOutbound,
 				Resource:       httpListenerWithSimpleRoute(10001),
-				ResourceOrigin: &backendMeshServiceIdentifier,
+				ResourceOrigin: backendMeshServiceIdentifier,
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
@@ -401,7 +401,7 @@ var _ = Describe("MeshRetry", func() {
 				Name:           "outbound",
 				Origin:         generator.OriginOutbound,
 				Resource:       httpListenerWithSimpleRoute(10001),
-				ResourceOrigin: &backendMeshExternalServiceIdentifier,
+				ResourceOrigin: backendMeshExternalServiceIdentifier,
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{

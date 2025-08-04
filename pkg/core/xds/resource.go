@@ -22,7 +22,7 @@ type Resource struct {
 	Name           string
 	Origin         string
 	Resource       ResourcePayload
-	ResourceOrigin *kri.Identifier
+	ResourceOrigin kri.Identifier
 	Protocol       core_mesh.Protocol
 }
 
@@ -121,6 +121,9 @@ func (s *ResourceSet) Empty() bool {
 
 func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	for _, resource := range resources {
+		if resource == nil {
+			continue
+		}
 		if s.typeToNamesIndex[s.typeName(resource.Resource)] == nil {
 			s.typeToNamesIndex[s.typeName(resource.Resource)] = map[string]*Resource{}
 		}
@@ -176,25 +179,23 @@ func (s *ResourceSet) List() ResourceList {
 }
 
 func NonMeshExternalService(r *Resource) bool {
-	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType)
+	return r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType
 }
 
 func NonGatewayResources(r *Resource) bool {
-	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.Origin != "gateway")
+	return r.ResourceOrigin.IsEmpty() || r.Origin != "gateway"
 }
 
 func HasAssociatedServiceResource(r *Resource) bool {
-	if r.ResourceOrigin == nil {
+	switch r.ResourceOrigin.ResourceType {
+	case meshservice_api.MeshServiceType:
+	case meshexternalservice_api.MeshExternalServiceType:
+	case meshmultizoneservice_api.MeshMultiZoneServiceType:
+	default:
 		return false
 	}
-	switch r.ResourceOrigin.ResourceType {
-	case
-		meshservice_api.MeshServiceType,
-		meshexternalservice_api.MeshExternalServiceType,
-		meshmultizoneservice_api.MeshMultiZoneServiceType:
-		return true
-	}
-	return false
+
+	return true
 }
 
 type ResourcesByType map[string][]*Resource
@@ -209,11 +210,8 @@ func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[kri.Ide
 					add = false
 				}
 			}
-			if add {
-				if resource.ResourceOrigin == nil {
-					continue
-				}
-				resOwner := *resource.ResourceOrigin
+			if add && !resource.ResourceOrigin.IsEmpty() {
+				resOwner := resource.ResourceOrigin
 				if byOwner[resOwner] == nil {
 					byOwner[resOwner] = map[string][]*Resource{}
 				}

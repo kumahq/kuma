@@ -74,7 +74,7 @@ type (
 		SANs                     []SAN
 		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
 		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		OwnerResource            *kri.Identifier
+		OwnerResource            kri.Identifier
 	}
 )
 
@@ -361,7 +361,7 @@ func (e Endpoint) IsExternalService() bool {
 }
 
 func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && e.ExternalService.OwnerResource != nil
+	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
 }
 
 func (e Endpoint) LocalityString() string {

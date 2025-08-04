@@ -97,7 +97,7 @@ var _ = Describe("MeshTrace", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
 					)).MustBuild(),
-				ResourceOrigin: &backendMeshServiceIdentifier,
+				ResourceOrigin: backendMeshServiceIdentifier,
 			},
 		}
 	}
@@ -145,7 +145,7 @@ var _ = Describe("MeshTrace", func() {
 				{
 					Address:  "127.0.0.1",
 					Port:     27777,
-					Resource: &backendMeshServiceIdentifier,
+					Resource: backendMeshServiceIdentifier,
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{

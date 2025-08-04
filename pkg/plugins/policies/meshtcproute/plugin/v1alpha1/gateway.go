@@ -117,7 +117,7 @@ func makeTcpRouteEntry(
 				dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
 			}
 		}
-		if ref == nil || ref.ResourceOrNil() == nil {
+		if ref == nil || ref.Resource().IsEmpty() {
 			var ok bool
 			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
 			if !ok {

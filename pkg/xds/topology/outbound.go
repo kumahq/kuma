@@ -626,7 +626,7 @@ func createMeshExternalServiceEndpoint(
 ) error {
 	es := &core_xds.ExternalService{
 		Protocol:      mes.Spec.Match.Protocol,
-		OwnerResource: pointer.To(kri.From(mes)),
+		OwnerResource: kri.From(mes),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
 	if tags == nil {
@@ -789,7 +789,7 @@ func fillExternalServicesOutboundsThroughEgress(
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
-			OwnerResource: pointer.To(kri.From(mes)),
+			OwnerResource: kri.From(mes),
 		}
 		if tls != nil && tls.Enabled {
 			err := setTlsConfiguration(ctx, tls, es, mes.Meta.GetMesh(), loader)

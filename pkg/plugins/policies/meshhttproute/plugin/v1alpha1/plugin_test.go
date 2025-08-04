@@ -252,7 +252,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							},
 						}},
 						{
-							Resource: pointer.To(kri.WithSectionName(kri.From(&meshSvc), "80")),
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
 							Address:  "10.0.0.1",
 							Port:     80,
 						},
@@ -349,7 +349,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy.Outbounds = xds_types.Outbounds{{
 				Address:  "10.0.0.2",
 				Port:     80,
-				Resource: pointer.To(kri.WithSectionName(kri.From(&meshMZSvc), "80")),
+				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
 			}}
 
 			return outboundsTestCase{
@@ -816,7 +816,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(kri.WithSectionName(kri.From(&meshSvc), "test-port")),
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -986,7 +986,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(kri.WithSectionName(kri.From(&meshSvc), "test-port")),
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
 					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
@@ -1149,7 +1149,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(kri.WithSectionName(kri.From(&meshSvc), "test-port")),
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
 					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
@@ -2611,7 +2611,7 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 			{
 				Address:  "10.20.20.1",
 				Port:     9090,
-				Resource: pointer.To(kri.From(mes)),
+				Resource: kri.From(mes),
 			},
 		}).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).

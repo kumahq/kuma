@@ -816,7 +816,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: &serviceResourceKRI,
+				Resource: serviceResourceKRI,
 			},
 			Protocol:            core_mesh.ProtocolHTTP,
 			KumaServiceTagValue: serviceName(serviceResourceKRI, port),

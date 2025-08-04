@@ -7,7 +7,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {
@@ -34,7 +33,7 @@ func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
 		return xds_types.Outbounds{{
 			Address:  t.Status.VIP.IP,
 			Port:     uint32(t.Spec.Match.Port),
-			Resource: pointer.To(kri.From(t)),
+			Resource: kri.From(t),
 		}}
 	}
 	return nil

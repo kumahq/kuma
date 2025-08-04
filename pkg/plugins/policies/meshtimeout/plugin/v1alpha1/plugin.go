@@ -75,8 +75,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
 		svcCtx := rctx.
-			WithID(kri.NoSectionName(*r.ResourceOrigin)).
-			WithID(*r.ResourceOrigin)
+			WithID(kri.NoSectionName(r.ResourceOrigin)).
+			WithID(r.ResourceOrigin)
 		if err := applyToRealResource(svcCtx, r); err != nil {
 			return err
 		}

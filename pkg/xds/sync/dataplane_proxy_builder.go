@@ -176,8 +176,8 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 
 			if onlySelectedBackends {
 				// check if there is an entry with specific port or without port
-				_, selected := reachableBackends[pointer.Deref(outbound.Resource)]
-				_, selectedBySectionName := reachableBackends[kri.NoSectionName(pointer.Deref(outbound.Resource))]
+				_, selected := reachableBackends[outbound.Resource]
+				_, selectedBySectionName := reachableBackends[kri.NoSectionName(outbound.Resource)]
 				if !selected && !selectedBySectionName {
 					// ignore VIP outbound if reachableServices is defined and not specified
 					// Reachable services takes precedence over reachable services graph.
@@ -187,7 +187,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 				// TODO: https://github.com/kumahq/kuma/issues/11077
 			} else if outbound.Resource.ResourceType != meshextenralservice_api.MeshExternalServiceType {
 				// static reachable services takes precedence over the graph
-				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, *outbound.Resource) {
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Resource) {
 					continue
 				}
 			}
@@ -268,7 +268,7 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 				outbounds = append(outbounds, &xds_types.Outbound{
 					Address:  o.Address,
 					Port:     o.Port,
-					Resource: ref.RealResourceBackendRef().Resource,
+					Resource: ref.Resource(),
 				})
 			}
 		} else {

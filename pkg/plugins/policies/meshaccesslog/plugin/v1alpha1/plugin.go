@@ -86,8 +86,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
 		svcCtx := rctx.
-			WithID(kri.NoSectionName(*r.ResourceOrigin)).
-			WithID(*r.ResourceOrigin)
+			WithID(kri.NoSectionName(r.ResourceOrigin)).
+			WithID(r.ResourceOrigin)
 		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath); err != nil {
 			return err
 		}

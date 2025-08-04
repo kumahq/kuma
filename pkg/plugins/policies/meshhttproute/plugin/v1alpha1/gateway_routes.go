@@ -242,7 +242,7 @@ func makeHttpRouteEntry(
 				}
 			}
 		}
-		if ref == nil || ref.ResourceOrNil() == nil {
+		if ref == nil || ref.Resource().IsEmpty() {
 			// We have a legacy backendRef
 			if !b.ReferencesRealObject() {
 				var ok bool

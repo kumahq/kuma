@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) *kri.Identifier
+type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) kri.Identifier
 
 func BackendRefOrNil(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
 	if br, ok := BackendRef(origin, br, resolver); ok {
@@ -28,8 +28,8 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 		return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
 	}
 
-	rr := RealResourceBackendRef{
-		Resource: pointer.To(TargetRefToKRI(origin, br.TargetRef)),
+	rr := &RealResourceBackendRef{
+		Resource: TargetRefToKRI(origin, br.TargetRef),
 		Origin:   origin,
 		Weight:   pointer.DerefOr(br.Weight, 1),
 	}
@@ -38,18 +38,17 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 		rr.Resource = resolver(core_model.ResourceType(br.Kind), labels)
 	}
 
-	if rr.Resource == nil {
+	if rr.Resource.IsEmpty() {
 		return ResolvedBackendRef{}, false
 	}
 
-	switch {
-	case br.SectionName != nil:
-		rr.Resource.SectionName = *br.SectionName
-	case br.Port != nil:
-		rr.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
+	if sn := pointer.Deref(br.SectionName); sn != "" {
+		rr.Resource.SectionName = sn
+	} else if p := pointer.Deref(br.Port); p > 0 {
+		rr.Resource.SectionName = fmt.Sprintf("%d", p)
 	}
 
-	return ResolvedBackendRef{Ref: &rr}, true
+	return ResolvedBackendRef{Ref: rr}, true
 }
 
 type IsResolvedBackendRef interface {
@@ -76,11 +75,11 @@ func (rbr *ResolvedBackendRef) ReferencesRealResource() bool {
 	return ok
 }
 
-func (rbr *ResolvedBackendRef) ResourceOrNil() *kri.Identifier {
+func (rbr *ResolvedBackendRef) Resource() kri.Identifier {
 	if rr := rbr.RealResourceBackendRef(); rr != nil {
 		return rr.Resource
 	}
-	return nil
+	return kri.Identifier{}
 }
 
 func (rbr *ResolvedBackendRef) LegacyBackendRef() *LegacyBackendRef {
@@ -102,7 +101,7 @@ type LegacyBackendRef common_api.BackendRef
 func (lbr *LegacyBackendRef) isResolvedBackendRef() {}
 
 type RealResourceBackendRef struct {
-	Resource *kri.Identifier
+	Resource kri.Identifier
 	Origin   kri.Identifier
 	Weight   uint
 }

@@ -82,7 +82,7 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     uint32(port.Port),
-				Resource: pointer.To(kri.WithSectionName(kri.From(t), port.GetName())),
+				Resource: kri.WithSectionName(kri.From(t), port.GetName()),
 			})
 		}
 	}
