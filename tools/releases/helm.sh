@@ -7,11 +7,11 @@ source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
+GH_REPO_URL=""
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
-GH_REPO_URL=""
 
 # This updates Chart.yaml with:
 #  appVersion equal to the kuma version
