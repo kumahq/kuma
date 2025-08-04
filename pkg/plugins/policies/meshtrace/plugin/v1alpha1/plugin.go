@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	net_url "net/url"
 	"strconv"
 	"strings"
@@ -48,16 +50,24 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
+	var kriWithoutSection *kri.Identifier
+	// we only handle a case where there is one origin because
+	// we do not yet have a mechanism to name resources that have more than one origin https://github.com/kumahq/kuma/issues/13886
+	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
+		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshTraceType, ""))
+	}
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
+
+	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
 		return err
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
 		return err
 	}
 	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
@@ -71,7 +81,7 @@ func applyToGateway(
 	rules core_rules.SingleItemRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	resources xds_context.ResourceMap,
-	dataplane *core_mesh.DataplaneResource,
+	proxy *xds.Proxy,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -80,6 +90,7 @@ func applyToGateway(
 		return nil
 	}
 
+	dataplane := proxy.Dataplane
 	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
 	if gateway == nil {
 		return nil
@@ -99,7 +110,7 @@ func applyToGateway(
 
 		if err := configureListener(
 			rules,
-			dataplane,
+			proxy,
 			listener,
 			"",
 		); err != nil {
@@ -110,9 +121,9 @@ func applyToGateway(
 	return nil
 }
 
-func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
+func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	for _, inboundListener := range inboundListeners {
-		if err := configureListener(rules, dataplane, inboundListener, ""); err != nil {
+		if err := configureListener(rules, proxy, inboundListener, ""); err != nil {
 			return err
 		}
 	}
@@ -123,9 +134,10 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 func applyToOutbounds(
 	rules core_rules.SingleItemRules,
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	outbounds xds_types.Outbounds,
-	dataplane *core_mesh.DataplaneResource,
+	proxy *xds.Proxy,
 ) error {
+	outbounds := proxy.Outbounds
+	dataplane := proxy.Dataplane
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 
@@ -136,7 +148,7 @@ func applyToOutbounds(
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureListener(rules, dataplane, listener, serviceName); err != nil {
+		if err := configureListener(rules, proxy, listener, serviceName); err != nil {
 			return err
 		}
 	}
@@ -163,7 +175,7 @@ func applyToRealResources(
 				for _, listener := range resources {
 					if err := configureListener(
 						rules,
-						proxy.Dataplane,
+						proxy,
 						listener.Resource.(*envoy_listener.Listener),
 						destinationname.MustResolve(false, service, port),
 					); err != nil {
@@ -176,8 +188,8 @@ func applyToRealResources(
 	return nil
 }
 
-func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
-	serviceName := dataplane.Spec.GetIdentifyingService()
+func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
+	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
 	if len(rules.Rules) == 0 {
 		return nil
 	}
@@ -185,11 +197,12 @@ func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.Da
 	conf := rawConf.(api.Conf)
 
 	configurer := plugin_xds.Configurer{
-		Conf:             conf,
-		Service:          serviceName,
-		TrafficDirection: listener.TrafficDirection,
-		Destination:      destination,
-		IsGateway:        dataplane.Spec.IsBuiltinGateway(),
+		Conf:                  conf,
+		Service:               serviceName,
+		TrafficDirection:      listener.TrafficDirection,
+		Destination:           destination,
+		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
+		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
 	}
 
 	for _, chain := range listener.FilterChains {

@@ -1,6 +1,8 @@
 package xds
 
 import (
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	net_url "net/url"
 	"strings"
 
@@ -83,7 +85,8 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.Zipkin != nil {
-			tracing, err := c.zipkinConfig(GetTracingClusterName(ZipkinProviderName))
+			name := getNameOrDefault(, GetTracingClusterName(ZipkinProviderName))
+			tracing, err := c.zipkinConfig(name)
 			if err != nil {
 				return err
 			}
