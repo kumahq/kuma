@@ -42,19 +42,11 @@ func (p *IngressProxyBuilder) Build(
 	}
 
 	proxy := &core_xds.Proxy{
-<<<<<<< HEAD
-		Id:               core_xds.FromResourceKey(key),
-		APIVersion:       p.apiVersion,
-		Zone:             p.zone,
-		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
-=======
 		Id:                core_xds.FromResourceKey(key),
 		APIVersion:        p.apiVersion,
 		InternalAddresses: p.InternalAddresses,
 		Zone:              p.zone,
 		ZoneIngressProxy:  p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
-		Metadata:          meta,
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies
