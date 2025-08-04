@@ -23,6 +23,7 @@ GH_REPO_URL=""
 #    from the repository. `cr` fetches explicit dependencies and they take
 #    precedence over embedded files.
 function update_version {
+  local dev=${1}
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
       continue
@@ -36,7 +37,6 @@ function update_version {
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
-    local dev=$1
     if [ -n "${dev}" ]; then
       local chart
       for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
@@ -101,7 +101,7 @@ function release {
     [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
   fi
 
-  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "${GH_REPO_URL}"
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
   local CHART_TAR
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
@@ -145,11 +145,11 @@ function usage {
 
 
 function main {
-  local flag=$1
   local op
   local dev
 
   while [[ $# -gt 0 ]]; do
+    local flag=$1
     case $flag in
       --help)
         usage
