@@ -20,7 +20,10 @@ spec:
   loadBalancerIP: {{ .Values.ingress.service.loadBalancerIP }}
   {{- end }}
   {{- if .Values.ingress.service.loadBalancerSourceRanges}}
-  loadBalancerSourceRanges: {{ .Values.ingress.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- range .Values.ingress.service.loadBalancerSourceRanges }}
+    - {{.}}
+  {{- end }}
   {{- end }}
   ports:
     - port: {{ .Values.ingress.service.port }}
