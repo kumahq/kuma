@@ -105,6 +105,85 @@ properties:
             - targetRef
           type: object
         type: array
+      rules:
+        description: Rules defines inbound permissions configuration
+        items:
+          properties:
+            default:
+              properties:
+                allow:
+                  description: Allow definees a list of matches for which access will be allowed
+                  items:
+                    properties:
+                      spiffeId:
+                        description: SpiffeId defines a matcher configuration for SpiffeId matching
+                        properties:
+                          type:
+                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+                            enum:
+                              - Exact
+                              - PathPrefix
+                            type: string
+                          value:
+                            description: Value is SpiffeId of a client that needs to match for the configuration to be applied
+                            type: string
+                        required:
+                          - type
+                          - value
+                        type: object
+                    type: object
+                  type: array
+                allowWithShadowDeny:
+                  description: |-
+                    AllowWithShadowDeny defines a list of matches for which access will be allowed but emits logs as if
+                    requests are denied
+                  items:
+                    properties:
+                      spiffeId:
+                        description: SpiffeId defines a matcher configuration for SpiffeId matching
+                        properties:
+                          type:
+                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+                            enum:
+                              - Exact
+                              - PathPrefix
+                            type: string
+                          value:
+                            description: Value is SpiffeId of a client that needs to match for the configuration to be applied
+                            type: string
+                        required:
+                          - type
+                          - value
+                        type: object
+                    type: object
+                  type: array
+                deny:
+                  description: Deny defines a list of matches for which access will be denied
+                  items:
+                    properties:
+                      spiffeId:
+                        description: SpiffeId defines a matcher configuration for SpiffeId matching
+                        properties:
+                          type:
+                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+                            enum:
+                              - Exact
+                              - PathPrefix
+                            type: string
+                          value:
+                            description: Value is SpiffeId of a client that needs to match for the configuration to be applied
+                            type: string
+                        required:
+                          - type
+                          - value
+                        type: object
+                    type: object
+                  type: array
+              type: object
+          required:
+            - default
+          type: object
+        type: array
       targetRef:
         description: |-
           TargetRef is a reference to the resource the policy takes an effect on.

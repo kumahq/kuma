@@ -14,6 +14,22 @@ type MeshTrafficPermission struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From *[]From `json:"from,omitempty"`
+	// Rules defines inbound permissions configuration
+	Rules *[]Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	Default RuleConf `json:"default"`
+}
+
+type RuleConf struct {
+	// Deny defines a list of matches for which access will be denied
+	Deny *[]common_api.Match `json:"deny,omitempty"`
+	// AllowWithShadowDeny defines a list of matches for which access will be allowed but emits logs as if
+	// requests are denied
+	AllowWithShadowDeny *[]common_api.Match `json:"allowWithShadowDeny,omitempty"`
+	// Allow definees a list of matches for which access will be allowed
+	Allow *[]common_api.Match `json:"allow,omitempty"`
 }
 
 type From struct {
