@@ -64,7 +64,7 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 		}
 	default:
 		q = query{
-			byIdentifier: pointer.To(TargetRefToKRI(tMeta, targetRef)),
+			byIdentifier: pointer.To(TargetRefToKRI(kri.FromResourceMeta(tMeta, core_model.ResourceType(targetRef.Kind)), targetRef)),
 			sectionName:  pointer.Deref(targetRef.SectionName),
 		}
 	}

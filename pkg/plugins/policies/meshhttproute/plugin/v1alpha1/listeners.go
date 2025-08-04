@@ -232,7 +232,11 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 				BackendRefs: util_slices.FilterMap(
 					pointer.Deref(rule.Default.BackendRefs),
 					func(br common_api.BackendRef) (resolve.ResolvedBackendRef, bool) {
-						return resolve.BackendRef(getOrigin(rule.Matches), br, meshCtx.ResolveResourceIdentifier)
+						return resolve.BackendRef(
+							kri.FromResourceMeta(getOrigin(rule.Matches), api.MeshHTTPRouteType),
+							br,
+							meshCtx.ResolveResourceIdentifier,
+						)
 					},
 				),
 			})

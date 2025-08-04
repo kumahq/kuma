@@ -81,7 +81,7 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				}
 			}
 		} else {
-			destinationKri := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
+			destinationKri := resolve.TargetRefToKRI(kri.From(dataplane), common_api.TargetRef{
 				Kind:      common_api.TargetRefKind(reachableBackend.Kind),
 				Name:      &reachableBackend.Name,
 				Namespace: &reachableBackend.Namespace,

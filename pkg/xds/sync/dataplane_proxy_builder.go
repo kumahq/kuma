@@ -260,7 +260,7 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 				},
 				Port: pointer.To(o.BackendRef.Port),
 			}
-			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, resolver)
+			ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, resolver)
 			if !ok {
 				continue
 			}
