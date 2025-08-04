@@ -118,17 +118,17 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 		systemName := core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), backendName).String())
 
 		configurer := &plugin_xds.PrometheusConfigurer{
-			Backend:         backend,
-			ListenerName:    getNameOrDefault(
+			Backend: backend,
+			ListenerName: getNameOrDefault(
 				systemName,
 				fmt.Sprintf("%s:%s", PrometheusListenerName, backendName),
 			),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-			ClusterName:     getNameOrDefault(
+			ClusterName: getNameOrDefault(
 				systemName,
 				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
 			),
-			StatsPath:       PrometheusDataplaneStatsPath,
+			StatsPath: PrometheusDataplaneStatsPath,
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)

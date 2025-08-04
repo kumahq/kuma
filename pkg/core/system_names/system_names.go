@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	SystemPrefix = "system_"
-	sectionSeparator = "_"
+	SystemPrefix          = "system_"
+	sectionSeparator      = "_"
 	sectionPartsSeparator = "-"
 )
 
