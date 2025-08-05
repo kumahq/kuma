@@ -14,11 +14,12 @@ provider:
       expiry: 24h
     autogenerate:
       enabled: false
-    certificate:
-      type: InsecureInline
-      insecureInline: 
-        value: "123"
-    privateKey:
-      type: File
-      file: 
-        path: "/tmp/key"
+    ca:
+      certificate:
+        type: InsecureInline
+        insecureInline: 
+          value: "123"
+      privateKey:
+        type: File
+        file: 
+          path: "/tmp/key"

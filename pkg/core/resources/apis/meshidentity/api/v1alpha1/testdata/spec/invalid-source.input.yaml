@@ -6,12 +6,10 @@ provider:
   bundled:
     meshTrustCreation: Test
     autogenerate:
-      enabled: true
+      enabled: false
     ca:
       certificate:
         type: File
         file:
       privateKey:
         type: EnvVar
-        envVar:
-          name: "MY_PRIVATE_KEY"

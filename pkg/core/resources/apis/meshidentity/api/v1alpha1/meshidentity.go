@@ -21,7 +21,7 @@ type Selector struct {
 type MeshIdentity struct {
 	Selector *Selector `json:"selector,omitempty"`
 	SpiffeID *SpiffeID `json:"spiffeID,omitempty"`
-	Provider Provider  `json:"provider,omitempty"`
+	Provider Provider  `json:"provider"`
 }
 
 type SpiffeID struct {
@@ -73,12 +73,17 @@ type Bundled struct {
 	InsecureAllowSelfSigned *bool `json:"insecureAllowSelfSigned,omitempty"`
 	// Autogenerate configures the control plane to use self-signed certificates.
 	Autogenerate *Autogenerate `json:"autogenerate,omitempty"`
+	// CA has configuration related to the CA
+	CA *CA `json:"ca,omitempty"`
+	// CertificateParameters allows users to define certificate generation parameters.
+	CertificateParameters *CertificateParameters `json:"certificateParameters,omitempty"`
+}
+
+type CA struct {
 	// Certificate allows the user to specify a custom certificate.
 	Certificate *datasource_api.SecureDataSource `json:"certificate,omitempty"`
 	// PrivateKey allows the user to specify a custom private key.
 	PrivateKey *datasource_api.SecureDataSource `json:"privateKey,omitempty"`
-	// CertificateParameters allows users to define certificate generation parameters.
-	CertificateParameters *CertificateParameters `json:"certificateParameters,omitempty"`
 }
 
 type SpireAgent struct {
