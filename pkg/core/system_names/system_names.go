@@ -3,16 +3,38 @@ package system_names
 import (
 	"regexp"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
-const SystemPrefix = "system_"
-
-const separator = "_"
+const (
+	SystemPrefix          = "system_"
+	sectionSeparator      = "_"
+	sectionPartsSeparator = "-"
+)
 
 var cleanNameRegex = regexp.MustCompile(`([a-z0-9-]*_?)+`)
 
 func IsSystem(name string) bool {
 	return strings.HasPrefix(SystemPrefix, name)
+}
+
+func CleanName(name string) string {
+	matches := cleanNameRegex.FindAllString(name, -1)
+	return strings.Join(matches, sectionPartsSeparator)
+}
+
+func AsSystemName[T string | kri.Identifier](name T) string {
+	switch v := any(name).(type) {
+	case kri.Identifier:
+		if v != (kri.Identifier{}) {
+			return SystemPrefix + v.String()
+		}
+		return ""
+	case string:
+		return SystemPrefix + v
+	}
+	panic("Unsupported type for AsSystemName: " + any(name).(string))
 }
 
 func MustBeSystemName(name string) string {
@@ -23,7 +45,7 @@ func MustBeSystemName(name string) string {
 }
 
 func Join(parts ...string) string {
-	return strings.Join(parts, separator)
+	return strings.Join(parts, sectionSeparator)
 }
 
 func GetNameOrDefault(predicate bool) func(name string, defaultName string) string {
