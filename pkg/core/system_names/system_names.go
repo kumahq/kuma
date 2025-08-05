@@ -1,9 +1,10 @@
 package system_names
 
 import (
-	"github.com/kumahq/kuma/pkg/core/kri"
 	"regexp"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 const (
