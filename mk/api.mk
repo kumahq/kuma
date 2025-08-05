@@ -1,8 +1,4 @@
 PROTOC := $(PROTOC_BIN) \
-	--proto_path=$(PROTO_GOOGLE_APIS) \
-	--proto_path=$(PROTO_XDS) \
-	--proto_path=$(PROTO_PGV) \
-	--proto_path=$(PROTO_ENVOY) \
 	--proto_path=$(PROTOS_DEPS_PATH) \
 	--proto_path=$(KUMA_DIR) \
 	--proto_path=.
