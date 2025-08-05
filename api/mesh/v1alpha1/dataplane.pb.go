@@ -1123,19 +1123,24 @@ type Dataplane_Networking_TransparentProxying_ReachableBackendRef struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Type of the backend: MeshService or MeshExternalService
-	//  +required
+	//
+	//	+required
 	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	// Name of the backend.
-	//  +optional
+	//
+	//	+optional
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Namespace of the backend. Might be empty
-	//  +optional
+	//
+	//	+optional
 	Namespace string `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// Port of the backend.
-	//  +optional
+	//
+	//	+optional
 	Port *wrapperspb.UInt32Value `protobuf:"bytes,4,opt,name=port,proto3" json:"port,omitempty"`
 	// Labels used to select backends
-	//  +optional
+	//
+	//	+optional
 	Labels map[string]string `protobuf:"bytes,5,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
