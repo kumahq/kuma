@@ -60,7 +60,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return err
 			}
 
-			yqExec := exec.CommandContext(cmd.Context(), // nolint: gosec
+			yqExec := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
 				fmt.Sprintf(`.properties *= (
     load(%q)

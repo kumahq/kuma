@@ -97,7 +97,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	}
 	builder.WithEventBus(eventBus)
 	builder.WithAPIManager(customization.NewAPIList())
-	xdsCtx, err := xds_runtime.WithDefaults(builder) //nolint:contextcheck
+	xdsCtx, err := xds_runtime.WithDefaults(builder)
 	if err != nil {
 		return nil, err
 	}

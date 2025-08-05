@@ -255,7 +255,7 @@ func (m *Manager) reconfigureBackend(ctx context.Context, backendName string, ba
 func (m *Manager) Step(configuration dpapi.MeshMetricDpConfig) error {
 	newApplicationsToScrape := m.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
 	m.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
-	return m.configureOpenTelemetryExporter(m.ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends)) // nolint:contextcheck
+	return m.configureOpenTelemetryExporter(m.ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
 }
 
 func (m *Manager) Shutdown() error {
