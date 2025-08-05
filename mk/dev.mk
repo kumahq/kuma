@@ -79,6 +79,10 @@ KUBE_LINTER=$(shell $(MISE) which kube-linter)
 HADOLINT=$(shell $(MISE) which hadolint)
 OAPI_CODEGEN=$(shell $(MISE) which oapi-codegen)
 
+TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
+TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
+TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
+
 # Install all dependencies on tools and protobuf files
 .PHONY: install
 install: ## Bootstrap: Install all development tools
