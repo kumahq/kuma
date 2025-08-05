@@ -25,3 +25,16 @@ func Init(enabledPlugins []string, plugins map[string]*PluginInitializer) {
 		}
 	}
 }
+
+func InitAllIf(enabledPlugins []string, pluginName string, plugins map[string]*PluginInitializer) {
+	for _, plugin := range enabledPlugins {
+		if plugin == pluginName {
+			for _, initializer := range plugins {
+				if !initializer.Initialized {
+					initializer.InitFn()
+					initializer.Initialized = true
+				}
+			}
+		}
+	}
+}

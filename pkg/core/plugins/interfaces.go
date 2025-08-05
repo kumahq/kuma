@@ -131,3 +131,10 @@ type ProxyPlugin interface {
 	// Apply mutate the proxy as needed.
 	Apply(ctx context.Context, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy) error
 }
+
+// CoreResourcePlugin a plugin to generate xDS resources based on core resources.
+type CoreResourcePlugin interface {
+	Plugin
+	// Apply to `rs` using `proxy` the mutation or new resources.
+	Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error
+}
