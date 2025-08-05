@@ -17,7 +17,7 @@ metadata:
 spec:
   type: {{ .Values.ingress.service.type }}
   {{- if .Values.ingress.service.loadBalancerIP }}
-  loadBalancerIP: {{ .Values.ingress.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.ingress.service.loadBalancerIP | toYaml }}
   {{- end }}
   {{- if .Values.ingress.service.loadBalancerSourceRanges}}
   loadBalancerSourceRanges:
