@@ -5,6 +5,7 @@ import (
 	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -106,6 +107,13 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.Traff
 		StatsName:  statsName,
 		Permission: permission,
 	})
+}
+
+func DownstreamTlsContext(downstreamTlsContext *envoy_tls.DownstreamTlsContext) FilterChainBuilderOpt {
+	if downstreamTlsContext == nil {
+		return FilterChainBuilderOptFunc(nil)
+	}
+	return AddFilterChainConfigurer(&v3.DownstreamTlsContextConfigurer{Config: downstreamTlsContext})
 }
 
 type splitAdapter struct {
