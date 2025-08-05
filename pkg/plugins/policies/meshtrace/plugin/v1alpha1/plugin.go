@@ -56,33 +56,26 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
 		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshTraceType, ""))
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming) && kriWithoutSection != nil)
-
-	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
+	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy, kriWithoutSection); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
+	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy, kriWithoutSection); err != nil {
 		return err
 	}
-	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
+	if err := applyToClusters(policies.SingleItemRules, rs, proxy, kriWithoutSection); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
+	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, kriWithoutSection); err != nil {
 		return err
 	}
-	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
+	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy, kriWithoutSection); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func applyToGateway(
-	rules core_rules.SingleItemRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	resources xds_context.ResourceMap,
-	proxy *xds.Proxy,
-) error {
+func applyToGateway(rules core_rules.SingleItemRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, proxy *xds.Proxy, kriWithoutSection *kri.Identifier) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
@@ -108,12 +101,7 @@ func applyToGateway(
 			continue
 		}
 
-		if err := configureListener(
-			rules,
-			proxy,
-			listener,
-			"",
-		); err != nil {
+		if err := configureListener(rules, proxy, listener, "", kriWithoutSection); err != nil {
 			return err
 		}
 	}
@@ -121,9 +109,9 @@ func applyToGateway(
 	return nil
 }
 
-func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
+func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy, kriWithoutSection *kri.Identifier) error {
 	for _, inboundListener := range inboundListeners {
-		if err := configureListener(rules, proxy, inboundListener, ""); err != nil {
+		if err := configureListener(rules, proxy, inboundListener, "", kriWithoutSection); err != nil {
 			return err
 		}
 	}
@@ -131,11 +119,7 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 	return nil
 }
 
-func applyToOutbounds(
-	rules core_rules.SingleItemRules,
-	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	proxy *xds.Proxy,
-) error {
+func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy, kriWithoutSection *kri.Identifier, ) error {
 	outbounds := proxy.Outbounds
 	dataplane := proxy.Dataplane
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
@@ -148,7 +132,7 @@ func applyToOutbounds(
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureListener(rules, proxy, listener, serviceName); err != nil {
+		if err := configureListener(rules, proxy, listener, serviceName, kriWithoutSection); err != nil {
 			return err
 		}
 	}
@@ -156,12 +140,7 @@ func applyToOutbounds(
 	return nil
 }
 
-func applyToRealResources(
-	ctx xds_context.Context,
-	rules core_rules.SingleItemRules,
-	rs *xds.ResourceSet,
-	proxy *xds.Proxy,
-) error {
+func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy, kriWithoutSection *kri.Identifier, ) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: &uri,
@@ -173,12 +152,7 @@ func applyToRealResources(
 			switch typ {
 			case envoy_resource.ListenerType:
 				for _, listener := range resources {
-					if err := configureListener(
-						rules,
-						proxy,
-						listener.Resource.(*envoy_listener.Listener),
-						destinationname.MustResolve(false, service, port),
-					); err != nil {
+					if err := configureListener(rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port), kriWithoutSection); err != nil {
 						return err
 					}
 				}
@@ -188,7 +162,7 @@ func applyToRealResources(
 	return nil
 }
 
-func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
+func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, kriWithoutSection *kri.Identifier) error {
 	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
 	if len(rules.Rules) == 0 {
 		return nil
@@ -203,6 +177,7 @@ func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, liste
 		Destination:           destination,
 		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
 		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
+		KriWithoutSection:	   kriWithoutSection,
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -214,7 +189,7 @@ func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, liste
 	return nil
 }
 
-func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy, kriWithoutSection *kri.Identifier) error {
 	if len(rules.Rules) == 0 {
 		return nil
 	}
@@ -232,19 +207,32 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 	var endpoint *xds.Endpoint
 	var provider string
 
+	getNameOrDefault := core_system_names.GetNameOrDefault((proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)) && kriWithoutSection != nil)
+	name := ""
 	switch {
 	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
 		provider = plugin_xds.ZipkinProviderName
+		name = getNameOrDefault(
+			core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), core_system_names.CleanName(backend.Zipkin.Url))),
+			plugin_xds.GetTracingClusterName(provider),
+		)
 	case backend.Datadog != nil:
 		endpoint = endpointForDatadog(backend.Datadog)
 		provider = plugin_xds.DatadogProviderName
+		name = getNameOrDefault(
+			core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), core_system_names.CleanName(backend.Datadog.Url))),
+			plugin_xds.GetTracingClusterName(provider),
+		)
 	case backend.OpenTelemetry != nil:
 		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
 		provider = plugin_xds.OpenTelemetryProviderName
+		name = getNameOrDefault(
+			core_system_names.AsSystemName(kri.WithSectionName(pointer.Deref(kriWithoutSection), core_system_names.CleanName(backend.OpenTelemetry.Endpoint))),
+			plugin_xds.GetTracingClusterName(provider),
+		)
 	}
-	builder := clusters.NewClusterBuilder(proxy.APIVersion, plugin_xds.GetTracingClusterName(provider))
-
+	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
 	if backend.OpenTelemetry != nil {
 		builder.Configure(clusters.Http2())
 	}
