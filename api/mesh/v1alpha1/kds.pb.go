@@ -309,6 +309,7 @@ type XDSConfigResponse struct {
 	// RequestID is a UUID that was set by the Global CP.
 	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Types that are assignable to Result:
+	//
 	//	*XDSConfigResponse_Error
 	//	*XDSConfigResponse_Config
 	Result isXDSConfigResponse_Result `protobuf_oneof:"result"`
@@ -489,6 +490,7 @@ type StatsResponse struct {
 	// RequestID is a UUID that was set by the Global CP.
 	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Types that are assignable to Result:
+	//
 	//	*StatsResponse_Error
 	//	*StatsResponse_Stats
 	Result isStatsResponse_Result `protobuf_oneof:"result"`
@@ -671,6 +673,7 @@ type ClustersResponse struct {
 	// RequestID is a UUID that was set by the Global CP.
 	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Types that are assignable to Result:
+	//
 	//	*ClustersResponse_Error
 	//	*ClustersResponse_Clusters
 	Result isClustersResponse_Result `protobuf_oneof:"result"`

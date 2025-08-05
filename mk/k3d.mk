@@ -1,6 +1,6 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
-K3D_VERSION ?= $(shell $(K3D_BIN) version | grep '^k3d version' | cut -d' ' -f3 | sed 's/^v//')
+K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
