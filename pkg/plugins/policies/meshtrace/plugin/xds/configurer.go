@@ -1,8 +1,6 @@
 package xds
 
 import (
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	net_url "net/url"
 	"strings"
 
@@ -17,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"

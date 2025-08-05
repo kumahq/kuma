@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	net_url "net/url"
 	"strconv"
 	"strings"
@@ -11,9 +9,11 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -119,7 +119,7 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 	return nil
 }
 
-func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy, kriWithoutSection *kri.Identifier, ) error {
+func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy, kriWithoutSection *kri.Identifier) error {
 	outbounds := proxy.Outbounds
 	dataplane := proxy.Dataplane
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
@@ -140,7 +140,7 @@ func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[me
 	return nil
 }
 
-func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy, kriWithoutSection *kri.Identifier, ) error {
+func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy, kriWithoutSection *kri.Identifier) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: &uri,
@@ -177,7 +177,7 @@ func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, liste
 		Destination:           destination,
 		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
 		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
-		KriWithoutSection:	   kriWithoutSection,
+		KriWithoutSection:     kriWithoutSection,
 	}
 
 	for _, chain := range listener.FilterChains {
