@@ -2827,50 +2827,103 @@ spec:
                           enabled:
                             type: boolean
                         type: object
-                      certificate:
-                        description: Certificate allows the user to specify a custom
-                          certificate.
+                      ca:
+                        description: CA has configuration related to the CA
                         properties:
-                          envVar:
+                          certificate:
+                            description: Certificate allows the user to specify a
+                              custom certificate.
                             properties:
-                              name:
-                                type: string
-                            required:
-                            - name
-                            type: object
-                          file:
-                            properties:
-                              path:
-                                type: string
-                            required:
-                            - path
-                            type: object
-                          insecureInline:
-                            properties:
-                              value:
-                                type: string
-                            required:
-                            - value
-                            type: object
-                          secretRef:
-                            properties:
-                              kind:
+                              envVar:
+                                properties:
+                                  name:
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              file:
+                                properties:
+                                  path:
+                                    type: string
+                                required:
+                                - path
+                                type: object
+                              insecureInline:
+                                properties:
+                                  value:
+                                    type: string
+                                required:
+                                - value
+                                type: object
+                              secretRef:
+                                properties:
+                                  kind:
+                                    enum:
+                                    - Secret
+                                    type: string
+                                  name:
+                                    type: string
+                                required:
+                                - kind
+                                - name
+                                type: object
+                              type:
                                 enum:
+                                - File
                                 - Secret
-                                type: string
-                              name:
+                                - EnvVar
+                                - InsecureInline
                                 type: string
                             required:
-                            - kind
-                            - name
+                            - type
                             type: object
-                          type:
-                            enum:
-                            - File
-                            - Secret
-                            - EnvVar
-                            - InsecureInline
-                            type: string
+                          privateKey:
+                            description: PrivateKey allows the user to specify a custom
+                              private key.
+                            properties:
+                              envVar:
+                                properties:
+                                  name:
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              file:
+                                properties:
+                                  path:
+                                    type: string
+                                required:
+                                - path
+                                type: object
+                              insecureInline:
+                                properties:
+                                  value:
+                                    type: string
+                                required:
+                                - value
+                                type: object
+                              secretRef:
+                                properties:
+                                  kind:
+                                    enum:
+                                    - Secret
+                                    type: string
+                                  name:
+                                    type: string
+                                required:
+                                - kind
+                                - name
+                                type: object
+                              type:
+                                enum:
+                                - File
+                                - Secret
+                                - EnvVar
+                                - InsecureInline
+                                type: string
+                            required:
+                            - type
+                            type: object
                         type: object
                       certificateParameters:
                         description: CertificateParameters allows users to define
@@ -2891,51 +2944,6 @@ spec:
                         - Enabled
                         - Disabled
                         type: string
-                      privateKey:
-                        description: PrivateKey allows the user to specify a custom
-                          private key.
-                        properties:
-                          envVar:
-                            properties:
-                              name:
-                                type: string
-                            required:
-                            - name
-                            type: object
-                          file:
-                            properties:
-                              path:
-                                type: string
-                            required:
-                            - path
-                            type: object
-                          insecureInline:
-                            properties:
-                              value:
-                                type: string
-                            required:
-                            - value
-                            type: object
-                          secretRef:
-                            properties:
-                              kind:
-                                enum:
-                                - Secret
-                                type: string
-                              name:
-                                type: string
-                            required:
-                            - kind
-                            - name
-                            type: object
-                          type:
-                            enum:
-                            - File
-                            - Secret
-                            - EnvVar
-                            - InsecureInline
-                            type: string
-                        type: object
                     type: object
                   spire:
                     description: Spire indicates that SPIRE is used for certificate
@@ -2977,6 +2985,8 @@ spec:
                   trustDomain:
                     type: string
                 type: object
+            required:
+            - provider
             type: object
           status:
             description: Status is the current status of the Kuma MeshIdentity resource.
