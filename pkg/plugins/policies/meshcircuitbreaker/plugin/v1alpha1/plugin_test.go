@@ -291,9 +291,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: []interface{}{
-							api.Conf{ConnectionLimits: genConnectionLimits()},
-						},
+						Conf: &api.Rule{Default: api.Conf{ConnectionLimits: genConnectionLimits()}},
 					}},
 				},
 			},
@@ -318,9 +316,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: []interface{}{
-							api.Conf{OutlierDetection: genOutlierDetection(false)},
-						},
+						Conf: &api.Rule{Default: api.Conf{OutlierDetection: genOutlierDetection(false)}},
 					}},
 				},
 			},
@@ -347,8 +343,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								OutlierDetection: genOutlierDetection(true),
 							},
 						},
@@ -379,8 +375,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(false),
 							},
@@ -412,8 +408,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: []interface{}{
-							api.Conf{
+						Conf: &api.Rule{
+							Default: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(true),
 							},
