@@ -11,6 +11,7 @@ type MeshTrust struct {
 	Origin *Origin `json:"origin,omitempty"`
 	// TrustDomain is the trust domain associated with this resource.
 	// +required
+	// +kubebuilder:validation:MaxLength=253
 	TrustDomain string `json:"trustDomain"`
 	// CABundles contains a list of CA bundles supported by this TrustDomain.
 	// At least one CA bundle must be specified.
@@ -36,10 +37,10 @@ type CABundle struct {
 	// +required
 	Type CABundleType `json:"type"`
 	// Pem contains the PEM-encoded CA bundle if the Type is set to a PEM-based format.
-	Pem *Pem `json:"pem,omitempty"`
+	PEM *PEM `json:"pem,omitempty"`
 }
 
-type Pem struct {
+type PEM struct {
 	// Value holds the PEM-encoded CA bundle as a string.
 	Value string `json:"value"`
 }
