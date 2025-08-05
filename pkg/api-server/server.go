@@ -279,12 +279,7 @@ func addResourcesEndpoints(
 			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 			xdsHooks:                     xdsHooks,
-<<<<<<< HEAD
-=======
-			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
-			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
 			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name

@@ -2,17 +2,10 @@ package xds
 
 import (
 	"fmt"
-<<<<<<< HEAD
-	"strings"
-
-=======
 	"net"
-	"slices"
 	"strings"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 

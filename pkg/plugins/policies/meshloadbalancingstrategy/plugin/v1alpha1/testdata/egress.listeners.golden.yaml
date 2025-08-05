@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-{}
-=======
 resources:
 - name: egress-listener
   resource:
@@ -81,4 +78,3 @@ resources:
           statPrefix: "127_0_0_1_10002"
     name: inbound:127.0.0.1:10002
     trafficDirection: INBOUND
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))

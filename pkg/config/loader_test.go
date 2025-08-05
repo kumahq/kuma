@@ -374,21 +374,8 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
-<<<<<<< HEAD
-=======
 
-			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
-			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
-			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
-			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
-			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
-			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
-
-			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
-			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
-			Expect(cfg.CoreResources.Status.MeshMultiZoneServiceInterval.Duration).To(Equal(7 * time.Second))
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -766,23 +753,10 @@ tracing:
   openTelemetry:
     enabled: true
     endpoint: collector:4317
-<<<<<<< HEAD
-=======
 ipam:
-  meshService:
-    cidr: 251.0.0.0/8
-  meshExternalService:
-    cidr: 252.0.0.0/8
-  meshMultiZoneService:
-    cidr: 253.0.0.0/8
-  allocationInterval: 7s
   knownInternalCIDRs:
   - 10.8.0.0/16
   - 127.0.0.6/32
-meshService:
-  generationInterval: 8s
-  deletionGracePeriod: 11s
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1064,18 +1038,7 @@ meshService:
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
-<<<<<<< HEAD
-=======
-				"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL":                                         "6s",
-				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
-				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
-				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
-				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
-				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
 				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
-				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
-				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 			},
 			yamlFileConfig: "",
 		}),

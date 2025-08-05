@@ -111,61 +111,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddExternalService("external-service").
 					Build(),
 				proxy: xds_builders.Proxy().
-<<<<<<< HEAD
 					WithDataplane(samples.DataplaneWebBuilder().
 						AddOutboundToService("external-service")).
-=======
-					WithDataplane(builders.Dataplane().
-						WithName("web-01").
-						WithAddress("192.168.0.2").
-						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(xds_types.Outbounds{
-						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-							Port: builders.FirstOutboundPort,
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "backend",
-							},
-						}},
-						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-							Port: builders.FirstOutboundPort + 1,
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "external-service",
-							},
-						}},
-					}).
-					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithInternalAddresses(xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
-					Build(),
-			}
-		}()),
-		Entry("default-route-outbound-with-tags-with-mtls", func() outboundsTestCase {
-			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend", xds_builders.Endpoint().
-					WithTarget("192.168.0.4").
-					WithPort(8084).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
-			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().
-					WithMeshBuilder(samples.MeshMTLSBuilder()).
-					WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
-					Build(),
-				proxy: xds_builders.Proxy().
-					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
-					WithDataplane(builders.Dataplane().
-						WithName("web-01").
-						WithAddress("192.168.0.2").
-						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(xds_types.Outbounds{
-						{LegacyOutbound: builders.Outbound().
-							WithPort(builders.FirstOutboundPort).
-							WithTags(map[string]string{
-								mesh_proto.ServiceTag: "backend",
-								"region":              "us",
-							}).Build()},
-					}).
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					Build(),
 			}

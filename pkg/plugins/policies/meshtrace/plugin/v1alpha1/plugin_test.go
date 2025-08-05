@@ -58,29 +58,6 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}
 	}
-<<<<<<< HEAD
-=======
-	inboundAndOutboundRealMeshService := func() []core_xds.Resource {
-		return []core_xds.Resource{
-			{
-				Name:   "inbound",
-				Origin: generator.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
-					)).MustBuild(),
-			}, {
-				Name:   "outbound",
-				Origin: generator.OriginOutbound,
-				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
-					)).MustBuild(),
-				ResourceOrigin: &backendMeshServiceIdentifier,
-			},
-		}
-	}
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			resources := core_xds.NewResourceSet()
@@ -156,6 +133,12 @@ var _ = Describe("MeshTrace", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   statPrefix: "127_0_0_1_17777"
                   tracing:
                       spawnUpstreamSpan: false
@@ -201,6 +184,12 @@ var _ = Describe("MeshTrace", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   statPrefix: "127_0_0_1_27777"
                   tracing:
                       spawnUpstreamSpan: false
@@ -295,6 +284,12 @@ var _ = Describe("MeshTrace", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   statPrefix: "127_0_0_1_17777"
                   tracing:
                       spawnUpstreamSpan: false
@@ -338,6 +333,12 @@ var _ = Describe("MeshTrace", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   statPrefix: "127_0_0_1_27777"
                   tracing:
                       spawnUpstreamSpan: false
@@ -430,6 +431,12 @@ var _ = Describe("MeshTrace", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   statPrefix: "127_0_0_1_17777"
                   tracing:
                       spawnUpstreamSpan: false
@@ -456,6 +463,12 @@ var _ = Describe("MeshTrace", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   statPrefix: "127_0_0_1_27777"
                   tracing:
                       spawnUpstreamSpan: false
@@ -523,6 +536,12 @@ var _ = Describe("MeshTrace", func() {
                             - name: envoy.filters.http.router
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        internalAddressConfig:
+                            cidrRanges:
+                                - addressPrefix: 127.0.0.1
+                                  prefixLen: 32
+                                - addressPrefix: ::1
+                                  prefixLen: 128
                         statPrefix: "127_0_0_1_17777"
                         tracing:
                             spawnUpstreamSpan: false
@@ -552,6 +571,12 @@ var _ = Describe("MeshTrace", func() {
                             - name: envoy.filters.http.router
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        internalAddressConfig:
+                           cidrRanges:
+                               - addressPrefix: 127.0.0.1
+                                 prefixLen: 32
+                               - addressPrefix: ::1
+                                 prefixLen: 128
                         statPrefix: "127_0_0_1_27777"
                         tracing:
                             spawnUpstreamSpan: false
@@ -614,6 +639,12 @@ var _ = Describe("MeshTrace", func() {
                             - name: envoy.filters.http.router
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        internalAddressConfig:
+                           cidrRanges:
+                               - addressPrefix: 127.0.0.1
+                                 prefixLen: 32
+                               - addressPrefix: ::1
+                                 prefixLen: 128
                         statPrefix: "127_0_0_1_17777"
             name: inbound:127.0.0.1:17777
             trafficDirection: INBOUND`, `
@@ -630,6 +661,12 @@ var _ = Describe("MeshTrace", func() {
                             - name: envoy.filters.http.router
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        internalAddressConfig:
+                           cidrRanges:
+                               - addressPrefix: 127.0.0.1
+                                 prefixLen: 32
+                               - addressPrefix: ::1
+                                 prefixLen: 128
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`},

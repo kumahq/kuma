@@ -57,7 +57,6 @@ const (
 )
 
 type resourceEndpoints struct {
-<<<<<<< HEAD
 	mode               config_core.CpMode
 	federatedZone      bool
 	zoneName           string
@@ -68,22 +67,7 @@ type resourceEndpoints struct {
 	filter             func(request *restful.Request) (store.ListFilterFunc, error)
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
-=======
-	mode                   config_core.CpMode
-	federatedZone          bool
-	zoneName               string
-	resManager             manager.ResourceManager
-	descriptor             model.ResourceTypeDescriptor
-	resourceAccess         access.ResourceAccess
-	k8sMapper              k8s.ResourceMapperFunc
-	filter                 func(request *restful.Request) (store.ListFilterFunc, error)
-	meshContextBuilder     xds_context.MeshContextBuilder
-	xdsHooks               []xds_hooks.ResourceSetHook
-	systemNamespace        string
-	isK8s                  bool
 	knownInternalAddresses []string
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
-
 	disableOriginLabelValidation bool
 }
 

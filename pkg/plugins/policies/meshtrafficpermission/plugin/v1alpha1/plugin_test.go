@@ -38,13 +38,8 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-<<<<<<< HEAD
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
-					Configure(listeners.HttpConnectionManager("test_listener", false)))).
-=======
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil)))).
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
@@ -57,13 +52,8 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-<<<<<<< HEAD
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
-					Configure(listeners.HttpConnectionManager("test_listener2", false)))).
-=======
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil)))).
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
@@ -76,13 +66,8 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-<<<<<<< HEAD
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
-					Configure(listeners.HttpConnectionManager("test_listener3", false)))).
-=======
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil)))).
->>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{

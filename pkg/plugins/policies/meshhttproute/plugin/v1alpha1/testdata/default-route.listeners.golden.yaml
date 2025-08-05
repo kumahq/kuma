@@ -17,8 +17,8 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           internalAddressConfig:
             cidrRanges:
-            - addressPrefix: 192.168.0.0
-              prefixLen: 16
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
           normalizePath: true
@@ -65,8 +65,8 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           internalAddressConfig:
             cidrRanges:
-            - addressPrefix: 192.168.0.0
-              prefixLen: 16
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
           normalizePath: true
