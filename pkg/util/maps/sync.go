@@ -47,8 +47,8 @@ func (s *Sync[K, V]) Swap(k K, v V) (V, bool) {
 	return prev.(V), true
 }
 
-func (s *Sync[K, V]) CompareAndSwap(k K, old, new V) bool {
-	return s.inner.CompareAndSwap(k, old, new)
+func (s *Sync[K, V]) CompareAndSwap(k K, old, n V) bool {
+	return s.inner.CompareAndSwap(k, old, n)
 }
 
 func (s *Sync[K, V]) CompareAndDelete(k K, old V) bool {

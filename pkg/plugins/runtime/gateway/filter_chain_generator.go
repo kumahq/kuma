@@ -507,7 +507,7 @@ func configureTLS(
 		return nil, errors.Errorf("unsupported TLS mode %q", tls.GetMode())
 	}
 
-	any, err := util_proto.MarshalAnyDeterministic(downstream)
+	typedConfig, err := util_proto.MarshalAnyDeterministic(downstream)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +518,7 @@ func configureTLS(
 				chain.TransportSocket = &envoy_config_core.TransportSocket{
 					Name: "envoy.transport_sockets.tls",
 					ConfigType: &envoy_config_core.TransportSocket_TypedConfig{
-						TypedConfig: any,
+						TypedConfig: typedConfig,
 					},
 				}
 			}),

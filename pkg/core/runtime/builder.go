@@ -220,8 +220,8 @@ func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithCAProvider(cap secrets.CaProvider) *Builder {
-	b.cap = cap
+func (b *Builder) WithCAProvider(c secrets.CaProvider) *Builder {
+	b.cap = c
 	return b
 }
 

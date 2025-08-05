@@ -119,34 +119,34 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-func autoVersion(old *envoy_cache.Snapshot, new *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
+func autoVersion(old *envoy_cache.Snapshot, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
 	for resourceType, resources := range old.Resources {
-		new.Resources[resourceType] = reuseVersion(resources, new.Resources[resourceType])
+		n.Resources[resourceType] = reuseVersion(resources, n.Resources[resourceType])
 	}
 
 	var changed []string
-	for resourceType, resource := range new.Resources {
+	for resourceType, resource := range n.Resources {
 		if old.Resources[resourceType].Version != resource.Version {
 			changed = append(changed, resource.Version)
 		}
 	}
 
-	return new, changed
+	return n, changed
 }
 
-func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
-	new.Version = old.Version
-	if !equalSnapshots(old.Items, new.Items) {
-		new.Version = core.NewUUID()
+func reuseVersion(old, n envoy_cache.Resources) envoy_cache.Resources {
+	n.Version = old.Version
+	if !equalSnapshots(old.Items, n.Items) {
+		n.Version = core.NewUUID()
 	}
-	return new
+	return n
 }
 
-func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
-	if len(new) != len(old) {
+func equalSnapshots(old, n map[string]envoy_types.ResourceWithTTL) bool {
+	if len(n) != len(old) {
 		return false
 	}
-	for key, newValue := range new {
+	for key, newValue := range n {
 		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
 			return false
 		}

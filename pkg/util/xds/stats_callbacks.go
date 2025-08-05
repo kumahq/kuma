@@ -237,8 +237,8 @@ func (s *statsCallbacks) OnStreamDeltaResponse(streamID int64, request DeltaDisc
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
 }
 
-func classifyError(error string) string {
-	if strings.Contains(error, failedCallingWebhook) {
+func classifyError(err string) string {
+	if strings.Contains(err, failedCallingWebhook) {
 		return userErrorType
 	} else {
 		return otherErrorType

@@ -156,10 +156,10 @@ type Deprecation struct {
 	Message string
 }
 
-func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
-	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, new)
+func NewReplaceByDeprecation(old, n string, removed bool) Deprecation {
+	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, n)
 	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, new)
+		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, n)
 	}
 	return Deprecation{
 		Key:     old,

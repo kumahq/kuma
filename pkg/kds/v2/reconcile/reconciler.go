@@ -83,11 +83,11 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 		}
 	}
 
-	new, err := r.generator.GenerateSnapshot(ctx, node, builder, changedTypes)
+	n, err := r.generator.GenerateSnapshot(ctx, node, builder, changedTypes)
 	if err != nil {
 		return err, false
 	}
-	if new == nil {
+	if n == nil {
 		return errors.New("nil snapshot"), false
 	}
 	// call ConstructVersionMap, so we can override versions if needed and compute what changed
@@ -97,24 +97,24 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 			return errors.Wrap(err, "could not construct version map"), false
 		}
 	}
-	if err := new.ConstructVersionMap(); err != nil {
+	if err := n.ConstructVersionMap(); err != nil {
 		return errors.Wrap(err, "could not construct version map"), false
 	}
 
-	if changed := r.changedTypes(old, new); len(changed) > 0 {
+	if changed := r.changedTypes(old, n); len(changed) > 0 {
 		r.logChanges(logger, changed, node)
 		r.meterConfigReadyForDelivery(changed, node.Id)
-		return r.cache.SetSnapshot(ctx, id, new), true
+		return r.cache.SetSnapshot(ctx, id, n), true
 	}
 	return nil, false
 }
 
-func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_model.ResourceType {
+func (r *reconciler) changedTypes(old, n envoy_cache.ResourceSnapshot) []core_model.ResourceType {
 	var changed []core_model.ResourceType
 	for _, resType := range r.providedTypes {
 		typ := string(resType)
-		if (old == nil && len(new.GetVersionMap(typ)) > 0) ||
-			(old != nil && !maps.Equal(old.GetVersionMap(typ), new.GetVersionMap(typ))) {
+		if (old == nil && len(n.GetVersionMap(typ)) > 0) ||
+			(old != nil && !maps.Equal(old.GetVersionMap(typ), n.GetVersionMap(typ))) {
 			changed = append(changed, core_model.ResourceType(typ))
 		}
 	}

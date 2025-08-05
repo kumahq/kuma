@@ -217,14 +217,14 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 					},
 				},
 			}
-			any, err := util_proto.MarshalAnyDeterministic(transport)
+			typedConfig, err := util_proto.MarshalAnyDeterministic(transport)
 			if err != nil {
 				return nil, err
 			}
 			r.TransportSocket = &envoy_core_v3.TransportSocket{
 				Name: "envoy.transport_sockets.tls",
 				ConfigType: &envoy_core_v3.TransportSocket_TypedConfig{
-					TypedConfig: any,
+					TypedConfig: typedConfig,
 				},
 			}
 		}
