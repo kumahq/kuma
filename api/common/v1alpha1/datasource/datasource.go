@@ -1,6 +1,17 @@
 // +kubebuilder:object:generate=true
 package datasource
 
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+)
+
 // +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
 type SecureDataSourceType string
 
@@ -62,4 +73,30 @@ type SecretRef struct {
 
 type Inline struct {
 	Value string `json:"value"`
+}
+
+func (sds *SecureDataSource) ReadByControlPlane(ctx context.Context, secretManager manager.ReadOnlyResourceManager, mesh string) ([]byte, error) {
+	switch sds.Type {
+	case SecureDataSourceFile:
+		return os.ReadFile(sds.File.Path)
+	case SecureDataSourceEnvVar:
+		value, found := os.LookupEnv(sds.EnvVar.Name)
+		if !found {
+			return nil, fmt.Errorf("environment variable: %s is not defined", sds.EnvVar.Name)
+		}
+		return []byte(value), nil
+	case SecureDataSourceInline:
+		return []byte(sds.InsecureInline.Value), nil
+	case SecureDataSourceSecretRef:
+		if secretManager == nil {
+			return nil, errors.New("resource manager is not defined")
+		}
+		resource := system.NewSecretResource()
+		if err := secretManager.Get(ctx, resource, core_store.GetByKey(sds.SecretRef.Name, mesh)); err != nil {
+			return nil, err
+		}
+		return resource.Spec.GetData().GetValue(), nil
+	default:
+		return nil, fmt.Errorf("datasource type: %s is not supported", sds.Type)
+	}
 }
