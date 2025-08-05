@@ -57,17 +57,17 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode               config_core.CpMode
-	federatedZone      bool
-	zoneName           string
-	resManager         manager.ResourceManager
-	descriptor         model.ResourceTypeDescriptor
-	resourceAccess     access.ResourceAccess
-	k8sMapper          k8s.ResourceMapperFunc
-	filter             func(request *restful.Request) (store.ListFilterFunc, error)
-	meshContextBuilder xds_context.MeshContextBuilder
-	xdsHooks           []xds_hooks.ResourceSetHook
-	knownInternalAddresses []string
+	mode                         config_core.CpMode
+	federatedZone                bool
+	zoneName                     string
+	resManager                   manager.ResourceManager
+	descriptor                   model.ResourceTypeDescriptor
+	resourceAccess               access.ResourceAccess
+	k8sMapper                    k8s.ResourceMapperFunc
+	filter                       func(request *restful.Request) (store.ListFilterFunc, error)
+	meshContextBuilder           xds_context.MeshContextBuilder
+	xdsHooks                     []xds_hooks.ResourceSetHook
+	knownInternalAddresses       []string
 	disableOriginLabelValidation bool
 }
 
