@@ -138,6 +138,9 @@ const (
 	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
 	// Available value is DELTA_GRPC
 	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
+
+	// KumaServiceAccount specifies the ServiceAccount associated with the pod.
+	KumaServiceAccount = "k8s.kuma.io/service-account"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

@@ -11,6 +11,7 @@ import (
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -19,7 +20,7 @@ import (
 
 // createorUpdateBuiltinGatewayDataplane manages the dataplane for a pod
 // belonging to a built-in Kuma gateway.
-func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) error {
+func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) error {
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
@@ -53,6 +54,22 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		// through owner refs
 		return nil
 	}
+
+	labels, err := model.ComputeLabels(
+		core_mesh.DataplaneResourceTypeDescriptor,
+		dataplaneProto,
+		mergeLabels(dataplane.GetLabels(), pod.Labels),
+		dataplane.Mesh,
+		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
+		model.WithMode(r.PodConverter.Mode),
+		model.WithK8s(true),
+		model.WithZone(r.PodConverter.Zone),
+		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+	)
+	if err != nil {
+		return err
+	}
+	dataplane.SetLabels(labels)
 
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {

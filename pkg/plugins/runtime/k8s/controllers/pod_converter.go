@@ -64,11 +64,12 @@ func (p *PodConverter) PodToDataplane(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
-		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
-		p.Mode,
-		true,
-		p.Zone,
+		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		model.WithMode(p.Mode),
+		model.WithK8s(true),
+		model.WithZone(p.Zone),
+		model.WithServiceAccount(pod.Spec.ServiceAccountName),
 	)
 	if err != nil {
 		return err
@@ -104,11 +105,12 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
 		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
-		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
-		p.Mode,
-		true,
-		p.Zone,
+		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		model.WithMode(p.Mode),
+		model.WithK8s(true),
+		model.WithZone(p.Zone),
+		model.WithServiceAccount(pod.Spec.ServiceAccountName),
 	)
 	if err != nil {
 		return err
@@ -144,11 +146,12 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
 		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
-		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
-		p.Mode,
-		true,
-		p.Zone,
+		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		model.WithMode(p.Mode),
+		model.WithK8s(true),
+		model.WithZone(p.Zone),
+		model.WithServiceAccount(pod.Spec.ServiceAccountName),
 	)
 	if err != nil {
 		return err

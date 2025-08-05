@@ -20,6 +20,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
@@ -251,6 +252,13 @@ func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations 
 		annotations[v1alpha1.DisplayName] = v
 		delete(labels, v1alpha1.DisplayName)
 	}
+	// ServiceAccount object names are constrained by the DNS subdomain name specification, with a maximum length of 253 characters.
+	// Since the source name can exceed this length, we are storing the full, original name as an annotation on the ServiceAccount object.
+	// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts
+	if v, ok := labels[metadata.KumaServiceAccount]; ok {
+		annotations[metadata.KumaServiceAccount] = v
+		delete(labels, metadata.KumaServiceAccount)
+	}
 	return labels, annotations
 }
 
@@ -297,6 +305,9 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 		labels[v1alpha1.DisplayName] = displayName
 	} else {
 		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
+	}
+	if sa, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaServiceAccount]; ok {
+		labels[metadata.KumaServiceAccount] = sa
 	}
 	return labels
 }
