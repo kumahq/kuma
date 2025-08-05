@@ -119,7 +119,7 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-func autoVersion(old *envoy_cache.Snapshot, new *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
+func autoVersion(old, new *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
 	for resourceType, resources := range old.Resources {
 		new.Resources[resourceType] = reuseVersion(resources, new.Resources[resourceType])
 	}

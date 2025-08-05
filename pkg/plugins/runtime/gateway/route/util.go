@@ -9,7 +9,7 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 )
 
-func InferServiceProtocol(serviceProtocol core_mesh.Protocol, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
+func InferServiceProtocol(serviceProtocol, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
 	if serviceProtocol == core_mesh.ProtocolUnknown || serviceProtocol == "" {
 		switch routeProtocol {
 		case core_mesh.ProtocolHTTP:

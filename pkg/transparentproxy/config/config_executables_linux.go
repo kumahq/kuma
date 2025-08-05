@@ -133,7 +133,7 @@ func (c InitializedExecutable) Exec(
 	return &stdout, &stderr, nil
 }
 
-func mount(src string, dest string, flags uintptr) error {
+func mount(src, dest string, flags uintptr) error {
 	if err := unix.Mount(src, dest, "", flags, ""); err != nil {
 		return errors.Wrapf(err, "failed to mount %s to %s", src, dest)
 	}

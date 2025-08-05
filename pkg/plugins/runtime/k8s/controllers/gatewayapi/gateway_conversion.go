@@ -264,7 +264,7 @@ type certRefCondition struct {
 	reason  string
 }
 
-func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gatewayNamespace string, l gatewayapi.Listener) (*mesh_proto.MeshGateway_TLS_Conf, *certRefCondition, error) {
+func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh, gatewayNamespace string, l gatewayapi.Listener) (*mesh_proto.MeshGateway_TLS_Conf, *certRefCondition, error) {
 	type referencedSecret struct {
 		name kube_types.NamespacedName
 		data []byte

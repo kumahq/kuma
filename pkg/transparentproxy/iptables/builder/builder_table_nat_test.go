@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Builder nat", func() {
 	DescribeTable("should insert PREROUTING rules",
-		func(vnet []string, verbose bool, ipv6 bool, expect ...string) {
+		func(vnet []string, verbose, ipv6 bool, expect ...string) {
 			// given
 			nat := tables.Nat()
 			cfg := tproxy_test.InitializeConfigIPvX(config.Config{
@@ -130,7 +130,7 @@ var _ = Describe("Builder nat", func() {
 	)
 
 	DescribeTable("should append PREROUTING rules",
-		func(verbose bool, ipv6 bool, expect ...string) {
+		func(verbose, ipv6 bool, expect ...string) {
 			// given
 			nat := tables.Nat()
 			cfg := tproxy_test.InitializeConfigIPvX(config.Config{

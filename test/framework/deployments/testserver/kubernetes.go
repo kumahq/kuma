@@ -286,7 +286,7 @@ func (k *k8SDeployment) getLabels() map[string]string {
 	return labels
 }
 
-func meta(namespace string, name string) metav1.ObjectMeta {
+func meta(namespace, name string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      name,
 		Namespace: namespace,

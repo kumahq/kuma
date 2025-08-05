@@ -18,12 +18,12 @@ import (
 var log = core.Log.WithName("secrets").WithName("validator")
 
 type SecretValidator interface {
-	ValidateDelete(ctx context.Context, secretName string, secretMesh string) error
+	ValidateDelete(ctx context.Context, secretName, secretMesh string) error
 }
 
-type ValidateDelete func(ctx context.Context, secretName string, secretMesh string) error
+type ValidateDelete func(ctx context.Context, secretName, secretMesh string) error
 
-func (f ValidateDelete) ValidateDelete(ctx context.Context, secretName string, secretMesh string) error {
+func (f ValidateDelete) ValidateDelete(ctx context.Context, secretName, secretMesh string) error {
 	return f(ctx, secretName, secretMesh)
 }
 
@@ -39,7 +39,7 @@ type secretValidator struct {
 	store      core_store.ResourceStore
 }
 
-func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh string) error {
+func (s *secretValidator) ValidateDelete(ctx context.Context, name, mesh string) error {
 	meshRes := core_mesh.NewMeshResource()
 	err := s.store.Get(ctx, meshRes, core_store.GetByKey(mesh, model.NoMesh))
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh 
 	return verr.OrNil()
 }
 
-func (s *secretValidator) secretUsedByMTLSBackend(name string, mesh string, backend *mesh_proto.CertificateAuthorityBackend) (bool, error) {
+func (s *secretValidator) secretUsedByMTLSBackend(name, mesh string, backend *mesh_proto.CertificateAuthorityBackend) (bool, error) {
 	caManager := s.caManagers[backend.Type]
 	if caManager == nil { // this should be caught earlier by validator
 		return false, errors.Errorf("manager of type %q does not exist", backend.Type)

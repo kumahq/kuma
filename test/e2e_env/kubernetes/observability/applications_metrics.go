@@ -68,7 +68,7 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MeshAndEnvoyMetricsFilters(name string, usedOnly string) InstallFunc {
+func MeshAndEnvoyMetricsFilters(name, usedOnly string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh

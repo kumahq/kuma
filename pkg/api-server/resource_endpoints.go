@@ -344,7 +344,7 @@ func (r *resourceEndpoints) listResources(withInsight bool) func(request *restfu
 	}
 }
 
-func (r *resourceEndpoints) MergeInOverview(resources core_model.ResourceList, insights core_model.ResourceList) (core_model.ResourceList, error) {
+func (r *resourceEndpoints) MergeInOverview(resources, insights core_model.ResourceList) (core_model.ResourceList, error) {
 	insightsByKey := map[core_model.ResourceKey]core_model.Resource{}
 	for _, insight := range insights.GetItems() {
 		insightsByKey[core_model.MetaToResourceKey(insight.GetMeta())] = insight
@@ -566,7 +566,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
+func (r *resourceEndpoints) validateResourceRequest(name, meshName string, resource rest.Resource) error {
 	var err validators.ValidationError
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")

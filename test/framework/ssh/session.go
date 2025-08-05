@@ -20,7 +20,7 @@ type Session struct {
 	cmd        string
 }
 
-func NewSession(client *ssh.Client, reportPath string, name string, verbose bool, cmd string) (*Session, error) {
+func NewSession(client *ssh.Client, reportPath, name string, verbose bool, cmd string) (*Session, error) {
 	session, err := client.NewSession()
 	if err != nil {
 		panic(err)

@@ -27,7 +27,7 @@ type testPolicyInspectClient struct {
 	dpResponse api_types.InspectDataplanesForPolicyResponse
 }
 
-func (t *testPolicyInspectClient) DataplanesForPolicy(ctx context.Context, desc model.ResourceTypeDescriptor, mesh string, name string) (api_types.InspectDataplanesForPolicyResponse, error) {
+func (t *testPolicyInspectClient) DataplanesForPolicy(ctx context.Context, desc model.ResourceTypeDescriptor, mesh, name string) (api_types.InspectDataplanesForPolicyResponse, error) {
 	if t.ensureMesh != "" {
 		Expect(mesh).To(Equal(t.ensureMesh))
 	}

@@ -91,7 +91,7 @@ func isDeniedToJoin(tagSet mesh_proto.SingleValueTagSet, restrictions []*mesh_pr
 
 // matchTags checks whether dp tags has required tags
 // If required tags has `*` in value, dp tags have to contain non-empty value
-func matchTags(requiredTags map[string]string, dpTags map[string]string) bool {
+func matchTags(requiredTags, dpTags map[string]string) bool {
 	for requiredTag, requiredValue := range requiredTags {
 		dpValue := dpTags[requiredTag]
 		if requiredValue == mesh_proto.MatchAllTag && dpValue != "" {
