@@ -4,7 +4,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
@@ -70,19 +69,19 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			Address: dpAddress.GetAddress(),
 			Port:    dpAddress.GetPortValue(),
 		}
-		rules, ok := mtp.FromRules.Rules[key]
+
+		inboundRules, ok := mtp.FromRules.InboundRules[key]
 		if !ok {
-			if len(proxy.Policies.TrafficPermissions) == 0 {
-				rules = p.denyRules()
-			} else {
-				continue
+			err := p.configureLegacyRules(mtp, key, listener, res, proxy)
+			if err != nil {
+				return err
 			}
 		}
 
 		configurer := &v3.RBACConfigurer{
-			StatsName: res.Name,
-			Rules:     rules,
-			Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
+			StatsName:    res.Name,
+			InboundRules: inboundRules,
+			Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
 		}
 		for _, filterChain := range listener.FilterChains {
 			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
@@ -92,6 +91,34 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			if err := configurer.Configure(filterChain); err != nil {
 				return err
 			}
+		}
+
+	}
+	return nil
+}
+
+func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
+	rules, ok := mtp.FromRules.Rules[key]
+	if !ok {
+		if len(proxy.Policies.TrafficPermissions) == 0 {
+			rules = p.denyRules()
+		} else {
+			return nil
+		}
+	}
+
+	configurer := &v3.LegacyRBACConfigurer{
+		StatsName: resource.Name,
+		Rules:     rules,
+		Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
+	}
+	for _, filterChain := range listener.FilterChains {
+		if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+			// we only want to configure RBAC on listeners protected by Kuma's TLS
+			continue
+		}
+		if err := configurer.Configure(filterChain); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -169,7 +196,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			}
 
 			for _, rule := range rules.Rules {
-				configurer := &v3.RBACConfigurer{
+				configurer := &v3.LegacyRBACConfigurer{
 					StatsName: listeners.Egress.Name,
 					Rules:     rule,
 					Mesh:      meshName,
@@ -196,7 +223,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			}
 
 			for _, rule := range rules.Rules {
-				configurer := &v3.RBACConfigurer{
+				configurer := &v3.LegacyRBACConfigurer{
 					StatsName: listeners.Egress.Name,
 					Rules:     rule,
 					Mesh:      meshName,
