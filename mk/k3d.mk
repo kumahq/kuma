@@ -105,11 +105,11 @@ k3d/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
 
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
-	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
+	$(MAKE) k3d/configure/calico
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -120,6 +120,14 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	@echo
 	$(MAKE) k3d/configure/ebpf
 	$(MAKE) k3d/configure/metallb
+
+.PHONY: k3d/configure/calico
+k3d/configure/calico:
+ifeq ($(K3D_NETWORK_CNI),calico)
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/tigera-operator.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/custom-resources.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) patch installation default --type=merge --patch='{"spec":{"calicoNetwork":{"containerIPForwarding":"Enabled"}}}'
+endif
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:
