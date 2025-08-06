@@ -175,6 +175,7 @@ rules:
       - meshidentities
       - meshmultizoneservices
       - meshservices
+      - meshtrusts
     verbs:
       - get
       - list
@@ -506,7 +507,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 8d8c84bfb46f0b77878f1c28394bb8e2b5545d0cf45a89e9c4be8526f8c86537
+        checksum/tls-secrets: 78a59fe0ea29976965d43929e1c03a149b76e4686e1d304bea1820e85e9d875a
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -892,6 +893,7 @@ webhooks:
           - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -954,6 +956,7 @@ webhooks:
           - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
   
       
     sideEffects: None
@@ -1098,6 +1101,7 @@ webhooks:
           - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     
       
     sideEffects: None

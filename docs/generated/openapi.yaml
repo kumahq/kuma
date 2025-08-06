@@ -3663,6 +3663,140 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshServiceList'
+  /meshes/{mesh}/meshtrusts/{name}:
+    get:
+      operationId: getMeshTrust
+      summary: Returns MeshTrust entity
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTrustItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshTrust
+      summary: Creates or Updates MeshTrust entity
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTrustItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshTrust
+      summary: Deletes MeshTrust entity
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshtrusts:
+    get:
+      operationId: getMeshTrustList
+      summary: Returns a list of MeshTrust in the mesh.
+      tags:
+        - MeshTrust
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTrustList'
 components:
   securitySchemes:
     BasicAuth:
@@ -17882,6 +18016,110 @@ components:
     MeshServiceDeleteSuccessResponse:
       type: object
       properties: {}
+    MeshTrustItem:
+      type: object
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshTrust
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshTrust resource.
+          properties:
+            caBundles:
+              description: >-
+                CABundles contains a list of CA bundles supported by this
+                TrustDomain.
+
+                At least one CA bundle must be specified.
+              items:
+                properties:
+                  pem:
+                    description: >-
+                      Pem contains the PEM-encoded CA bundle if the Type is set
+                      to a PEM-based format.
+                    properties:
+                      value:
+                        description: Value holds the PEM-encoded CA bundle as a string.
+                        type: string
+                    required:
+                      - value
+                    type: object
+                  type:
+                    description: Type specifies the format or source type of the CA bundle.
+                    enum:
+                      - Pem
+                    type: string
+                required:
+                  - type
+                type: object
+              minItems: 1
+              type: array
+            origin:
+              description: >-
+                Origin specifies whether the resource was created from a
+                MeshIdentity.
+              properties:
+                kri:
+                  description: Resource identifier
+                  type: string
+              type: object
+            trustDomain:
+              description: TrustDomain is the trust domain associated with this resource.
+              maxLength: 253
+              type: string
+          required:
+            - caBundles
+            - trustDomain
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+    MeshTrustCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          readOnly: true
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    MeshTrustDeleteSuccessResponse:
+      type: object
+      properties: {}
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -18568,6 +18806,29 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshServiceItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshTrustItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTrustItem'
+    MeshTrustList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshTrustItem'
               total:
                 type: number
                 description: The total number of entities

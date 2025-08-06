@@ -824,6 +824,7 @@ coreResources:
     - meshidentities
     - meshmultizoneservices
     - meshservices
+    - meshtrusts
 # IP address management configuration
 ipam:
   # MeshService address management

@@ -122,6 +122,7 @@ rules:
       - meshidentities
       - meshmultizoneservices
       - meshservices
+      - meshtrusts
     verbs:
       - get
       - list

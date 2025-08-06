@@ -231,6 +231,7 @@ rules:
       - meshidentities
       - meshmultizoneservices
       - meshservices
+      - meshtrusts
     verbs:
       - get
       - list
@@ -751,7 +752,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 29660c82813409aa78103cf3343f613bf89326246bafda075c1dc46a1e3e994c
+        checksum/tls-secrets: 33c77d33ab23ff4cf808bc85e7f86118779c14eaa9e70ff31028c773fc53a51c
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -1280,6 +1281,7 @@ webhooks:
           - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -1342,6 +1344,7 @@ webhooks:
           - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
   
       
     sideEffects: None
@@ -1485,6 +1488,7 @@ webhooks:
           - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     
       
     sideEffects: None
