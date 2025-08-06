@@ -8,6 +8,11 @@ type Match struct {
 // +kubebuilder:validation:Enum=Exact;Prefix
 type SpiffeIdMatchType string
 
+const (
+	ExactMatchType  SpiffeIdMatchType = "Exact"
+	PrefixMatchType SpiffeIdMatchType = "Prefix"
+)
+
 type SpiffeIdMatch struct {
 	// Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
 	Type SpiffeIdMatchType `json:"type"`
