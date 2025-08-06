@@ -243,7 +243,7 @@ func handleRealResources(
 		return nil
 	}
 
-	service := destinationname.ResolveLegacyFromDestination(dest, port)
+	service := destinationname.MustResolve(false, dest, port)
 
 	clusterName := service
 	if unifiedNaming {
@@ -253,7 +253,7 @@ func handleRealResources(
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
-	refHash := common_api.BackendRefHash(clusterName)
+	refHash := common_api.BackendRefHash(ref.Resource.String())
 
 	splitTo := func(clusterName string) envoy_common.Split {
 		return plugins_xds.NewSplitBuilder().

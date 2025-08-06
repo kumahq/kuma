@@ -38,10 +38,6 @@ func From(r core_model.Resource, sectionName string) Identifier {
 }
 
 func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType, sectionName string) Identifier {
-	if rm == nil {
-		return Identifier{}
-	}
-
 	return Identifier{
 		ResourceType: resourceType,
 		Mesh:         rm.GetMesh(),
