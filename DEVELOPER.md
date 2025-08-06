@@ -35,17 +35,17 @@ make help
 
 ### Installing dev tools
 
-We packaged the remaining dependencies into one target:
+We use [mise](https://mise.jdx.dev) to manage dev tools for Kuma. To install you can run:  
 
 ```bash
-make dev/tools
+make install
 ```
 
-You can install each commands individually if you prefer.
+or use mise directly
 
-ATTENTION: By default, development tools will be installed at `$HOME/.kuma-dev/bin`. Remember to include this directory
-into your `PATH`, e.g. by adding `export PATH=$HOME/.kuma-dev/bin:$PATH` line to the `$HOME/.bashrc` file or `$HOME/.zshrc` if using zsh.
-This can be overridden by setting the env var `CI_TOOLS_DIR`, but it isn't recommended.
+```bash
+mise install
+```
 
 ## Code checks
 
