@@ -44,7 +44,7 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 }
 
 // GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
-func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
+func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
 	outbounds := map[kri.Identifier]core.Port{}
 	// Handle user defined outbound without a transparent proxy
 	if dataplane.Spec.GetNetworking().GetOutbound() != nil {
@@ -60,12 +60,12 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				},
 				Port: pointer.To(outbound.BackendRef.Port),
 			}
-			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, dc.ResolveResourceIdentifier)
+			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, di.ResolveResourceIdentifier)
 			if !ok || !ref.ReferencesRealResource() {
 				continue
 			}
 			outboundKri := pointer.Deref(ref.ResourceOrNil())
-			dest, ok := dc.destinationByIdentifier[kri.NoSectionName(outboundKri)]
+			dest, ok := di.destinationByIdentifier[kri.NoSectionName(outboundKri)]
 			if !ok {
 				continue
 			}
@@ -81,7 +81,7 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	reachableBackends := dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends()
 	if reachableBackends == nil {
 		// return all destinations if reachable backends not configured
-		for destinationKri, destination := range dc.destinationByIdentifier {
+		for destinationKri, destination := range di.destinationByIdentifier {
 			for _, port := range destination.GetPorts() {
 				outbounds[kri.WithSectionName(destinationKri, port.GetName())] = port
 			}
@@ -91,8 +91,8 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	for _, reachableBackend := range reachableBackends.GetRefs() {
 		if len(reachableBackend.Labels) > 0 {
-			for _, destinationKri := range dc.resolveResourceIdentifiersForLabels(core_model.ResourceType(reachableBackend.Kind), reachableBackend.Labels) {
-				dest := dc.destinationByIdentifier[destinationKri]
+			for _, destinationKri := range di.resolveResourceIdentifiersForLabels(core_model.ResourceType(reachableBackend.Kind), reachableBackend.Labels) {
+				dest := di.destinationByIdentifier[destinationKri]
 				if dest == nil {
 					continue
 				}
@@ -115,7 +115,7 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				Name:      &reachableBackend.Name,
 				Namespace: &reachableBackend.Namespace,
 			})
-			dest := dc.destinationByIdentifier[destinationKri]
+			dest := di.destinationByIdentifier[destinationKri]
 			if dest == nil {
 				continue
 			}
@@ -136,35 +136,35 @@ func (dc *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	return outbounds, true
 }
 
-func (dc *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
-	return dc.destinationByIdentifier[kri.NoSectionName(id)]
+func (di *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destination {
+	return di.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
 // ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
-func (dc *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *kri.Identifier {
+func (di *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *kri.Identifier {
 	if len(labels) == 0 {
 		return nil
 	}
 	var oldestCreationTime *time.Time
-	var oldestTri *kri.Identifier
-	for _, tri := range dc.resolveResourceIdentifiersForLabels(resType, labels) {
-		resource := dc.destinationByIdentifier[kri.NoSectionName(tri)].(core_model.Resource)
+	var oldestKri *kri.Identifier
+	for _, resourceKri := range di.resolveResourceIdentifiersForLabels(resType, labels) {
+		resource := di.destinationByIdentifier[kri.NoSectionName(resourceKri)].(core_model.Resource)
 		if resource != nil {
 			resCreationTime := resource.GetMeta().GetCreationTime()
 			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
 				oldestCreationTime = &resCreationTime
-				oldestTri = &tri
+				oldestKri = &resourceKri
 			}
 		}
 	}
-	return oldestTri
+	return oldestKri
 }
 
-func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_model.ResourceType, labels map[string]string) []kri.Identifier {
+func (di *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_model.ResourceType, labels map[string]string) []kri.Identifier {
 	var result []kri.Identifier
-	reachable := dc.getDestinationsForLabels(resType, labels)
+	reachable := di.getDestinationsForLabels(resType, labels)
 	for ri, count := range reachable {
 		if count == len(labels) {
 			result = append(result, ri)
@@ -173,7 +173,7 @@ func (dc *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_mod
 	return result
 }
 
-func (dc *DestinationIndex) getDestinationsForLabels(resType core_model.ResourceType, labels map[string]string) map[kri.Identifier]int {
+func (di *DestinationIndex) getDestinationsForLabels(resType core_model.ResourceType, labels map[string]string) map[kri.Identifier]int {
 	reachable := map[kri.Identifier]int{}
 	for label, value := range labels {
 		key := labelValue{
@@ -181,7 +181,7 @@ func (dc *DestinationIndex) getDestinationsForLabels(resType core_model.Resource
 			value: value,
 		}
 
-		matchedDestinations, found := dc.destinationsByLabelByValue[key]
+		matchedDestinations, found := di.destinationsByLabelByValue[key]
 		if found {
 			for ri := range matchedDestinations {
 				if ri.ResourceType == resType {
