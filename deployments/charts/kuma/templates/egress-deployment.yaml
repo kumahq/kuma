@@ -75,6 +75,7 @@ spec:
             - --log-level={{ .Values.egress.logLevel | default "info" }}
           ports:
             - containerPort: 10002
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
