@@ -4,6 +4,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -72,13 +73,13 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedResourceNaming)
 	meshCaSecret := NewSecretConfigSource(
 		getNameOrDefault(
-			core_system_names.AsSystemName("mtls_ca_" + core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
+			core_system_names.AsSystemName("mtls_ca_"+core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
 			targetMeshCa.Name(),
 		),
 	)
 	identitySecret := NewSecretConfigSource(
 		getNameOrDefault(
-			core_system_names.AsSystemName("mtls_identity_" + core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
+			core_system_names.AsSystemName("mtls_identity_"+core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
 			ownMesh.Name(),
 		),
 	)

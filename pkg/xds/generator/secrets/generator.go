@@ -2,14 +2,14 @@ package secrets
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/system_names"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
@@ -44,7 +44,7 @@ func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret
 
 // GenerateForZoneEgress generates whatever secrets were referenced in the
 // zone egress config generation.
-func (g Generator) GenerateForZoneEgress(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy, secretsTracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, ) (*core_xds.ResourceSet, error) {
+func (g Generator) GenerateForZoneEgress(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy, secretsTracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	zoneEgressResource := proxy.ZoneEgressProxy.ZoneEgressResource
 
@@ -67,7 +67,7 @@ func (g Generator) GenerateForZoneEgress(ctx context.Context, xdsCtx xds_context
 	if usedIdentity {
 		log.V(1).Info("added identity", "mesh", meshName)
 		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_" + proxy.SecretsTracker.RequestIdentityCert().MeshName()),
+			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
 			proxy.SecretsTracker.RequestIdentityCert().Name(),
 		)
 		resources.Add(createIdentitySecretResource(identitySecretName, identity))
@@ -76,7 +76,7 @@ func (g Generator) GenerateForZoneEgress(ctx context.Context, xdsCtx xds_context
 	if _, ok := secretsTracker.UsedCas()[meshName]; ok {
 		log.V(1).Info("added mesh CA resources", "mesh", meshName)
 		name := getNameOrDefault(
-			system_names.AsSystemName("mtls_ca_" + meshName),
+			system_names.AsSystemName("mtls_ca_"+meshName),
 			secretsTracker.RequestCa(meshName).Name(),
 		)
 		resources.Add(createCaSecretResource(name, ca))
@@ -120,7 +120,7 @@ func (g Generator) Generate(
 		)
 		resources.Add(createCaSecretResource(caSecretName, allInOneCa))
 		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_" + proxy.SecretsTracker.RequestIdentityCert().MeshName()),
+			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
 			proxy.SecretsTracker.RequestIdentityCert().Name(),
 		)
 		resources.Add(createIdentitySecretResource(identitySecretName, identity))
@@ -140,7 +140,7 @@ func (g Generator) Generate(
 		}
 
 		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_" + proxy.SecretsTracker.RequestIdentityCert().MeshName()),
+			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
 			proxy.SecretsTracker.RequestIdentityCert().Name(),
 		)
 		resources.Add(createIdentitySecretResource(identitySecretName, identity))
@@ -148,7 +148,7 @@ func (g Generator) Generate(
 		var addedCas []string
 		for mesh := range usedCAs {
 			identityName := getNameOrDefault(
-				system_names.AsSystemName("mtls_ca_" + mesh),
+				system_names.AsSystemName("mtls_ca_"+mesh),
 				proxy.SecretsTracker.RequestCa(mesh).Name(),
 			)
 			if ca, ok := generatedMeshCAs[mesh]; ok {
