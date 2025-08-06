@@ -52,14 +52,14 @@ func Sidecars() {
 
 	DescribeTable("should generate proper Envoy config",
 		TestSidecarConfig,
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshtimeout"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshaccesslog"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshfaultinjection"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshretry"), "envoyconfig"),
-		// test.EntriesForFolder(filepath.Join("sidecars", "meshloadbalancingstrategy"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshtimeout"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshaccesslog"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshfaultinjection"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshretry"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshloadbalancingstrategy"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtrafficpermission"), "envoyconfig"),
 	)
 }

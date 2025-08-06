@@ -81,7 +81,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			configurer := &v3.RBACConfigurer{
 				StatsName:    res.Name,
 				InboundRules: inboundRules,
-				Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
 			}
 			for _, filterChain := range listener.FilterChains {
 				if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {

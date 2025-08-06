@@ -26,7 +26,6 @@ import (
 type RBACConfigurer struct {
 	StatsName    string
 	InboundRules []*inbound.Rule
-	Mesh         string
 }
 
 func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -126,23 +125,44 @@ func (c *RBACConfigurer) createMatcher() *matcher_config.Matcher {
 			matchers = append(matchers, allowMatchers)
 		}
 	}
-
-	matchersList := matcher_config.Matcher_MatcherList_{
-		MatcherList: &matcher_config.Matcher_MatcherList{
-			Matchers: matchers,
-		},
+	var matchersList *matcher_config.Matcher_MatcherList_
+	if len(matchers) > 0 {
+		matchersList = &matcher_config.Matcher_MatcherList_{
+			MatcherList: &matcher_config.Matcher_MatcherList{
+				Matchers: matchers,
+			},
+		}
 	}
 
-	matcher := matcher_config.Matcher{
-		MatcherType: &matchersList,
-		OnNoMatch:   onMatch(rbac_config.RBAC_ALLOW, "default"),
+	return &matcher_config.Matcher{
+		MatcherType: matchersList,
+		OnNoMatch:   onMatch(rbac_config.RBAC_DENY, "default"),
 	}
-	return &matcher
 }
 
-// TODO implement
 func (c *RBACConfigurer) createShadowMatcher() *matcher_config.Matcher {
-	return &matcher_config.Matcher{}
+	var matchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+	for _, rule := range c.InboundRules {
+		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
+		shadowDenyMatchers := buildMatchers(pointer.Deref(conf.AllowWithShadowDeny), rbac_config.RBAC_DENY, rule.Origin)
+		if shadowDenyMatchers != nil {
+			matchers = append(matchers, shadowDenyMatchers)
+		}
+	}
+
+	var matchersList *matcher_config.Matcher_MatcherList_
+	if len(matchers) > 0 {
+		matchersList = &matcher_config.Matcher_MatcherList_{
+			MatcherList: &matcher_config.Matcher_MatcherList{
+				Matchers: matchers,
+			},
+		}
+	}
+
+	return &matcher_config.Matcher{
+		MatcherType: matchersList,
+		OnNoMatch:   onMatch(rbac_config.RBAC_DENY, "default"),
+	}
 }
 
 func onMatch(action rbac_config.RBAC_Action, name string) *matcher_config.Matcher_OnMatch {
