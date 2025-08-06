@@ -45,7 +45,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 
 func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTraceType]
-	if !ok {
+	if !ok || len(policies.SingleItemRules.Rules) == 0 {
 		return nil
 	}
 
@@ -164,9 +164,6 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 
 func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, kriWithoutSection *kri.Identifier) error {
 	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
-	if len(rules.Rules) == 0 {
-		return nil
-	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
@@ -190,9 +187,6 @@ func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, liste
 }
 
 func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy, kriWithoutSection *kri.Identifier) error {
-	if len(rules.Rules) == 0 {
-		return nil
-	}
 	rawConf := rules.Rules[0].Conf
 
 	conf := rawConf.(api.Conf)
