@@ -7634,6 +7634,99 @@ spec:
                   - targetRef
                   type: object
                 type: array
+              rules:
+                description: Rules defines inbound permissions configuration
+                items:
+                  properties:
+                    default:
+                      properties:
+                        allow:
+                          description: Allow definees a list of matches for which
+                            access will be allowed
+                          items:
+                            properties:
+                              spiffeId:
+                                description: SpiffeId defines a matcher configuration
+                                  for SpiffeId matching
+                                properties:
+                                  type:
+                                    description: Type defines how to match incoming
+                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      allowed.
+                                    enum:
+                                    - Exact
+                                    - Prefix
+                                    type: string
+                                  value:
+                                    description: Value is SpiffeId of a client that
+                                      needs to match for the configuration to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
+                            type: object
+                          type: array
+                        allowWithShadowDeny:
+                          description: |-
+                            AllowWithShadowDeny defines a list of matches for which access will be allowed but emits logs as if
+                            requests are denied
+                          items:
+                            properties:
+                              spiffeId:
+                                description: SpiffeId defines a matcher configuration
+                                  for SpiffeId matching
+                                properties:
+                                  type:
+                                    description: Type defines how to match incoming
+                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      allowed.
+                                    enum:
+                                    - Exact
+                                    - Prefix
+                                    type: string
+                                  value:
+                                    description: Value is SpiffeId of a client that
+                                      needs to match for the configuration to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
+                            type: object
+                          type: array
+                        deny:
+                          description: Deny defines a list of matches for which access
+                            will be denied
+                          items:
+                            properties:
+                              spiffeId:
+                                description: SpiffeId defines a matcher configuration
+                                  for SpiffeId matching
+                                properties:
+                                  type:
+                                    description: Type defines how to match incoming
+                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      allowed.
+                                    enum:
+                                    - Exact
+                                    - Prefix
+                                    type: string
+                                  value:
+                                    description: Value is SpiffeId of a client that
+                                      needs to match for the configuration to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                  required:
+                  - default
+                  type: object
+                type: array
               targetRef:
                 description: |-
                   TargetRef is a reference to the resource the policy takes an effect on.
@@ -7704,6 +7797,98 @@ spec:
     served: true
     storage: true
     subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: meshtrusts.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTrust
+    listKind: MeshTrustList
+    plural: meshtrusts
+    shortNames:
+    - mtrust
+    singular: meshtrust
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTrust resource.
+            properties:
+              caBundles:
+                description: |-
+                  CABundles contains a list of CA bundles supported by this TrustDomain.
+                  At least one CA bundle must be specified.
+                items:
+                  properties:
+                    pem:
+                      description: Pem contains the PEM-encoded CA bundle if the Type
+                        is set to a PEM-based format.
+                      properties:
+                        value:
+                          description: Value holds the PEM-encoded CA bundle as a
+                            string.
+                          type: string
+                      required:
+                      - value
+                      type: object
+                    type:
+                      description: Type specifies the format or source type of the
+                        CA bundle.
+                      enum:
+                      - Pem
+                      type: string
+                  required:
+                  - type
+                  type: object
+                minItems: 1
+                type: array
+              origin:
+                description: Origin specifies whether the resource was created from
+                  a MeshIdentity.
+                properties:
+                  kri:
+                    description: Resource identifier
+                    type: string
+                type: object
+              trustDomain:
+                description: TrustDomain is the trust domain associated with this
+                  resource.
+                maxLength: 253
+                type: string
+            required:
+            - caBundles
+            - trustDomain
+            type: object
+        type: object
+    served: true
+    storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -8010,56 +8195,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: trafficpermissions.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: TrafficPermission
-    listKind: TrafficPermissionList
-    plural: trafficpermissions
-    singular: trafficpermission
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma TrafficPermission resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -8100,6 +8235,56 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma ExternalService resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: trafficpermissions.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: TrafficPermission
+    listKind: TrafficPermissionList
+    plural: trafficpermissions
+    singular: trafficpermission
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma TrafficPermission resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -10660,6 +10845,7 @@ rules:
       - meshexternalservices
       - meshmultizoneservices
       - meshservices
+      - meshtrusts
     verbs:
       - get
       - list
@@ -10962,7 +11148,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: dd07006d086abef5b112a0f450a4969e01fcadcf605cdf25ad749b4099d111ec
+        checksum/tls-secrets: 2a2a35c58a4d4b18c7f7c1d0de3e6b9f79e2676d7f89217d9d38abf87c7f18ff
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -11182,6 +11368,7 @@ webhooks:
           - meshexternalservices
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -11243,6 +11430,7 @@ webhooks:
           - meshexternalservices
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
   
       
     sideEffects: None
@@ -11385,6 +11573,7 @@ webhooks:
           - meshexternalservices
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     
       
     sideEffects: None
