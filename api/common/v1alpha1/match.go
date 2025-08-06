@@ -5,11 +5,11 @@ type Match struct {
 	SpiffeId *SpiffeIdMatch `json:"spiffeId,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Exact;PathPrefix
+// +kubebuilder:validation:Enum=Exact;Prefix
 type SpiffeIdMatchType string
 
 type SpiffeIdMatch struct {
-	// Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+	// Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
 	Type SpiffeIdMatchType `json:"type"`
 	// Value is SpiffeId of a client that needs to match for the configuration to be applied
 	Value string `json:"value"`

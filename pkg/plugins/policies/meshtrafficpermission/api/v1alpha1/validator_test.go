@@ -97,8 +97,8 @@ rules:
             value: spiffe://trust.domain/service
       allow:
         - spiffeId:
-            type: PathPrefix
-            value: spiffe://trust.domain/service
+            type: Prefix
+            value: spiffe://trust.domain
       allowWithShadowDeny:
         - spiffeId:
             type: Exact
@@ -223,7 +223,7 @@ rules:
             value: some-service
       allow:
         - spiffeId:
-            type: PathPrefix
+            type: Prefix
             value: wrong
       allowWithShadowDeny:
         - spiffeId:

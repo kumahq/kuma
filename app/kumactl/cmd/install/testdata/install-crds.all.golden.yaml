@@ -9629,11 +9629,11 @@ spec:
                                 properties:
                                   type:
                                     description: Type defines how to match incoming
-                                      traffic by SpiffeId. `Exact` or `PathPrefix`
-                                      are allowed.
+                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      allowed.
                                     enum:
                                     - Exact
-                                    - PathPrefix
+                                    - Prefix
                                     type: string
                                   value:
                                     description: Value is SpiffeId of a client that
@@ -9657,11 +9657,11 @@ spec:
                                 properties:
                                   type:
                                     description: Type defines how to match incoming
-                                      traffic by SpiffeId. `Exact` or `PathPrefix`
-                                      are allowed.
+                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      allowed.
                                     enum:
                                     - Exact
-                                    - PathPrefix
+                                    - Prefix
                                     type: string
                                   value:
                                     description: Value is SpiffeId of a client that
@@ -9684,11 +9684,11 @@ spec:
                                 properties:
                                   type:
                                     description: Type defines how to match incoming
-                                      traffic by SpiffeId. `Exact` or `PathPrefix`
-                                      are allowed.
+                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      allowed.
                                     enum:
                                     - Exact
-                                    - PathPrefix
+                                    - Prefix
                                     type: string
                                   value:
                                     description: Value is SpiffeId of a client that

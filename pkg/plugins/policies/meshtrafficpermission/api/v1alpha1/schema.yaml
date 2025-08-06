@@ -119,10 +119,10 @@ properties:
                         description: SpiffeId defines a matcher configuration for SpiffeId matching
                         properties:
                           type:
-                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
                             enum:
                               - Exact
-                              - PathPrefix
+                              - Prefix
                             type: string
                           value:
                             description: Value is SpiffeId of a client that needs to match for the configuration to be applied
@@ -143,10 +143,10 @@ properties:
                         description: SpiffeId defines a matcher configuration for SpiffeId matching
                         properties:
                           type:
-                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
                             enum:
                               - Exact
-                              - PathPrefix
+                              - Prefix
                             type: string
                           value:
                             description: Value is SpiffeId of a client that needs to match for the configuration to be applied
@@ -165,10 +165,10 @@ properties:
                         description: SpiffeId defines a matcher configuration for SpiffeId matching
                         properties:
                           type:
-                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `PathPrefix` are allowed.
+                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
                             enum:
                               - Exact
-                              - PathPrefix
+                              - Prefix
                             type: string
                           value:
                             description: Value is SpiffeId of a client that needs to match for the configuration to be applied

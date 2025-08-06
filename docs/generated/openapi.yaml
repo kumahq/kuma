@@ -14302,11 +14302,11 @@ components:
                                 type:
                                   description: >-
                                     Type defines how to match incoming traffic
-                                    by SpiffeId. `Exact` or `PathPrefix` are
+                                    by SpiffeId. `Exact` or `Prefix` are
                                     allowed.
                                   enum:
                                     - Exact
-                                    - PathPrefix
+                                    - Prefix
                                   type: string
                                 value:
                                   description: >-
@@ -14335,11 +14335,11 @@ components:
                                 type:
                                   description: >-
                                     Type defines how to match incoming traffic
-                                    by SpiffeId. `Exact` or `PathPrefix` are
+                                    by SpiffeId. `Exact` or `Prefix` are
                                     allowed.
                                   enum:
                                     - Exact
-                                    - PathPrefix
+                                    - Prefix
                                   type: string
                                 value:
                                   description: >-
@@ -14366,11 +14366,11 @@ components:
                                 type:
                                   description: >-
                                     Type defines how to match incoming traffic
-                                    by SpiffeId. `Exact` or `PathPrefix` are
+                                    by SpiffeId. `Exact` or `Prefix` are
                                     allowed.
                                   enum:
                                     - Exact
-                                    - PathPrefix
+                                    - Prefix
                                   type: string
                                 value:
                                   description: >-
