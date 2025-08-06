@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"sigs.k8s.io/yaml"
@@ -447,6 +448,17 @@ func ValidateTargetRef(
 	}
 
 	return err
+}
+
+func ValidateMatch(match common_api.Match) validators.ValidationError {
+	var verr validators.ValidationError
+	if match.SpiffeId != nil {
+		_, err := spiffeid.FromString(match.SpiffeId.Value)
+		if err != nil {
+			verr.AddViolation("spiffeId", "must be a valid Spiffe ID")
+		}
+	}
+	return verr
 }
 
 func validateProxyTypes(field string, proxyTypes *[]common_api.TargetRefProxyType) validators.ValidationError {
