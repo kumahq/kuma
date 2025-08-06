@@ -74,15 +74,15 @@ func validateBundled(path validators.PathBuilder, b *Bundled) validators.Validat
 		}
 	} else {
 		if b.CA == nil {
-			verr.AddViolationAt(path.Field("ca"), "needs to be defined")
+			verr.AddViolationAt(path.Field("ca"), validators.MustBeDefined)
 		} else {
 			if b.CA.Certificate == nil {
-				verr.AddViolationAt(path.Field("ca").Field("certificate"), "needs to be defined")
+				verr.AddViolationAt(path.Field("ca").Field("certificate"), validators.MustBeDefined)
 			} else {
 				verr.Add(b.CA.Certificate.ValidateSecureDataSource(path.Field("ca").Field("certificate")))
 			}
 			if b.CA.PrivateKey == nil {
-				verr.AddViolationAt(path.Field("ca").Field("privateKey"), "needs to be defined")
+				verr.AddViolationAt(path.Field("ca").Field("privateKey"), validators.MustBeDefined)
 			} else {
 				verr.Add(b.CA.PrivateKey.ValidateSecureDataSource(path.Field("ca").Field("privateKey")))
 			}
