@@ -28,7 +28,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			tracker := envoy.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.ClientSideMTLS(tracker, given.mesh, given.clientService, true, given.tags)).
+				Configure(clusters.ClientSideMTLS(tracker, false, given.mesh, given.clientService, true, given.tags)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
 

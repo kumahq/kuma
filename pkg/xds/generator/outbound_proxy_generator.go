@@ -215,13 +215,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLS(
-							proxy.SecretsTracker,
-							ctx.Mesh.Resource,
-							mesh_proto.ZoneEgressServiceName,
-							tlsReady,
-							clusterTags,
-						))
+						Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, ctx.Mesh.Resource, mesh_proto.ZoneEgressServiceName, tlsReady, clusterTags))
 				} else {
 					endpoints := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
@@ -256,9 +250,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 						}
 					}
 				} else {
-					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
-						proxy.SecretsTracker,
-						ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
+					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
 				}
 			}
 

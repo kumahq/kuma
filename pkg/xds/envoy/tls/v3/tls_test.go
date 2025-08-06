@@ -31,6 +31,10 @@ func (r *identityRequest) Name() string {
 	return "identity_cert:secret:" + r.mesh
 }
 
+func (r *identityRequest) MeshName() string {
+	return r.mesh
+}
+
 var _ = Describe("CreateDownstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 		type testCase struct {
@@ -109,13 +113,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(
-					&identityRequest{mesh: mesh},
-					&caRequest{mesh: mesh},
-					given.upstreamService,
-					"",
-					nil,
-				)
+				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, false)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

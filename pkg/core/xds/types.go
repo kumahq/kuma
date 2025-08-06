@@ -213,6 +213,7 @@ type ServerSideTLSCertPaths struct {
 
 type IdentityCertRequest interface {
 	Name() string
+	MeshName() string
 }
 
 type CaRequest interface {
