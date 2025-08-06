@@ -123,7 +123,22 @@
     {
       "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/rules",
-      "value": {}
+      "value": {
+        "policies": {
+          "MeshTrafficPermission": {
+            "permissions": [
+              {
+                "any": true
+              }
+            ],
+            "principals": [
+              {
+                "any": true
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "op": "add",

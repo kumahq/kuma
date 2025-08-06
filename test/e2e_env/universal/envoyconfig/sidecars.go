@@ -15,6 +15,7 @@ import (
 	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancing "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -47,6 +48,7 @@ func Sidecars() {
 		meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
 		meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
 		meshretry.MeshRetryResourceTypeDescriptor,
+		meshloadbalancing.MeshLoadBalancingStrategyResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
 	))
 
