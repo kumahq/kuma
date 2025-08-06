@@ -401,6 +401,15 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshTrust",
+   "path": "meshtrusts",
+   "pluralDisplayName": "Mesh Trusts",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Trust"
+  },
+  {
+   "includeInFederation": true,
    "name": "ProxyTemplate",
    "path": "proxytemplates",
    "pluralDisplayName": "Proxy Templates",
