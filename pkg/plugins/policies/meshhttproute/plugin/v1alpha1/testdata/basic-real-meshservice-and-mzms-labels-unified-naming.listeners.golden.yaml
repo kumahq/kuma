@@ -1,0 +1,69 @@
+resources:
+- name: kri_msvc_default___backend_test-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
+          normalizePath: true
+          routeConfig:
+            name: kri_msvc_default___backend_test-port
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kri_msvc_default___backend_test-port
+              routes:
+              - match:
+                  path: /mzms
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_mzsvc_default___backend_80
+                  timeout: 0s
+              - match:
+                  prefix: /mzms/
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_mzsvc_default___backend_80
+                  timeout: 0s
+              - match:
+                  path: /ms
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  timeout: 0s
+              - match:
+                  prefix: /ms/
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  timeout: 0s
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: kri_msvc_default___backend_test-port
+                  timeout: 0s
+          statPrefix: kri_msvc_default___backend_test-port
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: kri_msvc_default___backend_test-port
+    statPrefix: kri_msvc_default___backend_test-port
+    trafficDirection: OUTBOUND

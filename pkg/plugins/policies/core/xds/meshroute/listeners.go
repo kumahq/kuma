@@ -25,6 +25,7 @@ func MakeTCPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
+	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_mesh.Protocol]struct{}{
@@ -39,6 +40,7 @@ func MakeTCPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
+		unifiedNaming,
 	)
 }
 
@@ -47,6 +49,7 @@ func MakeHTTPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
+	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_mesh.Protocol]struct{}{
@@ -58,6 +61,7 @@ func MakeHTTPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
+		unifiedNaming,
 	)
 }
 
@@ -193,12 +197,13 @@ func makeSplits(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
+	unifiedNaming bool,
 ) []envoy_common.Split {
 	var result []envoy_common.Split
 
 	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
+			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx, unifiedNaming)
 		}
 
 		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
@@ -223,6 +228,7 @@ func handleRealResources(
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
+	unifiedNaming bool,
 ) envoy_common.Split {
 	if ref.Weight == 0 {
 		return nil
@@ -237,13 +243,17 @@ func handleRealResources(
 		return nil
 	}
 
-	service := destinationname.MustResolve(false, dest, port)
+	service := destinationname.ResolveLegacyFromDestination(dest, port)
+
 	clusterName := service
+	if unifiedNaming {
+		clusterName = ref.Resource.String()
+	}
 
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
-	refHash := common_api.BackendRefHash(ref.Resource.String())
+	refHash := common_api.BackendRefHash(clusterName)
 
 	splitTo := func(clusterName string) envoy_common.Split {
 		return plugins_xds.NewSplitBuilder().

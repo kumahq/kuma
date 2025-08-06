@@ -60,7 +60,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				},
 				Port: pointer.To(outbound.BackendRef.Port),
 			}
-			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, di.ResolveResourceIdentifier)
+			ref, ok := resolve.BackendRef(pointer.To(kri.From(dataplane, "")), backendRef, di.ResolveResourceIdentifier)
 			if !ok || !ref.ReferencesRealResource() {
 				continue
 			}

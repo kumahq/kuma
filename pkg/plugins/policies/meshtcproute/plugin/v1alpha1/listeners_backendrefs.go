@@ -1,6 +1,9 @@
 package v1alpha1
 
 import (
+	"fmt"
+
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -14,15 +17,15 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.Rule, core_model.ResourceMeta) {
+func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.Rule, common.Origin) {
 	// compute for old MeshService
 	var tcpConf *api.Rule
-	var origin core_model.ResourceMeta
+	var origin common.Origin
 
 	ruleTCP := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue))
 	if ruleTCP != nil {
 		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
-		origin = impactfulMeta(ruleTCP.Origin)
+		origin = impactfulOriginFromMeta(ruleTCP.Origin)
 	}
 	// check if there is configuration for real MeshService and prioritize it
 	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
@@ -36,19 +39,19 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 }
 
 // impactfulOrigin returns the origin policy that contributed the backendRefs
-func impactfulOrigin(os []common.Origin) core_model.ResourceMeta {
+func impactfulOrigin(os []common.Origin) common.Origin {
 	if len(os) == 0 {
-		return nil
+		return common.Origin{}
 	}
-	return os[len(os)-1].Resource
+	return os[len(os)-1]
 }
 
-// impactfulMeta returns the origin policy that contributed the backendRefs
-func impactfulMeta(ms []core_model.ResourceMeta) core_model.ResourceMeta {
+// impactfulOriginFromMeta returns the origin policy that contributed the backendRefs
+func impactfulOriginFromMeta(ms []core_model.ResourceMeta) common.Origin {
 	if len(ms) == 0 {
-		return nil
+		return common.Origin{}
 	}
-	return ms[len(ms)-1]
+	return common.Origin{Resource: ms[len(ms)-1]}
 }
 
 func getBackendRefs(
@@ -71,19 +74,20 @@ func getBackendRefs(
 		if tcpConf == nil || httpConf != nil {
 			return nil
 		}
-	default:
 	}
 
-	var backendRefs []resolve.ResolvedBackendRef
-	if tcpConf != nil {
-		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
-			if resolved := resolve.BackendRefOrNil(origin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
-				backendRefs = append(backendRefs, *resolved)
-			}
-		}
-	} else {
+	if tcpConf == nil {
 		return []resolve.ResolvedBackendRef{*svc.DefaultBackendRef()}
 	}
 
-	return backendRefs
+	originID := kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType, fmt.Sprintf("rule_%d", origin.RuleIndex))
+
+	var resolved []resolve.ResolvedBackendRef
+	for _, ref := range pointer.Deref(tcpConf.Default.BackendRefs) {
+		if r, ok := resolve.BackendRef(&originID, ref, meshCtx.ResolveResourceIdentifier); ok {
+			resolved = append(resolved, r)
+		}
+	}
+
+	return resolved
 }

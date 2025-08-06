@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -99,8 +99,11 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	var routes []xds.OutboundRoute
-	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+
+	for _, route := range prepareRoutes(rules, svc, meshCtx, unifiedNaming) {
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, unifiedNaming)
 		if split == nil {
 			continue
 		}
@@ -111,6 +114,7 @@ func generateFromService(
 					clusterCache, servicesAcc,
 					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
 					meshCtx,
+					unifiedNaming,
 				)
 			}
 		}
@@ -173,29 +177,34 @@ func ComputeHTTPRouteConf(
 	toRules rules.ToRules,
 	svc meshroute_xds.DestinationService,
 	meshCtx xds_context.MeshContext,
-) (*api.PolicyDefault, map[common_api.MatchesHash]core_model.ResourceMeta) {
+) (*api.PolicyDefault, map[common_api.MatchesHash]common.Origin) {
 	// check if there is configuration for real MeshService and prioritize it
 	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
 		if rule := toRules.ResourceRules.Compute(r, meshCtx.Resources); rule != nil && len(rule.Conf) > 0 {
-			return pointer.To(rule.Conf[0].(api.PolicyDefault)), util_maps.MapValues(
-				rule.OriginByMatches,
-				func(_ common_api.MatchesHash, o common.Origin) core_model.ResourceMeta {
-					return o.Resource
-				},
-			)
+			return pointer.To(rule.Conf[0].(api.PolicyDefault)), rule.OriginByMatches
 		}
 	}
 
 	// compute for old MeshService
 	if rule := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue)); rule != nil {
-		return pointer.To(rule.Conf.(api.PolicyDefault)), rule.OriginByMatches
+		return pointer.To(rule.Conf.(api.PolicyDefault)), util_maps.MapValues(
+			rule.OriginByMatches,
+			func(_ common_api.MatchesHash, o core_model.ResourceMeta) common.Origin {
+				return common.Origin{Resource: o}
+			},
+		)
 	}
 
-	return nil, make(map[common_api.MatchesHash]core_model.ResourceMeta)
+	return nil, make(map[common_api.MatchesHash]common.Origin)
 }
 
 // prepareRoutes handles the always present, catch all default route
-func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
+func prepareRoutes(
+	toRules rules.ToRules,
+	svc meshroute_xds.DestinationService,
+	meshCtx xds_context.MeshContext,
+	unifiedNaming bool,
+) []api.Route {
 	conf, originByMatches := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
@@ -211,34 +220,44 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 		}
 	}
 
-	getOrigin := func(ms []api.Match) core_model.ResourceMeta {
-		return originByMatches[api.HashMatches(ms)]
-	}
+	var routes []api.Route
 
-	getRouteName := func(ms []api.Match) string {
+	for _, rule := range apiRules {
+		filters := pointer.Deref(rule.Default.Filters)
+		backendRefs := pointer.Deref(rule.Default.BackendRefs)
+		matchesHash := api.HashMatches(rule.Matches)
+		routeName := string(matchesHash)
+		origin := originByMatches[matchesHash]
+
+		originID := kri.FromResourceMeta(origin.Resource, api.MeshHTTPRouteType, "")
+		if unifiedNaming {
+			originID = kri.WithSectionName(originID, fmt.Sprintf("rule_%d", origin.RuleIndex))
+		}
+
 		if _, ok := svc.Outbound.AssociatedServiceResource(); ok {
-			return kri.FromResourceMeta(getOrigin(ms), api.MeshHTTPRouteType, "").String()
+			routeName = originID.String()
 		}
-		return string(api.HashMatches(ms))
-	}
 
-	routes := util_slices.FlatMap(apiRules, func(rule api.Rule) []api.Route {
-		var routes []api.Route
 		for _, match := range rule.Matches {
-			routes = append(routes, api.Route{
-				Name:    getRouteName(rule.Matches),
-				Match:   match,
-				Filters: pointer.Deref(rule.Default.Filters),
-				BackendRefs: util_slices.FilterMap(
-					pointer.Deref(rule.Default.BackendRefs),
-					func(br common_api.BackendRef) (resolve.ResolvedBackendRef, bool) {
-						return resolve.BackendRef(getOrigin(rule.Matches), br, meshCtx.ResolveResourceIdentifier)
-					},
-				),
-			})
+			var refs []resolve.ResolvedBackendRef
+
+			for _, br := range backendRefs {
+				if rbr, ok := resolve.BackendRef(&originID, br, meshCtx.ResolveResourceIdentifier); ok {
+					refs = append(refs, rbr)
+				}
+			}
+
+			routes = append(
+				routes,
+				api.Route{
+					Name:        routeName,
+					Match:       match,
+					Filters:     filters,
+					BackendRefs: refs,
+				},
+			)
 		}
-		return routes
-	})
+	}
 
 	// sort rules before we add default prefix matches etc
 	slices.SortStableFunc(routes, func(i, j api.Route) int {

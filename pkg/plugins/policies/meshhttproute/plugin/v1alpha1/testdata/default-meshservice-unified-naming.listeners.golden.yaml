@@ -1,0 +1,45 @@
+resources:
+- name: kri_msvc_default___backend_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.0.0.1
+        portValue: 80
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
+          normalizePath: true
+          routeConfig:
+            name: kri_msvc_default___backend_80
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kri_msvc_default___backend_80
+              routes:
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  timeout: 0s
+          statPrefix: kri_msvc_default___backend_80
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: kri_msvc_default___backend_80
+    statPrefix: kri_msvc_default___backend_80
+    trafficDirection: OUTBOUND

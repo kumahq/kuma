@@ -22,7 +22,7 @@
    "kri": "kri_msvc_default_test-zone__test-server_80",
    "port": 80,
    "protocol": "http",
-   "proxyResourceName": ""
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server_80"
   }
  ]
 }
