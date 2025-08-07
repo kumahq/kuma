@@ -11,6 +11,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -59,6 +60,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
+							proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
@@ -120,9 +122,7 @@ func GenerateClusters(
 							ServiceTagIdentities(realResourceRef, meshCtx),
 						))
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
-							proxy.SecretsTracker,
-							meshCtx.Resource, serviceName, tlsReady, clusterTags))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, meshCtx.Resource, serviceName, tlsReady, clusterTags))
 					}
 				}
 			}

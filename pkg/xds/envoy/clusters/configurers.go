@@ -23,15 +23,16 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(tracker core_xds.SecretsTracker, unifiedResourceNaming bool, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        mesh,
-			Tags:             tags,
-			UpstreamTLSReady: upstreamTLSReady,
+			SecretsTracker:        tracker,
+			UnifiedResourceNaming: unifiedResourceNaming,
+			UpstreamMesh:          mesh,
+			UpstreamService:       upstreamService,
+			LocalMesh:             mesh,
+			Tags:                  tags,
+			UpstreamTLSReady:      upstreamTLSReady,
 		})
 	})
 }

@@ -211,7 +211,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 

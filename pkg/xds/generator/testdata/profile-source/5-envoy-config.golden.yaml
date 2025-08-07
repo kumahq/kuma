@@ -343,19 +343,19 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: system_envoy_admin
     trafficDirection: INBOUND
-- name: identity_cert:secret:demo
+- name: system_mtls_ca_demo
   resource:
     '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: identity_cert:secret:demo
+    name: system_mtls_ca_demo
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=
+- name: system_mtls_identity_demo
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: system_mtls_identity_demo
     tlsCertificate:
       certificateChain:
         inlineBytes: Q0VSVA==
       privateKey:
         inlineBytes: S0VZ
-- name: mesh_ca:secret:demo
-  resource:
-    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: mesh_ca:secret:demo
-    validationContext:
-      trustedCa:
-        inlineBytes: Q0E=

@@ -112,7 +112,7 @@ func (g Generator) Generate(
 		resources.AddSet(rs)
 
 		rs, err = g.SecretGenerator.GenerateForZoneEgress(
-			ctx, xdsCtx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
+			ctx, xdsCtx, proxy, secretsTracker, meshResources.Mesh,
 		)
 		if err != nil {
 			err := errors.Wrapf(
