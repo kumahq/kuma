@@ -98,9 +98,6 @@ func httpRBACUpdater(
 		if err != nil {
 			return err
 		}
-		if err != nil {
-			return err
-		}
 
 		httpFilter := &envoy_hcm.HttpFilter{
 			Name: "envoy.filters.http.rbac",
