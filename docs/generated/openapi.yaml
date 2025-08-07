@@ -4522,6 +4522,8 @@ components:
           type: object
           additionalProperties: true
           x-go-type: interface{}
+        kri:
+          type: string
     InboundPolicyConf:
       type: object
       required:
