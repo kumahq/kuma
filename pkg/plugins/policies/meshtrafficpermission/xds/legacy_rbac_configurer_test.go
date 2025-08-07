@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
-var _ = Describe("RBACConfigurer", func() {
+var _ = Describe("LegacyRBACConfigurer", func() {
 	type testCase struct {
 		rules    core_xds.Rules
 		mesh     string
@@ -26,7 +26,7 @@ var _ = Describe("RBACConfigurer", func() {
 	DescribeTable("should generate proper envoy config",
 		func(given testCase) {
 			// given
-			configurer := &xds.RBACConfigurer{
+			configurer := &xds.LegacyRBACConfigurer{
 				Rules:     given.rules,
 				Mesh:      given.mesh,
 				StatsName: given.stats,
