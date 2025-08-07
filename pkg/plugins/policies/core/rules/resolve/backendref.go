@@ -118,11 +118,16 @@ func TargetRefToKRI(origin kri.Identifier, ref common_api.TargetRef) kri.Identif
 		}
 	}
 
+	var ns string
+	if ns = pointer.Deref(ref.Namespace); ns == "" {
+		ns = origin.Namespace
+	}
+
 	return kri.Identifier{
 		ResourceType: core_model.ResourceType(ref.Kind),
+		Name:         pointer.Deref(ref.Name),
 		Mesh:         origin.Mesh,
 		Zone:         origin.Zone,
-		Namespace:    pointer.DerefOr(ref.Namespace, origin.Namespace),
-		Name:         pointer.Deref(ref.Name),
+		Namespace:    ns,
 	}
 }
