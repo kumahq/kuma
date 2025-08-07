@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -86,6 +87,11 @@ type CaPlugin interface {
 type AuthnAPIServerPlugin interface {
 	Plugin
 	NewAuthenticator(PluginContext) (authn.Authenticator, error)
+}
+
+type IdentityProviderPlugin interface {
+	Plugin
+	NewIdentityProvider(PluginContext, PluginConfig) (providers.IdentityProvider, error)
 }
 
 type MatchedPoliciesConfig struct {

@@ -16,6 +16,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -103,6 +104,7 @@ type Builder struct {
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	apiWebServiceCustomize   []func(*restful.WebService) error
+	identityProviders        providers.IdentityProviders
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -112,11 +114,12 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	}
 	suffix := core.NewUUID()[0:4]
 	return &Builder{
-		cfg:         cfg,
-		ext:         context.Background(),
-		cam:         core_ca.Managers{},
-		RuntimeInfo: NewRuntimeInfo(fmt.Sprintf("%s-%s", hostname, suffix), cfg.Mode),
-		appCtx:      appCtx,
+		cfg:               cfg,
+		ext:               context.Background(),
+		cam:               core_ca.Managers{},
+		RuntimeInfo:       NewRuntimeInfo(fmt.Sprintf("%s-%s", hostname, suffix), cfg.Mode),
+		appCtx:            appCtx,
+		identityProviders: providers.IdentityProviders{},
 	}, nil
 }
 
@@ -290,6 +293,11 @@ func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService)
 	return b
 }
 
+func (b *Builder) WithIdentityProviders(name string, identityProviders providers.IdentityProvider) *Builder {
+	b.identityProviders[name] = identityProviders
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -366,6 +374,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.tenants == nil {
 		return nil, errors.Errorf("Tenants has not been configured")
 	}
+	if b.identityProviders == nil {
+		return nil, errors.Errorf("IdentityProviders have not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.RuntimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -400,6 +411,7 @@ func (b *Builder) Build() (Runtime, error) {
 			interCpPool:              b.interCpPool,
 			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
 			tenants:                  b.tenants,
+			identityProviders:        b.identityProviders,
 			apiWebServiceCustomize:   b.apiWebServiceCustomize,
 		},
 		Manager: b.cm,
@@ -540,4 +552,8 @@ func (b *Builder) Tenants() multitenant.Tenants {
 
 func (b *Builder) APIWebServiceCustomize() []func(*restful.WebService) error {
 	return b.apiWebServiceCustomize
+}
+
+func (b *Builder) IdentityProviders() providers.IdentityProviders {
+	return b.identityProviders
 }
