@@ -23,7 +23,8 @@
         }
        }
       ]
-     }
+     },
+     "kri": "kri_mal_default___multiple-backends_"
     }
    ]
   },
@@ -56,7 +57,8 @@
         }
        }
       }
-     }
+     },
+     "kri": "kri_mrl_default___backend-rate-limit_"
     }
    ]
   }

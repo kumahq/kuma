@@ -1026,6 +1026,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		var policyRules []api_common.PolicyRule
 		for _, rule := range rules {
 			policyRules = append(policyRules, api_common.PolicyRule{
+				Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
 				Conf: rule.Conf.GetDefault(),
 			})
 		}
