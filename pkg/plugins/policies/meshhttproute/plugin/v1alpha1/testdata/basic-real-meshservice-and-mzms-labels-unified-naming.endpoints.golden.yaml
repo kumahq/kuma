@@ -1,0 +1,13 @@
+resources:
+- name: kri_msvc_default___backend_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_msvc_default___backend_80
+- name: kri_msvc_default___backend_test-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_msvc_default___backend_test-port
+- name: kri_mzsvc_default___backend_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_mzsvc_default___backend_80

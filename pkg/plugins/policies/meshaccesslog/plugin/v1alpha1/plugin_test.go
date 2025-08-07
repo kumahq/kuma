@@ -875,7 +875,9 @@ func otherServiceHTTPListener() core_xds.Resource {
 
 func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 	listener, err := meshtcproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address: "127.0.0.1",
@@ -884,7 +886,6 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 			Protocol:            core_mesh.ProtocolTCP,
 			KumaServiceTagValue: service,
 		},
-		false,
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(service).Build(),
 		},

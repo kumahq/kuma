@@ -11,9 +11,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -91,7 +91,7 @@ func generateEnvoyRouteEntries(
 
 		entries = append(
 			entries,
-			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), impactfulMeta(rule.Origin), resolver),
+			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), impactfulOriginFromMeta(rule.Origin), resolver),
 		)
 	}
 
@@ -102,7 +102,7 @@ func makeTcpRouteEntry(
 	meshCtx xds_context.MeshContext,
 	name string,
 	rule api.Rule,
-	origin core_model.ResourceMeta,
+	origin common.Origin,
 	resolver resolve.LabelResourceIdentifierResolver,
 ) route.Entry {
 	entry := route.Entry{
@@ -111,7 +111,7 @@ func makeTcpRouteEntry(
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
-		ref := resolve.BackendRefOrNil(kri.FromResourceMeta(origin, api.MeshTCPRouteType), b, resolver)
+		ref := resolve.BackendRefOrNil(kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType), b, resolver)
 		if ref.ReferencesRealResource() {
 			if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
 				dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}

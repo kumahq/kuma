@@ -88,9 +88,10 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	reachableOutbounds, _ := baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	for outboundKri, port := range reachableOutbounds {
 		outbounds = append(outbounds, api_common.DataplaneOutbound{
-			Kri:      outboundKri.String(),
-			Port:     port.GetValue(),
-			Protocol: string(port.GetProtocol()),
+			Kri:               outboundKri.String(),
+			Port:              port.GetValue(),
+			Protocol:          string(port.GetProtocol()),
+			ProxyResourceName: outboundKri.String(),
 		})
 	}
 

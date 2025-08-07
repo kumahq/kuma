@@ -22,19 +22,19 @@
    "kri": "kri_msvc_default_test-zone__test-server-1_main-port",
    "port": 80,
    "protocol": "http",
-   "proxyResourceName": ""
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server-1_main-port"
   },
   {
    "kri": "kri_msvc_default_test-zone__test-server-2_main-port",
    "port": 80,
    "protocol": "http",
-   "proxyResourceName": ""
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server-2_main-port"
   },
   {
    "kri": "kri_msvc_default_test-zone__test-server-3_main-port",
    "port": 80,
    "protocol": "http",
-   "proxyResourceName": ""
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server-3_main-port"
   }
  ]
 }
