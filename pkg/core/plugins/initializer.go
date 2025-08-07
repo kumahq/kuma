@@ -35,6 +35,7 @@ func InitAllIf(enabledPlugins []string, pluginName string, plugins map[string]*P
 					initializer.Initialized = true
 				}
 			}
+			break;
 		}
 	}
 }
