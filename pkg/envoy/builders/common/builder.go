@@ -11,14 +11,6 @@ func (b *Builder[R]) Configure(configurer Configurer[R]) *Builder[R] {
 	return b
 }
 
-func (b *Builder[R]) ConfigureIf(condition bool, fn func() Configurer[R]) *Builder[R] {
-	if !condition {
-		return b
-	}
-	b.configurers = append(b.configurers, fn())
-	return b
-}
-
 func (b *Builder[R]) Build() (*R, error) {
 	var r R
 	for _, configurer := range b.configurers {
@@ -45,15 +37,4 @@ func IfNotNil[R, P any](ptr *P, fn func(P) Configurer[R]) Configurer[R] {
 		}
 		return nil
 	}
-}
-
-func AsBuilder[R any](fn func() (*R, error)) *Builder[R] {
-	return &Builder[R]{configurers: []Configurer[R]{func(r *R) error {
-		ptr, err := fn()
-		if err != nil {
-			return err
-		}
-		*r = *ptr
-		return nil
-	}}}
 }

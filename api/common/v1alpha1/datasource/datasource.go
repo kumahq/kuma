@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+  "github.com/kumahq/kuma/pkg/core/validators"
 )
 
 // +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
@@ -25,7 +26,7 @@ const (
 // SecureDataSource is a way to securely provide data to the component
 type SecureDataSource struct {
 	// +kuma:discriminator
-	Type           SecureDataSourceType `json:"type,omitempty"`
+	Type           SecureDataSourceType `json:"type"`
 	File           *File                `json:"file,omitempty"`
 	EnvVar         *EnvVar              `json:"envVar,omitempty"`
 	InsecureInline *Inline              `json:"insecureInline,omitempty"`
@@ -100,3 +101,47 @@ func (sds *SecureDataSource) ReadByControlPlane(ctx context.Context, secretManag
 		return nil, fmt.Errorf("datasource type: %s is not supported", sds.Type)
 	}
 }
+
+func (s *SecureDataSource) ValidateSecureDataSource(path validators.PathBuilder) validators.ValidationError {
+	var verr validators.ValidationError
+	if s == nil {
+		return verr
+	}
+	switch s.Type {
+	case SecureDataSourceEnvVar:
+		if s.EnvVar == nil {
+			verr.AddViolationAt(path.Field("envVar"), validators.MustBeDefined)
+		} else if s.EnvVar.Name == "" {
+			verr.AddViolationAt(path.Field("envVar").Field("name"), validators.MustBeDefined)
+		}
+	case SecureDataSourceInline:
+		if s.InsecureInline == nil {
+			verr.AddViolationAt(path.Field("insecureInline"), validators.MustBeDefined)
+		} else if s.InsecureInline.Value == "" {
+			verr.AddViolationAt(path.Field("insecureInline").Field("value"), validators.MustBeDefined)
+		}
+	case SecureDataSourceFile:
+		if s.File == nil {
+			verr.AddViolationAt(path.Field("file"), validators.MustBeDefined)
+		} else if s.File.Path == "" {
+			verr.AddViolationAt(path.Field("file").Field("path"), validators.MustBeDefined)
+		}
+	case SecureDataSourceSecretRef:
+		if s.SecretRef == nil {
+			verr.AddViolationAt(path.Field("secretRef"), validators.MustBeDefined)
+		}
+		if s.SecretRef != nil {
+			if s.SecretRef.Kind != SecretRefType {
+				verr.AddViolationAt(path.Field("secretRef").Field("kind"), validators.MustBeOneOf(string(s.SecretRef.Kind), string(SecretRefType)))
+			}
+			if s.SecretRef.Name == "" {
+				verr.AddViolationAt(path.Field("secretRef").Field("name"), validators.MustBeDefined)
+			}
+		}
+	default:
+		verr.AddViolationAt(path.Field("type"), validators.MustBeOneOf(string(s.Type), string(SecureDataSourceEnvVar), string(SecureDataSourceInline), string(SecureDataSourceFile), string(SecureDataSourceSecretRef)))
+	}
+	return verr
+}
+
+

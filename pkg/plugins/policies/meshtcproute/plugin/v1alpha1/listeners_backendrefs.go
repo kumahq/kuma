@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -77,7 +78,11 @@ func getBackendRefs(
 	var backendRefs []resolve.ResolvedBackendRef
 	if tcpConf != nil {
 		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
-			if resolved := resolve.BackendRefOrNil(origin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
+			if resolved := resolve.BackendRefOrNil(
+				kri.FromResourceMeta(origin, api.MeshTCPRouteType),
+				br,
+				meshCtx.ResolveResourceIdentifier,
+			); resolved != nil {
 				backendRefs = append(backendRefs, *resolved)
 			}
 		}

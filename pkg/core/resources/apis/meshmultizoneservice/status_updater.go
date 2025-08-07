@@ -98,7 +98,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		ports := map[int32]meshservice_api.Port{}
 		for _, svc := range msList.Items {
 			if matchesService(mzSvc, svc) {
-				ri := kri.From(svc, "")
+				ri := kri.From(svc)
 				matched = append(matched, meshmzservice_api.MatchedMeshService{
 					Name:      ri.Name,
 					Namespace: ri.Namespace,

@@ -1,0 +1,75 @@
+type: object
+required: [type, name, spec]
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - MeshTrust
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  labels:
+    additionalProperties:
+      type: string
+    description: 'The labels to help identity resources'
+    type: object
+  spec:
+    description: Spec is the specification of the Kuma MeshTrust resource.
+    properties:
+      caBundles:
+        description: |-
+          CABundles contains a list of CA bundles supported by this TrustDomain.
+          At least one CA bundle must be specified.
+        items:
+          properties:
+            pem:
+              description: Pem contains the PEM-encoded CA bundle if the Type is set to a PEM-based format.
+              properties:
+                value:
+                  description: Value holds the PEM-encoded CA bundle as a string.
+                  type: string
+              required:
+                - value
+              type: object
+            type:
+              description: Type specifies the format or source type of the CA bundle.
+              enum:
+                - Pem
+              type: string
+          required:
+            - type
+          type: object
+        minItems: 1
+        type: array
+      origin:
+        description: Origin specifies whether the resource was created from a MeshIdentity.
+        properties:
+          kri:
+            description: Resource identifier
+            type: string
+        type: object
+      trustDomain:
+        description: TrustDomain is the trust domain associated with this resource.
+        maxLength: 253
+        type: string
+    required:
+      - caBundles
+      - trustDomain
+    type: object
+  creationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

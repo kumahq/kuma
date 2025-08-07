@@ -44,17 +44,17 @@ func (rr ResourceRules) Compute(uri kri.Identifier, reader kri.ResourceReader) *
 		}
 		// find MeshService's Mesh and compute rules for it
 		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(kri.From(mesh, ""), reader)
+			return rr.Compute(kri.From(mesh), reader)
 		}
 	case meshexternalservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
 		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(kri.From(mesh, ""), reader)
+			return rr.Compute(kri.From(mesh), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
 		// find MeshHTTPRoute's Mesh and compute rules for it
 		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(kri.From(mesh, ""), reader)
+			return rr.Compute(kri.From(mesh), reader)
 		}
 	}
 
@@ -168,9 +168,9 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 			return false
 		}
 		switch {
-		case kri.From(rw.rs.Resource, rw.rs.SectionName) == kri.From(other, sectionName):
+		case kri.WithSectionName(kri.From(rw.rs.Resource), rw.rs.SectionName) == kri.WithSectionName(kri.From(other), sectionName):
 			return true
-		case kri.From(rw.rs.Resource, "") == kri.From(other, "") && rw.rs.SectionName == "" && sectionName != "":
+		case kri.From(rw.rs.Resource) == kri.From(other) && rw.rs.SectionName == "" && sectionName != "":
 			return true
 		default:
 			return false
@@ -179,12 +179,12 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
-		return kri.From(rw.rs.Resource, "") == kri.From(other, "")
+		return kri.From(rw.rs.Resource) == kri.From(other)
 	case meshhttproute_api.MeshHTTPRouteType:
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
-		return kri.From(rw.rs.Resource, "") == kri.From(other, "")
+		return kri.From(rw.rs.Resource) == kri.From(other)
 	default:
 		return false
 	}

@@ -23,7 +23,7 @@ func Resolve(unifiedNaming bool, dest core.Destination, port core.Port) (string,
 	case port == nil:
 		return "", errors.New("port is nil: expected a non-nil port implementing core.Port")
 	case unifiedNaming:
-		return kri.From(dest, port.GetName()).String(), nil
+		return kri.WithSectionName(kri.From(dest), port.GetName()).String(), nil
 	default:
 		return ResolveLegacyFromDestination(dest, port), nil
 	}
@@ -31,7 +31,7 @@ func Resolve(unifiedNaming bool, dest core.Destination, port core.Port) (string,
 
 func ResolveLegacyFromDestination(dest core.Destination, port core.Port) string {
 	return ResolveLegacyFromKRI(
-		kri.From(dest, ""),
+		kri.From(dest),
 		dest.Descriptor().ShortName,
 		port.GetValue(),
 	)

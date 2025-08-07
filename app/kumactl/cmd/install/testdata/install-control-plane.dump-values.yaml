@@ -929,8 +929,10 @@ plugins:
   resources:
     hostnamegenerators: true
     meshexternalservices: true
+    meshidentities: true
     meshmultizoneservices: true
     meshservices: true
+    meshtrusts: true
   policies:
     meshaccesslogs: true
     meshcircuitbreakers: true

@@ -585,7 +585,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(kri.From(&meshSvc, "test-port")),
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
 					WithPolicies(
@@ -1179,7 +1179,7 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		outbounds = append(outbounds, &xds_types.Outbound{
 			Address:  mes.Status.VIP.IP,
 			Port:     uint32(mes.Spec.Match.Port),
-			Resource: pointer.To(kri.From(mes, "")),
+			Resource: kri.From(mes),
 		})
 	}
 	dp := builders.Dataplane().
