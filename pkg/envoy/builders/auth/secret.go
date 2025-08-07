@@ -78,7 +78,7 @@ func CertificateChain(datasource *Builder[envoy_core.DataSource]) Configurer[env
 	return func(s *envoy_auth.Secret_TlsCertificate) error {
 		ds, err := datasource.Build()
 		if err != nil {
-			return nil
+			return err
 		}
 		if s.TlsCertificate == nil {
 			s.TlsCertificate = &envoy_auth.TlsCertificate{}
@@ -92,7 +92,7 @@ func PrivateKey(datasource *Builder[envoy_core.DataSource]) Configurer[envoy_aut
 	return func(s *envoy_auth.Secret_TlsCertificate) error {
 		ds, err := datasource.Build()
 		if err != nil {
-			return nil
+			return err
 		}
 		if s.TlsCertificate == nil {
 			s.TlsCertificate = &envoy_auth.TlsCertificate{}
@@ -110,7 +110,7 @@ func TrustDomainBundle(trustDomain string, datasource *Builder[envoy_core.DataSo
 	return func(s *envoy_auth.SPIFFECertValidatorConfig_TrustDomain) error {
 		ds, err := datasource.Build()
 		if err != nil {
-			return nil
+			return err
 		}
 		s.Name = trustDomain
 		s.TrustBundle = ds

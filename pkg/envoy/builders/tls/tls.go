@@ -139,7 +139,7 @@ func SANs(builders []*Builder[envoy_tls.SubjectAltNameMatcher]) Configurer[envoy
 		for _, builder := range builders {
 			config, err := builder.Build()
 			if err != nil {
-				return nil
+				return err
 			}
 			c.MatchTypedSubjectAltNames = append(c.MatchTypedSubjectAltNames, config)
 		}
