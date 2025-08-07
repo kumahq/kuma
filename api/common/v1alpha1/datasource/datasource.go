@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-  "github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 // +kubebuilder:validation:Enum=File;Secret;EnvVar;InsecureInline
@@ -143,5 +143,3 @@ func (s *SecureDataSource) ValidateSecureDataSource(path validators.PathBuilder)
 	}
 	return verr
 }
-
-
