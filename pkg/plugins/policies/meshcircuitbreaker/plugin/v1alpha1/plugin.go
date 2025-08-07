@@ -172,12 +172,12 @@ func applyToGateways(
 					if dest.BackendRef == nil {
 						continue
 					}
-					if realRef := dest.BackendRef.ResourceOrNil(); realRef != nil {
-						resources := resourcesByOrigin[*realRef]
+					if realRef := dest.BackendRef.Resource(); !realRef.IsEmpty() {
+						resources := resourcesByOrigin[realRef]
 						if err := applyToRealResource(
 							meshCtx,
 							rules.ResourceRules,
-							*realRef,
+							realRef,
 							resources,
 						); err != nil {
 							return err

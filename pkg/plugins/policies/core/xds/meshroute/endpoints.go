@@ -57,7 +57,7 @@ func GenerateEndpoints(
 					Name:           cluster.Name(),
 					Origin:         generator.OriginOutbound,
 					Resource:       loadAssignment,
-					ResourceOrigin: service.BackendRef().ResourceOrNil(),
+					ResourceOrigin: service.BackendRef().Resource(),
 				})
 			}
 		}

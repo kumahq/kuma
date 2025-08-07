@@ -11,7 +11,7 @@ type Outbound struct {
 
 	Address  string
 	Port     uint32
-	Resource *kri.Identifier
+	Resource kri.Identifier
 }
 
 // AssociatedServiceResource
@@ -20,10 +20,7 @@ type Outbound struct {
 //   - if the outbound is defined using the old way with 'kuma.io/service' tag,
 //     then it returns empty kri.Identifier and false
 func (o *Outbound) AssociatedServiceResource() (kri.Identifier, bool) {
-	if o.Resource != nil {
-		return *o.Resource, true
-	}
-	return kri.Identifier{}, false
+	return o.Resource, !o.Resource.IsEmpty()
 }
 
 func (o *Outbound) GetAddress() string {

@@ -31,7 +31,7 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 	destinationsByLabelByValue := labelsToValuesToResourceIdentifier{}
 	for _, destinations := range resources {
 		for _, item := range destinations {
-			ri := kri.From(item, "")
+			ri := kri.From(item)
 			destinationByIdentifier[ri] = item.(core.Destination)
 			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, item.GetMeta().GetLabels())
 		}
@@ -60,11 +60,11 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				},
 				Port: pointer.To(outbound.BackendRef.Port),
 			}
-			ref, ok := resolve.BackendRef(dataplane.GetMeta(), backendRef, di.ResolveResourceIdentifier)
+			ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, di.ResolveResourceIdentifier)
 			if !ok || !ref.ReferencesRealResource() {
 				continue
 			}
-			outboundKri := pointer.Deref(ref.ResourceOrNil())
+			outboundKri := ref.Resource()
 			dest, ok := di.destinationByIdentifier[kri.NoSectionName(outboundKri)]
 			if !ok {
 				continue
@@ -110,7 +110,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				}
 			}
 		} else {
-			destinationKri := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
+			destinationKri := resolve.TargetRefToKRI(kri.From(dataplane), common_api.TargetRef{
 				Kind:      common_api.TargetRefKind(reachableBackend.Kind),
 				Name:      &reachableBackend.Name,
 				Namespace: &reachableBackend.Namespace,
@@ -143,19 +143,19 @@ func (di *DestinationIndex) GetDestinationByKri(id kri.Identifier) core.Destinat
 // ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
-func (di *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *kri.Identifier {
+func (di *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
 	if len(labels) == 0 {
-		return nil
+		return kri.Identifier{}
 	}
 	var oldestCreationTime *time.Time
-	var oldestKri *kri.Identifier
+	var oldestKri kri.Identifier
 	for _, resourceKri := range di.resolveResourceIdentifiersForLabels(resType, labels) {
 		resource := di.destinationByIdentifier[kri.NoSectionName(resourceKri)].(core_model.Resource)
 		if resource != nil {
 			resCreationTime := resource.GetMeta().GetCreationTime()
 			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
 				oldestCreationTime = &resCreationTime
-				oldestKri = &resourceKri
+				oldestKri = resourceKri
 			}
 		}
 	}
