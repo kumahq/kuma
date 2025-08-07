@@ -48,6 +48,7 @@ type Registry interface {
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
 	PolicyPlugins([]PluginName) []RegisteredPolicyPlugin
 	ProxyPlugins() map[PluginName]ProxyPlugin
+	CoreResourcePlugins() map[PluginName]CoreResourcePlugin
 }
 
 type RegistryMutator interface {
@@ -61,30 +62,32 @@ type MutableRegistry interface {
 
 func NewRegistry() MutableRegistry {
 	return &registry{
-		bootstrap:          make(map[PluginName]BootstrapPlugin),
-		resourceStore:      make(map[PluginName]ResourceStorePlugin),
-		secretStore:        make(map[PluginName]SecretStorePlugin),
-		configStore:        make(map[PluginName]ConfigStorePlugin),
-		runtime:            make(map[PluginName]RuntimePlugin),
-		ca:                 make(map[PluginName]CaPlugin),
-		authnAPIServer:     make(map[PluginName]AuthnAPIServerPlugin),
-		proxy:              make(map[PluginName]ProxyPlugin),
-		registeredPolicies: make(map[PluginName]PolicyPlugin),
+		bootstrap:           make(map[PluginName]BootstrapPlugin),
+		resourceStore:       make(map[PluginName]ResourceStorePlugin),
+		secretStore:         make(map[PluginName]SecretStorePlugin),
+		configStore:         make(map[PluginName]ConfigStorePlugin),
+		runtime:             make(map[PluginName]RuntimePlugin),
+		ca:                  make(map[PluginName]CaPlugin),
+		authnAPIServer:      make(map[PluginName]AuthnAPIServerPlugin),
+		proxy:               make(map[PluginName]ProxyPlugin),
+		registeredPolicies:  make(map[PluginName]PolicyPlugin),
+		registeredResources: make(map[PluginName]CoreResourcePlugin),
 	}
 }
 
 var _ MutableRegistry = &registry{}
 
 type registry struct {
-	bootstrap          map[PluginName]BootstrapPlugin
-	resourceStore      map[PluginName]ResourceStorePlugin
-	secretStore        map[PluginName]SecretStorePlugin
-	configStore        map[PluginName]ConfigStorePlugin
-	runtime            map[PluginName]RuntimePlugin
-	proxy              map[PluginName]ProxyPlugin
-	ca                 map[PluginName]CaPlugin
-	authnAPIServer     map[PluginName]AuthnAPIServerPlugin
-	registeredPolicies map[PluginName]PolicyPlugin
+	bootstrap           map[PluginName]BootstrapPlugin
+	resourceStore       map[PluginName]ResourceStorePlugin
+	secretStore         map[PluginName]SecretStorePlugin
+	configStore         map[PluginName]ConfigStorePlugin
+	runtime             map[PluginName]RuntimePlugin
+	proxy               map[PluginName]ProxyPlugin
+	ca                  map[PluginName]CaPlugin
+	authnAPIServer      map[PluginName]AuthnAPIServerPlugin
+	registeredPolicies  map[PluginName]PolicyPlugin
+	registeredResources map[PluginName]CoreResourcePlugin
 }
 
 func (r *registry) ResourceStore(name PluginName) (ResourceStorePlugin, error) {
@@ -136,6 +139,10 @@ func (r *registry) PolicyPlugins(ordered []PluginName) []RegisteredPolicyPlugin 
 		})
 	}
 	return plugins
+}
+
+func (r *registry) CoreResourcePlugins() map[PluginName]CoreResourcePlugin {
+	return r.registeredResources
 }
 
 func (r *registry) BootstrapPlugins() []BootstrapPlugin {
@@ -212,6 +219,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(proxyPlugin, name, old, proxy)
 		}
 		r.proxy[name] = proxy
+	}
+	if coreRes, ok := plugin.(CoreResourcePlugin); ok {
+		if old, exists := r.registeredResources[name]; exists {
+			return pluginAlreadyRegisteredError(proxyPlugin, name, old, coreRes)
+		}
+		r.registeredResources[name] = coreRes
 	}
 	return nil
 }

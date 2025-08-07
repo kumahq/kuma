@@ -47,6 +47,7 @@ type PolicyConfig struct {
 	IsReferenceableInTo          bool
 	KubebuilderMarkers           []string
 	IsFromAsRules                bool
+	RegisterGenerator            bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -175,6 +176,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := parseBool(markers, "kuma:policy:is_from_as_rules"); ok {
 		res.IsFromAsRules = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:register_generator"); ok {
+		res.RegisterGenerator = v
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v
