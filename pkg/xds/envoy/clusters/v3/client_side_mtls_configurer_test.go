@@ -142,7 +142,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 					"version":         "v1",
 				},
 			},
-			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-many-different-tag-sets.golden.yaml",
+			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-mtls-and-credentials.golden.yaml",
 		}),
 	)
 })
