@@ -123,33 +123,6 @@ func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key cor
 	return nil
 }
 
-func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
-	rules, ok := mtp.FromRules.Rules[key]
-	if !ok {
-		if len(proxy.Policies.TrafficPermissions) == 0 {
-			rules = p.denyRules()
-		} else {
-			return nil
-		}
-	}
-
-	configurer := &v3.LegacyRBACConfigurer{
-		StatsName: resource.Name,
-		Rules:     rules,
-		Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
-	}
-	for _, filterChain := range listener.FilterChains {
-		if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-			// we only want to configure RBAC on listeners protected by Kuma's TLS
-			continue
-		}
-		if err := configurer.Configure(filterChain); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (p plugin) denyRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{
