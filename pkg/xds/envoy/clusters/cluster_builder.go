@@ -41,6 +41,17 @@ func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
 	return b
 }
 
+func (b *ClusterBuilder) ConfigureIf(condition bool, opts ...ClusterBuilderOpt) *ClusterBuilder {
+	if !condition {
+		return b
+	}
+	for _, opt := range opts {
+		opt.ApplyTo(b)
+	}
+
+	return b
+}
+
 // Build generates an Envoy cluster by applying a series of ClusterConfigurers.
 func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {

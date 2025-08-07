@@ -2,6 +2,7 @@ package clusters
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -239,5 +240,13 @@ func Http2FromEdge() ClusterBuilderOpt {
 func Http() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.HttpConfigurer{})
+	})
+}
+
+func UpstreamTLSContext(config *envoy_tls.UpstreamTlsContext) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
+			Config: config,
+		})
 	})
 }
