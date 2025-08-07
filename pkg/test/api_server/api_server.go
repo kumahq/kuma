@@ -3,8 +3,8 @@ package api_server
 import (
 	"net"
 
-	"github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"

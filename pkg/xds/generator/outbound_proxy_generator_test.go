@@ -400,6 +400,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				SecretsTracker: envoy_common.NewSecretsTracker(given.ctx.Mesh.Resource.Meta.GetName(), meshes),
 				APIVersion:     envoy_common.APIV3,
+				InternalAddresses: []model.InternalAddress{
+					{AddressPrefix: "9.10.11.12", PrefixLen: 12},
+					{AddressPrefix: "127.0.0.6", PrefixLen: 8},
+				},
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{
 						mesh_proto.OutboundInterface{

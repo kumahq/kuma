@@ -29,6 +29,7 @@ import (
 var _ = Describe("ProxyConfigInspector", func() {
 	zone := "zone-1"
 	mesh := "mesh-1"
+	knownInternalAddr := []string{"172.16.0.0/12", "::1/128"}
 
 	var resManager manager.ResourceManager
 	var meshContextBuilder xds_context.MeshContextBuilder
@@ -83,7 +84,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		meshContext, err := meshContextBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
-		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone)
+		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone, knownInternalAddr)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -102,7 +103,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		meshContext, err := meshContextBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
-		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone)
+		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone, knownInternalAddr)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -129,7 +130,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		meshContext, err := meshContextBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
-		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone)
+		inspector, err := inspect.NewProxyConfigInspector(meshContext, zone, knownInternalAddr)
 		Expect(err).ToNot(HaveOccurred())
 
 		noShadow, err := inspector.Get(context.Background(), "test-dpp", false)

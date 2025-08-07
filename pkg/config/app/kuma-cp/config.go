@@ -1,6 +1,8 @@
 package kuma_cp
 
 import (
+	"fmt"
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
@@ -176,6 +178,8 @@ type Config struct {
 	Policies *policies.Config `json:"policies"`
 	// CoreResources holds configuration for generated core resources like MeshService
 	CoreResources *apis.Config `json:"coreResources"`
+	// IP administration and management config
+	IPAM IPAMConfig `json:"ipam"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -277,6 +281,9 @@ var DefaultConfig = func() Config {
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
 		CoreResources: apis.Default(),
+		IPAM: IPAMConfig{
+			KnownInternalCIDRs: defaultKnownInternalCIDRs,
+		},
 	}
 }
 
@@ -338,6 +345,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Policies.Validate(); err != nil {
 		return errors.Wrap(err, "Policies validation failed")
+	}
+	if err := c.IPAM.Validate(); err != nil {
+		return errors.Wrap(err, "IPAM validation failed")
 	}
 	return nil
 }
@@ -451,6 +461,36 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
 	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
 	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
+}
+
+type IPAMConfig struct {
+	// KnownInternalCIDRs contains a list of CIDRs which are considered internal and trusted, Envoy attaches internal only headers to requests from these clients when forwarding HTTP requests
+	KnownInternalCIDRs []string `json:"knownInternalCIDRs" envconfig:"KUMA_IPAM_KNOWN_INTERNAL_CIDRS"`
+}
+
+func (i IPAMConfig) Validate() error {
+	for _, knownInternalCIDR := range i.KnownInternalCIDRs {
+		if _, _, err := net.ParseCIDR(knownInternalCIDR); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("entry '%s' in .KnownInternalCIDRs is invalid", knownInternalCIDR))
+		}
+	}
+	return nil
+}
+
+var defaultKnownInternalCIDRs = []string{
+	// Private Address Space defined in RFC 1918: https://datatracker.ietf.org/doc/html/rfc1918#section-3
+	"10.0.0.0/8",
+	"192.168.0.0/16",
+	"172.16.0.0/12",
+
+	// Local IPv6 address prefix defined in RFC4193: https://datatracker.ietf.org/doc/html/rfc4193#section-3.2.2
+	"fc00::/7",
+	// included in default implementation of Envoy: https://github.com/envoyproxy/envoy/blob/v1.32.2/source/common/network/utility.cc#L272
+	"fd00::/8",
+
+	// loopback
+	"127.0.0.1/32",
+	"::1/128",
 }
 
 func (c Config) GetEnvoyAdminPort() uint32 {

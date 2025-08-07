@@ -98,14 +98,14 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 			// configuration for HTTP case
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolGRPC:
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
