@@ -70,11 +70,11 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
-		core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace),
 		resource.GetMeta().GetMesh(),
-		h.Mode,
-		true,
-		h.ZoneName,
+		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
+		core_model.WithMode(h.Mode),
+		core_model.WithK8s(true),
+		core_model.WithZone(h.ZoneName),
 	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
