@@ -74,7 +74,7 @@ type (
 		SANs                     []SAN
 		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
 		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		OwnerResource            *kri.Identifier
+		OwnerResource            kri.Identifier
 	}
 )
 
@@ -250,7 +250,7 @@ type MeshResources struct {
 func (r MeshResources) Get(id kri.Identifier) core_model.Resource {
 	// todo: we can probably optimize it by using indexing on ResourceIdentifier
 	list := r.ListOrEmpty(id.ResourceType).GetItems()
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r, "") == kri.NoSectionName(id) }); i >= 0 {
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r) == kri.NoSectionName(id) }); i >= 0 {
 		return list[i]
 	}
 	return nil
@@ -361,7 +361,7 @@ func (e Endpoint) IsExternalService() bool {
 }
 
 func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && e.ExternalService.OwnerResource != nil
+	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
 }
 
 func (e Endpoint) LocalityString() string {

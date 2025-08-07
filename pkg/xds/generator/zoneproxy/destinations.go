@@ -74,7 +74,7 @@ func buildMeshServiceDestinations(
 				DestinationName: destinationname.MustResolve(false, ms, port),
 				SNI:             sni,
 				Resource: resolve.BackendRefOrNil(
-					pointer.To(kri.From(ms, "")),
+					kri.From(ms),
 					resourceToBackendRef(ms, meshservice_api.MeshServiceType, port.Port),
 					resolveResourceIdentifier,
 				),
@@ -85,7 +85,7 @@ func buildMeshServiceDestinations(
 }
 
 func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType, port int32) common_api.BackendRef {
-	id := kri.From(r, "")
+	id := kri.From(r)
 	return common_api.BackendRef{
 		TargetRef: common_api.TargetRef{
 			Kind:      common_api.TargetRefKind(resType),
@@ -114,7 +114,7 @@ func buildMeshExternalServiceDestinations(
 			DestinationName: destinationname.MustResolve(false, mes, mes.Spec.Match),
 			SNI:             sni,
 			Resource: resolve.BackendRefOrNil(
-				pointer.To(kri.From(mes, "")),
+				kri.From(mes),
 				resourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, mes.Spec.Match.Port),
 				resolveResourceIdentifier,
 			),
@@ -134,7 +134,7 @@ func buildMeshMultiZoneServiceDestinations(
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: destinationname.MustResolve(false, ms, port),
 				Resource: resolve.BackendRefOrNil(
-					pointer.To(kri.From(ms, "")),
+					kri.From(ms),
 					resourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
 					resolveResourceIdentifier,
 				),

@@ -80,11 +80,14 @@ func getBackendRefs(
 		return []resolve.ResolvedBackendRef{*svc.DefaultBackendRef()}
 	}
 
-	originID := kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType, fmt.Sprintf("rule_%d", origin.RuleIndex))
+	originID := kri.WithSectionName(
+		kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType),
+		fmt.Sprintf("rule_%d", origin.RuleIndex),
+	)
 
 	var resolved []resolve.ResolvedBackendRef
 	for _, ref := range pointer.Deref(tcpConf.Default.BackendRefs) {
-		if r, ok := resolve.BackendRef(&originID, ref, meshCtx.ResolveResourceIdentifier); ok {
+		if r, ok := resolve.BackendRef(originID, ref, meshCtx.ResolveResourceIdentifier); ok {
 			resolved = append(resolved, r)
 		}
 	}

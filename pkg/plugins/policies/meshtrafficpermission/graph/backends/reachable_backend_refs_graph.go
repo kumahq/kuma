@@ -34,7 +34,7 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 		if !ok {
 			continue
 		}
-		rules[kri.From(ms, "")] = rl
+		rules[kri.From(ms)] = rl
 	}
 	return rules
 }

@@ -87,7 +87,7 @@ func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 	if r, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
-			Resource: &r,
+			Resource: r,
 			Weight:   100,
 		})
 	} else {
@@ -145,7 +145,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 		// TODO: Add a clear way to pass warnings up when needed. Right now
 		//  we skip logging to avoid too much noise, and there’s no system
 		//  for handling warnings yet
-		if svc = meshCtx.GetServiceByKRI(pointer.Deref(outbound.Resource)); svc == nil {
+		if svc = meshCtx.GetServiceByKRI(outbound.Resource); svc == nil {
 			continue
 		}
 
@@ -180,7 +180,7 @@ func DestinationPortFromRef(
 	var port core.Port
 	var ok bool
 
-	if dest = meshCtx.GetServiceByKRI(pointer.Deref(ref.Resource)); dest == nil {
+	if dest = meshCtx.GetServiceByKRI(ref.Resource); dest == nil {
 		return dest, port, false
 	}
 

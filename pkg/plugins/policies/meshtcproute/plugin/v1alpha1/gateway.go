@@ -108,17 +108,16 @@ func makeTcpRouteEntry(
 	entry := route.Entry{
 		Route: name,
 	}
-	originID := kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType, "")
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
-		ref := resolve.BackendRefOrNil(&originID, b, resolver)
+		ref := resolve.BackendRefOrNil(kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType), b, resolver)
 		if ref.ReferencesRealResource() {
 			if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
 				dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
 			}
 		}
-		if ref == nil || ref.ResourceOrNil() == nil {
+		if ref == nil || ref.Resource().IsEmpty() {
 			var ok bool
 			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
 			if !ok {

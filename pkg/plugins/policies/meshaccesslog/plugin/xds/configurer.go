@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	bldrs_accesslog "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
@@ -66,8 +67,9 @@ func BaseAccessLogBuilder(
 }
 
 type EndpointAccumulator struct {
-	endpoints map[LoggingEndpoint]int
-	latest    int
+	endpoints             map[LoggingEndpoint]int
+	latest                int
+	UnifiedResourceNaming bool
 }
 
 type endpointClusterName string
@@ -83,7 +85,12 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 		acc.latest += 1
 	}
 
-	return endpointClusterName(fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind))
+	getNameOrDefault := core_system_names.GetNameOrDefault(acc.UnifiedResourceNaming)
+	name := getNameOrDefault(
+		core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
+		fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+	)
+	return endpointClusterName(name)
 }
 
 const defaultOpenTelemetryGRPCPort uint32 = 4317

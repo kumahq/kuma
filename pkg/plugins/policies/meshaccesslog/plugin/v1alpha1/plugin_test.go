@@ -71,6 +71,7 @@ var _ = Describe("MeshAccessLog", func() {
 		fromRules         core_rules.FromRules
 		expectedListeners []string
 		expectedClusters  []string
+		features          xds_types.Features
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -98,7 +99,8 @@ var _ = Describe("MeshAccessLog", func() {
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir: "/tmp",
+					WorkDir:  "/tmp",
+					Features: given.features,
 				}).
 				WithDataplane(
 					builders.Dataplane().
@@ -428,6 +430,90 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
+		}),
+		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+			resources: []core_xds.Resource{
+				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundServiceTCPListener("foo-service", 37778),
+				outboundServiceTCPListener("bar-service", 37779),
+			},
+			outbounds: xds_types.Outbounds{
+				{LegacyOutbound: builders.Outbound().
+					WithService("foo-service").
+					WithAddress("127.0.0.1").
+					WithPort(37778).Build()},
+				{LegacyOutbound: builders.Outbound().
+					WithService("bar-service").
+					WithAddress("127.0.0.1").
+					WithPort(37779).Build()},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "other-service-tcp",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "otel-collector",
+								},
+							}},
+						},
+					},
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "foo-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "otel-collector",
+									Body: &apiextensionsv1.JSON{
+										Raw: []byte("%KUMA_MESH%"),
+									},
+								},
+							}},
+						},
+					},
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "bar-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "other-otel-collector:5317",
+									Body: &apiextensionsv1.JSON{
+										Raw: []byte(`{
+										  "kvlistValue": {
+											"values": [
+											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
+											]
+										  }
+									    }`),
+									},
+								},
+							}},
+						},
+					},
+				},
+			},
+			expectedClusters: []string{
+				"outbound_otel_unified_naming.cluster.golden.yaml",
+				"outbound_otel_unified_naming_1.cluster.golden.yaml",
+			},
+			expectedListeners: []string{
+				"outbound_otel_unified_naming.listener.golden.yaml",
+				"outbound_otel_unified_naming_1.listener.golden.yaml",
+				"outbound_otel_unified_naming_2.listener.golden.yaml",
+			},
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
@@ -817,7 +903,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: &serviceResourceKRI,
+				Resource: serviceResourceKRI,
 			},
 			Protocol:            core_mesh.ProtocolHTTP,
 			KumaServiceTagValue: serviceName(serviceResourceKRI, port),

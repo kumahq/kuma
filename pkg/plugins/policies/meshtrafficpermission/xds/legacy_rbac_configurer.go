@@ -21,13 +21,13 @@ import (
 	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
-type RBACConfigurer struct {
+type LegacyRBACConfigurer struct {
 	StatsName string
 	Rules     core_xds.Rules
 	Mesh      string
 }
 
-func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *LegacyRBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	for idx, filter := range filterChain.Filters {
 		if filter.GetName() == "envoy.filters.network.rbac" {
 			// new MeshTrafficPermission takes over this filter chain,
@@ -58,7 +58,7 @@ func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) erro
 	return c.addRBACFilterToFilterChain(filterChain, rules, shadowRules)
 }
 
-func (c *RBACConfigurer) addRBACFilterToFilterChain(
+func (c *LegacyRBACConfigurer) addRBACFilterToFilterChain(
 	filterChain *envoy_listener.FilterChain,
 	rules *rbac_config.RBAC,
 	shadowRules *rbac_config.RBAC,
@@ -114,7 +114,7 @@ func httpRBACUpdater(
 
 type PrincipalMap map[policies_api.Action][]*rbac_config.Principal
 
-func (c *RBACConfigurer) principalsByAction() PrincipalMap {
+func (c *LegacyRBACConfigurer) principalsByAction() PrincipalMap {
 	pm := PrincipalMap{}
 	for _, rule := range c.Rules {
 		action := pointer.Deref(rule.Conf.(policies_api.Conf).Action)
@@ -172,7 +172,7 @@ func createShadowRules(pm PrincipalMap) *rbac_config.RBAC {
 	}
 }
 
-func (c *RBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_config.Principal {
+func (c *LegacyRBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_config.Principal {
 	principals := []*rbac_config.Principal{}
 
 	for _, t := range ss {
@@ -217,7 +217,7 @@ func (c *RBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_config
 	}
 }
 
-func (c *RBACConfigurer) not(p *rbac_config.Principal) *rbac_config.Principal {
+func (c *LegacyRBACConfigurer) not(p *rbac_config.Principal) *rbac_config.Principal {
 	return &rbac_config.Principal{
 		Identifier: &rbac_config.Principal_NotId{
 			NotId: p,

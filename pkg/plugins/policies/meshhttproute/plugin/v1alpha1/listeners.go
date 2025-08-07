@@ -229,7 +229,7 @@ func prepareRoutes(
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
 
-		originID := kri.FromResourceMeta(origin.Resource, api.MeshHTTPRouteType, "")
+		originID := kri.FromResourceMeta(origin.Resource, api.MeshHTTPRouteType)
 		if unifiedNaming {
 			originID = kri.WithSectionName(originID, fmt.Sprintf("rule_%d", origin.RuleIndex))
 		}
@@ -242,7 +242,7 @@ func prepareRoutes(
 			var refs []resolve.ResolvedBackendRef
 
 			for _, br := range backendRefs {
-				if rbr, ok := resolve.BackendRef(&originID, br, meshCtx.ResolveResourceIdentifier); ok {
+				if rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier); ok {
 					refs = append(refs, rbr)
 				}
 			}

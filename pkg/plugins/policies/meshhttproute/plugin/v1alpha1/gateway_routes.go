@@ -235,15 +235,14 @@ func makeHttpRouteEntry(
 		var dest map[string]string
 		var ref *resolve.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
-			originID := kri.FromResourceMeta(origin, api.MeshHTTPRouteType, "")
-			ref = resolve.BackendRefOrNil(&originID, b, resolver)
+			ref = resolve.BackendRefOrNil(kri.FromResourceMeta(origin, api.MeshHTTPRouteType), b, resolver)
 			if ref.ReferencesRealResource() {
 				if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
 					dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
 				}
 			}
 		}
-		if ref == nil || ref.ResourceOrNil() == nil {
+		if ref == nil || ref.Resource().IsEmpty() {
 			// We have a legacy backendRef
 			if !b.ReferencesRealObject() {
 				var ok bool

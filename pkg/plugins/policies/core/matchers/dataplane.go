@@ -258,7 +258,7 @@ func isSelectedByResourceIdentifier(dpp *core_mesh.DataplaneResource, ref common
 	if pointer.Deref(ref.Name) == "" {
 		return false
 	}
-	return kri.From(dpp, "") == resolve.TargetRefToKRI(meta, ref)
+	return kri.From(dpp) == resolve.TargetRefToKRI(kri.FromResourceMeta(meta, core_model.ResourceType(ref.Kind)), ref)
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
