@@ -113,6 +113,7 @@ func (i Identifier) HasSectionName() bool {
 }
 
 func WithSectionName(id Identifier, sectionName string) Identifier {
+	// cannot add section name to empty identifier
 	if id.IsEmpty() {
 		return id
 	}

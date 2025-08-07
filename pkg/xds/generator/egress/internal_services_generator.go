@@ -33,7 +33,6 @@ func (g *InternalServicesGenerator) Generate(
 	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)
 
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
-
 	destinations := zoneproxy.BuildMeshDestinations(
 		availableServices,
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},

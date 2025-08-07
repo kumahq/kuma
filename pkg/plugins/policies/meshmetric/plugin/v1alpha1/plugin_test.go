@@ -10,12 +10,15 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -234,12 +237,23 @@ var _ = Describe("MeshMetric", func() {
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					WorkDir: "/tmp",
+					Features: map[string]bool{
+						xds_types.FeatureUnifiedResourceNaming: true,
+					},
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
 								Subset: []subsetutils.Tag{},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{
+										Mesh: "default",
+										Name: "meshmetric1",
+									},
+								},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
 										IncludeUnused: pointer.To(false),

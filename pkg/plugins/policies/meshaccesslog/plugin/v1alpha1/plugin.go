@@ -61,7 +61,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	endpoints := &EndpointAccumulator{}
+	endpoints := &EndpointAccumulator{
+		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
+	}
 
 	listeners := policies_xds.GatherListeners(rs)
 
@@ -355,11 +357,10 @@ func applyToRealResource(
 
 	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
-			ConfigureIf(r.Protocol.IsHTTPBased(), func() Configurer[envoy_accesslog.AccessLog] {
-				return bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
-					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
-					Configure(bldrs_matcher.NullValue()))
-			})
+			Configure(If(r.Protocol.IsHTTPBased(), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
+				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
+				Configure(bldrs_matcher.NullValue())),
+			))
 	}
 
 	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
@@ -388,9 +389,7 @@ func applyToRealResource(
 						builderForRouteBackend(id),
 					)
 				}))).
-		ConfigureIf(hasAtLeastOneBackend, func() Configurer[envoy_listener.Listener] {
-			return bldrs_listener.HCM(hcm.LuaFilterAddFirst(setFilterMetadataAsDynamicLuaFilter(namespace, routeMetadataKey)))
-		}).
+		Configure(If(hasAtLeastOneBackend, bldrs_listener.HCM(hcm.LuaFilterAddFirst(setFilterMetadataAsDynamicLuaFilter(namespace, routeMetadataKey))))).
 		Modify()
 }
 
