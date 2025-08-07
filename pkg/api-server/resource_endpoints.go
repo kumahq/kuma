@@ -1121,7 +1121,7 @@ func policyOriginsToKRIOrigins(policyType core_model.ResourceType, origins []cor
 }
 
 func originToKRI(origin core_model.ResourceMeta, policyType core_model.ResourceType) api_common.PolicyOrigin {
-	return api_common.PolicyOrigin{Kri: kri.FromResourceMeta(origin, policyType, "").String()}
+	return api_common.PolicyOrigin{Kri: kri.FromResourceMeta(origin, policyType).String()}
 }
 
 func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {

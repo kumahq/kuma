@@ -33,7 +33,7 @@ func AsResourceContext[T any](conf T) *ResourceContext[T] {
 func RootContext[T any](mesh *core_mesh.MeshResource, rules ResourceRules) *ResourceContext[T] {
 	return &ResourceContext[T]{
 		ids: []kri.Identifier{
-			kri.From(mesh, ""),
+			kri.From(mesh),
 		},
 		rules: rules,
 	}

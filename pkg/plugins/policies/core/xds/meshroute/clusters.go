@@ -101,7 +101,7 @@ func GenerateClusters(
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
 						tlsReady = true // tls readiness is only relevant for MeshService
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							dest := meshCtx.GetServiceByKRI(pointer.Deref(realResourceRef.Resource))
+							dest := meshCtx.GetServiceByKRI(realResourceRef.Resource)
 							if dest != nil {
 								ms := dest.(*meshservice_api.MeshServiceResource)
 								// we only check TLS status for local service
@@ -136,7 +136,7 @@ func GenerateClusters(
 				Name:           clusterName,
 				Origin:         generator.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: service.BackendRef().ResourceOrNil(),
+				ResourceOrigin: service.BackendRef().Resource(),
 				Protocol:       protocol,
 			})
 		}
@@ -151,7 +151,7 @@ func SniForBackendRef(
 	systemNamespace string,
 ) string {
 	var port int32
-	dest := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+	dest := meshCtx.GetServiceByKRI(backendRef.Resource)
 	if p, ok := dest.FindPortByName(backendRef.Resource.SectionName); ok {
 		port = p.GetValue()
 	}
@@ -171,7 +171,7 @@ func ServiceTagIdentities(
 	var result []string
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
-		ms := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+		ms := meshCtx.GetServiceByKRI(backendRef.Resource)
 		if ms == nil {
 			return result
 		}
@@ -181,7 +181,7 @@ func ServiceTagIdentities(
 			}
 		}
 	case common_api.MeshMultiZoneService:
-		svc := meshCtx.GetServiceByKRI(pointer.Deref(backendRef.Resource))
+		svc := meshCtx.GetServiceByKRI(backendRef.Resource)
 		if svc == nil {
 			return result
 		}

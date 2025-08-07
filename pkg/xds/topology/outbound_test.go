@@ -1423,7 +1423,7 @@ var _ = Describe("TrafficRoute", func() {
 								FallbackToSystemCa:       true,
 								SkipHostnameVerification: true,
 								SANs:                     []core_xds.SAN{},
-								OwnerResource: &kri.Identifier{
+								OwnerResource: kri.Identifier{
 									ResourceType: meshexternalservice_api.MeshExternalServiceType,
 									Mesh:         "default",
 									Name:         "another-mes",
@@ -1459,7 +1459,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								MinTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_2),
 								MaxTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_3),
-								OwnerResource: &kri.Identifier{
+								OwnerResource: kri.Identifier{
 									ResourceType: meshexternalservice_api.MeshExternalServiceType,
 									Mesh:         "default",
 									Name:         "example-mes",
@@ -1542,8 +1542,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
 					samples.MeshMultiZoneServiceBackendBuilder().
-						AddMatchedMeshServiceName(kri.From(samples.MeshServiceBackend(), "")).
-						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend(), "")).
+						AddMatchedMeshServiceName(kri.From(samples.MeshServiceBackend())).
+						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend())).
 						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
@@ -1715,7 +1715,7 @@ var _ = Describe("TrafficRoute", func() {
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
 									Protocol:   core_mesh.ProtocolTCP,
-									OwnerResource: &kri.Identifier{
+									OwnerResource: kri.Identifier{
 										ResourceType: "MeshExternalService",
 										Mesh:         "default",
 										Name:         "example",
@@ -1785,7 +1785,7 @@ var _ = Describe("TrafficRoute", func() {
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
 									Protocol:   core_mesh.ProtocolTCP,
-									OwnerResource: &kri.Identifier{
+									OwnerResource: kri.Identifier{
 										ResourceType: "MeshExternalService",
 										Mesh:         "default",
 										Name:         "example",

@@ -457,7 +457,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					Name:           "outbound",
 					Origin:         generator.OriginOutbound,
 					Resource:       test_xds.ClusterWithName("backend"),
-					ResourceOrigin: &backendMeshServiceIdentifier,
+					ResourceOrigin: backendMeshServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{

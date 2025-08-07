@@ -152,7 +152,7 @@ func applyToRealResources(
 ) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
-			Resource: &uri,
+			Resource: uri,
 		})
 		if !found {
 			continue

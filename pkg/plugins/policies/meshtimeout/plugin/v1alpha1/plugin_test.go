@@ -510,14 +510,14 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:           "outbound",
 					Origin:         generator.OriginOutbound,
-					Resource:       httpListenerWithSeveralMeshHTTPRoutes("test-service-1", kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, "")),
-					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, "")),
+					Resource:       httpListenerWithSeveralMeshHTTPRoutes("test-service-1", kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
+					ResourceOrigin: kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType),
 					Protocol:       core_mesh.ProtocolHTTP,
 				},
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, ""): {
+					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType): {
 						Resource: testMeshHTTPRouteMeta(),
 						Conf: []interface{}{
 							api.Conf{
@@ -528,7 +528,7 @@ var _ = Describe("MeshTimeout", func() {
 							},
 						},
 					},
-					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, ""): {
+					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType): {
 						Resource: testMeshServiceMeta(),
 						Conf: []interface{}{
 							api.Conf{
@@ -550,14 +550,14 @@ var _ = Describe("MeshTimeout", func() {
 					Origin:         generator.OriginOutbound,
 					Resource:       httpOutboundListener(),
 					Protocol:       core_mesh.ProtocolHTTP,
-					ResourceOrigin: &backendMeshServiceIdentifier,
+					ResourceOrigin: backendMeshServiceIdentifier,
 				},
 				{
 					Name:           "outbound",
 					Origin:         generator.OriginOutbound,
 					Resource:       test_xds.ClusterWithName("backend"),
 					Protocol:       core_mesh.ProtocolHTTP,
-					ResourceOrigin: &backendMeshServiceIdentifier,
+					ResourceOrigin: backendMeshServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
@@ -588,14 +588,14 @@ var _ = Describe("MeshTimeout", func() {
 					Origin:         generator.OriginOutbound,
 					Resource:       httpOutboundListener(),
 					Protocol:       core_mesh.ProtocolHTTP,
-					ResourceOrigin: &backendMeshExternalServiceIdentifier,
+					ResourceOrigin: backendMeshExternalServiceIdentifier,
 				},
 				{
 					Name:           "outbound",
 					Origin:         generator.OriginOutbound,
 					Resource:       test_xds.ClusterWithName("backend"),
 					Protocol:       core_mesh.ProtocolHTTP,
-					ResourceOrigin: &backendMeshExternalServiceIdentifier,
+					ResourceOrigin: backendMeshExternalServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{

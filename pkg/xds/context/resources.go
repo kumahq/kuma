@@ -54,7 +54,7 @@ func NewResources() Resources {
 func (r Resources) Get(id kri.Identifier) core_model.Resource {
 	// todo: we can probably optimize it by using indexing on ResourceIdentifier
 	list := r.ListOrEmpty(id.ResourceType).GetItems()
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r, "") == kri.NoSectionName(id) }); i >= 0 {
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r) == kri.NoSectionName(id) }); i >= 0 {
 		return list[i]
 	}
 	return nil

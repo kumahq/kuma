@@ -303,7 +303,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 				Configure(clusters.ClientSideMTLS(secretsTracker, mesh.Build(), "outgoing", true, nil)).
 				MustBuild(),
 			Protocol: core_mesh.ProtocolHTTP,
-			ResourceOrigin: &kri.Identifier{
+			ResourceOrigin: kri.Identifier{
 				ResourceType: "MeshService",
 				Mesh:         "default",
 				Zone:         "zone-1",
