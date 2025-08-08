@@ -30,7 +30,7 @@ var _ = Describe("Metrics format mapper", func() {
 		// when
 		metrics, err := AggregatedOtelMutator()(input)
 		Expect(err).ToNot(HaveOccurred())
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", map[string]string{"extraLabel": "test"}, time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
+		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", "0.0.0", map[string]string{"extraLabel": "test"}, time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
 
 		// then
 		marshal, err := json.MarshalIndent(flatten(openTelemetryMetrics), "", "  ")

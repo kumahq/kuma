@@ -21,7 +21,7 @@ const (
 	kumaOtelScope      = "kuma"
 )
 
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, kumaVersion string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
 
 	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
@@ -29,13 +29,13 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 		var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
 		switch prometheusMetric.GetType() {
 		case io_prometheus_client.MetricType_GAUGE:
-			scopedAggregations = scopedGauges(prometheusMetric.Metric, extraAttributes, requestTime)
+			scopedAggregations = scopedGauges(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_SUMMARY:
-			scopedAggregations = scopedSummaries(prometheusMetric.Metric, extraAttributes, requestTime)
+			scopedAggregations = scopedSummaries(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_COUNTER:
-			scopedAggregations = scopedCounters(prometheusMetric.Metric, extraAttributes, requestTime)
+			scopedAggregations = scopedCounters(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_HISTOGRAM:
-			scopedAggregations = scopedHistograms(prometheusMetric.Metric, extraAttributes, requestTime)
+			scopedAggregations = scopedHistograms(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		default:
 			log.Info("got unsupported metric type", "type", prometheusMetric.Type)
 		}
@@ -56,10 +56,10 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 	return scopedMetrics
 }
 
-func scopedGauges(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+func scopedGauges(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
 	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
 	for _, metric := range prometheusData {
-		scope, attributes := extractScope(metric)
+		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
 
 		if _, ok := scopedDataPoints[scope]; !ok {
@@ -83,10 +83,10 @@ func scopedGauges(prometheusData []*io_prometheus_client.Metric, extraAttributes
 	return scopedAggregations
 }
 
-func scopedSummaries(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+func scopedSummaries(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
 	scopedDataPoints := map[instrumentation.Scope][]metricdata.SummaryDataPoint{}
 	for _, metric := range prometheusData {
-		scope, attributes := extractScope(metric)
+		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
 
 		if _, ok := scopedDataPoints[scope]; !ok {
@@ -112,10 +112,10 @@ func scopedSummaries(prometheusData []*io_prometheus_client.Metric, extraAttribu
 	return scopedAggregations
 }
 
-func scopedCounters(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+func scopedCounters(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
 	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
 	for _, metric := range prometheusData {
-		scope, attributes := extractScope(metric)
+		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
 
 		if _, ok := scopedDataPoints[scope]; !ok {
@@ -141,10 +141,10 @@ func scopedCounters(prometheusData []*io_prometheus_client.Metric, extraAttribut
 	return scopedAggregations
 }
 
-func scopedHistograms(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+func scopedHistograms(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
 	scopedDataPoints := map[instrumentation.Scope][]metricdata.HistogramDataPoint[float64]{}
 	for _, metric := range prometheusData {
-		scope, attributes := extractScope(metric)
+		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
 
 		if _, ok := scopedDataPoints[scope]; !ok {
@@ -217,7 +217,7 @@ func extraAttributesFrom(mesh string, dataplane string, service string, extraLab
 	return extraAttributes
 }
 
-func extractScope(metric *io_prometheus_client.Metric) (instrumentation.Scope, []attribute.KeyValue) {
+func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (instrumentation.Scope, []attribute.KeyValue) {
 	var attributes []attribute.KeyValue
 	var scopeAttributes []attribute.KeyValue
 	scope := instrumentation.Scope{}
@@ -246,8 +246,7 @@ func extractScope(metric *io_prometheus_client.Metric) (instrumentation.Scope, [
 	// If metrics were not scoped, we need to create Kuma scope for it
 	if len(attributes) == len(metric.Label) {
 		scope.Name = kumaOtelScope
-		// TODO replace with actual Kuma version
-		scope.Version = "0.0.0"
+		scope.Version = kumaVersion
 	}
 
 	return scope, attributes
