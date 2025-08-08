@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestMeshIdentity(t *testing.T) {
-	test.RunSpecs(t, "MeshIdentity Suite")
+func TestPlugin(t *testing.T) {
+	test.RunSpecs(t, "MeshTrust Secrets Generator")
 }
