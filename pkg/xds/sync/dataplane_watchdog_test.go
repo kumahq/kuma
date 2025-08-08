@@ -12,6 +12,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -39,6 +41,26 @@ func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Co
 
 func (s *staticSnapshotReconciler) Clear(proxyId *core_xds.ProxyId) error {
 	return nil
+}
+
+type staticIdentityProvider struct {
+	_ *core_xds.Proxy
+}
+
+func (s *staticIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+	return nil
+}
+
+func (s *staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+	return nil
+}
+
+func (s *staticIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy) (*core_xds.WorkloadIdentity, error) {
+	return nil, nil
+}
+
+func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+	return nil, nil
 }
 
 var _ sync.SnapshotReconciler = &staticSnapshotReconciler{}
@@ -74,6 +96,10 @@ var _ = Describe("Dataplane Watchdog", func() {
 		secrets, err := secrets.NewSecrets(nil, nil, newMetrics) // nil is ok for now, because we don't use it
 		Expect(err).ToNot(HaveOccurred())
 
+		plugins := map[string]providers.IdentityProvider{
+			"static": &staticIdentityProvider{},
+		}
+
 		deps = sync.DataplaneWatchdogDependencies{
 			DataplaneProxyBuilder: &sync.DataplaneProxyBuilder{
 				APIVersion: envoy.APIV3,
@@ -81,8 +107,9 @@ var _ = Describe("Dataplane Watchdog", func() {
 			},
 			DataplaneReconciler: snapshotReconciler,
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
-				Secrets: secrets,
-				Zone:    zone,
+				Secrets:         secrets,
+				Zone:            zone,
+				IdentityManager: providers.NewIdentityProviderManager(plugins),
 			},
 			MeshCache:  cache,
 			ResManager: resManager,
