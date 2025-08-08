@@ -134,5 +134,6 @@ func redactKumaDynamicConfig(jsonStr string) string {
 func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
 	return func() {
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
+		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
 	}
 }
