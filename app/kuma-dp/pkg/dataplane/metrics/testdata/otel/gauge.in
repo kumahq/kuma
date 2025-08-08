@@ -39,3 +39,8 @@ envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="kuma_envoy_ad
 envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="localhost_3000"} 37
 envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="outbound_passthrough_ipv4"} 38
 envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="outbound_passthrough_ipv6"} 39
+
+# TYPE custom_metric_with_scope gauge
+custom_metric_with_scope{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",name="access_log_sink"} 1
+custom_metric_with_scope{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",name="ads_cluster"} 2
+custom_metric_with_scope{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",name="demo-client"} 3

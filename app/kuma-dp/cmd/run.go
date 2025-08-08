@@ -498,6 +498,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
 		tpEnabled,
+		kuma_version.Build.Version,
 	)
 	metricsServer := metrics.New(
 		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),

@@ -28,3 +28,8 @@ envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin"}
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000"} 7
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4"} 8
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6"} 9
+
+# TYPE custom_metric_with_scope counter
+custom_metric_with_scope{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",envoy_cluster_name="access_log_sink"} 1
+custom_metric_with_scope{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",envoy_cluster_name="ads_cluster"} 2
+custom_metric_with_scope{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",envoy_cluster_name="demo-client"} 3

@@ -14,3 +14,9 @@ custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf
 custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb",quantile="0.99"} 13
 custom_metric_seconds_sum{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 800
 custom_metric_seconds_count{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 200
+
+
+# TYPE custom_metric_scoped_seconds summary
+custom_metric_scoped_seconds{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea",quantile="0.5"} 2
+custom_metric_scoped_seconds{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea",quantile="0.9"} 5
+custom_metric_scoped_seconds{otel_scope_name="io.opentelemetry.contrib.mongodb",otel_scope_version="1.9.0",otel_scope_schema_url="https://opentelemetry.io/schemas/1.10.0",otel_scope_extra="test",envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea",quantile="0.99"} 20
