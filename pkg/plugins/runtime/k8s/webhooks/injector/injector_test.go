@@ -860,6 +860,22 @@ spec:
                     kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("43. Pod with spire mount", testCase{
+			num: "43",
+			mesh: `
+                apiVersion: kuma.io/v1alpha1
+                kind: Mesh
+                metadata:
+                  name: default`,
+			namespace: `
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  name: default
+                  labels:
+                    kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.spire.config.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",

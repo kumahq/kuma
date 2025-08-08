@@ -1,0 +1,46 @@
+controlPlane:
+  apiServer:
+    url: http://kuma-control-plane.kuma-system:5681
+sidecarContainer:
+  image: kuma/kuma-sidecar:latest
+  ipFamilyMode: dualstack
+  redirectPortOutbound: 15001
+  redirectPortInbound: 15006
+  uid: 5678
+  gid: 5678
+  adminPort: 9901
+  drainTime: 31s
+  readinessProbe:
+    initialDelaySeconds: 11
+    timeoutSeconds:      13
+    periodSeconds:       15
+    successThreshold:    11
+    failureThreshold:    112
+  livenessProbe:
+    initialDelaySeconds: 260
+    timeoutSeconds:      23
+    periodSeconds:       25
+    failureThreshold:    212
+  startupProbe:
+    initialDelaySeconds: 261
+    timeoutSeconds:      24
+    periodSeconds:       26
+    failureThreshold:    213
+  resources:
+    requests:
+      cpu: 150m
+      memory: 164Mi
+    limits:
+      cpu: 1100m
+      memory: 1512Mi
+initContainer:
+  image: kuma/kuma-init:latest
+virtualProbesEnabled: true
+virtualProbesPort: 9000
+applicationProbeProxyPort: 9000
+exceptions:
+  labels:
+    "openshift.io/deployer-pod-for.name": "*"
+spire:
+  enabled: true
+  mountPath: "/run/spire/sockets"

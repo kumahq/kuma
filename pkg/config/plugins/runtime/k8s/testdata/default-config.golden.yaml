@@ -72,6 +72,10 @@ injector:
     excludeInboundPorts: []
     excludeOutboundIPs: []
     excludeOutboundPorts: []
+  spire:
+    enabled: false
+    mountPath: /run/spire/sockets
+    socketFileName: socket
   transparentProxyConfigMap: ""
   unifiedResourceNamingEnabled: false
   virtualProbesEnabled: true
