@@ -60,6 +60,11 @@ func (p *ProxyBuilder) WithSecretsTracker(secretsTracker core_xds.SecretsTracker
 	return p
 }
 
+func (p *ProxyBuilder) WithWorkloadIdentity(workloadIdentity *core_xds.WorkloadIdentity) *ProxyBuilder {
+	p.res.WorkloadIdentity = workloadIdentity
+	return p
+}
+
 func (p *ProxyBuilder) WithPolicies(policies *MatchedPoliciesBuilder) *ProxyBuilder {
 	p.res.Policies = *policies.Build()
 	return p
