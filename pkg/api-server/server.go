@@ -291,6 +291,7 @@ func addResourcesEndpoints(
 			xdsHooks:                     xdsHooks,
 			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
 			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name

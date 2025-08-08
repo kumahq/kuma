@@ -789,7 +789,7 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 func createListener(builder *ListenerBuilder, route FilterChainBuilderOpt) envoy_common.NamedResource {
 	return builder.
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager(builder.GetName(), false)).
+			Configure(HttpConnectionManager(builder.GetName(), false, nil)).
 			Configure(route),
 		)).MustBuild()
 }

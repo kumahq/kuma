@@ -16,8 +16,9 @@ const (
 )
 
 type Configurer struct {
-	APIVersion core_xds.APIVersion
-	Conf       api.Conf
+	APIVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
+	Conf              api.Conf
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
@@ -65,13 +66,14 @@ func (c Configurer) configureListener(
 	listener.FilterChains = []*envoy_listener.FilterChain{}
 	for _, matcher := range orderedFilterChainMatches {
 		configurer := FilterChainConfigurer{
-			APIVersion: c.APIVersion,
-			Protocol:   matcher.Protocol,
-			Port:       matcher.Port,
-			MatchType:  matcher.MatchType,
-			MatchValue: matcher.Value,
-			Routes:     matcher.Routes,
-			IsIPv6:     isIPv6,
+			APIVersion:        c.APIVersion,
+			InternalAddresses: c.InternalAddresses,
+			Protocol:          matcher.Protocol,
+			Port:              matcher.Port,
+			MatchType:         matcher.MatchType,
+			MatchValue:        matcher.Value,
+			Routes:            matcher.Routes,
+			IsIPv6:            isIPv6,
 		}
 		err := configurer.Configure(listener, clustersAccumulator)
 		if err != nil {

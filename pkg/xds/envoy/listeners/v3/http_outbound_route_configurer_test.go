@@ -30,7 +30,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(HttpConnectionManager(given.statsName, false)).
+					Configure(HttpConnectionManager(given.statsName, false, nil)).
 					Configure(HttpOutboundRoute(given.service, given.routes, given.dpTags)))).
 				Build()
 			// then
@@ -107,6 +107,12 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                             - name: backend-1
                               weight: 80
                   statPrefix: "127_0_0_1_18080"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
 		}),
@@ -262,6 +268,12 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           prefixRewrite: /another
                           timeout: 0s
                   statPrefix: "127_0_0_1_18080"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
 		}),
