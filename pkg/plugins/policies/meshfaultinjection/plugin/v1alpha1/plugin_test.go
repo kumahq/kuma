@@ -30,6 +30,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -90,6 +91,7 @@ var _ = Describe("MeshFaultInjection", func() {
 							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								listeners.HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
 									"backend",
 									envoy_common.Routes{
 										{

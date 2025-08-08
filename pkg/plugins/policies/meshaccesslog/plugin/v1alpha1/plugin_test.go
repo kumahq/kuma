@@ -43,6 +43,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -677,6 +678,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
 								"backend",
 								envoy_common.Routes{
 									{

@@ -11,6 +11,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -59,7 +60,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, true, nil)).
-					Configure(HttpInboundRoutes(given.service, given.routes)))).
+					Configure(HttpInboundRoutes(envoy_names.GetInboundRouteName(given.service), given.service, given.routes)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

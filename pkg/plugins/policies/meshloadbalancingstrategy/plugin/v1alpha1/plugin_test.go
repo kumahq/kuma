@@ -46,6 +46,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -259,6 +260,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("eds-cluster"),
 									"eds-cluster",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -274,6 +276,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("static-cluster"),
 								"static-cluster",
 								envoy_common.Routes{{
 									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -396,6 +399,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("eds-cluster"),
 									"eds-cluster",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -411,6 +415,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("static-cluster"),
 								"static-cluster",
 								envoy_common.Routes{{
 									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(

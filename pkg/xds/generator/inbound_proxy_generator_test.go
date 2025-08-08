@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/xds"
@@ -24,6 +25,7 @@ import (
 var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
 		dataplaneFile string
+		dataplaneMeta *model.DataplaneMetadata
 		expected      string
 		mode          mesh_proto.CertificateAuthorityBackend_Mode
 	}
@@ -203,7 +205,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 						},
 					},
 				},
-				Metadata: &model.DataplaneMetadata{},
+				Metadata: given.dataplaneMeta,
 				InternalAddresses: []model.InternalAddress{
 					{AddressPrefix: "100.64.0.0", PrefixLen: 16},
 					{AddressPrefix: "fc00::/7", PrefixLen: 128},
@@ -259,6 +261,11 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile: "7-dataplane.input.yaml",
 			expected:      "7-envoy-config.golden.yaml",
 			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
+		}),
+		Entry("08. transparent_proxying=false, ip_addresses=2, ports=2, unified", testCase{
+			dataplaneFile: "8-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:      "8-envoy-config.golden.yaml",
 		}),
 	)
 })
