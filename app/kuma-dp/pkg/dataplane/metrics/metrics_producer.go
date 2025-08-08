@@ -53,7 +53,7 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	appsToScrape = append(appsToScrape, ap.applicationsToScrape...)
 	ap.applicationsToScrapeMutex.Unlock()
 
-	out := make(chan *metricdata.ScopeMetrics, len(appsToScrape))
+	out := make(chan map[instrumentation.Scope][]metricdata.Metrics, len(appsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
 	wg.Add(len(appsToScrape))
@@ -79,17 +79,29 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	}
 }
 
-func combineMetrics(metrics <-chan *metricdata.ScopeMetrics) []metricdata.ScopeMetrics {
-	var combinedMetrics []metricdata.ScopeMetrics
-	for metric := range metrics {
-		if metric != nil {
-			combinedMetrics = append(combinedMetrics, *metric)
+func combineMetrics(metricsChan <-chan map[instrumentation.Scope][]metricdata.Metrics) []metricdata.ScopeMetrics {
+	aggregatedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
+	for scopedMetrics := range metricsChan {
+		for scope, metrics := range scopedMetrics {
+			if _, ok := aggregatedMetrics[scope]; !ok {
+				aggregatedMetrics[scope] = []metricdata.Metrics{}
+			}
+			aggregatedMetrics[scope] = append(aggregatedMetrics[scope], metrics...)
 		}
 	}
+
+	var combinedMetrics []metricdata.ScopeMetrics
+	for scope, metrics := range aggregatedMetrics {
+		combinedMetrics = append(combinedMetrics, metricdata.ScopeMetrics{
+			Scope:   scope,
+			Metrics: metrics,
+		})
+	}
+
 	return combinedMetrics
 }
 
-func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) *metricdata.ScopeMetrics {
+func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) map[instrumentation.Scope][]metricdata.Metrics {
 	req, err := http.NewRequest(http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), http.NoBody)
 	if err != nil {
 		log.Error(err, "failed to create request")
@@ -108,12 +120,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		log.Error(err, "failed to mutate metrics")
 		return nil
 	}
-	return &metricdata.ScopeMetrics{
-		Scope: instrumentation.Scope{
-			Name: app.Name,
-		},
-		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, app.ExtraLabels, requestTime),
-	}
+	return FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, app.ExtraLabels, requestTime)
 }
 
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {
