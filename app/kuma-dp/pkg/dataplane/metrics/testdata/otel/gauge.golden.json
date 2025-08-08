@@ -1,6 +1,159 @@
 [
   {
     "scope": {
+      "Name": "io.opentelemetry.contrib.mongodb",
+      "Version": "1.9.0",
+      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0",
+      "Attributes": [
+        {
+          "Key": "extra",
+          "Value": {
+            "Type": "STRING",
+            "Value": "test"
+          }
+        }
+      ]
+    },
+    "metrics": [
+      {
+        "Name": "custom_metric_with_scope",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 1
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 2
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 3
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "scope": {
       "Name": "kuma",
       "Version": "0.0.0",
       "SchemaURL": "",
@@ -1542,159 +1695,6 @@
               "StartTime": "0001-01-01T00:00:00Z",
               "Time": "2024-01-01T01:01:01.000000001Z",
               "Value": 39
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "scope": {
-      "Name": "io.opentelemetry.contrib.mongodb",
-      "Version": "1.9.0",
-      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0",
-      "Attributes": [
-        {
-          "Key": "extra",
-          "Value": {
-            "Type": "STRING",
-            "Value": "test"
-          }
-        }
-      ]
-    },
-    "metrics": [
-      {
-        "Name": "custom_metric_with_scope",
-        "Description": "",
-        "Unit": "",
-        "Data": {
-          "DataPoints": [
-            {
-              "Attributes": [
-                {
-                  "Key": "dataplane",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "dpp-1"
-                  }
-                },
-                {
-                  "Key": "extraLabel",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "test"
-                  }
-                },
-                {
-                  "Key": "mesh",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "default"
-                  }
-                },
-                {
-                  "Key": "name",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "access_log_sink"
-                  }
-                },
-                {
-                  "Key": "service",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "test-service"
-                  }
-                }
-              ],
-              "StartTime": "0001-01-01T00:00:00Z",
-              "Time": "2024-01-01T01:01:01.000000001Z",
-              "Value": 1
-            },
-            {
-              "Attributes": [
-                {
-                  "Key": "dataplane",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "dpp-1"
-                  }
-                },
-                {
-                  "Key": "extraLabel",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "test"
-                  }
-                },
-                {
-                  "Key": "mesh",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "default"
-                  }
-                },
-                {
-                  "Key": "name",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "ads_cluster"
-                  }
-                },
-                {
-                  "Key": "service",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "test-service"
-                  }
-                }
-              ],
-              "StartTime": "0001-01-01T00:00:00Z",
-              "Time": "2024-01-01T01:01:01.000000001Z",
-              "Value": 2
-            },
-            {
-              "Attributes": [
-                {
-                  "Key": "dataplane",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "dpp-1"
-                  }
-                },
-                {
-                  "Key": "extraLabel",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "test"
-                  }
-                },
-                {
-                  "Key": "mesh",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "default"
-                  }
-                },
-                {
-                  "Key": "name",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "demo-client"
-                  }
-                },
-                {
-                  "Key": "service",
-                  "Value": {
-                    "Type": "STRING",
-                    "Value": "test-service"
-                  }
-                }
-              ],
-              "StartTime": "0001-01-01T00:00:00Z",
-              "Time": "2024-01-01T01:01:01.000000001Z",
-              "Value": 3
             }
           ]
         }

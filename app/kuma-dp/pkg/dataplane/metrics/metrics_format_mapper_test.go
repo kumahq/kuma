@@ -52,5 +52,9 @@ func flatten(scoped map[instrumentation.Scope][]metricdata.Metrics) []Scoped {
 		})
 		out = append(out, Scoped{Scope: s, Metrics: ms})
 	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Scope.Name < out[j].Scope.Name
+	})
 	return out
 }
