@@ -660,6 +660,7 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10001
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"

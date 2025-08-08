@@ -1,0 +1,27 @@
+[settings]
+experimental = true # To enable installation of Go tools from source with mise.
+
+[tools]
+clang-format = "13.0.0"
+container-structure-test = "1.15.0"
+ginkgo = "2.20.2"
+golangci-lint = "1.60.3"
+hadolint = "2.12.0"
+helm = "3.18.0"
+helm-docs = "1.11.0"
+helm-cr = "1.7.0"
+k3d = "5.8.1"
+kind = "0.24.0"
+kubectl = "1.32.6"
+kube-linter = "0.6.8"
+protoc = "3.20.0"
+protoc-gen-go = "1.28.1"
+protoc-gen-go-grpc = "1.1.0"
+protoc-gen-validate = "1.2.1"
+shellcheck = "0.8.0"
+skaffold = "2.16.0"
+yq = "4.47.1"
+"go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
+"go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.16.3"
+"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250630142431-4c2e9cec2954"
+"go:github.com/deepmap/oapi-codegen/cmd/oapi-codegen" = "v1.15.0"
