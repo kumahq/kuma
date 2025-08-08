@@ -124,16 +124,14 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 		})
 		return conditions
 	}
-	if !mid.Status.IsInitialized() {
-		if err := provider.Initialize(ctx, mid); err != nil {
-			conditions = append(conditions, common_api.Condition{
-				Type:    meshidentity_api.ProviderConditionType,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  "ProviderInitializationError",
-				Message: err.Error(),
-			})
-			return conditions
-		}
+	if err := provider.Initialize(ctx, mid); err != nil {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.ProviderConditionType,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  "ProviderInitializationError",
+			Message: err.Error(),
+		})
+		return conditions
 	}
 	if err := provider.Validate(ctx, mid); err != nil {
 		conditions = append(conditions, common_api.Condition{

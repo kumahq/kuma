@@ -103,37 +103,43 @@ func (b *bundledIdentityProvider) Validate(ctx context.Context, identity *meshid
 
 func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
 	if pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
-		trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), b.zone)
-		if err != nil {
-			return err
-		}
-		b.logger.V(1).Info("initializing provider", "identity", model.MetaToResourceKey(identity.GetMeta()), "trustDomain", trustDomain)
-		keyPair, err := GenerateRootCA(trustDomain)
-		if err != nil {
-			return err
-		}
-		certSecret := &core_system.SecretResource{
-			Spec: &system_proto.Secret{
-				Data: util_proto.Bytes(keyPair.CertPEM),
-			},
-		}
-		mesh := identity.Meta.GetMesh()
-		if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(identity), core_store.CreateByKey(RootCAName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
-			if !core_store.IsAlreadyExists(err) {
+		if _, err := b.getCAKeyPair(ctx, identity, identity.Meta.GetMesh()); err != nil && core_store.IsNotFound(err) {
+			trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), b.zone)
+			if err != nil {
 				return err
 			}
-		}
-		keySecret := &core_system.SecretResource{
-			Spec: &system_proto.Secret{
-				Data: util_proto.Bytes(keyPair.KeyPEM),
-			},
-		}
-		if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(identity), core_store.CreateByKey(PrivateKeyName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
-			if !core_store.IsAlreadyExists(err) {
+			b.logger.V(1).Info("initializing provider", "identity", model.MetaToResourceKey(identity.GetMeta()), "trustDomain", trustDomain)
+			keyPair, err := GenerateRootCA(trustDomain)
+			if err != nil {
 				return err
 			}
+			certSecret := &core_system.SecretResource{
+				Spec: &system_proto.Secret{
+					Data: util_proto.Bytes(keyPair.CertPEM),
+				},
+			}
+			mesh := identity.Meta.GetMesh()
+			if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(identity), core_store.CreateByKey(RootCAName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
+				if !core_store.IsAlreadyExists(err) {
+					return err
+				}
+			}
+			keySecret := &core_system.SecretResource{
+				Spec: &system_proto.Secret{
+					Data: util_proto.Bytes(keyPair.KeyPEM),
+				},
+			}
+			if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(identity), core_store.CreateByKey(PrivateKeyName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
+				if !core_store.IsAlreadyExists(err) {
+					return err
+				}
+			}
+			b.logger.V(1).Info("initialized", "identity", model.MetaToResourceKey(identity.GetMeta()), "trustDomain", trustDomain)
+		} else if err != nil {
+			return err
+		} else {
+			b.logger.V(1).Info("provider already initialized", "identity", model.MetaToResourceKey(identity.GetMeta()))
 		}
-		b.logger.V(1).Info("initialized", "identity", model.MetaToResourceKey(identity.GetMeta()), "trustDomain", trustDomain)
 	}
 	return nil
 }
