@@ -818,6 +818,8 @@ coreResources:
     meshMultiZoneServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL
     # How often we compute status of MeshService
     meshServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL
+    # How often we compute status of MeshIdentity
+    meshIdentityInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
     - hostnamegenerators
     - meshexternalservices
