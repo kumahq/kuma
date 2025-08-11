@@ -66,6 +66,9 @@ func BuildRules(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 	for service, tags := range services {
 		// build artificial dpp for matching
 		dpTags := maps.Clone(tags)
+		if dpTags == nil {
+			dpTags = map[string]string{}
+		}
 		dpTags[mesh_proto.ServiceTag] = service
 		rl, ok, err := graph_util.ComputeMtpRulesForTags(dpTags, trimmedMtps)
 		if err != nil {
