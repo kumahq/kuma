@@ -140,9 +140,10 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 }
 
 func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy *core_xds.Proxy, localClusterName string, xdsCtx xds_context.Context, endpoint mesh_proto.InboundInterface, service string, routes *envoy_common.Routes, tlsVersion *tls.Version, ciphers []tls.TlsCipher) *envoy_listeners.FilterChainBuilder {
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	routeConfigName := envoy_names.GetInboundRouteName(service)
 	virtualHostName := service
-	if proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming) {
+	if unifiedNaming {
 		unifiedName := naming.ContextualInbound(endpoint.WorkloadPort)
 		routeConfigName = unifiedName
 		virtualHostName = unifiedName
@@ -176,7 +177,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 	}
 	if serverSideMTLS {
 		filterChainBuilder.
-			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers))
+			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, unifiedNaming))
 	}
 	return filterChainBuilder.
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))

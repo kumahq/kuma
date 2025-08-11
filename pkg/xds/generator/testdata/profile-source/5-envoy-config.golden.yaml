@@ -22,12 +22,12 @@ resources:
                   exact: spiffe://demo/db
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: mesh_ca:secret:demo
+              name: system_mtls_ca_demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:demo
+          - name: system_mtls_identity_demo
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -67,12 +67,12 @@ resources:
                   exact: spiffe://demo/elastic
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: mesh_ca:secret:demo
+              name: system_mtls_ca_demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:demo
+          - name: system_mtls_identity_demo
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -232,12 +232,12 @@ resources:
                     prefix: spiffe://demo/
                   sanType: URI
               validationContextSdsSecretConfig:
-                name: mesh_ca:secret:demo
+                name: system_mtls_ca_demo
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:demo
+            - name: system_mtls_identity_demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
