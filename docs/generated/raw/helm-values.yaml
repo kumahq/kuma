@@ -655,9 +655,9 @@ kubectl:
     # -- The kubectl image registry
     registry: docker.io
     # -- The kubectl image repository
-    repository: bitnami/kubectl
+    repository: rancher/kubectl
     # -- The kubectl image tag
-    tag: "1.27.5"
+    tag: "v1.27.16@sha256:51758d7dbafd9248757c11225ca6693f3cba570803431d0f0d6e917dd7667310"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
