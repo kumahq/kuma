@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	"github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -124,6 +125,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 }
 
 func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy *core_xds.Proxy, localClusterName string, xdsCtx xds_context.Context, endpoint mesh_proto.InboundInterface, service string, routes *envoy_common.Routes, tlsVersion *tls.Version, ciphers []tls.TlsCipher) *envoy_listeners.FilterChainBuilder {
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 	switch protocol {
 	// configuration for HTTP case
@@ -152,7 +154,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 	}
 	if serverSideMTLS {
 		filterChainBuilder.
-			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers))
+			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, unifiedNaming))
 	}
 	return filterChainBuilder.
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))

@@ -66,12 +66,19 @@ func NetworkDirectResponse(response string) FilterChainBuilderOpt {
 	})
 }
 
-func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker, tlsVersion *common_tls.Version, tlsCiphers []common_tls.TlsCipher) FilterChainBuilderOpt {
+func ServerSideMTLS(
+	mesh *core_mesh.MeshResource,
+	secrets core_xds.SecretsTracker,
+	tlsVersion *common_tls.Version,
+	tlsCiphers []common_tls.TlsCipher,
+	unifiedResourceNaming bool,
+) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh:           mesh,
-		SecretsTracker: secrets,
-		TlsVersion:     tlsVersion,
-		TlsCiphers:     tlsCiphers,
+		Mesh:                  mesh,
+		SecretsTracker:        secrets,
+		TlsVersion:            tlsVersion,
+		TlsCiphers:            tlsCiphers,
+		UnifiedResourceNaming: unifiedResourceNaming,
 	})
 }
 

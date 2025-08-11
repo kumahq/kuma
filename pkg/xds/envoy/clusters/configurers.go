@@ -24,7 +24,14 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(tracker core_xds.SecretsTracker, unifiedResourceNaming bool, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(
+	tracker core_xds.SecretsTracker,
+	unifiedResourceNaming bool,
+	mesh *core_mesh.MeshResource,
+	upstreamService string,
+	upstreamTLSReady bool,
+	tags []envoy_tags.Tags,
+) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:        tracker,
@@ -38,44 +45,69 @@ func ClientSideMTLS(tracker core_xds.SecretsTracker, unifiedResourceNaming bool,
 	})
 }
 
-func ClientSideMTLSCustomSNI(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, sni string) ClusterBuilderOpt {
+func ClientSideMTLSCustomSNI(
+	tracker core_xds.SecretsTracker,
+	unifiedResourceNaming bool,
+	mesh *core_mesh.MeshResource,
+	upstreamService string,
+	upstreamTLSReady bool,
+	sni string,
+) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        mesh,
-			Tags:             nil,
-			UpstreamTLSReady: upstreamTLSReady,
-			SNI:              sni,
+			SecretsTracker:        tracker,
+			UnifiedResourceNaming: unifiedResourceNaming,
+			UpstreamMesh:          mesh,
+			UpstreamService:       upstreamService,
+			LocalMesh:             mesh,
+			Tags:                  nil,
+			UpstreamTLSReady:      upstreamTLSReady,
+			SNI:                   sni,
 		})
 	})
 }
 
-func ClientSideMultiIdentitiesMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamTLSReady bool, sni string, identities []string) ClusterBuilderOpt {
+func ClientSideMultiIdentitiesMTLS(
+	tracker core_xds.SecretsTracker,
+	unifiedResourceNaming bool,
+	mesh *core_mesh.MeshResource,
+	upstreamTLSReady bool,
+	sni string,
+	identities []string,
+) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  "*",
-			LocalMesh:        mesh,
-			SNI:              sni,
-			Tags:             nil,
-			UpstreamTLSReady: upstreamTLSReady,
-			VerifyIdentities: identities,
+			SecretsTracker:        tracker,
+			UnifiedResourceNaming: unifiedResourceNaming,
+			UpstreamMesh:          mesh,
+			UpstreamService:       "*",
+			LocalMesh:             mesh,
+			SNI:                   sni,
+			Tags:                  nil,
+			UpstreamTLSReady:      upstreamTLSReady,
+			VerifyIdentities:      identities,
 		})
 	})
 }
 
-func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
+func CrossMeshClientSideMTLS(
+	tracker core_xds.SecretsTracker,
+	unifiedResourceNaming bool,
+	localMesh *core_mesh.MeshResource,
+	upstreamMesh *core_mesh.MeshResource,
+	upstreamService string,
+	upstreamTLSReady bool,
+	tags []envoy_tags.Tags,
+) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     upstreamMesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        localMesh,
-			Tags:             tags,
-			UpstreamTLSReady: upstreamTLSReady,
+			SecretsTracker:        tracker,
+			UnifiedResourceNaming: unifiedResourceNaming,
+			UpstreamMesh:          upstreamMesh,
+			UpstreamService:       upstreamService,
+			LocalMesh:             localMesh,
+			Tags:                  tags,
+			UpstreamTLSReady:      upstreamTLSReady,
 		})
 	})
 }
