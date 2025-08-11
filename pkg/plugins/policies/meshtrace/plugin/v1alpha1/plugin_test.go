@@ -192,7 +192,7 @@ var _ = Describe("MeshTrace", func() {
 				{
 					Address:  "127.0.0.1",
 					Port:     27777,
-					Resource: &backendMeshServiceIdentifier,
+					Resource: backendMeshServiceIdentifier,
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
