@@ -39,6 +39,7 @@ func (g *ExternalServicesGenerator) Generate(
 
 	g.addFilterChains(
 		apiVersion,
+		proxy.InternalAddresses,
 		destinations,
 		endpointMap,
 		meshResources,
@@ -134,6 +135,7 @@ func (*ExternalServicesGenerator) buildServices(
 
 func (g *ExternalServicesGenerator) addFilterChains(
 	apiVersion core_xds.APIVersion,
+	internalAddresses []core_xds.InternalAddress,
 	destinationsPerService map[string][]tags.Tags,
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
@@ -214,7 +216,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
+					Configure(envoy_listeners.HttpConnectionManager(serviceName, false, internalAddresses)).
 					Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[serviceName]...)).
 					Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[serviceName])).
 					Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, nil))

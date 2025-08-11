@@ -180,6 +180,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						KeyPEM:  []byte("keyPEM"),
 					},
 				},
+				InternalAddresses: []core_xds.InternalAddress{
+					{AddressPrefix: "10.8.0.0", PrefixLen: 16},
+				},
 			}
 
 			// when

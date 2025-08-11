@@ -76,6 +76,7 @@ var _ = Describe("MeshAccessLog", func() {
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
+				WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -89,7 +90,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -146,6 +147,12 @@ var _ = Describe("MeshAccessLog", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   routeConfig:
                     name: outbound:backend
                     validateClusters: false
@@ -761,7 +768,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -814,6 +821,12 @@ var _ = Describe("MeshAccessLog", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   routeConfig:
                     name: outbound:backend
                     validateClusters: false
@@ -842,7 +855,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"backend",
@@ -897,6 +910,12 @@ var _ = Describe("MeshAccessLog", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                      cidrRanges:
+                          - addressPrefix: 127.0.0.1
+                            prefixLen: 32
+                          - addressPrefix: ::1
+                            prefixLen: 128
                   routeConfig:
                     name: inbound:backend
                     validateClusters: false

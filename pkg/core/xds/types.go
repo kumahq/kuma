@@ -2,9 +2,12 @@ package xds
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -156,6 +159,8 @@ type Proxy struct {
 	RuntimeExtensions map[string]interface{}
 	// Zone the zone the proxy is in
 	Zone string
+	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
+	InternalAddresses []InternalAddress
 }
 
 type ServerSideMTLSCerts struct {
@@ -242,6 +247,41 @@ type CaSecret struct {
 type IdentitySecret struct {
 	PemCerts [][]byte
 	PemKey   []byte
+}
+
+type InternalAddress struct {
+	AddressPrefix string
+	PrefixLen     uint32
+}
+
+var LocalHostAddresses = []InternalAddress{
+	{AddressPrefix: "127.0.0.1", PrefixLen: 32},
+	{AddressPrefix: "::1", PrefixLen: 128},
+}
+
+func InternalAddressToEnvoyCIDRs(internalAddresses []InternalAddress) []*envoy_config_core.CidrRange {
+	var cidrRanges []*envoy_config_core.CidrRange
+	for _, internalAddressPool := range internalAddresses {
+		cidrRanges = append(cidrRanges, &envoy_config_core.CidrRange{
+			AddressPrefix: internalAddressPool.AddressPrefix,
+			PrefixLen:     &wrapperspb.UInt32Value{Value: internalAddressPool.PrefixLen},
+		})
+	}
+	return cidrRanges
+}
+
+func InternalAddressesFromCIDRs(cidrs []string) []InternalAddress {
+	var internalAddresses []InternalAddress
+	for _, cidr := range cidrs {
+		ip, ipNet, _ := net.ParseCIDR(cidr)
+
+		prefixLen, _ := ipNet.Mask.Size()
+		internalAddresses = append(internalAddresses, InternalAddress{
+			AddressPrefix: ip.String(),
+			PrefixLen:     uint32(prefixLen),
+		})
+	}
+	return internalAddresses
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

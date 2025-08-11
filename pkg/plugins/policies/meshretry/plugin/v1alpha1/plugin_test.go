@@ -784,7 +784,7 @@ func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
 func httpListener(port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager(fmt.Sprintf("outbound:127.0.0.1:%d", port), false)).
+			Configure(HttpConnectionManager(fmt.Sprintf("outbound:127.0.0.1:%d", port), false, nil)).
 			Configure(route))).
 		MustBuild()
 }
