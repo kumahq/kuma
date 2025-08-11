@@ -54,7 +54,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	// we only handle a case where there is one origin because
 	// we do not yet have a mechanism to name resources that have more than one origin https://github.com/kumahq/kuma/issues/13886
 	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
-		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshTraceType, ""))
+		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshTraceType))
 	}
 	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy, kriWithoutSection); err != nil {
 		return err
