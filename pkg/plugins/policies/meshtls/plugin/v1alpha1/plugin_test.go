@@ -40,6 +40,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -275,6 +276,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 					Configure(
 						listeners.HttpInboundRoutes(
+							envoy_names.GetInboundRouteName("backend"),
 							"backend",
 							envoy_common.Routes{
 								{
@@ -325,6 +327,7 @@ func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBui
 					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 					Configure(
 						listeners.HttpInboundRoutes(
+							envoy_names.GetInboundRouteName("backend"),
 							"backend",
 							envoy_common.Routes{
 								{

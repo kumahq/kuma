@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -29,6 +30,7 @@ type InboundProxyGenerator struct{}
 
 func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
 		// we do not create inbounds for serviceless
 		if endpoint.IsServiceLess() {
@@ -37,9 +39,14 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
+		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
+		if unifiedNaming {
+			localClusterName = unifiedName
+		}
+
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, localClusterName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
@@ -76,8 +83,16 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		// generate LDS resource
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
+		statPrefix := ""
+		if unifiedNaming {
+			service = unifiedName
+			inboundListenerName = unifiedName
+			statPrefix = unifiedName
+		}
 
-		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
+		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundListenerName).
+			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP)).
+			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 
@@ -126,6 +141,14 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 
 func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy *core_xds.Proxy, localClusterName string, xdsCtx xds_context.Context, endpoint mesh_proto.InboundInterface, service string, routes *envoy_common.Routes, tlsVersion *tls.Version, ciphers []tls.TlsCipher) *envoy_listeners.FilterChainBuilder {
 	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	routeConfigName := envoy_names.GetInboundRouteName(service)
+	virtualHostName := service
+	if unifiedNaming {
+		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
+		routeConfigName = unifiedName
+		virtualHostName = unifiedName
+	}
+
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 	switch protocol {
 	// configuration for HTTP case
@@ -135,7 +158,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
+			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
 	case core_mesh.ProtocolGRPC:
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
@@ -143,7 +166,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
+			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
 	case core_mesh.ProtocolKafka:
 		filterChainBuilder.
 			Configure(envoy_listeners.Kafka(localClusterName)).
