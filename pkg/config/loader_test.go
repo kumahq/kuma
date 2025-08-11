@@ -374,6 +374,8 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
+
+			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -751,6 +753,10 @@ tracing:
   openTelemetry:
     enabled: true
     endpoint: collector:4317
+ipam:
+  knownInternalCIDRs:
+  - 10.8.0.0/16
+  - 127.0.0.6/32
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1032,6 +1038,7 @@ tracing:
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
+				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 			},
 			yamlFileConfig: "",
 		}),

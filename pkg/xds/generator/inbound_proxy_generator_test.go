@@ -204,6 +204,11 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 				},
 				Metadata: &model.DataplaneMetadata{},
+				InternalAddresses: []model.InternalAddress{
+					{AddressPrefix: "100.64.0.0", PrefixLen: 16},
+					{AddressPrefix: "fc00::/7", PrefixLen: 128},
+					{AddressPrefix: "::1/128", PrefixLen: 128},
+				},
 			}
 
 			// when

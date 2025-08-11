@@ -1,0 +1,11 @@
+resources:
+- name: mesh-1:eds-cluster
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_eds-cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: mesh-1:eds-cluster
+    type: EDS
