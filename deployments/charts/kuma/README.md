@@ -191,8 +191,8 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
-| kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.27.5"` | The kubectl image tag |
+| kubectl.image.repository | string | `"rancher/kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"v1.27.16@sha256:51758d7dbafd9248757c11225ca6693f3cba570803431d0f0d6e917dd7667310"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
