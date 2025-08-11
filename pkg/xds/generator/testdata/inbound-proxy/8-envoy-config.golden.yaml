@@ -1,10 +1,10 @@
 resources:
-- name: self_inbound_8080
+- name: self_inbound_dp_8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     loadAssignment:
-      clusterName: self_inbound_8080
+      clusterName: self_inbound_dp_8080
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -12,7 +12,7 @@ resources:
               socketAddress:
                 address: 192.168.0.2
                 portValue: 8080
-    name: self_inbound_8080
+    name: self_inbound_dp_8080
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -21,12 +21,12 @@ resources:
           idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
-- name: self_inbound_8443
+- name: self_inbound_dp_8443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     loadAssignment:
-      clusterName: self_inbound_8443
+      clusterName: self_inbound_dp_8443
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -34,9 +34,9 @@ resources:
               socketAddress:
                 address: 192.168.0.2
                 portValue: 8443
-    name: self_inbound_8443
+    name: self_inbound_dp_8443
     type: STATIC
-- name: self_inbound_8080
+- name: self_inbound_dp_8080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -50,7 +50,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
-          statPrefix: self_inbound_8080.
+          statPrefix: self_inbound_dp_8080.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -70,23 +70,23 @@ resources:
             - addressPrefix: ::1/128
               prefixLen: 128
           routeConfig:
-            name: self_inbound_8080
+            name: self_inbound_dp_8080
             requestHeadersToRemove:
             - x-kuma-tags
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: self_inbound_8080
+              name: self_inbound_dp_8080
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: self_inbound_8080
+                  cluster: self_inbound_dp_8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: self_inbound_8080
+          statPrefix: self_inbound_dp_8080
           streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -115,10 +115,10 @@ resources:
         io.kuma.tags:
           kuma.io/protocol: http
           kuma.io/service: backend3
-    name: self_inbound_8080
-    statPrefix: self_inbound_8080
+    name: self_inbound_dp_8080
+    statPrefix: self_inbound_dp_8080
     trafficDirection: INBOUND
-- name: self_inbound_8443
+- name: self_inbound_dp_8443
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -132,13 +132,13 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
-          statPrefix: self_inbound_8443.
+          statPrefix: self_inbound_dp_8443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: self_inbound_8443
+          cluster: self_inbound_dp_8443
           idleTimeout: 7200s
-          statPrefix: self_inbound_8443
+          statPrefix: self_inbound_dp_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -165,6 +165,6 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/service: backend4
-    name: self_inbound_8443
-    statPrefix: self_inbound_8443
+    name: self_inbound_dp_8443
+    statPrefix: self_inbound_dp_8443
     trafficDirection: INBOUND

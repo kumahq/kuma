@@ -83,12 +83,12 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: self_inbound_8080
+- name: self_inbound_dp_8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     loadAssignment:
-      clusterName: self_inbound_8080
+      clusterName: self_inbound_dp_8080
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -96,7 +96,7 @@ resources:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-    name: self_inbound_8080
+    name: self_inbound_dp_8080
     type: STATIC
 - name: system_envoy_admin
   resource:
@@ -199,7 +199,7 @@ resources:
           kuma.io/service: elastic
     name: outbound:127.0.0.1:59200
     trafficDirection: OUTBOUND
-- name: self_inbound_8080
+- name: self_inbound_dp_8080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -213,13 +213,13 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
-          statPrefix: self_inbound_8080.
+          statPrefix: self_inbound_dp_8080.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: self_inbound_8080
+          cluster: self_inbound_dp_8080
           idleTimeout: 7200s
-          statPrefix: self_inbound_8080
+          statPrefix: self_inbound_dp_8080
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -246,8 +246,8 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/service: backend
-    name: self_inbound_8080
-    statPrefix: self_inbound_8080
+    name: self_inbound_dp_8080
+    statPrefix: self_inbound_dp_8080
     trafficDirection: INBOUND
 - name: system_envoy_admin
   resource:
