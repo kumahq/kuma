@@ -28,12 +28,13 @@ import (
 type ProxyConfig map[string]interface{}
 
 type ProxyConfigInspector struct {
-	zone              string
-	meshContext       xds_context.MeshContext
-	snapshotGenerator *v3.TemplateSnapshotGenerator
+	zone                   string
+	meshContext            xds_context.MeshContext
+	snapshotGenerator      *v3.TemplateSnapshotGenerator
+	knownInternalAddresses []string
 }
 
-func NewProxyConfigInspector(meshContext xds_context.MeshContext, zone string, hooks ...xds_hooks.ResourceSetHook) (*ProxyConfigInspector, error) {
+func NewProxyConfigInspector(meshContext xds_context.MeshContext, zone string, knownInternalAddresses []string, hooks ...xds_hooks.ResourceSetHook) (*ProxyConfigInspector, error) {
 	return &ProxyConfigInspector{
 		zone:        zone,
 		meshContext: meshContext,
@@ -41,14 +42,16 @@ func NewProxyConfigInspector(meshContext xds_context.MeshContext, zone string, h
 			ResourceSetHooks:      hooks,
 			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		},
+		knownInternalAddresses: knownInternalAddresses,
 	}, nil
 }
 
 func (p *ProxyConfigInspector) Get(ctx context.Context, name string, shadow bool) (ProxyConfig, error) {
 	proxyBuilder := &sync.DataplaneProxyBuilder{
-		Zone:          p.zone,
-		APIVersion:    envoy.APIV3,
-		IncludeShadow: shadow,
+		Zone:              p.zone,
+		APIVersion:        envoy.APIV3,
+		IncludeShadow:     shadow,
+		InternalAddresses: core_xds.InternalAddressesFromCIDRs(p.knownInternalAddresses),
 	}
 
 	proxy, err := proxyBuilder.Build(ctx, model.ResourceKey{Name: name, Mesh: p.mesh()}, p.meshContext)
