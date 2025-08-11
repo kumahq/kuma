@@ -497,6 +497,7 @@ func configureTLS(
 		downstream, err = envoy_tls_v3.CreateDownstreamTlsContext(
 			listener.Proxy.SecretsTracker.RequestAllInOneCa(),
 			listener.Proxy.SecretsTracker.RequestIdentityCert(),
+			false,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")
