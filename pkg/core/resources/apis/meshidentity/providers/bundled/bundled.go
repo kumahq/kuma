@@ -322,7 +322,7 @@ func generateKey(caPrivateKey crypto.PrivateKey) (crypto.PublicKey, crypto.Priva
 		privateKey = priv
 
 	case *rsa.PrivateKey:
-		priv, err := rsa.GenerateKey(rand.Reader, DefaultKeySize)
+		priv, err := rsa.GenerateKey(rand.Reader, defaultKeySize)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to generate rsa key: %w", err)
 		}
@@ -353,7 +353,7 @@ func init() {
 func isSelfSigned(certPEM []byte) (bool, error) {
 	block, _ := pem.Decode(certPEM)
 	if block == nil || block.Type != "CERTIFICATE" {
-		return false, errors.New("failed to decode PEM certificate")
+		return false, errors.New("failed to decode PEM block or block is not of type CERTIFICATE")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {

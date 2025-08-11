@@ -48,22 +48,13 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
-
-func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshHTTPRoute", func() {
 	backendMeshServiceIdentifier := kri.Identifier{
@@ -109,11 +100,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
 
-			Expect(getResource(resourceSet, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
-			Expect(getResource(resourceSet, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
-			Expect(getResource(resourceSet, envoy_resource.EndpointType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
-			Expect(getResource(resourceSet, envoy_resource.RouteType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".routes.golden.yaml")))
-			Expect(getResource(resourceSet, envoy_resource.SecretType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".secrets.golden.yaml")))
+			resource, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.EndpointType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.RouteType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".routes.golden.yaml")))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.SecretType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".secrets.golden.yaml")))
 		},
 		Entry("default-route", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
