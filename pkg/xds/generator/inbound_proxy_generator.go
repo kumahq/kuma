@@ -39,7 +39,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
-		unifiedName := naming.ContextualInbound(endpoint.WorkloadPort)
+		unifiedName := naming.ContextualInboundName(endpoint.WorkloadPort)
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
@@ -144,7 +144,7 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 	routeConfigName := envoy_names.GetInboundRouteName(service)
 	virtualHostName := service
 	if unifiedNaming {
-		unifiedName := naming.ContextualInbound(endpoint.WorkloadPort)
+		unifiedName := naming.ContextualInboundName(endpoint.WorkloadPort)
 		routeConfigName = unifiedName
 		virtualHostName = unifiedName
 	}
