@@ -31,6 +31,8 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
@@ -49,6 +51,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
+							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -60,7 +63,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
-							proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
+							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
@@ -93,7 +96,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -116,13 +119,14 @@ func GenerateClusters(
 						}
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 							proxy.SecretsTracker,
+							unifiedNaming,
 							meshCtx.Resource,
 							tlsReady,
 							SniForBackendRef(realResourceRef, meshCtx, systemNamespace),
 							ServiceTagIdentities(realResourceRef, meshCtx),
 						))
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, meshCtx.Resource, serviceName, tlsReady, clusterTags))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags))
 					}
 				}
 			}
