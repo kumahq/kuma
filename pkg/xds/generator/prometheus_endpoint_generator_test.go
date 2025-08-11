@@ -456,6 +456,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 					WorkDir: "/tmp",
 				},
+				// internal addresses are set to "localhost" addresses to the "prometheus" listener
+				InternalAddresses: DummyInternalAddresses,
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
 		}),

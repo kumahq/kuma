@@ -17,7 +17,7 @@ var _ = Describe("gRPCStatsConfigurer", func() {
 		func(given testCase) {
 			// when
 			filterChain, err := NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-				Configure(HttpConnectionManager("stats", false)).
+				Configure(HttpConnectionManager("stats", false, nil)).
 				Configure(GrpcStats()).
 				Build()
 			// then
@@ -42,7 +42,13 @@ var _ = Describe("gRPCStatsConfigurer", func() {
                 - name: envoy.filters.http.router
                   typedConfig:
                     '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                statPrefix: stats`,
+                statPrefix: stats
+                internalAddressConfig:
+                  cidrRanges:
+                    - addressPrefix: 127.0.0.1
+                      prefixLen: 32
+                    - addressPrefix: ::1
+                      prefixLen: 128`,
 		}),
 	)
 })

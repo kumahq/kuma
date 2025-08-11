@@ -124,6 +124,12 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            internalAddressConfig:
+              cidrRanges:
+              - addressPrefix: 127.0.0.1
+                prefixLen: 32
+              - addressPrefix: ::1
+                prefixLen: 128
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -186,6 +192,12 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            internalAddressConfig:
+              cidrRanges:
+              - addressPrefix: 127.0.0.1
+                prefixLen: 32
+              - addressPrefix: ::1
+                prefixLen: 128
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -248,6 +260,12 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            internalAddressConfig:
+              cidrRanges:
+              - addressPrefix: 127.0.0.1
+                prefixLen: 32
+              - addressPrefix: ::1
+                prefixLen: 128
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT

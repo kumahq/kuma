@@ -159,6 +159,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						}},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithInternalAddresses(xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
 					Build(),
 			}
 		}()),

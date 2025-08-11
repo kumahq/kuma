@@ -824,6 +824,15 @@ ipam:
     cidr: 243.0.0.0/8 # ENV: KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR
   # Interval on which Kuma will allocate new IPs for MeshServices and MeshExternalServices
   allocationInterval: 5s # ENV: KUMA_IPAM_ALLOCATION_INTERVAL
+  # Contains a list of CIDRs which are considered internal and trusted, Envoy attaches internal only headers to requests from these clients when forwarding HTTP requests
+  knownInternalCIDRs: # ENV: KUMA_IPAM_KNOWN_INTERNAL_CIDRS
+    - 10.0.0.0/8
+    - 192.168.0.0/16
+    - 172.16.0.0/12
+    - fc00::/7
+    - fd00::/8
+    - 127.0.0.1/32
+    - ::1/128
 meshService:
   # How often we check whether MeshServices need to be generated from Dataplanes
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
