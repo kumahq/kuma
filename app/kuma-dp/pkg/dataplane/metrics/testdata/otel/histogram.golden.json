@@ -1,1068 +1,2162 @@
 [
   {
-    "Name": "envoy_cluster_upstream_cx_connect_ms",
-    "Description": "",
-    "Unit": "",
-    "Data": {
-      "DataPoints": [
+    "scope": {
+      "Name": "io.opentelemetry.contrib.mongodb",
+      "Version": "1.9.0",
+      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0",
+      "Attributes": [
         {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "access_log_sink"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "ads_cluster"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 1,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 20.5
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "demo-client"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 4,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            3,
-            3,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 27.65
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 4,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            3,
-            3,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 30.65
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 4,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            3,
-            3,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 27.65
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "kuma_envoy_admin"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "localhost_3000"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 0,
-          "Bounds": [
-            0.5,
-            1,
-            5,
-            10,
-            25,
-            50,
-            100,
-            250,
-            500,
-            1000,
-            2500,
-            5000,
-            10000,
-            30000,
-            60000,
-            300000,
-            600000,
-            1800000,
-            3600000
-          ],
-          "BucketCounts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ],
-          "Min": null,
-          "Max": null,
-          "Sum": 0
+          "Key": "extra",
+          "Value": {
+            "Type": "STRING",
+            "Value": "test"
+          }
         }
-      ],
-      "Temporality": "CumulativeTemporality"
-    }
+      ]
+    },
+    "metrics": [
+      {
+        "Name": "scoped_envoy_cluster_upstream_cx_connect_ms",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 1,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 20.5
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 4,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 27.65
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 4,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 30.65
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 4,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 27.65
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "kuma_envoy_admin"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "localhost_3000"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            }
+          ],
+          "Temporality": "CumulativeTemporality"
+        }
+      }
+    ]
+  },
+  {
+    "scope": {
+      "Name": "kuma",
+      "Version": "0.0.0",
+      "SchemaURL": "",
+      "Attributes": null
+    },
+    "metrics": [
+      {
+        "Name": "envoy_cluster_upstream_cx_connect_ms",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 1,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 20.5
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 4,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 27.65
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 4,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 30.65
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 4,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 27.65
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "kuma_envoy_admin"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "localhost_3000"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Bounds": [
+                0.5,
+                1,
+                5,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+                1000,
+                2500,
+                5000,
+                10000,
+                30000,
+                60000,
+                300000,
+                600000,
+                1800000,
+                3600000
+              ],
+              "BucketCounts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "Min": null,
+              "Max": null,
+              "Sum": 0
+            }
+          ],
+          "Temporality": "CumulativeTemporality"
+        }
+      }
+    ]
   }
 ]

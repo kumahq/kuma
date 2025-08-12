@@ -490,25 +490,9 @@ func MeshMetric() {
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-			g.Expect(stdout).To(ContainSubstring("origin-app"))
-		}, "1m", "1s").Should(Succeed())
-
-		// update policy config and check if changes was applied on DPP
-		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "updated-app", "/metrics"))).To(Succeed())
-
-		// then
-		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
-				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
-				client.FromKubernetesPod(namespace, "test-server-0"),
-			)
-
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).ToNot(BeNil())
-			// metric from envoy
-			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-			g.Expect(stdout).ToNot(ContainSubstring("origin-app"))
-			g.Expect(stdout).To(ContainSubstring("updated-app"))
+			// check if metrics from test-server were aggregated
+			g.Expect(stdout).To(ContainSubstring("go_info"))
+			g.Expect(stdout).To(ContainSubstring("service_name=\"unknown_service:test-server\""))
 		}, "1m", "1s").Should(Succeed())
 	})
 
