@@ -191,7 +191,8 @@ func EnsureInstallSuccessful(ctx context.Context, c testcontainers.Container, pa
 
 	if params.EchoStdin != "" {
 		scriptPath := "/install.sh"
-		script := []byte(fmt.Sprintf(`echo %q | %s`, params.EchoStdin, strings.Join(cmd, " ")))
+		//nolint:gocritic // we need "%s" for correct shell quoting
+		script := []byte(fmt.Sprintf(`echo "%s" | %s`, params.EchoStdin, strings.Join(cmd, " ")))
 		cmd = []string{"sh", "-c", scriptPath}
 
 		Expect(c.CopyToContainer(ctx, script, scriptPath, 0o700)).To(Succeed())

@@ -40,24 +40,16 @@ import (
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
-
-func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
 	backendMeshServiceIdentifier := kri.Identifier{
@@ -86,9 +78,15 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
 
-			Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
-			Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
-			Expect(getResource(resources, envoy_resource.EndpointType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
+			resource, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
+			resource, err = util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
+			resource, err = util_yaml.GetResourcesToYaml(resources, envoy_resource.EndpointType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
 		},
 		Entry("basic", testCase{
 			resources: []core_xds.Resource{
@@ -259,6 +257,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("eds-cluster"),
 									"eds-cluster",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -274,6 +273,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("static-cluster"),
 								"static-cluster",
 								envoy_common.Routes{{
 									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -396,6 +396,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("eds-cluster"),
 									"eds-cluster",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -411,6 +412,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("static-cluster"),
 								"static-cluster",
 								envoy_common.Routes{{
 									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -1455,14 +1457,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			// then
-			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.clusters.golden.yaml", given.name))))
-			Expect(getResource(generatedResources, envoy_resource.EndpointType)).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.endpoints.golden.yaml", given.name))))
-			Expect(getResource(generatedResources, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listeners.golden.yaml", given.name))))
-			Expect(getResource(generatedResources, envoy_resource.RouteType)).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
+			resource, err := util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listeners.golden.yaml", given.name))))
+			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.clusters.golden.yaml", given.name))))
+			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.EndpointType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.endpoints.golden.yaml", given.name))))
+			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.RouteType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster", gatewayTestCase{
 			name:          "basic",
