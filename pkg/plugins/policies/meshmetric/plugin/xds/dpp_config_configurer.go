@@ -32,7 +32,7 @@ func (dcc *DppConfigConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_
 						Path:       "/",
 						StatusCode: 200,
 						Response:   string(marshal),
-					}}),
+					}}, core_xds.LocalHostAddresses),
 				),
 		)).
 		Build()
