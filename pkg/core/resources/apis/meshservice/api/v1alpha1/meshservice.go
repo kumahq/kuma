@@ -88,11 +88,12 @@ type MeshServiceStatus struct {
 	DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=ServiceTag
+// +kubebuilder:validation:Enum=ServiceTag;SpiffeID
 type MeshServiceIdentityType string
 
 const (
 	MeshServiceIdentityServiceTagType = "ServiceTag"
+	MeshServiceIdentitySpiffeIDType   = "SpiffeID"
 )
 
 type MeshServiceIdentity struct {

@@ -8,14 +8,18 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -68,12 +72,82 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
+	It("should add identity to status of service based on MeshIdentity", func() {
+		// when
+		mid := builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
+			MatchLabels: &map[string]string{
+				"app": "test",
+			},
+		}).WithInitializedStatus().Build()
+		trustDomain := "test.east.mesh.local"
+		Expect(samples.MeshServiceBackendBuilder().Create(resManager)).To(Succeed())
+		Expect(builders.MeshTrust().WithTrustDomain(trustDomain).Create(resManager)).To(Succeed())
+		Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "default"))).To(Succeed())
+		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("default").Build(), store.CreateByKey("dp-1", "default"), store.CreateWithLabels(map[string]string{
+			metadata.KumaServiceAccount: "default",
+			mesh_proto.KubeNamespaceTag: "my-ns",
+			"app":                       "test",
+		}))).To(Succeed())
+		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
+
+		// then
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+					Value: "spiffe://default.east.mesh.local/ns/my-ns/sa/default",
+				},
+			}))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should add identity to status of service based on MeshIdentity and old mTLS", func() {
+		// when
+		mid := builders.MeshIdentity().WithBundled().WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
+			MatchLabels: &map[string]string{
+				"app": "test",
+			},
+		}).WithInitializedStatus().Build()
+		trustDomain := "tls-mesh.east.mesh.local"
+
+		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.MeshServiceBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(builders.MeshTrust().WithMesh("tls-mesh").WithTrustDomain(trustDomain).Create(resManager)).To(Succeed())
+		Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "tls-mesh"))).To(Succeed())
+		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("tls-mesh").Build(), store.CreateByKey("dp-1", "tls-mesh"), store.CreateWithLabels(map[string]string{
+			metadata.KumaServiceAccount: "default",
+			mesh_proto.KubeNamespaceTag: "my-ns",
+			"app":                       "test",
+		}))).To(Succeed())
+		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
+
+		// then
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: "backend",
+				},
+				{
+					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+					Value: "spiffe://tls-mesh.east.mesh.local/ns/my-ns/sa/default",
+				},
+			}))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
 	It("should not override identity to status of service from another zone", func() {
 		// when
 		Expect(samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{
-				v1alpha1.ZoneTag:             "west",
-				v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+				mesh_proto.ZoneTag:             "west",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			}).
 			AddServiceTagIdentity("backend").
 			Create(resManager)).To(Succeed())
@@ -95,6 +169,9 @@ var _ = Describe("Updater", func() {
 
 	type testCase struct {
 		meshBuilder            *builders.MeshBuilder
+		meshIdentities         []*meshidentity_api.MeshIdentityResource
+		meshTrusts             []*meshtrust_api.MeshTrustResource
+		dppLabels              map[string]string
 		dpInsightIssuedBackend string
 		dpInsightMissing       bool
 		existingTLSStatus      meshservice_api.TLSStatus
@@ -105,7 +182,13 @@ var _ = Describe("Updater", func() {
 		func(given testCase) {
 			// given
 			Expect(given.meshBuilder.WithName("test").Create(resManager)).To(Succeed())
-			Expect(samples.DataplaneBackendBuilder().WithMesh("test").Create(resManager)).To(Succeed())
+			for _, mid := range given.meshIdentities {
+				Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "test"))).To(Succeed())
+			}
+			for _, mt := range given.meshTrusts {
+				Expect(resManager.Create(context.TODO(), mt, store.CreateByKey(mt.Meta.GetName(), "test"))).To(Succeed())
+			}
+			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(given.dppLabels))).To(Succeed())
 			if !given.dpInsightMissing {
 				Expect(samples.DataplaneInsightBackendBuilder().
 					WithMesh("test").
@@ -159,6 +242,86 @@ var _ = Describe("Updater", func() {
 			existingTLSStatus:      "",
 			expectedTLSStatus:      meshservice_api.TLSNotReady,
 		}),
+		Entry("should set TLS to Ready when there is MeshIdentity and Trust", testCase{
+			meshBuilder: samples.MeshDefaultBuilder(),
+			meshIdentities: []*meshidentity_api.MeshIdentityResource{
+				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
+					MatchLabels: &map[string]string{
+						"app": "test",
+					},
+				}).WithInitializedStatus().Build(),
+			},
+			meshTrusts: []*meshtrust_api.MeshTrustResource{
+				builders.MeshTrust().WithTrustDomain("test.east.mesh.local").Build(),
+			},
+			dppLabels: map[string]string{
+				"app":                         "test",
+				"k8s.kuma.io/service-account": "default",
+			},
+			dpInsightIssuedBackend: "",
+			existingTLSStatus:      "",
+			expectedTLSStatus:      meshservice_api.TLSReady,
+		}),
+		Entry("should set TLS to NotReady when there is no matching MeshIdentity", testCase{
+			meshBuilder: samples.MeshDefaultBuilder(),
+			meshIdentities: []*meshidentity_api.MeshIdentityResource{
+				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
+					MatchLabels: &map[string]string{
+						"app": "not-existing",
+					},
+				}).WithInitializedStatus().Build(),
+			},
+			meshTrusts: []*meshtrust_api.MeshTrustResource{
+				builders.MeshTrust().WithTrustDomain("test.east.mesh.local").Build(),
+			},
+			dppLabels: map[string]string{
+				"app":                         "test",
+				"k8s.kuma.io/service-account": "default",
+			},
+			dpInsightIssuedBackend: "",
+			existingTLSStatus:      "",
+			expectedTLSStatus:      meshservice_api.TLSNotReady,
+		}),
+		Entry("should set TLS to NotReady when there is no MeshTrust for identity", testCase{
+			meshBuilder: samples.MeshDefaultBuilder(),
+			meshIdentities: []*meshidentity_api.MeshIdentityResource{
+				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
+					MatchLabels: &map[string]string{
+						"app": "test",
+					},
+				}).WithInitializedStatus().Build(),
+			},
+			meshTrusts: []*meshtrust_api.MeshTrustResource{
+				builders.MeshTrust().WithTrustDomain("not-existing.east.mesh.local").Build(),
+			},
+			dppLabels: map[string]string{
+				"app":                         "test",
+				"k8s.kuma.io/service-account": "default",
+			},
+			dpInsightIssuedBackend: "",
+			existingTLSStatus:      "",
+			expectedTLSStatus:      meshservice_api.TLSNotReady,
+		}),
+		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs with MeshIdentity", testCase{
+			meshBuilder: samples.MeshDefaultBuilder(),
+			meshIdentities: []*meshidentity_api.MeshIdentityResource{
+				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
+					MatchLabels: &map[string]string{
+						"app": "test",
+					},
+				}).WithInitializedStatus().Build(),
+			},
+			meshTrusts: []*meshtrust_api.MeshTrustResource{
+				builders.MeshTrust().WithTrustDomain("test.east.mesh.local").Build(),
+			},
+			dppLabels: map[string]string{
+				"app":                         "test",
+				"k8s.kuma.io/service-account": "default",
+			},
+			dpInsightIssuedBackend: "",
+			existingTLSStatus:      meshservice_api.TLSReady,
+			expectedTLSStatus:      meshservice_api.TLSReady,
+		}),
 	)
 
 	type dpProxiesTestCase struct {
@@ -211,12 +374,12 @@ var _ = Describe("Updater", func() {
 			insights: []*builders.DataplaneInsightBuilder{
 				samples.DataplaneInsightBackendBuilder().
 					WithName("dp-connected").
-					AddSubscription(&v1alpha1.DiscoverySubscription{
+					AddSubscription(&mesh_proto.DiscoverySubscription{
 						ConnectTime: proto.MustTimestampProto(time.Now()),
 					}),
 				samples.DataplaneInsightBackendBuilder().
 					WithName("dp-disconnected").
-					AddSubscription(&v1alpha1.DiscoverySubscription{
+					AddSubscription(&mesh_proto.DiscoverySubscription{
 						ConnectTime:    proto.MustTimestampProto(time.Now()),
 						DisconnectTime: proto.MustTimestampProto(time.Now()),
 					}),
@@ -244,15 +407,15 @@ var _ = Describe("Updater", func() {
 					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
 					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
 					With(func(resource *core_mesh.DataplaneResource) {
-						resource.Spec.Networking.Inbound[0].State = v1alpha1.Dataplane_Networking_Inbound_NotReady
+						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}),
 				builders.Dataplane().
 					WithName("dp-no-inbounds-healthy").
 					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
 					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
 					With(func(resource *core_mesh.DataplaneResource) {
-						resource.Spec.Networking.Inbound[0].State = v1alpha1.Dataplane_Networking_Inbound_NotReady
-						resource.Spec.Networking.Inbound[1].State = v1alpha1.Dataplane_Networking_Inbound_NotReady
+						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
+						resource.Spec.Networking.Inbound[1].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}),
 			},
 			expectedState: meshservice_api.StateAvailable,
