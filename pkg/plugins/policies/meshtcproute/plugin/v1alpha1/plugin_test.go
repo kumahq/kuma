@@ -47,25 +47,13 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshTCPRoute", func() {
 	backendMeshServiceIdentifier := kri.Identifier{
@@ -236,12 +224,15 @@ var _ = Describe("MeshTCPRoute", func() {
 				name+".endpoints.golden.yaml",
 			)
 
-			Expect(getResource(resourceSet, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(listenersGolden))
-			Expect(getResource(resourceSet, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(clustersGolden))
-			Expect(getResource(resourceSet, envoy_resource.EndpointType)).
-				To(matchers.MatchGoldenYAML(endpointsGolden))
+			resource, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(listenersGolden))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(clustersGolden))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.EndpointType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(endpointsGolden))
 		},
 
 		Entry("split-traffic", func() outboundsTestCase {

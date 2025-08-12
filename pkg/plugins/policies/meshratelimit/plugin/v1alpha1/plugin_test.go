@@ -106,6 +106,7 @@ var _ = Describe("MeshRateLimit", func() {
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
 									"backend",
 									envoy_common.Routes{
 										{
@@ -237,6 +238,7 @@ var _ = Describe("MeshRateLimit", func() {
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
 									"backend",
 									envoy_common.Routes{
 										{
@@ -424,6 +426,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
 								"backend",
 								envoy_common.Routes{
 									{
@@ -517,6 +520,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
 								"backend",
 								envoy_common.Routes{
 									{
