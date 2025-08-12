@@ -90,7 +90,7 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 
 	return &xds.WorkloadIdentity{
 		KRI:                        kri.From(identity),
-		ManageType:                 xds.ExternalManagedType,
+		ManagementMode:             xds.ExternalManagementMode,
 		IdentitySourceConfigurer:   sourceConfigurer(spiffeID),
 		ValidationSourceConfigurer: sourceConfigurer(FederatedCASecretName),
 		AdditionalResources:        resources,

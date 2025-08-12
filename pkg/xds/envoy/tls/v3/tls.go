@@ -15,14 +15,18 @@ import (
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections
 // It verifies that incoming connection has TLS certificate signed by Mesh CA with URI SAN of prefix spiffe://{mesh_name}/
 // It secures inbound listener with certificate of "identity_cert" that will be received from the SDS (it contains URI SANs of all inbounds).
-func CreateDownstreamTlsContext(downstreamMesh core_xds.CaRequest, mesh core_xds.IdentityCertRequest) (*envoy_tls.DownstreamTlsContext, error) {
+func CreateDownstreamTlsContext(
+	downstreamMesh core_xds.CaRequest,
+	mesh core_xds.IdentityCertRequest,
+	unifiedResourceNaming bool,
+) (*envoy_tls.DownstreamTlsContext, error) {
 	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := downstreamMesh.MeshName()
 	for _, meshName := range meshNames {
 		validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
 	}
 
-	commonTlsContext := createCommonTlsContext(mesh, downstreamMesh, validationSANMatchers, false)
+	commonTlsContext := createCommonTlsContext(mesh, downstreamMesh, validationSANMatchers, unifiedResourceNaming)
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext:         commonTlsContext,
 		RequireClientCertificate: util_proto.Bool(true),

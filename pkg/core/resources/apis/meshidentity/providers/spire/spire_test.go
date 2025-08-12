@@ -78,7 +78,7 @@ var _ = Describe("Spire Providers Test", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identity.KRI).To(Equal(kri.From(meshIdentity)))
-			Expect(identity.ManageType).To(Equal(core_xds.ExternalManagedType))
+			Expect(identity.ManagementMode).To(Equal(core_xds.ExternalManagementMode))
 			// we don't manage secrets
 			Expect(identity.ExpirationTime).To(BeNil())
 			Expect(identity.GenerationTime).To(BeNil())
