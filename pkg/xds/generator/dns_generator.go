@@ -49,6 +49,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 			vips[domain] = addresses
 		}
 	}
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
 		// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
 		// https://github.com/kumahq/kuma/issues/13463
@@ -67,7 +68,6 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 		if err != nil {
 			return nil, err
 		}
-		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 		err = dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes)
 		if err != nil {
 			return nil, err
@@ -82,7 +82,12 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 			uint32(tp.Redirect.DNS.Port),
 			core_xds.SocketAddressProtocolUDP,
 		).
-		WithOverwriteName(names.GetDNSListenerName()).
+		WithOverwriteName(
+			getNameOrDefault(
+				core_system_names.AsSystemName("dns"),
+				names.GetDNSListenerName(),
+			),
+		).
 		Configure(envoy_listeners.DNS(vips)).
 		Build()
 	if err != nil {

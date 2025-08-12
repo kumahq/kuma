@@ -346,11 +346,11 @@ var _ = Describe("ComputeLabels", func() {
 				given.r.Descriptor(),
 				given.r.GetSpec(),
 				given.r.GetMeta().GetLabels(),
-				core_model.GetNamespace(given.r.GetMeta(), "kuma-system"),
 				given.r.GetMeta().GetMesh(),
-				given.mode,
-				given.isK8s,
-				given.localZone,
+				core_model.WithNamespace(core_model.GetNamespace(given.r.GetMeta(), "kuma-system")),
+				core_model.WithMode(given.mode),
+				core_model.WithK8s(given.isK8s),
+				core_model.WithZone(given.localZone),
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(labels).To(Equal(given.expectedLabels))

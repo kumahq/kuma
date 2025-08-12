@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_generator "github.com/kumahq/kuma/pkg/core/resources/apis/core/generator"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
@@ -89,6 +90,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		DNSGenerator{},
 		generator.NewGenerator(),
 		generator_secrets.Generator{},
+		core_generator.NewGenerator(),
 	}
 }
 

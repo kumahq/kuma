@@ -1,0 +1,17 @@
+spiffeID:
+  trustDomain: "{{ .Mesh|1 }}.{ .Zone|2 }.mesh.local"
+  path: "/ns/.Namespace/sa/{ .ServiceAccount|2 }"
+provider:
+  type: Bundled
+  bundled:
+    meshTrustCreation: Test
+    autogenerate:
+      enabled: true
+    ca:
+      certificate:
+        type: File
+        file:
+      privateKey:
+        type: EnvVar
+        envVar:
+          name: "MY_PRIVATE_KEY"

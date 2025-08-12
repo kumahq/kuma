@@ -172,6 +172,7 @@ rules:
       - meshtrafficpermissions
       - hostnamegenerators
       - meshexternalservices
+      - meshidentities
       - meshmultizoneservices
       - meshservices
       - meshtrusts
@@ -506,7 +507,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 734ce53170d873bff848d52c4fa2c9b6977a7ece92f15cd0af313307be5010b1
+        checksum/tls-secrets: 78a59fe0ea29976965d43929e1c03a149b76e4686e1d304bea1820e85e9d875a
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -889,6 +890,7 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
           - meshtrusts
@@ -951,6 +953,7 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
           - meshtrusts
@@ -1095,6 +1098,7 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
           - meshtrusts

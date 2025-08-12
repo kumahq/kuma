@@ -43,6 +43,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -677,6 +678,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
 								"backend",
 								envoy_common.Routes{
 									{
@@ -875,7 +877,9 @@ func otherServiceHTTPListener() core_xds.Resource {
 
 func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 	listener, err := meshtcproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address: "127.0.0.1",
@@ -884,7 +888,6 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 			Protocol:            core_mesh.ProtocolTCP,
 			KumaServiceTagValue: service,
 		},
-		false,
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(service).Build(),
 		},

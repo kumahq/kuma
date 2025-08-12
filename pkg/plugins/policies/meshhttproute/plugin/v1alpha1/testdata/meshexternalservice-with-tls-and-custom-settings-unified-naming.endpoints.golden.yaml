@@ -1,0 +1,13 @@
+resources:
+- name: kri_extsvc_default___example_
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_extsvc_default___example_
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 127.0.0.1
+              portValue: 10002
+        loadBalancingWeight: 1

@@ -1,19 +1,4 @@
 resources:
-- name: kuma:readiness
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: kuma_readiness
-    connectTimeout: 5s
-    loadAssignment:
-      clusterName: kuma:readiness
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              pipe:
-                path: kuma-readiness-reporter.sock
-    name: kuma:readiness
-    type: STATIC
 - name: system_envoy_admin
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -28,6 +13,20 @@ resources:
                 address: 127.0.0.1
                 portValue: 9901
     name: system_envoy_admin
+    type: STATIC
+- name: system_probe_readiness
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: system_probe_readiness
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: kuma-readiness-reporter.sock
+    name: system_probe_readiness
     type: STATIC
 - name: system_envoy_admin
   resource:
@@ -62,7 +61,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: kuma:readiness
+                  cluster: system_probe_readiness
                   prefixRewrite: /ready
           statPrefix: system_envoy_admin
     - filterChainMatch:
@@ -91,7 +90,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: kuma:readiness
+                  cluster: system_probe_readiness
                   prefixRewrite: /ready
               - match:
                   prefix: /

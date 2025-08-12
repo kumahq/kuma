@@ -5,6 +5,7 @@ import (
 	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -15,7 +16,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
@@ -65,12 +66,19 @@ func NetworkDirectResponse(response string) FilterChainBuilderOpt {
 	})
 }
 
-func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker, tlsVersion *common_tls.Version, tlsCiphers []common_tls.TlsCipher) FilterChainBuilderOpt {
+func ServerSideMTLS(
+	mesh *core_mesh.MeshResource,
+	secrets core_xds.SecretsTracker,
+	tlsVersion *common_tls.Version,
+	tlsCiphers []common_tls.TlsCipher,
+	unifiedResourceNaming bool,
+) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh:           mesh,
-		SecretsTracker: secrets,
-		TlsVersion:     tlsVersion,
-		TlsCiphers:     tlsCiphers,
+		Mesh:                  mesh,
+		SecretsTracker:        secrets,
+		TlsVersion:            tlsVersion,
+		TlsCiphers:            tlsCiphers,
+		UnifiedResourceNaming: unifiedResourceNaming,
 	})
 }
 
@@ -106,6 +114,13 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.Traff
 		StatsName:  statsName,
 		Permission: permission,
 	})
+}
+
+func DownstreamTlsContext(downstreamTlsContext *envoy_tls.DownstreamTlsContext) FilterChainBuilderOpt {
+	if downstreamTlsContext == nil {
+		return FilterChainBuilderOptFunc(nil)
+	}
+	return AddFilterChainConfigurer(&v3.DownstreamTlsContextConfigurer{Config: downstreamTlsContext})
 }
 
 type splitAdapter struct {
@@ -239,10 +254,11 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	})
 }
 
-func HttpInboundRoutes(service string, routes envoy_common.Routes) FilterChainBuilderOpt {
+func HttpInboundRoutes(routeConfigName string, virtualHostName string, routes envoy_common.Routes) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
-		Service: service,
-		Routes:  routes,
+		RouteConfigName: routeConfigName,
+		VirtualHostName: virtualHostName,
+		Routes:          routes,
 	})
 }
 

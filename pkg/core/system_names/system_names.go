@@ -44,8 +44,12 @@ func MustBeSystemName(name string) string {
 	return SystemPrefix + name
 }
 
-func Join(parts ...string) string {
-	return strings.Join(parts, sectionSeparator)
+func JoinSections(sections ...string) string {
+	return strings.Join(sections, sectionSeparator)
+}
+
+func JoinSectionParts(parts ...string) string {
+	return strings.Join(parts, sectionPartsSeparator)
 }
 
 func GetNameOrDefault(predicate bool) func(name string, defaultName string) string {

@@ -8,6 +8,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
@@ -75,7 +76,12 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	if unifiedNamingEnabled {
 		envoyAdminClusterName = system_names.SystemResourceNameEnvoyAdmin
 	}
-	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
+
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	dppReadinessClusterName := getNameOrDefault(
+		system_names.SystemResourceNameReadiness,
+		envoy_names.GetDPPReadinessClusterName(),
+	)
 	adminAddress := proxy.Metadata.GetAdminAddress()
 	if _, ok := adminAddressAllowedValues[adminAddress]; !ok {
 		var allowedAddresses []string

@@ -21,6 +21,7 @@ import (
 	managers_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -94,6 +95,7 @@ type RuntimeContext interface {
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
 	Tenants() multitenant.Tenants
 	APIWebServiceCustomize() func(ws *restful.WebService) error
+	IdentityProviders() providers.IdentityProviders
 }
 
 type Access struct {
@@ -202,6 +204,7 @@ type runtimeContext struct {
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	apiWebServiceCustomize   []func(*restful.WebService) error
+	identityProviders        providers.IdentityProviders
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -330,6 +333,10 @@ func (rc *runtimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomizati
 
 func (rc *runtimeContext) Tenants() multitenant.Tenants {
 	return rc.tenants
+}
+
+func (rc *runtimeContext) IdentityProviders() providers.IdentityProviders {
+	return rc.identityProviders
 }
 
 func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
