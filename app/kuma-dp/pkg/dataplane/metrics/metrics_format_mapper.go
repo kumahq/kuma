@@ -41,10 +41,6 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 		}
 
 		for scope, aggregations := range scopedAggregations {
-			if _, ok := scopedMetrics[scope]; !ok {
-				scopedMetrics[scope] = []metricdata.Metrics{}
-			}
-
 			scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
 				Name:        prometheusMetric.GetName(),
 				Description: prometheusMetric.GetHelp(),
@@ -61,11 +57,6 @@ func scopedGauges(prometheusData []*io_prometheus_client.Metric, kumaVersion str
 	for _, metric := range prometheusData {
 		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
-
-		if _, ok := scopedDataPoints[scope]; !ok {
-			scopedDataPoints[scope] = []metricdata.DataPoint[float64]{}
-		}
-
 		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
 			Attributes: attribute.NewSet(attributes...),
 			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
@@ -88,11 +79,6 @@ func scopedSummaries(prometheusData []*io_prometheus_client.Metric, kumaVersion 
 	for _, metric := range prometheusData {
 		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
-
-		if _, ok := scopedDataPoints[scope]; !ok {
-			scopedDataPoints[scope] = []metricdata.SummaryDataPoint{}
-		}
-
 		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.SummaryDataPoint{
 			Attributes:     attribute.NewSet(attributes...),
 			Time:           getTimeOrFallback(metric.TimestampMs, requestTime),
@@ -117,11 +103,6 @@ func scopedCounters(prometheusData []*io_prometheus_client.Metric, kumaVersion s
 	for _, metric := range prometheusData {
 		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
-
-		if _, ok := scopedDataPoints[scope]; !ok {
-			scopedDataPoints[scope] = []metricdata.DataPoint[float64]{}
-		}
-
 		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
 			Attributes: attribute.NewSet(attributes...),
 			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
@@ -146,10 +127,6 @@ func scopedHistograms(prometheusData []*io_prometheus_client.Metric, kumaVersion
 	for _, metric := range prometheusData {
 		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
-
-		if _, ok := scopedDataPoints[scope]; !ok {
-			scopedDataPoints[scope] = []metricdata.HistogramDataPoint[float64]{}
-		}
 
 		var bounds []float64
 		var bucketCounts []uint64
@@ -220,7 +197,7 @@ func extraAttributesFrom(mesh string, dataplane string, service string, extraLab
 func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (instrumentation.Scope, []attribute.KeyValue) {
 	var attributes []attribute.KeyValue
 	var scopeAttributes []attribute.KeyValue
-	scope := instrumentation.Scope{}
+	var scope instrumentation.Scope
 	for _, label := range metric.Label {
 		if !strings.HasPrefix(label.GetName(), otelScopePrefix) {
 			attributes = append(attributes, attribute.String(label.GetName(), label.GetValue()))
