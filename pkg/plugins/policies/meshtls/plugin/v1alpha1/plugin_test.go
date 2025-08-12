@@ -35,7 +35,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -43,18 +43,6 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshTLS", func() {
 	type testCase struct {
@@ -122,10 +110,12 @@ var _ = Describe("MeshTLS", func() {
 			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 			// then
-			Expect(getResource(resourceSet, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listeners.golden.yaml", given.caseName)))
-			Expect(getResource(resourceSet, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
+			resource, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listeners.golden.yaml", given.caseName)))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
 		},
 		Entry("strict with no mTLS on the mesh", testCase{
 			caseName:    "strict-no-mtls",
@@ -249,12 +239,15 @@ var _ = Describe("MeshTLS", func() {
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			// then
-			Expect(getResource(generatedResources, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listeners.golden.yaml", given.caseName)))
-			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
-			Expect(getResource(generatedResources, envoy_resource.RouteType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.routes.golden.yaml", given.caseName)))
+			resource, err := util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listeners.golden.yaml", given.caseName)))
+			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
+			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.RouteType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.routes.golden.yaml", given.caseName)))
 		},
 		Entry("tls version and cypher on gateway", testCase{
 			caseName: "gateway-tls-version-and-cipher",

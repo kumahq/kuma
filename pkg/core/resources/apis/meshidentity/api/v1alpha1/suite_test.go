@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestCommonAPI(t *testing.T) {
+func TestMeshIdentity(t *testing.T) {
 	test.RunSpecs(t, "MeshIdentity Suite")
 }
