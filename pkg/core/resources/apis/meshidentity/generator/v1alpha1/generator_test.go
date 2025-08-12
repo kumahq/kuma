@@ -14,29 +14,10 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-<<<<<<< HEAD
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-)
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
-
-=======
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
->>>>>>> master
 var _ = Describe("MeshIdentity Generator", func() {
 	type testCase struct {
 		caseName            string
