@@ -63,12 +63,7 @@ func (i *MeshIdentity) getSpiffeIDTemplate() string {
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
 	if i.SpiffeID != nil {
-		builder.WriteString("{{ .TrustDomain }}")
-		if i.SpiffeID.Path == nil {
-			builder.WriteString(defaultPathTemplate)
-		} else {
-			builder.WriteString(pointer.Deref(i.SpiffeID.Path))
-		}
+		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultPathTemplate))
 	} else {
 		builder.WriteString("{{ .TrustDomain }}")
 		builder.WriteString(defaultPathTemplate)

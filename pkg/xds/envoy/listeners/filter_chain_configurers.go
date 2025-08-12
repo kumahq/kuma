@@ -16,7 +16,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
@@ -66,12 +66,19 @@ func NetworkDirectResponse(response string) FilterChainBuilderOpt {
 	})
 }
 
-func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker, tlsVersion *common_tls.Version, tlsCiphers []common_tls.TlsCipher) FilterChainBuilderOpt {
+func ServerSideMTLS(
+	mesh *core_mesh.MeshResource,
+	secrets core_xds.SecretsTracker,
+	tlsVersion *common_tls.Version,
+	tlsCiphers []common_tls.TlsCipher,
+	unifiedResourceNaming bool,
+) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh:           mesh,
-		SecretsTracker: secrets,
-		TlsVersion:     tlsVersion,
-		TlsCiphers:     tlsCiphers,
+		Mesh:                  mesh,
+		SecretsTracker:        secrets,
+		TlsVersion:            tlsVersion,
+		TlsCiphers:            tlsCiphers,
+		UnifiedResourceNaming: unifiedResourceNaming,
 	})
 }
 
@@ -247,10 +254,11 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	})
 }
 
-func HttpInboundRoutes(service string, routes envoy_common.Routes) FilterChainBuilderOpt {
+func HttpInboundRoutes(routeConfigName string, virtualHostName string, routes envoy_common.Routes) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
-		Service: service,
-		Routes:  routes,
+		RouteConfigName: routeConfigName,
+		VirtualHostName: virtualHostName,
+		Routes:          routes,
 	})
 }
 

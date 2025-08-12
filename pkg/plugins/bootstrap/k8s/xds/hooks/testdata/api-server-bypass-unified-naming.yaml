@@ -1,0 +1,26 @@
+resources:
+- name: system_kube_api_server_bypass
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: system_kube_api_server_bypass
+    type: ORIGINAL_DST
+- name: system_kube_api_server_bypass
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 1.1.1.1
+        portValue: 9090
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: system_kube_api_server_bypass
+          statPrefix: system_kube_api_server_bypass
+    name: system_kube_api_server_bypass
+    trafficDirection: OUTBOUND
+    useOriginalDst: true

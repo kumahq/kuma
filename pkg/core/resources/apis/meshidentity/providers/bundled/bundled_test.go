@@ -217,8 +217,8 @@ var _ = Describe("Bundled Providers Test", func() {
 })
 
 func readCertificate(identity *core_xds.WorkloadIdentity, kri string) (*x509.Certificate, error) {
-	valll := identity.AdditionalResources.Resources(envoy_resource.SecretType)
-	secret := valll[kri].Resource.(*envoy_auth.Secret)
+	secrets := identity.AdditionalResources.Resources(envoy_resource.SecretType)
+	secret := secrets[kri].Resource.(*envoy_auth.Secret)
 	certificate := secret.GetTlsCertificate().CertificateChain.GetInlineBytes()
 	// Decode PEM block
 	block, _ := pem.Decode(certificate)
