@@ -63,8 +63,8 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 		Entry("with-multiple-trust-domains", testCase{
 			caseName: "secrets-multiple-trust-domains",
 			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI:        kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
-				ManageType: core_xds.KumaManagedType,
+				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
+				ManagementMode: core_xds.KumaManagementMode,
 			},
 			trustDomains: map[string][]*meshtrust_api.MeshTrust{
 				"domain-1": {
@@ -107,8 +107,8 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 		Entry("with-multiple-trust-domains-and-default-name", testCase{
 			caseName: "secrets-multiple-trust-domains-default-name",
 			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI:        kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
-				ManageType: core_xds.KumaManagedType,
+				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
+				ManagementMode: core_xds.KumaManagementMode,
 			},
 			trustDomains: map[string][]*meshtrust_api.MeshTrust{
 				"domain-1": {
@@ -154,8 +154,8 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 		Entry("no secrets for externally managed", testCase{
 			caseName: "no-secrets-externally-managed",
 			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI:        kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
-				ManageType: core_xds.ExternalManagedType,
+				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
+				ManagementMode: core_xds.ExternalManagementMode,
 			},
 			trustDomains: map[string][]*meshtrust_api.MeshTrust{
 				"domain-1": {
