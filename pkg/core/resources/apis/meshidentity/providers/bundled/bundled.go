@@ -264,7 +264,7 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 
 	return &xds.WorkloadIdentity{
 		KRI:                        identifier,
-		ManageType:                 xds.KumaManagedType,
+		ManagementMode:             xds.KumaManagementMode,
 		ExpirationTime:             pointer.To(template.NotAfter),
 		GenerationTime:             pointer.To(now),
 		IdentitySourceConfigurer:   sourceConfigurer(identifier.String()),
