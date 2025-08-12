@@ -51,10 +51,11 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	})
 }
 
-func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoints) FilterChainBuilderOpt {
+func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoints, internalAddresses []core_xds.InternalAddress) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.DirectResponseConfigurer{
-		VirtualHostName: virtualHostName,
-		Endpoints:       endpoints,
+		VirtualHostName:   virtualHostName,
+		Endpoints:         endpoints,
+		InternalAddresses: internalAddresses,
 	})
 }
 
