@@ -22,7 +22,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-const ListenerName  = "_kuma:dynamicconfig"
+const ListenerName = "_kuma:dynamicconfig"
 
 func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, path string, bytes []byte) error {
 	var listener *envoy_listener.Listener
