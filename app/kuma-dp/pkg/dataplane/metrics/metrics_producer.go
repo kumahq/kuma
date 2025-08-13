@@ -103,13 +103,8 @@ func combineMetrics(metricsChan <-chan map[instrumentation.Scope][]metricdata.Me
 	return combinedMetrics
 }
 
-<<<<<<< HEAD
-func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) *metricdata.ScopeMetrics {
-	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), nil)
-=======
 func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) map[instrumentation.Scope][]metricdata.Metrics {
 	req, err := http.NewRequest(http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), http.NoBody)
->>>>>>> 659833745 (fix(MeshMetrics): properly parse scopes from scraped metrics (#14182))
 	if err != nil {
 		log.Error(err, "failed to create request")
 		return nil
