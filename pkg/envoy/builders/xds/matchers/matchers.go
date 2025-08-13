@@ -5,6 +5,7 @@ import (
 	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	sslv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/ssl/v3"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
@@ -17,6 +18,11 @@ func NewMatcherBuilder() *Builder[matcher_config.Matcher] {
 
 func MatchersList(fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher) Configurer[matcher_config.Matcher] {
 	return func(matcher *matcher_config.Matcher) error {
+		// filter remove empty field matchers
+		fieldMatchers = util_slices.Filter(fieldMatchers, func(fm *matcher_config.Matcher_MatcherList_FieldMatcher) bool {
+			return fm != nil && fm.Predicate != nil
+		})
+
 		if len(fieldMatchers) > 0 {
 			matcher.MatcherType = &matcher_config.Matcher_MatcherList_{
 				MatcherList: &matcher_config.Matcher_MatcherList{

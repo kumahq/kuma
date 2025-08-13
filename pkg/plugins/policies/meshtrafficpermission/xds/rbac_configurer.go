@@ -121,20 +121,17 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 	for _, rule := range c.InboundRules {
 		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
-		if conf.Deny != nil {
-			denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
-			if err != nil {
-				return nil, err
-			}
-			fieldMatchers = append(fieldMatchers, denyMatchers)
+		denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
+		if err != nil {
+			return nil, err
 		}
-		if conf.Allow != nil || conf.AllowWithShadowDeny != nil {
-			allowMatchers, err := buildMatchers(append(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_ALLOW, rule.Origin)
-			if err != nil {
-				return nil, err
-			}
-			fieldMatchers = append(fieldMatchers, allowMatchers)
+		fieldMatchers = append(fieldMatchers, denyMatchers)
+
+		allowMatchers, err := buildMatchers(append(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_ALLOW, rule.Origin)
+		if err != nil {
+			return nil, err
 		}
+		fieldMatchers = append(fieldMatchers, allowMatchers)
 	}
 
 	return bldrs_matchers.NewMatcherBuilder().
@@ -172,9 +169,6 @@ func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) 
 }
 
 func buildMatchers(matches []common_api.Match, action rbac_config.RBAC_Action, origin common.Origin) (*matcher_config.Matcher_MatcherList_FieldMatcher, error) {
-	if len(matches) == 0 {
-		return nil, nil
-	}
 	return bldrs_matchers.NewFieldMatcherList().
 		Configure(bldrs_matchers.Matches(
 			matches,
