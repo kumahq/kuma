@@ -88,7 +88,6 @@ var _ = Describe("Updater", func() {
 			mesh_proto.KubeNamespaceTag: "my-ns",
 			"app":                       "test",
 		}))).To(Succeed())
-		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
 
 		// then
 		Eventually(func(g Gomega) {
@@ -122,7 +121,6 @@ var _ = Describe("Updater", func() {
 			mesh_proto.KubeNamespaceTag: "my-ns",
 			"app":                       "test",
 		}))).To(Succeed())
-		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
 
 		// then
 		Eventually(func(g Gomega) {

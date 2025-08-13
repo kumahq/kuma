@@ -299,7 +299,7 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	}
 	var identites []meshservice_api.MeshServiceIdentity
 
-	if (len(spiffeIDs) != 0 && mesh.MTLSEnabled()) || len(spiffeIDs) == 0 {
+	if len(spiffeIDs) == 0 || mesh.MTLSEnabled() {
 		for _, identity := range maps.SortedKeys(serviceTagIdentities) {
 			identites = append(identites, meshservice_api.MeshServiceIdentity{
 				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
