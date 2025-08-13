@@ -3,7 +3,7 @@ DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
-# renovate: datasource=github-tags depName=kumahq/ci-tools versioning=semver
+# renovate: datasource=github-tags depName=kumahq/ci-tools versioning=semver-coerced
 OAPI_TOOLS_VERSION ?= v1.1.6
 
 .PHONY: clean/docs
