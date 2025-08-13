@@ -23,6 +23,7 @@ import (
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
