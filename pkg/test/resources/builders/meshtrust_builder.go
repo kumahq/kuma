@@ -26,7 +26,6 @@ func MeshTrust() *MeshTrustBuilder {
 					{
 						Type: meshtrust_api.PemCABundleType,
 						PEM: &meshtrust_api.PEM{
-							// nolint:gosec
 							Value: `-----BEGIN CERTIFICATE-----
 MIIB9jCCAZ2gAwIBAgIUJ1gLZ/fvZhGq51qWrJzL6z2XWoQwCgYIKoZIzj0EAwIw
 EjEQMA4GA1UEChMHVGVzdCBDQTAeFw0yNTA3MzAxMjAwMDBaFw0zNTA3MjcxMjAw
@@ -55,5 +54,15 @@ func (mi *MeshTrustBuilder) Create(s store.ResourceStore) error {
 
 func (mi *MeshTrustBuilder) WithName(name string) *MeshTrustBuilder {
 	mi.res.Meta.(*test_model.ResourceMeta).Name = name
+	return mi
+}
+
+func (mi *MeshTrustBuilder) WithTrustDomain(td string) *MeshTrustBuilder {
+	mi.res.Spec.TrustDomain = td
+	return mi
+}
+
+func (mi *MeshTrustBuilder) WithMesh(name string) *MeshTrustBuilder {
+	mi.res.Meta.(*test_model.ResourceMeta).Mesh = name
 	return mi
 }

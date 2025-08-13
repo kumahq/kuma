@@ -6239,6 +6239,7 @@ spec:
                     type:
                       enum:
                       - ServiceTag
+                      - SpiffeID
                       type: string
                     value:
                       type: string
