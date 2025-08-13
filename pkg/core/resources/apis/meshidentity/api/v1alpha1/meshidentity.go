@@ -97,6 +97,12 @@ type Spire struct {
 	Agent *SpireAgent `json:"agent,omitempty"`
 }
 
+const (
+	ReadyConditionType     string = "Ready"
+	ProviderConditionType  string = "Provider"
+	MeshTrustConditionType string = "MeshTrustCreated"
+)
+
 type MeshIdentityStatus struct {
 	// Conditions is an array of hostname generator conditions.
 	//

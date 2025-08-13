@@ -51,6 +51,7 @@ func RegisterXDS(
 	if err != nil {
 		return err
 	}
+
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)
 
@@ -181,6 +182,8 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secr
 				},
 				rt.Config().XdsServer.DataplaneStatusFlushInterval.Duration/10,
 				xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
+				rt.EventBus(),
+				rt.ReadOnlyResourceManager(),
 			)
 		})
 }
