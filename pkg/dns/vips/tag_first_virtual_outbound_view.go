@@ -8,6 +8,8 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	dns_metadata "github.com/kumahq/kuma/pkg/dns/metadata"
+	k8s_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -165,9 +167,9 @@ func copyTagsWithSvc(tags map[string]string, svc string) map[string]string {
 
 func minifyOrigin(origin string) string {
 	switch origin {
-	case OriginKube:
+	case string(k8s_metadata.OriginKube):
 		return "k8s"
-	case OriginService:
+	case string(dns_metadata.OriginService):
 		return "svc"
 	default:
 		return origin
@@ -177,9 +179,9 @@ func minifyOrigin(origin string) string {
 func deMinifyOrigin(origin string) string {
 	switch origin {
 	case "k8s":
-		return OriginKube
+		return string(k8s_metadata.OriginKube)
 	case "svc":
-		return OriginService
+		return string(dns_metadata.OriginService)
 	default:
 		return origin
 	}

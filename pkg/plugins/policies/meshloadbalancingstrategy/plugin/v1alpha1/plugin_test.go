@@ -47,8 +47,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
@@ -92,14 +91,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
 						createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
@@ -107,7 +106,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "payment",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -117,7 +116,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "frontend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "frontend").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -127,12 +126,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:     "backend",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: backendListener(),
 				},
 				{
 					Name:     "payments",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: paymentsListener(),
 				},
 			},
@@ -223,14 +222,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "mesh-1:eds-cluster",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:eds-cluster").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "mesh-1:eds-cluster",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: endpoints.CreateClusterLoadAssignment("mesh-1:eds-cluster", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
 						createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
@@ -239,7 +238,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "mesh-2:static-cluster",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -249,7 +248,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "egress-listener",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
@@ -362,14 +361,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "mesh-1:eds-cluster",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:eds-cluster").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "mesh-1:eds-cluster",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: endpoints.CreateClusterLoadAssignment("mesh-1:eds-cluster", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
 						createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
@@ -378,7 +377,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "mesh-2:static-cluster",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -388,7 +387,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "egress-listener",
-					Origin: egress.OriginEgress,
+					Origin: metadata.OriginEgress,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
@@ -474,14 +473,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
 						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
@@ -495,7 +494,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "payment",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -506,12 +505,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:     "backend",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: backendListener(),
 				},
 				{
 					Name:     "payments",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: paymentsListener(),
 				},
 			},
@@ -663,14 +662,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
 						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
@@ -681,7 +680,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "payment",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -692,12 +691,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:     "backend",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: backendListener(),
 				},
 				{
 					Name:     "payments",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: paymentsListener(),
 				},
 			},
@@ -845,14 +844,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
 						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
@@ -866,7 +865,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "payment",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -876,12 +875,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:     "backend",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: backendListener(),
 				},
 				{
 					Name:     "payments",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: paymentsListener(),
 				},
 			},
@@ -978,14 +977,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
 						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
@@ -999,7 +998,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "payment",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -1009,12 +1008,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:     "backend",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: backendListener(),
 				},
 				{
 					Name:     "payments",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: paymentsListener(),
 				},
 			},
@@ -1120,21 +1119,21 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend-bb38a94289f18fb9",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend-bb38a94289f18fb9").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend-c72efb5be46fae6b",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend-c72efb5be46fae6b").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
 					Name:   "backend-bb38a94289f18fb9",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend-bb38a94289f18fb9", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
 						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
@@ -1148,7 +1147,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "backend-c72efb5be46fae6b",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend-c72efb5be46fae6b", []core_xds.Endpoint{
 						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
 						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
@@ -1159,7 +1158,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "payment",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
@@ -1169,7 +1168,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:   "backend",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
@@ -1199,7 +1198,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 				{
 					Name:     "payments",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: paymentsListener(),
 				},
 			},

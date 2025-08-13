@@ -7,9 +7,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	egress_generator "github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 type Listeners struct {
@@ -36,36 +36,36 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 		address := listener.GetAddress().GetSocketAddress()
 
 		switch res.Origin {
-		case generator.OriginOutbound:
+		case generator_metadata.OriginOutbound:
 			listeners.Outbound[mesh_proto.OutboundInterface{
 				DataplaneIP:   address.GetAddress(),
 				DataplanePort: address.GetPortValue(),
 			}] = listener
-		case generator.OriginInbound:
+		case generator_metadata.OriginInbound:
 			listeners.Inbound[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
-		case egress_generator.OriginEgress:
+		case generator_metadata.OriginEgress:
 			listeners.Egress = listener
-		case generator.OriginTransparent:
+		case generator_metadata.OriginTransparent:
 			switch listener.Name {
 			case generator.OutboundNameIPv4:
 				listeners.Ipv4Passthrough = listener
 			case generator.OutboundNameIPv6:
 				listeners.Ipv6Passthrough = listener
 			}
-		case generator.OriginDirectAccess:
+		case generator_metadata.OriginDirectAccess:
 			listeners.DirectAccess[generator.Endpoint{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
-		case metadata.OriginGateway:
+		case gateway_metadata.OriginGateway:
 			listeners.Gateway[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
-		case generator.OriginPrometheus:
+		case generator_metadata.OriginPrometheus:
 			listeners.Prometheus = listener
 		default:
 			continue

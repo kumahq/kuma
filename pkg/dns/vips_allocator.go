@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/metadata"
 	dns_metrics "github.com/kumahq/kuma/pkg/dns/metrics"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -495,7 +496,7 @@ func addFromVirtualOutbound(outboundSet *vips.VirtualOutboundMeshView, vob *core
 func addDefault(outboundSet *vips.VirtualOutboundMeshView, service string, port uint32) error {
 	return outboundSet.Add(vips.NewServiceEntry(service), vips.OutboundEntry{
 		TagSet: map[string]string{mesh_proto.ServiceTag: service},
-		Origin: vips.OriginService,
+		Origin: string(metadata.OriginService),
 		Port:   port,
 	})
 }
