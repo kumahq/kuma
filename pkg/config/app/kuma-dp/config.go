@@ -246,6 +246,9 @@ type DataplaneRuntime struct {
 	// - System format for internal Kuma resources that users typically don't need to care about unless debugging Kuma
 	// - Contextual format for proxy-scoped resources like inbounds and transparent proxy passthrough
 	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_unified_resource_naming_enabled"`
+	// SpireSupported indicates whether the sidecar has mounted a volume that includes the socket for the Spire agent to retrieve its identity.
+	// Currently supported only on Kubernetes.
+	SpireSupported bool `json:"spireSupported,omitempty" envconfig:"kuma_dataplane_runtime_spire_supported"`
 }
 
 type Metrics struct {
