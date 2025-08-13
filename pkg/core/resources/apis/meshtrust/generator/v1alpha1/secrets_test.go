@@ -16,21 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshTrust Secret Generator", func() {
 	type testCase struct {
@@ -57,8 +45,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 			Expect(plugin.Generate(resourceSet, context, proxy)).To(Succeed())
 
 			// then
-			Expect(getResource(resourceSet, envoy_resource.SecretType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.secrets.golden.yaml", given.caseName)))
+			resources, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.SecretType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resources).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.secrets.golden.yaml", given.caseName)))
 		},
 		Entry("with-multiple-trust-domains", testCase{
 			caseName: "secrets-multiple-trust-domains",
