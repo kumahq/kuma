@@ -9,10 +9,17 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
+
+type Scoped struct {
+	Scope   instrumentation.Scope `json:"scope"`
+	Metrics []metricdata.Metrics  `json:"metrics"`
+}
 
 var _ = Describe("Metrics format mapper", func() {
 	DescribeTable("should convert from Prometheus metrics to OpenTelemetry backend", func() {
@@ -24,13 +31,10 @@ var _ = Describe("Metrics format mapper", func() {
 		// when
 		metrics, err := AggregatedOtelMutator()(input)
 		Expect(err).ToNot(HaveOccurred())
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", map[string]string{"extraLabel": "test"}, time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
+		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", "0.0.0", map[string]string{"extraLabel": "test"}, time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
 
 		// then
-		sort.SliceStable(openTelemetryMetrics, func(i, j int) bool {
-			return openTelemetryMetrics[i].Name < openTelemetryMetrics[j].Name
-		})
-		marshal, err := json.MarshalIndent(openTelemetryMetrics, "", "  ")
+		marshal, err := json.MarshalIndent(flatten(openTelemetryMetrics), "", "  ")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(marshal).To(matchers.MatchGoldenJSON(path.Join("testdata", "otel", name+".golden.json")))
 	},
@@ -40,3 +44,18 @@ var _ = Describe("Metrics format mapper", func() {
 		Entry("summary"),
 	)
 })
+
+func flatten(scoped map[instrumentation.Scope][]metricdata.Metrics) []Scoped {
+	out := make([]Scoped, 0, len(scoped))
+	for s, ms := range scoped {
+		sort.SliceStable(ms, func(i, j int) bool {
+			return ms[i].Name < ms[j].Name
+		})
+		out = append(out, Scoped{Scope: s, Metrics: ms})
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Scope.Name < out[j].Scope.Name
+	})
+	return out
+}

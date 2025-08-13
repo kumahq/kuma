@@ -1,182 +1,266 @@
 [
   {
-    "Name": "custom_metric_seconds",
-    "Description": "",
-    "Unit": "",
-    "Data": {
-      "DataPoints": [
-        {
-          "Attributes": [
+    "scope": {
+      "Name": "io.opentelemetry.contrib.mongodb",
+      "Version": "1.9.0",
+      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0"
+    },
+    "metrics": [
+      {
+        "Name": "custom_metric_scoped_seconds",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
             {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 500,
-          "Sum": 1000,
-          "QuantileValues": [
-            {
-              "Quantile": 0.5,
-              "Value": 2
-            },
-            {
-              "Quantile": 0.9,
-              "Value": 5
-            },
-            {
-              "Quantile": 0.99,
-              "Value": 20
-            }
-          ]
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 100,
-          "Sum": 600,
-          "QuantileValues": [
-            {
-              "Quantile": 0.5,
-              "Value": 3
-            },
-            {
-              "Quantile": 0.9,
-              "Value": 6
-            },
-            {
-              "Quantile": 0.99,
-              "Value": 11
-            }
-          ]
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Count": 200,
-          "Sum": 800,
-          "QuantileValues": [
-            {
-              "Quantile": 0.5,
-              "Value": 4
-            },
-            {
-              "Quantile": 0.9,
-              "Value": 7
-            },
-            {
-              "Quantile": 0.99,
-              "Value": 13
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 0,
+              "Sum": 0,
+              "QuantileValues": [
+                {
+                  "Quantile": 0.5,
+                  "Value": 2
+                },
+                {
+                  "Quantile": 0.9,
+                  "Value": 5
+                },
+                {
+                  "Quantile": 0.99,
+                  "Value": 20
+                }
+              ]
             }
           ]
         }
-      ]
-    }
+      }
+    ]
+  },
+  {
+    "scope": {
+      "Name": "kuma",
+      "Version": "0.0.0",
+      "SchemaURL": ""
+    },
+    "metrics": [
+      {
+        "Name": "custom_metric_seconds",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 500,
+              "Sum": 1000,
+              "QuantileValues": [
+                {
+                  "Quantile": 0.5,
+                  "Value": 2
+                },
+                {
+                  "Quantile": 0.9,
+                  "Value": 5
+                },
+                {
+                  "Quantile": 0.99,
+                  "Value": 20
+                }
+              ]
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 100,
+              "Sum": 600,
+              "QuantileValues": [
+                {
+                  "Quantile": 0.5,
+                  "Value": 3
+                },
+                {
+                  "Quantile": 0.9,
+                  "Value": 6
+                },
+                {
+                  "Quantile": 0.99,
+                  "Value": 11
+                }
+              ]
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Count": 200,
+              "Sum": 800,
+              "QuantileValues": [
+                {
+                  "Quantile": 0.5,
+                  "Value": 4
+                },
+                {
+                  "Quantile": 0.9,
+                  "Value": 7
+                },
+                {
+                  "Quantile": 0.99,
+                  "Value": 13
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
   }
 ]
