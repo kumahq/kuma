@@ -18,16 +18,14 @@ type IdentityProviderManager struct {
 	logger      logr.Logger
 	eventWriter events.Emitter
 	providers   IdentityProviders
-	zone        string
 }
 
-func NewIdentityProviderManager(providers IdentityProviders, eventWriter events.Emitter, zone string) IdentityProviderManager {
+func NewIdentityProviderManager(providers IdentityProviders, eventWriter events.Emitter) IdentityProviderManager {
 	logger := core.Log.WithName("identity-provider")
 	return IdentityProviderManager{
 		logger:      logger,
 		eventWriter: eventWriter,
 		providers:   providers,
-		zone:        zone,
 	}
 }
 
