@@ -216,7 +216,7 @@ func (s *StatusUpdater) buildTLS(
 			Status: meshservice_api.TLSNotReady,
 		}
 	}
-	if (existing.Status == meshservice_api.TLSReady && (mesh.MTLSEnabled() || len(meshIdentities) > 0)) {
+	if existing.Status == meshservice_api.TLSReady && (mesh.MTLSEnabled() || len(meshIdentities) > 0) {
 		// If mTLS is enabled, the status should go only one way.
 		// Every new instance always starts with mTLS, so we don't want to count issued backends.
 		// Otherwise, we could get into race when new Dataplane did not receive cert yet,
