@@ -102,7 +102,7 @@ func (c *virtualHostModificator) virtualHostMatches(vHost *envoy_route.VirtualHo
 }
 
 func (c *virtualHostModificator) originMatches(routeCfg *core_xds.Resource) bool {
-	return c.Match.GetOrigin() == "" || (c.Match.GetOrigin() == routeCfg.Origin)
+	return c.Match.GetOrigin() == "" || (c.Match.GetOrigin() == string(routeCfg.Origin))
 }
 
 func (c *virtualHostModificator) routeConfigurationMatches(routeCfg *envoy_route.RouteConfiguration) bool {

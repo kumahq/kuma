@@ -26,11 +26,6 @@ func (vo *VirtualOutbound) Equal(other *VirtualOutbound) bool {
 }
 
 const (
-	OriginService = "service"
-	OriginKube    = "kubernetes"
-)
-
-const (
 	VirtualOutboundPrefix = "virtual-outbound:"
 	HostPrefix            = "external-service:"
 	GatewayPrefix         = "mesh-gateway:"

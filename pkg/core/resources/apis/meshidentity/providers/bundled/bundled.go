@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -47,7 +48,6 @@ import (
 
 const (
 	DefaultAllowedClockSkew = 10 * time.Second
-	OriginIdentityBundled   = "IdentityBundled"
 
 	cacheExpirationTime = 5 * time.Second
 	caCacheEntryKey     = "ca_pair"
@@ -290,7 +290,7 @@ func additionalResources(secretName string, keyPair *util_tls.KeyPair) (*xds.Res
 	}
 	resources.Add(&xds.Resource{
 		Name:     secretName,
-		Origin:   OriginIdentityBundled,
+		Origin:   metadata.OriginIdentityBundled,
 		Resource: identitySecret,
 	})
 	return resources, nil

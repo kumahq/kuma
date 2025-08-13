@@ -12,11 +12,10 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
-// OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
 const (
-	OriginTransparent = "transparent"
 	OutboundNameIPv4  = "outbound:passthrough:ipv4"
 	OutboundNameIPv6  = "outbound:passthrough:ipv6"
 	InboundNameIPv4   = "inbound:passthrough:ipv4"
@@ -113,25 +112,25 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 
 	resources.Add(&model.Resource{
 		Name:     outboundListener.GetName(),
-		Origin:   OriginTransparent,
+		Origin:   metadata.OriginTransparent,
 		Resource: outboundListener,
 	})
 
 	if ctx.Mesh.Resource.Spec.IsPassthrough() {
 		resources.Add(&model.Resource{
 			Name:     outboundPassThroughCluster.GetName(),
-			Origin:   OriginTransparent,
+			Origin:   metadata.OriginTransparent,
 			Resource: outboundPassThroughCluster,
 		})
 	}
 	resources.Add(&model.Resource{
 		Name:     inboundListener.GetName(),
-		Origin:   OriginTransparent,
+		Origin:   metadata.OriginTransparent,
 		Resource: inboundListener,
 	})
 	resources.Add(&model.Resource{
 		Name:     inboundPassThroughCluster.GetName(),
-		Origin:   OriginTransparent,
+		Origin:   metadata.OriginTransparent,
 		Resource: inboundPassThroughCluster,
 	})
 	return resources, nil
