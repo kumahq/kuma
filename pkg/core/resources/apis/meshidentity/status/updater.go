@@ -21,10 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-const (
-	MeshTrustType string = "MeshTrustCreated"
-)
-
 type IdentityProviderReconciler struct {
 	roResManager      manager.ReadOnlyResourceManager
 	resManager        manager.ResourceManager
