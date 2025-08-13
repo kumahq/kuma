@@ -17,11 +17,9 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
-
-// OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginAdmin = "admin"
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
@@ -148,14 +146,14 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 		resources.Add(&core_xds.Resource{
 			Name:     listener.GetName(),
-			Origin:   OriginAdmin,
+			Origin:   metadata.OriginAdmin,
 			Resource: listener,
 		})
 	}
 
 	resources.Add(&core_xds.Resource{
 		Name:     envoyAdminCluster.GetName(),
-		Origin:   OriginAdmin,
+		Origin:   metadata.OriginAdmin,
 		Resource: envoyAdminCluster,
 	})
 
@@ -181,7 +179,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 
 	resources.Add(&core_xds.Resource{
 		Name:     readinessCluster.GetName(),
-		Origin:   OriginAdmin,
+		Origin:   metadata.OriginAdmin,
 		Resource: readinessCluster,
 	})
 

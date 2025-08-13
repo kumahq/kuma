@@ -151,7 +151,7 @@ func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) boo
 	if h.Match.ListenerName != nil && *h.Match.ListenerName != resource.Name {
 		return false
 	}
-	if h.Match.Origin != nil && *h.Match.Origin != resource.Origin {
+	if h.Match.Origin != nil && *h.Match.Origin != string(resource.Origin) {
 		return false
 	}
 	if len(pointer.Deref(h.Match.ListenerTags)) > 0 {

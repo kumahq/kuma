@@ -13,15 +13,12 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
 const (
 	EgressProxy = "egress-proxy"
-
-	// OriginEgress is a marker to indicate by which ProxyGenerator resources
-	// were generated.
-	OriginEgress = "egress"
 )
 
 var log = core.Log.WithName("xds").WithName("egress-proxy-generator")
@@ -100,7 +97,7 @@ func (g Generator) Generate(
 			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   OriginEgress,
+				Origin:   metadata.OriginEgress,
 				Resource: listener,
 			})
 		}

@@ -10,6 +10,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 type clusterModificator api.ClusterMod
@@ -64,7 +65,7 @@ func (c *clusterModificator) remove(resources *core_xds.ResourceSet) {
 func (c *clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     clusterMod.Name,
-		Origin:   Origin,
+		Origin:   metadata.OriginProxyTemplateModifications,
 		Resource: clusterMod,
 	})
 }
@@ -76,7 +77,7 @@ func (c *clusterModificator) clusterMatches(cluster *core_xds.Resource) bool {
 	if c.Match.Name != nil && *c.Match.Name != cluster.Name {
 		return false
 	}
-	if c.Match.Origin != nil && *c.Match.Origin != cluster.Origin {
+	if c.Match.Origin != nil && *c.Match.Origin != string(cluster.Origin) {
 		return false
 	}
 	return true

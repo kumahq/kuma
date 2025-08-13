@@ -21,10 +21,8 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-// OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginInbound = "inbound"
 
 type InboundProxyGenerator struct{}
 
@@ -74,7 +72,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		resources.Add(&core_xds.Resource{
 			Name:     localClusterName,
 			Resource: envoyCluster,
-			Origin:   OriginInbound,
+			Origin:   metadata.OriginInbound,
 		})
 
 		cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
@@ -133,7 +131,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		resources.Add(&core_xds.Resource{
 			Name:     inboundListenerName,
 			Resource: inboundListener,
-			Origin:   OriginInbound,
+			Origin:   metadata.OriginInbound,
 		})
 	}
 	return resources, nil

@@ -22,14 +22,13 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/metadata"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-const OriginMeshTrace = "mesh-trace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
@@ -238,7 +237,7 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 		return err
 	}
 
-	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: OriginMeshTrace, Resource: res})
+	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: metadata.OriginMeshTrace, Resource: res})
 
 	return nil
 }

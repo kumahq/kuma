@@ -19,12 +19,10 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound-proxy-generator")
-
-// OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginOutbound = "outbound"
 
 type OutboundProxyGenerator struct{}
 
@@ -64,7 +62,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		}
 		resources.Add(&model.Resource{
 			Name:     listener.GetName(),
-			Origin:   OriginOutbound,
+			Origin:   metadata.OriginOutbound,
 			Resource: listener,
 		})
 	}
@@ -264,7 +262,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 			resources.Add(&model.Resource{
 				Name:     clusterName,
-				Origin:   OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: edsCluster,
 			})
 		}
@@ -303,7 +301,7 @@ func (OutboundProxyGenerator) generateEDS(
 
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),
-					Origin:   OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: loadAssignment,
 				})
 			}
