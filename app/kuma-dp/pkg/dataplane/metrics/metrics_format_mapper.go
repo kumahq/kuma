@@ -196,7 +196,6 @@ func extraAttributesFrom(mesh string, dataplane string, service string, extraLab
 
 func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (instrumentation.Scope, []attribute.KeyValue) {
 	var attributes []attribute.KeyValue
-	var scopeAttributes []attribute.KeyValue
 	var scope instrumentation.Scope
 	for _, label := range metric.Label {
 		if !strings.HasPrefix(label.GetName(), otelScopePrefix) {
@@ -211,13 +210,7 @@ func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (inst
 			scope.Version = label.GetValue()
 		case otelScopeSchemaUrl:
 			scope.SchemaURL = label.GetValue()
-		default:
-			scopeAttributes = append(scopeAttributes, attribute.String(strings.TrimPrefix(label.GetName(), otelScopePrefix), label.GetValue()))
 		}
-	}
-
-	if len(scopeAttributes) > 0 {
-		scope.Attributes = attribute.NewSet(scopeAttributes...)
 	}
 
 	// If metrics were not scoped, we need to create Kuma scope for it
