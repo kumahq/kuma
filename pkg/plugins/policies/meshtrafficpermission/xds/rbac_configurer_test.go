@@ -104,14 +104,6 @@ filters:
                     '@type': type.googleapis.com/envoy.config.rbac.v3.Action
                     action: DENY
                     name: default
-    shadowMatcher:
-        onNoMatch:
-            action:
-                name: envoy.filters.rbac.action
-                typedConfig:
-                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
-                    action: DENY
-                    name: default
     statPrefix: allow_all_prefix.`,
 		}),
 		Entry("deny all from mesh", testCase{
@@ -156,14 +148,6 @@ filters:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
                             prefix: spiffeId://trust-domain.mesh/
-        onNoMatch:
-            action:
-                name: envoy.filters.rbac.action
-                typedConfig:
-                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
-                    action: DENY
-                    name: default
-    shadowMatcher:
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -229,14 +213,6 @@ filters:
                                         '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                                 valueMatch:
                                     exact: spiffeId://trust-domain.mesh/ns/backend/v2
-        onNoMatch:
-            action:
-                name: envoy.filters.rbac.action
-                typedConfig:
-                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
-                    action: DENY
-                    name: default
-    shadowMatcher:
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -317,14 +293,6 @@ filters:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
                             prefix: spiffeId://trust-domain.mesh/ns/backend
-        onNoMatch:
-            action:
-                name: envoy.filters.rbac.action
-                typedConfig:
-                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
-                    action: DENY
-                    name: default
-    shadowMatcher:
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action

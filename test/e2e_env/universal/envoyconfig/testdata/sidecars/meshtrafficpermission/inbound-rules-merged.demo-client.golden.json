@@ -64,22 +64,6 @@
           }
         }
       }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:3000/filterChains/0/filters/0/typedConfig/shadowMatcher",
-      "value": {
-        "onNoMatch": {
-          "action": {
-            "name": "envoy.filters.rbac.action",
-            "typedConfig": {
-              "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-              "action": "DENY",
-              "name": "default"
-            }
-          }
-        }
-      }
     }
   ],
   "xds": {
@@ -453,18 +437,6 @@
                         }
                       ]
                     },
-                    "onNoMatch": {
-                      "action": {
-                        "name": "envoy.filters.rbac.action",
-                        "typedConfig": {
-                          "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-                          "action": "DENY",
-                          "name": "default"
-                        }
-                      }
-                    }
-                  },
-                  "shadowMatcher": {
                     "onNoMatch": {
                       "action": {
                         "name": "envoy.filters.rbac.action",

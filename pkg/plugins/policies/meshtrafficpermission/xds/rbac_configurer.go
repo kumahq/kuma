@@ -159,6 +159,10 @@ func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) 
 		fieldMatchers = append(fieldMatchers, shadowDenyMatchers)
 	}
 
+	if len(fieldMatchers) == 0 {
+		return nil, nil
+	}
+
 	return bldrs_matchers.NewMatcherBuilder().
 		Configure(bldrs_matchers.MatchersList(fieldMatchers)).
 		Configure(bldrs_matchers.OnNoMatch(
