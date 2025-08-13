@@ -65,6 +65,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				snippet, err := v3.CreateDownstreamTlsContext(
 					&caRequest{mesh: mesh.GetMeta().GetName()},
 					&identityRequest{mesh: mesh.GetMeta().GetName()},
+					false,
 				)
 				// then
 				Expect(err).ToNot(HaveOccurred())

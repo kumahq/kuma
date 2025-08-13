@@ -13,11 +13,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 const (
-	// OriginProbes is a marker to indicate by which ProxyGenerator resources were generated.
-	OriginProbe            = "probe"
 	listenerName           = "probe:listener"
 	routeConfigurationName = "probe:route_configuration"
 )
@@ -80,7 +79,7 @@ func (g ProbeProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet,
 	resources.Add(&model.Resource{
 		Name:     listenerName,
 		Resource: probeListener,
-		Origin:   OriginProbe,
+		Origin:   metadata.OriginProbe,
 	})
 
 	return resources, nil

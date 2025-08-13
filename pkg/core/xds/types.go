@@ -208,20 +208,20 @@ func (p *Proxy) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
 	return tproxy_dp.GetDataplaneConfig(p.Dataplane, p.Metadata)
 }
 
-type ManageType string
+type ManagementMode string
 
 const (
 	// When kuma acts as a workload identity provider and SDS server.
-	KumaManagedType ManageType = "kuma"
+	KumaManagementMode ManagementMode = "kuma"
 	// When there is an external SDS server which provides workload identities.
-	ExternalManagedType ManageType = "external"
+	ExternalManagementMode ManagementMode = "external"
 )
 
 type WorkloadIdentity struct {
 	// KRI identifies which MeshIdentity targets this Proxy.
 	KRI kri.Identifier
-	// ManageType indicates which system provides the identity for the Proxy.
-	ManageType     ManageType
+	// ManagementMode indicates which system provides the identity for the Proxy.
+	ManagementMode ManagementMode
 	ExpirationTime *time.Time
 	GenerationTime *time.Time
 	// IdentitySourceConfigurer returns a function that configures the identity secret,

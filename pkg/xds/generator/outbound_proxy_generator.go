@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -18,12 +19,10 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound-proxy-generator")
-
-// OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginOutbound = "outbound"
 
 type OutboundProxyGenerator struct{}
 
@@ -63,7 +62,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		}
 		resources.Add(&model.Resource{
 			Name:     listener.GetName(),
-			Origin:   OriginOutbound,
+			Origin:   metadata.OriginOutbound,
 			Resource: listener,
 		})
 	}
@@ -193,6 +192,8 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
@@ -215,7 +216,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, ctx.Mesh.Resource, mesh_proto.ZoneEgressServiceName, tlsReady, clusterTags))
+						Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, mesh_proto.ZoneEgressServiceName, tlsReady, clusterTags))
 				} else {
 					endpoints := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
@@ -243,14 +244,14 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, ctx.Mesh.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
 						}
 					}
 				} else {
-					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
+					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
 				}
 			}
 
@@ -261,7 +262,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 			resources.Add(&model.Resource{
 				Name:     clusterName,
-				Origin:   OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: edsCluster,
 			})
 		}
@@ -300,7 +301,7 @@ func (OutboundProxyGenerator) generateEDS(
 
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),
-					Origin:   OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: loadAssignment,
 				})
 			}

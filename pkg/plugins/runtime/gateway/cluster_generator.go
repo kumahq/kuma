@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -157,6 +158,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	if !ok {
 		return nil, "", nil
 	}
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
@@ -166,11 +168,11 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 		Configure(
 			clusters.EdsCluster(),
 			clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 		).
 		ConfigureIf(proxy.WorkloadIdentity == nil, clusters.ClientSideMultiIdentitiesMTLS(
 			proxy.SecretsTracker,
+			unifiedNaming,
 			meshCtx.Resource,
 			true, // TODO we just assume this atm?...
 			sni,

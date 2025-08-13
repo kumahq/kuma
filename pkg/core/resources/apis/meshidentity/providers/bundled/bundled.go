@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -47,7 +48,6 @@ import (
 
 const (
 	DefaultAllowedClockSkew = 10 * time.Second
-	OriginIdentityBundled   = "IdentityBundled"
 
 	cacheExpirationTime = 5 * time.Second
 	caCacheEntryKey     = "ca_pair"
@@ -264,7 +264,7 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 
 	return &xds.WorkloadIdentity{
 		KRI:                        identifier,
-		ManageType:                 xds.KumaManagedType,
+		ManagementMode:             xds.KumaManagementMode,
 		ExpirationTime:             pointer.To(template.NotAfter),
 		GenerationTime:             pointer.To(now),
 		IdentitySourceConfigurer:   sourceConfigurer(identifier.String()),
@@ -290,7 +290,7 @@ func additionalResources(secretName string, keyPair *util_tls.KeyPair) (*xds.Res
 	}
 	resources.Add(&xds.Resource{
 		Name:     secretName,
-		Origin:   OriginIdentityBundled,
+		Origin:   metadata.OriginIdentityBundled,
 		Resource: identitySecret,
 	})
 	return resources, nil
@@ -322,7 +322,7 @@ func generateKey(caPrivateKey crypto.PrivateKey) (crypto.PublicKey, crypto.Priva
 		privateKey = priv
 
 	case *rsa.PrivateKey:
-		priv, err := rsa.GenerateKey(rand.Reader, DefaultKeySize)
+		priv, err := rsa.GenerateKey(rand.Reader, defaultKeySize)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to generate rsa key: %w", err)
 		}
@@ -353,7 +353,7 @@ func init() {
 func isSelfSigned(certPEM []byte) (bool, error) {
 	block, _ := pem.Decode(certPEM)
 	if block == nil || block.Type != "CERTIFICATE" {
-		return false, errors.New("failed to decode PEM certificate")
+		return false, errors.New("failed to decode PEM block or block is not of type CERTIFICATE")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {

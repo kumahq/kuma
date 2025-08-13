@@ -23,8 +23,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("RBAC", func() {
@@ -40,13 +39,13 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener,
 			})
 
@@ -54,13 +53,13 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener2.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener2,
 			})
 
@@ -68,7 +67,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -87,7 +86,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener4.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener4,
 			})
 
@@ -166,7 +165,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   egress.OriginEgress,
+				Origin:   metadata.OriginEgress,
 				Resource: listener,
 			})
 

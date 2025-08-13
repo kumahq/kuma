@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	DefaultCACertValidityPeriod = 10 * 365 * 24 * time.Hour
-	DefaultKeySize              = 2048
+	defaultCACertValidityPeriod = 10 * 365 * 24 * time.Hour
+	defaultKeySize              = 2048
 )
 
 func RootCAName(resourceName string) string {
@@ -32,8 +32,9 @@ func PrivateKeyName(resourceName string) string {
 	return fmt.Sprintf("%s-private-key", resourceName)
 }
 
+// We are using RSA since Envoy not fully works with ED25519 or ecliptic P-384
 func GenerateRootCA(trustDomain string) (*core_ca.KeyPair, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, DefaultKeySize)
+	privateKey, err := rsa.GenerateKey(rand.Reader, defaultKeySize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate ecdsa key")
 	}
@@ -52,7 +53,7 @@ func newCACert(signer crypto.Signer, trustDomain string) ([]byte, error) {
 	}
 	now := core.Now()
 	notBefore := now.Add(-DefaultAllowedClockSkew)
-	notAfter := now.Add(DefaultCACertValidityPeriod)
+	notAfter := now.Add(defaultCACertValidityPeriod)
 
 	domain, err := spiffeid.TrustDomainFromString(trustDomain)
 	if err != nil {
@@ -62,8 +63,12 @@ func newCACert(signer crypto.Signer, trustDomain string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return nil, err
+	}
 	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(0),
+		SerialNumber: serialNumber,
 		Subject:      subject,
 		URIs:         []*url.URL{uri.URL()},
 		NotBefore:    notBefore,

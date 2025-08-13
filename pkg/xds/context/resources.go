@@ -10,6 +10,7 @@ import (
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -213,6 +214,18 @@ func (r Resources) MeshIdentities() *meshidentity_api.MeshIdentityResourceList {
 		}
 	}
 	return list.(*meshidentity_api.MeshIdentityResourceList)
+}
+
+func (r Resources) MeshTrusts() *meshtrust_api.MeshTrustResourceList {
+	list, ok := r.MeshLocalResources[meshtrust_api.MeshTrustType]
+	if !ok {
+		var err error
+		list, err = registry.Global().NewList(meshtrust_api.MeshTrustType)
+		if err != nil {
+			return &meshtrust_api.MeshTrustResourceList{}
+		}
+	}
+	return list.(*meshtrust_api.MeshTrustResourceList)
 }
 
 type MeshGatewayDataplanes struct {

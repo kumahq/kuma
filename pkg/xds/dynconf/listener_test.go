@@ -14,6 +14,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	"github.com/kumahq/kuma/pkg/xds/dynconf"
+	"github.com/kumahq/kuma/pkg/xds/dynconf/metadata"
 )
 
 var _ = Describe("AddConfigRoute", func() {
@@ -41,7 +42,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		var listener *envoy_listener.Listener
 		for _, res := range rs.Resources(envoy_resource.ListenerType) {
-			if res.Origin == dynconf.Origin {
+			if res.Origin == metadata.OriginDynamicConfig {
 				listener = res.Resource.(*envoy_listener.Listener)
 				break
 			}
@@ -86,7 +87,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		var listener *envoy_listener.Listener
 		for _, res := range rs.Resources(envoy_resource.ListenerType) {
-			if res.Origin == dynconf.Origin {
+			if res.Origin == metadata.OriginDynamicConfig {
 				listener = res.Resource.(*envoy_listener.Listener)
 				break
 			}

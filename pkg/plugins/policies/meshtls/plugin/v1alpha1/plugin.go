@@ -32,6 +32,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var (
@@ -117,7 +118,7 @@ func applyToInbounds(
 			rs.Remove(envoy_resource.ListenerType, listener.GetName())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: l,
 			})
 		}

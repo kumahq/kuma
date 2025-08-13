@@ -13,12 +13,10 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var generatorLogger = core.Log.WithName("secrets-generator")
-
-// OriginSecrets is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginSecrets = "secrets"
 
 type Generator struct{}
 
@@ -28,7 +26,7 @@ func createCaSecretResource(name string, ca *core_xds.CaSecret) *core_xds.Resour
 	caSecret := envoy_secrets.CreateCaSecret(ca, name)
 	return &core_xds.Resource{
 		Name:     caSecret.Name,
-		Origin:   OriginSecrets,
+		Origin:   metadata.OriginSecrets,
 		Resource: caSecret,
 	}
 }
@@ -37,7 +35,7 @@ func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret
 	identitySecret := envoy_secrets.CreateIdentitySecret(identity, name)
 	return &core_xds.Resource{
 		Name:     identitySecret.Name,
-		Origin:   OriginSecrets,
+		Origin:   metadata.OriginSecrets,
 		Resource: identitySecret,
 	}
 }

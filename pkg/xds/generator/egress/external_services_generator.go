@@ -6,6 +6,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -14,6 +15,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
@@ -43,14 +45,12 @@ func (g *ExternalServicesGenerator) Generate(
 	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(
-		apiVersion,
-		proxy.InternalAddresses,
+		proxy,
 		destinations,
 		endpointMap,
 		meshResources,
 		listenerBuilder,
 		services,
-		proxy.SecretsTracker,
 	)
 
 	cds, err := g.generateCDS(
@@ -125,7 +125,7 @@ func (*ExternalServicesGenerator) generateCDS(
 
 		resource := &core_xds.Resource{
 			Name:     cluster.GetName(),
-			Origin:   OriginEgress,
+			Origin:   metadata.OriginEgress,
 			Resource: cluster,
 		}
 
@@ -155,14 +155,12 @@ func (*ExternalServicesGenerator) buildServices(
 }
 
 func (g *ExternalServicesGenerator) addFilterChains(
-	apiVersion core_xds.APIVersion,
-	internalAddresses []core_xds.InternalAddress,
+	proxy *core_xds.Proxy,
 	meshDestinations zoneproxy.MeshDestinations,
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	services map[string]bool,
-	secretsTracker core_xds.SecretsTracker,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 	sniUsed := map[string]bool{}
@@ -190,15 +188,13 @@ func (g *ExternalServicesGenerator) addFilterChains(
 
 			sniUsed[sni] = true
 			g.configureFilterChain(
-				apiVersion,
-				internalAddresses,
+				proxy,
 				esName,
 				sni,
 				meshName,
 				endpoints,
 				meshDestination,
 				meshResources,
-				secretsTracker,
 				listenerBuilder,
 			)
 		}
@@ -215,32 +211,29 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		sniUsed[mes.SNI] = true
 		relevantTags := tags.Tags{}
 		g.configureFilterChain(
-			apiVersion,
-			internalAddresses,
+			proxy,
 			mes.DestinationName,
 			mes.SNI,
 			meshName,
 			endpoints,
 			relevantTags,
 			meshResources,
-			secretsTracker,
 			listenerBuilder,
 		)
 	}
 }
 
 func (*ExternalServicesGenerator) configureFilterChain(
-	apiVersion core_xds.APIVersion,
-	internalAddresses []core_xds.InternalAddress,
+	proxy *core_xds.Proxy,
 	esName string,
 	sni string,
 	meshName string,
 	endpoints []core_xds.Endpoint,
 	meshDestination tags.Tags,
 	meshResources *core_xds.MeshResources,
-	secretsTracker core_xds.SecretsTracker,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 ) {
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	// There is a case where multiple meshes contain services with
 	// the same names, so we cannot use just "serviceName" as a cluster
 	// name as we would overwrite some clusters with the latest one
@@ -261,8 +254,8 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		filterChainName = esName
 	}
 
-	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, filterChainName).Configure(
-		envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker, nil, nil),
+	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).Configure(
+		envoy_listeners.ServerSideMTLS(meshResources.Mesh, proxy.SecretsTracker, nil, nil, unifiedNaming),
 		envoy_listeners.MatchTransportProtocol("tls"),
 		envoy_listeners.MatchServerNames(sni),
 		envoy_listeners.NetworkRBAC(
@@ -300,7 +293,7 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		}
 
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(esName, false, internalAddresses)).
+			Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses)).
 			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
 			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{

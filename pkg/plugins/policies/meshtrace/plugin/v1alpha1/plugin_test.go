@@ -15,6 +15,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -24,28 +25,18 @@ import (
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshTrace", func() {
 	type testCase struct {
@@ -53,6 +44,7 @@ var _ = Describe("MeshTrace", func() {
 		singleItemRules core_rules.SingleItemRules
 		outbounds       xds_types.Outbounds
 		goldenFile      string
+		features        xds_types.Features
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -66,14 +58,14 @@ var _ = Describe("MeshTrace", func() {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
-				Origin: generator.OriginOutbound,
+				Origin: metadata.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
@@ -85,14 +77,14 @@ var _ = Describe("MeshTrace", func() {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
-				Origin: generator.OriginOutbound,
+				Origin: metadata.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
@@ -126,6 +118,9 @@ var _ = Describe("MeshTrace", func() {
 							WithAddress("127.0.0.1").
 							WithPort(17777)),
 				).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					Features: given.features,
+				}).
 				WithOutbounds(given.outbounds).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
@@ -134,10 +129,12 @@ var _ = Describe("MeshTrace", func() {
 
 			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
 
-			Expect(getResource(resources, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listener.golden.yaml", given.goldenFile)))
-			Expect(getResource(resources, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
+			resource, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listener.golden.yaml", given.goldenFile)))
+			resource, err = util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
 		},
 		Entry("inbound/outbound for zipkin and real MeshService", testCase{
 			resources: inboundAndOutboundRealMeshService(),
@@ -176,6 +173,53 @@ var _ = Describe("MeshTrace", func() {
 				},
 			},
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
+		}),
+		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
+			resources: inboundAndOutboundRealMeshService(),
+			features: xds_types.Features{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+			outbounds: xds_types.Outbounds{
+				{
+					Address:  "127.0.0.1",
+					Port:     27777,
+					Resource: backendMeshServiceIdentifier,
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{
+								Mesh: "default",
+								Name: "mt-1",
+							},
+						},
+						Conf: api.Conf{
+							Tags: &[]api.Tag{
+								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+							},
+							Sampling: &api.Sampling{
+								Overall: pointer.To(intstr.FromInt(10)),
+								Client:  pointer.To(intstr.FromInt(20)),
+								Random:  pointer.To(intstr.FromInt(50)),
+							},
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-zipkin-real-meshservice-unified-naming",
 		}),
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound(),
@@ -334,7 +378,8 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		rules core_rules.SingleItemRules
+		rules    core_rules.SingleItemRules
+		features xds_types.Features
 	}
 	DescribeTable("should generate proper Envoy config for gateways",
 		func(given gatewayTestCase) {
@@ -350,6 +395,9 @@ var _ = Describe("MeshTrace", func() {
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					Features: given.features,
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.rules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
@@ -374,6 +422,33 @@ var _ = Describe("MeshTrace", func() {
 				Rules: []*core_rules.Rule{
 					{
 						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: true,
+									TraceId128Bit:     true,
+								},
+							}},
+						},
+					},
+				},
+			},
+		}),
+		Entry("simple-gateway-with-unified-naming", gatewayTestCase{
+			features: xds_types.Features{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+			rules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{
+								Mesh: "default",
+								Name: "mt-2",
+							},
+						},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{

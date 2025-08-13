@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/origin"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
@@ -19,7 +20,7 @@ func GenerateCDS(
 	services envoy_common.Services,
 	apiVersion core_xds.APIVersion,
 	meshName string,
-	origin string,
+	origin origin.Origin,
 ) ([]*core_xds.Resource, error) {
 	matchAllDestinations := meshDestinations.KumaIoServices[mesh_proto.MatchAllTag]
 
@@ -63,7 +64,7 @@ func GenerateEDS(
 	endpointMap core_xds.EndpointMap,
 	apiVersion core_xds.APIVersion,
 	meshName string,
-	origin string,
+	origin origin.Origin,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 

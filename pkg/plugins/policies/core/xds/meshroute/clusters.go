@@ -24,7 +24,7 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 func GenerateClusters(
@@ -34,6 +34,8 @@ func GenerateClusters(
 	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
+
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
@@ -53,6 +55,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
+							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -64,7 +67,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
-							proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
+							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
@@ -97,7 +100,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -122,6 +125,7 @@ func GenerateClusters(
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						edsClusterBuilder.ConfigureIf(proxy.WorkloadIdentity == nil, envoy_clusters.ClientSideMultiIdentitiesMTLS(
 							proxy.SecretsTracker,
+							unifiedNaming,
 							meshCtx.Resource,
 							tlsReady,
 							sni,
@@ -135,7 +139,7 @@ func GenerateClusters(
 							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, false, meshCtx.Resource, serviceName, tlsReady, clusterTags))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags))
 					}
 				}
 			}
@@ -147,7 +151,7 @@ func GenerateClusters(
 
 			resources = resources.Add(&core_xds.Resource{
 				Name:           clusterName,
-				Origin:         generator.OriginOutbound,
+				Origin:         metadata.OriginOutbound,
 				Resource:       edsCluster,
 				ResourceOrigin: service.BackendRef().Resource(),
 				Protocol:       protocol,

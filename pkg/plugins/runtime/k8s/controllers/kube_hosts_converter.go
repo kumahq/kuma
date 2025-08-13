@@ -10,6 +10,7 @@ import (
 	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/metadata"
 )
 
 func KubeHosts(
@@ -58,7 +59,7 @@ func KubeHosts(
 						mesh_proto.ServiceTag:  serviceTag,
 						mesh_proto.InstanceTag: endpoint.Instance,
 					},
-					Origin: vips.OriginKube,
+					Origin: string(metadata.OriginKube),
 				})
 				if err != nil {
 					return nil, err
@@ -72,7 +73,7 @@ func KubeHosts(
 				TagSet: map[string]string{
 					mesh_proto.ServiceTag: serviceTag,
 				},
-				Origin: vips.OriginKube,
+				Origin: string(metadata.OriginKube),
 			})
 			if err != nil {
 				return nil, err
