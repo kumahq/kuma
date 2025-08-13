@@ -391,12 +391,8 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		cfg.Dataplane.Name,
 		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
-<<<<<<< HEAD
 		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
-=======
-		tpEnabled,
 		kuma_version.Build.Version,
->>>>>>> 659833745 (fix(MeshMetrics): properly parse scopes from scraped metrics (#14182))
 	)
 	metricsServer := metrics.New(
 		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
