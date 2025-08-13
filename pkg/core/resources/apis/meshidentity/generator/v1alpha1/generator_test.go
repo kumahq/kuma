@@ -3,6 +3,7 @@ package v1alpha1_test
 import (
 	"fmt"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -56,7 +57,13 @@ var _ = Describe("MeshIdentity Generator", func() {
 					Resource: &envoy_auth.Secret{
 						Name: "test-secret",
 						Type: &envoy_auth.Secret_ValidationContext{
-							ValidationContext: &envoy_auth.CertificateValidationContext{},
+							ValidationContext: &envoy_auth.CertificateValidationContext{
+								TrustedCa: &envoy_core.DataSource{
+									Specifier: &envoy_core.DataSource_EnvironmentVariable{
+										EnvironmentVariable: "MY_ENV",
+									},
+								},
+							},
 						},
 					},
 				}),

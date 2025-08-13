@@ -1,1541 +1,1704 @@
 [
   {
-    "Name": "envoy_cluster_circuit_breakers_default_cx_open",
-    "Description": "",
-    "Unit": "",
-    "Data": {
-      "DataPoints": [
+    "scope": {
+      "Name": "io.opentelemetry.contrib.mongodb",
+      "Version": "1.9.0",
+      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0",
+      "Attributes": [
         {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "access_log_sink"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 1
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "ads_cluster"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 2
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "demo-client"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 3
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 100
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 110
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 120
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 4
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 5
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "kuma_envoy_admin"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 6
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "localhost_3000"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 7
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 8
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 9
+          "Key": "extra",
+          "Value": {
+            "Type": "STRING",
+            "Value": "test"
+          }
         }
       ]
-    }
+    },
+    "metrics": [
+      {
+        "Name": "custom_metric_with_scope",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 1
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 2
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 3
+            }
+          ]
+        }
+      }
+    ]
   },
   {
-    "Name": "envoy_cluster_circuit_breakers_default_cx_pool_open",
-    "Description": "",
-    "Unit": "",
-    "Data": {
-      "DataPoints": [
-        {
-          "Attributes": [
+    "scope": {
+      "Name": "kuma",
+      "Version": "0.0.0",
+      "SchemaURL": "",
+      "Attributes": null
+    },
+    "metrics": [
+      {
+        "Name": "envoy_cluster_circuit_breakers_default_cx_open",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
             {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 1
             },
             {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "access_log_sink"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 2
             },
             {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 3
             },
             {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 100
             },
             {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 110
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 120
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 4
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 5
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "kuma_envoy_admin"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 6
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "localhost_3000"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 7
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 8
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 9
             }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 21
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "ads_cluster"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 22
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "demo-client"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 23
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 200
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 210
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 220
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 24
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 25
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "kuma_envoy_admin"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 26
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "localhost_3000"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 27
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 28
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 29
+          ]
         }
-      ]
-    }
-  },
-  {
-    "Name": "envoy_cluster_circuit_breakers_default_rq_open",
-    "Description": "",
-    "Unit": "",
-    "Data": {
-      "DataPoints": [
-        {
-          "Attributes": [
+      },
+      {
+        "Name": "envoy_cluster_circuit_breakers_default_cx_pool_open",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
             {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 21
             },
             {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "access_log_sink"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 22
             },
             {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 23
             },
             {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 200
             },
             {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 210
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 220
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 24
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 25
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "kuma_envoy_admin"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 26
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "localhost_3000"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 27
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 28
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 29
             }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 31
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "ads_cluster"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 32
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "demo-client"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 33
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 300
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 310
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 320
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 34
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "inbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 35
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "kuma_envoy_admin"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 36
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "localhost_3000"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 37
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv4"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 38
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "dataplane",
-              "Value": {
-                "Type": "STRING",
-                "Value": "dpp-1"
-              }
-            },
-            {
-              "Key": "envoy_cluster_name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "outbound_passthrough_ipv6"
-              }
-            },
-            {
-              "Key": "extraLabel",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test"
-              }
-            },
-            {
-              "Key": "mesh",
-              "Value": {
-                "Type": "STRING",
-                "Value": "default"
-              }
-            },
-            {
-              "Key": "service",
-              "Value": {
-                "Type": "STRING",
-                "Value": "test-service"
-              }
-            }
-          ],
-          "StartTime": "0001-01-01T00:00:00Z",
-          "Time": "2024-01-01T01:01:01.000000001Z",
-          "Value": 39
+          ]
         }
-      ]
-    }
+      },
+      {
+        "Name": "envoy_cluster_circuit_breakers_default_rq_open",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "access_log_sink"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 31
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "ads_cluster"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 32
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "demo-client"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 33
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 300
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 310
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 320
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 34
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "inbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 35
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "kuma_envoy_admin"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 36
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "localhost_3000"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 37
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv4"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 38
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "dataplane",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "dpp-1"
+                  }
+                },
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "outbound_passthrough_ipv6"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test"
+                  }
+                },
+                {
+                  "Key": "mesh",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "default"
+                  }
+                },
+                {
+                  "Key": "service",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-service"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 39
+            }
+          ]
+        }
+      }
+    ]
   }
 ]

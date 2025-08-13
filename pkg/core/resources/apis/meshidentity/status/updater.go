@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	ReadyType     string = "Ready"
-	ProviderType  string = "Provider"
 	MeshTrustType string = "MeshTrustCreated"
 )
 
