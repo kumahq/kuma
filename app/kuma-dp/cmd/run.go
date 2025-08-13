@@ -402,6 +402,7 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
 		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+		kuma_version.Build.Version,
 	)
 	metricsServer := metrics.New(
 		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
