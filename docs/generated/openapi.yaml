@@ -1496,6 +1496,1217 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
+<<<<<<< HEAD
+=======
+  /meshes/{mesh}/dataplanes/{name}:
+    get:
+      operationId: getDataplane
+      summary: Returns Dataplane entity
+      tags:
+        - Dataplane
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Dataplane
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putDataplane
+      summary: Creates or Updates Dataplane entity
+      tags:
+        - Dataplane
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Dataplane
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataplaneCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataplaneCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteDataplane
+      summary: Deletes Dataplane entity
+      tags:
+        - Dataplane
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Dataplane
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataplaneDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/dataplanes:
+    get:
+      operationId: getDataplaneList
+      summary: Returns a list of Dataplane in the mesh.
+      tags:
+        - Dataplane
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneList'
+  /meshes/{mesh}/dataplanes/{name}/_overview:
+    get:
+      operationId: getDataplaneOverview
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/_overview:
+    get:
+      operationId: getDataplaneOverviewList
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{name}:
+    get:
+      operationId: getMesh
+      summary: Returns Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMesh
+      summary: Creates or Updates Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMesh
+      summary: Deletes Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes:
+    get:
+      operationId: getMeshList
+      summary: Returns a list of Mesh in the mesh.
+      tags:
+        - Mesh
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshList'
+  /meshes/{mesh}/meshgateways/{name}:
+    get:
+      operationId: getMeshGateway
+      summary: Returns MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshGateway
+      summary: Creates or Updates MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshGatewayItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshGateway
+      summary: Deletes MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshgateways:
+    get:
+      operationId: getMeshGatewayList
+      summary: Returns a list of MeshGateway in the mesh.
+      tags:
+        - MeshGateway
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayList'
+  /hostnamegenerators/{name}:
+    get:
+      operationId: getHostnameGenerator
+      summary: Returns HostnameGenerator entity
+      tags:
+        - HostnameGenerator
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the HostnameGenerator
+      responses:
+        '200':
+          $ref: '#/components/responses/HostnameGeneratorItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putHostnameGenerator
+      summary: Creates or Updates HostnameGenerator entity
+      tags:
+        - HostnameGenerator
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the HostnameGenerator
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostnameGeneratorItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse
+    delete:
+      operationId: deleteHostnameGenerator
+      summary: Deletes HostnameGenerator entity
+      tags:
+        - HostnameGenerator
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the HostnameGenerator
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostnameGeneratorDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /hostnamegenerators:
+    get:
+      operationId: getHostnameGeneratorList
+      summary: Returns a list of HostnameGenerator in the mesh.
+      tags:
+        - HostnameGenerator
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: '#/components/responses/HostnameGeneratorList'
+  /meshes/{mesh}/meshexternalservices/{name}:
+    get:
+      operationId: getMeshExternalService
+      summary: Returns MeshExternalService entity
+      tags:
+        - MeshExternalService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshExternalService
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshExternalServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshExternalService
+      summary: Creates or Updates MeshExternalService entity
+      tags:
+        - MeshExternalService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshExternalService
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshExternalServiceItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse
+    delete:
+      operationId: deleteMeshExternalService
+      summary: Deletes MeshExternalService entity
+      tags:
+        - MeshExternalService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshExternalService
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshExternalServiceDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshexternalservices:
+    get:
+      operationId: getMeshExternalServiceList
+      summary: Returns a list of MeshExternalService in the mesh.
+      tags:
+        - MeshExternalService
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshExternalServiceList'
+  /meshes/{mesh}/meshidentities/{name}:
+    get:
+      operationId: getMeshIdentity
+      summary: Returns MeshIdentity entity
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshIdentity
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshIdentityItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshIdentity
+      summary: Creates or Updates MeshIdentity entity
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshIdentity
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshIdentityItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshIdentityCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshIdentityCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshIdentity
+      summary: Deletes MeshIdentity entity
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshIdentity
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshIdentityDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshidentities:
+    get:
+      operationId: getMeshIdentityList
+      summary: Returns a list of MeshIdentity in the mesh.
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshIdentityList'
+  /meshes/{mesh}/meshmultizoneservices/{name}:
+    get:
+      operationId: getMeshMultiZoneService
+      summary: Returns MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMultiZoneServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshMultiZoneService
+      summary: Creates or Updates MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshMultiZoneServiceItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+    delete:
+      operationId: deleteMeshMultiZoneService
+      summary: Deletes MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMultiZoneServiceDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshmultizoneservices:
+    get:
+      operationId: getMeshMultiZoneServiceList
+      summary: Returns a list of MeshMultiZoneService in the mesh.
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMultiZoneServiceList'
+  /meshes/{mesh}/meshservices/{name}:
+    get:
+      operationId: getMeshService
+      summary: Returns MeshService entity
+      tags:
+        - MeshService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshService
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshService
+      summary: Creates or Updates MeshService entity
+      tags:
+        - MeshService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshService
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshServiceItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshService
+      summary: Deletes MeshService entity
+      tags:
+        - MeshService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshService
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshServiceDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshservices:
+    get:
+      operationId: getMeshServiceList
+      summary: Returns a list of MeshService in the mesh.
+      tags:
+        - MeshService
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshServiceList'
+  /meshes/{mesh}/meshtrusts/{name}:
+    get:
+      operationId: getMeshTrust
+      summary: Returns MeshTrust entity
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTrustItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshTrust
+      summary: Creates or Updates MeshTrust entity
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTrustItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshTrust
+      summary: Deletes MeshTrust entity
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrust
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTrustDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshtrusts:
+    get:
+      operationId: getMeshTrustList
+      summary: Returns a list of MeshTrust in the mesh.
+      tags:
+        - MeshTrust
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTrustList'
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+  - {}
+>>>>>>> afae05d06 (chore(deps): bump openapi-tool to v1.1.6 (#14226))
 components:
   schemas:
     ResourceTypeDescriptionList:
@@ -9427,4 +10638,17 @@ components:
           - type: Dataplane
             mesh: default
             name: dp-2
+<<<<<<< HEAD
+=======
+            labels:
+              k8s.kuma.io/namespace: kuma-system
+    InspectHostnamesExample:
+      value:
+        total: 100
+        items:
+          - hostname: redis.redis-system.svc.east.mesh.local
+            zones:
+              - name: east
+              - name: west
+>>>>>>> afae05d06 (chore(deps): bump openapi-tool to v1.1.6 (#14226))
 
