@@ -7,16 +7,17 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/origin"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("Cluster modifications", func() {
 	type testCaseCluster struct {
 		yaml   string
-		origin string
+		origin origin.Origin
 	}
 
 	type testCase struct {
@@ -35,7 +36,7 @@ var _ = Describe("Cluster modifications", func() {
 				Expect(err).ToNot(HaveOccurred())
 				origin := c.origin
 				if origin == "" {
-					origin = generator.OriginInbound
+					origin = metadata.OriginInbound
 				}
 				set.Add(&core_xds.Resource{
 					Name:     cluster.Name,
@@ -256,7 +257,7 @@ var _ = Describe("Cluster modifications", func() {
                             - kuma
                         sni: foo-service{mesh=default}
                     `,
-					origin: generator.OriginOutbound,
+					origin: metadata.OriginOutbound,
 				},
 				{
 					yaml: `
@@ -269,7 +270,7 @@ var _ = Describe("Cluster modifications", func() {
                         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                         sni: bar-service{mesh=default}
                     `,
-					origin: generator.OriginInbound,
+					origin: metadata.OriginInbound,
 				},
 				{
 					yaml: `
@@ -282,7 +283,7 @@ var _ = Describe("Cluster modifications", func() {
                         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                         sni: baz-service{mesh=default}
                     `,
-					origin: generator.OriginOutbound,
+					origin: metadata.OriginOutbound,
 				},
 			},
 			modifications: []string{

@@ -2,99 +2,131 @@ package metrics
 
 import (
 	"math"
+	"strings"
 	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, extraLabels map[string]string, requestTime time.Time) []metricdata.Metrics {
+const (
+	otelScopePrefix    = "otel_scope_"
+	otelScopeName      = "otel_scope_name"
+	otelScopeVersion   = "otel_scope_version"
+	otelScopeSchemaUrl = "otel_scope_schema_url"
+	kumaOtelScope      = "kuma"
+)
+
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, kumaVersion string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
 
-	var openTelemetryMetrics []metricdata.Metrics
+	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
 	for _, prometheusMetric := range appMetrics {
-		otelMetric := metricdata.Metrics{
-			Name:        prometheusMetric.GetName(),
-			Description: prometheusMetric.GetHelp(),
-		}
-
+		var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
 		switch prometheusMetric.GetType() {
 		case io_prometheus_client.MetricType_GAUGE:
-			otelMetric.Data = metricdata.Gauge[float64]{
-				DataPoints: gaugeDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
-			}
+			scopedAggregations = scopedGauges(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_SUMMARY:
-			otelMetric.Data = metricdata.Summary{
-				DataPoints: summaryDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
-			}
+			scopedAggregations = scopedSummaries(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_COUNTER:
-			otelMetric.Data = metricdata.Sum[float64]{
-				IsMonotonic: true,
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints:  counterDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
-			}
+			scopedAggregations = scopedCounters(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_HISTOGRAM:
-			otelMetric.Data = metricdata.Histogram[float64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints:  histogramDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
-			}
+			scopedAggregations = scopedHistograms(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		default:
 			log.Info("got unsupported metric type", "type", prometheusMetric.Type)
 		}
-		openTelemetryMetrics = append(openTelemetryMetrics, otelMetric)
+
+		for scope, aggregations := range scopedAggregations {
+			scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
+				Name:        prometheusMetric.GetName(),
+				Description: prometheusMetric.GetHelp(),
+				Data:        aggregations,
+			})
+		}
 	}
 
-	return openTelemetryMetrics
+	return scopedMetrics
 }
 
-func gaugeDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.DataPoint[float64] {
-	var dataPoints []metricdata.DataPoint[float64]
+func scopedGauges(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
-		dataPoints = append(dataPoints, metricdata.DataPoint[float64]{
-			Attributes: attributes,
+		scope, attributes := extractScope(metric, kumaVersion)
+		attributes = append(attributes, extraAttributes...)
+		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
+			Attributes: attribute.NewSet(attributes...),
 			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
 			Value:      metric.Gauge.GetValue(),
 		})
 	}
-	return dataPoints
+
+	scopedAggregations := map[instrumentation.Scope]metricdata.Aggregation{}
+	for scope, data := range scopedDataPoints {
+		scopedAggregations[scope] = metricdata.Gauge[float64]{
+			DataPoints: data,
+		}
+	}
+
+	return scopedAggregations
 }
 
-func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.SummaryDataPoint {
-	var dataPoints []metricdata.SummaryDataPoint
+func scopedSummaries(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.SummaryDataPoint{}
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
-		dataPoints = append(dataPoints, metricdata.SummaryDataPoint{
-			Attributes:     attributes,
+		scope, attributes := extractScope(metric, kumaVersion)
+		attributes = append(attributes, extraAttributes...)
+		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.SummaryDataPoint{
+			Attributes:     attribute.NewSet(attributes...),
 			Time:           getTimeOrFallback(metric.TimestampMs, requestTime),
 			QuantileValues: toOpenTelemetryQuantile(metric.Summary.Quantile),
 			Sum:            pointer.Deref(metric.Summary.SampleSum),
 			Count:          pointer.Deref(metric.Summary.SampleCount),
 		})
 	}
-	return dataPoints
+
+	scopedAggregations := map[instrumentation.Scope]metricdata.Aggregation{}
+	for scope, data := range scopedDataPoints {
+		scopedAggregations[scope] = metricdata.Summary{
+			DataPoints: data,
+		}
+	}
+
+	return scopedAggregations
 }
 
-func counterDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.DataPoint[float64] {
-	var dataPoints []metricdata.DataPoint[float64]
+func scopedCounters(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
-		dataPoints = append(dataPoints, metricdata.DataPoint[float64]{
-			Attributes: attributes,
+		scope, attributes := extractScope(metric, kumaVersion)
+		attributes = append(attributes, extraAttributes...)
+		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
+			Attributes: attribute.NewSet(attributes...),
 			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
 			Value:      metric.Counter.GetValue(),
 		})
 	}
-	return dataPoints
+
+	scopedAggregations := map[instrumentation.Scope]metricdata.Aggregation{}
+	for scope, data := range scopedDataPoints {
+		scopedAggregations[scope] = metricdata.Sum[float64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  data,
+		}
+	}
+
+	return scopedAggregations
 }
 
-func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.HistogramDataPoint[float64] {
-	var dataPoints []metricdata.HistogramDataPoint[float64]
+func scopedHistograms(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.HistogramDataPoint[float64]{}
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
+		scope, attributes := extractScope(metric, kumaVersion)
+		attributes = append(attributes, extraAttributes...)
 
 		var bounds []float64
 		var bucketCounts []uint64
@@ -105,16 +137,25 @@ func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAtt
 			bucketCounts = append(bucketCounts, bucket.GetCumulativeCount())
 		}
 
-		dataPoints = append(dataPoints, metricdata.HistogramDataPoint[float64]{
+		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.HistogramDataPoint[float64]{
 			Time:         getTimeOrFallback(metric.TimestampMs, requestTime),
-			Attributes:   attributes,
+			Attributes:   attribute.NewSet(attributes...),
 			Count:        metric.Histogram.GetSampleCount(),
 			Sum:          metric.Histogram.GetSampleSum(),
 			Bounds:       bounds,
 			BucketCounts: bucketCounts,
 		})
 	}
-	return dataPoints
+
+	scopedAggregations := map[instrumentation.Scope]metricdata.Aggregation{}
+	for scope, data := range scopedDataPoints {
+		scopedAggregations[scope] = metricdata.Histogram[float64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  data,
+		}
+	}
+
+	return scopedAggregations
 }
 
 func getTimeOrFallback(timestampMs *int64, fallback time.Time) time.Time {
@@ -123,15 +164,6 @@ func getTimeOrFallback(timestampMs *int64, fallback time.Time) time.Time {
 	} else {
 		return fallback
 	}
-}
-
-func createOpenTelemetryAttributes(labels []*io_prometheus_client.LabelPair, extraAttributes []attribute.KeyValue) attribute.Set {
-	var attributes []attribute.KeyValue
-	for _, label := range labels {
-		attributes = append(attributes, attribute.String(label.GetName(), label.GetValue()))
-	}
-	attributes = append(attributes, extraAttributes...)
-	return attribute.NewSet(attributes...)
 }
 
 func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantile) []metricdata.QuantileValue {
@@ -160,4 +192,39 @@ func extraAttributesFrom(mesh string, dataplane string, service string, extraLab
 		extraAttributes = append(extraAttributes, attribute.String(k, v))
 	}
 	return extraAttributes
+}
+
+func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (instrumentation.Scope, []attribute.KeyValue) {
+	var attributes []attribute.KeyValue
+	var scopeAttributes []attribute.KeyValue
+	var scope instrumentation.Scope
+	for _, label := range metric.Label {
+		if !strings.HasPrefix(label.GetName(), otelScopePrefix) {
+			attributes = append(attributes, attribute.String(label.GetName(), label.GetValue()))
+			continue
+		}
+
+		switch label.GetName() {
+		case otelScopeName:
+			scope.Name = label.GetValue()
+		case otelScopeVersion:
+			scope.Version = label.GetValue()
+		case otelScopeSchemaUrl:
+			scope.SchemaURL = label.GetValue()
+		default:
+			scopeAttributes = append(scopeAttributes, attribute.String(strings.TrimPrefix(label.GetName(), otelScopePrefix), label.GetValue()))
+		}
+	}
+
+	if len(scopeAttributes) > 0 {
+		scope.Attributes = attribute.NewSet(scopeAttributes...)
+	}
+
+	// If metrics were not scoped, we need to create Kuma scope for it
+	if len(attributes) == len(metric.Label) {
+		scope.Name = kumaOtelScope
+		scope.Version = kumaVersion
+	}
+
+	return scope, attributes
 }

@@ -15,10 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/dynconf"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-// OriginDNS is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginDNS = "dns"
 
 type DNSGenerator struct{}
 
@@ -98,7 +96,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	resources.Add(&core_xds.Resource{
 		Name:     names.GetDNSListenerName(),
 		Resource: listener,
-		Origin:   OriginDNS,
+		Origin:   metadata.OriginDNS,
 	})
 	return resources, nil
 }

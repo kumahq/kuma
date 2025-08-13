@@ -14,7 +14,7 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 func GenerateOutboundListener(
@@ -58,7 +58,7 @@ func GenerateOutboundListener(
 
 	return &core_xds.Resource{
 		Name:           resource.GetName(),
-		Origin:         generator.OriginOutbound,
+		Origin:         metadata.OriginOutbound,
 		Resource:       resource,
 		ResourceOrigin: svc.Outbound.Resource,
 		Protocol:       svc.Protocol,

@@ -8,11 +8,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/metadata"
 	xds_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-)
-
-const (
-	OriginMeshPassthrough = "meshpassthrough"
 )
 
 type Configurer struct {
@@ -46,7 +43,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     config.GetName(),
-			Origin:   OriginMeshPassthrough,
+			Origin:   metadata.OriginMeshPassthrough,
 			Resource: config,
 		})
 	}
