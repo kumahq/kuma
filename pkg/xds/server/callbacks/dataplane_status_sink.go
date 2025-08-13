@@ -268,7 +268,6 @@ func (s *dataplaneInsightStore) Upsert(
 			}
 
 			insight.Spec.Metadata = xdsMetadata
-			core.Log.Info("TEST", "insight.Spec.MTLS", insight.Spec.MTLS, "secrets", secretsInfo)
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil ||
@@ -279,7 +278,6 @@ func (s *dataplaneInsightStore) Upsert(
 					return err
 				}
 			}
-			core.Log.Info("SET", "insight", insight)
 			return nil
 		})
 	default:
