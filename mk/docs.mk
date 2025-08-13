@@ -4,7 +4,7 @@ DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
 # renovate: datasource=docker depName=kumahq/openapi-tool versioning=semver-coerced registryUrl=https://ghcr.io
-OAPI_TOOLS_VERSION ?= v1.1.6
+OAPI_TOOLS_VERSION ?= v1.1.7
 
 .PHONY: clean/docs
 clean/docs:
