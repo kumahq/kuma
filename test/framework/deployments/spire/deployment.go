@@ -13,9 +13,9 @@ type Deployment interface {
 }
 
 type deployOptions struct {
-	namespace   string
-	name        string
-	trustDomain string
+	namespace      string
+	name           string
+	trustDomain    string
 	kubectlVersion string
 }
 
@@ -40,10 +40,10 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 		switch cluster.(type) {
 		case *framework.K8sCluster:
 			deployment = &k8sDeployment{
-				namespace:   opts.namespace,
-				name:        opts.name,
-				trustDomain: opts.trustDomain,
-				kubectlVersion: opts.kubectlVersion
+				namespace:      opts.namespace,
+				name:           opts.name,
+				trustDomain:    opts.trustDomain,
+				kubectlVersion: opts.kubectlVersion,
 			}
 		default:
 			return errors.New("invalid cluster")

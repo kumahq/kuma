@@ -6,12 +6,13 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/pkg/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -61,10 +62,10 @@ func Matched(
 func (i *MeshIdentity) getSpiffeIDTemplate() string {
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
+	builder.WriteString("{{ .TrustDomain }}")
 	if i.SpiffeID != nil {
 		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultPathTemplate))
 	} else {
-		builder.WriteString("{{ .TrustDomain }}")
 		builder.WriteString(defaultPathTemplate)
 	}
 	return builder.String()

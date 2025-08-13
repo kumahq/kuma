@@ -227,7 +227,9 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	if err != nil {
 		return nil, err
 	}
+	core.Log.Info("TRUST_DOMAIN", "trustDomain", trustDomain)
 	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta())
+	core.Log.Info("TRUST_DOMAIN", "spiffeID", spiffeID)
 	if err != nil {
 		return nil, err
 	}

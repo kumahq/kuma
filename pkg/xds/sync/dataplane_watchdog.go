@@ -142,7 +142,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	syncForConfig := meshCtx.Hash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
 	identity := d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items)
 	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity))
-	syncIdentity := identityHash != d.lastIdentityHash || (d.workloadIdentity != nil && d.workloadIdentity.ManageType == core_xds.KumaManagedType && d.workloadIdentity.ExpiringSoon())
+	syncIdentity := identityHash != d.lastIdentityHash || (d.workloadIdentity != nil && d.workloadIdentity.ManagementMode == core_xds.KumaManagementMode && d.workloadIdentity.ExpiringSoon())
 	if !syncForCert && !syncForConfig && !syncIdentity {
 		result.Status = SkipStatus
 		return result, nil

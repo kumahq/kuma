@@ -19,6 +19,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	envoy_admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -92,6 +93,8 @@ var _ = Describe("Dataplane Watchdog", func() {
 		Expect(err).ToNot(HaveOccurred())
 		cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
+		eventBus, err := events.NewEventBus(10, newMetrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		secrets, err := secrets.NewSecrets(nil, nil, newMetrics) // nil is ok for now, because we don't use it
 		Expect(err).ToNot(HaveOccurred())
@@ -109,7 +112,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
 				Secrets:         secrets,
 				Zone:            zone,
-				IdentityManager: providers.NewIdentityProviderManager(plugins),
+				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus),
 			},
 			MeshCache:  cache,
 			ResManager: resManager,

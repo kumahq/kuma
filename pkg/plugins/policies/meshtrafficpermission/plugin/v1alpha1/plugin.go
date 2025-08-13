@@ -51,7 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	if !ctx.Mesh.Resource.MTLSEnabled() {
+	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
@@ -63,7 +63,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		if res.Origin != metadata.OriginInbound {
 			continue
 		}
-
 		listener := res.Resource.(*envoy_listener.Listener)
 		dpAddress := listener.GetAddress().GetSocketAddress()
 

@@ -36,7 +36,6 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--repo", "https://spiffe.github.io/helm-charts-hardened/",
 		"spire-crds",
 	)
-
 	if err != nil {
 		return err
 	}
@@ -48,7 +47,6 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--set", "global.spire.tools.kubectl.tag="+t.kubectlVersion,
 		"spire",
 	)
-
 	if err != nil {
 		return err
 	}

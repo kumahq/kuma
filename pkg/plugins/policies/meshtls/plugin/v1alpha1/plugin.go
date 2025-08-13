@@ -336,7 +336,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 	// Spire delivers SANs validator and we don't support MeshTrust with spire
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
-	if proxy.WorkloadIdentity.ManageType == core_xds.KumaManagedType {
+	if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
 		for trustDomain := range xdsCtx.Mesh.TrustsByTrustDomain {
 			id, err := spiffeid.TrustDomainFromString(trustDomain)
 			if err != nil {
@@ -351,15 +351,16 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		Configure(
 			bldrs_tls.DownstreamCommonTlsContext(
 				bldrs_tls.NewCommonTlsContext().
-					ConfigureIf(conf.TlsCiphers != nil, func() bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						return bldrs_tls.CipherSuites(*conf.TlsCiphers)
-					}).
-					ConfigureIf(conf.TlsVersion != nil && conf.TlsVersion.Max != nil, func() bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						return bldrs_tls.TlsMaxVersion(conf.TlsVersion.Max)
-					}).
-					ConfigureIf(conf.TlsVersion != nil && conf.TlsVersion.Min != nil, func() bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						return bldrs_tls.TlsMinVersion(conf.TlsVersion.Min)
-					}).
+					Configure(bldrs_common.IfNotNil(conf.TlsCiphers, bldrs_tls.CipherSuites)).
+					Configure(bldrs_common.IfNotNil(conf.TlsVersion, func(version common_tls.Version) bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
+						if version.Max != nil {
+							bldrs_tls.TlsMaxVersion(version.Max)
+						}
+						if version.Min != nil {
+							bldrs_tls.TlsMinVersion(version.Min)
+						}
+						return nil
+					})).
 					Configure(bldrs_tls.CombinedCertificateValidationContext(
 						bldrs_tls.NewCombinedCertificateValidationContext().Configure(
 							bldrs_tls.DefaultValidationContext(bldrs_tls.NewDefaultValidationContext().Configure(
