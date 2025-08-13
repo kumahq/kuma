@@ -9,6 +9,7 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/go-logr/logr"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -26,8 +27,8 @@ import (
 )
 
 const (
-	OriginIdentitySpire                 = "IdentitySpire"
-	SystemResourceNameSpireAgentCluster = "system_identity_sds-spire-agent"
+	OriginIdentitySpire   = "IdentitySpire"
+	SpireAgentClusterName = "identity_sds-spire-agent"
 	// Secret name which includes all CAs required after federation
 	FederatedCASecretName        = "ALL"
 	defaultSpireAgentConnTimeout = 1 * time.Second
@@ -100,11 +101,12 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 // we need to create a cluster for spire agent
 func additionalResources(mountPath, socketFileName string, timeout time.Duration) (*xds.ResourceSet, error) {
 	resources := xds.NewResourceSet()
+	clusterName := core_system_names.AsSystemName(SpireAgentClusterName)
 	resource, err := bldrs_cluster.NewCluster().
-		Configure(bldrs_cluster.Name(SystemResourceNameSpireAgentCluster)).
+		Configure(bldrs_cluster.Name(clusterName)).
 		Configure(bldrs_cluster.ConnectTimeout(timeout)).
 		Configure(bldrs_cluster.Http2()).
-		Configure(bldrs_cluster.Endpoints(SystemResourceNameSpireAgentCluster, []*envoy_endpoint.LocalityLbEndpoints{
+		Configure(bldrs_cluster.Endpoints(clusterName, []*envoy_endpoint.LocalityLbEndpoints{
 			{
 				LbEndpoints: []*envoy_endpoint.LbEndpoint{
 					{
@@ -127,7 +129,7 @@ func additionalResources(mountPath, socketFileName string, timeout time.Duration
 		return nil, err
 	}
 	resources = resources.Add(&xds.Resource{
-		Name:     SystemResourceNameSpireAgentCluster,
+		Name:     clusterName,
 		Origin:   OriginIdentitySpire,
 		Resource: resource,
 	})
@@ -138,7 +140,7 @@ func sourceConfigurer(secretName string) func() bldrs_common.Configurer[envoy_tl
 	return func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 		return bldrs_tls.SdsSecretConfigSource(
 			secretName,
-			bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(SystemResourceNameSpireAgentCluster)),
+			bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(secretName)),
 		)
 	}
 }

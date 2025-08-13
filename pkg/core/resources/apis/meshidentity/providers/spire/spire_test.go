@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers/spire"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
@@ -21,7 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
 var _ = Describe("Spire Providers Test", func() {
@@ -40,18 +41,18 @@ var _ = Describe("Spire Providers Test", func() {
 						"version": "v1",
 					},
 				}).WithSpire().Build()
-
+			clusterName := core_system_names.AsSystemName(spire.SpireAgentClusterName)
 			expectedIdentity, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 				bldrs_tls.SdsSecretConfigSource(
 					"spiffe://default.my-zone.mesh.local/ns/my-ns/sa/my-sa",
-					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(spire.SystemResourceNameSpireAgentCluster)),
+					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(clusterName)),
 				),
 			).Build()
 			Expect(err).ToNot(HaveOccurred())
 			expectedValidation, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 				bldrs_tls.SdsSecretConfigSource(
 					spire.FederatedCASecretName,
-					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(spire.SystemResourceNameSpireAgentCluster)),
+					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(clusterName)),
 				),
 			).Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -91,7 +92,9 @@ var _ = Describe("Spire Providers Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(validatorSource).To(Equal(expectedValidation))
 
-			Expect(getResource(identity.AdditionalResources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "spire.cluster.golden.yaml")))
+			resources, err := util_yaml.GetResourcesToYaml(identity.AdditionalResources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resources).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "spire.cluster.golden.yaml")))
 		})
 
 		It("should not provide an identity for a dataplane without spire support", func() {
@@ -127,12 +130,3 @@ var _ = Describe("Spire Providers Test", func() {
 		})
 	})
 })
-
-func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
