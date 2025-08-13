@@ -130,11 +130,17 @@ func scopedHistograms(prometheusData []*io_prometheus_client.Metric, kumaVersion
 
 		var bounds []float64
 		var bucketCounts []uint64
-		for _, bucket := range metric.Histogram.Bucket {
+		for idx, bucket := range metric.Histogram.Bucket {
 			if !math.IsInf(bucket.GetUpperBound(), 1) {
 				bounds = append(bounds, bucket.GetUpperBound())
 			}
-			bucketCounts = append(bucketCounts, bucket.GetCumulativeCount())
+
+			bucketValue := bucket.GetCumulativeCount()
+			// we need to get actual count from specific bucket, not from all smaller buckets to convert prometheus histogram to native histogram
+			if idx > 0 {
+				bucketValue -= metric.Histogram.Bucket[idx-1].GetCumulativeCount()
+			}
+			bucketCounts = append(bucketCounts, bucketValue)
 		}
 
 		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.HistogramDataPoint[float64]{
