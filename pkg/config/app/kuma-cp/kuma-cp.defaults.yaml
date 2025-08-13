@@ -389,9 +389,9 @@ runtime:
         # If true, enables mounting of SPIRE-related resources.
         enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED
         # mountPath is the location inside the container where the SPIRE agent socket will be mounted.
-        mountPath: "/run/spire/sockets" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_MOUNT_PATH
+        mountPath: "/run/spire/sockets" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH
         # socketFileName is the name of the socket on the host
-        socketFileName: "socket" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_MOUNT_PATH
+        socketFileName: "socket" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_SOCKET_FILE_NAME
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
     # Kubernetes's resources reconciliation concurrency configuration
     controllersConcurrency:

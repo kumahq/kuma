@@ -9,14 +9,15 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/go-logr/logr"
-	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers/spire/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_cluster "github.com/kumahq/kuma/pkg/envoy/builders/cluster"
@@ -27,7 +28,6 @@ import (
 )
 
 const (
-	OriginIdentitySpire   = "IdentitySpire"
 	SpireAgentClusterName = "identity_sds-spire-agent"
 	// Secret name which includes all CAs required after federation
 	FederatedCASecretName        = "ALL"
@@ -130,17 +130,18 @@ func additionalResources(mountPath, socketFileName string, timeout time.Duration
 	}
 	resources = resources.Add(&xds.Resource{
 		Name:     clusterName,
-		Origin:   OriginIdentitySpire,
+		Origin:   metadata.OriginMeshTrust,
 		Resource: resource,
 	})
 	return resources, nil
 }
 
 func sourceConfigurer(secretName string) func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+	clusterName := core_system_names.AsSystemName(SpireAgentClusterName)
 	return func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 		return bldrs_tls.SdsSecretConfigSource(
 			secretName,
-			bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(secretName)),
+			bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(clusterName)),
 		)
 	}
 }
