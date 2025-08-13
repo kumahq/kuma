@@ -15,6 +15,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/events"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -60,6 +62,11 @@ var _ = Describe("DataplaneInsightSink", func() {
 			ticker := &time.Ticker{
 				C: ticks,
 			}
+			metrics, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			eventBus, err := events.NewEventBus(10, metrics)
+			Expect(err).ToNot(HaveOccurred())
+
 			var latestOperation *DataplaneInsightOperation
 
 			// given
@@ -79,6 +86,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
 				1*time.Millisecond,
 				store,
+				eventBus,
+				recorder.ResourceManager,
 			)
 
 			// when

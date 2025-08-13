@@ -78,7 +78,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	envoyCpCtx := &xds_context.ControlPlaneContext{
 		CLACache:        claCache,
 		Secrets:         secrets,
-		IdentityManager: providers.NewIdentityProviderManager(rt.IdentityProviders()),
+		IdentityManager: providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus()),
 		Zone:            rt.Config().Multizone.Zone.Name,
 		SystemNamespace: systemNamespace,
 	}

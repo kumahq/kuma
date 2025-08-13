@@ -116,3 +116,17 @@ func (mi *MeshIdentityBuilder) WithBundled() *MeshIdentityBuilder {
 	}
 	return mi
 }
+
+func (mi *MeshIdentityBuilder) WithInitializedStatus() *MeshIdentityBuilder {
+	mi.res.Status = &meshidentity_api.MeshIdentityStatus{
+		Conditions: []common_api.Condition{
+			{
+				Type:    meshidentity_api.ReadyConditionType,
+				Status:  v1.ConditionTrue,
+				Reason:  "Ready",
+				Message: "Successfully initialized",
+			},
+		},
+	}
+	return mi
+}
