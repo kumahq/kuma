@@ -41,7 +41,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -65,13 +65,13 @@ var _ = Describe("MeshHealthCheck", func() {
 	httpClusters := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-http",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, httpServiceTag).
 				MustBuild(),
 		},
 		{
 			Name:   "cluster-echo-http-_0_",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, splitHttpServiceTag).
 				MustBuild(),
 		},
@@ -79,7 +79,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	tcpCluster := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-tcp",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, tcpServiceTag).
 				MustBuild(),
 		},
@@ -87,7 +87,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	grpcCluster := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-grpc",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, grpcServiceTag).
 				MustBuild(),
 		},

@@ -20,7 +20,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var (
@@ -60,7 +60,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
-		if res.Origin != generator.OriginInbound {
+		if res.Origin != metadata.OriginInbound {
 			continue
 		}
 

@@ -23,8 +23,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("RBAC", func() {
@@ -46,7 +45,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener,
 			})
 
@@ -60,7 +59,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener2.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener2,
 			})
 
@@ -87,7 +86,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener4.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener4,
 			})
 
@@ -166,7 +165,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   egress.OriginEgress,
+				Origin:   metadata.OriginEgress,
 				Resource: listener,
 			})
 

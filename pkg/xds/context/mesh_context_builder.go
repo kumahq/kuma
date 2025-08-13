@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -154,6 +155,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		domains = append(domains, vipDomains...)
 	}
 
+	trustDomainToTrusts := getTrustDomainToTrusts(resources.MeshTrusts().Items)
+
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
 	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
@@ -228,6 +231,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		ServicesInformation:         m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:            loader,
 		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
+		TrustsByTrustDomain:         trustDomainToTrusts,
 	}, nil
 }
 
@@ -566,4 +570,12 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
 		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol
+}
+
+func getTrustDomainToTrusts(trusts []*meshtrust_api.MeshTrustResource) map[string][]*meshtrust_api.MeshTrust {
+	trustDomainToMeshTrust := map[string][]*meshtrust_api.MeshTrust{}
+	for _, trust := range trusts {
+		trustDomainToMeshTrust[trust.Spec.TrustDomain] = append(trustDomainToMeshTrust[trust.Spec.TrustDomain], trust.Spec)
+	}
+	return trustDomainToMeshTrust
 }

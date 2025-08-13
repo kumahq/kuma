@@ -25,12 +25,13 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/metadata"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/dynconf"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var (
@@ -39,7 +40,6 @@ var (
 )
 
 const (
-	OriginOpenTelemetry          = "open-telemetry"
 	PrometheusListenerName       = "_kuma:metrics:prometheus"
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
@@ -137,7 +137,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     cluster.GetName(),
-			Origin:   generator.OriginPrometheus,
+			Origin:   generator_metadata.OriginPrometheus,
 			Resource: cluster,
 		})
 
@@ -147,7 +147,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     listener.GetName(),
-			Origin:   generator.OriginPrometheus,
+			Origin:   generator_metadata.OriginPrometheus,
 			Resource: listener,
 		})
 	}
@@ -188,7 +188,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	}
 	rs.Add(&core_xds.Resource{
 		Name:     cluster.GetName(),
-		Origin:   OriginOpenTelemetry,
+		Origin:   metadata.OriginOpenTelemetry,
 		Resource: cluster,
 	})
 
@@ -198,7 +198,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	}
 	rs.Add(&core_xds.Resource{
 		Name:     listener.GetName(),
-		Origin:   OriginOpenTelemetry,
+		Origin:   metadata.OriginOpenTelemetry,
 		Resource: listener,
 	})
 
