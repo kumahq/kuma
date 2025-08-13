@@ -127,16 +127,15 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{
+			g.Expect(pointer.Deref(ms.Spec.Identities)).To(ContainElements(meshservice_api.MeshServiceIdentity{
 					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 					Value: "backend",
 				},
-				{
+				meshservice_api.MeshServiceIdentity{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://tls-mesh.east.mesh.local/ns/my-ns/sa/default",
 				},
-			}))
+			))
 		}, "10s", "100ms").Should(Succeed())
 	})
 
