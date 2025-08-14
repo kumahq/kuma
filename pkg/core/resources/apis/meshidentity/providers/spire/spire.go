@@ -102,12 +102,11 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 // we need to create a cluster for spire agent
 func additionalResources(mountPath, socketFileName string, timeout time.Duration) (*xds.ResourceSet, error) {
 	resources := xds.NewResourceSet()
-	clusterName := core_system_names.AsSystemName(SpireAgentClusterName)
 	resource, err := bldrs_cluster.NewCluster().
-		Configure(bldrs_cluster.Name(clusterName)).
+		Configure(bldrs_cluster.Name(SpireAgentClusterName)).
 		Configure(bldrs_cluster.ConnectTimeout(timeout)).
 		Configure(bldrs_cluster.Http2()).
-		Configure(bldrs_cluster.Endpoints(clusterName, []*envoy_endpoint.LocalityLbEndpoints{
+		Configure(bldrs_cluster.Endpoints(SpireAgentClusterName, []*envoy_endpoint.LocalityLbEndpoints{
 			{
 				LbEndpoints: []*envoy_endpoint.LbEndpoint{
 					{
@@ -130,7 +129,7 @@ func additionalResources(mountPath, socketFileName string, timeout time.Duration
 		return nil, err
 	}
 	resources = resources.Add(&xds.Resource{
-		Name:     clusterName,
+		Name:     SpireAgentClusterName,
 		Origin:   metadata.OriginMeshTrust,
 		Resource: resource,
 	})
@@ -138,11 +137,10 @@ func additionalResources(mountPath, socketFileName string, timeout time.Duration
 }
 
 func sourceConfigurer(secretName string) func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-	clusterName := core_system_names.AsSystemName(SpireAgentClusterName)
 	return func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 		return bldrs_tls.SdsSecretConfigSource(
 			secretName,
-			bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(clusterName)),
+			bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(SpireAgentClusterName)),
 		)
 	}
 }
