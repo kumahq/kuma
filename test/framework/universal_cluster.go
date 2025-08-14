@@ -570,12 +570,12 @@ func (c *UniversalCluster) GetUniversalNetworkingState() universal.NetworkingSta
 		KumaCp: *c.controlplane.Networking(),
 	}
 	if ingressState := c.networking[Config.ZoneIngressApp]; ingressState != nil {
-		out.ZoneIngress = *ingressState // nolint:govet
+		out.ZoneIngress = *ingressState //nolint:govet
 	}
 	if egressState := c.networking[Config.ZoneEgressApp]; egressState != nil {
-		out.ZoneEgress = *egressState // nolint:govet
+		out.ZoneEgress = *egressState //nolint:govet
 	}
-	return out // nolint:govet
+	return out //nolint:govet
 }
 
 func (c *UniversalCluster) AddNetworking(networking *universal.Networking, name string) error {

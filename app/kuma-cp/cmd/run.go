@@ -57,7 +57,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 
-			// nolint:staticcheck
+			//nolint:staticcheck
 			if cfg.Mode == config_core.Standalone {
 				runLog.Info(`[WARNING] "standalone" mode is deprecated. Changing it to "zone". Set KUMA_MODE to "zone" as "standalone" will be removed in the future.`)
 				cfg.Mode = config_core.Zone

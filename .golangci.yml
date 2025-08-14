@@ -16,6 +16,7 @@ linters:
     - loggercheck
     - makezero
     - misspell
+    - nolintlint
     - nonamedreturns
     - nosprintfhostport
     - revive
@@ -126,6 +127,9 @@ linters:
       locale: US
       ignore-rules:
         - cancelled
+    nolintlint:
+      allow-unused: false
+      require-specific: true
     nonamedreturns:
       report-error-in-defer: false
     revive:

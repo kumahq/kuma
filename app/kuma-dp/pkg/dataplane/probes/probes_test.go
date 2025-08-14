@@ -446,7 +446,7 @@ func (m *mockApplication) startHTTPServer(ctx context.Context) error {
 	}
 
 	go m.checkReadiness(ctx, m.HTTP.ListenPort)
-	// nolint: contextcheck
+	//nolint:contextcheck
 	return startServer(ctx, func() error {
 		GinkgoLogr.Info("starting mock HTTP Server", "address", server.Addr)
 		errCh := make(chan error)

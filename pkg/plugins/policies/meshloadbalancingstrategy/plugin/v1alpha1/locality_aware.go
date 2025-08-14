@@ -34,7 +34,7 @@ func NewEndpoints(
 			ed := createEndpoint(lbEndpoint, localZone)
 			zoneName := ed.Tags[mesh_proto.ZoneTag]
 
-			// nolint:gocritic
+			//nolint:gocritic
 			if zoneName == localZone {
 				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
 				endpointsList = append(endpointsList, ed)
