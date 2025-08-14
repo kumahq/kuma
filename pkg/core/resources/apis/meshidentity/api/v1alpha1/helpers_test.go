@@ -118,14 +118,14 @@ var _ = Describe("MeshIdentity Helper", func() {
 		}),
 		Entry("select matching with the ascending name when 3 tags", testCase{
 			labels: map[string]string{
-				"app": "test-app",
+				"app":     "test-app",
 				"version": "v1",
-				"env": "prod",
+				"env":     "prod",
 			},
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithName("b-matching-v1").WithSelector(&v1alpha1.LabelSelector{
 					MatchLabels: &map[string]string{
-						"app": "test-app", 
+						"app":     "test-app",
 						"version": "v1",
 					},
 				}).Build(),

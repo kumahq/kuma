@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,7 +19,9 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
@@ -29,11 +32,13 @@ var _ = Describe("DataplaneInsightSink", func() {
 	Describe("DataplaneInsightSink", func() {
 		var recorder *DataplaneInsightStoreRecorder
 		var store callbacks.DataplaneInsightStore
+		var resManager manager.ResourceManager
 		var stop chan struct{}
 
 		BeforeEach(func() {
+			resManager = manager.NewResourceManager(memory_resources.NewStore())
 			recorder = &DataplaneInsightStoreRecorder{
-				ResourceManager: manager.NewResourceManager(memory_resources.NewStore()),
+				ResourceManager: resManager,
 				Creates:         make(chan DataplaneInsightOperation),
 				Updates:         make(chan DataplaneInsightOperation),
 			}
@@ -161,7 +166,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			}
 		})
 
-		FIt("should periodically flush DataplaneInsight into a store with mTLS status based on events", func() {
+		It("should periodically flush DataplaneInsight into a store with mTLS status based on events", func() {
 			// setup
 			key := core_model.ResourceKey{Mesh: "default", Name: "example-001"}
 			subscription := &mesh_proto.DiscoverySubscription{
@@ -228,49 +233,68 @@ var _ = Describe("DataplaneInsightSink", func() {
 			// and
 			Expect(latestOperation.DataplaneInsight_MTLS).To(BeNil())
 
-// 			// when - time tick after changes
-// 			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
-// 			subscription.Status.Lds.ResponsesSent += 1
-// 			subscription.Status.Total.ResponsesSent += 1
-// 			// and
-// 			ticks <- t0.Add(2 * time.Second)
-// 			// then
-// 			Eventually(func() bool {
-// 				select {
-// 				case update, ok := <-recorder.Updates:
-// 					latestOperation = &update
-// 					return ok
-// 				default:
-// 					return false
-// 				}
-// 			}, "1s", "1ms").Should(BeTrue())
-// 			// and
-// 			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
-//             connectTime: "2019-07-01T00:00:00Z"
-//             controlPlaneInstanceId: control-plane-01
-//             id: 3287995C-7E11-41FB-9479-7D39337F845D
-//             status:
-//               lastUpdateTime: "2019-07-01T00:00:02Z"
-//               cds: {}
-//               eds: {}
-//               lds:
-//                 responsesSent: "1"
-//               rds: {}
-//               total:
-//                 responsesSent: "1"
-// `))
+			// when - identity provided
+			now := time.Now()
+			identifier, err := kri.FromString("kri_mid_default_default_kuma-system_my-identity_")
+			Expect(err).ToNot(HaveOccurred())
+			eventBus.Send(events.WorkloadIdentityChangedEvent{
+				ResourceKey:    key,
+				Operation:      events.Create,
+				GenerationTime: pointer.To(now),
+				ExpirationTime: pointer.To(now.Add(24 * time.Hour)),
+				Origin:         identifier,
+			})
+			// then
+			update, ok := <-recorder.Updates
+			Expect(ok).To(BeTrue())
+			latestOperation = &update
+			// and
+			Expect(latestOperation.DataplaneInsight_MTLS.IssuedBackend).To(Equal(identifier.String()))
+			Expect(latestOperation.DataplaneInsight_MTLS.CertificateExpirationTime).ToNot(BeNil())
+			Expect(latestOperation.DataplaneInsight_MTLS.LastCertificateRegeneration).ToNot(BeNil())
+			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(BeEmpty())
 
-// 			// when - time tick without changes
-// 			ticks <- t0.Add(3 * time.Second)
-// 			// then
-// 			select {
-// 			case <-recorder.Creates:
-// 				Fail("time tick should not lead to status update")
-// 			case <-recorder.Updates:
-// 				Fail("time tick should not lead to status update")
-// 			case <-time.After(100 * time.Millisecond):
-// 				// no update is good
-// 			}
+			// when trust added
+			meshTrust := builders.MeshTrust().Build()
+			Expect(resManager.Create(context.TODO(), meshTrust, core_store.CreateByKey("trust-1", core_model.DefaultMesh))).To(Succeed())
+			ticks <- t0.Add(2 * time.Second)
+			// then
+			update, ok = <-recorder.Updates
+			Expect(ok).To(BeTrue())
+			latestOperation = &update
+			// and
+			Expect(latestOperation.DataplaneInsight_MTLS.IssuedBackend).To(Equal(identifier.String()))
+			Expect(latestOperation.DataplaneInsight_MTLS.CertificateExpirationTime).ToNot(BeNil())
+			Expect(latestOperation.DataplaneInsight_MTLS.LastCertificateRegeneration).ToNot(BeNil())
+			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(ContainElements(kri.From(meshTrust).String()))
+
+			// when identity removed
+			eventBus.Send(events.WorkloadIdentityChangedEvent{
+				ResourceKey: key,
+				Operation:   events.Delete,
+			})
+			// then
+			update, ok = <-recorder.Updates
+			Expect(ok).To(BeTrue())
+			latestOperation = &update
+			// and
+			Expect(latestOperation.DataplaneInsight_MTLS).To(BeNil())
+
+			// when identity provided but without time
+			eventBus.Send(events.WorkloadIdentityChangedEvent{
+				ResourceKey: key,
+				Operation:   events.Create,
+				Origin:      identifier,
+			})
+			// then
+			update, ok = <-recorder.Updates
+			Expect(ok).To(BeTrue())
+			latestOperation = &update
+			// and
+			Expect(latestOperation.DataplaneInsight_MTLS.IssuedBackend).To(Equal(identifier.String()))
+			Expect(latestOperation.DataplaneInsight_MTLS.CertificateExpirationTime).To(BeNil())
+			Expect(latestOperation.DataplaneInsight_MTLS.LastCertificateRegeneration).To(BeNil())
+			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(BeEmpty())
 		})
 	})
 

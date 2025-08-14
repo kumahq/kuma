@@ -135,10 +135,14 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			secretsInfo = nil
 		case event != nil:
 			secretsInfo = &secrets.Info{
-				IssuedBackend:     event.Origin.String(),
-				SupportedBackends: s.listMeshTrustBackends(ctx, dataplaneID.Mesh),
-				Expiration:        pointer.Deref(event.ExpirationTime),
-				Generation:        pointer.Deref(event.GenerationTime),
+				IssuedBackend: event.Origin.String(),
+			}
+			if event.ExpirationTime != nil && event.GenerationTime != nil {
+				secretsInfo.Expiration = pointer.Deref(event.ExpirationTime)
+				secretsInfo.Generation = pointer.Deref(event.GenerationTime)
+				secretsInfo.SupportedBackends = s.listMeshTrustBackends(ctx, dataplaneID.Mesh)
+			} else {
+				secretsInfo.ManagedExternally = true
 			}
 		default:
 			secretsInfo = s.secrets.Info(proxyType, dataplaneID)
@@ -266,7 +270,7 @@ func (s *dataplaneInsightStore) Upsert(
 				insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration ||
 				insight.Spec.MTLS.IssuedBackend != secretsInfo.IssuedBackend ||
 				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, secretsInfo.SupportedBackends) {
-				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends); err != nil {
+				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends, secretsInfo.ManagedExternally); err != nil {
 					return err
 				}
 			}
