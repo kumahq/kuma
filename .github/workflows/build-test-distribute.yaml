@@ -70,7 +70,7 @@ jobs:
           GOGC: "80" # run GC more aggressively
         with:
           args: --fix=false --verbose
-          version: v2.2.2
+          version: v2.4.0 # TODO: automate this version update via Renovate
       - name: Run clang-format style check for Protobuf
         uses: jidicula/clang-format-action@4726374d1aa3c6aecf132e5197e498979588ebc8 # v4.15.0
         with:
