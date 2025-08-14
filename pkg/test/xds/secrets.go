@@ -30,6 +30,7 @@ var TestSecretsInfo = &secrets.Info{
 }
 
 type TestSecrets struct {
+	NoSecrets        bool
 	GeneratedMeshCAs map[string]struct{}
 }
 
@@ -69,8 +70,10 @@ func (ts *TestSecrets) GetForZoneEgress(
 	_ *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	if ts.NoSecrets {
+		return nil, nil, nil
+	}
 	identity, cas, _ := ts.get([]*core_mesh.MeshResource{mesh})
-
 	return identity, cas[mesh.GetMeta().GetName()], nil
 }
 
@@ -80,6 +83,9 @@ func (ts *TestSecrets) GetForDataPlane(
 	mesh *core_mesh.MeshResource,
 	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
+	if ts.NoSecrets {
+		return nil, nil, nil
+	}
 	identity, cas, _ := ts.get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, cas, nil
 }
@@ -90,11 +96,17 @@ func (ts *TestSecrets) GetAllInOne(
 	_ *core_mesh.DataplaneResource,
 	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	if ts.NoSecrets {
+		return nil, nil, nil
+	}
 	identity, _, allInOne := ts.get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, allInOne, nil
 }
 
-func (*TestSecrets) Info(mesh_proto.ProxyType, model.ResourceKey) *secrets.Info {
+func (ts *TestSecrets) Info(mesh_proto.ProxyType, model.ResourceKey) *secrets.Info {
+	if ts.NoSecrets {
+		return nil
+	}
 	return TestSecretsInfo
 }
 
