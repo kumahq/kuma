@@ -139,8 +139,11 @@ const (
 	// Available value is DELTA_GRPC
 	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
 
-	// KumaServiceAccount specifies the ServiceAccount associated with the pod.
+	// KumaServiceAccount specifies the ServiceAccount associated with the Pod.
 	KumaServiceAccount = "k8s.kuma.io/service-account"
+
+	// KumaSpireSupport allows injecting Spire-related volumes into a single Pod.
+	KumaSpireSupport = "k8s.kuma.io/spire-support"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
