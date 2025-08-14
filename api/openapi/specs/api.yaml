@@ -120,7 +120,7 @@ paths:
         '400':
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_layout:
     get:
       operationId: get-dataplanes-layout
