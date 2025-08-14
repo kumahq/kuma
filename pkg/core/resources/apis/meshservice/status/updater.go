@@ -121,6 +121,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 
 	insightsByKey := core_model.IndexByKey(dpInsightsList.Items)
 	meshByKey := core_model.IndexByKey(meshList.Items)
+	identityByMesh := getIdentitiesByMesh(meshIdentities)
 
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dpList.Items, msList.Items, false)
 
@@ -132,13 +133,14 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		log := s.logger.WithValues("meshservice", ms.GetMeta().GetName(), "mesh", ms.GetMeta().GetMesh())
 		var changeReasons []string
 		mesh := meshByKey[core_model.ResourceKey{Name: ms.Meta.GetMesh()}]
-		identities := s.buildIdentities(dpps, meshIdentities.Items, mesh)
+		mids := identityByMesh[mesh.Meta.GetMesh()]
+		identities := s.buildIdentities(dpps, mids, mesh)
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
 			ms.Spec.Identities = &identities
 		}
 
-		tls := s.buildTLS(ms.Status.TLS, dpps, insightsByKey, mesh, meshIdentities.Items, trustDomains)
+		tls := s.buildTLS(ms.Status.TLS, dpps, insightsByKey, mesh, mids, trustDomains)
 		if !reflect.DeepEqual(ms.Status.TLS, tls) {
 			changeReasons = append(changeReasons, "tls status")
 			ms.Status.TLS = tls
@@ -171,6 +173,14 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func getIdentitiesByMesh(mids meshidentity_api.MeshIdentityResourceList) map[string][]*meshidentity_api.MeshIdentityResource {
+	midByMesh := map[string][]*meshidentity_api.MeshIdentityResource{}
+	for _, mid := range mids.Items {
+		midByMesh[mid.Meta.GetMesh()] = append(midByMesh[mid.Meta.GetMesh()], mid)
+	}
+	return midByMesh
 }
 
 func buildDataplaneProxies(

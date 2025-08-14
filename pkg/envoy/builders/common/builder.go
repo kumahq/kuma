@@ -1,7 +1,5 @@
 package common
 
-import "github.com/kumahq/kuma/pkg/core"
-
 type Builder[R any] struct {
 	configurers []Configurer[R]
 }
@@ -25,9 +23,7 @@ func (b *Builder[R]) Build() (*R, error) {
 
 func If[R any](condition bool, configurer Configurer[R]) Configurer[R] {
 	return func(c *R) error {
-		core.Log.Info("IF CONDITION", "condition", condition)
 		if condition {
-			core.Log.Info("IF CONDITION fulfilled", "condition", condition)
 			return configurer(c)
 		}
 		return nil
