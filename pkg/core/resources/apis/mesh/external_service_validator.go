@@ -8,6 +8,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -19,8 +20,8 @@ func (es *ExternalServiceResource) Validate() error {
 	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 		var result validators.ValidationError
 		if value, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if ParseProtocol(value) == ProtocolUnknown {
-				err.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
+			if core_meta.ParseProtocol(value) == core_meta.ProtocolUnknown {
+				err.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(core_meta.SupportedProtocols.Strings()...)))
 			}
 		}
 		return result

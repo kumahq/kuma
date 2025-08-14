@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -82,8 +83,8 @@ var _ = Describe("MeshTimeout", func() {
 		context := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
-			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
-			AddServiceProtocol("second-service", core_mesh.ProtocolTCP).
+			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
+			AddServiceProtocol("second-service", core_meta.ProtocolTCP).
 			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
@@ -513,7 +514,7 @@ var _ = Describe("MeshTimeout", func() {
 					Origin:         metadata.OriginOutbound,
 					Resource:       httpListenerWithSeveralMeshHTTPRoutes("test-service-1", kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
 					ResourceOrigin: kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType),
-					Protocol:       core_mesh.ProtocolHTTP,
+					Protocol:       core_meta.ProtocolHTTP,
 				},
 			},
 			toRules: core_rules.ToRules{
@@ -550,14 +551,14 @@ var _ = Describe("MeshTimeout", func() {
 					Name:           "outbound",
 					Origin:         metadata.OriginOutbound,
 					Resource:       httpOutboundListener(),
-					Protocol:       core_mesh.ProtocolHTTP,
+					Protocol:       core_meta.ProtocolHTTP,
 					ResourceOrigin: backendMeshServiceIdentifier,
 				},
 				{
 					Name:           "outbound",
 					Origin:         metadata.OriginOutbound,
 					Resource:       test_xds.ClusterWithName("backend"),
-					Protocol:       core_mesh.ProtocolHTTP,
+					Protocol:       core_meta.ProtocolHTTP,
 					ResourceOrigin: backendMeshServiceIdentifier,
 				},
 			},
@@ -588,14 +589,14 @@ var _ = Describe("MeshTimeout", func() {
 					Name:           "outbound",
 					Origin:         metadata.OriginOutbound,
 					Resource:       httpOutboundListener(),
-					Protocol:       core_mesh.ProtocolHTTP,
+					Protocol:       core_meta.ProtocolHTTP,
 					ResourceOrigin: backendMeshExternalServiceIdentifier,
 				},
 				{
 					Name:           "outbound",
 					Origin:         metadata.OriginOutbound,
 					Resource:       test_xds.ClusterWithName("backend"),
-					Protocol:       core_mesh.ProtocolHTTP,
+					Protocol:       core_meta.ProtocolHTTP,
 					ResourceOrigin: backendMeshExternalServiceIdentifier,
 				},
 			},
@@ -639,8 +640,8 @@ var _ = Describe("MeshTimeout", func() {
 		xdsCtx := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(resources).
-			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
-			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
+			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).

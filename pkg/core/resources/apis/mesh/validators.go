@@ -14,6 +14,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -258,7 +259,7 @@ func AllowedValuesHint(values ...string) string {
 	return fmt.Sprintf("Allowed values: %s", options)
 }
 
-func ProtocolValidator(protocols ...string) TagsValidatorFunc {
+func ProtocolValidator(protocols core_meta.ProtocolList) TagsValidatorFunc {
 	return func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 		var err validators.ValidationError
 		v, defined := selector[mesh_proto.ProtocolTag]
@@ -266,13 +267,14 @@ func ProtocolValidator(protocols ...string) TagsValidatorFunc {
 			err.AddViolationAt(path, "protocol must be specified")
 			return err
 		}
-		for _, protocol := range protocols {
-			if v == protocol {
-				return err
-			}
+
+		if !protocols.Contains(core_meta.ParseProtocol(v)) {
+			err.AddViolationAt(
+				path.Key(mesh_proto.ProtocolTag),
+				fmt.Sprintf("must be one of the [%s]", strings.Join(protocols.Strings(), ", ")),
+			)
 		}
-		err.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("must be one of the [%s]",
-			strings.Join(protocols, ", ")))
+
 		return err
 	}
 }

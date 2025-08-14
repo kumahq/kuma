@@ -5,10 +5,10 @@ import (
 	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -116,13 +116,6 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.Traff
 	})
 }
 
-func DownstreamTlsContext(downstreamTlsContext *envoy_tls.DownstreamTlsContext) FilterChainBuilderOpt {
-	if downstreamTlsContext == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-	return AddFilterChainConfigurer(&v3.DownstreamTlsContextConfigurer{Config: downstreamTlsContext})
-}
-
 type splitAdapter struct {
 	clusterName string
 	weight      uint32
@@ -139,13 +132,18 @@ func (s *splitAdapter) HasExternalService() bool { return s.hasExternalService }
 func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
-		cluster := cluster.(*envoy_common.ClusterImpl)
-		splits = append(splits, &splitAdapter{
+		sa := &splitAdapter{
 			clusterName:        cluster.Name(),
-			weight:             cluster.Weight(),
 			lbMetadata:         cluster.Tags(),
 			hasExternalService: cluster.IsExternalService(),
-		})
+			weight:             1,
+		}
+
+		if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
+			sa.weight = c.Weight()
+		}
+
+		splits = append(splits, sa)
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
@@ -157,13 +155,18 @@ func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) Filt
 func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
-		cluster := cluster.(*envoy_common.ClusterImpl)
-		splits = append(splits, &splitAdapter{
+		sa := &splitAdapter{
 			clusterName:        cluster.Name(),
-			weight:             cluster.Weight(),
 			lbMetadata:         cluster.Tags(),
 			hasExternalService: cluster.IsExternalService(),
-		})
+			weight:             1,
+		}
+
+		if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
+			sa.weight = c.Weight()
+		}
+
+		splits = append(splits, sa)
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
@@ -282,7 +285,7 @@ func MaxConnectAttempts(retry *core_mesh.RetryResource) FilterChainBuilderOpt {
 
 func Retry(
 	retry *core_mesh.RetryResource,
-	protocol core_mesh.Protocol,
+	protocol core_meta.Protocol,
 ) FilterChainBuilderOpt {
 	if retry == nil {
 		return FilterChainBuilderOptFunc(nil)
@@ -296,7 +299,7 @@ func Retry(
 		}))
 }
 
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) FilterChainBuilderOpt {
+func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,
 		Protocol: protocol,

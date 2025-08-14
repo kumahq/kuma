@@ -8,11 +8,11 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -84,9 +84,9 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	return resources, nil
 }
 
-func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
+func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_meta.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	rateLimits := []*core_mesh.RateLimitResource{}
+	var rateLimits []*core_mesh.RateLimitResource
 	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
 		rateLimits = append(rateLimits, rateLimit)
 	}
@@ -106,7 +106,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 		switch protocol {
-		case core_mesh.ProtocolGRPC:
+		case core_meta.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
 				Configure(envoy_listeners.Tracing(
@@ -123,7 +123,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
 				Configure(envoy_listeners.Tracing(
@@ -145,7 +145,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol))
-		case core_mesh.ProtocolKafka:
+		case core_meta.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
 				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
@@ -227,9 +227,9 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				}
 
 				switch protocol {
-				case core_mesh.ProtocolHTTP:
+				case core_meta.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
-				case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+				case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 					edsClusterBuilder.Configure(envoy_clusters.Http2())
 				default:
 				}
@@ -311,8 +311,8 @@ func (OutboundProxyGenerator) generateEDS(
 	return resources, nil
 }
 
-func inferProtocol(meshCtx xds_context.MeshContext, clusters []envoy_common.Cluster) core_mesh.Protocol {
-	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
+func inferProtocol(meshCtx xds_context.MeshContext, clusters []envoy_common.Cluster) core_meta.Protocol {
+	protocol := core_meta.ProtocolUnknown
 	for idx, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
 		serviceProtocol := meshCtx.GetServiceProtocol(serviceName)
@@ -320,7 +320,7 @@ func inferProtocol(meshCtx xds_context.MeshContext, clusters []envoy_common.Clus
 			protocol = serviceProtocol
 			continue
 		}
-		protocol = util_protocol.GetCommonProtocol(serviceProtocol, protocol)
+		protocol = core_meta.GetCommonProtocol(serviceProtocol, protocol)
 	}
 	return protocol
 }
@@ -360,7 +360,7 @@ func (OutboundProxyGenerator) determineRoutes(
 			name, _ := envoy_tags.Tags(destination.Destination).DestinationClusterName(nil)
 
 			if mesh, ok := destination.Destination[mesh_proto.MeshTag]; ok {
-				// The name should be distinct to the service & mesh combination
+				// The name should be distinct to the service and mesh combination
 				name = fmt.Sprintf("%s_%s", name, mesh)
 			}
 

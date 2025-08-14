@@ -6,7 +6,6 @@ import (
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
@@ -16,12 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
-
-const (
-	EgressProxy = "egress-proxy"
-)
-
-var log = core.Log.WithName("xds").WithName("egress-proxy-generator")
 
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.

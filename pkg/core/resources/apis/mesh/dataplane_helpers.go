@@ -4,7 +4,6 @@ import (
 	"hash/fnv"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
@@ -15,73 +14,6 @@ import (
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-// Protocol identifies a protocol supported by a service.
-type Protocol string
-
-const (
-	ProtocolUnknown = "<unknown>"
-	ProtocolTCP     = "tcp"
-	ProtocolTLS     = "tls"
-	ProtocolHTTP    = "http"
-	ProtocolHTTP2   = "http2"
-	ProtocolGRPC    = "grpc"
-	ProtocolKafka   = "kafka"
-	ProtocolMysql   = "mysql"
-)
-
-func ParseProtocol(tag string) Protocol {
-	switch strings.ToLower(tag) {
-	case ProtocolHTTP:
-		return ProtocolHTTP
-	case ProtocolHTTP2:
-		return ProtocolHTTP2
-	case ProtocolTCP:
-		return ProtocolTCP
-	case ProtocolTLS:
-		return ProtocolTLS
-	case ProtocolGRPC:
-		return ProtocolGRPC
-	case ProtocolKafka:
-		return ProtocolKafka
-	case ProtocolMysql:
-		return ProtocolMysql
-	default:
-		return ProtocolUnknown
-	}
-}
-
-// ProtocolList represents a list of Protocols.
-type ProtocolList []Protocol
-
-func (l ProtocolList) Strings() []string {
-	values := make([]string, len(l))
-	for i := range l {
-		values[i] = string(l[i])
-	}
-	return values
-}
-
-// SupportedProtocols is a list of supported protocols that will be communicated to a user.
-var SupportedProtocols = ProtocolList{
-	ProtocolGRPC,
-	ProtocolHTTP,
-	ProtocolHTTP2,
-	ProtocolKafka,
-	ProtocolTCP,
-}
-
-// Service that indicates L4 pass through cluster
-const PassThroughService = "pass_through"
-
-var (
-	IPv4Loopback = net.IPv4(127, 0, 0, 1)
-	IPv6Loopback = net.IPv6loopback
-)
-
-func (p Protocol) IsHTTPBased() bool {
-	return p == ProtocolHTTP || p == ProtocolHTTP2 || p == ProtocolGRPC
-}
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
