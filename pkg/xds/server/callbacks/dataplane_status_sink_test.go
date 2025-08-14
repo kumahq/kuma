@@ -160,6 +160,118 @@ var _ = Describe("DataplaneInsightSink", func() {
 				// no update is good
 			}
 		})
+
+		FIt("should periodically flush DataplaneInsight into a store with mTLS status based on events", func() {
+			// setup
+			key := core_model.ResourceKey{Mesh: "default", Name: "example-001"}
+			subscription := &mesh_proto.DiscoverySubscription{
+				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
+				ControlPlaneInstanceId: "control-plane-01",
+				ConnectTime:            util_proto.MustTimestampProto(t0),
+				Status:                 mesh_proto.NewSubscriptionStatus(t0),
+			}
+			accessor := &SubscriptionStatusHolder{key, subscription}
+			ticks := make(chan time.Time)
+			ticker := &time.Ticker{
+				C: ticks,
+			}
+			metrics, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			eventBus, err := events.NewEventBus(10, metrics)
+			Expect(err).ToNot(HaveOccurred())
+
+			var latestOperation *DataplaneInsightOperation
+
+			// given
+			sink := callbacks.NewDataplaneInsightSink(
+				&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						core_xds.FieldDataplaneProxyType: {
+							Kind: &structpb.Value_StringValue{
+								StringValue: string(mesh_proto.DataplaneProxyType),
+							},
+						},
+					},
+				},
+				accessor,
+				&xds.TestSecrets{NoSecrets: true}, // let's use events
+				func() *time.Ticker { return ticker },
+				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
+				1*time.Millisecond,
+				store,
+				eventBus,
+				recorder.ResourceManager,
+			)
+
+			// when
+			go sink.Start(stop)
+
+			// then
+			create, ok := <-recorder.Creates
+			Expect(ok).To(BeTrue())
+			latestOperation = &create
+
+			// and
+			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
+            connectTime: "2019-07-01T00:00:00Z"
+            controlPlaneInstanceId: control-plane-01
+            id: 3287995C-7E11-41FB-9479-7D39337F845D
+            status:
+              cds: {}
+              eds: {}
+              lastUpdateTime: "2019-07-01T00:00:00Z"
+              lds: {}
+              rds: {}
+              total: {}
+`))
+
+			// and
+			Expect(latestOperation.DataplaneInsight_MTLS).To(BeNil())
+
+// 			// when - time tick after changes
+// 			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
+// 			subscription.Status.Lds.ResponsesSent += 1
+// 			subscription.Status.Total.ResponsesSent += 1
+// 			// and
+// 			ticks <- t0.Add(2 * time.Second)
+// 			// then
+// 			Eventually(func() bool {
+// 				select {
+// 				case update, ok := <-recorder.Updates:
+// 					latestOperation = &update
+// 					return ok
+// 				default:
+// 					return false
+// 				}
+// 			}, "1s", "1ms").Should(BeTrue())
+// 			// and
+// 			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
+//             connectTime: "2019-07-01T00:00:00Z"
+//             controlPlaneInstanceId: control-plane-01
+//             id: 3287995C-7E11-41FB-9479-7D39337F845D
+//             status:
+//               lastUpdateTime: "2019-07-01T00:00:02Z"
+//               cds: {}
+//               eds: {}
+//               lds:
+//                 responsesSent: "1"
+//               rds: {}
+//               total:
+//                 responsesSent: "1"
+// `))
+
+// 			// when - time tick without changes
+// 			ticks <- t0.Add(3 * time.Second)
+// 			// then
+// 			select {
+// 			case <-recorder.Creates:
+// 				Fail("time tick should not lead to status update")
+// 			case <-recorder.Updates:
+// 				Fail("time tick should not lead to status update")
+// 			case <-time.After(100 * time.Millisecond):
+// 				// no update is good
+// 			}
+		})
 	})
 
 	Describe("DataplaneInsightStore", func() {

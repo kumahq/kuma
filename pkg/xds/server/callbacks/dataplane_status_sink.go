@@ -110,7 +110,6 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	var lastStoredState *mesh_proto.DiscoverySubscription
 	var lastStoredSecretsInfo *secrets.Info
 	var lastEvent *events.WorkloadIdentityChangedEvent
-	var usesIdentity bool
 	var generation uint32
 
 	proxyType, err := core_mesh.ProxyTypeFromResourceType(s.dataplaneType)
@@ -133,20 +132,13 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		var secretsInfo *secrets.Info
 		switch {
 		case event != nil && event.Operation == events.Delete:
-			usesIdentity = false
 			secretsInfo = nil
 		case event != nil:
-			usesIdentity = true
 			secretsInfo = &secrets.Info{
 				IssuedBackend:     event.Origin.String(),
 				SupportedBackends: s.listMeshTrustBackends(ctx, dataplaneID.Mesh),
 				Expiration:        pointer.Deref(event.ExpirationTime),
 				Generation:        pointer.Deref(event.GenerationTime),
-			}
-		case usesIdentity:
-			secretsInfo = lastStoredSecretsInfo
-			if secretsInfo != nil {
-				secretsInfo.SupportedBackends = s.listMeshTrustBackends(ctx, dataplaneID.Mesh)
 			}
 		default:
 			secretsInfo = s.secrets.Info(proxyType, dataplaneID)
