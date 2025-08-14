@@ -150,7 +150,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener,
 			})
 
@@ -164,7 +164,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener2.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener2,
 			})
 
@@ -191,7 +191,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener4.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener4,
 			})
 
