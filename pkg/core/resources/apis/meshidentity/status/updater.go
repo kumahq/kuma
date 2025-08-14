@@ -1,7 +1,10 @@
 package status
 
 import (
+	"bytes"
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"reflect"
 	"time"
@@ -195,7 +198,7 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	if update {
 		// Check if the CA PEM is already present in the MeshTrust resource
 		for _, bundle := range meshTrust.Spec.CABundles {
-			if bundle.PEM.Value == caPEM {
+			if pemEqual(bundle.PEM.Value, caPEM) {
 				// Already exists; no need to update
 				return nil
 			}
@@ -240,4 +243,18 @@ func (i *IdentityProviderReconciler) loadCA(ctx context.Context, identity *meshi
 
 func (i *IdentityProviderReconciler) NeedLeaderElection() bool {
 	return true
+}
+
+func pemEqual(pem1, pem2 string) bool {
+	block1, _ := pem.Decode([]byte(pem1))
+	block2, _ := pem.Decode([]byte(pem2))
+	if block1 == nil || block2 == nil {
+		return false
+	}
+	cert1, err1 := x509.ParseCertificate(block1.Bytes)
+	cert2, err2 := x509.ParseCertificate(block2.Bytes)
+	if err1 != nil || err2 != nil {
+		return bytes.Equal(block1.Bytes, block2.Bytes)
+	}
+	return cert1.Equal(cert2)
 }

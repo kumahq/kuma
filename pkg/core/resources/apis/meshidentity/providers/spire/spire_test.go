@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers/spire"
-	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
@@ -41,18 +40,17 @@ var _ = Describe("Spire Providers Test", func() {
 						"version": "v1",
 					},
 				}).WithSpire().Build()
-			clusterName := core_system_names.AsSystemName(spire.SpireAgentClusterName)
 			expectedIdentity, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 				bldrs_tls.SdsSecretConfigSource(
 					"spiffe://default.my-zone.mesh.local/ns/my-ns/sa/my-sa",
-					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(clusterName)),
+					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(spire.SpireAgentClusterName)),
 				),
 			).Build()
 			Expect(err).ToNot(HaveOccurred())
 			expectedValidation, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 				bldrs_tls.SdsSecretConfigSource(
 					spire.FederatedCASecretName,
-					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(clusterName)),
+					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(spire.SpireAgentClusterName)),
 				),
 			).Build()
 			Expect(err).ToNot(HaveOccurred())
