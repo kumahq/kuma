@@ -26,6 +26,7 @@ func MeshTrust() *MeshTrustBuilder {
 					{
 						Type: meshtrust_api.PemCABundleType,
 						PEM: &meshtrust_api.PEM{
+							// nolint:gosec
 							Value: `-----BEGIN CERTIFICATE-----
 MIIB9jCCAZ2gAwIBAgIUJ1gLZ/fvZhGq51qWrJzL6z2XWoQwCgYIKoZIzj0EAwIw
 EjEQMA4GA1UEChMHVGVzdCBDQTAeFw0yNTA3MzAxMjAwMDBaFw0zNTA3MjcxMjAw

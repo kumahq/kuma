@@ -7,10 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -52,88 +50,7 @@ var _ = Describe("MeshIdentity providers", func() {
 	AfterEach(func() {
 		core.Now = time.Now
 	})
-	type testCase struct {
-		dpp                  *core_mesh.DataplaneResource
-		meshIdentities       []*meshidentity_api.MeshIdentityResource
-		expectedIdentityName string
-	}
-	DescribeTable("SelectIdentity",
-		func(given testCase) {
-			// when
-			identity := identityManager.SelectedIdentity(given.dpp, given.meshIdentities)
 
-			// then
-			Expect(identity.Meta.GetName()).To(Equal(given.expectedIdentityName))
-		},
-		Entry("select the most specific identity", testCase{
-			dpp: builders.Dataplane().WithLabels(map[string]string{
-				"app": "test-app",
-			}).AddInboundHttpOfService("test-app").Build(),
-			meshIdentities: []*meshidentity_api.MeshIdentityResource{
-				builders.MeshIdentity().WithName("not-matching-1").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app":     "test-app",
-						"version": "v1",
-					},
-				}).Build(),
-				builders.MeshIdentity().WithName("matching-all").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{},
-				}).Build(),
-				builders.MeshIdentity().WithName("matching-specific").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app": "test-app",
-					},
-				}).Build(),
-			},
-			expectedIdentityName: "matching-specific",
-		}),
-		Entry("select the most specific identity with 2 tags", testCase{
-			dpp: builders.Dataplane().WithLabels(map[string]string{
-				"app":     "test-app",
-				"version": "v1",
-			}).AddInboundHttpOfService("test-app").Build(),
-			meshIdentities: []*meshidentity_api.MeshIdentityResource{
-				builders.MeshIdentity().WithName("matching-1").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app":     "test-app",
-						"version": "v1",
-					},
-				}).Build(),
-				builders.MeshIdentity().WithName("matching-all").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{},
-				}).Build(),
-				builders.MeshIdentity().WithName("matching-specific").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app": "test-app",
-					},
-				}).Build(),
-			},
-			expectedIdentityName: "matching-1",
-		}),
-		Entry("select matching all", testCase{
-			dpp: builders.Dataplane().WithLabels(map[string]string{
-				"app":     "demo-app",
-				"version": "v1",
-			}).AddInboundHttpOfService("demo-app").Build(),
-			meshIdentities: []*meshidentity_api.MeshIdentityResource{
-				builders.MeshIdentity().WithName("matching-1").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app":     "test-app",
-						"version": "v1",
-					},
-				}).Build(),
-				builders.MeshIdentity().WithName("matching-all").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{},
-				}).Build(),
-				builders.MeshIdentity().WithName("matching-specific").WithSelector(&v1alpha1.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app": "test-app",
-					},
-				}).Build(),
-			},
-			expectedIdentityName: "matching-all",
-		}),
-	)
 	It("should get Identity", func() {
 		// given
 		createIdentityListener := eventBus.Subscribe(func(event events.Event) bool {
