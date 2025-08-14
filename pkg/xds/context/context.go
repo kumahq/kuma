@@ -9,6 +9,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -33,6 +35,7 @@ type ConnectionInfo struct {
 type ControlPlaneContext struct {
 	CLACache        envoy.CLACache
 	Secrets         secrets.Secrets
+	IdentityManager providers.IdentityProviderManager
 	Zone            string
 	SystemNamespace string
 }
@@ -87,6 +90,7 @@ type MeshContext struct {
 	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
 	ReachableServicesGraph      ReachableServicesGraph
+	TrustsByTrustDomain         map[string][]*meshtrust_api.MeshTrust
 }
 
 type ServiceInformation struct {

@@ -20,7 +20,7 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 func GenerateClusters(
@@ -138,7 +138,7 @@ func GenerateClusters(
 
 			resources = resources.Add(&core_xds.Resource{
 				Name:           clusterName,
-				Origin:         generator.OriginOutbound,
+				Origin:         metadata.OriginOutbound,
 				Resource:       edsCluster,
 				ResourceOrigin: service.BackendRef().Resource(),
 				Protocol:       protocol,

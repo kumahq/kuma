@@ -15,6 +15,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
@@ -124,7 +125,7 @@ func (*ExternalServicesGenerator) generateCDS(
 
 		resource := &core_xds.Resource{
 			Name:     cluster.GetName(),
-			Origin:   OriginEgress,
+			Origin:   metadata.OriginEgress,
 			Resource: cluster,
 		}
 

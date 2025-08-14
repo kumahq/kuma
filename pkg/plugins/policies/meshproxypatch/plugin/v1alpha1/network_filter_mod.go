@@ -128,7 +128,7 @@ func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) 
 	if n.Match.ListenerName != nil && *n.Match.ListenerName != resource.Name {
 		return false
 	}
-	if n.Match.Origin != nil && *n.Match.Origin != resource.Origin {
+	if n.Match.Origin != nil && *n.Match.Origin != string(resource.Origin) {
 		return false
 	}
 	if len(pointer.Deref(n.Match.ListenerTags)) > 0 {

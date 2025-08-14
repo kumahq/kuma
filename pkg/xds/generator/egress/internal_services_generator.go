@@ -9,6 +9,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
@@ -45,13 +46,13 @@ func (g *InternalServicesGenerator) Generate(
 
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
 
-	cds, err := zoneproxy.GenerateCDS(destinations, services, proxy.APIVersion, meshName, OriginEgress)
+	cds, err := zoneproxy.GenerateCDS(destinations, services, proxy.APIVersion, meshName, metadata.OriginEgress)
 	if err != nil {
 		return nil, err
 	}
 	resources.Add(cds...)
 
-	eds, err := zoneproxy.GenerateEDS(services, meshResources.EndpointMap, proxy.APIVersion, meshName, OriginEgress)
+	eds, err := zoneproxy.GenerateEDS(services, meshResources.EndpointMap, proxy.APIVersion, meshName, metadata.OriginEgress)
 	if err != nil {
 		return nil, err
 	}

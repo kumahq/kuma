@@ -31,23 +31,12 @@ import (
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshTrace", func() {
 	type testCase struct {
@@ -69,14 +58,14 @@ var _ = Describe("MeshTrace", func() {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
-				Origin: generator.OriginOutbound,
+				Origin: metadata.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
@@ -88,14 +77,14 @@ var _ = Describe("MeshTrace", func() {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
-				Origin: generator.OriginOutbound,
+				Origin: metadata.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
@@ -140,10 +129,12 @@ var _ = Describe("MeshTrace", func() {
 
 			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
 
-			Expect(getResource(resources, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listener.golden.yaml", given.goldenFile)))
-			Expect(getResource(resources, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
+			resource, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listener.golden.yaml", given.goldenFile)))
+			resource, err = util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
 		},
 		Entry("inbound/outbound for zipkin and real MeshService", testCase{
 			resources: inboundAndOutboundRealMeshService(),
@@ -192,7 +183,7 @@ var _ = Describe("MeshTrace", func() {
 				{
 					Address:  "127.0.0.1",
 					Port:     27777,
-					Resource: &backendMeshServiceIdentifier,
+					Resource: backendMeshServiceIdentifier,
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{

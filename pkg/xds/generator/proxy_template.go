@@ -14,6 +14,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
@@ -41,9 +42,6 @@ func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_contex
 	return resources, nil
 }
 
-// OriginProxyTemplateRaw is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginProxyTemplateRaw = "proxy-template-raw"
-
 type ProxyTemplateRawSource struct {
 	Resources []*mesh_proto.ProxyTemplateRawResource
 }
@@ -58,7 +56,7 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 
 		resources.Add(&model.Resource{
 			Name:     r.Name,
-			Origin:   OriginProxyTemplateRaw,
+			Origin:   metadata.OriginProxyTemplateRaw,
 			Resource: res,
 		})
 	}

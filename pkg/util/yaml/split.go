@@ -3,6 +3,11 @@ package yaml
 import (
 	"regexp"
 	"strings"
+
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
@@ -25,4 +30,15 @@ func SplitYAML(yamls string) []string {
 		result = append(result, doc)
 	}
 	return result
+}
+
+func GetResourcesToYaml(
+	resourceSet *core_xds.ResourceSet,
+	typ envoy_resource.Type,
+) ([]byte, error) {
+	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
+	if err != nil {
+		return nil, err
+	}
+	return util_proto.ToYAML(resources)
 }

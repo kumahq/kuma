@@ -10,7 +10,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("Virtual Host modifications", func() {
@@ -30,7 +30,7 @@ var _ = Describe("Virtual Host modifications", func() {
 				Expect(err).ToNot(HaveOccurred())
 				set.Add(&core_xds.Resource{
 					Name:     routeCfg.Name,
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: routeCfg,
 				})
 			}

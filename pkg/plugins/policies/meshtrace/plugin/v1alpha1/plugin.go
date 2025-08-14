@@ -22,14 +22,13 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/metadata"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-const OriginMeshTrace = "mesh-trace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
@@ -54,7 +53,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	// we only handle a case where there is one origin because
 	// we do not yet have a mechanism to name resources that have more than one origin https://github.com/kumahq/kuma/issues/13886
 	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
-		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshTraceType, ""))
+		kriWithoutSection = pointer.To(kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshTraceType))
 	}
 	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy, kriWithoutSection); err != nil {
 		return err
@@ -238,7 +237,7 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 		return err
 	}
 
-	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: OriginMeshTrace, Resource: res})
+	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: metadata.OriginMeshTrace, Resource: res})
 
 	return nil
 }

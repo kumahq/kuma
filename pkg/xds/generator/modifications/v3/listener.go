@@ -9,6 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 type listenerModificator mesh_proto.ProxyTemplate_Modifications_Listener
@@ -50,7 +51,7 @@ func (l *listenerModificator) remove(resources *core_xds.ResourceSet) {
 func (l *listenerModificator) add(resources *core_xds.ResourceSet, listener *envoy_listener.Listener) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     listener.Name,
-		Origin:   OriginProxyTemplateModifications,
+		Origin:   metadata.OriginProxyTemplateModifications,
 		Resource: listener,
 	})
 }
@@ -59,7 +60,7 @@ func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool 
 	if l.Match.GetName() != "" && l.Match.GetName() != listener.Name {
 		return false
 	}
-	if l.Match.GetOrigin() != "" && l.Match.GetOrigin() != listener.Origin {
+	if l.Match.GetOrigin() != "" && l.Match.GetOrigin() != string(listener.Origin) {
 		return false
 	}
 	if len(l.Match.GetTags()) > 0 {
