@@ -28,11 +28,12 @@ import (
 )
 
 const (
-	SpireAgentClusterName = core_system_names.AsSystemName("identity_sds-spire-agent")
 	// Secret name which includes all CAs required after federation
 	FederatedCASecretName        = "ALL"
 	defaultSpireAgentConnTimeout = 1 * time.Second
 )
+
+var SpireAgentClusterName = core_system_names.AsSystemName("identity_sds-spire-agent")
 
 var _ providers.IdentityProvider = &spireIdentityProvider{}
 
