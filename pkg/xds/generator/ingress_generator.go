@@ -10,16 +10,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
-const (
-	IngressProxy = "ingress-proxy"
-
-	// OriginIngress is a marker to indicate by which ProxyGenerator resources
-	// were generated.
-	OriginIngress = "ingress"
-)
+const IngressProxy = "ingress-proxy"
 
 type IngressGenerator struct{}
 
@@ -59,13 +54,13 @@ func (i IngressGenerator) Generate(
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
 
-		cdsResources, err := zoneproxy.GenerateCDS(dest, services, proxy.APIVersion, meshName, OriginIngress)
+		cdsResources, err := zoneproxy.GenerateCDS(dest, services, proxy.APIVersion, meshName, metadata.OriginIngress)
 		if err != nil {
 			return nil, err
 		}
 		resources.Add(cdsResources...)
 
-		edsResources, err := zoneproxy.GenerateEDS(services, mr.EndpointMap, proxy.APIVersion, meshName, OriginIngress)
+		edsResources, err := zoneproxy.GenerateEDS(services, mr.EndpointMap, proxy.APIVersion, meshName, metadata.OriginIngress)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +82,7 @@ func (i IngressGenerator) Generate(
 
 	resources.Add(&core_xds.Resource{
 		Name:     listener.GetName(),
-		Origin:   OriginIngress,
+		Origin:   metadata.OriginIngress,
 		Resource: listener,
 	})
 	return resources, nil

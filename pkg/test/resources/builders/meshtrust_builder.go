@@ -57,3 +57,13 @@ func (mi *MeshTrustBuilder) WithName(name string) *MeshTrustBuilder {
 	mi.res.Meta.(*test_model.ResourceMeta).Name = name
 	return mi
 }
+
+func (mi *MeshTrustBuilder) WithTrustDomain(td string) *MeshTrustBuilder {
+	mi.res.Spec.TrustDomain = td
+	return mi
+}
+
+func (mi *MeshTrustBuilder) WithMesh(name string) *MeshTrustBuilder {
+	mi.res.Meta.(*test_model.ResourceMeta).Mesh = name
+	return mi
+}

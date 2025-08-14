@@ -2,10 +2,9 @@ package xds
 
 import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
-
-const OriginMeshAccessLog = "meshaccesslog"
 
 type LoggingEndpoint struct {
 	Address string
@@ -34,7 +33,7 @@ func AddLogBackendConf(backendEndpoints EndpointAccumulator, rs *core_xds.Resour
 			return err
 		}
 
-		rs.Add(&core_xds.Resource{Name: string(clusterName), Origin: OriginMeshAccessLog, Resource: res})
+		rs.Add(&core_xds.Resource{Name: string(clusterName), Origin: metadata.OriginMeshAccessLog, Resource: res})
 	}
 
 	return nil

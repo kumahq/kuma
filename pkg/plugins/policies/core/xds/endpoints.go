@@ -6,27 +6,27 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/pkg/core/xds/origin"
+	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 type EndpointMap map[xds.ServiceName][]*endpointv3.ClusterLoadAssignment
 
 func GatherOutboundEndpoints(rs *xds.ResourceSet) EndpointMap {
-	return gatherEndpoints(rs, generator.OriginOutbound)
+	return gatherEndpoints(rs, generator_metadata.OriginOutbound)
 }
 
 func GatherGatewayEndpoints(rs *xds.ResourceSet) EndpointMap {
-	return gatherEndpoints(rs, metadata.OriginGateway)
+	return gatherEndpoints(rs, gateway_metadata.OriginGateway)
 }
 
 func GatherEgressEndpoints(rs *xds.ResourceSet) EndpointMap {
-	return gatherEndpoints(rs, egress.OriginEgress)
+	return gatherEndpoints(rs, generator_metadata.OriginEgress)
 }
 
-func gatherEndpoints(rs *xds.ResourceSet, origin string) EndpointMap {
+func gatherEndpoints(rs *xds.ResourceSet, origin origin.Origin) EndpointMap {
 	em := EndpointMap{}
 	for _, res := range rs.Resources(envoy_resource.EndpointType) {
 		if res.Origin != origin {

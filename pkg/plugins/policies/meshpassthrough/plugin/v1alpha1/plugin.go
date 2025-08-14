@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -114,7 +115,7 @@ func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds
 	}
 	rs.Add(&core_xds.Resource{
 		Name:     outboundPassThroughCluster.GetName(),
-		Origin:   generator.OriginTransparent,
+		Origin:   metadata.OriginTransparent,
 		Resource: outboundPassThroughCluster,
 	})
 	outboundPassThroughCluster, err = xds.CreateCluster(apiVersion, generator.OutboundNameIPv6, core_mesh.ProtocolTCP)
@@ -123,7 +124,7 @@ func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds
 	}
 	rs.Add(&core_xds.Resource{
 		Name:     outboundPassThroughCluster.GetName(),
-		Origin:   generator.OriginTransparent,
+		Origin:   metadata.OriginTransparent,
 		Resource: outboundPassThroughCluster,
 	})
 	return nil
