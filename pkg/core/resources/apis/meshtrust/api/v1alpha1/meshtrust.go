@@ -6,6 +6,7 @@ package v1alpha1
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 // +kuma:policy:short_name=mtrust
+// +kuma:policy:register_generator=true
 type MeshTrust struct {
 	// Origin specifies whether the resource was created from a MeshIdentity.
 	Origin *Origin `json:"origin,omitempty"`

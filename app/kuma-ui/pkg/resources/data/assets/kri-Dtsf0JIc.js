@@ -1,0 +1,1 @@
+class c{static fromString(s){const e=s.split("_").slice(1);return{shortName:e[0],mesh:e[1],zone:e[2],namespace:e[3],name:e[4],sectionName:e[5]}}static toString(s){const{shortName:e="",mesh:t="",zone:a="",namespace:n="",name:r="",sectionName:m=""}=s;return`kri_${e}_${t}_${a}_${n}_${r}_${m}`}}export{c as K};

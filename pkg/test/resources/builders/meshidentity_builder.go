@@ -130,3 +130,8 @@ func (mi *MeshIdentityBuilder) WithInitializedStatus() *MeshIdentityBuilder {
 	}
 	return mi
 }
+
+func (mi *MeshIdentityBuilder) WithMesh(name string) *MeshIdentityBuilder {
+	mi.res.Meta.(*test_model.ResourceMeta).Mesh = name
+	return mi
+}

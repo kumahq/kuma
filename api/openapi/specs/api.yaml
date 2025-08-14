@@ -120,7 +120,7 @@ paths:
         '400':
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/Internal'
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_layout:
     get:
       operationId: get-dataplanes-layout
@@ -817,18 +817,6 @@ components:
         application/json:
           schema:
             $ref: './common/resource.yaml#/components/schemas/PoliciesList'
-    BadRequest:
-      description: Bad Request
-      content:
-        application/problem+json:
-          schema:
-            $ref: './common/error_schema.yaml#/components/schemas/Error'
-    Internal:
-      description: Internal Server Error
-      content:
-        application/problem+json:
-          schema:
-            $ref: './common/error_schema.yaml#/components/schemas/Error'
   examples:
     GlobalInsightExample:
       value:
