@@ -1,0 +1,32 @@
+type: MeshTrafficPermission
+name: mtp-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  rules:
+    - default:
+        deny:
+          - spiffeId:
+              type: Exact
+              value: spiffe://trust-domain.mesh/ns/legacy
+---
+type: MeshTrafficPermission
+name: mtp-2
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    name: test-server
+  rules:
+    - default:
+        allow:
+          - spiffeId:
+              type: Prefix
+              value: spiffe://trust-domain.mesh
+        allowWithShadowDeny:
+          - spiffeId:
+              type: Exact
+              value: spiffe://trust-domain.mesh/ns/new

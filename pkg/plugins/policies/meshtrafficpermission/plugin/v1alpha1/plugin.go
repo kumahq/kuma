@@ -78,6 +78,20 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			if err != nil {
 				return err
 			}
+		} else {
+			configurer := &v3.RBACConfigurer{
+				StatsName:    res.Name,
+				InboundRules: inboundRules,
+			}
+			for _, filterChain := range listener.FilterChains {
+				if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+					// we only want to configure RBAC on listeners protected by Kuma's TLS
+					continue
+				}
+				if err := configurer.Configure(filterChain); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

@@ -209,9 +209,6 @@ type SchemasGlobalInsight struct {
 	Zones ZonesStats `json:"zones"`
 }
 
-// BadRequest standard error
-type BadRequest = externalRef0.Error
-
 // DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
 type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
 
@@ -235,9 +232,6 @@ type InspectHostnamesResponse = InspectHostnames
 
 // InspectRulesResponse A list of rules for a dataplane
 type InspectRulesResponse = InspectRules
-
-// Internal standard error
-type Internal = externalRef0.Error
 
 // OutboundPolicyConfResponse defines model for OutboundPolicyConfResponse.
 type OutboundPolicyConfResponse = externalRef0.PoliciesList
