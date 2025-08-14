@@ -148,8 +148,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 			continue
 		}
 		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ListenerType:
+			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
 					if err := configureListener(rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port), kriWithoutSection); err != nil {
 						return err

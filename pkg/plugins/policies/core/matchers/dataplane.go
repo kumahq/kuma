@@ -148,7 +148,7 @@ func MatchedPolicies(
 
 func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_mesh.DataplaneResource) []*core_mesh.MeshGatewayResource {
 	if gateways == nil {
-		return gateways
+		return nil
 	}
 	var filtered []*core_mesh.MeshGatewayResource
 	dppZone, dppZoneOk := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]

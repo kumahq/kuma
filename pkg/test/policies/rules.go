@@ -25,8 +25,7 @@ func newTestOrigin() common.Origin {
 func NewRule(s subsetutils.Subset, conf interface{}) *core_rules.Rule {
 	originByMatches := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
-	switch c := conf.(type) {
-	case meshhttproute_api.PolicyDefault:
+	if c, ok := conf.(meshhttproute_api.PolicyDefault); ok {
 		for _, rule := range c.Rules {
 			originByMatches[meshhttproute_api.HashMatches(rule.Matches)] = newTestResourceMeta()
 		}
@@ -43,8 +42,7 @@ func NewRule(s subsetutils.Subset, conf interface{}) *core_rules.Rule {
 func NewOutboundRule(r core_model.ResourceMeta, conf interface{}) outbound.ResourceRule {
 	originByMatches := map[common_api.MatchesHash]common.Origin{}
 
-	switch c := conf.(type) {
-	case meshhttproute_api.PolicyDefault:
+	if c, ok := conf.(meshhttproute_api.PolicyDefault); ok {
 		for _, rule := range c.Rules {
 			originByMatches[meshhttproute_api.HashMatches(rule.Matches)] = newTestOrigin()
 		}
