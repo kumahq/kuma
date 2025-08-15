@@ -12,11 +12,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	envoy_admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -39,6 +42,26 @@ func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Co
 
 func (s *staticSnapshotReconciler) Clear(proxyId *core_xds.ProxyId) error {
 	return nil
+}
+
+type staticIdentityProvider struct {
+	_ *core_xds.Proxy
+}
+
+func (s *staticIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+	return nil
+}
+
+func (s *staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+	return nil
+}
+
+func (s *staticIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy) (*core_xds.WorkloadIdentity, error) {
+	return nil, nil
+}
+
+func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+	return nil, nil
 }
 
 var _ sync.SnapshotReconciler = &staticSnapshotReconciler{}
@@ -70,9 +93,15 @@ var _ = Describe("Dataplane Watchdog", func() {
 		Expect(err).ToNot(HaveOccurred())
 		cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
+		eventBus, err := events.NewEventBus(10, newMetrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		secrets, err := secrets.NewSecrets(nil, nil, newMetrics) // nil is ok for now, because we don't use it
 		Expect(err).ToNot(HaveOccurred())
+
+		plugins := map[string]providers.IdentityProvider{
+			"static": &staticIdentityProvider{},
+		}
 
 		deps = sync.DataplaneWatchdogDependencies{
 			DataplaneProxyBuilder: &sync.DataplaneProxyBuilder{
@@ -81,8 +110,9 @@ var _ = Describe("Dataplane Watchdog", func() {
 			},
 			DataplaneReconciler: snapshotReconciler,
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
-				Secrets: secrets,
-				Zone:    zone,
+				Secrets:         secrets,
+				Zone:            zone,
+				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus),
 			},
 			MeshCache:  cache,
 			ResManager: resManager,

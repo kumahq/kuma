@@ -7,6 +7,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_generator "github.com/kumahq/kuma/pkg/core/resources/apis/core/generator"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	policies_generator "github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -124,5 +125,6 @@ func NewProxyProfile(zone string) generator_core.ResourceGenerator {
 		NewGenerator(zone),
 		policies_generator.NewGenerator(),
 		generator_secrets.Generator{},
+		core_generator.NewGenerator(),
 	}
 }

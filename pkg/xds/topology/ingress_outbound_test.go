@@ -53,6 +53,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 					nil,
 					given.zoneEgress,
 					dataSourceLoader,
+					given.mesh.MTLSEnabled(),
 				)
 
 				// then

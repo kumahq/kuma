@@ -62,10 +62,10 @@ func Matched(
 func (i *MeshIdentity) getSpiffeIDTemplate() string {
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
+	builder.WriteString("{{ .TrustDomain }}")
 	if i.SpiffeID != nil {
 		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultPathTemplate))
 	} else {
-		builder.WriteString("{{ .TrustDomain }}")
 		builder.WriteString(defaultPathTemplate)
 	}
 	return builder.String()
