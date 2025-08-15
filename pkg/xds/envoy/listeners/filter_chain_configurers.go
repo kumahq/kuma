@@ -262,11 +262,17 @@ func HttpInboundRoutes(routeConfigName string, virtualHostName string, routes en
 	})
 }
 
-func HttpOutboundRoute(service string, routes envoy_common.Routes, dpTags mesh_proto.MultiValueTagSet) FilterChainBuilderOpt {
+func HttpOutboundRoute(
+	routeConfigName string,
+	virtualHostName string,
+	routes envoy_common.Routes,
+	dpTags mesh_proto.MultiValueTagSet,
+) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-		Service: service,
-		Routes:  routes,
-		DpTags:  dpTags,
+		RouteConfigName: routeConfigName,
+		VirtualHostName: virtualHostName,
+		Routes:          routes,
+		DpTags:          dpTags,
 	})
 }
 

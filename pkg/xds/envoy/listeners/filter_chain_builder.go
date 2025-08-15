@@ -8,7 +8,7 @@ import (
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 // FilterChainBuilderOpt is a configuration option for FilterChainBuilder.
@@ -54,52 +54,42 @@ func (b *FilterChainBuilder) ConfigureIf(condition bool, opts ...FilterChainBuil
 	return b
 }
 
-// Build generates an Envoy filter chain by applying a series of FilterChainConfigurers.
 func (b *FilterChainBuilder) Build() (envoy.NamedResource, error) {
-	switch b.apiVersion {
-	case envoy.APIV3:
-		filterChain := envoy_listener_v3.FilterChain{
-			Name: b.name,
-		}
-
-		for _, configurer := range b.configurers {
-			if err := configurer.Configure(&filterChain); err != nil {
-				return nil, err
-			}
-		}
-
-		// Ensure there is always an HTTP router terminating the filter chain.
-		_ = v3.UpdateHTTPConnectionManager(&filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-			for _, filter := range hcm.HttpFilters {
-				if filter.Name == "envoy.filters.http.router" {
-					return nil
-				}
-			}
-			router := &envoy_hcm.HttpFilter{
-				Name: "envoy.filters.http.router",
-				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-					TypedConfig: &anypb.Any{
-						TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
-					},
-				},
-			}
-			hcm.HttpFilters = append(hcm.HttpFilters, router)
-			return nil
-		})
-
-		return &filterChain, nil
-
-	default:
+	if b.apiVersion != envoy.APIV3 {
 		return nil, errors.New("unknown API")
 	}
+
+	filterChain := envoy_listener_v3.FilterChain{
+		Name: b.name,
+	}
+
+	for _, configurer := range b.configurers {
+		if err := configurer.Configure(&filterChain); err != nil {
+			return nil, err
+		}
+	}
+
+	// Ensure there is always an HTTP router terminating the filter chain.
+	_ = v3.UpdateHTTPConnectionManager(&filterChain, func(hcm *envoy_hcm.HttpConnectionManager) {
+		for _, filter := range hcm.HttpFilters {
+			if filter.Name == "envoy.filters.http.router" {
+				return
+			}
+		}
+
+		hcm.HttpFilters = append(hcm.HttpFilters, &envoy_hcm.HttpFilter{
+			Name: "envoy.filters.http.router",
+			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: &anypb.Any{
+					TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
+				},
+			},
+		})
+	})
+
+	return &filterChain, nil
 }
 
-// AddConfigurer appends a given FilterChainConfigurer to the end of the chain.
-func (b *FilterChainBuilder) AddConfigurer(configurer v3.FilterChainConfigurer) {
-	b.configurers = append(b.configurers, configurer)
-}
-
-// FilterChainBuilderOptFunc is a convenience type adapter.
 type FilterChainBuilderOptFunc func(builder *FilterChainBuilder)
 
 func (f FilterChainBuilderOptFunc) ApplyTo(builder *FilterChainBuilder) {
@@ -108,10 +98,8 @@ func (f FilterChainBuilderOptFunc) ApplyTo(builder *FilterChainBuilder) {
 	}
 }
 
-// AddFilterChainConfigurer produces an option that applies the given
-// configurer to the filter chain.
 func AddFilterChainConfigurer(c v3.FilterChainConfigurer) FilterChainBuilderOpt {
-	return FilterChainBuilderOptFunc(func(builder *FilterChainBuilder) {
-		builder.AddConfigurer(c)
+	return FilterChainBuilderOptFunc(func(b *FilterChainBuilder) {
+		b.configurers = append(b.configurers, c)
 	})
 }

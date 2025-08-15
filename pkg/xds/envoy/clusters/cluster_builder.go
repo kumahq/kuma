@@ -36,7 +36,9 @@ type ClusterBuilder struct {
 // Configure configures ClusterBuilder by adding individual ClusterConfigurers.
 func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
 	for _, opt := range opts {
-		opt.ApplyTo(b)
+		if opt != nil {
+			opt.ApplyTo(b)
+		}
 	}
 	return b
 }

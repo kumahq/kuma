@@ -170,8 +170,11 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	if len(clusters) != 0 {
 		// Timeout can be configured only per outbound listener. So all clusters in the split
 		// must have the same timeout. That's why we can take the timeout from the first cluster.
-		cluster := clusters[0].(*envoy_common.ClusterImpl)
-		routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		if cluster, ok := clusters[0].(*envoy_common.ClusterImpl); ok {
+			routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		} else {
+			routeAction.Timeout = util_proto.Duration(0)
+		}
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
@@ -179,12 +182,17 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 		}
 	} else {
 		var weightedClusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
-		for _, c := range clusters {
-			cluster := c.(*envoy_common.ClusterImpl)
-			weightedClusters = append(weightedClusters, &envoy_config_route_v3.WeightedCluster_ClusterWeight{
+		for _, cluster := range clusters {
+			cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name:   cluster.Name(),
-				Weight: util_proto.UInt32(cluster.Weight()),
-			})
+				Weight: util_proto.UInt32(1),
+			}
+
+			if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
+				cw.Weight = util_proto.UInt32(c.Weight())
+			}
+
+			weightedClusters = append(weightedClusters, cw)
 		}
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_config_route_v3.WeightedCluster{

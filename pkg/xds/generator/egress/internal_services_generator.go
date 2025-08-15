@@ -17,7 +17,7 @@ type InternalServicesGenerator struct{}
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *InternalServicesGenerator) Generate(
-	ctx context.Context,
+	_ context.Context,
 	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
