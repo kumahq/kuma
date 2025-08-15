@@ -132,6 +132,10 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		log := s.logger.WithValues("meshservice", ms.GetMeta().GetName(), "mesh", ms.GetMeta().GetMesh())
 		var changeReasons []string
 		mesh := meshByKey[core_model.ResourceKey{Name: ms.Meta.GetMesh()}]
+		if mesh == nil {
+			log.Info("mesh doesn't exists, skip", "mesh", ms.Meta.GetMesh())
+			continue
+		}
 		mids := identityByMesh[mesh.Meta.GetName()]
 		identities := s.buildIdentities(dpps, mids, mesh)
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
@@ -175,7 +179,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 }
 
 func getIdentitiesByMesh(mids meshidentity_api.MeshIdentityResourceList) map[string][]*meshidentity_api.MeshIdentityResource {
-	midByMesh := map[string][]*meshidentity_api.MeshIdentityResource{}
+	midByMesh := make(map[string][]*meshidentity_api.MeshIdentityResource)
 	for _, mid := range mids.Items {
 		midByMesh[mid.Meta.GetMesh()] = append(midByMesh[mid.Meta.GetMesh()], mid)
 	}
