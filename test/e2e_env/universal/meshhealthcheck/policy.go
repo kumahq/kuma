@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -52,7 +52,7 @@ spec:
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP))).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -135,7 +135,7 @@ spec:
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP))).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -220,7 +220,7 @@ spec:
 				).
 				Install(TestServerUniversal("test-server", meshName,
 					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol(mesh.ProtocolTCP)),
+					WithProtocol(core_meta.ProtocolTCP)),
 				).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -312,7 +312,7 @@ spec:
 				).
 				Install(TestServerUniversal("test-server-mtls", meshName,
 					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol(mesh.ProtocolTCP),
+					WithProtocol(core_meta.ProtocolTCP),
 					WithServiceName("test-server-mtls")),
 				).
 				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
@@ -394,7 +394,7 @@ spec:
 					"test-server",
 					meshName,
 					WithArgs([]string{"grpc", "server", "--port", "8080"}),
-					WithProtocol(mesh.ProtocolGRPC),
+					WithProtocol(core_meta.ProtocolGRPC),
 					WithTransparentProxy(true),
 				)).
 				Setup(universal.Cluster)
@@ -512,8 +512,8 @@ spec:
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v1"))).
-				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v2"))).
+				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v1"))).
+				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v2"))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())

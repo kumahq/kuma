@@ -6,7 +6,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -50,7 +50,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -103,7 +103,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -135,7 +135,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPort(8080, 8081, mesh.ProtocolTCP).
+			AddIntPort(8080, 8081, core_meta.ProtocolTCP).
 			Build(),
 		)
 
@@ -166,7 +166,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -197,7 +197,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPort(8080, 8081, mesh.ProtocolTCP).
+			AddIntPort(8080, 8081, core_meta.ProtocolTCP).
 			Build(),
 		)
 
@@ -230,7 +230,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -264,7 +264,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -298,7 +298,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPort(8080, 8081, mesh.ProtocolTCP).
+			AddIntPort(8080, 8081, core_meta.ProtocolTCP).
 			Build(),
 		)
 
@@ -332,7 +332,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -365,7 +365,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -394,7 +394,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPortWithName(8080, 8081, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 
@@ -424,7 +424,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPort(8080, 8081, mesh.ProtocolTCP).
+			AddIntPort(8080, 8081, core_meta.ProtocolTCP).
 			Build(),
 		)
 
@@ -454,7 +454,7 @@ var _ = Describe("Resolve TargetRef", func() {
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			}).
-			AddIntPort(8080, 8081, mesh.ProtocolTCP).
+			AddIntPort(8080, 8081, core_meta.ProtocolTCP).
 			Build(),
 		)
 
@@ -489,7 +489,7 @@ var _ = Describe("Resolve TargetRef", func() {
 			WithServiceLabelSelector(map[string]string{
 				mesh_proto.DisplayName: "backend",
 			}).
-			AddIntPortWithName(8080, mesh.ProtocolTCP, "tcp-port").
+			AddIntPortWithName(8080, core_meta.ProtocolTCP, "tcp-port").
 			Build(),
 		)
 

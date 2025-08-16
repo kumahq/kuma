@@ -7,6 +7,7 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -143,7 +144,7 @@ func GrpcRetryOn(conf []mesh_proto.Retry_Conf_Grpc_RetryOn) string {
 	return strings.Join(retryOn, ",")
 }
 
-func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *envoy_config_route_v3.RetryPolicy {
+func RetryConfig(retry *core_mesh.RetryResource, protocol core_meta.Protocol) *envoy_config_route_v3.RetryPolicy {
 	if retry == nil {
 		return nil
 	}

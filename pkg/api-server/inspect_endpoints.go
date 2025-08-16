@@ -9,6 +9,7 @@ import (
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -414,7 +415,7 @@ func newGatewayDataplaneInspectResponse(
 
 	// TrafficLog and TrafficeTrace are applied to the entire MeshGateway
 	// see pkg/plugins/runtime/gateway.newFilterChain
-	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
+	if logging, ok := proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]; ok {
 		gatewayPolicies[core_mesh.TrafficLogType] = rest.From.Meta(logging)
 	}
 	if trace := proxy.Policies.TrafficTrace; trace != nil {
@@ -524,7 +525,7 @@ func gatewayEntriesByPolicy(
 		)
 	}
 
-	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
+	if logging, ok := proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]; ok {
 		wholeGateway := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
 		policyKey := inspect.PolicyKey{
 			Type: core_mesh.TrafficLogType,

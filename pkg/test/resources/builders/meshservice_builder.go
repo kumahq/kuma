@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -77,7 +77,7 @@ func (m *MeshServiceBuilder) WithDataplaneTagsSelectorKV(selectorKV ...string) *
 	return m.WithDataplaneTagsSelector(TagsKVToMap(selectorKV))
 }
 
-func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_mesh.Protocol) *MeshServiceBuilder {
+func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_meta.Protocol) *MeshServiceBuilder {
 	m.res.Spec.Ports = append(m.res.Spec.Ports, v1alpha1.Port{
 		Port: port,
 		TargetPort: &intstr.IntOrString{
@@ -89,7 +89,7 @@ func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_mesh.P
 	return m
 }
 
-func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol core_mesh.Protocol, name string) *MeshServiceBuilder {
+func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol core_meta.Protocol, name string) *MeshServiceBuilder {
 	m.res.Spec.Ports = append(m.res.Spec.Ports, v1alpha1.Port{
 		Port: port,
 		TargetPort: &intstr.IntOrString{

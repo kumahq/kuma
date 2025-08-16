@@ -15,7 +15,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -24,7 +24,7 @@ import (
 
 type Configurer struct {
 	Conf     api.Conf
-	Protocol core_mesh.Protocol
+	Protocol core_meta.Protocol
 	Tags     v1alpha1.MultiValueTagSet
 }
 
@@ -81,25 +81,25 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 	return nil
 }
 
-func selectHealthCheckType(protocol core_mesh.Protocol, tcp *api.TcpHealthCheck, http *api.HttpHealthCheck, grpc *api.GrpcHealthCheck) HCProtocol {
+func selectHealthCheckType(protocol core_meta.Protocol, tcp *api.TcpHealthCheck, http *api.HttpHealthCheck, grpc *api.GrpcHealthCheck) HCProtocol {
 	// match exact
-	if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && !pointer.Deref(http.Disabled) {
+	if (protocol == core_meta.ProtocolHTTP || protocol == core_meta.ProtocolHTTP2) && http != nil && !pointer.Deref(http.Disabled) {
 		return HCProtocolHTTP
 	}
-	if protocol == core_mesh.ProtocolGRPC && grpc != nil && !pointer.Deref(grpc.Disabled) {
+	if protocol == core_meta.ProtocolGRPC && grpc != nil && !pointer.Deref(grpc.Disabled) {
 		return HCProtocolGRPC
 	}
-	if protocol == core_mesh.ProtocolTCP && tcp != nil && !pointer.Deref(tcp.Disabled) {
+	if protocol == core_meta.ProtocolTCP && tcp != nil && !pointer.Deref(tcp.Disabled) {
 		return HCProtocolTCP
 	}
 
 	// match fallback HTTP
-	if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && pointer.Deref(http.Disabled) && tcp != nil && !pointer.Deref(tcp.Disabled) {
+	if (protocol == core_meta.ProtocolHTTP || protocol == core_meta.ProtocolHTTP2) && http != nil && pointer.Deref(http.Disabled) && tcp != nil && !pointer.Deref(tcp.Disabled) {
 		return HCProtocolTCP
 	}
 
 	// match fallback GRPC
-	if protocol == core_mesh.ProtocolGRPC && grpc != nil && pointer.Deref(grpc.Disabled) && tcp != nil && !pointer.Deref(tcp.Disabled) {
+	if protocol == core_meta.ProtocolGRPC && grpc != nil && pointer.Deref(grpc.Disabled) && tcp != nil && !pointer.Deref(tcp.Disabled) {
 		return HCProtocolTCP
 	}
 
@@ -178,7 +178,7 @@ func tcpHealthCheck(
 	}
 }
 
-func httpHealthCheck(protocol core_mesh.Protocol, httpConf *api.HttpHealthCheck, srcTags v1alpha1.MultiValueTagSet) *envoy_core.HealthCheck_HttpHealthCheck_ {
+func httpHealthCheck(protocol core_meta.Protocol, httpConf *api.HttpHealthCheck, srcTags v1alpha1.MultiValueTagSet) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	var expectedStatuses []*envoy_type.Int64Range
 	if httpConf.ExpectedStatuses != nil {
 		for _, status := range *httpConf.ExpectedStatuses {
@@ -190,7 +190,7 @@ func httpHealthCheck(protocol core_mesh.Protocol, httpConf *api.HttpHealthCheck,
 	}
 
 	codecClientType := envoy_type.CodecClientType_HTTP1
-	if protocol == core_mesh.ProtocolHTTP2 {
+	if protocol == core_meta.ProtocolHTTP2 {
 		codecClientType = envoy_type.CodecClientType_HTTP2
 	}
 

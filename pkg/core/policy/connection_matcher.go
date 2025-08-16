@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
@@ -27,7 +28,7 @@ func ToOutboundServicesOf(dataplane *core_mesh.DataplaneResource) ServiceIterato
 		}
 		if len(outbounds) == idx { // add additional implicit pass through service
 			idx++
-			return core_mesh.PassThroughService, true
+			return core_meta.PassThroughServiceName, true
 		}
 		oface := outbounds[idx]
 		idx++

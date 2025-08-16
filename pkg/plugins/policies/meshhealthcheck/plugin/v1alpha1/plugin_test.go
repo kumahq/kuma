@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -103,10 +104,10 @@ var _ = Describe("MeshHealthCheck", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
-				AddServiceProtocol(httpServiceTag, core_mesh.ProtocolHTTP).
-				AddServiceProtocol(tcpServiceTag, core_mesh.ProtocolTCP).
-				AddServiceProtocol(grpcServiceTag, core_mesh.ProtocolGRPC).
-				AddServiceProtocol(splitHttpServiceTag, core_mesh.ProtocolHTTP).
+				AddServiceProtocol(httpServiceTag, core_meta.ProtocolHTTP).
+				AddServiceProtocol(tcpServiceTag, core_meta.ProtocolTCP).
+				AddServiceProtocol(grpcServiceTag, core_meta.ProtocolGRPC).
+				AddServiceProtocol(splitHttpServiceTag, core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
@@ -330,7 +331,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
@@ -428,7 +429,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Ports: []meshservice_api.Port{{
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
@@ -531,7 +532,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Ports: []meshservice_api.Port{{
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{

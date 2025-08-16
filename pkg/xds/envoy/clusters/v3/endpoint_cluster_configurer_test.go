@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -45,7 +45,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 					TLSEnabled: true,
 				},
 			})).
-			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
+			Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 			Build()
 
 		// then
@@ -88,7 +88,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 					TLSEnabled: true,
 				},
 			})).
-			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
+			Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 			Build()
 
 		// then
@@ -122,7 +122,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
 			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: address, Port: port})).
-			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
+			Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 			Build()
 
 		// then
@@ -154,7 +154,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
 			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{UnixDomainPath: path})).
-			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
+			Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 			Build()
 
 		// then

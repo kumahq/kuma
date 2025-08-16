@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/logs"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -163,7 +164,7 @@ var _ = Describe("Matcher", func() {
 		// should match because *->* rule and default backend file1
 		Expect(meshRes.GetLoggingBackend(log["web"].Spec.GetConf().GetBackend())).To(Equal(backendFile1))
 		// should match implicit pass through because service *->* rule and default backend file1
-		Expect(meshRes.GetLoggingBackend(log[core_mesh.PassThroughService].Spec.GetConf().GetBackend())).To(Equal(backendFile1))
+		Expect(meshRes.GetLoggingBackend(log[core_meta.PassThroughServiceName].Spec.GetConf().GetBackend())).To(Equal(backendFile1))
 	})
 
 	It("should not match services", func() {

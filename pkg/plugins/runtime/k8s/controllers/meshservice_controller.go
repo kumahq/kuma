@@ -27,6 +27,7 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_k8s "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
@@ -401,7 +402,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 				Name:        &portName,
 				Port:        port.Port,
 				TargetPort:  &port.TargetPort,
-				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
+				AppProtocol: core_meta.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}
 

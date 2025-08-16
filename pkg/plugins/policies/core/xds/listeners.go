@@ -8,8 +8,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	generator_meta "github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	generator_model "github.com/kumahq/kuma/pkg/xds/generator/model"
 )
 
 type Listeners struct {
@@ -19,7 +19,7 @@ type Listeners struct {
 	Gateway         map[core_rules.InboundListener]*envoy_listener.Listener
 	Ipv4Passthrough *envoy_listener.Listener
 	Ipv6Passthrough *envoy_listener.Listener
-	DirectAccess    map[generator.Endpoint]*envoy_listener.Listener
+	DirectAccess    map[generator_model.Endpoint]*envoy_listener.Listener
 	Prometheus      *envoy_listener.Listener
 }
 
@@ -28,7 +28,7 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 		Inbound:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
 		Gateway:      map[core_rules.InboundListener]*envoy_listener.Listener{},
-		DirectAccess: map[generator.Endpoint]*envoy_listener.Listener{},
+		DirectAccess: map[generator_model.Endpoint]*envoy_listener.Listener{},
 	}
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
@@ -36,27 +36,27 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 		address := listener.GetAddress().GetSocketAddress()
 
 		switch res.Origin {
-		case generator_metadata.OriginOutbound:
+		case generator_meta.OriginOutbound:
 			listeners.Outbound[mesh_proto.OutboundInterface{
 				DataplaneIP:   address.GetAddress(),
 				DataplanePort: address.GetPortValue(),
 			}] = listener
-		case generator_metadata.OriginInbound:
+		case generator_meta.OriginInbound:
 			listeners.Inbound[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
-		case generator_metadata.OriginEgress:
+		case generator_meta.OriginEgress:
 			listeners.Egress = listener
-		case generator_metadata.OriginTransparent:
+		case generator_meta.OriginTransparent:
 			switch listener.Name {
-			case generator.OutboundNameIPv4:
+			case generator_meta.TransparentOutboundNameIPv4:
 				listeners.Ipv4Passthrough = listener
-			case generator.OutboundNameIPv6:
+			case generator_meta.TransparentOutboundNameIPv6:
 				listeners.Ipv6Passthrough = listener
 			}
-		case generator_metadata.OriginDirectAccess:
-			listeners.DirectAccess[generator.Endpoint{
+		case generator_meta.OriginDirectAccess:
+			listeners.DirectAccess[generator_model.Endpoint{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
@@ -65,7 +65,7 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
-		case generator_metadata.OriginPrometheus:
+		case generator_meta.OriginPrometheus:
 			listeners.Prometheus = listener
 		default:
 			continue

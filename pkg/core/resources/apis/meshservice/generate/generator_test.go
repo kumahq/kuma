@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/generate"
@@ -98,7 +99,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -167,7 +168,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("main"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -186,7 +187,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -210,7 +211,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -229,7 +230,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -247,7 +248,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("81"),
 					Port:        81,
 					TargetPort:  pointer.To(intstr.FromInt(81)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -266,7 +267,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -304,7 +305,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())
@@ -350,7 +351,7 @@ var _ = Describe("MeshService generator", func() {
 					Name:        pointer.To("80"),
 					Port:        80,
 					TargetPort:  pointer.To(intstr.FromInt(80)),
-					AppProtocol: core_mesh.ProtocolTCP,
+					AppProtocol: core_meta.ProtocolTCP,
 				},
 			}))
 		}, "2s", "100ms").Should(Succeed())

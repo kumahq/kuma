@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/test/framework"
@@ -45,7 +46,7 @@ networking:
 			Spec: &mesh_proto.ExternalService{
 				Tags: map[string]string{
 					mesh_proto.ServiceTag:  service,
-					mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+					mesh_proto.ProtocolTag: string(core_meta.ProtocolHTTP),
 				},
 				Networking: &mesh_proto.ExternalService_Networking{
 					Address: address,

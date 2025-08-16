@@ -1,7 +1,7 @@
 package route
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -113,7 +113,7 @@ type Destination struct {
 	BackendRef  *resolve.ResolvedBackendRef
 
 	Weight        uint32
-	RouteProtocol core_mesh.Protocol
+	RouteProtocol core_meta.Protocol
 
 	// Name is the globally unique name for this destination instance.
 	// It takes into account not only the service that it targets, but

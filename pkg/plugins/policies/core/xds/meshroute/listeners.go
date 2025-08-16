@@ -5,9 +5,9 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -28,13 +28,13 @@ func MakeTCPSplit(
 	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
-		map[core_mesh.Protocol]struct{}{
-			core_mesh.ProtocolUnknown: {},
-			core_mesh.ProtocolKafka:   {},
-			core_mesh.ProtocolTCP:     {},
-			core_mesh.ProtocolHTTP:    {},
-			core_mesh.ProtocolHTTP2:   {},
-			core_mesh.ProtocolGRPC:    {},
+		map[core_meta.Protocol]struct{}{
+			core_meta.ProtocolUnknown: {},
+			core_meta.ProtocolKafka:   {},
+			core_meta.ProtocolTCP:     {},
+			core_meta.ProtocolHTTP:    {},
+			core_meta.ProtocolHTTP2:   {},
+			core_meta.ProtocolGRPC:    {},
 		},
 		clusterCache,
 		servicesAcc,
@@ -52,10 +52,10 @@ func MakeHTTPSplit(
 	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
-		map[core_mesh.Protocol]struct{}{
-			core_mesh.ProtocolHTTP:  {},
-			core_mesh.ProtocolHTTP2: {},
-			core_mesh.ProtocolGRPC:  {},
+		map[core_meta.Protocol]struct{}{
+			core_meta.ProtocolHTTP:  {},
+			core_meta.ProtocolHTTP2: {},
+			core_meta.ProtocolGRPC:  {},
 		},
 		clusterCache,
 		servicesAcc,
@@ -67,7 +67,7 @@ func MakeHTTPSplit(
 
 type DestinationService struct {
 	Outbound            *xds_types.Outbound
-	Protocol            core_mesh.Protocol
+	Protocol            core_meta.Protocol
 	KumaServiceTagValue string
 }
 
@@ -138,7 +138,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 
 		var svc core.Destination
 		var port core.Port
-		var protocol core_mesh.Protocol
+		var protocol core_meta.Protocol
 		var ok bool
 
 		// ignore outbound when no service matches the KRI identifier
@@ -156,7 +156,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 
 		// determine protocol, default to TCP if unspecified
 		if protocol = port.GetProtocol(); protocol == "" {
-			protocol = core_mesh.ProtocolTCP
+			protocol = core_meta.ProtocolTCP
 		}
 
 		result = append(
@@ -192,7 +192,7 @@ func DestinationPortFromRef(
 }
 
 func makeSplits(
-	protocols map[core_mesh.Protocol]struct{},
+	protocols map[core_meta.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
@@ -223,7 +223,7 @@ func makeSplits(
 }
 
 func handleRealResources(
-	protocols map[core_mesh.Protocol]struct{},
+	protocols map[core_meta.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
@@ -282,7 +282,7 @@ func handleRealResources(
 }
 
 func handleLegacyBackendRef(
-	protocols map[core_mesh.Protocol]struct{},
+	protocols map[core_meta.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.LegacyBackendRef,

@@ -2,10 +2,10 @@ package generate
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"reflect"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -85,20 +86,24 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "error", allErrs)
 			continue
 		}
-		appProtocol, hasProtocol := inbound.GetTags()[mesh_proto.ProtocolTag]
-		if !hasProtocol {
-			appProtocol = core_mesh.ProtocolTCP
-		}
-		portName := inbound.Name
-		if portName == "" {
-			portName = strconv.Itoa(int(inbound.Port))
-		}
+
 		port := meshservice_api.Port{
-			Name:        &portName,
+			Name:        &inbound.Name,
 			Port:        int32(inbound.Port),
-			TargetPort:  pointer.To(intstr.FromInt(int(inbound.Port))),
-			AppProtocol: core_mesh.Protocol(appProtocol),
+			TargetPort:  pointer.To(intstr.FromInt32(int32(inbound.Port))),
+			AppProtocol: core_meta.ProtocolTCP,
 		}
+
+		if name := pointer.Deref(port.Name); name == "" {
+			port.Name = pointer.To(fmt.Sprintf("%d", port.Port))
+		}
+
+		if proto, ok := inbound.GetTags()[mesh_proto.ProtocolTag]; ok {
+			if p := core_meta.ParseProtocol(proto); p != core_meta.ProtocolUnknown {
+				port.AppProtocol = p
+			}
+		}
+
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
 	}
 

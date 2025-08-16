@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
@@ -175,7 +176,7 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 	})
 }
 
-func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
+func HealthCheck(protocol core_meta.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
@@ -216,7 +217,7 @@ func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
 	})
 }
 
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) ClusterBuilderOpt {
+func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.TimeoutConfigurer{
 			Protocol: protocol,
@@ -228,7 +229,7 @@ func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) Clus
 func DefaultTimeout() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.TimeoutConfigurer{
-			Protocol: core_mesh.ProtocolTCP,
+			Protocol: core_meta.ProtocolTCP,
 		})
 	})
 }

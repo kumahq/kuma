@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -93,11 +94,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
 						"db": {
 							TLSReadiness: true,
-							Protocol:     core_mesh.ProtocolUnknown,
+							Protocol:     core_meta.ProtocolUnknown,
 						},
 						"elastic": {
 							TLSReadiness: true,
-							Protocol:     core_mesh.ProtocolUnknown,
+							Protocol:     core_meta.ProtocolUnknown,
 						},
 					},
 				},

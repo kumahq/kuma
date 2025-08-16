@@ -8,14 +8,14 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var (
-	allMatchProtocols    = []string{core_mesh.ProtocolTCP, core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2}
+	allMatchProtocols    = core_meta.ProtocolList{core_meta.ProtocolTCP, core_meta.ProtocolGRPC, core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2}
 	allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
 	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
 )
@@ -87,8 +87,8 @@ func validateMatch(match Match) validators.ValidationError {
 	if match.Port == 0 || match.Port > math.MaxUint16 {
 		verr.AddViolationAt(validators.RootedAt("port"), "port must be a valid (1-65535)")
 	}
-	if !slices.Contains(allMatchProtocols, string(match.Protocol)) {
-		verr.AddErrorAt(validators.RootedAt("protocol"), validators.MakeFieldMustBeOneOfErr("protocol", allMatchProtocols...))
+	if !allMatchProtocols.Contains(match.Protocol) {
+		verr.AddErrorAt(validators.RootedAt("protocol"), validators.MakeFieldMustBeOneOfErr("protocol", allMatchProtocols.Strings()...))
 	}
 
 	return verr

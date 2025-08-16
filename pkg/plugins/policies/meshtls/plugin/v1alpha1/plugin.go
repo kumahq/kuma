@@ -11,6 +11,7 @@ import (
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -275,7 +276,7 @@ func configure(
 ) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
 	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
-	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
 	cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
 	service := inbound.GetService()

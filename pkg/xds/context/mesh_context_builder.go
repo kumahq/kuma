@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -25,7 +26,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/maps"
-	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -543,7 +543,7 @@ func getServiceInformation(servicesInformation map[string]*ServiceInformation, s
 		return info
 	}
 	return &ServiceInformation{
-		Protocol: core_mesh.ProtocolUnknown,
+		Protocol: core_meta.ProtocolUnknown,
 	}
 }
 
@@ -554,20 +554,20 @@ func isExternalService(endpoints []xds.Endpoint) bool {
 	return false
 }
 
-func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
+func inferServiceProtocol(endpoints []xds.Endpoint) core_meta.Protocol {
 	if len(endpoints) == 0 {
-		return core_mesh.ProtocolUnknown
+		return core_meta.ProtocolUnknown
 	}
-	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
+	serviceProtocol := core_meta.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
 	if endpoints[0].ExternalService != nil && endpoints[0].ExternalService.Protocol != "" {
 		serviceProtocol = endpoints[0].ExternalService.Protocol
 	}
 	for _, endpoint := range endpoints[1:] {
-		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
+		endpointProtocol := core_meta.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
 		if endpoint.ExternalService != nil && endpoint.ExternalService.Protocol != "" {
 			endpointProtocol = endpoint.ExternalService.Protocol
 		}
-		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
+		serviceProtocol = core_meta.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol
 }

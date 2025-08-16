@@ -6,8 +6,8 @@ import (
 
 	"github.com/kumahq/kuma/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 // MeshExternalService
@@ -51,7 +51,7 @@ type Match struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
 	// +kubebuilder:validation:Enum=tcp;grpc;http;http2
-	Protocol core_mesh.Protocol `json:"protocol"`
+	Protocol core_meta.Protocol `json:"protocol"`
 }
 
 type Extension struct {

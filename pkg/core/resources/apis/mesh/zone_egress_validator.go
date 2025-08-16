@@ -2,6 +2,7 @@ package mesh
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -14,7 +15,7 @@ func (r *ZoneEgressResource) Validate() error {
 func (r *ZoneEgressResource) validateNetworking(path validators.PathBuilder, networking *mesh_proto.ZoneEgress_Networking) validators.ValidationError {
 	var err validators.ValidationError
 	if admin := networking.GetAdmin(); admin != nil {
-		if r.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
+		if r.UsesInboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
 			err.AddViolationAt(path.Field("admin").Field("port"), "must differ from port")
 		}
 	}

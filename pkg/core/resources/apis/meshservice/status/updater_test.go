@@ -10,6 +10,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -394,7 +395,7 @@ var _ = Describe("Updater", func() {
 		Entry("should count healthy DPPs and use MeshService.ports[].targetPort to select DP inbound", dpProxiesTestCase{
 			meshService: samples.MeshServiceBackendBuilder().
 				WithDataplaneTagsSelectorKV("app", "backend").
-				AddIntPort(int32(builders.FirstInboundServicePort+1), int32(builders.FirstInboundPort+1), core_mesh.ProtocolHTTP),
+				AddIntPort(int32(builders.FirstInboundServicePort+1), int32(builders.FirstInboundPort+1), core_meta.ProtocolHTTP),
 			dpps: []*builders.DataplaneBuilder{
 				builders.Dataplane().
 					WithName("dp-all-inbounds-healthy").

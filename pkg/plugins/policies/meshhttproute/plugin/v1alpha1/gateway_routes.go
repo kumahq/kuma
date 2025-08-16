@@ -9,8 +9,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -263,7 +263,7 @@ func makeHttpRouteEntry(
 			BackendRef:    ref,
 			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
-			RouteProtocol: core_mesh.ProtocolHTTP,
+			RouteProtocol: core_meta.ProtocolHTTP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)

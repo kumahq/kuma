@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
@@ -182,7 +183,7 @@ func GenerateVirtualHost(
 }
 
 // retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
-func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) []envoy_routes.RouteConfigurer {
+func retryRouteConfigurers(protocol core_meta.Protocol, policy model.Resource) []envoy_routes.RouteConfigurer {
 	retry, _ := policy.(*core_mesh.RetryResource)
 	if retry == nil {
 		return nil

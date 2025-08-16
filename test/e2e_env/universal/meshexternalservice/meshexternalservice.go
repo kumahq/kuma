@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/gomega/types"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -57,7 +57,7 @@ networking:
 				Match: meshexternalservice_api.Match{
 					Type:     meshexternalservice_api.HostnameGeneratorType,
 					Port:     80,
-					Protocol: core_mesh.ProtocolHTTP,
+					Protocol: core_meta.ProtocolHTTP,
 				},
 				Endpoints: &[]meshexternalservice_api.Endpoint{{
 					Address: host,

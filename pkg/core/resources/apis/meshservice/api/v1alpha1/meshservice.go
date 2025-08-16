@@ -4,8 +4,8 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Selector struct {
@@ -24,7 +24,7 @@ type Port struct {
 	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
 	// +kuma:nolint // it should be without omitempty but MeshService doesn't have any validation https://github.com/kumahq/kuma/issues/13814 so if it was ever persisted empty this would cause a nack
-	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
+	AppProtocol core_meta.Protocol `json:"appProtocol,omitempty"`
 }
 
 const maxNameLength = 63

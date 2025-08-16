@@ -13,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -40,6 +41,7 @@ import (
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/model"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -120,7 +122,7 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
@@ -181,7 +183,7 @@ func applyToTransparentProxyListeners(
 	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_mesh.PassThroughService))
+	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
 	if conf == nil {
 		return nil
 	}
@@ -195,23 +197,23 @@ func applyToTransparentProxyListeners(
 	}
 
 	if ipv4 != nil {
-		if err := configureListener(*conf, ipv4, backends, core_mesh.ProtocolTCP, kumaValues, path); err != nil {
+		if err := configureListener(*conf, ipv4, backends, core_meta.ProtocolTCP, kumaValues, path); err != nil {
 			return err
 		}
 	}
 
 	if ipv6 != nil {
-		return configureListener(*conf, ipv6, backends, core_mesh.ProtocolTCP, kumaValues, path)
+		return configureListener(*conf, ipv6, backends, core_meta.ProtocolTCP, kumaValues, path)
 	}
 
 	return nil
 }
 
 func applyToDirectAccess(
-	rules core_rules.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_mesh.PassThroughService))
+	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
 	if conf == nil {
 		return nil
 	}
@@ -224,7 +226,7 @@ func applyToDirectAccess(
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
-		return configureListener(*conf, listener, backends, core_mesh.ProtocolTCP, kumaValues, path)
+		return configureListener(*conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
 	}
 
 	return nil
@@ -261,11 +263,11 @@ func applyToGateway(
 		if !ok {
 			continue
 		}
-		var protocol core_mesh.Protocol
+		var protocol core_meta.Protocol
 		if _, p, _, err := names.ParseGatewayListenerName(listener.GetName()); err != nil {
 			return err
 		} else {
-			protocol = core_mesh.ParseProtocol(p)
+			protocol = core_meta.ParseProtocol(p)
 		}
 
 		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
@@ -302,11 +304,11 @@ func applyToGateway(
 	return nil
 }
 
-func configureListener(
+func configureListener[T ~string](
 	conf api.Conf,
 	listener *envoy_listener.Listener,
 	backendsAcc *EndpointAccumulator,
-	defaultFormat string,
+	defaultFormat T,
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) error {
@@ -315,7 +317,7 @@ func configureListener(
 			util_slices.Map(
 				pointer.Deref(conf.Backends),
 				func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-					return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, values, accessLogSocketPath)
+					return BaseAccessLogBuilder(b, string(defaultFormat), backendsAcc, values, accessLogSocketPath)
 				}))).
 		Modify()
 }
@@ -357,7 +359,7 @@ func applyToRealResource(
 
 	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
-			Configure(If(r.Protocol.IsHTTPBased(), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
+			Configure(If(core_meta.IsHTTPBased(r.Protocol), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
 				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 				Configure(bldrs_matcher.NullValue())),
 			))

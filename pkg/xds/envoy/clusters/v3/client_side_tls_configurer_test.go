@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -37,7 +37,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
 				Configure(clusterBuilderOpt).
-				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
+				Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 				Build()
 
 			// then
