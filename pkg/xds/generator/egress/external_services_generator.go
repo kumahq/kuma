@@ -297,10 +297,10 @@ func (*ExternalServicesGenerator) configureFilterChain(
 			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
 			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-				Name:    routeConfigName,
-				Service: esName,
-				Routes:  routes,
-				DpTags:  nil,
+				RouteConfigName: routeConfigName,
+				VirtualHostName: esName,
+				Routes:          routes,
+				DpTags:          nil,
 			}))
 	default:
 		filterChainBuilder.Configure(
