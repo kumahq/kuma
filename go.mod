@@ -12,7 +12,7 @@ require (
 	github.com/cilium/ebpf v0.19.0
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.7.1
-	github.com/emicklei/go-restful/v3 v3.12.2
+	github.com/emicklei/go-restful/v3 v3.13.0
 	github.com/envoyproxy/go-control-plane v0.13.4
 	github.com/envoyproxy/go-control-plane/contrib v1.32.4
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4
