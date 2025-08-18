@@ -90,3 +90,11 @@ func (p Port) GetValue() int32 {
 func (p Port) GetProtocol() core_meta.Protocol {
 	return p.AppProtocol
 }
+
+func (l *MeshMultiZoneServiceResourceList) GetDestinations() []core.Destination {
+	var result []core.Destination
+	for _, item := range l.Items {
+		result = append(result, item)
+	}
+	return result
+}

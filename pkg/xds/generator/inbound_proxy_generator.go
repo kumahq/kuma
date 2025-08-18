@@ -13,6 +13,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -75,7 +76,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 			Origin:   metadata.OriginInbound,
 		})
 
-		cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
+		cluster := plugins_xds.NewClusterBuilder().WithName(localClusterName).Build()
 		routes := GenerateRoutes(proxy, endpoint, cluster)
 
 		// generate LDS resource
@@ -150,13 +151,12 @@ func FilterChainBuilder(
 	ciphers []tls.TlsCipher,
 ) *envoy_listeners.FilterChainBuilder {
 	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
-	routeConfigName := envoy_names.GetInboundRouteName(service)
-	virtualHostName := service
-	if unifiedNaming {
-		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
-		routeConfigName = unifiedName
-		virtualHostName = unifiedName
-	}
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
+	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
+	routeConfigName := getName(contextualName, envoy_names.GetInboundRouteName(service))
+	virtualHostName := getName(contextualName, service)
+
+	cluster := plugins_xds.NewClusterBuilder().WithName(localClusterName).Build()
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 	switch protocol {
@@ -179,10 +179,10 @@ func FilterChainBuilder(
 	case core_meta.ProtocolKafka:
 		filterChainBuilder.
 			Configure(envoy_listeners.Kafka(localClusterName)).
-			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
+			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
 	default:
 		// configuration for non-HTTP cases
-		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
+		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
 	}
 	if serverSideMTLS {
 		filterChainBuilder.
@@ -192,7 +192,7 @@ func FilterChainBuilder(
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 }
 
-func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster *envoy_common.ClusterImpl) envoy_common.Routes {
+func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster envoy_common.Cluster) envoy_common.Routes {
 	routes := envoy_common.Routes{}
 
 	// Iterate over that RateLimits and generate the relevant Routes.

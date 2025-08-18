@@ -73,3 +73,11 @@ func (m Match) GetValue() int32 {
 func (m Match) GetProtocol() core_meta.Protocol {
 	return m.Protocol
 }
+
+func (l *MeshExternalServiceResourceList) GetDestinations() []core.Destination {
+	var result []core.Destination
+	for _, item := range l.Items {
+		result = append(result, item)
+	}
+	return result
+}

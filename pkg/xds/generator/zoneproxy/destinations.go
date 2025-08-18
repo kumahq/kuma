@@ -4,13 +4,11 @@ import (
 	"reflect"
 	"slices"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns"
@@ -18,6 +16,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -29,126 +28,56 @@ type MeshDestinations struct {
 }
 
 type BackendRefDestination struct {
-	Mesh string
-	// DestinationName is a string to reference Type+Name+Mesh+Port. Effectively an Envoy Cluster name
-	DestinationName string
-	SNI             string
-	Resource        *resolve.ResolvedBackendRef
+	resolve.ResolvedBackendRef
+
+	Mesh              string
+	SNI               string
+	LegacyServiceName string
 }
 
 func BuildMeshDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
-	res xds_context.Resources,
-	meshServices []*meshservice_api.MeshServiceResource,
-	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
-	mesServices []*meshexternalservice_api.MeshExternalServiceResource,
 	systemNamespace string,
-	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
+	resources xds_context.Resources,
+	realResourceLists ...core_resources.DestinationList,
 ) MeshDestinations {
 	return MeshDestinations{
-		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
-		BackendRefs: append(
-			append(buildMeshServiceDestinations(meshServices, systemNamespace, resolveResourceIdentifier), buildMeshMultiZoneServiceDestinations(meshMzSvc, resolveResourceIdentifier)...),
-			buildMeshExternalServiceDestinations(mesServices, resolveResourceIdentifier)...,
+		KumaIoServices: buildKumaIoServiceDestinations(availableServices, resources),
+		BackendRefs: buildRealResourceDestinations(
+			util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
+			systemNamespace,
 		),
 	}
 }
 
-func buildMeshServiceDestinations(
-	meshServices []*meshservice_api.MeshServiceResource,
-	systemNamespace string,
-	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
-) []BackendRefDestination {
-	var msDestinations []BackendRefDestination
-	for _, ms := range meshServices {
-		for _, port := range ms.Spec.Ports {
-			sni := tls.SNIForResource(
-				ms.SNIName(systemNamespace),
-				ms.GetMeta().GetMesh(),
-				meshservice_api.MeshServiceType,
-				port.Port,
-				nil,
-			)
-			msDestinations = append(msDestinations, BackendRefDestination{
-				Mesh:            ms.GetMeta().GetMesh(),
-				DestinationName: destinationname.MustResolve(false, ms, port),
-				SNI:             sni,
-				Resource: resolve.BackendRefOrNil(
-					kri.From(ms),
-					resourceToBackendRef(ms, meshservice_api.MeshServiceType, port.Port),
-					resolveResourceIdentifier,
-				),
-			})
+func buildRealResourceDestinations(destinations []core_resources.Destination, systemNS string) []BackendRefDestination {
+	return util_slices.FlatMap(destinations, func(dest core_resources.Destination) []BackendRefDestination {
+		origin := kri.From(dest)
+		mesh := dest.GetMeta().GetMesh()
+
+		var rName string
+		switch r := any(dest).(type) {
+		case *meshservice_api.MeshServiceResource:
+			rName = r.SNIName(systemNS)
+		default:
+			rName = core_model.GetDisplayName(dest.GetMeta())
 		}
-	}
-	return msDestinations
-}
 
-func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType, port int32) common_api.BackendRef {
-	id := kri.From(r)
-	return common_api.BackendRef{
-		TargetRef: common_api.TargetRef{
-			Kind:      common_api.TargetRefKind(resType),
-			Name:      pointer.To(id.Name),
-			Namespace: pointer.To(id.Namespace),
-		},
-		Port: pointer.To(uint32(port)),
-	}
-}
-
-func buildMeshExternalServiceDestinations(
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
-) []BackendRefDestination {
-	var mesDestinations []BackendRefDestination
-	for _, mes := range meshExternalServices {
-		sni := tls.SNIForResource(
-			core_model.GetDisplayName(mes.GetMeta()),
-			mes.GetMeta().GetMesh(),
-			meshexternalservice_api.MeshExternalServiceType,
-			mes.Spec.Match.Port,
-			nil,
-		)
-		mesDestinations = append(mesDestinations, BackendRefDestination{
-			Mesh:            mes.GetMeta().GetMesh(),
-			DestinationName: destinationname.MustResolve(false, mes, mes.Spec.Match),
-			SNI:             sni,
-			Resource: resolve.BackendRefOrNil(
-				kri.From(mes),
-				resourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, mes.Spec.Match.Port),
-				resolveResourceIdentifier,
-			),
+		return util_slices.Map(dest.GetPorts(), func(port core_resources.Port) BackendRefDestination {
+			return BackendRefDestination{
+				Mesh:              mesh,
+				SNI:               tls.SNIForResource(rName, mesh, origin.ResourceType, port.GetValue(), nil),
+				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
+				ResolvedBackendRef: resolve.ResolvedBackendRef{
+					Ref: &resolve.RealResourceBackendRef{
+						Resource: kri.WithSectionName(origin, port.GetName()),
+						Origin:   origin,
+						Weight:   1,
+					},
+				},
+			}
 		})
-	}
-	return mesDestinations
-}
-
-func buildMeshMultiZoneServiceDestinations(
-	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
-	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
-) []BackendRefDestination {
-	var msDestinations []BackendRefDestination
-	for _, ms := range meshMzSvc {
-		for _, port := range ms.Spec.Ports {
-			msDestinations = append(msDestinations, BackendRefDestination{
-				Mesh:            ms.GetMeta().GetMesh(),
-				DestinationName: destinationname.MustResolve(false, ms, port),
-				Resource: resolve.BackendRefOrNil(
-					kri.From(ms),
-					resourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
-					resolveResourceIdentifier,
-				),
-				SNI: tls.SNIForResource(
-					core_model.GetDisplayName(ms.GetMeta()),
-					ms.GetMeta().GetMesh(),
-					v1alpha1.MeshMultiZoneServiceType,
-					port.Port,
-					nil,
-				),
-			})
-		}
-	}
-	return msDestinations
+	})
 }
 
 func buildKumaIoServiceDestinations(
