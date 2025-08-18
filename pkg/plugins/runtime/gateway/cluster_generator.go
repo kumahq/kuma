@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -158,26 +159,33 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	if !ok {
 		return nil, "", nil
 	}
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-
+	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
 			clusters.EdsCluster(),
 			clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-			clusters.ClientSideMultiIdentitiesMTLS(
-				proxy.SecretsTracker,
-				false,
-				meshCtx.Resource,
-				true, // TODO we just assume this atm?...
-				meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace),
-				meshroute.ServiceTagIdentities(backendRef, meshCtx),
-			),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
-		)
-
+		).
+		ConfigureIf(proxy.WorkloadIdentity == nil, clusters.ClientSideMultiIdentitiesMTLS(
+			proxy.SecretsTracker,
+			unifiedNaming,
+			meshCtx.Resource,
+			true, // TODO we just assume this atm?...
+			sni,
+			meshroute.Identities(backendRef, meshCtx, false),
+		))
+	if proxy.WorkloadIdentity != nil {
+		upstreamCtx, err := meshroute.UpstreamTLSContext(backendRef, meshCtx, proxy, sni)
+		if err != nil {
+			return nil, "", err
+		}
+		edsClusterBuilder.Configure(clusters.UpstreamTLSContext(upstreamCtx))
+	}
 	switch protocol {
 	case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		edsClusterBuilder.Configure(clusters.Http2FromEdge())

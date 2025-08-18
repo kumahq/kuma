@@ -18,6 +18,7 @@ type Selector struct {
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:short_name=mid
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+// +kuma:policy:register_generator=true
 type MeshIdentity struct {
 	Selector *Selector `json:"selector,omitempty"`
 	SpiffeID *SpiffeID `json:"spiffeID,omitempty"`
