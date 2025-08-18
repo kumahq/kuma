@@ -14,8 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
-const IngressProxy = "ingress-proxy"
-
 type IngressGenerator struct{}
 
 func (i IngressGenerator) Generate(
@@ -41,15 +39,19 @@ func (i IngressGenerator) Generate(
 
 		meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
 		// we only want to expose local mesh services
-		localMs := localMeshServices(xdsCtx.ControlPlane.Zone, meshResources.MeshServices().Items)
+		localMS := &meshservice_api.MeshServiceResourceList{}
+		for _, ms := range meshResources.MeshServices().GetItems() {
+			if labels := ms.GetMeta().GetLabels(); labels == nil || labels[mesh_proto.ZoneTag] == "" || labels[mesh_proto.ZoneTag] == xdsCtx.ControlPlane.Zone {
+				_ = localMS.AddItem(ms)
+			}
+		}
+
 		dest := zoneproxy.BuildMeshDestinations(
 			availableSvcsByMesh[meshName],
-			meshResources,
-			localMs,
-			meshResources.MeshMultiZoneServices().Items,
-			nil,
 			xdsCtx.ControlPlane.SystemNamespace,
-			xdsCtx.Mesh.ResolveResourceIdentifier,
+			meshResources,
+			localMS,
+			meshResources.MeshMultiZoneServices(),
 		)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
@@ -86,15 +88,4 @@ func (i IngressGenerator) Generate(
 		Resource: listener,
 	})
 	return resources, nil
-}
-
-func localMeshServices(zone string, meshServices []*meshservice_api.MeshServiceResource) []*meshservice_api.MeshServiceResource {
-	var result []*meshservice_api.MeshServiceResource
-	for _, ms := range meshServices {
-		if labels := ms.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" && labels[mesh_proto.ZoneTag] != zone {
-			continue
-		}
-		result = append(result, ms)
-	}
-	return result
 }

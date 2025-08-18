@@ -61,7 +61,7 @@ func TransparentProxying[T *tproxy_dp.DataplaneConfig | *core_xds.Proxy | bool](
 		return AddListenerConfigurer(&v3.TransparentProxyingConfigurer{})
 	}
 
-	return ListenerBuilderOptFunc(nil)
+	return listenerBuilderOptFunc(nil)
 }
 
 func NoBindToPort() ListenerBuilderOpt {
