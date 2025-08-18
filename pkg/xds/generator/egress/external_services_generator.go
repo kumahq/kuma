@@ -23,8 +23,8 @@ type ExternalServicesGenerator struct{}
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *ExternalServicesGenerator) Generate(
-	ctx context.Context,
-	xdsCtx xds_context.Context,
+	_ context.Context,
+	_ xds_context.Context,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
@@ -35,23 +35,13 @@ func (g *ExternalServicesGenerator) Generate(
 	localResources := xds_context.Resources{MeshLocalResources: meshResources.Resources}
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
-		localResources,
-		nil,
-		nil,
-		localResources.MeshExternalServices().Items,
 		"",
-		xdsCtx.Mesh.ResolveResourceIdentifier,
+		localResources,
+		localResources.MeshExternalServices(),
 	)
 	services := g.buildServices(endpointMap)
 
-	g.addFilterChains(
-		proxy,
-		destinations,
-		endpointMap,
-		meshResources,
-		listenerBuilder,
-		services,
-	)
+	g.addFilterChains(proxy, destinations, meshResources, listenerBuilder)
 
 	cds, err := g.generateCDS(
 		meshResources.Mesh.GetMeta().GetName(),
@@ -155,23 +145,20 @@ func (*ExternalServicesGenerator) buildServices(
 func (g *ExternalServicesGenerator) addFilterChains(
 	proxy *core_xds.Proxy,
 	meshDestinations zoneproxy.MeshDestinations,
-	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
-	services map[string]bool,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
-	sniUsed := map[string]bool{}
-	esNames := []string{}
-	for _, es := range meshResources.ExternalServices {
-		esNames = append(esNames, es.Spec.GetService())
-	}
+	sniUsed := map[string]struct{}{}
 
-	for _, esName := range esNames {
-		if !services[esName] {
+	for _, es := range meshResources.ExternalServices {
+		esName := es.Spec.GetService()
+		endpoints := meshResources.EndpointMap[esName]
+
+		if len(endpoints) == 0 || !endpoints[0].IsExternalService() {
 			continue
 		}
-		endpoints := endpointMap[esName]
+
 		destinations := meshDestinations.KumaIoServices[esName]
 		destinations = append(destinations, meshDestinations.KumaIoServices[mesh_proto.MatchAllTag]...)
 		for _, destination := range destinations {
@@ -180,11 +167,12 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				WithTags("mesh", meshName)
 
 			sni := tls.SNIFromTags(meshDestination)
-			if sniUsed[sni] {
+			if _, ok := sniUsed[sni]; ok {
 				continue
 			}
 
-			sniUsed[sni] = true
+			sniUsed[sni] = struct{}{}
+
 			g.configureFilterChain(
 				proxy,
 				esName,
@@ -198,23 +186,21 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		}
 	}
 
-	for _, mes := range meshDestinations.BackendRefs {
-		if !services[mes.DestinationName] {
-			return
-		}
-		endpoints := endpointMap[mes.DestinationName]
-		if sniUsed[mes.SNI] {
+	for _, ref := range meshDestinations.BackendRefs {
+		endpoints := meshResources.EndpointMap[ref.LegacyServiceName]
+		if _, ok := sniUsed[ref.SNI]; ok || len(endpoints) == 0 || !endpoints[0].IsExternalService() {
 			continue
 		}
-		sniUsed[mes.SNI] = true
-		relevantTags := tags.Tags{}
+
+		sniUsed[ref.SNI] = struct{}{}
+
 		g.configureFilterChain(
 			proxy,
-			mes.DestinationName,
-			mes.SNI,
+			ref.LegacyServiceName,
+			ref.SNI,
 			meshName,
 			endpoints,
-			relevantTags,
+			tags.Tags{},
 			meshResources,
 			listenerBuilder,
 		)

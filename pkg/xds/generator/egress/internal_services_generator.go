@@ -36,12 +36,8 @@ func (g *InternalServicesGenerator) Generate(
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
 	destinations := zoneproxy.BuildMeshDestinations(
 		availableServices,
-		xds_context.Resources{MeshLocalResources: meshResources.Resources},
-		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
-		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
-		nil,
 		"",
-		xdsCtx.Mesh.ResolveResourceIdentifier,
+		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 	)
 
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)

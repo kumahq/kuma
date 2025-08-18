@@ -190,8 +190,8 @@ func AddFilterChains(
 		// Destination name usually equals to kuma.io/service so we will add already existing cluster which will be
 		// then deduplicated in later steps
 		cluster := envoy_common.NewCluster(
-			envoy_common.WithName(refDest.DestinationName),
-			envoy_common.WithService(refDest.DestinationName),
+			envoy_common.WithName(refDest.LegacyServiceName),
+			envoy_common.WithService(refDest.LegacyServiceName),
 			envoy_common.WithTags(relevantTags),
 		)
 		cluster.SetMesh(refDest.Mesh)
@@ -201,14 +201,14 @@ func AddFilterChains(
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(refDest.SNI),
 				envoy_listeners.TcpProxyDeprecatedWithMetadata(
-					refDest.DestinationName,
+					refDest.LegacyServiceName,
 					cluster,
 				),
 			),
 		)
 
 		listenerBuilder.Configure(filterChain)
-		servicesAcc.AddBackendRef(refDest.Resource, cluster)
+		servicesAcc.AddBackendRef(&refDest.ResolvedBackendRef, cluster)
 	}
 
 	return servicesAcc.Services()

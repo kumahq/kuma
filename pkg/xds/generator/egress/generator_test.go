@@ -134,7 +134,7 @@ var _ = Describe("EgressGenerator", func() {
 			loader := fakeLoader{}
 
 			for _, meshResources := range meshResourcesMap {
-				mes := []*meshexternalservice_api.MeshExternalServiceResource{}
+				var mes []*meshexternalservice_api.MeshExternalServiceResource
 				if _, found := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
 					for _, m := range meshResources.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems() {
 						mes = append(mes, m.(*meshexternalservice_api.MeshExternalServiceResource))

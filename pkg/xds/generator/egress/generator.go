@@ -67,16 +67,10 @@ func (g Generator) Generate(
 		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
 		proxy.SecretsTracker = secretsTracker
 
-		for _, generator := range g.ZoneEgressGenerators {
-			rs, err := generator.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
+		for _, zeGen := range g.ZoneEgressGenerators {
+			rs, err := zeGen.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
 			if err != nil {
-				err := errors.Wrapf(
-					err,
-					"%T failed to generate resources for zone egress %q",
-					generator,
-					proxy.Id,
-				)
-				return nil, err
+				return nil, errors.Wrapf(err, "%T failed to generate resources for zone egress %q", zeGen, proxy.Id)
 			}
 
 			resources.AddSet(rs)
@@ -86,6 +80,7 @@ func (g Generator) Generate(
 		if err != nil {
 			return nil, err
 		}
+
 		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
 			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{
@@ -95,26 +90,18 @@ func (g Generator) Generate(
 			})
 		}
 
-		rs, err := generator.NewGenerator().Generate(ctx, resources, xdsCtx, proxy)
+		pluginResources, err := generator.NewGenerator().Generate(ctx, resources, xdsCtx, proxy)
 		if err != nil {
 			return nil, err
 		}
-		resources.AddSet(rs)
+		resources.AddSet(pluginResources)
 
-		rs, err = g.SecretGenerator.GenerateForZoneEgress(
-			ctx, xdsCtx, proxy, secretsTracker, meshResources.Mesh,
-		)
+		secrets, err := g.SecretGenerator.GenerateForZoneEgress(ctx, xdsCtx, proxy, secretsTracker, meshResources.Mesh)
 		if err != nil {
-			err := errors.Wrapf(
-				err,
-				"%T failed to generate resources for zone egress %q",
-				g.SecretGenerator,
-				proxy.Id,
-			)
-			return nil, err
+			return nil, errors.Wrapf(err, "%T failed to generate resources for zone egress %q", g.SecretGenerator, proxy.Id)
 		}
-
-		resources.AddSet(rs)
+		resources.AddSet(secrets)
 	}
+
 	return resources, nil
 }

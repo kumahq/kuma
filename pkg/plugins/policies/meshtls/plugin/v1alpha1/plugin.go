@@ -286,7 +286,7 @@ func configure(
 	}
 	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
-	cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
+	cluster := policies_xds.NewClusterBuilder().WithName(localClusterName).Build()
 	service := inbound.GetService()
 	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP).
