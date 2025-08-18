@@ -19,10 +19,10 @@
  },
  "outbounds": [
   {
-   "kri": "kri_extsvc_default___mes-1_",
+   "kri": "kri_extsvc_default___mes-1_9090",
    "port": 9090,
    "protocol": "http",
-   "proxyResourceName": "kri_extsvc_default___mes-1_"
+   "proxyResourceName": "kri_extsvc_default___mes-1_9090"
   },
   {
    "kri": "kri_msvc_default_test-zone__test-server-1_main-port",

@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
@@ -33,7 +35,7 @@ func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
 		return xds_types.Outbounds{{
 			Address:  t.Status.VIP.IP,
 			Port:     uint32(t.Spec.Match.Port),
-			Resource: kri.From(t),
+			Resource: kri.WithSectionName(kri.From(t), t.Spec.Match.GetName()),
 		}}
 	}
 	return nil
@@ -62,8 +64,7 @@ func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bo
 }
 
 func (m Match) GetName() string {
-	// MES can only have one port so there's no point in naming it.
-	return ""
+	return fmt.Sprintf("%d", m.Port)
 }
 
 func (m Match) GetValue() int32 {

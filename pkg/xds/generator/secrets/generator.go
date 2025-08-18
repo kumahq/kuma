@@ -6,21 +6,19 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
-	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var generatorLogger = core.Log.WithName("secrets-generator")
 
 type Generator struct{}
-
-var _ generator_core.ResourceGenerator = Generator{}
 
 func createCaSecretResource(name string, ca *core_xds.CaSecret) *core_xds.Resource {
 	caSecret := envoy_secrets.CreateCaSecret(ca, name)
@@ -42,45 +40,53 @@ func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret
 
 // GenerateForZoneEgress generates whatever secrets were referenced in the
 // zone egress config generation.
-func (g Generator) GenerateForZoneEgress(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy, secretsTracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource) (*core_xds.ResourceSet, error) {
-	resources := core_xds.NewResourceSet()
-	zoneEgressResource := proxy.ZoneEgressProxy.ZoneEgressResource
-
-	log := generatorLogger.WithValues("proxyID", proxy.Id.String())
-
+func (g Generator) GenerateForZoneEgress(
+	ctx context.Context,
+	xdsCtx xds_context.Context,
+	proxy *core_xds.Proxy,
+	secretsTracker core_xds.SecretsTracker,
+	mesh *core_mesh.MeshResource,
+) (*core_xds.ResourceSet, error) {
 	if !mesh.MTLSEnabled() {
 		return nil, nil
 	}
 
-	meshName := mesh.GetMeta().GetName()
+	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
+	log := generatorLogger.WithValues("ZoneEgress", zoneEgress.GetMeta().GetName())
 
-	usedIdentity := secretsTracker.UsedIdentity()
-
-	identity, ca, err := xdsCtx.ControlPlane.Secrets.GetForZoneEgress(ctx, zoneEgressResource, mesh)
+	identity, ca, err := xdsCtx.ControlPlane.Secrets.GetForZoneEgress(ctx, zoneEgress, mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate ZoneEgress secrets")
 	}
 
-	getNameOrDefault := system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
-	if usedIdentity {
+	rs := core_xds.NewResourceSet()
+	meshName := mesh.GetMeta().GetName()
+	unifiedNaming := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
+
+	if secretsTracker.UsedIdentity() {
 		log.V(1).Info("added identity", "mesh", meshName)
-		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
-			proxy.SecretsTracker.RequestIdentityCert().Name(),
+
+		identitySecretName := getName(
+			system_names.AsSystemName("mtls_identity_"+meshName),
+			secretsTracker.RequestIdentityCert().Name(),
 		)
-		resources.Add(createIdentitySecretResource(identitySecretName, identity))
+
+		rs.Add(createIdentitySecretResource(identitySecretName, identity))
 	}
 
 	if _, ok := secretsTracker.UsedCas()[meshName]; ok {
 		log.V(1).Info("added mesh CA resources", "mesh", meshName)
-		name := getNameOrDefault(
+
+		name := getName(
 			system_names.AsSystemName("mtls_ca_"+meshName),
 			secretsTracker.RequestCa(meshName).Name(),
 		)
-		resources.Add(createCaSecretResource(name, ca))
+
+		rs.Add(createCaSecretResource(name, ca))
 	}
 
-	return resources, nil
+	return rs, nil
 }
 
 // Generate uses the SecretsTracker on Proxy and

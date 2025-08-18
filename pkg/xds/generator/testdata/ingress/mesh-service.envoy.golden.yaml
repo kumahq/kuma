@@ -38,16 +38,6 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - a601e0c00295a9fbe.backend.80.default.ms
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default_backend__east_msvc_80
-          statPrefix: default_backend__east_msvc_80
-    - filterChainMatch:
-        serverNames:
         - aec60634adf0f45d6.backend2.80.default.ms
         transportProtocol: tls
       filters:
@@ -56,6 +46,16 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: default_backend___msvc_80
           statPrefix: default_backend___msvc_80
+    - filterChainMatch:
+        serverNames:
+        - a601e0c00295a9fbe.backend.80.default.ms
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: default_backend__east_msvc_80
+          statPrefix: default_backend__east_msvc_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

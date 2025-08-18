@@ -96,11 +96,8 @@ func NewEgressProxyProfile() core.ResourceGenerator {
 	return core.CompositeResourceGenerator{
 		AdminProxyGenerator{},
 		egress.Generator{
-			ZoneEgressGenerators: []egress.ZoneEgressGenerator{
-				&egress.InternalServicesGenerator{},
-				&egress.ExternalServicesGenerator{},
-			},
 			SecretGenerator: &generator_secrets.Generator{},
+			PolicyGenerator: policies_generator.NewGenerator(),
 		},
 	}
 }
