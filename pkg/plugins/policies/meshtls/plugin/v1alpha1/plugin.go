@@ -63,16 +63,20 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	log.V(1).Info("applying", "proxy-name", proxy.Dataplane.GetMeta().GetName())
-	policies, ok := proxy.Policies.Dynamic[api.MeshTLSType]
-	// Check if MeshTLS policy is present and relevant to the current Dataplane.
-	// - len(policies.FromRules.InboundRules) == 0 and len(policies.GatewayRules.InboundRules) == 0
-	//   means none of the matched policies apply to this specific Dataplane
-	//   (either as a gateway or a regular inbound)
-	// This avoids unnecessary processing and ensures that xDS config is only generated
-	// when there is an actual policy that affects this proxy.
-	if proxy.WorkloadIdentity == nil && (!ok || len(policies.FromRules.InboundRules) == 0 && len(policies.GatewayRules.InboundRules) == 0) {
+
+	policies, _ := proxy.Policies.Dynamic[api.MeshTLSType]
+	// Check if MeshTLS policy or workload identity applies to this Dataplane
+	// - proxy.WorkloadIdentity != nil means the Dataplane has an assigned workload identity
+	// - non empty FromRules or GatewayRules mean a MeshTLS policy applies
+	// If neither condition is true, skip processing to avoid generating unused xDS config
+	switch {
+	case proxy.WorkloadIdentity != nil:
+	case len(policies.FromRules.InboundRules) > 0:
+	case len(policies.GatewayRules.InboundRules) > 0:
+	default:
 		return nil
 	}
+
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
 
@@ -280,8 +284,7 @@ func configure(
 ) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
 	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
-	useIdentity := proxy.WorkloadIdentity != nil
-	if useIdentity {
+	if proxy.WorkloadIdentity != nil {
 		mode = pointer.DerefOr(conf.Mode, api.ModeStrict)
 	}
 	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
