@@ -64,7 +64,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	log.V(1).Info("applying", "proxy-name", proxy.Dataplane.GetMeta().GetName())
 
-	policies, _ := proxy.Policies.Dynamic[api.MeshTLSType]
+	policies := proxy.Policies.Dynamic[api.MeshTLSType]
 	// Check if MeshTLS policy or workload identity applies to this Dataplane
 	// - proxy.WorkloadIdentity != nil means the Dataplane has an assigned workload identity
 	// - non empty FromRules or GatewayRules mean a MeshTLS policy applies
