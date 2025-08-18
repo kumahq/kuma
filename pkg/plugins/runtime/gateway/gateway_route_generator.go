@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
@@ -177,7 +178,7 @@ func makeTcpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_TcpRoute_R
 			Destination:   b.GetDestination(),
 			Weight:        b.GetWeight(),
 			Policies:      nil,
-			RouteProtocol: core_mesh.ProtocolTCP,
+			RouteProtocol: core_meta.ProtocolTCP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)
@@ -196,7 +197,7 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 			Destination:   b.GetDestination(),
 			Weight:        b.GetWeight(),
 			Policies:      nil,
-			RouteProtocol: core_mesh.ProtocolHTTP,
+			RouteProtocol: core_meta.ProtocolHTTP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)

@@ -15,6 +15,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -319,7 +320,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				Match: meshexternalservice_api.Match{
 					Type:     meshexternalservice_api.HostnameGeneratorType,
 					Port:     9000,
-					Protocol: core_mesh.ProtocolHTTP,
+					Protocol: core_meta.ProtocolHTTP,
 				},
 				Endpoints: &[]meshexternalservice_api.Endpoint{
 					{

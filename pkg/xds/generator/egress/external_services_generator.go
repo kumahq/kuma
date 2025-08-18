@@ -4,7 +4,7 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -83,8 +83,6 @@ func (*ExternalServicesGenerator) generateCDS(
 		endpoints := endpointMap[serviceName]
 
 		if len(endpoints) == 0 {
-			log.Info("no endpoints for service", "serviceName", serviceName)
-
 			continue
 		}
 
@@ -112,9 +110,9 @@ func (*ExternalServicesGenerator) generateCDS(
 			Configure(envoy_clusters.DefaultTimeout())
 
 		switch endpoints[0].Protocol() {
-		case core_mesh.ProtocolHTTP:
+		case core_meta.ProtocolHTTP:
 			clusterBuilder.Configure(envoy_clusters.Http())
-		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}
 
@@ -269,7 +267,7 @@ func (*ExternalServicesGenerator) configureFilterChain(
 	protocol := endpoints[0].Protocol()
 
 	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		routes := envoy_common.Routes{}
 
 		for _, rl := range meshResources.ExternalServiceRateLimits[esName] {
@@ -297,10 +295,10 @@ func (*ExternalServicesGenerator) configureFilterChain(
 			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
 			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-				Name:    routeConfigName,
-				Service: esName,
-				Routes:  routes,
-				DpTags:  nil,
+				RouteConfigName: routeConfigName,
+				VirtualHostName: esName,
+				Routes:          routes,
+				DpTags:          nil,
 			}))
 	default:
 		filterChainBuilder.Configure(

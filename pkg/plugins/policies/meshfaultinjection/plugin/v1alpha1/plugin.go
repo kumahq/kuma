@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -70,7 +71,7 @@ func applyToInbounds(
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 		if _, exists := proxy.Policies.FaultInjections[iface]; exists {
 			continue
 		}
@@ -121,12 +122,12 @@ func applyToGateways(
 			continue
 		}
 
-		var protocol core_mesh.Protocol
+		var protocol core_meta.Protocol
 		switch listenerInfo.Listener.Protocol {
 		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_mesh.ProtocolHTTP
+			protocol = core_meta.ProtocolHTTP
 		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_mesh.ProtocolTCP
+			protocol = core_meta.ProtocolTCP
 		}
 		for _, filterChain := range gatewayListener.FilterChains {
 			if err := configure(rules.Rules, filterChain, protocol); err != nil {
@@ -178,10 +179,10 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 func configure(
 	fromRules core_rules.Rules,
 	filterChain *envoy_listener.FilterChain,
-	protocol core_mesh.Protocol,
+	protocol core_meta.Protocol,
 ) error {
 	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		for _, rule := range fromRules {
 			conf := rule.Conf.(api.Conf)
 			from := rule.Subset

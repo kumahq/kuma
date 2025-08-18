@@ -14,6 +14,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -1174,6 +1175,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 							Configure(
 								HttpOutboundRoute(
+									envoy_names.GetOutboundRouteName("backend"),
 									"backend",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{
@@ -1422,7 +1424,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			xdsCtx := *xds_builders.Context().
 				WithResources(resources).
 				WithEndpointMap(given.endpointMap).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithZone("test-zone").
@@ -1646,7 +1648,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Ports: []meshservice_api.Port{{
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
@@ -1760,7 +1762,7 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 	return *xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).
-		WithTags(mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, mesh_proto.ZoneTag, zone).
+		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, zone).
 		AddTagsMap(extraTags).
 		WithZone(zone).
 		Build()
@@ -1770,7 +1772,7 @@ func createEndpointBuilderWith(zone string, ip string, extraTags map[string]stri
 	return xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).
-		WithTags(mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, mesh_proto.ZoneTag, zone).
+		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, zone).
 		AddTagsMap(extraTags).
 		WithZone(zone)
 }
@@ -1791,6 +1793,7 @@ func paymentsListener() envoy_common.NamedResource {
 			Configure(HttpConnectionManager("127.0.0.1:27778", false, nil)).
 			Configure(
 				HttpOutboundRoute(
+					envoy_names.GetOutboundRouteName("backend"),
 					"backend",
 					envoy_common.Routes{{
 						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -1814,6 +1817,7 @@ func backendListener() envoy_common.NamedResource {
 			Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 			Configure(
 				HttpOutboundRoute(
+					envoy_names.GetOutboundRouteName("backend"),
 					"backend",
 					envoy_common.Routes{{
 						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
@@ -1842,7 +1846,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Port:     uint32(port),
 				Resource: serviceResourceKRI,
 			},
-			Protocol:            core_mesh.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
 			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
 		routes,

@@ -1,9 +1,7 @@
-// This file lives in a dedicated "metadata" subpackage, because the Origin
-// type/values are imported by many components (generators, plugins,
-// controllers, hooks, etc.). Keeping them in a tiny leaf package avoids
-// import cycles and prevents pulling heavy transitive dependencies across
-// the build graph. Per-feature constants live in their own metadata
-// subpackages to keep ownership clear while keeping dependencies minimal
+// Package metadata provides lightweight, import-cycle-safe constants shared by
+// multiple components (generators, plugins, controllers, hooks, etc.).
+// Keeping per-feature constants in a tiny leaf package helps avoid pulling
+// heavy transitive dependencies across the build graph and keeps ownership clear
 package metadata
 
 import . "github.com/kumahq/kuma/pkg/core/xds/origin"
@@ -51,3 +49,26 @@ const (
 	// OriginTransparent is the origin for resources produced by the transparent proxy generator
 	OriginTransparent Origin = "transparent"
 )
+
+const (
+	TransparentOutboundNameIPv4  = "outbound:passthrough:ipv4"
+	TransparentOutboundNameIPv6  = "outbound:passthrough:ipv6"
+	TransparentInboundNameIPv4   = "inbound:passthrough:ipv4"
+	TransparentInboundNameIPv6   = "inbound:passthrough:ipv6"
+	TransparentInPassThroughIPv4 = "127.0.0.6"
+	TransparentInPassThroughIPv6 = "::6"
+	TransparentAllIPv4           = "0.0.0.0"
+	TransparentAllIPv6           = "::"
+)
+
+const (
+	ProxyTemplateProfileEgressProxy  = "egress-proxy"
+	ProxyTemplateProfileIngressProxy = "ingress-proxy"
+)
+
+const (
+	ProbeListenerName    = "probe:listener"
+	ProbeRouteConfigName = "probe:route_configuration"
+)
+
+const DirectAccessClusterName = "direct_access"

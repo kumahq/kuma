@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -38,7 +38,7 @@ jobs:
           echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
           repository: ${{ env.REPO }}

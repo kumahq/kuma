@@ -6,13 +6,13 @@ import (
 	envoy_upstream_http "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type TimeoutConfigurer struct {
-	Protocol core_mesh.Protocol
+	Protocol core_meta.Protocol
 	Conf     *mesh_proto.Timeout_Conf
 }
 
@@ -21,7 +21,7 @@ var _ ClusterConfigurer = &TimeoutConfigurer{}
 func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	cluster.ConnectTimeout = util_proto.Duration(t.Conf.GetConnectTimeoutOrDefault(policies_defaults.DefaultConnectTimeout))
 	switch t.Protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
 			if options.CommonHttpProtocolOptions == nil {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
@@ -48,7 +48,7 @@ func (t *TimeoutConfigurer) setMaxStreamDuration(options *envoy_core.HttpProtoco
 	}
 
 	// backwards compatibility
-	if t.Protocol == core_mesh.ProtocolGRPC {
+	if t.Protocol == core_meta.ProtocolGRPC {
 		if msd := t.Conf.GetGrpc().GetMaxStreamDuration(); msd != nil && msd.AsDuration() != 0 {
 			options.MaxStreamDuration = util_proto.Duration(msd.AsDuration())
 		}

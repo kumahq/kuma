@@ -19,19 +19,19 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
+var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-generator")
+
 // PrometheusEndpointGenerator generates an inbound Envoy listener
 // that forwards HTTP requests into the `/stats/prometheus`
 // endpoint of the Envoy Admin API.
 //
 // When generating such a listener, it's important not to overshadow
-// a port that is already in use by the application or other Envoy listeners.
+// a port already in use by the application or other Envoy listeners.
 // In the latter case we prefer not generate Prometheus endpoint at all
 // rather than introduce undeterministic behavior.
 type PrometheusEndpointGenerator struct{}
 
-var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-generator")
-
-func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(xdsCtx.Mesh.Resource)
 	if err != nil {
@@ -188,7 +188,7 @@ func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, metadata *cor
 }
 
 // we cannot use url.Values{} because generated url looks 'usedonly='
-// which isn't supported by Envoy
+// which Envoy doesn't support
 func buildEnvoyMetricsFilter(config *mesh_proto.PrometheusMetricsBackendConfig) string {
 	var query string
 	if config.GetEnvoy() != nil {

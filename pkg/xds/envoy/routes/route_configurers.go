@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
@@ -320,10 +321,10 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 }
 
 // RouteActionRetryDefault initializes the retry policy with defaults appropriate for the protocol.
-func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
+func RouteActionRetryDefault(protocol core_meta.Protocol) RouteConfigurer {
 	// The retry policy only supports HTTP and GRPC.
 	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 	default:
 		return RouteConfigureFunc(nil)
 	}
@@ -337,9 +338,9 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 		p := &envoy_config_route_v3.RetryPolicy{}
 
 		switch protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 			p.RetryOn = envoy_routes.HttpRetryOnDefault
-		case core_mesh.ProtocolGRPC:
+		case core_meta.ProtocolGRPC:
 			p.RetryOn = envoy_routes.GrpcRetryOnDefault
 		}
 
@@ -348,10 +349,10 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 	})
 }
 
-func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) RouteConfigurer {
+func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_meta.Protocol) RouteConfigurer {
 	// The retry policy only supports HTTP and GRPC.
 	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 	default:
 		return RouteConfigureFunc(nil)
 	}

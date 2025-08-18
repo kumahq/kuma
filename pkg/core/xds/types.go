@@ -15,6 +15,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -66,7 +67,7 @@ type TagSelectorSet []mesh_proto.TagSelector
 type (
 	DestinationMap  map[ServiceName]TagSelectorSet
 	ExternalService struct {
-		Protocol                 core_mesh.Protocol
+		Protocol                 core_meta.Protocol
 		TLSEnabled               bool
 		FallbackToSystemCa       bool
 		CaCert                   []byte
@@ -116,12 +117,12 @@ func (e Endpoint) Address() string {
 	return fmt.Sprintf("%s:%d", e.Target, e.Port)
 }
 
-func (e Endpoint) Protocol() string {
-	protocol := e.Tags[mesh_proto.ProtocolTag]
+func (e Endpoint) Protocol() core_meta.Protocol {
 	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
-		protocol = string(e.ExternalService.Protocol)
+		return e.ExternalService.Protocol
 	}
-	return protocol
+
+	return core_meta.ParseProtocol(e.Tags[mesh_proto.ProtocolTag])
 }
 
 // EndpointList is a list of Endpoints with convenience methods.

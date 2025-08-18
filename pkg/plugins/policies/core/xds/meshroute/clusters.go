@@ -7,7 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -84,9 +84,9 @@ func GenerateClusters(
 				}
 
 				switch protocol {
-				case core_mesh.ProtocolHTTP:
+				case core_meta.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
-				case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+				case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 					edsClusterBuilder.Configure(envoy_clusters.Http2())
 				default:
 				}

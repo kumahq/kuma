@@ -9,8 +9,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
@@ -130,7 +130,7 @@ func makeTcpRouteEntry(
 			BackendRef:    ref,
 			Weight:        uint32(*b.Weight),
 			Policies:      nil,
-			RouteProtocol: core_mesh.ProtocolTCP,
+			RouteProtocol: core_meta.ProtocolTCP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -24,7 +24,7 @@ var _ = Describe("LbSubset", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
 				Configure(clusters.LbSubset(given.tags)).
-				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
+				Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 				Build()
 
 			// then
