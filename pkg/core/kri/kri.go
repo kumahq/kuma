@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/constraints"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -25,6 +26,10 @@ func (i Identifier) MarshalText() ([]byte, error) {
 }
 
 func (i Identifier) String() string {
+	if i.IsEmpty() {
+		return ""
+	}
+
 	desc, err := registry.Global().DescriptorFor(i.ResourceType)
 	if err != nil {
 		panic(err)
@@ -108,15 +113,11 @@ func Compare(a, b Identifier) int {
 	return strings.Compare(a.String(), b.String())
 }
 
-func (i Identifier) HasSectionName() bool {
-	return i.SectionName != ""
-}
-
-func WithSectionName(id Identifier, sectionName string) Identifier {
+func WithSectionName[T ~string | constraints.Unsigned](id Identifier, sectionName T) Identifier {
 	// cannot add section name to empty identifier
 	if id.IsEmpty() {
 		return id
 	}
-	id.SectionName = sectionName
+	id.SectionName = fmt.Sprintf("%v", sectionName)
 	return id
 }

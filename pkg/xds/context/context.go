@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
@@ -95,7 +96,7 @@ type MeshContext struct {
 
 type ServiceInformation struct {
 	TLSReadiness      bool
-	Protocol          core_mesh.Protocol
+	Protocol          core_meta.Protocol
 	IsExternalService bool
 }
 
@@ -142,11 +143,11 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
-func (mc *MeshContext) GetServiceProtocol(serviceName string) core_mesh.Protocol {
+func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
 	if info, found := mc.ServicesInformation[serviceName]; found {
 		return info.Protocol
 	}
-	return core_mesh.ProtocolUnknown
+	return core_meta.ProtocolUnknown
 }
 
 func (mc *MeshContext) IsExternalService(serviceName string) bool {

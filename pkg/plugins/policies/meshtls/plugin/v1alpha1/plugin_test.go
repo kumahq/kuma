@@ -13,6 +13,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -157,7 +158,7 @@ var _ = Describe("MeshTLS", func() {
 							Name:        pointer.To("test-port"),
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
@@ -297,7 +298,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
 				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil)).
 				MustBuild(),
-			Protocol: core_mesh.ProtocolHTTP,
+			Protocol: core_meta.ProtocolHTTP,
 			ResourceOrigin: kri.Identifier{
 				ResourceType: "MeshService",
 				Mesh:         "default",

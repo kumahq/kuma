@@ -3,9 +3,9 @@ package v1alpha1
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 )
 
@@ -70,6 +70,6 @@ func (m Match) GetValue() int32 {
 	return m.Port
 }
 
-func (m Match) GetProtocol() core_mesh.Protocol {
+func (m Match) GetProtocol() core_meta.Protocol {
 	return m.Protocol
 }

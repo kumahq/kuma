@@ -3,7 +3,7 @@ package builders
 import (
 	"context"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -25,7 +25,7 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 				Match: v1alpha1.Match{
 					Type:     v1alpha1.HostnameGeneratorType,
 					Port:     9000,
-					Protocol: core_mesh.ProtocolHTTP,
+					Protocol: core_meta.ProtocolHTTP,
 				},
 				Endpoints: &[]v1alpha1.Endpoint{
 					{

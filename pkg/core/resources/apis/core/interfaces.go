@@ -1,7 +1,7 @@
 package core
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -12,7 +12,7 @@ type Port interface {
 	// GetValue returns port value
 	GetValue() int32
 	// GetProtocol return standardized protocol name of a port
-	GetProtocol() core_mesh.Protocol
+	GetProtocol() core_meta.Protocol
 }
 
 // Destination interface creates abstraction for Kuma destinations like MeshService, MeshMultiZoneService or MeshExternalService

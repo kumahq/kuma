@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -149,7 +150,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
 	backendRef *resolve.RealResourceBackendRef,
-	routeProtocol core_mesh.Protocol,
+	routeProtocol core_meta.Protocol,
 	systemNamespace string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, string, error) {
@@ -178,9 +179,9 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 		)
 
 	switch protocol {
-	case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		edsClusterBuilder.Configure(clusters.Http2FromEdge())
-	case core_mesh.ProtocolHTTP:
+	case core_meta.ProtocolHTTP:
 		edsClusterBuilder.Configure(clusters.Http())
 	default:
 	}
@@ -206,7 +207,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
+	destProtocol := core_meta.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
 	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
@@ -260,7 +261,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 func newClusterBuilder(
 	version core_xds.APIVersion,
 	name string,
-	protocol core_mesh.Protocol,
+	protocol core_meta.Protocol,
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
 	var timeout *mesh_proto.Timeout_Conf
@@ -279,9 +280,9 @@ func newClusterBuilder(
 	// gives mesh services a HTTP/2 transport. We ought to do
 	// the same, but it doesn't work.
 	switch protocol {
-	case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		builder.Configure(clusters.Http2FromEdge())
-	case core_mesh.ProtocolHTTP:
+	case core_meta.ProtocolHTTP:
 		builder.Configure(clusters.Http())
 	default:
 	}

@@ -9,14 +9,14 @@ import (
 )
 
 // MatchTransportProtocol sets the transport protocol match for the filter chain.
-func MatchTransportProtocol(transport string) FilterChainBuilderOpt {
+func MatchTransportProtocol[T ~string](transport T) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(
 		v3.FilterChainMustConfigureFunc(func(chain *envoy_listener.FilterChain) {
 			if chain.FilterChainMatch == nil {
 				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
 			}
 
-			chain.FilterChainMatch.TransportProtocol = transport
+			chain.FilterChainMatch.TransportProtocol = string(transport)
 		}),
 	)
 }

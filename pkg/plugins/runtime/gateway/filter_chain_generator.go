@@ -17,6 +17,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -256,7 +257,7 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 			envoy_common.TrafficDirectionInbound,
 			service,                // Source service is the gateway service.
 			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+			ctx.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
 			info.Proxy,
 		),
 	)
@@ -343,7 +344,7 @@ func newTCPFilterChain(
 			envoy_common.TrafficDirectionInbound,
 			service,                // Source service is the gateway service.
 			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
 			proxy,
 		),
 		envoy_listeners.MaxConnectAttempts(retryPolicy),
