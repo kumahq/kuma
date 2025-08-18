@@ -742,7 +742,7 @@ kubectl:
     # -- The kubectl image repository
     repository: rancher/kubectl
     # -- The kubectl image tag
-    tag: "v1.33.3@sha256:26d09fcee6eb9a14b81c95e52dd90964a0a24263abb075f58651d2ac62651b59"
+    tag: "v1.33.4@sha256:5c0d769f262a320aef3a37e74188ebd5376e8acf2db85421a9cc138df1fcb6fb"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
