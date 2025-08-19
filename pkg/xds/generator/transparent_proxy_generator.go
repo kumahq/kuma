@@ -2,11 +2,11 @@ package generator
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/naming"
 
 	"github.com/pkg/errors"
 
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"

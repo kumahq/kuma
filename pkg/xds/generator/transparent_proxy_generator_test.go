@@ -2,7 +2,6 @@ package generator_test
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -172,7 +172,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		Entry("transparent_proxying=true,unified_naming=true", testCase{
 			proxy: &model.Proxy{
 				Metadata: &model.DataplaneMetadata{Features: map[string]bool{types.FeatureUnifiedResourceNaming: true}},
-				Id: *model.BuildProxyId("", "side-car"),
+				Id:       *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
