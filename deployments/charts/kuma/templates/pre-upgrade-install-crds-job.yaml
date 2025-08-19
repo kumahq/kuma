@@ -72,16 +72,6 @@ metadata:
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 data:
-  install_crds.sh: |
-    #!/usr/bin/env sh
-    set -e
-
-    if [ -s /kuma/crds/crds.yaml ]; then
-      echo "/kuma/crds/crds.yaml found and is not empty, adding crds"
-      kubectl apply -f /kuma/crds/crds.yaml
-    else
-      echo "/kuma/crds/crds.yaml not found or empty, it looks like there is no crds to install"
-    fi
   save_crds.sh: |
     set -e
 
@@ -133,13 +123,10 @@ spec:
              limits:
                cpu: "100m"
                memory: "256Mi"
-          command: ["/kuma/scripts/install_crds.sh"]
+          args: ["apply", "--recursive", "--filename", "/kuma/crds"]
           volumeMounts:
             - mountPath: /kuma/crds
               name: crds
-              readOnly: true
-            - mountPath: /kuma/scripts
-              name: scripts
               readOnly: true
       initContainers:
         - name: pre-upgrade-job-init
