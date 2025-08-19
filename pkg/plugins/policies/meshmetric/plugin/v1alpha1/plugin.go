@@ -14,7 +14,6 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
@@ -65,12 +64,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	conf := policies.SingleItemRules.Rules[0].Conf.(api.Conf)
-	var kriWithoutSection kri.Identifier
-	// we only handle a case where there is one origin because
-	// we do not yet have a mechanism to name resources that have more than one origin https://github.com/kumahq/kuma/issues/13886
-	if len(policies.SingleItemRules.Rules[0].Origin) == 1 {
-		kriWithoutSection = kri.FromResourceMeta(policies.SingleItemRules.Rules[0].Origin[0], api.MeshMetricType)
-	}
 
 	if len(pointer.Deref(conf.Backends)) == 0 {
 		return nil
@@ -83,11 +76,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	prometheusBackends := filterPrometheusBackends(conf.Backends)
 	openTelemetryBackends := filterOpenTelemetryBackends(conf.Backends)
 
-	err := configurePrometheus(rs, proxy, prometheusBackends, kriWithoutSection)
+	err := configurePrometheus(rs, proxy, prometheusBackends)
 	if err != nil {
 		return err
 	}
-	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, kriWithoutSection)
+	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends)
 	if err != nil {
 		return err
 	}
@@ -107,15 +100,15 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, kriWithoutSection kri.Identifier) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
 
 	for _, backend := range prometheusBackends {
-		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && !kriWithoutSection.IsEmpty())
+		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
 		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
-		systemName := core_system_names.AsSystemName(kri.WithSectionName(kriWithoutSection, backendName))
+		systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_prometheus", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 		configurer := &plugin_xds.PrometheusConfigurer{
 			Backend: backend,
@@ -155,9 +148,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, kriWithoutSection kri.Identifier) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, kriWithoutSection)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend)
 		if err != nil {
 			return err
 		}
@@ -165,14 +158,14 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, kriWithoutSection kri.Identifier) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming) && !kriWithoutSection.IsEmpty())
-	systemName := core_system_names.AsSystemName(kri.WithSectionName(kriWithoutSection, core_system_names.CleanName(openTelemetryBackend.Endpoint)))
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
 	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
 	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
+	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
 		Endpoint:     endpoint,
