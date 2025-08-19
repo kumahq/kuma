@@ -77,7 +77,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
 
 	if err := applyToInbounds(rs, policies.FromRules, listeners.Inbound, proxy, ctx); err != nil {

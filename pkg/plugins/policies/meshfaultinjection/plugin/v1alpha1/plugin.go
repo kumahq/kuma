@@ -53,7 +53,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
@@ -140,7 +140,7 @@ func applyToGateways(
 }
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	if listeners.Egress == nil {
 		log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
 			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),

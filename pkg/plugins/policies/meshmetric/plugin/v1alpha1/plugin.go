@@ -76,7 +76,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
 	removeResourcesConfiguredByMesh(rs, listeners.Prometheus, clusters.Prometheus)
 

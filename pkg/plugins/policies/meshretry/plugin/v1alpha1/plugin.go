@@ -44,7 +44,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := xds.GatherListeners(rs)
 	routes := xds.GatherRoutes(rs)
 
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {

@@ -147,7 +147,7 @@ func (p plugin) allowRules() core_rules.Rules {
 
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshName := resource.Mesh.GetMeta().GetName()
 		if listeners.Egress == nil {

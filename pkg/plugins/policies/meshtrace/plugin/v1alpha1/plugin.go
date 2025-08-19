@@ -48,7 +48,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return nil
 	}
 
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	var kriWithoutSection *kri.Identifier
 	// we only handle a case where there is one origin because
 	// we do not yet have a mechanism to name resources that have more than one origin https://github.com/kumahq/kuma/issues/13886

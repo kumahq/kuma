@@ -24,7 +24,7 @@ type Listeners struct {
 	Prometheus      *envoy_listener.Listener
 }
 
-func GatherListeners(rs *xds.ResourceSet, unifiedResourceNaming bool) Listeners {
+func GatherListeners(rs *xds.ResourceSet) Listeners {
 	listeners := Listeners{
 		Inbound:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
@@ -58,7 +58,7 @@ func GatherListeners(rs *xds.ResourceSet, unifiedResourceNaming bool) Listeners 
 			case naming.ContextualTransparentProxyName("outbound", 4):
 				listeners.Ipv4Passthrough = listener
 			case naming.ContextualTransparentProxyName("outbound", 6):
-				listeners.Ipv4Passthrough = listener
+				listeners.Ipv6Passthrough = listener
 			}
 		case generator_meta.OriginDirectAccess:
 			listeners.DirectAccess[generator_model.Endpoint{

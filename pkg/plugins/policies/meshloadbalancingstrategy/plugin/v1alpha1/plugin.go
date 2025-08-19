@@ -70,7 +70,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
 	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
@@ -466,7 +466,7 @@ func (p plugin) configureGateway(
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	indexed := rs.IndexByOrigin()
 	endpoints := policies_xds.GatherEgressEndpoints(rs)
-	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	listeners := policies_xds.GatherListeners(rs)
 	if listeners.Egress == nil {
 		return nil
 	}
