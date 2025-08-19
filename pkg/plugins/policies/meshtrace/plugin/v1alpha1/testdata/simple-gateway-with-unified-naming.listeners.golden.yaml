@@ -56,7 +56,7 @@ filterChains:
           name: envoy.tracers.zipkin
           typedConfig:
             '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
-            collectorCluster: system_kri_mtr_default___mt-2_http---jaeger-collector-mesh-observability-9411-api-v2-spans
+            collectorCluster: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
             collectorEndpoint: /api/v2/spans
             collectorEndpointVersion: HTTP_JSON
             collectorHostname: jaeger-collector.mesh-observability:9411
