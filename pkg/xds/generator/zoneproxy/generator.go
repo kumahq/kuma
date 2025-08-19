@@ -96,15 +96,13 @@ func GenerateEDS(
 	return rs, nil
 }
 
-// CreateFilterChain adds filter chains to a listener. Generated listener assumes that
-// mTLS is on. Using TLSInspector we sniff SNI value. SNI value has service name
-// and tag values specified with the following format:
-// "backend{cluster=2,version=1}". We take all possible destinations from
-// TrafficRoutes + MeshHTTPRoutes + GatewayRoutes and generate
-// FilterChainsMatcher for each unique destination. This approach has
-// a limitation: additional tags on outbound in Universal mode won't work across
-// different zones. Traffic is NOT decrypted here, therefore we don't need
-// certificates and mTLS settings.
+// CreateFilterChain builds filter chains for a listener with mTLS enabled.
+// TLSInspector checks the SNI value, which contains service name and tags in
+// the format "backend{cluster=2,version=1}". For every unique destination
+// from TrafficRoutes, MeshHTTPRoutes, and GatewayRoutes we create a
+// FilterChainsMatcher. Limitation: extra tags on outbound in Universal mode
+// do not work across zones. Traffic is not decrypted, so certificates and
+// mTLS settings are not needed here.
 func CreateFilterChain(
 	proxy *core_xds.Proxy,
 	cluster envoy_common.Cluster,

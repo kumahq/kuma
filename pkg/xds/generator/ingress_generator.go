@@ -64,7 +64,13 @@ func (i IngressGenerator) Generate(
 			}
 		}
 
-		dest := zoneproxy.BuildMeshDestinations(availableServices[meshName], cp.SystemNamespace, meshResources, localMS)
+		dest := zoneproxy.BuildMeshDestinations(
+			availableServices[meshName],
+			cp.SystemNamespace,
+			meshResources,
+			localMS,
+			meshResources.MeshMultiZoneServices(),
+		)
 
 		services := zoneproxy.GetServices(proxy, dest, mr.EndpointMap, availableServices[meshName])
 
