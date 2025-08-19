@@ -963,7 +963,7 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 type matchedPoliciesToResponse func([]core_xds.TypedMatchingPolicies, *restful.Request, *core_mesh.MeshResource, *core_mesh.DataplaneResource, xds_context.Resources) (interface{}, error)
 
 func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, _ *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (interface{}, error) {
-	var conf []api_common.PolicyConf
+	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		if len(matched.SingleItemRules.Rules) == 0 {
 			continue
@@ -983,7 +983,7 @@ func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPol
 		return nil, err
 	}
 
-	var conf []api_common.PolicyConf
+	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		rctx := outbound.RootContext[interface{}](mesh, matched.ToRules.ResourceRules).
 			WithID(kri.NoSectionName(outboundKri)).
@@ -1016,7 +1016,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		Port:    inbounds[0].DataplanePort,
 	}
 
-	var conf []api_common.InboundPolicyConf
+	conf := []api_common.InboundPolicyConf{}
 	for _, matched := range matchedPolicies {
 		rules := matched.FromRules.InboundRules[inboundKey]
 		if len(rules) == 0 {
@@ -1049,7 +1049,7 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 		return nil, err
 	}
 
-	var routeConfs []api_common.RouteConf
+	routeConfs := []api_common.RouteConf{}
 	for _, matched := range matchedPolicies {
 		conf := matched.ToRules.ResourceRules.Compute(outboundKri, resources)
 		if conf == nil {
@@ -1094,7 +1094,7 @@ func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolici
 		return nil, err
 	}
 
-	var conf []api_common.PolicyConf
+	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		rctx := outbound.RootContext[interface{}](mesh, matched.ToRules.ResourceRules).
 			WithID(kri.NoSectionName(outboundKri)).
@@ -1112,7 +1112,7 @@ func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolici
 		})
 	}
 
-	return conf, nil
+	return api_common.PoliciesList{Policies: conf}, nil
 }
 
 func policyOriginsToKRIOrigins(policyType core_model.ResourceType, origins []core_model.ResourceMeta) []api_common.PolicyOrigin {

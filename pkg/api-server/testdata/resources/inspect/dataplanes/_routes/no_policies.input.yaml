@@ -1,0 +1,35 @@
+#/meshes/default/dataplanes/dp-1/outbounds/kri_msvc_default_test-zone__test-server-1_main-port/_routes 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: MeshService
+name: test-server-1
+mesh: default
+labels:
+  kuma.io/display-name: test-server-1
+  kuma.io/zone: test-zone
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+    - port: 8080
+      targetPort: 8080
+      appProtocol: tcp
+      name: secondary-port
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-1
