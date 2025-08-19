@@ -40,7 +40,8 @@ func (rr ResourceRules) Compute(uri kri.Identifier, reader kri.ResourceReader) *
 	case meshmultizoneservice_api.MeshMultiZoneServiceType:
 	case meshhttproute_api.MeshHTTPRouteType:
 	default:
-		// For other resource types rules can be returned directly, no extra processing is required
+		// For other resource types no further processing can produce a valid rule, so if nothing
+		// was found above we return nil
 		return nil
 	}
 
