@@ -5,6 +5,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
@@ -53,6 +54,10 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 			case generator_meta.TransparentOutboundNameIPv4:
 				listeners.Ipv4Passthrough = listener
 			case generator_meta.TransparentOutboundNameIPv6:
+				listeners.Ipv6Passthrough = listener
+			case naming.ContextualTransparentProxyName("outbound", 4):
+				listeners.Ipv4Passthrough = listener
+			case naming.ContextualTransparentProxyName("outbound", 6):
 				listeners.Ipv6Passthrough = listener
 			}
 		case generator_meta.OriginDirectAccess:

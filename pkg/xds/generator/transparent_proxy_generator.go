@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -126,9 +127,25 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 }
 
 func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	return tpg.generate(ctx, proxy, metadata.TransparentOutboundNameIPv4, metadata.TransparentInboundNameIPv4, metadata.TransparentAllIPv4, metadata.TransparentInPassThroughIPv4)
+	nameOrDefault := naming.GetNameOrFallbackFunc(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	return tpg.generate(
+		ctx,
+		proxy,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), metadata.TransparentOutboundNameIPv4),
+		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4),
+		metadata.TransparentAllIPv4,
+		metadata.TransparentInPassThroughIPv4,
+	)
 }
 
 func (tpg TransparentProxyGenerator) generateIPv6(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	return tpg.generate(ctx, proxy, metadata.TransparentOutboundNameIPv6, metadata.TransparentInboundNameIPv6, metadata.TransparentAllIPv6, metadata.TransparentInPassThroughIPv6)
+	nameOrDefault := naming.GetNameOrFallbackFunc(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	return tpg.generate(
+		ctx,
+		proxy,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 6), metadata.TransparentOutboundNameIPv6),
+		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6),
+		metadata.TransparentAllIPv6,
+		metadata.TransparentInPassThroughIPv6,
+	)
 }
