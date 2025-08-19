@@ -1,4 +1,4 @@
-#/meshes/default/dataplanes/dp-1/inbounds/kri_dp_default_test-zone__dp-1_main-port/_policies 200
+#/meshes/default/dataplanes/dp-1/_inbounds/kri_dp_default_test-zone__dp-1_main-port/_policies 200
 type: Mesh
 name: default
 meshServices:
