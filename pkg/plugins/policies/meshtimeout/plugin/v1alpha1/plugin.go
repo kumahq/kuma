@@ -47,7 +47,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := xds.GatherListeners(rs)
+	listeners := xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 	clusters := xds.GatherClusters(rs)
 	routes := xds.GatherRoutes(rs)
 

@@ -67,7 +67,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
 	}
 
-	listeners := policies_xds.GatherListeners(rs)
+	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 
 	accessLogSocketPath := core_xds.AccessLogSocketName(proxy.Metadata.WorkDir, proxy.Id.ToResourceKey().Name, proxy.Id.ToResourceKey().Mesh)
 

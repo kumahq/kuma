@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -52,7 +53,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	listeners := policies_xds.GatherListeners(rs)
+	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
@@ -139,7 +140,7 @@ func applyToGateways(
 }
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	listeners := policies_xds.GatherListeners(rs)
+	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 	if listeners.Egress == nil {
 		log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
 			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),

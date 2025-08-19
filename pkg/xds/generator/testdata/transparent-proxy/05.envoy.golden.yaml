@@ -1,0 +1,111 @@
+resources:
+- name: inbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: inbound_passthrough_ipv4
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: inbound:passthrough:ipv4
+    type: ORIGINAL_DST
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
+- name: inbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: inbound_passthrough_ipv6
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: inbound:passthrough:ipv6
+    type: ORIGINAL_DST
+    upstreamBindConfig:
+      sourceAddress:
+        address: ::6
+        portValue: 0
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough_ipv4
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough:ipv4
+    type: ORIGINAL_DST
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough_ipv6
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough:ipv6
+    type: ORIGINAL_DST
+- name: inbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15006
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv4
+          statPrefix: inbound_passthrough_ipv4
+    name: inbound:passthrough:ipv4
+    trafficDirection: INBOUND
+    useOriginalDst: true
+- name: inbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15006
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv6
+          statPrefix: inbound_passthrough_ipv6
+    name: inbound:passthrough:ipv6
+    trafficDirection: INBOUND
+    useOriginalDst: true
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: outbound:passthrough:ipv4
+          statPrefix: outbound_passthrough_ipv4
+    name: outbound:passthrough:ipv4
+    trafficDirection: OUTBOUND
+    useOriginalDst: true
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: outbound:passthrough:ipv6
+          statPrefix: outbound_passthrough_ipv6
+    name: outbound:passthrough:ipv6
+    trafficDirection: OUTBOUND
+    useOriginalDst: true

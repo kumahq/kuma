@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/core/naming"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
@@ -47,7 +48,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}
-	listeners := policies_xds.GatherListeners(rs)
+	listeners := policies_xds.GatherListeners(rs, proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
 	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
 		return err
 	}
@@ -71,15 +72,16 @@ func applyToOutboundPassthrough(
 	if pointer.Deref(conf.PassthroughMode) == "" {
 		conf.PassthroughMode = pointer.To[api.PassthroughMode]("Matched")
 	}
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// remove clusters because they were added in TransparentProxyGenerator
-		removeDefaultPassthroughCluster(rs)
+		removeDefaultPassthroughCluster(rs, unifiedNaming)
 		return nil
 	}
 	if enableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// add clusters because they were not added in TransparentProxyGenerator
-		return addDefaultPassthroughClusters(rs, proxy.APIVersion)
+		return addDefaultPassthroughClusters(rs, proxy.APIVersion, unifiedNaming)
 	}
 	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "All" {
 		// clusters were added in TransparentProxyGenerator, do nothing
@@ -87,7 +89,7 @@ func applyToOutboundPassthrough(
 	}
 
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "Matched" || conf.PassthroughMode == nil {
-		removeDefaultPassthroughCluster(rs)
+		removeDefaultPassthroughCluster(rs, unifiedNaming)
 		if len(pointer.Deref(conf.AppendMatch)) > 0 {
 			configurer := xds.Configurer{
 				APIVersion:        proxy.APIVersion,
@@ -103,13 +105,25 @@ func applyToOutboundPassthrough(
 	return nil
 }
 
-func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet) {
-	rs.Remove(envoy_resource.ClusterType, metadata.TransparentOutboundNameIPv4)
-	rs.Remove(envoy_resource.ClusterType, metadata.TransparentOutboundNameIPv6)
+func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet, unifiedNaming bool) {
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+	rs.Remove(
+		envoy_resource.ClusterType,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), metadata.TransparentOutboundNameIPv4),
+	)
+	rs.Remove(
+		envoy_resource.ClusterType,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 6), metadata.TransparentOutboundNameIPv6),
+	)
 }
 
-func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds.APIVersion) error {
-	outboundPassThroughCluster, err := xds.CreateCluster(apiVersion, metadata.TransparentOutboundNameIPv4, core_meta.ProtocolTCP)
+func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds.APIVersion, unifiedNaming bool) error {
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+	outboundPassThroughCluster, err := xds.CreateCluster(
+		apiVersion,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), metadata.TransparentOutboundNameIPv4),
+		core_meta.ProtocolTCP,
+	)
 	if err != nil {
 		return err
 	}
@@ -118,7 +132,11 @@ func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds
 		Origin:   metadata.OriginTransparent,
 		Resource: outboundPassThroughCluster,
 	})
-	outboundPassThroughCluster, err = xds.CreateCluster(apiVersion, metadata.TransparentOutboundNameIPv6, core_meta.ProtocolTCP)
+	outboundPassThroughCluster, err = xds.CreateCluster(
+		apiVersion,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 6), metadata.TransparentOutboundNameIPv6),
+		core_meta.ProtocolTCP,
+	)
 	if err != nil {
 		return err
 	}

@@ -25,6 +25,10 @@ func MustContextualInboundName[T sectionName](r core_model.Resource, sectionName
 	return name
 }
 
+func ContextualTransparentProxyName(direction string, ipVersion int) string {
+	return fmt.Sprintf("self_transparentproxy_passthrough_%s_ipv%d", direction, ipVersion)
+}
+
 func ContextualInboundName[T sectionName](r core_model.Resource, sectionName T) (string, error) {
 	if r == nil {
 		return "", errors.New("cannot build contextual inbound name: resource is nil")
