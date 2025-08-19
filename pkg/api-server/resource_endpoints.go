@@ -152,19 +152,19 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToInboundConfig)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToInboundConfig)).
 			Doc("Get policy config for inbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("inbound_kri", "KRI of a inbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToOutboundPolicy)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToOutboundPolicy)).
 			Doc("Get policy config for outbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_routes").To(r.getPoliciesConf(
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes").To(r.getPoliciesConf(
 			[]core_plugins.PluginName{
 				core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
 				core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
@@ -176,7 +176,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(r.getPoliciesConf(
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(r.getPoliciesConf(
 			util_slices.Filter(ordered.Policies, func(name core_plugins.PluginName) bool {
 				return name != core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) && name != core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
 			}), matchedPoliciesToRouteConfig)).
