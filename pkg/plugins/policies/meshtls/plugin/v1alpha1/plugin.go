@@ -12,7 +12,9 @@ import (
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -27,6 +29,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -36,10 +39,9 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
-var (
-	_   core_plugins.PolicyPlugin = &plugin{}
-	log                           = core.Log.WithName("MeshTLS")
-)
+var logger = core.Log.WithName("MeshTLS")
+
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -47,7 +49,11 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (p plugin) MatchedPolicies(
+	dataplane *core_mesh.DataplaneResource,
+	resources xds_context.Resources,
+	opts ...core_plugins.MatchedPoliciesOption,
+) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshTLSType, dataplane, resources, opts...)
 }
 
@@ -55,14 +61,21 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
-		log.V(1).Info("skip applying MeshTLS, MTLS is disabled",
-			"proxyName", proxy.Dataplane.GetMeta().GetName(),
-			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
+
+	log := logger.WithValues(
+		"proxyName", proxy.Dataplane.GetMeta().GetName(),
+		"mesh", ctx.Mesh.Resource.GetMeta().GetName(),
+	)
+
+	switch {
+	case ctx.Mesh.Resource.MTLSEnabled():
+	case proxy.WorkloadIdentity != nil:
+	default:
+		log.V(1).Info("skip applying MeshTLS, mTLS is disabled")
 		return nil
 	}
 
-	log.V(1).Info("applying", "proxy-name", proxy.Dataplane.GetMeta().GetName())
+	log.V(1).Info("applying")
 
 	policies := proxy.Policies.Dynamic[api.MeshTLSType]
 	// Check if MeshTLS policy or workload identity applies to this Dataplane
@@ -110,24 +123,26 @@ func applyToInbounds(
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
+
 		listener, ok := inboundListeners[listenerKey]
 		if !ok {
 			continue
 		}
+
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
-		l, err := configure(proxy, listener, iface, inbound, conf, ctx)
-		if err != nil {
+
+		if resource, err := configureListener(proxy, ctx, iface, inbound, conf); err != nil {
 			return err
-		}
-		if l != nil {
+		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, listener.GetName())
 			rs.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
+				Name:     resource.GetName(),
 				Origin:   metadata.OriginInbound,
-				Resource: l,
+				Resource: resource,
 			})
 		}
 	}
+
 	return nil
 }
 
@@ -155,7 +170,7 @@ func applyToOutbounds(
 			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
 			break
 		}
-		if err := configureParams(conf, cluster); err != nil {
+		if err := configureTLSParams(conf, cluster); err != nil {
 			return err
 		}
 	}
@@ -180,7 +195,8 @@ func applyToGateways(
 			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
 			break
 		}
-		if err := configureParams(conf, cluster); err != nil {
+
+		if err := configureTLSParams(conf, cluster); err != nil {
 			return err
 		}
 	}
@@ -199,71 +215,53 @@ func applyToRealResources(
 			break
 		}
 
-		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ClusterType:
-				for _, cluster := range resources {
-					if err := configureParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
-						return err
-					}
-				}
+		for _, cluster := range resType[envoy_resource.ClusterType] {
+			if err := configureTLSParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func configureParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
+func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 	if cluster.TransportSocket.GetName() != wellknown.TransportSocketTLS {
 		// we only want to configure TLS Version on listeners protected by Kuma's TLS
 		return nil
 	}
 
-	tlsContext := &envoy_tls.UpstreamTlsContext{CommonTlsContext: &envoy_tls.CommonTlsContext{}}
-
-	version := conf.TlsVersion
-	if version != nil {
-		if version.Min != nil {
-			tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{
-				TlsMinimumProtocolVersion: common_tls.ToTlsVersion(version.Min),
-			}
-		}
-		if version.Max != nil {
-			if tlsContext.CommonTlsContext.TlsParams == nil {
-				tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{
-					TlsMaximumProtocolVersion: common_tls.ToTlsVersion(version.Max),
-				}
-			} else {
-				tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = common_tls.ToTlsVersion(version.Max)
-			}
-		}
-	}
-
-	ciphers := pointer.Deref(conf.TlsCiphers)
-	if ciphers != nil {
-		if tlsContext.CommonTlsContext.TlsParams != nil {
-			var cipherSuites []string
-			for _, c := range ciphers {
-				cipherSuites = append(cipherSuites, string(c))
-			}
-			tlsContext.CommonTlsContext.TlsParams.CipherSuites = cipherSuites
-		}
-	}
-
-	log.V(1).Info("computed outbound tlsContext", "tlsContext", tlsContext)
-
-	dst := envoy_tls.UpstreamTlsContext{}
-	err := proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), &dst)
-	if err != nil {
+	var dst envoy_tls.UpstreamTlsContext
+	if err := proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), &dst); err != nil {
 		return err
 	}
 
-	// this relies on nothing before it modifying TlsParams
-	dst.CommonTlsContext.TlsParams = tlsContext.CommonTlsContext.TlsParams
+	version := pointer.Deref(conf.TlsVersion)
+	ciphers := pointer.Deref(conf.TlsCiphers)
+
+	if len(ciphers) > 0 || version.Min != nil || version.Max != nil {
+		dst.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{}
+	}
+
+	if len(ciphers) > 0 {
+		dst.CommonTlsContext.TlsParams.CipherSuites = util_slices.Map(ciphers, common_tls.TlsCipher.String)
+	}
+
+	if version.Min != nil {
+		dst.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = common_tls.ToTlsVersion(version.Min)
+	}
+
+	if version.Max != nil {
+		dst.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = common_tls.ToTlsVersion(version.Max)
+	}
+
+	logger.V(1).Info("computed outbound tls params", "params", dst.CommonTlsContext.TlsParams)
+
 	pbst, err := proto.MarshalAnyDeterministic(&dst)
 	if err != nil {
 		return err
 	}
+
 	cluster.TransportSocket = &envoy_core.TransportSocket{
 		Name: "envoy.transport_sockets.tls",
 		ConfigType: &envoy_core.TransportSocket_TypedConfig{
@@ -274,69 +272,93 @@ func configureParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 	return nil
 }
 
-func configure(
+func configureListener(
 	proxy *core_xds.Proxy,
-	listener *envoy_listener.Listener,
+	xdsCtx xds_context.Context,
 	iface mesh_proto.InboundInterface,
 	inbound *mesh_proto.Dataplane_Networking_Inbound,
 	conf api.Conf,
-	xdsCtx xds_context.Context,
 ) (envoy_common.NamedResource, error) {
-	mesh := xdsCtx.Mesh.Resource
-	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
-	if proxy.WorkloadIdentity != nil {
-		mode = pointer.DerefOr(conf.Mode, api.ModeStrict)
-	}
-	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
-	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
-	cluster := policies_xds.NewClusterBuilder().WithName(localClusterName).Build()
-	service := inbound.GetService()
-	routes := generator.GenerateRoutes(proxy, iface, cluster)
-	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP).
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
+
+	inboundID := kri.WithSectionName(kri.From(proxy.Dataplane), iface.WorkloadPort).String()
+	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.WorkloadPort)
+
+	legacyClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
+	legacyListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
+
+	listenerName := getName(inboundID, legacyListenerName)
+	statPrefix := getName(inboundContextualID, "")
+	clusterName := getName(inboundContextualID, legacyClusterName)
+
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
+
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	switch mode {
-	case api.ModeStrict:
-		listenerBuilder.
-			Configure(envoy_listeners.FilterChain(generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).
-				Configure(envoy_listeners.NetworkRBAC(listener.GetName(), isMTLSEnabled(mesh, proxy), proxy.Policies.TrafficPermissions[iface])).
-				ConfigureIf(downstreamCtx != nil, envoy_listeners.DownstreamTlsContext(downstreamCtx))))
-	case api.ModePermissive:
-		listenerBuilder.
-			Configure(envoy_listeners.TLSInspector()).
-			Configure(envoy_listeners.FilterChain(
-				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
-					envoy_listeners.MatchTransportProtocol("raw_buffer"))),
-			).
-			Configure(envoy_listeners.FilterChain(
-				// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
-				// the app itself might be protected by TLS.
-				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
-					envoy_listeners.MatchTransportProtocol("tls"))),
-			).
-			Configure(envoy_listeners.FilterChain(
-				generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).
-					Configure(
-						envoy_listeners.MatchTransportProtocol("tls"),
-						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
-						envoy_listeners.NetworkRBAC(listener.GetName(), isMTLSEnabled(mesh, proxy), proxy.Policies.TrafficPermissions[iface]),
-					).
-					ConfigureIf(downstreamCtx != nil, envoy_listeners.DownstreamTlsContext(downstreamCtx))),
-			)
+	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+	service := inbound.GetService()
+	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
+	routes := generator.GenerateRoutes(proxy, iface, cluster)
+	ciphers := pointer.Deref(conf.TlsCiphers)
+
+	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
+		return generator.FilterChainBuilder(
+			serverSideMTLS,
+			protocol,
+			proxy,
+			clusterName,
+			xdsCtx,
+			iface,
+			service,
+			&routes,
+			conf.TlsVersion,
+			ciphers,
+		)
 	}
-	return listenerBuilder.Build()
+
+	filterChainKumaTLS := filterChainBuilder(true).
+		Configure(envoy_listeners.NetworkRBAC(listenerName, true, proxy.Policies.TrafficPermissions[iface])).
+		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
+
+	switch getMeshTLSMode(conf.Mode, proxy.WorkloadIdentity, xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()) {
+	case api.ModeStrict:
+		return listener.Configure(envoy_listeners.FilterChain(filterChainKumaTLS)).Build()
+	}
+
+	filterChainRawBuffer := filterChainBuilder(false).
+		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolRawBuffer))
+
+	// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode the app
+	// itself might be protected by TLS
+	filterChainTLS := filterChainBuilder(false).
+		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS))
+
+	filterChainKumaTLS.
+		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
+		Configure(envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...))
+
+	return listener.
+		Configure(envoy_listeners.TLSInspector()).
+		Configure(envoy_listeners.FilterChain(filterChainRawBuffer)).
+		Configure(envoy_listeners.FilterChain(filterChainTLS)).
+		Configure(envoy_listeners.FilterChain(filterChainKumaTLS)).
+		Build()
 }
 
 func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, conf api.Conf) (*envoy_tls.DownstreamTlsContext, error) {
 	if proxy.WorkloadIdentity == nil {
 		return nil, nil
 	}
-	sanMatchers := []*bldrs_common.Builder[envoy_tls.SubjectAltNameMatcher]{}
+
+	var sanMatchers []*bldrs_common.Builder[envoy_tls.SubjectAltNameMatcher]
 	// Spire delivers SANs validator and we don't support MeshTrust with spire
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
@@ -351,7 +373,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		}
 	}
 
-	downstreamCtx, err := bldrs_tls.NewDownstreamTLSContext().
+	return bldrs_tls.NewDownstreamTLSContext().
 		Configure(
 			bldrs_tls.DownstreamCommonTlsContext(
 				bldrs_tls.NewCommonTlsContext().
@@ -378,22 +400,26 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 						bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 							proxy.WorkloadIdentity.IdentitySourceConfigurer()),
 					})))).
-		Configure(bldrs_tls.RequireClientCertificate(true)).Build()
-	if err != nil {
-		return nil, err
-	}
-	return downstreamCtx, nil
+		Configure(bldrs_tls.RequireClientCertificate(true)).
+		Build()
 }
 
-func getMeshTLSMode(mesh *core_mesh.MeshResource) api.Mode {
-	switch mesh.GetEnabledCertificateAuthorityBackend().GetMode() {
-	case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
+func getMeshTLSMode(
+	confMode *api.Mode,
+	workloadIdentity *core_xds.WorkloadIdentity,
+	caBackend *mesh_proto.CertificateAuthorityBackend,
+) api.Mode {
+	switch {
+	case confMode != nil:
+		// Use the mode defined in the MeshTLS policy configuration
+		return *confMode
+	case workloadIdentity != nil:
+		// If no confMode is set but the workload has an identity, default to strict mode
+		return api.ModeStrict
+	case caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
+		// If the CA backend is configured as permissive, use permissive mode
 		return api.ModePermissive
 	default:
 		return api.ModeStrict
 	}
-}
-
-func isMTLSEnabled(mesh *core_mesh.MeshResource, proxy *core_xds.Proxy) bool {
-	return mesh.MTLSEnabled() || proxy.WorkloadIdentity != nil
 }
