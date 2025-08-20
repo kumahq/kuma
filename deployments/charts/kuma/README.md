@@ -190,9 +190,9 @@ A Helm chart for the Kuma Control Plane
 | egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
-| kubectl.image.repository | string | `"rancher/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.27.16@sha256:51758d7dbafd9248757c11225ca6693f3cba570803431d0f0d6e917dd7667310"` | The kubectl image tag |
+| kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"v1.28.15@sha256:498806b1515409c41d0d209fe2f5cd891fc571698ff19b1d3d9749f8b9b10f46"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
