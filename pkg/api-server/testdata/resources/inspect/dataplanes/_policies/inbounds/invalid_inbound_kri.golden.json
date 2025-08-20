@@ -2,6 +2,6 @@
  "type": "/std-errors",
  "status": 400,
  "title": "Bad Request",
- "detail": "bad request: Invalid inbound KRI",
- "details": "bad request: Invalid inbound KRI"
+ "detail": "bad request: invalid identifier string: \"invalid-kri\"",
+ "details": "bad request: invalid identifier string: \"invalid-kri\""
 }
