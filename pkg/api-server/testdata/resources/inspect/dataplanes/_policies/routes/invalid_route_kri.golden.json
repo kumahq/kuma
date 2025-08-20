@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: Invalid route KRI",
+ "details": "bad request: Invalid route KRI"
+}

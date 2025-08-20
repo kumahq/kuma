@@ -977,10 +977,10 @@ func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolici
 	return api_common.PoliciesList{Policies: conf}, nil
 }
 
-func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (interface{}, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError("Invalid outbound KRI")
 	}
 
 	conf := []api_common.PolicyConf{}
@@ -1005,7 +1005,7 @@ func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPol
 func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
 	inboundKri, err := kri.FromString(request.PathParameter("inbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError("Invalid inbound KRI")
 	}
 	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
 	if len(inbounds) == 0 {
@@ -1046,7 +1046,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError("Invalid outbound KRI")
 	}
 
 	routeConfs := []api_common.RouteConf{}
@@ -1087,11 +1087,11 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError("Invalid outbound KRI")
 	}
 	routeKri, err := kri.FromString(request.PathParameter("route_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError("Invalid route KRI")
 	}
 
 	conf := []api_common.PolicyConf{}
