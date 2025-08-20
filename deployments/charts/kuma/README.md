@@ -212,9 +212,9 @@ A Helm chart for the Kuma Control Plane
 | egress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
-| kubectl.image.repository | string | `"rancher/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.32.7@sha256:9b97630d834879e76ad4ab2899deb9b600981bc2026fe0042f65006a5dfe415c"` | The kubectl image tag |
+| kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"v1.32.8@sha256:54e66c42a1d3a11a1ed4f866ce9fff7e1e48f32a1cb147e3b98a05168a429917"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
