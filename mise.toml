@@ -21,7 +21,7 @@ yq = "4.47.1"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.5.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.18.0"
-"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250813191507-c7df6d0236ed"
+"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250819114936-e4f9a2446c3d"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/workflows/_build_publish.yaml
