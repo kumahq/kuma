@@ -49,45 +49,7 @@ resources:
                     value: 5237c55fc21d54360fbd4a6de06f58da55ea9255ee43f36c4e2f7103e273c2a7
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
-- name: system_kri_mm_default___meshmetric1_default-backend
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 192.168.0.1
-        portValue: 5670
-    enableReusePort: false
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          internalAddressConfig:
-            cidrRanges:
-            - addressPrefix: 127.0.0.1
-              prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
-          routeConfig:
-            validateClusters: false
-            virtualHosts:
-            - domains:
-              - '*'
-              name: system_kri_mm_default___meshmetric1_default-backend
-              routes:
-              - match:
-                  prefix: /metrics
-                route:
-                  cluster: system_kri_mm_default___meshmetric1_default-backend
-                  prefixRewrite: /meshmetric
-          statPrefix: system_kri_mm_default___meshmetric1_default-backend
-    name: system_kri_mm_default___meshmetric1_default-backend
-    trafficDirection: INBOUND
-- name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+- name: system_meshmetric_otel_otel-collector-observability-svc-4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -117,11 +79,49 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+              name: system_meshmetric_otel_otel-collector-observability-svc-4317
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
-          statPrefix: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
-    name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+                  cluster: system_meshmetric_otel_otel-collector-observability-svc-4317
+          statPrefix: system_meshmetric_otel_otel-collector-observability-svc-4317
+    name: system_meshmetric_otel_otel-collector-observability-svc-4317
+- name: system_meshmetric_prometheus_default-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 5670
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: system_meshmetric_prometheus_default-backend
+              routes:
+              - match:
+                  prefix: /metrics
+                route:
+                  cluster: system_meshmetric_prometheus_default-backend
+                  prefixRewrite: /meshmetric
+          statPrefix: system_meshmetric_prometheus_default-backend
+    name: system_meshmetric_prometheus_default-backend
+    trafficDirection: INBOUND

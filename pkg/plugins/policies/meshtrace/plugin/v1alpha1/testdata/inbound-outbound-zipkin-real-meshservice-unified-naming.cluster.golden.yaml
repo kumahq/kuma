@@ -5,7 +5,7 @@ resources:
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: system_kri_mtr_default___mt-1_http---jaeger-collector-mesh-observability-9411-api-v2-spans
+      clusterName: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -13,5 +13,5 @@ resources:
               socketAddress:
                 address: jaeger-collector.mesh-observability
                 portValue: 9411
-    name: system_kri_mtr_default___mt-1_http---jaeger-collector-mesh-observability-9411-api-v2-spans
+    name: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
     type: STRICT_DNS
