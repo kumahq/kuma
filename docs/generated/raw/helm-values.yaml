@@ -710,11 +710,11 @@ kumactl:
 kubectl:
   image:
     # -- The kubectl image registry
-    registry: docker.io
+    registry: registry.k8s.io
     # -- The kubectl image repository
-    repository: rancher/kubectl
+    repository: kubectl
     # -- The kubectl image tag
-    tag: "v1.32.7@sha256:9b97630d834879e76ad4ab2899deb9b600981bc2026fe0042f65006a5dfe415c"
+    tag: v1.32.8@sha256:54e66c42a1d3a11a1ed4f866ce9fff7e1e48f32a1cb147e3b98a05168a429917
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
