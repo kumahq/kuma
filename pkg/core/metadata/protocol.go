@@ -11,14 +11,15 @@ import (
 type Protocol string
 
 const (
-	ProtocolUnknown Protocol = "<unknown>"
-	ProtocolTCP     Protocol = "tcp"
-	ProtocolTLS     Protocol = "tls"
-	ProtocolHTTP    Protocol = "http"
-	ProtocolHTTP2   Protocol = "http2"
-	ProtocolGRPC    Protocol = "grpc"
-	ProtocolKafka   Protocol = "kafka"
-	ProtocolMysql   Protocol = "mysql"
+	ProtocolUnknown   Protocol = "<unknown>"
+	ProtocolTCP       Protocol = "tcp"
+	ProtocolTLS       Protocol = "tls"
+	ProtocolHTTP      Protocol = "http"
+	ProtocolHTTP2     Protocol = "http2"
+	ProtocolGRPC      Protocol = "grpc"
+	ProtocolKafka     Protocol = "kafka"
+	ProtocolMysql     Protocol = "mysql"
+	ProtocolRawBuffer Protocol = "raw_buffer"
 )
 
 func (p Protocol) String() string { return string(p) }
