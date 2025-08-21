@@ -40,6 +40,7 @@ spec:
       {{- toYaml .Values.ingress.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-ingress
       automountServiceAccountToken: {{ .Values.ingress.automountServiceAccountToken }}
+      restartPolicy: {{ .Values.ingress.restartPolicy }}
       {{- with .Values.ingress.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
@@ -146,5 +147,5 @@ spec:
               - key: ca.crt
                 path: ca.crt
         - name: tmp
-          emptyDir: {}
+          emptyDir: { }
 {{- end }}

@@ -40,6 +40,7 @@ spec:
       {{- toYaml .Values.egress.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-egress
       automountServiceAccountToken: {{ .Values.egress.automountServiceAccountToken }}
+      restartPolicy: {{ .Values.egress.restartPolicy }}
       {{- with .Values.egress.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}

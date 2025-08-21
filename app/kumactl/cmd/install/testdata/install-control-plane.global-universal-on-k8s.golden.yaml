@@ -140,6 +140,7 @@ spec:
         runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
         
         kubernetes.io/os: linux

@@ -93,6 +93,7 @@ metadata:
     "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
 spec:
+  ttlSecondsAfterFinished: 0
   template:
     metadata:
       name: {{ template "kuma.name" . }}-install-crds-job
