@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -12,31 +12,54 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 func GenerateOutboundListener(
-	apiVersion core_xds.APIVersion,
+	proxy *core_xds.Proxy,
 	svc meshroute_xds.DestinationService,
-	isTransparent bool,
 	splits []envoy_common.Split,
 ) (*core_xds.Resource, error) {
-	listener, err := envoy_listeners.NewOutboundListenerBuilder(apiVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TransparentProxying(isTransparent)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-			ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(svc.KumaServiceTagValue)).
-			Configure(envoy_listeners.TCPProxy(svc.KumaServiceTagValue, splits...)))).
-		Build()
+	unifiedNaming := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
+	bindOutbounds := proxy.Metadata.HasFeature(types.FeatureBindOutbounds)
+	transparentProxy := !bindOutbounds && proxy.GetTransparentProxy().Enabled()
+
+	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
+	port := svc.Outbound.GetPort()
+
+	listenerName := envoy_names.GetOutboundListenerName(address, port)
+	listenerStatPrefix := ""
+	tcpProxyStatPrefix := svc.KumaServiceTagValue
+	if id, ok := svc.Outbound.AssociatedServiceResource(); ok && unifiedNaming {
+		listenerName = id.String()
+		listenerStatPrefix = listenerName
+		tcpProxyStatPrefix = listenerName
+	}
+
+	tags := envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
+
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
+		ConfigureIf(svc.Protocol == core_meta.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
+
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
+		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.TransparentProxying(transparentProxy)).
+		Configure(envoy_listeners.TagsMetadata(tags)).
+		Configure(envoy_listeners.FilterChain(filterChain))
+
+	resource, err := listener.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	return &core_xds.Resource{
-		Name:           listener.GetName(),
-		Origin:         generator.OriginOutbound,
-		Resource:       listener,
+		Name:           resource.GetName(),
+		Origin:         metadata.OriginOutbound,
+		Resource:       resource,
 		ResourceOrigin: svc.Outbound.Resource,
 		Protocol:       svc.Protocol,
 	}, nil
@@ -51,17 +74,16 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules
+	unifiedNaming := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 
 	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, meshCtx)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
 
-	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
+	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx, unifiedNaming)
 
-	isTransparent := !proxy.Metadata.HasFeature(types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
-
-	listener, err := GenerateOutboundListener(proxy.APIVersion, svc, isTransparent, splits)
+	listener, err := GenerateOutboundListener(proxy, svc, splits)
 	if err != nil {
 		return nil, err
 	}

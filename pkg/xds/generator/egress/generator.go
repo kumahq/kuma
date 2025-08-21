@@ -2,59 +2,27 @@ package egress
 
 import (
 	"context"
+	"slices"
 
-	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
-const (
-	EgressProxy = "egress-proxy"
-
-	// OriginEgress is a marker to indicate by which ProxyGenerator resources
-	// were generated.
-	OriginEgress = "egress"
-)
-
-var log = core.Log.WithName("xds").WithName("egress-proxy-generator")
-
-// ZoneEgressGenerator is responsible for generating xDS resources for
-// a single ZoneEgress.
-type ZoneEgressGenerator interface {
-	Generate(context.Context, xds_context.Context, *core_xds.Proxy, *envoy_listeners.ListenerBuilder, *core_xds.MeshResources) (*core_xds.ResourceSet, error)
-}
-
 // Generator generates xDS resources for an entire ZoneEgress.
 type Generator struct {
-	// These generators add to the listener builder
-	ZoneEgressGenerators []ZoneEgressGenerator
-	// These generators depend on the config being built
 	SecretGenerator *generator_secrets.Generator
-}
-
-func makeListenerBuilder(
-	apiVersion core_xds.APIVersion,
-	zoneEgress *core_mesh.ZoneEgressResource,
-) *envoy_listeners.ListenerBuilder {
-	networking := zoneEgress.Spec.GetNetworking()
-
-	address := networking.GetAddress()
-	port := networking.GetPort()
-
-	return envoy_listeners.NewInboundListenerBuilder(
-		apiVersion,
-		address,
-		port,
-		core_xds.SocketAddressProtocolTCP,
-	).Configure(envoy_listeners.TLSInspector())
+	PolicyGenerator generator_core.ResourceGenerator
 }
 
 func (g Generator) Generate(
@@ -63,68 +31,76 @@ func (g Generator) Generate(
 	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
-	resources := core_xds.NewResourceSet()
+	rs := core_xds.NewResourceSet()
 
-	listenerBuilder := makeListenerBuilder(
-		proxy.APIVersion,
-		proxy.ZoneEgressProxy.ZoneEgressResource,
-	)
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
+
+	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
+	address := zoneEgress.Spec.GetNetworking().GetAddress()
+	port := zoneEgress.Spec.GetNetworking().GetPort()
+
+	listenerName := getName(kri.From(zoneEgress).String(), envoy_names.GetInboundListenerName(address, port))
+	statPrefix := getName(naming.MustContextualInboundName(zoneEgress, port), "")
+
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.StatPrefix(statPrefix)).
+		Configure(envoy_listeners.TLSInspector())
 
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
-		meshName := meshResources.Mesh.GetMeta().GetName()
+		mesh := meshResources.Mesh
+		meshName := mesh.GetMeta().GetName()
 
 		// Secrets are generated in relation to a mesh so we need to create a new tracker
 		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
-		proxy.SecretsTracker = secretsTracker
 
-		for _, generator := range g.ZoneEgressGenerators {
-			rs, err := generator.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
+		internal, internalFCB, err := genInternalResources(proxy, meshResources, xdsCtx.ControlPlane.Zone)
+		if err != nil {
+			return nil, err
+		}
+		rs.AddSet(internal)
+
+		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker)
+		if err != nil {
+			return nil, err
+		}
+		rs.AddSet(external)
+
+		for _, filterChain := range slices.Concat(internalFCB, externalFCB) {
+			listener.Configure(envoy_listeners.FilterChain(filterChain))
+		}
+
+		// Envoy rejects listener with no filter chains, so there is no point in sending it
+		if len(externalFCB) > 0 || len(internalFCB) > 0 {
+			resource, err := listener.Build()
 			if err != nil {
-				err := errors.Wrapf(
-					err,
-					"%T failed to generate resources for zone egress %q",
-					generator,
-					proxy.Id,
-				)
 				return nil, err
 			}
 
-			resources.AddSet(rs)
-		}
-
-		listener, err := listenerBuilder.Build()
-		if err != nil {
-			return nil, err
-		}
-		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
-			// Envoy rejects listener with no filter chains, so there is no point in sending it.
-			resources.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
-				Origin:   OriginEgress,
-				Resource: listener,
+			rs.Add(&core_xds.Resource{
+				Name:     resource.GetName(),
+				Origin:   metadata.OriginEgress,
+				Resource: resource,
 			})
 		}
 
-		rs, err := generator.NewGenerator().Generate(ctx, resources, xdsCtx, proxy)
+		policyResources, err := g.PolicyGenerator.Generate(ctx, rs, xdsCtx, proxy)
 		if err != nil {
 			return nil, err
 		}
-		resources.AddSet(rs)
+		rs.AddSet(policyResources)
 
-		rs, err = g.SecretGenerator.GenerateForZoneEgress(
-			ctx, xdsCtx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
-		)
+		secretResources, err := g.SecretGenerator.GenerateForZoneEgress(ctx, xdsCtx, proxy, secretsTracker, mesh)
 		if err != nil {
-			err := errors.Wrapf(
+			return nil, errors.Wrapf(
 				err,
-				"%T failed to generate resources for zone egress %q",
-				g.SecretGenerator,
-				proxy.Id,
+				"failed to generate secret resources for zone egress: %s",
+				zoneEgress.GetMeta().GetName(),
 			)
-			return nil, err
 		}
-
-		resources.AddSet(rs)
+		rs.AddSet(secretResources)
 	}
-	return resources, nil
+
+	return rs, nil
 }

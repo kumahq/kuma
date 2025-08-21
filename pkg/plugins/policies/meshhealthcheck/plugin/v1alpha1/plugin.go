@@ -6,6 +6,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -135,13 +136,13 @@ func applyToGateways(
 					if dest.BackendRef == nil {
 						continue
 					}
-					if realRef := dest.BackendRef.ResourceOrNil(); realRef != nil {
-						resources := resourcesByOrigin[*realRef]
+					if realRef := dest.BackendRef.Resource(); !realRef.IsEmpty() {
+						resources := resourcesByOrigin[realRef]
 						if err := applyToRealResource(
 							meshCtx,
 							rules.ResourceRules,
 							proxy.Dataplane.Spec.TagSet(),
-							*realRef,
+							realRef,
 							resources,
 						); err != nil {
 							return err
@@ -155,21 +156,21 @@ func applyToGateways(
 	return nil
 }
 
-func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_mesh.Protocol {
+func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_meta.Protocol {
 	switch p {
 	case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-		return core_mesh.ProtocolHTTP
+		return core_meta.ProtocolHTTP
 	case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-		return core_mesh.ProtocolTCP
+		return core_meta.ProtocolTCP
 	}
-	return core_mesh.ProtocolTCP
+	return core_meta.ProtocolTCP
 }
 
 func configure(
 	dataplane *core_mesh.DataplaneResource,
 	rules core_rules.Rules,
 	element subsetutils.Element,
-	protocol core_mesh.Protocol,
+	protocol core_meta.Protocol,
 	cluster *envoy_cluster.Cluster,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](rules, element)

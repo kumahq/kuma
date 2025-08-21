@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -542,6 +543,7 @@ var _ = Describe("KubernetesStore", func() {
             metadata:
               annotations:
                 kuma.io/display-name: dn
+                k8s.kuma.io/service-account: default
               name: %s
             spec:
               conf:
@@ -559,6 +561,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal("dn"))
+			Expect(actual.Meta.GetLabels()[metadata.KumaServiceAccount]).To(Equal("default"))
 		})
 	})
 

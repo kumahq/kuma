@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshProxyPatch", func() {
@@ -50,7 +50,7 @@ var _ = Describe("MeshProxyPatch", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:   "echo-http",
-					Origin: generator.OriginOutbound,
+					Origin: metadata.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "echo-http").
 						MustBuild(),
 				},

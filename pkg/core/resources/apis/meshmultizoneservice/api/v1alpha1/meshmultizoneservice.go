@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
 
@@ -33,7 +33,7 @@ type Port struct {
 	Port int32   `json:"port"`
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
-	AppProtocol core_mesh.Protocol `json:"appProtocol"`
+	AppProtocol core_meta.Protocol `json:"appProtocol"`
 }
 
 type Selector struct {

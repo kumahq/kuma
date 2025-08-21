@@ -3,6 +3,9 @@ DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
+# renovate: datasource=docker depName=kumahq/openapi-tool versioning=semver-coerced registryUrl=https://ghcr.io
+OAPI_TOOLS_VERSION ?= v1.1.7
+
 .PHONY: clean/docs
 clean/docs:
 	rm -rf docs/generated
@@ -53,7 +56,7 @@ docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES)
 	for i in $$( find $(MESH_API_DIR) -name '*.yaml'); do DIR=$(OAPI_TMP_DIR)/protoresources/$$(echo $${i} | awk -F/ '{print $$(NF-1)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
 
 ifdef BASE_API
-	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v1.1.3 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
+	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION) generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
 else
-	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v1.1.3 generate '/specs/**/*.yaml' > $@
+	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION) generate '/specs/**/*.yaml' > $@
 endif

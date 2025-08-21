@@ -103,6 +103,11 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:             []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 			UnifiedResourceNamingEnabled: false,
+			Spire: Spire{
+				Enabled:        false,
+				MountPath:      "/run/spire/sockets",
+				SocketFileName: "socket",
+			},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -243,6 +248,8 @@ type Injector struct {
 	// When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
 	// This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
 	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled" envconfig:"kuma_runtime_kubernetes_injector_unified_resource_naming_enabled"`
+	// Spire is used to specify spire integration configuration.
+	Spire Spire `json:"spire"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
@@ -655,4 +662,13 @@ func (c *BuiltinDNS) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".port must be in the range [0, 65535]"))
 	}
 	return errs
+}
+
+type Spire struct {
+	// If true, enables mounting of SPIRE-related resources.
+	Enabled bool `json:"enabled" envconfig:"kuma_runtime_kubernetes_injector_spire_enabled"`
+	// MountPath is the location inside the container where the SPIRE agent socket will be mounted.
+	MountPath string `json:"mountPath" envconfig:"kuma_runtime_kubernetes_injector_spire_mount_path"`
+	// SocketFileName is the name of the socket on the host
+	SocketFileName string `json:"socketFileName" envconfig:"kuma_runtime_kubernetes_injector_spire_socket_file_name"`
 }

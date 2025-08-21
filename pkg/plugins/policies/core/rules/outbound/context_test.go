@@ -21,7 +21,7 @@ var _ = Describe("ResourceContext", func() {
 		It("should create a ResourceContext with mesh identifier", func() {
 			// when
 			resourceRules := outbound.ResourceRules{
-				kri.From(mesh, ""): outbound.ResourceRule{Conf: []interface{}{"mesh-conf"}},
+				kri.From(mesh): outbound.ResourceRule{Conf: []interface{}{"mesh-conf"}},
 			}
 			rc := outbound.RootContext[string](mesh, resourceRules)
 
@@ -40,8 +40,8 @@ var _ = Describe("ResourceContext", func() {
 				Name:         "test-resource",
 			}
 			resourceRules := outbound.ResourceRules{
-				kri.From(mesh, ""): outbound.ResourceRule{Conf: []interface{}{"mesh-conf"}},
-				id:                 outbound.ResourceRule{Conf: []interface{}{"test-conf"}},
+				kri.From(mesh): outbound.ResourceRule{Conf: []interface{}{"mesh-conf"}},
+				id:             outbound.ResourceRule{Conf: []interface{}{"test-conf"}},
 			}
 			rc := outbound.RootContext[string](mesh, resourceRules)
 
@@ -62,7 +62,7 @@ var _ = Describe("ResourceContext", func() {
 				Name:         "test-resource",
 			}
 			resourceRules := outbound.ResourceRules{
-				kri.From(mesh, ""): outbound.ResourceRule{Conf: []interface{}{"mesh-conf"}},
+				kri.From(mesh): outbound.ResourceRule{Conf: []interface{}{"mesh-conf"}},
 			}
 			rc := outbound.RootContext[string](mesh, resourceRules)
 

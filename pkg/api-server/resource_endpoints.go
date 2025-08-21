@@ -152,19 +152,19 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToInboundConfig)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToInboundConfig)).
 			Doc("Get policy config for inbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("inbound_kri", "KRI of a inbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToOutboundPolicy)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToOutboundPolicy)).
 			Doc("Get policy config for outbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_routes").To(r.getPoliciesConf(
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes").To(r.getPoliciesConf(
 			[]core_plugins.PluginName{
 				core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
 				core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
@@ -176,7 +176,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(r.getPoliciesConf(
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(r.getPoliciesConf(
 			util_slices.Filter(ordered.Policies, func(name core_plugins.PluginName) bool {
 				return name != core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) && name != core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
 			}), matchedPoliciesToRouteConfig)).
@@ -448,11 +448,11 @@ func (r *resourceEndpoints) createResource(
 		res.Descriptor(),
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
-		core_model.GetNamespace(res.GetMeta(), r.systemNamespace),
 		meshName,
-		r.mode,
-		r.isK8s,
-		r.zoneName,
+		core_model.WithNamespace(core_model.GetNamespace(res.GetMeta(), r.systemNamespace)),
+		core_model.WithMode(r.mode),
+		core_model.WithK8s(r.isK8s),
+		core_model.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -494,11 +494,11 @@ func (r *resourceEndpoints) updateResource(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
 		newResRest.GetMeta().GetLabels(),
-		core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
 		meshName,
-		r.mode,
-		r.isK8s,
-		r.zoneName,
+		core_model.WithNamespace(core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
+		core_model.WithMode(r.mode),
+		core_model.WithK8s(r.isK8s),
+		core_model.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -963,7 +963,7 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 type matchedPoliciesToResponse func([]core_xds.TypedMatchingPolicies, *restful.Request, *core_mesh.MeshResource, *core_mesh.DataplaneResource, xds_context.Resources) (interface{}, error)
 
 func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, _ *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (interface{}, error) {
-	var conf []api_common.PolicyConf
+	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		if len(matched.SingleItemRules.Rules) == 0 {
 			continue
@@ -977,13 +977,13 @@ func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolici
 	return api_common.PoliciesList{Policies: conf}, nil
 }
 
-func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (interface{}, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
 
-	var conf []api_common.PolicyConf
+	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		rctx := outbound.RootContext[interface{}](mesh, matched.ToRules.ResourceRules).
 			WithID(kri.NoSectionName(outboundKri)).
@@ -1005,7 +1005,7 @@ func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPol
 func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
 	inboundKri, err := kri.FromString(request.PathParameter("inbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
 	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
 	if len(inbounds) == 0 {
@@ -1016,7 +1016,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		Port:    inbounds[0].DataplanePort,
 	}
 
-	var conf []api_common.InboundPolicyConf
+	conf := []api_common.InboundPolicyConf{}
 	for _, matched := range matchedPolicies {
 		rules := matched.FromRules.InboundRules[inboundKey]
 		if len(rules) == 0 {
@@ -1026,6 +1026,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		var policyRules []api_common.PolicyRule
 		for _, rule := range rules {
 			policyRules = append(policyRules, api_common.PolicyRule{
+				Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
 				Conf: rule.Conf.GetDefault(),
 			})
 		}
@@ -1045,10 +1046,10 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
 
-	var routeConfs []api_common.RouteConf
+	routeConfs := []api_common.RouteConf{}
 	for _, matched := range matchedPolicies {
 		conf := matched.ToRules.ResourceRules.Compute(outboundKri, resources)
 		if conf == nil {
@@ -1086,14 +1087,14 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
 	routeKri, err := kri.FromString(request.PathParameter("route_kri"))
 	if err != nil {
-		return nil, err
+		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
 
-	var conf []api_common.PolicyConf
+	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		rctx := outbound.RootContext[interface{}](mesh, matched.ToRules.ResourceRules).
 			WithID(kri.NoSectionName(outboundKri)).
@@ -1111,7 +1112,7 @@ func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolici
 		})
 	}
 
-	return conf, nil
+	return api_common.PoliciesList{Policies: conf}, nil
 }
 
 func policyOriginsToKRIOrigins(policyType core_model.ResourceType, origins []core_model.ResourceMeta) []api_common.PolicyOrigin {
@@ -1121,7 +1122,7 @@ func policyOriginsToKRIOrigins(policyType core_model.ResourceType, origins []cor
 }
 
 func originToKRI(origin core_model.ResourceMeta, policyType core_model.ResourceType) api_common.PolicyOrigin {
-	return api_common.PolicyOrigin{Kri: kri.FromResourceMeta(origin, policyType, "").String()}
+	return api_common.PolicyOrigin{Kri: kri.FromResourceMeta(origin, policyType).String()}
 }
 
 func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {

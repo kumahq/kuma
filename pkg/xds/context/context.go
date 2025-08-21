@@ -2,14 +2,16 @@ package context
 
 import (
 	"encoding/base64"
-	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -34,6 +36,7 @@ type ConnectionInfo struct {
 type ControlPlaneContext struct {
 	CLACache        envoy.CLACache
 	Secrets         secrets.Secrets
+	IdentityManager providers.IdentityProviderManager
 	Zone            string
 	SystemNamespace string
 }
@@ -88,11 +91,12 @@ type MeshContext struct {
 	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
 	ReachableServicesGraph      ReachableServicesGraph
+	TrustsByTrustDomain         map[string][]*meshtrust_api.MeshTrust
 }
 
 type ServiceInformation struct {
 	TLSReadiness      bool
-	Protocol          core_mesh.Protocol
+	Protocol          core_meta.Protocol
 	IsExternalService bool
 }
 
@@ -101,23 +105,8 @@ type ReachableBackends map[kri.Identifier]bool
 // ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
-func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *kri.Identifier {
-	if len(labels) == 0 {
-		return nil
-	}
-	var oldestCreationTime *time.Time
-	var oldestTri *kri.Identifier
-	for _, tri := range mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifiersForLabels(resType, labels) {
-		resource := mc.GetServiceByKRI(tri).(core_model.Resource)
-		if resource != nil {
-			resCreationTime := resource.GetMeta().GetCreationTime()
-			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
-				oldestCreationTime = &resCreationTime
-				oldestTri = &tri
-			}
-		}
-	}
-	return oldestTri
+func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
+	return mc.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier(resType, labels)
 }
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
@@ -154,11 +143,11 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
-func (mc *MeshContext) GetServiceProtocol(serviceName string) core_mesh.Protocol {
+func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
 	if info, found := mc.ServicesInformation[serviceName]; found {
 		return info.Protocol
 	}
-	return core_mesh.ProtocolUnknown
+	return core_meta.ProtocolUnknown
 }
 
 func (mc *MeshContext) IsExternalService(serviceName string) bool {

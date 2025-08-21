@@ -238,6 +238,8 @@ components:
           type: object
           additionalProperties: true
           x-go-type: 'interface{}'
+        kri:
+          type: string
     RoutesList:
       type: object
       required: [ routes ]

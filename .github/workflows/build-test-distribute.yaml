@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
-    timeout-minutes: 30
+    timeout-minutes: 40
     runs-on: ubuntu-24.04
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
@@ -44,7 +44,7 @@ jobs:
         run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -61,7 +61,7 @@ jobs:
           gomemlimit=$((mem_total_bytes * 8 / 10))
           echo "GOMEMLIMIT=${gomemlimit}" >> $GITHUB_ENV
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec $gomemlimit)"
-      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+      - uses: jdx/mise-action@ca0c5fc9c8a8386dae8ba5d37608a083a307991c # v3.1.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
@@ -70,7 +70,7 @@ jobs:
           GOGC: "80" # run GC more aggressively
         with:
           args: --fix=false --verbose
-          version: v2.2.2
+          version: v2.4.0 # TODO: automate this version update via Renovate
       - name: Run clang-format style check for Protobuf
         uses: jidicula/clang-format-action@4726374d1aa3c6aecf132e5197e498979588ebc8 # v4.15.0
         with:
@@ -167,7 +167,7 @@ jobs:
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: "*sbom.{cyclonedx,spdx}.json"
@@ -175,7 +175,7 @@ jobs:
       - name: "Download binary artifact provenance"
         if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
         id: collect_provenance
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: ${{ github.event.repository.name }}.intoto.jsonl

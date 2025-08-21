@@ -179,7 +179,7 @@ func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, po
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
 		return errors.Wrap(err, "unable to get Namespace for Pod")
 	}
-	return r.createorUpdateBuiltinGatewayDataplane(ctx, pod, &ns)
+	return r.createOrUpdateBuiltinGatewayDataplane(ctx, pod, &ns)
 }
 
 func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {

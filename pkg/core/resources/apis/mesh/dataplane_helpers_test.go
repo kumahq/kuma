@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -631,48 +632,48 @@ var _ = Describe("Dataplane", func() {
 	_ = Describe("ParseProtocol()", func() {
 		type testCase struct {
 			tag      string
-			expected Protocol
+			expected core_meta.Protocol
 		}
 
 		DescribeTable("should parse protocol from a tag",
 			func(given testCase) {
-				Expect(ParseProtocol(given.tag)).To(Equal(given.expected))
+				Expect(core_meta.ParseProtocol(given.tag)).To(Equal(given.expected))
 			},
 			Entry("http", testCase{
 				tag:      "http",
-				expected: ProtocolHTTP,
+				expected: core_meta.ProtocolHTTP,
 			}),
 			Entry("tcp", testCase{
 				tag:      "tcp",
-				expected: ProtocolTCP,
+				expected: core_meta.ProtocolTCP,
 			}),
 			Entry("http2", testCase{
 				tag:      "http2",
-				expected: ProtocolHTTP2,
+				expected: core_meta.ProtocolHTTP2,
 			}),
 			Entry("grpc", testCase{
 				tag:      "grpc",
-				expected: ProtocolGRPC,
+				expected: core_meta.ProtocolGRPC,
 			}),
 			Entry("kafka", testCase{
 				tag:      "kafka",
-				expected: ProtocolKafka,
+				expected: core_meta.ProtocolKafka,
 			}),
 			Entry("mongo", testCase{
 				tag:      "mongo",
-				expected: ProtocolUnknown,
+				expected: core_meta.ProtocolUnknown,
 			}),
 			Entry("mysql", testCase{
 				tag:      "mysql",
-				expected: ProtocolMysql,
+				expected: core_meta.ProtocolMysql,
 			}),
 			Entry("unknown", testCase{
 				tag:      "unknown",
-				expected: ProtocolUnknown,
+				expected: core_meta.ProtocolUnknown,
 			}),
 			Entry("empty", testCase{
 				tag:      "",
-				expected: ProtocolUnknown,
+				expected: core_meta.ProtocolUnknown,
 			}),
 		)
 	})

@@ -49,3 +49,25 @@ func NullValue() Configurer[matcherv3.MetadataMatcher] {
 		return nil
 	}
 }
+
+func NewStringMatcher() *Builder[matcherv3.StringMatcher] {
+	return &Builder[matcherv3.StringMatcher]{}
+}
+
+func ExactMatcher(value string) Configurer[matcherv3.StringMatcher] {
+	return func(m *matcherv3.StringMatcher) error {
+		m.MatchPattern = &matcherv3.StringMatcher_Exact{
+			Exact: value,
+		}
+		return nil
+	}
+}
+
+func PrefixMatcher(value string) Configurer[matcherv3.StringMatcher] {
+	return func(m *matcherv3.StringMatcher) error {
+		m.MatchPattern = &matcherv3.StringMatcher_Prefix{
+			Prefix: value,
+		}
+		return nil
+	}
+}

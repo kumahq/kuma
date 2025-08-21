@@ -1,325 +1,206 @@
 package egress
 
 import (
-	"context"
+	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
-type ExternalServicesGenerator struct{}
-
-// Generate will generate envoy resources for one mesh (when mTLS enabled)
-func (g *ExternalServicesGenerator) Generate(
-	ctx context.Context,
-	xdsCtx xds_context.Context,
+func genExternalResources(
 	proxy *core_xds.Proxy,
-	listenerBuilder *envoy_listeners.ListenerBuilder,
-	meshResources *core_xds.MeshResources,
-) (*core_xds.ResourceSet, error) {
-	resources := core_xds.NewResourceSet()
-	apiVersion := proxy.APIVersion
-	endpointMap := meshResources.EndpointMap
-	localResources := xds_context.Resources{MeshLocalResources: meshResources.Resources}
-	destinations := zoneproxy.BuildMeshDestinations(
-		nil,
-		localResources,
-		nil,
-		nil,
-		localResources.MeshExternalServices().Items,
-		"",
-		xdsCtx.Mesh.ResolveResourceIdentifier,
-	)
-	services := g.buildServices(endpointMap)
+	resources *core_xds.MeshResources,
+	secretsTracker core_xds.SecretsTracker,
+) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error) {
+	rs := core_xds.NewResourceSet()
 
-	g.addFilterChains(
-		apiVersion,
-		proxy.InternalAddresses,
-		destinations,
-		endpointMap,
-		meshResources,
-		listenerBuilder,
-		services,
-		proxy.SecretsTracker,
-	)
+	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
-	cds, err := g.generateCDS(
-		meshResources.Mesh.GetMeta().GetName(),
-		apiVersion,
-		services,
-		endpointMap,
-		proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6(),
-		proxy.Metadata.GetSystemCaPath(),
-	)
-	if err != nil {
-		return nil, err
+	for _, cluster := range getExternalServicesClusters(proxy, resources) {
+		filterChainBuilders = append(
+			filterChainBuilders,
+			buildExternalServiceFilterChain(proxy, resources, secretsTracker, cluster),
+		)
+
+		cds, err := genExternalServicesCDS(proxy, resources.EndpointMap[cluster.Service()], cluster)
+		if err != nil {
+			return nil, nil, err
+		}
+		rs.Add(cds)
 	}
-	resources.Add(cds...)
 
-	return resources, nil
+	return rs, filterChainBuilders, nil
 }
 
-func (*ExternalServicesGenerator) generateCDS(
-	meshName string,
-	apiVersion core_xds.APIVersion,
-	services map[string]bool,
-	endpointMap core_xds.EndpointMap,
-	isIPV6 bool,
-	systemCaPath string,
-) ([]*core_xds.Resource, error) {
-	var resources []*core_xds.Resource
+func getExternalServicesClusters(
+	proxy *core_xds.Proxy,
+	resources *core_xds.MeshResources,
+) []envoy_common.Cluster {
+	svcAcc := envoy_common.NewServicesAccumulator(nil)
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
+	destinations := zoneproxy.BuildMeshDestinations(
+		nil,
+		"",
+		localResources,
+		localResources.MeshExternalServices(),
+	)
 
-	for serviceName := range services {
-		endpoints := endpointMap[serviceName]
+	meshName := resources.Mesh.GetMeta().GetName()
+	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
+	sniUsed := map[string]struct{}{}
 
-		if len(endpoints) == 0 {
-			log.Info("no endpoints for service", "serviceName", serviceName)
+	for _, es := range resources.ExternalServices {
+		esName := es.Spec.GetService()
+		endpoints := resources.EndpointMap[esName]
 
+		if len(endpoints) == 0 || !endpoints[0].IsExternalService() {
 			continue
 		}
 
-		var clusterBuilder *envoy_clusters.ClusterBuilder
-		isMes := isMeshExternalService(endpoints)
-		if isMes {
-			clusterBuilder = envoy_clusters.NewClusterBuilder(apiVersion, serviceName).
-				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMes, endpoints...)).
-				Configure(
-					envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCaPath, true),
-				)
-		} else {
+		for _, dest := range slices.Concat(destinations.KumaIoServices[esName], matchAll) {
+			destTags := dest.WithTags("mesh", meshName)
+
+			sni := tls.SNIFromTags(destTags.WithTags(mesh_proto.ServiceTag, esName))
+			if _, ok := sniUsed[sni]; ok {
+				continue
+			}
+
+			sniUsed[sni] = struct{}{}
+
 			// There is a case where multiple meshes contain services with
 			// the same names, so we cannot use just "serviceName" as a cluster
 			// name as we would overwrite some clusters with the latest one
-			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-			clusterBuilder = envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
-				Configure(envoy_clusters.ProvidedEndpointCluster(
-					isIPV6,
-					endpoints...,
-				)).
-				Configure(envoy_clusters.ClientSideTLS(endpoints))
-		}
-		clusterBuilder.
-			Configure(envoy_clusters.DefaultTimeout())
+			cluster := xds.NewClusterBuilder().
+				WithName(envoy_names.GetMeshClusterName(meshName, esName)).
+				WithService(esName).
+				WithSNI(sni).
+				WithExternalService(true).
+				WithTags(destTags).
+				Build()
 
-		switch endpoints[0].Protocol() {
-		case core_mesh.ProtocolHTTP:
-			clusterBuilder.Configure(envoy_clusters.Http())
-		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-			clusterBuilder.Configure(envoy_clusters.Http2())
-		}
-
-		cluster, err := clusterBuilder.Build()
-		if err != nil {
-			return nil, err
-		}
-
-		resource := &core_xds.Resource{
-			Name:     cluster.GetName(),
-			Origin:   OriginEgress,
-			Resource: cluster,
-		}
-
-		if isMes {
-			resource.ResourceOrigin = endpoints[0].ExternalService.OwnerResource
-			resource.Protocol = endpoints[0].ExternalService.Protocol
-		}
-
-		resources = append(resources, resource)
-	}
-
-	return resources, nil
-}
-
-func (*ExternalServicesGenerator) buildServices(
-	endpointMap core_xds.EndpointMap,
-) map[string]bool {
-	services := map[string]bool{}
-
-	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 && endpoints[0].IsExternalService() {
-			services[serviceName] = true
+			svcAcc.Add(cluster)
 		}
 	}
 
-	return services
-}
-
-func (g *ExternalServicesGenerator) addFilterChains(
-	apiVersion core_xds.APIVersion,
-	internalAddresses []core_xds.InternalAddress,
-	meshDestinations zoneproxy.MeshDestinations,
-	endpointMap core_xds.EndpointMap,
-	meshResources *core_xds.MeshResources,
-	listenerBuilder *envoy_listeners.ListenerBuilder,
-	services map[string]bool,
-	secretsTracker core_xds.SecretsTracker,
-) {
-	meshName := meshResources.Mesh.GetMeta().GetName()
-	sniUsed := map[string]bool{}
-	esNames := []string{}
-	for _, es := range meshResources.ExternalServices {
-		esNames = append(esNames, es.Spec.GetService())
-	}
-
-	for _, esName := range esNames {
-		if !services[esName] {
+	for _, ref := range destinations.BackendRefs {
+		endpoints := resources.EndpointMap[ref.LegacyServiceName]
+		if _, ok := sniUsed[ref.SNI]; ok || len(endpoints) == 0 || !endpoints[0].IsExternalService() {
 			continue
 		}
-		endpoints := endpointMap[esName]
-		destinations := meshDestinations.KumaIoServices[esName]
-		destinations = append(destinations, meshDestinations.KumaIoServices[mesh_proto.MatchAllTag]...)
-		for _, destination := range destinations {
-			meshDestination := destination.
-				WithTags(mesh_proto.ServiceTag, esName).
-				WithTags("mesh", meshName)
 
-			sni := tls.SNIFromTags(meshDestination)
-			if sniUsed[sni] {
-				continue
-			}
+		sniUsed[ref.SNI] = struct{}{}
 
-			sniUsed[sni] = true
-			g.configureFilterChain(
-				apiVersion,
-				internalAddresses,
-				esName,
-				sni,
-				meshName,
-				endpoints,
-				meshDestination,
-				meshResources,
-				secretsTracker,
-				listenerBuilder,
-			)
-		}
-	}
-
-	for _, mes := range meshDestinations.BackendRefs {
-		if !services[mes.DestinationName] {
-			return
-		}
-		endpoints := endpointMap[mes.DestinationName]
-		if sniUsed[mes.SNI] {
-			continue
-		}
-		sniUsed[mes.SNI] = true
-		relevantTags := tags.Tags{}
-		g.configureFilterChain(
-			apiVersion,
-			internalAddresses,
-			mes.DestinationName,
-			mes.SNI,
-			meshName,
-			endpoints,
-			relevantTags,
-			meshResources,
-			secretsTracker,
-			listenerBuilder,
+		clusterName := naming.GetNameOrFallback(
+			unifiedNaming,
+			ref.Resource().String(),
+			ref.LegacyServiceName,
 		)
+
+		cluster := xds.NewClusterBuilder().
+			WithName(clusterName).
+			WithService(ref.LegacyServiceName).
+			WithSNI(ref.SNI).
+			WithExternalService(true).
+			Build()
+
+		svcAcc.AddBackendRef(&ref.ResolvedBackendRef, cluster)
 	}
+
+	return svcAcc.Services().Clusters()
 }
 
-func (*ExternalServicesGenerator) configureFilterChain(
-	apiVersion core_xds.APIVersion,
-	internalAddresses []core_xds.InternalAddress,
-	esName string,
-	sni string,
-	meshName string,
+func genExternalServicesCDS(
+	proxy *core_xds.Proxy,
 	endpoints []core_xds.Endpoint,
-	meshDestination tags.Tags,
-	meshResources *core_xds.MeshResources,
-	secretsTracker core_xds.SecretsTracker,
-	listenerBuilder *envoy_listeners.ListenerBuilder,
-) {
-	// There is a case where multiple meshes contain services with
-	// the same names, so we cannot use just "serviceName" as a cluster
-	// name as we would overwrite some clusters with the latest one
-	clusterName := envoy_names.GetMeshClusterName(meshName, esName)
-	if isMeshExternalService(endpoints) {
-		clusterName = esName
-	}
+	cluster envoy_common.Cluster,
+) (*core_xds.Resource, error) {
+	ipv6 := proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6()
+	systemCAPath := proxy.Metadata.GetSystemCaPath()
 
-	cluster := envoy_common.NewCluster(
-		envoy_common.WithName(clusterName),
-		envoy_common.WithService(esName),
-		envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
-		envoy_common.WithExternalService(true),
-	)
-
-	filterChainName := envoy_names.GetEgressFilterChainName(esName, meshName)
-	if isMeshExternalService(endpoints) {
-		filterChainName = esName
-	}
-
-	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, filterChainName).Configure(
-		envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker, nil, nil),
-		envoy_listeners.MatchTransportProtocol("tls"),
-		envoy_listeners.MatchServerNames(sni),
-		envoy_listeners.NetworkRBAC(
-			esName,
-			// Zone Egress will configure these filter chains only for
-			// meshes with mTLS enabled, so we can safely pass here true
-			true,
-			meshResources.ExternalServicePermissionMap[esName],
-		),
-	)
 	protocol := endpoints[0].Protocol()
+	isMES := endpoints[0].IsMeshExternalService()
 
-	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-		routes := envoy_common.Routes{}
-
-		for _, rl := range meshResources.ExternalServiceRateLimits[esName] {
-			if rl.Spec.GetConf().GetHttp() == nil {
-				continue
-			}
-
-			routes = append(routes, envoy_common.NewRoute(
-				envoy_common.WithCluster(cluster),
-				envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-				envoy_common.WithRateLimit(rl.Spec),
-			))
-		}
-
-		// Add the default fall-back route
-		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
-
-		routeConfigName := envoy_names.GetOutboundRouteName(esName)
-		if isMeshExternalService(endpoints) {
-			routeConfigName = esName
-		}
-
-		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(esName, false, internalAddresses)).
-			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
-			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-				Name:    routeConfigName,
-				Service: esName,
-				Routes:  routes,
-				DpTags:  nil,
-			}))
-	default:
-		filterChainBuilder.Configure(
-			envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster),
-		)
+	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, cluster.Name()).
+		Configure(envoy_clusters.DefaultTimeout()).
+		ConfigureIf(core_meta.IsHTTP(protocol), envoy_clusters.Http()).
+		ConfigureIf(core_meta.IsHTTP2Based(protocol), envoy_clusters.Http2()).
+		ConfigureIf(isMES, envoy_clusters.ProvidedCustomEndpointCluster(ipv6, true, endpoints...)).
+		ConfigureIf(isMES, envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCAPath, true)).
+		ConfigureIf(!isMES, envoy_clusters.ProvidedEndpointCluster(ipv6, endpoints...)).
+		ConfigureIf(!isMES, envoy_clusters.ClientSideTLS(endpoints)).
+		Build()
+	if err != nil {
+		return nil, err
 	}
-	listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+
+	return &core_xds.Resource{
+		Name:           resource.GetName(),
+		Origin:         metadata.OriginEgress,
+		Resource:       resource,
+		Protocol:       endpoints[0].ExternalService.Protocol,
+		ResourceOrigin: endpoints[0].ExternalService.OwnerResource,
+	}, nil
 }
 
-func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
-	if len(endpoints) > 0 {
-		return endpoints[0].IsMeshExternalService()
+func buildExternalServiceFilterChain(
+	proxy *core_xds.Proxy,
+	resources *core_xds.MeshResources,
+	secretsTracker core_xds.SecretsTracker,
+	cluster envoy_common.Cluster,
+) *envoy_listeners.FilterChainBuilder {
+	meshName := resources.Mesh.GetMeta().GetName()
+	endpoints := resources.EndpointMap[cluster.Service()]
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	getName := naming.GetNameOrFallbackFunc(endpoints[0].IsMeshExternalService)
+	esName := naming.GetNameOrFallback(unifiedNaming, cluster.Name(), cluster.Service())
+	filterChainName := getName(esName, envoy_names.GetEgressFilterChainName(esName, meshName))
+	routeConfigName := getName(esName, envoy_names.GetOutboundRouteName(esName))
+	virtualHostName := esName
+
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
+		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming)).
+		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
+		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
+		// Zone Egress will configure these filter chains only for meshes with mTLS enabled, so we can safely pass here true
+		Configure(envoy_listeners.NetworkRBAC(esName, true, resources.ExternalServicePermissionMap[esName]))
+
+	// Protocol is not HTTP based, so we can use TCP proxy instead of HTTP connection manager and return early
+	if !core_meta.IsHTTPBased(endpoints[0].Protocol()) {
+		return filterChain.Configure(envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster))
 	}
-	return false
+
+	var routes envoy_common.Routes
+	for _, rl := range resources.ExternalServiceRateLimits[esName] {
+		if rl.Spec.GetConf().GetHttp() == nil {
+			continue
+		}
+
+		routes = append(routes, envoy_common.NewRoute(
+			envoy_common.WithCluster(cluster),
+			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
+			envoy_common.WithRateLimit(rl.Spec),
+		))
+	}
+	// Add the default fall-back route
+	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+
+	return filterChain.
+		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses)).
+		Configure(envoy_listeners.FaultInjection(resources.ExternalServiceFaultInjections[esName]...)).
+		Configure(envoy_listeners.RateLimit(resources.ExternalServiceRateLimits[esName])).
+		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
 }

@@ -24,12 +24,13 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/metadata"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/dynconf"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var (
@@ -38,7 +39,6 @@ var (
 )
 
 const (
-	OriginOpenTelemetry          = "open-telemetry"
 	PrometheusListenerName       = "_kuma:metrics:prometheus"
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
@@ -106,12 +106,22 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	}
 
 	for _, backend := range prometheusBackends {
+		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
+		systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_prometheus", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
+
 		configurer := &plugin_xds.PrometheusConfigurer{
-			Backend:         backend,
-			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
+			Backend: backend,
+			ListenerName: getNameOrDefault(
+				systemName,
+				fmt.Sprintf("%s:%s", PrometheusListenerName, backendName),
+			),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-			StatsPath:       PrometheusDataplaneStatsPath,
+			ClusterName: getNameOrDefault(
+				systemName,
+				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
+			),
+			StatsPath: PrometheusDataplaneStatsPath,
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
@@ -120,7 +130,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     cluster.GetName(),
-			Origin:   generator.OriginPrometheus,
+			Origin:   generator_metadata.OriginPrometheus,
 			Resource: cluster,
 		})
 
@@ -130,7 +140,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     listener.GetName(),
-			Origin:   generator.OriginPrometheus,
+			Origin:   generator_metadata.OriginPrometheus,
 			Resource: listener,
 		})
 	}
@@ -152,13 +162,15 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	if openTelemetryBackend == nil {
 		return nil
 	}
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
 	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
 	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
+	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
 		Endpoint:     endpoint,
-		ListenerName: envoy_names.GetOpenTelemetryListenerName(backendName),
-		ClusterName:  envoy_names.GetOpenTelemetryClusterName(backendName),
+		ListenerName: getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
+		ClusterName:  getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
 	}
@@ -169,7 +181,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	}
 	rs.Add(&core_xds.Resource{
 		Name:     cluster.GetName(),
-		Origin:   OriginOpenTelemetry,
+		Origin:   metadata.OriginOpenTelemetry,
 		Resource: cluster,
 	})
 
@@ -179,7 +191,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	}
 	rs.Add(&core_xds.Resource{
 		Name:     listener.GetName(),
-		Origin:   OriginOpenTelemetry,
+		Origin:   metadata.OriginOpenTelemetry,
 		Resource: listener,
 	})
 

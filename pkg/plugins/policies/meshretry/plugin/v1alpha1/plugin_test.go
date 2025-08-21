@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -39,7 +40,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshRetry", func() {
@@ -78,10 +79,10 @@ var _ = Describe("MeshRetry", func() {
 		context := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
-			AddServiceProtocol("http-service", core_mesh.ProtocolHTTP).
-			AddServiceProtocol("tcp-service", core_mesh.ProtocolTCP).
-			AddServiceProtocol("grpc-service", core_mesh.ProtocolGRPC).
-			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("http-service", core_meta.ProtocolHTTP).
+			AddServiceProtocol("tcp-service", core_meta.ProtocolTCP).
+			AddServiceProtocol("grpc-service", core_meta.ProtocolGRPC).
+			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -132,7 +133,7 @@ var _ = Describe("MeshRetry", func() {
 		Entry("http retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: httpListenerWithSimpleRoute(10001),
 			}},
 			toRules: core_rules.ToRules{
@@ -148,7 +149,7 @@ var _ = Describe("MeshRetry", func() {
 		Entry("http retry 0 numRetries", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: httpListenerWithSimpleRoute(10001),
 			}},
 			toRules: core_rules.ToRules{
@@ -169,7 +170,7 @@ var _ = Describe("MeshRetry", func() {
 		Entry("grpc retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: httpListenerWithSimpleRoute(10002),
 			}},
 			toRules: core_rules.ToRules{
@@ -217,7 +218,7 @@ var _ = Describe("MeshRetry", func() {
 		Entry("grpc retry 0 numRetries", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: httpListenerWithSimpleRoute(10002),
 			}},
 			toRules: core_rules.ToRules{
@@ -241,7 +242,7 @@ var _ = Describe("MeshRetry", func() {
 		Entry("tcp retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
+				Origin:   metadata.OriginOutbound,
 				Resource: tcpListener(10003),
 			}},
 			toRules: core_rules.ToRules{
@@ -262,7 +263,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:     "outbound",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: httpListenerWithSeveralRoutes(10001),
 				},
 			},
@@ -353,21 +354,21 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{
 				{
 					Name:           "outbound",
-					Origin:         generator.OriginOutbound,
-					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, "")),
-					ResourceOrigin: pointer.To(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, "")),
-					Protocol:       core_mesh.ProtocolHTTP,
+					Origin:         metadata.OriginOutbound,
+					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
+					ResourceOrigin: kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType),
+					Protocol:       core_meta.ProtocolHTTP,
 				},
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType, ""): {
+					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType): {
 						Resource: testMeshHTTPRouteMeta(),
 						Conf: []interface{}{
 							testFirstHTTPRetryConf(),
 						},
 					},
-					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType, ""): {
+					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType): {
 						Resource: testMeshServiceMeta(),
 						Conf: []interface{}{
 							testSecondHTTPRetryConf(),
@@ -380,10 +381,10 @@ var _ = Describe("MeshRetry", func() {
 		Entry("http retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
-				Origin:         generator.OriginOutbound,
+				Origin:         metadata.OriginOutbound,
 				Resource:       httpListenerWithSimpleRoute(10001),
-				ResourceOrigin: &backendMeshServiceIdentifier,
-				Protocol:       core_mesh.ProtocolHTTP,
+				ResourceOrigin: backendMeshServiceIdentifier,
+				Protocol:       core_meta.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
@@ -399,10 +400,10 @@ var _ = Describe("MeshRetry", func() {
 		Entry("http retry mesh external service", testCase{
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
-				Origin:         generator.OriginOutbound,
+				Origin:         metadata.OriginOutbound,
 				Resource:       httpListenerWithSimpleRoute(10001),
-				ResourceOrigin: &backendMeshExternalServiceIdentifier,
-				Protocol:       core_mesh.ProtocolHTTP,
+				ResourceOrigin: backendMeshExternalServiceIdentifier,
+				Protocol:       core_meta.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{

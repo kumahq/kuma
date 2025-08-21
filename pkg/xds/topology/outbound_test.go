@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -213,7 +214,7 @@ var _ = Describe("TrafficRoute", func() {
 			externalServices := &core_mesh.ExternalServiceResourceList{}
 
 			// when
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader)
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled())
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -303,7 +304,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader)
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader, given.mesh.MTLSEnabled())
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
 				)
@@ -1311,7 +1312,7 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     meshexternalservice_api.HostnameGeneratorType,
 								Port:     10000,
-								Protocol: core_mesh.ProtocolHTTP,
+								Protocol: core_meta.ProtocolHTTP,
 							},
 							Endpoints: &[]meshexternalservice_api.Endpoint{
 								{
@@ -1364,7 +1365,7 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     meshexternalservice_api.HostnameGeneratorType,
 								Port:     10000,
-								Protocol: core_mesh.ProtocolTCP,
+								Protocol: core_meta.ProtocolTCP,
 							},
 							Endpoints: &[]meshexternalservice_api.Endpoint{
 								{
@@ -1418,12 +1419,12 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol:                 core_mesh.ProtocolTCP,
+								Protocol:                 core_meta.ProtocolTCP,
 								TLSEnabled:               true,
 								FallbackToSystemCa:       true,
 								SkipHostnameVerification: true,
 								SANs:                     []core_xds.SAN{},
-								OwnerResource: &kri.Identifier{
+								OwnerResource: kri.Identifier{
 									ResourceType: meshexternalservice_api.MeshExternalServiceType,
 									Mesh:         "default",
 									Name:         "another-mes",
@@ -1438,7 +1439,7 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol:                 core_mesh.ProtocolHTTP,
+								Protocol:                 core_meta.ProtocolHTTP,
 								TLSEnabled:               true,
 								FallbackToSystemCa:       true,
 								CaCert:                   []byte("ca"),
@@ -1459,7 +1460,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								MinTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_2),
 								MaxTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_3),
-								OwnerResource: &kri.Identifier{
+								OwnerResource: kri.Identifier{
 									ResourceType: meshexternalservice_api.MeshExternalServiceType,
 									Mesh:         "default",
 									Name:         "example-mes",
@@ -1480,7 +1481,7 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     meshexternalservice_api.HostnameGeneratorType,
 								Port:     10000,
-								Protocol: core_mesh.ProtocolHTTP,
+								Protocol: core_meta.ProtocolHTTP,
 							},
 							Endpoints: &[]meshexternalservice_api.Endpoint{
 								{
@@ -1542,8 +1543,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
 					samples.MeshMultiZoneServiceBackendBuilder().
-						AddMatchedMeshServiceName(kri.From(samples.MeshServiceBackend(), "")).
-						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend(), "")).
+						AddMatchedMeshServiceName(kri.From(samples.MeshServiceBackend())).
+						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend())).
 						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
@@ -1664,7 +1665,7 @@ var _ = Describe("TrafficRoute", func() {
 								Match: meshexternalservice_api.Match{
 									Type:     meshexternalservice_api.HostnameGeneratorType,
 									Port:     443,
-									Protocol: core_mesh.ProtocolTCP,
+									Protocol: core_meta.ProtocolTCP,
 								},
 								Endpoints: &[]meshexternalservice_api.Endpoint{
 									{
@@ -1714,8 +1715,8 @@ var _ = Describe("TrafficRoute", func() {
 								Weight: 1,
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
-									Protocol:   core_mesh.ProtocolTCP,
-									OwnerResource: &kri.Identifier{
+									Protocol:   core_meta.ProtocolTCP,
+									OwnerResource: kri.Identifier{
 										ResourceType: "MeshExternalService",
 										Mesh:         "default",
 										Name:         "example",
@@ -1733,7 +1734,7 @@ var _ = Describe("TrafficRoute", func() {
 								Match: meshexternalservice_api.Match{
 									Type:     meshexternalservice_api.HostnameGeneratorType,
 									Port:     443,
-									Protocol: core_mesh.ProtocolTCP,
+									Protocol: core_meta.ProtocolTCP,
 								},
 								Endpoints: &[]meshexternalservice_api.Endpoint{
 									{
@@ -1749,7 +1750,7 @@ var _ = Describe("TrafficRoute", func() {
 								Match: meshexternalservice_api.Match{
 									Type:     meshexternalservice_api.HostnameGeneratorType,
 									Port:     443,
-									Protocol: core_mesh.ProtocolTCP,
+									Protocol: core_meta.ProtocolTCP,
 								},
 								Endpoints: &[]meshexternalservice_api.Endpoint{
 									{
@@ -1784,8 +1785,8 @@ var _ = Describe("TrafficRoute", func() {
 								Weight: 1,
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
-									Protocol:   core_mesh.ProtocolTCP,
-									OwnerResource: &kri.Identifier{
+									Protocol:   core_meta.ProtocolTCP,
+									OwnerResource: kri.Identifier{
 										ResourceType: "MeshExternalService",
 										Mesh:         "default",
 										Name:         "example",

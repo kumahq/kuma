@@ -59,6 +59,20 @@
         "kumahq/envoy-builds"
       ],
       "commitMessageTopic": "envoy"
+    },
+    {
+      "description": "Disable pinning of openapi-tool which won't work and always will result in pailures. This dependency is managed by the custom regex manager for Makefiles",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "kumahq/openapi-tool"
+      ],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest"
+      ],
+      "enabled": false
     }
   ]
 }

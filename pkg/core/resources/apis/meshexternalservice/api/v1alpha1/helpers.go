@@ -1,13 +1,14 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {
@@ -34,7 +35,7 @@ func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
 		return xds_types.Outbounds{{
 			Address:  t.Status.VIP.IP,
 			Port:     uint32(t.Spec.Match.Port),
-			Resource: pointer.To(kri.From(t, "")),
+			Resource: kri.WithSectionName(kri.From(t), t.Spec.Match.GetName()),
 		}}
 	}
 	return nil
@@ -63,14 +64,21 @@ func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bo
 }
 
 func (m Match) GetName() string {
-	// MES can only have one port so there's no point in naming it.
-	return ""
+	return fmt.Sprintf("%d", m.Port)
 }
 
 func (m Match) GetValue() int32 {
 	return m.Port
 }
 
-func (m Match) GetProtocol() core_mesh.Protocol {
+func (m Match) GetProtocol() core_meta.Protocol {
 	return m.Protocol
+}
+
+func (l *MeshExternalServiceResourceList) GetDestinations() []core.Destination {
+	var result []core.Destination
+	for _, item := range l.Items {
+		result = append(result, item)
+	}
+	return result
 }

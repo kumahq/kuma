@@ -8,11 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -90,7 +91,7 @@ func generateEnvoyRouteEntries(
 
 		entries = append(
 			entries,
-			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), impactfulMeta(rule.Origin), resolver),
+			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), impactfulOriginFromMeta(rule.Origin), resolver),
 		)
 	}
 
@@ -101,7 +102,7 @@ func makeTcpRouteEntry(
 	meshCtx xds_context.MeshContext,
 	name string,
 	rule api.Rule,
-	origin core_model.ResourceMeta,
+	origin common.Origin,
 	resolver resolve.LabelResourceIdentifierResolver,
 ) route.Entry {
 	entry := route.Entry{
@@ -110,13 +111,13 @@ func makeTcpRouteEntry(
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
-		ref := resolve.BackendRefOrNil(origin, b, resolver)
+		ref := resolve.BackendRefOrNil(kri.FromResourceMeta(origin.Resource, api.MeshTCPRouteType), b, resolver)
 		if ref.ReferencesRealResource() {
 			if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
 				dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
 			}
 		}
-		if ref == nil || ref.ResourceOrNil() == nil {
+		if ref == nil || ref.Resource().IsEmpty() {
 			var ok bool
 			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
 			if !ok {
@@ -129,7 +130,7 @@ func makeTcpRouteEntry(
 			BackendRef:    ref,
 			Weight:        uint32(*b.Weight),
 			Policies:      nil,
-			RouteProtocol: core_mesh.ProtocolTCP,
+			RouteProtocol: core_meta.ProtocolTCP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -48,9 +49,7 @@ func (f *FaultInjectionResource) validateDestinations() validators.ValidationErr
 		RequireAtLeastOneSelector: true,
 		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
-			ExtraTagsValidators: []TagsValidatorFunc{
-				ProtocolValidator(ProtocolHTTP, ProtocolHTTP2, ProtocolGRPC),
-			},
+			ExtraTagsValidators:  []TagsValidatorFunc{ProtocolValidator(core_meta.HTTPBasedProtocols)},
 		},
 	})
 }

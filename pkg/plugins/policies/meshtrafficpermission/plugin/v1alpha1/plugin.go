@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -19,7 +20,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var (
@@ -50,7 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	if !ctx.Mesh.Resource.MTLSEnabled() {
+	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
@@ -59,10 +60,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
-		if res.Origin != generator.OriginInbound {
+		if res.Origin != metadata.OriginInbound {
 			continue
 		}
-
 		listener := res.Resource.(*envoy_listener.Listener)
 		dpAddress := listener.GetAddress().GetSocketAddress()
 
@@ -70,28 +70,54 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			Address: dpAddress.GetAddress(),
 			Port:    dpAddress.GetPortValue(),
 		}
-		rules, ok := mtp.FromRules.Rules[key]
-		if !ok {
-			if len(proxy.Policies.TrafficPermissions) == 0 {
-				rules = p.denyRules()
-			} else {
-				continue
-			}
-		}
 
-		configurer := &v3.RBACConfigurer{
-			StatsName: res.Name,
-			Rules:     rules,
-			Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
-		}
-		for _, filterChain := range listener.FilterChains {
-			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-				// we only want to configure RBAC on listeners protected by Kuma's TLS
-				continue
-			}
-			if err := configurer.Configure(filterChain); err != nil {
+		inboundRules, ok := mtp.FromRules.InboundRules[key]
+		if !ok || len(inboundRules) == 0 {
+			err := p.configureLegacyRules(mtp, key, listener, res, proxy)
+			if err != nil {
 				return err
 			}
+		} else {
+			configurer := &v3.RBACConfigurer{
+				StatsName:    res.Name,
+				InboundRules: inboundRules,
+			}
+			for _, filterChain := range listener.FilterChains {
+				if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+					// we only want to configure RBAC on listeners protected by Kuma's TLS
+					continue
+				}
+				if err := configurer.Configure(filterChain); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
+	rules, ok := mtp.FromRules.Rules[key]
+	if !ok {
+		if len(proxy.Policies.TrafficPermissions) == 0 {
+			rules = p.denyRules()
+		} else {
+			return nil
+		}
+	}
+
+	configurer := &v3.LegacyRBACConfigurer{
+		StatsName: resource.Name,
+		Rules:     rules,
+		Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
+	}
+	for _, filterChain := range listener.FilterChains {
+		if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+			// we only want to configure RBAC on listeners protected by Kuma's TLS
+			continue
+		}
+		if err := configurer.Configure(filterChain); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -120,6 +146,7 @@ func (p plugin) allowRules() core_rules.Rules {
 }
 
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshName := resource.Mesh.GetMeta().GetName()
@@ -146,7 +173,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match))
+			mesNames = append(mesNames, destinationname.MustResolve(unifiedNaming, meshExtSvc, meshExtSvc.Spec.Match))
 		}
 
 		for _, esName := range esNames {
@@ -169,7 +196,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			}
 
 			for _, rule := range rules.Rules {
-				configurer := &v3.RBACConfigurer{
+				configurer := &v3.LegacyRBACConfigurer{
 					StatsName: listeners.Egress.Name,
 					Rules:     rule,
 					Mesh:      meshName,
@@ -196,7 +223,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			}
 
 			for _, rule := range rules.Rules {
-				configurer := &v3.RBACConfigurer{
+				configurer := &v3.LegacyRBACConfigurer{
 					StatsName: listeners.Egress.Name,
 					Rules:     rule,
 					Mesh:      meshName,

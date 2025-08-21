@@ -8,7 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
 )
 
@@ -29,7 +29,7 @@ var _ = Describe("Cluster modifications", func() {
 				Expect(err).ToNot(HaveOccurred())
 				set.Add(&core_xds.Resource{
 					Name:     cluster.Name,
-					Origin:   generator.OriginInbound,
+					Origin:   metadata.OriginInbound,
 					Resource: cluster,
 				})
 			}

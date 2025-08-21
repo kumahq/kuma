@@ -138,6 +138,12 @@ const (
 	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
 	// Available value is DELTA_GRPC
 	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
+
+	// KumaServiceAccount specifies the ServiceAccount associated with the Pod.
+	KumaServiceAccount = "k8s.kuma.io/service-account"
+
+	// KumaSpireSupport allows injecting Spire-related volumes into a single Pod.
+	KumaSpireSupport = "k8s.kuma.io/spire-support"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

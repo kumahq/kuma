@@ -738,11 +738,11 @@ kumactl:
 kubectl:
   image:
     # -- The kubectl image registry
-    registry: docker.io
+    registry: registry.k8s.io
     # -- The kubectl image repository
-    repository: bitnami/kubectl
+    repository: kubectl
     # -- The kubectl image tag
-    tag: "1.33.3@sha256:cd354d5b25562b195b277125439c23e4046902d7f1abc0dc3c75aad04d298c17"
+    tag: v1.33.4@sha256:261a9ed843eb68e3d50da132245e2221d75ca19504130e47bd32788c0ff339a0
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -929,8 +929,10 @@ plugins:
   resources:
     hostnamegenerators: true
     meshexternalservices: true
+    meshidentities: true
     meshmultizoneservices: true
     meshservices: true
+    meshtrusts: true
   policies:
     meshaccesslogs: true
     meshcircuitbreakers: true

@@ -13,14 +13,14 @@ jobs:
   release:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: "master"
           fetch-depth: 0
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+      - uses: jdx/mise-action@ca0c5fc9c8a8386dae8ba5d37608a083a307991c # v3.1.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
@@ -48,7 +48,7 @@ jobs:
           fi
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

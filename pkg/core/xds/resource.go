@@ -8,10 +8,12 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/xds/origin"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -20,10 +22,10 @@ type ResourcePayload = envoy_types.Resource
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
 	Name           string
-	Origin         string
+	Origin         origin.Origin
 	Resource       ResourcePayload
-	ResourceOrigin *kri.Identifier
-	Protocol       core_mesh.Protocol
+	ResourceOrigin kri.Identifier
+	Protocol       core_meta.Protocol
 }
 
 // ResourceList represents a list of generic xDS resources.
@@ -121,6 +123,9 @@ func (s *ResourceSet) Empty() bool {
 
 func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	for _, resource := range resources {
+		if resource == nil {
+			continue
+		}
 		if s.typeToNamesIndex[s.typeName(resource.Resource)] == nil {
 			s.typeToNamesIndex[s.typeName(resource.Resource)] = map[string]*Resource{}
 		}
@@ -176,20 +181,16 @@ func (s *ResourceSet) List() ResourceList {
 }
 
 func NonMeshExternalService(r *Resource) bool {
-	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType)
+	return r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType
 }
 
 func NonGatewayResources(r *Resource) bool {
-	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.Origin != "gateway")
+	return r.ResourceOrigin.IsEmpty() || r.Origin != metadata.OriginGateway
 }
 
 func HasAssociatedServiceResource(r *Resource) bool {
-	if r.ResourceOrigin == nil {
-		return false
-	}
 	switch r.ResourceOrigin.ResourceType {
-	case
-		meshservice_api.MeshServiceType,
+	case meshservice_api.MeshServiceType,
 		meshexternalservice_api.MeshExternalServiceType,
 		meshmultizoneservice_api.MeshMultiZoneServiceType:
 		return true
@@ -209,11 +210,8 @@ func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[kri.Ide
 					add = false
 				}
 			}
-			if add {
-				if resource.ResourceOrigin == nil {
-					continue
-				}
-				resOwner := *resource.ResourceOrigin
+			if add && !resource.ResourceOrigin.IsEmpty() {
+				resOwner := resource.ResourceOrigin
 				if byOwner[resOwner] == nil {
 					byOwner[resOwner] = map[string][]*Resource{}
 				}

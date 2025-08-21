@@ -86,10 +86,11 @@ func BuildIngressEndpointMap(
 	gateways []*core_mesh.MeshGatewayResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	loader datasource.Loader,
+	mtlsEnabled bool,
 ) core_xds.EndpointMap {
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices, loader)
+	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices, loader, mtlsEnabled)
 	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
 	return outbound
 }
@@ -106,12 +107,13 @@ func BuildEdsEndpointMap(
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
+	mtlsEnabled bool,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
 	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
 	for _, ms := range meshServices {
-		meshServicesByKri[kri.From(ms, "")] = ms
+		meshServicesByKri[kri.From(ms)] = ms
 	}
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
@@ -130,7 +132,7 @@ func BuildEdsEndpointMap(
 
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone, meshServiceDestinations)
 
-	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, mesh, localZone)
+	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, mesh, localZone, mtlsEnabled)
 
 	fillExternalServicesOutboundsThroughEgress(ctx, outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone, loader)
 
@@ -180,17 +182,15 @@ func fillRemoteMeshServices(
 	zoneIngress []*core_mesh.ZoneIngressResource,
 	mesh *core_mesh.MeshResource,
 	localZone string,
+	mtlsEnabled bool,
 ) {
-	ziInstances := map[string]struct{}{}
-
-	if !mesh.MTLSEnabled() {
-		// Ingress routes the request by TLS SNI, therefore for cross
-		// cluster communication MTLS is required.
-		// We ignore Ingress from endpoints if MTLS is disabled, otherwise
-		// we would fail anyway.
+	if !mtlsEnabled {
 		return
 	}
 
+	ziInstances := map[string]struct{}{}
+
+	// introduction of MeshIdentity doesn't requires mTLS on mesh
 	zoneToEndpoints := map[string][]core_xds.Endpoint{}
 	for _, zi := range zoneIngress {
 		if !zi.IsRemoteIngress(localZone) {
@@ -626,7 +626,7 @@ func createMeshExternalServiceEndpoint(
 ) error {
 	es := &core_xds.ExternalService{
 		Protocol:      mes.Spec.Match.Protocol,
-		OwnerResource: pointer.To(kri.From(mes, "")),
+		OwnerResource: kri.From(mes),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
 	if tags == nil {
@@ -789,7 +789,7 @@ func fillExternalServicesOutboundsThroughEgress(
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
-			OwnerResource: pointer.To(kri.From(mes, "")),
+			OwnerResource: kri.From(mes),
 		}
 		if tls != nil && tls.Enabled {
 			err := setTlsConfiguration(ctx, tls, es, mes.Meta.GetMesh(), loader)

@@ -47,19 +47,21 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 
 			outPath := filepath.Join(rootArgs.pluginDir, "zz_generated.plugin.go")
 			return save.GoTemplate(pluginGoTemplate, struct {
-				Package     string
-				Versions    []string
-				Name        string
-				GoModule    string
-				ResourceDir string
-				IsPolicy    bool
+				Package           string
+				Versions          []string
+				Name              string
+				GoModule          string
+				ResourceDir       string
+				IsPolicy          bool
+				RegisterGenerator bool
 			}{
-				Package:     strings.ToLower(pconfig.Name),
-				Name:        pconfig.Name,
-				Versions:    versions,
-				GoModule:    rootArgs.goModule,
-				ResourceDir: rootArgs.pluginDir,
-				IsPolicy:    pconfig.IsPolicy,
+				Package:           strings.ToLower(pconfig.Name),
+				Name:              pconfig.Name,
+				Versions:          versions,
+				GoModule:          rootArgs.goModule,
+				ResourceDir:       rootArgs.pluginDir,
+				IsPolicy:          pconfig.IsPolicy,
+				RegisterGenerator: pconfig.RegisterGenerator,
 			}, outPath)
 		},
 	}
@@ -74,9 +76,10 @@ package {{ .Package }}
 {{ $name := .Name }}
 {{ $gomodule := .GoModule }}
 {{ $isPolicy := .IsPolicy }}
+{{ $registerGenerator := .RegisterGenerator }}
 
 import (
-{{- if $isPolicy }}
+{{- if or $isPolicy $registerGenerator }}
 	"github.com/kumahq/kuma/pkg/core/plugins"
 {{- end}}
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -85,6 +88,9 @@ import (
 	k8s_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/k8s/{{ $version }}"
 {{- if $isPolicy }}
 	plugin_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/plugin/{{ $version }}"
+{{- end }}
+{{- if $registerGenerator }}
+	generator_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/generator/{{ $version }}"
 {{- end }}
 {{- end}}
 )
@@ -95,6 +101,9 @@ func InitPlugin() {
 	registry.RegisterType(api_{{ $version }}.{{ $name }}ResourceTypeDescriptor)
 {{- if $isPolicy }}
 	plugins.Register(plugins.PluginName(api_{{ $version }}.{{ $name }}ResourceTypeDescriptor.KumactlArg), plugin_{{ $version }}.NewPlugin())
+{{- end }}
+{{- if $registerGenerator }}
+	plugins.Register(plugins.PluginName(api_{{ $version }}.{{ $name }}ResourceTypeDescriptor.KumactlArg), generator_{{ $version }}.NewPlugin())
 {{- end }}
 	{{- end}}
 }

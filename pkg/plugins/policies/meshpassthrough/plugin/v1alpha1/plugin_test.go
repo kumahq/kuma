@@ -19,24 +19,12 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-func getResource(
-	resourceSet *core_xds.ResourceSet,
-	typ envoy_resource.Type,
-) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshPassthrough", func() {
 	type testCase struct {
@@ -84,16 +72,18 @@ var _ = Describe("MeshPassthrough", func() {
 			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 			// then
-			Expect(getResource(resourceSet, envoy_resource.ListenerType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.listenersGolden)))
-			Expect(getResource(resourceSet, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.clustersGolden)))
+			resource, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.listenersGolden)))
+			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.clustersGolden)))
 		},
 		Entry("basic listener", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -104,7 +94,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -197,7 +187,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -208,7 +198,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -242,7 +232,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -253,7 +243,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -293,7 +283,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -304,7 +294,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -349,7 +339,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -360,7 +350,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -410,7 +400,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -421,7 +411,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -460,7 +450,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -471,7 +461,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -510,7 +500,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -521,7 +511,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:   "outbound:passthrough:ipv6",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -561,7 +551,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -572,7 +562,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:     "outbound:passthrough:ipv4",
-					Origin:   generator.OriginTransparent,
+					Origin:   metadata.OriginTransparent,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").MustBuild(),
 				},
 			},
@@ -593,7 +583,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -629,7 +619,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginTransparent,
+					Origin: metadata.OriginTransparent,
 					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -640,7 +630,7 @@ var _ = Describe("MeshPassthrough", func() {
 				},
 				{
 					Name:     "outbound:passthrough:ipv4",
-					Origin:   generator.OriginTransparent,
+					Origin:   metadata.OriginTransparent,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").MustBuild(),
 				},
 			},

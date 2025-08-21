@@ -10,27 +10,21 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
-
-func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
-	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
-	Expect(err).ToNot(HaveOccurred())
-	actual, err := util_proto.ToYAML(resources)
-	Expect(err).ToNot(HaveOccurred())
-
-	return actual
-}
 
 var _ = Describe("MeshMetric", func() {
 	type testCase struct {
@@ -45,8 +39,12 @@ var _ = Describe("MeshMetric", func() {
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
 
-		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
-		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
+		resource, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
+		resource, err = util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
 	},
 		Entry("default", testCase{
 			proxy: xds_builders.Proxy().
@@ -234,12 +232,23 @@ var _ = Describe("MeshMetric", func() {
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					WorkDir: "/tmp",
+					Features: map[string]bool{
+						xds_types.FeatureUnifiedResourceNaming: true,
+					},
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
 								Subset: []subsetutils.Tag{},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{
+										Mesh: "default",
+										Name: "meshmetric1",
+									},
+								},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
 										IncludeUnused: pointer.To(false),

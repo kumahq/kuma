@@ -35,27 +35,31 @@ func (rr ResourceRules) Compute(uri kri.Identifier, reader kri.ResourceReader) *
 	}
 
 	switch uri.ResourceType {
-	case meshservice_api.MeshServiceType, meshmultizoneservice_api.MeshMultiZoneServiceType:
-		// find MeshService without the sectionName and compute rules for it
-		if uri.SectionName != "" {
-			uriWithoutSection := uri
-			uriWithoutSection.SectionName = ""
-			return rr.Compute(uriWithoutSection, reader)
-		}
-		// find MeshService's Mesh and compute rules for it
-		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(kri.From(mesh, ""), reader)
-		}
+	case meshservice_api.MeshServiceType:
 	case meshexternalservice_api.MeshExternalServiceType:
-		// find MeshExternalService's Mesh and compute rules for it
-		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(kri.From(mesh, ""), reader)
-		}
+	case meshmultizoneservice_api.MeshMultiZoneServiceType:
 	case meshhttproute_api.MeshHTTPRouteType:
-		// find MeshHTTPRoute's Mesh and compute rules for it
-		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(kri.From(mesh, ""), reader)
-		}
+	default:
+		// For other resource types no further processing can produce a valid rule, so if nothing
+		// was found above we return nil
+		return nil
+	}
+
+	// If the resource has a sectionName, try again without it. For MeshService, MeshExternalService,
+	// and MeshMultiZoneService this means checking rules at the service level instead of a specific
+	// port. MeshHTTPRoute has no sectionName, so no special handling is needed
+	if uri.SectionName != "" {
+		return rr.Compute(kri.NoSectionName(uri), reader)
+	}
+
+	// If still not found, try computing rules for the Mesh
+	meshID := kri.Identifier{
+		ResourceType: core_mesh.MeshType,
+		Name:         uri.Mesh,
+	}
+
+	if mesh := reader.Get(meshID); mesh != nil {
+		return rr.Compute(kri.From(mesh), reader)
 	}
 
 	return nil
@@ -168,9 +172,9 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 			return false
 		}
 		switch {
-		case kri.From(rw.rs.Resource, rw.rs.SectionName) == kri.From(other, sectionName):
+		case kri.WithSectionName(kri.From(rw.rs.Resource), rw.rs.SectionName) == kri.WithSectionName(kri.From(other), sectionName):
 			return true
-		case kri.From(rw.rs.Resource, "") == kri.From(other, "") && rw.rs.SectionName == "" && sectionName != "":
+		case kri.From(rw.rs.Resource) == kri.From(other) && rw.rs.SectionName == "" && sectionName != "":
 			return true
 		default:
 			return false
@@ -179,12 +183,12 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
-		return kri.From(rw.rs.Resource, "") == kri.From(other, "")
+		return kri.From(rw.rs.Resource) == kri.From(other)
 	case meshhttproute_api.MeshHTTPRouteType:
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
-		return kri.From(rw.rs.Resource, "") == kri.From(other, "")
+		return kri.From(rw.rs.Resource) == kri.From(other)
 	default:
 		return false
 	}
