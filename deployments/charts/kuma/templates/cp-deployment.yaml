@@ -104,6 +104,7 @@ spec:
       {{- toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       automountServiceAccountToken: {{ .Values.controlPlane.automountServiceAccountToken }}
+      restartPolicy: {{ .Values.controlPlane.restartPolicy }}
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
