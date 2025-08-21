@@ -56,7 +56,7 @@ controlPlane:
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 
-  # -- Pod restart policy for the Control Plane
+  # -- Pod restart policy for the Control Plane.
   restartPolicy: Always
 
   # -- Minimum number of seconds for which a newly created pod should be ready for it to be considered available.
@@ -403,7 +403,7 @@ cni:
     # -- CNI image pull policy
     imagePullPolicy: IfNotPresent
 
-  # -- Pod restart policy for the CNI
+  # -- Pod restart policy for the CNI pods
   restartPolicy: Always
 
   # -- it's only useful in tests to trigger a possible race condition
@@ -482,7 +482,7 @@ ingress:
   # -- Log level for ingress (available values: off|info|debug)
   logLevel: info
 
-  # -- Pod restart policy for the Ingress
+  # -- Pod restart policy for the ingress pods
   restartPolicy: Always
 
   # -- Define the resources to allocate to mesh ingress
@@ -624,7 +624,7 @@ egress:
   # -- Log level for egress (available values: off|info|debug)
   logLevel: info
 
-  # -- Pod restart policy for the Egress
+  # -- Pod restart policy for the egress pods
   restartPolicy: Always
 
   # Horizontal Pod Autoscaling configuration
