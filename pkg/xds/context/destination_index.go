@@ -50,35 +50,38 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	networking := dataplane.Spec.GetNetworking()
 
 	processRef := func(kind string, name string, port *uint32, labels map[string]string) {
-		id := resolve.TargetRefToKRI(
-			kri.From(dataplane),
-			common_api.TargetRef{
-				Kind:   common_api.TargetRefKind(kind),
-				Name:   &name,
-				Labels: &labels,
-			},
-		)
-
-		if len(labels) > 0 {
-			id = di.resolveResourceIdentifier(id.ResourceType, labels)
+		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), labels)
+		if len(ids) == 0 {
+			ids = []kri.Identifier{
+				resolve.TargetRefToKRI(
+					kri.From(dataplane),
+					common_api.TargetRef{
+						Kind:   common_api.TargetRefKind(kind),
+						Name:   &name,
+						Labels: &labels,
+					},
+				),
+			}
 		}
 
-		if port != nil {
-			id = kri.WithSectionName(id, *port)
-		}
+		for _, id := range ids {
+			if port != nil {
+				id = kri.WithSectionName(id, *port)
+			}
 
-		var dest core.Destination
-		if dest = di.getDestinationByKRI(id); dest == nil {
-			return
-		}
+			var dest core.Destination
+			if dest = di.getDestinationByKRI(id); dest == nil {
+				return
+			}
 
-		if p, ok := dest.FindPortByName(id.SectionName); ok {
-			outbounds[kri.WithSectionName(id, p.GetName())] = p
-			return
-		}
+			if p, ok := dest.FindPortByName(id.SectionName); ok {
+				outbounds[kri.WithSectionName(id, p.GetName())] = p
+				return
+			}
 
-		for _, p := range dest.GetPorts() {
-			outbounds[kri.WithSectionName(id, p.GetName())] = p
+			for _, p := range dest.GetPorts() {
+				outbounds[kri.WithSectionName(id, p.GetName())] = p
+			}
 		}
 	}
 
