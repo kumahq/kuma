@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -64,7 +65,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	endpoints := &EndpointAccumulator{
-		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
+		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
