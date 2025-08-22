@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/origin"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -26,10 +25,10 @@ func GenerateCDS(
 	services envoy_common.Services,
 	meshName string,
 	origin origin.Origin,
+	unifiedNaming bool,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 
 	for _, serviceName := range services.Sorted() {
@@ -71,10 +70,9 @@ func GenerateEDS(
 	services envoy_common.Services,
 	meshName string,
 	origin origin.Origin,
+	unifiedNaming bool,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
@@ -114,14 +112,13 @@ func CreateFilterChain(
 }
 
 func GetServices(
-	proxy *core_xds.Proxy,
 	destinations MeshDestinations,
 	endpointMap core_xds.EndpointMap,
 	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	unifiedNaming bool,
 ) envoy_common.Services {
 	acc := envoy_common.NewServicesAccumulator(nil)
 
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 	sniUsed := map[string]struct{}{}

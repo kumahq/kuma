@@ -7,7 +7,6 @@ import (
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -24,15 +23,16 @@ func genExternalResources(
 	proxy *core_xds.Proxy,
 	resources *core_xds.MeshResources,
 	secretsTracker core_xds.SecretsTracker,
+	unifiedNaming bool,
 ) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error) {
 	rs := core_xds.NewResourceSet()
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
-	for _, cluster := range getExternalServicesClusters(proxy, resources) {
+	for _, cluster := range getExternalServicesClusters(resources, unifiedNaming) {
 		filterChainBuilders = append(
 			filterChainBuilders,
-			buildExternalServiceFilterChain(proxy, resources, secretsTracker, cluster),
+			buildExternalServiceFilterChain(proxy, resources, secretsTracker, cluster, unifiedNaming),
 		)
 
 		cds, err := genExternalServicesCDS(proxy, resources.EndpointMap[cluster.Service()], cluster)
@@ -46,11 +46,10 @@ func genExternalResources(
 }
 
 func getExternalServicesClusters(
-	proxy *core_xds.Proxy,
 	resources *core_xds.MeshResources,
+	unifiedNaming bool,
 ) []envoy_common.Cluster {
 	svcAcc := envoy_common.NewServicesAccumulator(nil)
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
@@ -161,10 +160,10 @@ func buildExternalServiceFilterChain(
 	resources *core_xds.MeshResources,
 	secretsTracker core_xds.SecretsTracker,
 	cluster envoy_common.Cluster,
+	unifiedNaming bool,
 ) *envoy_listeners.FilterChainBuilder {
 	meshName := resources.Mesh.GetMeta().GetName()
 	endpoints := resources.EndpointMap[cluster.Service()]
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	getName := naming.GetNameOrFallbackFunc(endpoints[0].IsMeshExternalService)
 	esName := naming.GetNameOrFallback(unifiedNaming, cluster.Name(), cluster.Service())
 	filterChainName := getName(esName, envoy_names.GetEgressFilterChainName(esName, meshName))

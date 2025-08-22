@@ -8,9 +8,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -29,7 +29,7 @@ func (i IngressGenerator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	cp := xdsCtx.ControlPlane
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneIngress := proxy.ZoneIngressProxy.ZoneIngressResource
@@ -72,17 +72,17 @@ func (i IngressGenerator) Generate(
 			meshResources.MeshMultiZoneServices(),
 		)
 
-		services := zoneproxy.GetServices(proxy, dest, mr.EndpointMap, availableServices[meshName])
+		services := zoneproxy.GetServices(dest, mr.EndpointMap, availableServices[meshName], unifiedNaming)
 
 		clusters = slices.Concat(clusters, services.Clusters())
 
-		cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress)
+		cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, unifiedNaming)
 		if err != nil {
 			return nil, err
 		}
 		rs.AddSet(cds)
 
-		eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress)
+		eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress, unifiedNaming)
 		if err != nil {
 			return nil, err
 		}

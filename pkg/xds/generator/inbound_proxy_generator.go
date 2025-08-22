@@ -9,9 +9,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/net"
@@ -29,7 +29,7 @@ type InboundProxyGenerator struct{}
 
 func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
 		// we do not create inbounds for serviceless
 		if endpoint.IsServiceLess() {
@@ -150,7 +150,7 @@ func FilterChainBuilder(
 	tlsVersion *tls.Version,
 	ciphers []tls.TlsCipher,
 ) *envoy_listeners.FilterChainBuilder {
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
 	routeConfigName := getName(contextualName, envoy_names.GetInboundRouteName(service))
