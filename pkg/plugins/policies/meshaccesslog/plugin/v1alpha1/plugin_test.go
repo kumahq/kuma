@@ -873,6 +873,7 @@ func otherServiceHTTPListener() core_xds.Resource {
 			},
 		}},
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -894,6 +895,7 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(service).Build(),
 		},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -915,6 +917,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener

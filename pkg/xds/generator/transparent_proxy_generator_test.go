@@ -21,8 +21,9 @@ import (
 
 var _ = Describe("TransparentProxyGenerator", func() {
 	type testCase struct {
-		proxy    *model.Proxy
-		expected string
+		proxy            *model.Proxy
+		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
+		expected         string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -36,6 +37,9 @@ var _ = Describe("TransparentProxyGenerator", func() {
 							Name: "default",
 						},
 						Spec: &mesh_proto.Mesh{
+							MeshServices: &mesh_proto.Mesh_MeshServices{
+								Mode: given.meshServicesMode,
+							},
 							Logging: &mesh_proto.Logging{
 								Backends: []*mesh_proto.LoggingBackend{
 									{
@@ -199,7 +203,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 				},
 				InternalAddresses: DummyInternalAddresses,
 			},
-			expected: "05.envoy.golden.yaml",
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			expected:         "05.envoy.golden.yaml",
 		}),
 	)
 })

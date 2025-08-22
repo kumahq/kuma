@@ -7,6 +7,7 @@ import (
 
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -127,7 +128,8 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 }
 
 func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	nameOrDefault := naming.GetNameOrFallbackFunc(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
 	return tpg.generate(
 		ctx,
 		proxy,
@@ -139,7 +141,8 @@ func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy
 }
 
 func (tpg TransparentProxyGenerator) generateIPv6(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	nameOrDefault := naming.GetNameOrFallbackFunc(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
 	return tpg.generate(
 		ctx,
 		proxy,

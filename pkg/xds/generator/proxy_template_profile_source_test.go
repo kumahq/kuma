@@ -109,6 +109,12 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 			}
 
+			if given.features.HasFeature(xds_types.FeatureUnifiedResourceNaming) {
+				ctx.Mesh.Resource.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
+					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+				}
+			}
+
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
 
 			dataplane := &mesh_proto.Dataplane{}

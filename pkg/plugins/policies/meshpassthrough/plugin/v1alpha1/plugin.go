@@ -6,6 +6,7 @@ import (
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -72,7 +73,7 @@ func applyToOutboundPassthrough(
 	if pointer.Deref(conf.PassthroughMode) == "" {
 		conf.PassthroughMode = pointer.To[api.PassthroughMode]("Matched")
 	}
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
 
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// remove clusters because they were added in TransparentProxyGenerator

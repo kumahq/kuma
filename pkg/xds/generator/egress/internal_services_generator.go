@@ -2,6 +2,7 @@ package egress
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -13,8 +14,8 @@ import (
 
 func genInternalResources(
 	proxy *core_xds.Proxy,
+	xdsCtx xds_context.Context,
 	resources *core_xds.MeshResources,
-	localZone string,
 ) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error) {
 	if !resources.Mesh.ZoneEgressEnabled() {
 		return nil, nil, nil
@@ -22,6 +23,7 @@ func genInternalResources(
 
 	rs := core_xds.NewResourceSet()
 
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, resources.Mesh)
 	meshName := resources.Mesh.GetMeta().GetName()
 
 	availableServicesMap := map[string]*mesh_proto.ZoneIngress_AvailableService{}
@@ -35,7 +37,7 @@ func genInternalResources(
 				continue
 			case len(endpoints) == 0:
 				continue
-			case endpoints[0].IsExternalService() && endpoints[0].IsReachableFromZone(localZone):
+			case endpoints[0].IsExternalService() && endpoints[0].IsReachableFromZone(xdsCtx.ControlPlane.Zone):
 				continue
 			}
 
@@ -54,15 +56,15 @@ func genInternalResources(
 		xds_context.Resources{MeshLocalResources: resources.Resources},
 	)
 
-	services := zoneproxy.GetServices(proxy, destinations, resources.EndpointMap, availableServices)
+	services := zoneproxy.GetServices(destinations, resources.EndpointMap, availableServices, unifiedNaming)
 
-	cds, err := zoneproxy.GenerateCDS(proxy, destinations, services, meshName, metadata.OriginEgress)
+	cds, err := zoneproxy.GenerateCDS(proxy, destinations, services, meshName, metadata.OriginEgress, unifiedNaming)
 	if err != nil {
 		return nil, nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, resources.EndpointMap, services, meshName, metadata.OriginEgress)
+	eds, err := zoneproxy.GenerateEDS(proxy, resources.EndpointMap, services, meshName, metadata.OriginEgress, unifiedNaming)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -8,8 +8,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -33,7 +33,7 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
@@ -55,13 +55,13 @@ func (g Generator) Generate(
 		// Secrets are generated in relation to a mesh so we need to create a new tracker
 		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
 
-		internal, internalFCB, err := genInternalResources(proxy, meshResources, xdsCtx.ControlPlane.Zone)
+		internal, internalFCB, err := genInternalResources(proxy, xdsCtx, meshResources)
 		if err != nil {
 			return nil, err
 		}
 		rs.AddSet(internal)
 
-		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker)
+		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker, unifiedNaming)
 		if err != nil {
 			return nil, err
 		}

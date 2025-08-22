@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -279,7 +280,7 @@ func configureListener(
 	inbound *mesh_proto.Dataplane_Networking_Inbound,
 	conf api.Conf,
 ) (envoy_common.NamedResource, error) {
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	inboundID := kri.WithSectionName(kri.From(proxy.Dataplane), iface.WorkloadPort).String()

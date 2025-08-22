@@ -308,9 +308,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
 			}
+
+			mesh := builders.Mesh().
+				WithBuiltinMTLSBackend("builtin").
+				WithEnabledMTLSBackend("builtin").
+				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive)
+
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
-					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
+					WithMeshBuilder(mesh).
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					AddServiceProtocol("default_backend___svc_80", core_meta.ProtocolHTTP).
@@ -422,7 +428,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
 				Build()
-			mc := meshContextWithResources(dp, backendDP, &meshSvc, &meshMZSvc)
+			mc := meshContextWithResources(builders.Mesh(), dp, backendDP, &meshSvc, &meshMZSvc)
 
 			builder := &sync.DataplaneProxyBuilder{
 				Zone:       "zone-1",
@@ -467,7 +473,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -553,7 +559,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress, gateway, &meshHttpRoute)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress, gateway, &meshHttpRoute)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -614,7 +620,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -649,7 +655,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -687,7 +693,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -745,7 +751,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -806,7 +812,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc, xds_types.FeatureUnifiedResourceNaming)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
+
+			mc := meshContextWithResources(
+				builders.Mesh().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				dp.Build(),
+				&meshExtSvc,
+				egress,
+			)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1094,7 +1106,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-			mc := meshContextWithResources(dpBuilder.Build(), &meshSvc, &meshSvc2)
+			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &meshSvc2)
 
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
@@ -1270,7 +1282,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-			mc := meshContextWithResources(dpBuilder.Build(), &meshSvc, &meshMZSvc)
+			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &meshMZSvc)
 
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
@@ -1431,7 +1443,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-			mc := meshContextWithResources(dpBuilder.Build(), &meshSvc, &meshMZSvc)
+
+			mc := meshContextWithResources(
+				builders.Mesh().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				dpBuilder.Build(),
+				&meshSvc,
+				&meshMZSvc,
+			)
 
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
@@ -2866,10 +2884,17 @@ oESyXXAeWPJX3e7ZgdjUHomwhAZpUmqIWribTioaHZTb1I6OpsD+eF6USSayxUaL
 -----END CERTIFICATE-----
 `
 
-func meshContextWithResources(resources ...core_model.Resource) *xds_context.MeshContext {
+func meshContextWithResources(
+	meshBuilder *builders.MeshBuilder,
+	resources ...core_model.Resource,
+) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
 
-	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
+	if meshBuilder == nil {
+		meshBuilder = builders.Mesh()
+	}
+
+	mesh := meshBuilder.WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 

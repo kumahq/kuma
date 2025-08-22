@@ -24,38 +24,44 @@ import (
 
 var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
-		dataplaneFile string
-		dataplaneMeta *model.DataplaneMetadata
-		expected      string
-		mode          mesh_proto.CertificateAuthorityBackend_Mode
+		dataplaneFile   string
+		dataplaneMeta   *model.DataplaneMetadata
+		expected        string
+		mode            mesh_proto.CertificateAuthorityBackend_Mode
+		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
 		func(given testCase) {
 			// setup
 			gen := &generator.InboundProxyGenerator{}
+			mesh := &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
+								Mode: given.mode,
+							},
+						},
+					},
+					MeshServices: &mesh_proto.Mesh_MeshServices{
+						Mode: given.meshServiceMode,
+					},
+				},
+			}
+
 			xdsCtx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin",
-										Type: "builtin",
-										Mode: given.mode,
-									},
-								},
-							},
-						},
-					},
+					Resource: mesh,
 				},
 			}
 
@@ -263,9 +269,10 @@ var _ = Describe("InboundProxyGenerator", func() {
 			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
 		}),
 		Entry("08. transparent_proxying=false, ip_addresses=2, ports=2, unified", testCase{
-			dataplaneFile: "8-dataplane.input.yaml",
-			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
-			expected:      "8-envoy-config.golden.yaml",
+			dataplaneFile:   "8-dataplane.input.yaml",
+			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:        "8-envoy-config.golden.yaml",
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 		}),
 	)
 })

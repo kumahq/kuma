@@ -8,10 +8,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -159,7 +159,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	if !ok {
 		return nil, "", nil
 	}
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 

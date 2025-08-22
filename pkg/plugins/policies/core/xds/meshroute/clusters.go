@@ -8,11 +8,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/pkg/envoy/builders/tls"
@@ -35,7 +35,7 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
