@@ -14,7 +14,6 @@ import (
 
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/xds/dynconf/metadata"
 	"github.com/kumahq/kuma/pkg/xds/dynconf/system_names"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -24,9 +23,8 @@ import (
 
 const ListenerName = "_kuma:dynamicconfig"
 
-func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, path string, bytes []byte) error {
+func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNamingEnabled bool, name string, path string, bytes []byte) error {
 	var listener *envoy_listener.Listener
-	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	listenerName := getNameOrDefault(system_names.SystemResourceNameDynamicConfigListener, ListenerName)
 

@@ -14,6 +14,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
@@ -84,7 +85,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh.Resources.MeshLocalResources, conf, prometheusBackends, openTelemetryBackends)
+	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends)
 	if err != nil {
 		return err
 	}
@@ -198,14 +199,15 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	return nil
 }
 
-func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, resources xds_context.ResourceMap, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
-	dpConfig := createDynamicConfig(conf, proxy, resources, prometheusBackends, openTelemetryBackend)
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
-	return dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
+	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
+	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
 }
 
 func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
