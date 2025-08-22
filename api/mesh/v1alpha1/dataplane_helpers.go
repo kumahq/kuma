@@ -218,6 +218,10 @@ func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
 	return outbound.BackendRef == nil
 }
 
+func BackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef != nil
+}
+
 func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {
 	var result []*Dataplane_Networking_Outbound
 	for _, outbound := range n.GetOutbound() {
