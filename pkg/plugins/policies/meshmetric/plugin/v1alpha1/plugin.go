@@ -14,11 +14,11 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/mads"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -76,15 +76,16 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	prometheusBackends := filterPrometheusBackends(conf.Backends)
 	openTelemetryBackends := filterOpenTelemetryBackends(conf.Backends)
 
-	err := configurePrometheus(rs, proxy, prometheusBackends)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	err := configurePrometheus(rs, proxy, prometheusBackends, unifiedNaming)
 	if err != nil {
 		return err
 	}
-	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends)
+	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming)
 	if err != nil {
 		return err
 	}
-	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh.Resources.MeshLocalResources, conf, prometheusBackends, openTelemetryBackends)
+	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends)
 	if err != nil {
 		return err
 	}
@@ -100,13 +101,13 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, unifiedNaming bool) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
 
 	for _, backend := range prometheusBackends {
-		getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+		getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
 		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
 		systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_prometheus", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
@@ -148,9 +149,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming)
 		if err != nil {
 			return err
 		}
@@ -158,11 +159,11 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
 	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
 	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
@@ -198,14 +199,15 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	return nil
 }
 
-func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, resources xds_context.ResourceMap, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
-	dpConfig := createDynamicConfig(conf, proxy, resources, prometheusBackends, openTelemetryBackend)
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
-	return dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
+	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
+	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
 }
 
 func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {

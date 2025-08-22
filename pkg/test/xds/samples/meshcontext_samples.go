@@ -8,17 +8,17 @@ import (
 )
 
 func SampleContext() xds_context.Context {
-	return SampleContextWith(xds_context.NewResources())
+	builder := SampleContextWith(xds_context.NewResources())
+	return *builder.Build()
 }
 
-func SampleContextWith(resources xds_context.Resources) xds_context.Context {
-	return *builders.Context().
+func SampleContextWith(resources xds_context.Resources) *builders.ContextBuilder {
+	return builders.Context().
 		WithMeshBuilder(samples.MeshDefaultBuilder()).
 		WithResources(resources).
 		WithEndpointMap(
 			builders.EndpointMap().
 				AddEndpoint("some-service", builders.Endpoint().WithTags("app", "some-service")),
 		).
-		AddServiceProtocol("some-service", core_meta.ProtocolUnknown).
-		Build()
+		AddServiceProtocol("some-service", core_meta.ProtocolUnknown)
 }

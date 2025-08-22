@@ -478,7 +478,7 @@ var _ = Describe("MeshRetry", func() {
 				Items: given.gatewayRoutes,
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_samples.SampleContextWith(resources).Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds_builders.MatchedPolicies().

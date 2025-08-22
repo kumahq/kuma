@@ -3,9 +3,9 @@ package hooks
 import (
 	"github.com/pkg/errors"
 
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks/metadata"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -38,7 +38,7 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 		return nil
 	}
 
-	getNameOrDefault := system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	getNameOrDefault := system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
 
 	name := getNameOrDefault(
 		system_names.MustBeSystemName("kube_api_server_bypass"),
