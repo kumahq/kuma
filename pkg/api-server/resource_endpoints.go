@@ -929,7 +929,7 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 			return
 		}
 
-		if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() == mesh_proto.Mesh_MeshServices_Disabled {
+		if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() != mesh_proto.Mesh_MeshServices_Exclusive {
 			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _policies endpoint without meshService enabled"), "Bad Request")
 			return
 		}
