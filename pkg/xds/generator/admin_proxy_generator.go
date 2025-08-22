@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -63,7 +64,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, errors.New("ReadinessPort has to be in (0, 65353] range")
 	}
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
-	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
+	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
 	// the only reasonable alternatives are `::1`, `0.0.0.0` or `::`).
@@ -75,7 +76,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		envoyAdminClusterName = system_names.SystemResourceNameEnvoyAdmin
 	}
 
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	dppReadinessClusterName := getNameOrDefault(
 		system_names.SystemResourceNameReadiness,
 		envoy_names.GetDPPReadinessClusterName(),
