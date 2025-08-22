@@ -128,20 +128,20 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9400,
 		}),
 		Entry("should generate admin resources, unified naming, readiness with TCP port 9902", testCase{
-			dataplaneFile: "07.dataplane.input.yaml",
-			expected:      "07.envoy-config.golden.yaml",
-			adminAddress:  "",
-			readinessPort: 9902,
+			dataplaneFile:    "07.dataplane.input.yaml",
+			expected:         "07.envoy-config.golden.yaml",
+			adminAddress:     "",
+			readinessPort:    9902,
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
 		Entry("should generate admin resources, readiness with Unix socket", testCase{
-			dataplaneFile: "08.dataplane.input.yaml",
-			expected:      "08.envoy-config.golden.yaml",
-			adminAddress:  "127.0.0.1",
-			readinessPort: 9902,
+			dataplaneFile:    "08.dataplane.input.yaml",
+			expected:         "08.envoy-config.golden.yaml",
+			adminAddress:     "127.0.0.1",
+			readinessPort:    9902,
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,

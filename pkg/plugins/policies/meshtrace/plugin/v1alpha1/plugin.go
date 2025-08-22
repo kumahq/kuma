@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	net_url "net/url"
 	"strconv"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"

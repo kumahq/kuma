@@ -3,7 +3,6 @@ package v1alpha1_test
 import (
 	"context"
 	"fmt"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"path/filepath"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -178,7 +178,7 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
 		}),
 		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources: inboundAndOutboundRealMeshService(),
+			resources:       inboundAndOutboundRealMeshService(),
 			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
@@ -382,10 +382,10 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-	rules           core_rules.SingleItemRules
-	features        xds_types.Features
-	meshServiceMode mesh_proto.Mesh_MeshServices_Mode
-}
+		rules           core_rules.SingleItemRules
+		features        xds_types.Features
+		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+	}
 	DescribeTable("should generate proper Envoy config for gateways",
 		func(given gatewayTestCase) {
 			resources := xds_context.NewResources()

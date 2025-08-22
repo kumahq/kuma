@@ -379,9 +379,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 tags:
                   kuma.io/service: elastic
 `,
-			profile:  core_mesh.ProfileDefaultProxy,
+			profile:         core_mesh.ProfileDefaultProxy,
 			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			expected: "5-envoy-config.golden.yaml",
+			expected:        "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 				xds_types.FeatureReadinessUnixSocket:   true,

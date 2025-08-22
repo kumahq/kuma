@@ -3,12 +3,12 @@ package generator
 import (
 	"context"
 	"fmt"
-	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
