@@ -74,7 +74,6 @@ var _ = Describe("MeshAccessLog", func() {
 		expectedListeners []string
 		expectedClusters  []string
 		features          xds_types.Features
-		meshServicesMode  mesh_proto.Mesh_MeshServices_Mode
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -86,7 +85,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			xdsCtx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServicesMode)).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
 				WithEndpointMap(
 					xds_builders.EndpointMap().
@@ -435,7 +434,6 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},

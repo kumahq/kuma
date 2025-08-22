@@ -67,9 +67,6 @@ var _ = Describe("ApiServerBypass", func() {
 								Passthrough: wrapperspb.Bool(false),
 							},
 						},
-						MeshServices: &mesh_proto.Mesh_MeshServices{
-							Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-						},
 					},
 				},
 			},

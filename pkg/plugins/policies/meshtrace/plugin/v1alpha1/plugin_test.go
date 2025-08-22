@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -46,7 +45,6 @@ var _ = Describe("MeshTrace", func() {
 		outbounds       xds_types.Outbounds
 		goldenFile      string
 		features        xds_types.Features
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -110,8 +108,7 @@ var _ = Describe("MeshTrace", func() {
 					WithNamespace("backend-ns").
 					Build()},
 			}
-			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
-			context.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
+			context := xds_samples.SampleContextWith(meshResources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -178,8 +175,7 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
 		}),
 		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources:       inboundAndOutboundRealMeshService(),
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			resources: inboundAndOutboundRealMeshService(),
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
@@ -382,9 +378,8 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		rules           core_rules.SingleItemRules
-		features        xds_types.Features
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		rules    core_rules.SingleItemRules
+		features xds_types.Features
 	}
 	DescribeTable("should generate proper Envoy config for gateways",
 		func(given gatewayTestCase) {
@@ -396,8 +391,7 @@ var _ = Describe("MeshTrace", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := *xds_samples.SampleContextWith(resources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
-			xdsCtx.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
+			xdsCtx := xds_samples.SampleContextWith(resources)
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
@@ -442,7 +436,6 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}),
 		Entry("simple-gateway-with-unified-naming", gatewayTestCase{
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},

@@ -9,9 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -231,17 +229,6 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("otel_and_prometheus", testCase{
-			context: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &mesh.MeshResource{
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-							},
-						},
-					},
-				},
-			},
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
