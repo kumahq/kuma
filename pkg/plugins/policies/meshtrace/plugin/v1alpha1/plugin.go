@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	net_url "net/url"
 	"strconv"
 	"strings"
@@ -48,16 +49,16 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
+	if err := applyToInbounds(ctx, policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
+	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
 		return err
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
+	if err := applyToGateway(ctx, policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
 		return err
 	}
 	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
@@ -67,7 +68,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	return nil
 }
 
-func applyToGateway(rules core_rules.SingleItemRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, proxy *xds.Proxy) error {
+func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, proxy *xds.Proxy) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
@@ -93,7 +94,7 @@ func applyToGateway(rules core_rules.SingleItemRules, gatewayListeners map[core_
 			continue
 		}
 
-		if err := configureListener(rules, proxy, listener, ""); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, ""); err != nil {
 			return err
 		}
 	}
@@ -101,9 +102,9 @@ func applyToGateway(rules core_rules.SingleItemRules, gatewayListeners map[core_
 	return nil
 }
 
-func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
+func applyToInbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	for _, inboundListener := range inboundListeners {
-		if err := configureListener(rules, proxy, inboundListener, ""); err != nil {
+		if err := configureListener(ctx, rules, proxy, inboundListener, ""); err != nil {
 			return err
 		}
 	}
@@ -111,7 +112,7 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 	return nil
 }
 
-func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy) error {
+func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	outbounds := proxy.Outbounds
 	dataplane := proxy.Dataplane
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
@@ -124,7 +125,7 @@ func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[me
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureListener(rules, proxy, listener, serviceName); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, serviceName); err != nil {
 			return err
 		}
 	}
@@ -144,7 +145,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 			switch typ {
 			case envoy_resource.ListenerType:
 				for _, listener := range resources {
-					if err := configureListener(rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port)); err != nil {
+					if err := configureListener(ctx, rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port)); err != nil {
 						return err
 					}
 				}
@@ -154,7 +155,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 	return nil
 }
 
-func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
+func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
 	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
@@ -165,7 +166,7 @@ func configureListener(rules core_rules.SingleItemRules, proxy *xds.Proxy, liste
 		TrafficDirection:      listener.TrafficDirection,
 		Destination:           destination,
 		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
-		UnifiedResourceNaming: proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming),
+		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
 	}
 
 	for _, chain := range listener.FilterChains {

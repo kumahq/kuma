@@ -3,6 +3,7 @@ package v1alpha1_test
 import (
 	"context"
 	"fmt"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"path/filepath"
 	"strings"
 
@@ -45,6 +46,7 @@ var _ = Describe("MeshTrace", func() {
 		outbounds       xds_types.Outbounds
 		goldenFile      string
 		features        xds_types.Features
+		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -108,7 +110,8 @@ var _ = Describe("MeshTrace", func() {
 					WithNamespace("backend-ns").
 					Build()},
 			}
-			context := xds_samples.SampleContextWith(meshResources)
+			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
+			context.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -176,6 +179,7 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
 			resources: inboundAndOutboundRealMeshService(),
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
@@ -378,9 +382,10 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		rules    core_rules.SingleItemRules
-		features xds_types.Features
-	}
+	rules           core_rules.SingleItemRules
+	features        xds_types.Features
+	meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+}
 	DescribeTable("should generate proper Envoy config for gateways",
 		func(given gatewayTestCase) {
 			resources := xds_context.NewResources()
@@ -391,7 +396,8 @@ var _ = Describe("MeshTrace", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_samples.SampleContextWith(resources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
+			xdsCtx.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
@@ -436,6 +442,7 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}),
 		Entry("simple-gateway-with-unified-naming", gatewayTestCase{
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},

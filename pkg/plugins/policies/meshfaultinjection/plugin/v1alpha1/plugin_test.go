@@ -476,7 +476,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		xdsCtx := xds_samples.SampleContextWith(resources)
+		xdsCtx := *xds_samples.SampleContextWith(resources).Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshFaultInjectionType, rules)).
