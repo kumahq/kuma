@@ -76,10 +76,6 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-            {{- if .Values.dataPlane.features.unifiedResourceNaming }}
-            - name: KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED
-              value: "true"
-            {{- end }}
           args:
             - run
             - --log-level={{ .Values.ingress.logLevel | default "info" }}
