@@ -294,7 +294,7 @@ spec:
 `, Config.KumaNamespace, meshName))(multizone.KubeZone2)).To(Succeed())
 		// given
 		// create a tunnel to test-client admin
-		Expect(multizone.KubeZone1.PortForwardService("test-client", namespace, 9901)).To(Succeed())
+		Expect(multizone.KubeZone1.PortForwardApp("test-client", namespace, 9901)).To(Succeed())
 		portFwd := multizone.KubeZone1.GetPortForward("test-client")
 		tnl := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.ApiServerEndpoint)
 

@@ -95,14 +95,32 @@ func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 }
 
 func (c *K8sCluster) PortForwardService(name, namespace string, port int) error {
+	return c.portForward(k8s.ResourceTypeService, name, namespace, port)
+}
+
+func (c *K8sCluster) PortForwardApp(name string, namespace string, port int) error {
+	return c.portForward(k8s.ResourceTypePod, name, namespace, port)
+}
+
+func (c *K8sCluster) portForward(typ k8s.KubeResourceType, name string, namespace string, port int) error {
 	localPort, err := utils.GetFreePort()
 	if err != nil {
-		return errors.Wrapf(err, "getting free port for the new tunnel failed")
+		return errors.Wrap(err, "getting free port for the new tunnel failed")
 	}
 
-	tnl := k8s.NewTunnel(c.GetKubectlOptions(namespace), k8s.ResourceTypeService, name, localPort, port)
+	switch typ {
+	case k8s.ResourceTypeService:
+	case k8s.ResourceTypePod:
+		if name, err = PodNameOfApp(c, name, namespace); err != nil {
+			return errors.Wrapf(err, "getting pod name for %s failed", name)
+		}
+	default:
+		return errors.Errorf("unsupported resource type %s", typ)
+	}
+
+	tnl := k8s.NewTunnel(c.GetKubectlOptions(namespace), typ, name, localPort, port)
 	if err := tnl.ForwardPortE(c.t); err != nil {
-		return errors.Wrapf(err, "port forwarding for %d:%d failed", localPort, port)
+		return errors.Wrapf(err, "port forwarding for %s %d:%d failed", typ, localPort, port)
 	}
 
 	c.portForwards[name] = PortFwd{
@@ -662,7 +680,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
 		}
 
-		if err := c.PortForwardService(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
+		if err := c.PortForwardApp(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
 			return err
 		}
 	}
@@ -672,7 +690,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
 		}
 
-		if err := c.PortForwardService(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
+		if err := c.PortForwardApp(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
 			return err
 		}
 	}
@@ -791,7 +809,7 @@ func (c *K8sCluster) StartZoneIngress() error {
 	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if err := c.PortForwardService(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
+	if err := c.PortForwardApp(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
 		return err
 	}
 	return nil
@@ -830,7 +848,7 @@ func (c *K8sCluster) StartZoneEgress() error {
 	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if err := c.PortForwardService(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
+	if err := c.PortForwardApp(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
 		return err
 	}
 	return nil

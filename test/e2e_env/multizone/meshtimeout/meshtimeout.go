@@ -273,7 +273,7 @@ spec:
 	It("should apply MeshTimeout policy on MeshService from other zone", func() {
 		// given
 		// create a tunnel to test-client admin
-		Expect(multizone.KubeZone1.PortForwardService("test-client", k8sZoneNamespace, 9901)).To(Succeed())
+		Expect(multizone.KubeZone1.PortForwardApp("test-client", k8sZoneNamespace, 9901)).To(Succeed())
 		portFwd := multizone.KubeZone1.GetPortForward("test-client")
 		tnl := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.ApiServerEndpoint)
 
