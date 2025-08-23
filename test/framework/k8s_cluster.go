@@ -90,7 +90,7 @@ func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 }
 
 func (c *K8sCluster) PortForwardApp(appName string, namespace string, remotePort int) (*k8s.Tunnel, error) {
-	return c.portForward(k8s.ResourceTypeDeployment, appName, namespace, remotePort)
+	return c.portForward(k8s.ResourceTypePod, appName, namespace, remotePort)
 }
 
 func (c *K8sCluster) portForward(
