@@ -13,7 +13,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -245,7 +245,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	}
 	// For provided gateway we should ignore the protocol tag
 	protocol := ProtocolTagFor(svc, svcPort)
-	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); enabled && protocol != core_mesh.ProtocolTCP {
+	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); enabled && protocol != string(core_meta.ProtocolTCP) {
 		logger.Info("ignoring non TCP appProtocol or annotation as provided gateway only supports 'tcp'", "appProtocol", protocol)
 	} else {
 		tags[mesh_proto.ProtocolTag] = protocol
@@ -265,7 +265,7 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 		protocolValue = *svcPort.AppProtocol
 		// `appProtocol` can be any protocol and if we don't explicitly support
 		// it, let the default below take effect
-		if core_mesh.ParseProtocol(protocolValue) == core_mesh.ProtocolUnknown {
+		if core_meta.ParseProtocol(protocolValue) == core_meta.ProtocolUnknown {
 			protocolValue = ""
 		}
 	}
@@ -277,7 +277,7 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	if protocolValue == "" {
 		// if `appProtocol` or `<port>.service.kuma.io/protocol` is missing or has an empty value
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
-		protocolValue = core_mesh.ProtocolTCP
+		protocolValue = string(core_meta.ProtocolTCP)
 	}
 
 	// if `<port>.service.kuma.io/protocol` field is present but has an invalid value
@@ -301,7 +301,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod, name string, nodeLabels 
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
-	tags[mesh_proto.ProtocolTag] = core_mesh.ProtocolTCP
+	tags[mesh_proto.ProtocolTag] = string(core_meta.ProtocolTCP)
 	tags[mesh_proto.InstanceTag] = pod.Name
 	for key, value := range nodeLabels {
 		tags[key] = value

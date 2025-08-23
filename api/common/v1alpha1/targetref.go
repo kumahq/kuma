@@ -164,7 +164,7 @@ type BackendRef struct {
 func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
 	case MeshService:
-		return b.Port != nil
+		return pointer.Deref(b.SectionName) != "" || b.Port != nil
 	case MeshServiceSubset:
 		return false
 	// empty targetRef should not be treated as real object

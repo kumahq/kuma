@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -41,7 +42,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -65,13 +66,13 @@ var _ = Describe("MeshHealthCheck", func() {
 	httpClusters := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-http",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, httpServiceTag).
 				MustBuild(),
 		},
 		{
 			Name:   "cluster-echo-http-_0_",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, splitHttpServiceTag).
 				MustBuild(),
 		},
@@ -79,7 +80,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	tcpCluster := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-tcp",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, tcpServiceTag).
 				MustBuild(),
 		},
@@ -87,7 +88,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	grpcCluster := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-grpc",
-			Origin: generator.OriginOutbound,
+			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, grpcServiceTag).
 				MustBuild(),
 		},
@@ -103,10 +104,10 @@ var _ = Describe("MeshHealthCheck", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
-				AddServiceProtocol(httpServiceTag, core_mesh.ProtocolHTTP).
-				AddServiceProtocol(tcpServiceTag, core_mesh.ProtocolTCP).
-				AddServiceProtocol(grpcServiceTag, core_mesh.ProtocolGRPC).
-				AddServiceProtocol(splitHttpServiceTag, core_mesh.ProtocolHTTP).
+				AddServiceProtocol(httpServiceTag, core_meta.ProtocolHTTP).
+				AddServiceProtocol(tcpServiceTag, core_meta.ProtocolTCP).
+				AddServiceProtocol(grpcServiceTag, core_meta.ProtocolGRPC).
+				AddServiceProtocol(splitHttpServiceTag, core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
@@ -330,7 +331,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
@@ -428,7 +429,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Ports: []meshservice_api.Port{{
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{
@@ -531,7 +532,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Ports: []meshservice_api.Port{{
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{

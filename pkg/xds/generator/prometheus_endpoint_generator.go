@@ -8,33 +8,31 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
-// OriginPrometheus is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginPrometheus = "prometheus"
+var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-generator")
 
 // PrometheusEndpointGenerator generates an inbound Envoy listener
 // that forwards HTTP requests into the `/stats/prometheus`
 // endpoint of the Envoy Admin API.
 //
 // When generating such a listener, it's important not to overshadow
-// a port that is already in use by the application or other Envoy listeners.
+// a port already in use by the application or other Envoy listeners.
 // In the latter case we prefer not generate Prometheus endpoint at all
 // rather than introduce undeterministic behavior.
 type PrometheusEndpointGenerator struct{}
 
-var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-generator")
-
-func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(xdsCtx.Mesh.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get prometheus endpoint")
@@ -79,7 +77,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 
 	resources.Add(&core_xds.Resource{
 		Name:     cluster.GetName(),
-		Origin:   OriginPrometheus,
+		Origin:   metadata.OriginPrometheus,
 		Resource: cluster,
 	})
 
@@ -165,7 +163,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 
 	resources.Add(&core_xds.Resource{
 		Name:     listener.GetName(),
-		Origin:   OriginPrometheus,
+		Origin:   metadata.OriginPrometheus,
 		Resource: listener,
 	})
 	return resources, nil
@@ -190,7 +188,7 @@ func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, metadata *cor
 }
 
 // we cannot use url.Values{} because generated url looks 'usedonly='
-// which isn't supported by Envoy
+// which Envoy doesn't support
 func buildEnvoyMetricsFilter(config *mesh_proto.PrometheusMetricsBackendConfig) string {
 	var query string
 	if config.GetEnvoy() != nil {

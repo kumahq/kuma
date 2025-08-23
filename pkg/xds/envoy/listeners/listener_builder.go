@@ -69,7 +69,10 @@ func (b *ListenerBuilder) WithOverwriteName(name string) *ListenerBuilder {
 	return b
 }
 
-// Configure configures ListenerBuilder by adding individual ListenerConfigurers.
+func (b *ListenerBuilder) GetName() string {
+	return b.name
+}
+
 func (b *ListenerBuilder) Configure(opts ...ListenerBuilderOpt) *ListenerBuilder {
 	for _, opt := range opts {
 		opt.ApplyTo(b)
@@ -78,25 +81,26 @@ func (b *ListenerBuilder) Configure(opts ...ListenerBuilderOpt) *ListenerBuilder
 	return b
 }
 
-// Build generates an Envoy listener by applying a series of ListenerConfigurers.
 func (b *ListenerBuilder) Build() (envoy.NamedResource, error) {
-	switch b.apiVersion {
-	case envoy.APIV3:
-		listener := envoy_listener_v3.Listener{
-			Name: b.name,
-		}
-		for _, configurer := range b.configurers {
-			if err := configurer.Configure(&listener); err != nil {
-				return nil, err
-			}
-		}
-		if listener.GetName() == "" {
-			return nil, errors.New("listener name is required, but it was not provided")
-		}
-		return &listener, nil
-	default:
+	if b.apiVersion != envoy.APIV3 {
 		return nil, errors.New("unknown API")
 	}
+
+	listener := envoy_listener_v3.Listener{
+		Name: b.name,
+	}
+
+	for _, configurer := range b.configurers {
+		if err := configurer.Configure(&listener); err != nil {
+			return nil, err
+		}
+	}
+
+	if listener.GetName() == "" {
+		return nil, errors.New("listener name is required, but it was not provided")
+	}
+
+	return &listener, nil
 }
 
 func (b *ListenerBuilder) MustBuild() envoy.NamedResource {
@@ -108,28 +112,16 @@ func (b *ListenerBuilder) MustBuild() envoy.NamedResource {
 	return listener
 }
 
-func (b *ListenerBuilder) GetName() string {
-	return b.name
-}
+type listenerBuilderOptFunc func(builder *ListenerBuilder)
 
-// AddConfigurer appends a given ListenerConfigurer to the end of the chain.
-func (b *ListenerBuilder) AddConfigurer(configurer v3.ListenerConfigurer) {
-	b.configurers = append(b.configurers, configurer)
-}
-
-// ListenerBuilderOptFunc is a convenience type adapter.
-type ListenerBuilderOptFunc func(builder *ListenerBuilder)
-
-func (f ListenerBuilderOptFunc) ApplyTo(builder *ListenerBuilder) {
+func (f listenerBuilderOptFunc) ApplyTo(builder *ListenerBuilder) {
 	if f != nil {
 		f(builder)
 	}
 }
 
-// AddListenerConfigurer produces an option that applies the given
-// configurer to the listener.
 func AddListenerConfigurer(c v3.ListenerConfigurer) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(builder *ListenerBuilder) {
-		builder.AddConfigurer(c)
+	return listenerBuilderOptFunc(func(builder *ListenerBuilder) {
+		builder.configurers = append(builder.configurers, c)
 	})
 }

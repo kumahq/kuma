@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
@@ -65,8 +65,7 @@ func getBackendRefs(
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
 	// precedence over the latter
-	switch svc.Protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	if core_meta.IsHTTPBased(svc.Protocol) {
 		// If we have an >= HTTP service, don't manage routing with
 		// MeshTCPRoutes if we either don't have any MeshTCPRoutes or we have
 		// MeshHTTPRoutes

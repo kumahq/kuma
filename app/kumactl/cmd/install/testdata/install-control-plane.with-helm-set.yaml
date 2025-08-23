@@ -6239,6 +6239,7 @@ spec:
                     type:
                       enum:
                       - ServiceTag
+                      - SpiffeID
                       type: string
                     value:
                       type: string
@@ -11510,6 +11511,7 @@ spec:
         runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
         
         kubernetes.io/os: linux
@@ -11692,6 +11694,7 @@ spec:
         runAsUser: 5678
       serviceAccountName: kuma-egress
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -11823,6 +11826,7 @@ spec:
         runAsUser: 5678
       serviceAccountName: kuma-ingress
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -11899,7 +11903,7 @@ spec:
               - key: ca.crt
                 path: ca.crt
         - name: tmp
-          emptyDir: {}
+          emptyDir: { }
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration

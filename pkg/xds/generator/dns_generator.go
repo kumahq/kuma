@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"slices"
 
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -15,10 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/dynconf"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-// OriginDNS is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginDNS = "dns"
 
 type DNSGenerator struct{}
 
@@ -49,7 +48,8 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 			vips[domain] = addresses
 		}
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
 		// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
 		// https://github.com/kumahq/kuma/issues/13463
@@ -68,7 +68,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 		if err != nil {
 			return nil, err
 		}
-		err = dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes)
+		err = dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +98,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	resources.Add(&core_xds.Resource{
 		Name:     names.GetDNSListenerName(),
 		Resource: listener,
-		Origin:   OriginDNS,
+		Origin:   metadata.OriginDNS,
 	})
 	return resources, nil
 }

@@ -8,10 +8,12 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/xds/origin"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -20,10 +22,10 @@ type ResourcePayload = envoy_types.Resource
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
 	Name           string
-	Origin         string
+	Origin         origin.Origin
 	Resource       ResourcePayload
 	ResourceOrigin kri.Identifier
-	Protocol       core_mesh.Protocol
+	Protocol       core_meta.Protocol
 }
 
 // ResourceList represents a list of generic xDS resources.
@@ -183,7 +185,7 @@ func NonMeshExternalService(r *Resource) bool {
 }
 
 func NonGatewayResources(r *Resource) bool {
-	return r.ResourceOrigin.IsEmpty() || r.Origin != "gateway"
+	return r.ResourceOrigin.IsEmpty() || r.Origin != metadata.OriginGateway
 }
 
 func HasAssociatedServiceResource(r *Resource) bool {

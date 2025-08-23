@@ -21,7 +21,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_meta "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
@@ -51,6 +51,7 @@ func RegisterXDS(
 	if err != nil {
 		return err
 	}
+
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)
 
@@ -125,7 +126,7 @@ func DefaultIngressReconciler(
 		Template: &mesh_proto.ProxyTemplate{
 			Conf: &mesh_proto.ProxyTemplate_Conf{
 				Imports: []string{
-					generator.IngressProxy,
+					generator_meta.ProxyTemplateProfileIngressProxy,
 				},
 			},
 		},
@@ -150,7 +151,7 @@ func DefaultEgressReconciler(
 		Template: &mesh_proto.ProxyTemplate{
 			Conf: &mesh_proto.ProxyTemplate_Conf{
 				Imports: []string{
-					egress.EgressProxy,
+					generator_meta.ProxyTemplateProfileEgressProxy,
 				},
 			},
 		},
@@ -181,6 +182,8 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secr
 				},
 				rt.Config().XdsServer.DataplaneStatusFlushInterval.Duration/10,
 				xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
+				rt.EventBus(),
+				rt.ReadOnlyResourceManager(),
 			)
 		})
 }

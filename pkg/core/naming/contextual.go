@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/constraints"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type sectionName interface {
-	~string | ~uint32
+	~string | constraints.Unsigned
 }
 
 // MustContextualInboundName is a helper for code paths where you are certain the resource's
@@ -22,6 +23,10 @@ func MustContextualInboundName[T sectionName](r core_model.Resource, sectionName
 		panic(err)
 	}
 	return name
+}
+
+func ContextualTransparentProxyName(direction string, ipVersion int) string {
+	return fmt.Sprintf("self_transparentproxy_passthrough_%s_ipv%d", direction, ipVersion)
 }
 
 func ContextualInboundName[T sectionName](r core_model.Resource, sectionName T) (string, error) {

@@ -9,6 +9,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 var _ = Describe("HttpOutboundRouteConfigurer", func() {
@@ -31,7 +32,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false, nil)).
-					Configure(HttpOutboundRoute(given.service, given.routes, given.dpTags)))).
+					Configure(HttpOutboundRoute(envoy_names.GetOutboundRouteName(given.service), given.service, given.routes, given.dpTags)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

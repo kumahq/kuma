@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/kumactl"
 )
@@ -104,7 +105,7 @@ type appDeploymentOptions struct {
 	token                 string
 	transparent           *bool
 	builtindns            *bool // true by default
-	protocol              string
+	protocol              core_meta.Protocol
 	serviceName           string
 	serviceVersion        string
 	serviceInstance       string
@@ -432,7 +433,7 @@ func WithYaml(appYaml string) AppDeploymentOption {
 	})
 }
 
-func WithProtocol(protocol string) AppDeploymentOption {
+func WithProtocol(protocol core_meta.Protocol) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.protocol = protocol
 	})

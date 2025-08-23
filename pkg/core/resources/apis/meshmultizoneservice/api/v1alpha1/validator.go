@@ -1,9 +1,7 @@
 package v1alpha1
 
 import (
-	"slices"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -21,8 +19,8 @@ func (r *MeshMultiZoneServiceResource) validate() error {
 		if port.Name != nil && *port.Name == "" {
 			verr.AddViolationAt(path.Field("ports").Index(i).Field("name"), validators.MustNotBeEmpty)
 		}
-		if !slices.Contains(mesh.SupportedProtocols, port.AppProtocol) {
-			verr.AddViolationAt(path.Field("ports").Index(i).Field("appProtocol"), validators.MustBeOneOf("appProtocol", mesh.SupportedProtocols.Strings()...))
+		if !core_meta.SupportedProtocols.Contains(port.AppProtocol) {
+			verr.AddViolationAt(path.Field("ports").Index(i).Field("appProtocol"), validators.MustBeOneOf("appProtocol", core_meta.SupportedProtocols.Strings()...))
 		}
 	}
 	return verr.OrNil()

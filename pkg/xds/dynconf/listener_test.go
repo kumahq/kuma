@@ -14,6 +14,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	"github.com/kumahq/kuma/pkg/xds/dynconf"
+	"github.com/kumahq/kuma/pkg/xds/dynconf/metadata"
 )
 
 var _ = Describe("AddConfigRoute", func() {
@@ -31,7 +32,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		rs := core_xds.NewResourceSet()
 		body := make([]byte, 1024)
-		err := dynconf.AddConfigRoute(proxy, rs, "/meshmetric", "/meshmetric", body)
+		err := dynconf.AddConfigRoute(proxy, rs, false, "/meshmetric", "/meshmetric", body)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -41,7 +42,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		var listener *envoy_listener.Listener
 		for _, res := range rs.Resources(envoy_resource.ListenerType) {
-			if res.Origin == dynconf.Origin {
+			if res.Origin == metadata.OriginDynamicConfig {
 				listener = res.Resource.(*envoy_listener.Listener)
 				break
 			}
@@ -71,12 +72,12 @@ var _ = Describe("AddConfigRoute", func() {
 		}
 		rs := core_xds.NewResourceSet()
 		body := make([]byte, 1024)
-		err := dynconf.AddConfigRoute(proxy, rs, "meshmetric", "/meshmetric", body)
+		err := dynconf.AddConfigRoute(proxy, rs, true, "meshmetric", "/meshmetric", body)
 		Expect(err).ToNot(HaveOccurred())
 
 		// again with a different body size
 		newBody := make([]byte, 2048)
-		err = dynconf.AddConfigRoute(proxy, rs, "dns", "/dns", newBody)
+		err = dynconf.AddConfigRoute(proxy, rs, true, "dns", "/dns", newBody)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -86,7 +87,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		var listener *envoy_listener.Listener
 		for _, res := range rs.Resources(envoy_resource.ListenerType) {
-			if res.Origin == dynconf.Origin {
+			if res.Origin == metadata.OriginDynamicConfig {
 				listener = res.Resource.(*envoy_listener.Listener)
 				break
 			}

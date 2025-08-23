@@ -13,7 +13,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -24,7 +27,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/maps"
-	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -37,6 +39,7 @@ type meshContextBuilder struct {
 	topLevelDomain  string
 	vipPort         uint32
 	rsGraphBuilder  ReachableServicesGraphBuilder
+	// map of identities
 }
 
 // MeshContextBuilder
@@ -154,6 +157,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		domains = append(domains, vipDomains...)
 	}
 
+	trustDomainToTrusts := getTrustDomainToTrusts(resources.MeshTrusts().Items)
+
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
 	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
@@ -184,6 +189,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		zoneEgresses,
 		externalServices,
 		loader,
+		mtlsEnabled(mesh, resources.MeshIdentities()),
 	)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
@@ -198,6 +204,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		resources.Gateways().Items,
 		zoneEgresses,
 		loader,
+		mtlsEnabled(mesh, resources.MeshIdentities()),
 	)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
@@ -228,6 +235,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		ServicesInformation:         m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:            loader,
 		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
+		TrustsByTrustDomain:         trustDomainToTrusts,
 	}, nil
 }
 
@@ -386,6 +394,14 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	return list, nil
 }
 
+// if we have identities or mtlsEnabled let's assume mTLS is enabled
+func mtlsEnabled(mesh *core_mesh.MeshResource, identities *meshidentity_api.MeshIdentityResourceList) bool {
+	if mesh.MTLSEnabled() || len(identities.Items) > 0 {
+		return true
+	}
+	return false
+}
+
 // takes a resourceList and modify it as needed
 func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.Resource) (core_model.Resource, error)) (core_model.ResourceList, error) {
 	newList := list.NewItem().Descriptor().NewList()
@@ -539,7 +555,7 @@ func getServiceInformation(servicesInformation map[string]*ServiceInformation, s
 		return info
 	}
 	return &ServiceInformation{
-		Protocol: core_mesh.ProtocolUnknown,
+		Protocol: core_meta.ProtocolUnknown,
 	}
 }
 
@@ -550,20 +566,28 @@ func isExternalService(endpoints []xds.Endpoint) bool {
 	return false
 }
 
-func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
+func inferServiceProtocol(endpoints []xds.Endpoint) core_meta.Protocol {
 	if len(endpoints) == 0 {
-		return core_mesh.ProtocolUnknown
+		return core_meta.ProtocolUnknown
 	}
-	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
+	serviceProtocol := core_meta.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
 	if endpoints[0].ExternalService != nil && endpoints[0].ExternalService.Protocol != "" {
 		serviceProtocol = endpoints[0].ExternalService.Protocol
 	}
 	for _, endpoint := range endpoints[1:] {
-		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
+		endpointProtocol := core_meta.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
 		if endpoint.ExternalService != nil && endpoint.ExternalService.Protocol != "" {
 			endpointProtocol = endpoint.ExternalService.Protocol
 		}
-		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
+		serviceProtocol = core_meta.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol
+}
+
+func getTrustDomainToTrusts(trusts []*meshtrust_api.MeshTrustResource) map[string][]*meshtrust_api.MeshTrust {
+	trustDomainToMeshTrust := map[string][]*meshtrust_api.MeshTrust{}
+	for _, trust := range trusts {
+		trustDomainToMeshTrust[trust.Spec.TrustDomain] = append(trustDomainToMeshTrust[trust.Spec.TrustDomain], trust.Spec)
+	}
+	return trustDomainToMeshTrust
 }

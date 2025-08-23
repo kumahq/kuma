@@ -31,8 +31,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshFaultInjection", func() {
@@ -85,7 +84,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "inbound:127.0.0.1:17777",
-					Origin: generator.OriginInbound,
+					Origin: metadata.OriginInbound,
 					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
@@ -107,7 +106,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				},
 				{
 					Name:   "inbound:127.0.0.1:17778",
-					Origin: generator.OriginInbound,
+					Origin: metadata.OriginInbound,
 					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
@@ -236,7 +235,7 @@ var _ = Describe("MeshFaultInjection", func() {
 		Expect(err).ToNot(HaveOccurred())
 		rs.Add(&core_xds.Resource{
 			Name:     listener.GetName(),
-			Origin:   egress.OriginEgress,
+			Origin:   metadata.OriginEgress,
 			Resource: listener,
 		})
 
@@ -477,7 +476,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		xdsCtx := xds_samples.SampleContextWith(resources)
+		xdsCtx := *xds_samples.SampleContextWith(resources).Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshFaultInjectionType, rules)).

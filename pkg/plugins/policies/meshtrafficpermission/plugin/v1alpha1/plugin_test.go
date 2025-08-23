@@ -6,11 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	meshtrafficpermission "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/plugin/v1alpha1"
@@ -23,8 +26,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("RBAC", func() {
@@ -46,7 +48,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener,
 			})
 
@@ -60,7 +62,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener2.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener2,
 			})
 
@@ -87,7 +89,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener4.GetName(),
-				Origin:   generator.OriginInbound,
+				Origin:   metadata.OriginInbound,
 				Resource: listener4,
 			})
 
@@ -130,6 +132,140 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply.golden.yaml")))
 		})
+
+		It("should enrich matching listener with RBAC filter using matching api", func() {
+			// given
+			rs := core_xds.NewResourceSet()
+			ctx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				Build()
+
+			// listener that matches
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   metadata.OriginInbound,
+				Resource: listener,
+			})
+
+			// listener that is originated from inbound proxy generator but won't match
+			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener2").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.HttpConnectionManager("test_listener2", false, nil)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener2.GetName(),
+				Origin:   metadata.OriginInbound,
+				Resource: listener2,
+			})
+
+			// listener that matches but is not originated from inbound proxy generator
+			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener3").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.HttpConnectionManager("test_listener3", false, nil)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener3.GetName(),
+				Origin:   "not-inbound-origin",
+				Resource: listener3,
+			})
+
+			// listener that matches but it does not have mTLS
+			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener4").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener4.GetName(),
+				Origin:   metadata.OriginInbound,
+				Resource: listener4,
+			})
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(
+					builders.Dataplane().
+						WithName("dp1").
+						WithMesh("mesh-1").
+						WithServices("backend"),
+				).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
+							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+								{
+									Address: "192.168.0.1", Port: 8080,
+								}: {
+									{
+										Conf: &policies_api.Rule{
+											Default: policies_api.RuleConf{
+												Deny: &[]common_api.Match{
+													{
+														SpiffeId: &common_api.SpiffeIdMatch{
+															Type:  common_api.ExactMatchType,
+															Value: "spiffeId://trust-domain.mesh/ns/backend/v1",
+														},
+													},
+												},
+												AllowWithShadowDeny: &[]common_api.Match{
+													{
+														SpiffeId: &common_api.SpiffeIdMatch{
+															Type:  common_api.ExactMatchType,
+															Value: "spiffeId://trust-domain.mesh/ns/backend/v2",
+														},
+													},
+												},
+												Allow: &[]common_api.Match{
+													{
+														SpiffeId: &common_api.SpiffeIdMatch{
+															Type:  common_api.PrefixMatchType,
+															Value: "spiffeId://trust-domain.mesh/ns/backend/",
+														},
+													},
+												},
+											},
+										},
+										Origin: common.Origin{
+											Resource: &test_model.ResourceMeta{
+												Mesh: "default",
+												Name: "mtp-1",
+												Labels: map[string]string{
+													mesh_proto.ZoneTag:          "zone-1",
+													mesh_proto.KubeNamespaceTag: "ns-1",
+												},
+											},
+										},
+									},
+								},
+							},
+						}),
+				).
+				Build()
+			// when
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			err = p.Apply(rs, *ctx, proxy)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
+			Expect(err).ToNot(HaveOccurred())
+			bytes, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "matching-api.golden.yaml")))
+		})
 	})
 
 	Context("for ZoneEgress", func() {
@@ -166,7 +302,7 @@ var _ = Describe("RBAC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
-				Origin:   egress.OriginEgress,
+				Origin:   metadata.OriginEgress,
 				Resource: listener,
 			})
 

@@ -3,9 +3,10 @@ package hooks
 import (
 	"github.com/pkg/errors"
 
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks/metadata"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -13,10 +14,7 @@ import (
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 )
 
-const (
-	OriginApiServerBypass            = "apiServerBypass"
-	apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass" // #nosec G101 -- no idea why gosec things this is a secret
-)
+const apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass" // #nosec G101 -- no idea why gosec things this is a secret
 
 type ApiServerBypass struct {
 	Address string
@@ -40,7 +38,7 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 		return nil
 	}
 
-	getNameOrDefault := system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	getNameOrDefault := system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
 
 	name := getNameOrDefault(
 		system_names.MustBeSystemName("kube_api_server_bypass"),
@@ -68,13 +66,13 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 
 	resources.Add(&core_xds.Resource{
 		Name:     listener.GetName(),
-		Origin:   OriginApiServerBypass,
+		Origin:   metadata.OriginAPIServerBypass,
 		Resource: listener,
 	})
 
 	resources.Add(&core_xds.Resource{
 		Name:     cluster.GetName(),
-		Origin:   OriginApiServerBypass,
+		Origin:   metadata.OriginAPIServerBypass,
 		Resource: cluster,
 	})
 

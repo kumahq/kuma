@@ -132,7 +132,7 @@ func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) boo
 	if h.Match.GetListenerName() != "" && h.Match.GetListenerName() != resource.Name {
 		return false
 	}
-	if h.Match.GetOrigin() != "" && h.Match.GetOrigin() != resource.Origin {
+	if h.Match.GetOrigin() != "" && h.Match.GetOrigin() != string(resource.Origin) {
 		return false
 	}
 	if len(h.Match.GetListenerTags()) > 0 {

@@ -13,18 +13,12 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
-)
-
-const (
-	// OriginProbes is a marker to indicate by which ProxyGenerator resources were generated.
-	OriginProbe            = "probe"
-	listenerName           = "probe:listener"
-	routeConfigurationName = "probe:route_configuration"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 type ProbeProxyGenerator struct{}
 
-func (g ProbeProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	// if app probe proxy is enabled for this DP, Virtual Probes are not needed
 	appProbeProxyEnabled := proxy.Metadata.GetAppProbeProxyEnabled()
 	if appProbeProxyEnabled {
@@ -65,22 +59,22 @@ func (g ProbeProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet,
 	}
 
 	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP).
-		WithOverwriteName(listenerName).
+		WithOverwriteName(metadata.ProbeListenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.HttpConnectionManager(listenerName, false, nil)).
-			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, routeConfigurationName).
+			Configure(envoy_listeners.HttpConnectionManager(metadata.ProbeListenerName, false, nil)).
+			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, metadata.ProbeRouteConfigName).
 				Configure(envoy_routes.VirtualHost(virtualHostBuilder)))))).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener %s", listenerName)
+		return nil, errors.Wrapf(err, "could not generate listener %s", metadata.ProbeListenerName)
 	}
 
 	resources := model.NewResourceSet()
 	resources.Add(&model.Resource{
-		Name:     listenerName,
+		Name:     metadata.ProbeListenerName,
 		Resource: probeListener,
-		Origin:   OriginProbe,
+		Origin:   metadata.OriginProbe,
 	})
 
 	return resources, nil

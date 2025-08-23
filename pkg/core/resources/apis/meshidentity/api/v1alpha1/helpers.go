@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -61,10 +62,10 @@ func Matched(
 func (i *MeshIdentity) getSpiffeIDTemplate() string {
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
+	builder.WriteString("{{ .TrustDomain }}")
 	if i.SpiffeID != nil {
 		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultPathTemplate))
 	} else {
-		builder.WriteString("{{ .TrustDomain }}")
 		builder.WriteString(defaultPathTemplate)
 	}
 	return builder.String()
@@ -129,4 +130,13 @@ func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, 
 		return "", fmt.Errorf("executing template failed: %w", err)
 	}
 	return sb.String(), nil
+}
+
+func (s *MeshIdentityStatus) IsInitialized() bool {
+	for _, condition := range s.Conditions {
+		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }

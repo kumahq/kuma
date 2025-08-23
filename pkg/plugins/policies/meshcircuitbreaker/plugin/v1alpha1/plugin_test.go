@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -43,7 +44,7 @@ import (
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
@@ -149,7 +150,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "outbound",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 			},
@@ -172,7 +173,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "outbound",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("second-service"),
 				},
 			},
@@ -195,7 +196,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "outbound",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("second-service"),
 				},
 			},
@@ -218,7 +219,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "outbound",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("second-service"),
 				},
 			},
@@ -242,7 +243,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "outbound",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("second-service"),
 				},
 			},
@@ -266,7 +267,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-					Origin:   generator.OriginInbound,
+					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
 				},
 			},
@@ -293,7 +294,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-					Origin:   generator.OriginInbound,
+					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(envoy_names.GetLocalClusterName(builders.FirstInboundPort)),
 				},
 			},
@@ -318,7 +319,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-					Origin:   generator.OriginInbound,
+					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
 				},
 			},
@@ -349,7 +350,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-					Origin:   generator.OriginInbound,
+					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
 				},
 			},
@@ -382,7 +383,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-					Origin:   generator.OriginInbound,
+					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
 				},
 			},
@@ -415,12 +416,12 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "other-service",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 				{
 					Name:     "other-service-5ab6003f460fabce",
-					Origin:   generator.OriginOutbound,
+					Origin:   metadata.OriginOutbound,
 					Resource: test_xds.ClusterWithName("other-service-5ab6003f460fabce"),
 				},
 			},
@@ -447,7 +448,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:           "outbound",
-					Origin:         generator.OriginOutbound,
+					Origin:         metadata.OriginOutbound,
 					Resource:       test_xds.ClusterWithName("backend"),
 					ResourceOrigin: backendMeshServiceIdentifier,
 				},
@@ -497,7 +498,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
@@ -560,7 +561,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Ports: []meshservice_api.Port{{
 							Port:        80,
 							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_mesh.ProtocolHTTP,
+							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
 							{

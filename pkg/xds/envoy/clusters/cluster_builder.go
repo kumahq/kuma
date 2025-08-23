@@ -1,6 +1,8 @@
 package clusters
 
 import (
+	"slices"
+
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/pkg/errors"
 
@@ -30,47 +32,48 @@ type ClusterBuilder struct {
 	apiVersion core_xds.APIVersion
 	// A series of ClusterConfigurers to apply to Envoy cluster.
 	configurers []v3.ClusterConfigurer
+	opts        []ClusterBuilderOpt
 	name        string
 }
 
 // Configure configures ClusterBuilder by adding individual ClusterConfigurers.
 func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
-	for _, opt := range opts {
-		opt.ApplyTo(b)
-	}
+	b.opts = slices.Concat(b.opts, opts)
 	return b
 }
 
 func (b *ClusterBuilder) ConfigureIf(condition bool, opts ...ClusterBuilderOpt) *ClusterBuilder {
-	if !condition {
-		return b
+	if condition {
+		return b.Configure(opts...)
 	}
-	for _, opt := range opts {
-		opt.ApplyTo(b)
-	}
-
 	return b
 }
 
 // Build generates an Envoy cluster by applying a series of ClusterConfigurers.
 func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
-	switch b.apiVersion {
-	case envoy.APIV3:
-		cluster := envoy_api.Cluster{
-			Name: b.name,
-		}
-		for _, configurer := range b.configurers {
-			if err := configurer.Configure(&cluster); err != nil {
-				return nil, err
-			}
-		}
-		if cluster.GetName() == "" {
-			return nil, errors.New("cluster name is undefined")
-		}
-		return &cluster, nil
-	default:
+	if b.apiVersion != envoy.APIV3 {
 		return nil, errors.New("unknown API")
 	}
+
+	for _, opt := range b.opts {
+		opt.ApplyTo(b)
+	}
+
+	cluster := envoy_api.Cluster{
+		Name: b.name,
+	}
+
+	for _, configurer := range b.configurers {
+		if err := configurer.Configure(&cluster); err != nil {
+			return nil, err
+		}
+	}
+
+	if cluster.GetName() == "" {
+		return nil, errors.New("cluster name is undefined")
+	}
+
+	return &cluster, nil
 }
 
 func (b *ClusterBuilder) MustBuild() envoy.NamedResource {

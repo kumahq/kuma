@@ -65,7 +65,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
 	}
 
-	if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() == v1alpha1.Mesh_MeshServices_Disabled {
+	if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() != v1alpha1.Mesh_MeshServices_Exclusive {
 		rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _layout endpoint without meshService enabled"), "Bad Request")
 		return
 	}

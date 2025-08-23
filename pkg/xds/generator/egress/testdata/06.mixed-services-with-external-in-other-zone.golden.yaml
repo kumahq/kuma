@@ -138,6 +138,16 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
+        - externalservice-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:externalservice-2
+          statPrefix: mesh-1_externalservice-2
+    - filterChainMatch:
+        serverNames:
         - service-1-zone-2{mesh=mesh-1}
         transportProtocol: tls
       filters:
@@ -156,16 +166,6 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh-1:service-2-zone-2
           statPrefix: mesh-1_service-2-zone-2
-    - filterChainMatch:
-        serverNames:
-        - externalservice-2{mesh=mesh-1}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh-1:externalservice-2
-          statPrefix: mesh-1_externalservice-2
     - filterChainMatch:
         serverNames:
         - externalservice-1{mesh=mesh-1}

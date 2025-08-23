@@ -65,23 +65,25 @@ func (x *DataplaneInsight) GetSubscription(id string) generic.Subscription {
 	return generic.GetSubscription[*DiscoverySubscription](x, id)
 }
 
-func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string) error {
+func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string, managedExternally bool) error {
 	if x.MTLS == nil {
 		x.MTLS = &DataplaneInsight_MTLS{}
 	}
-	ts := util_proto.MustTimestampProto(expiration)
-	if err := ts.CheckValid(); err != nil {
-		return err
+	if !managedExternally {
+		ts := util_proto.MustTimestampProto(expiration)
+		if err := ts.CheckValid(); err != nil {
+			return err
+		}
+		x.MTLS.CertificateExpirationTime = ts
+		ts = util_proto.MustTimestampProto(generation)
+		if err := ts.CheckValid(); err != nil {
+			return err
+		}
+		x.MTLS.LastCertificateRegeneration = ts
 	}
-	x.MTLS.CertificateExpirationTime = ts
 	x.MTLS.CertificateRegenerations++
-	ts = util_proto.MustTimestampProto(generation)
-	if err := ts.CheckValid(); err != nil {
-		return err
-	}
 	x.MTLS.IssuedBackend = issuedBackend
 	x.MTLS.SupportedBackends = supportedBackends
-	x.MTLS.LastCertificateRegeneration = ts
 	return nil
 }
 

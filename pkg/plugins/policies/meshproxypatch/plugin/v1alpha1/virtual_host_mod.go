@@ -120,7 +120,7 @@ func (c *virtualHostModificator) originMatches(routeCfg *core_xds.Resource) bool
 	if c.Match == nil {
 		return true
 	}
-	return c.Match.Origin == nil || (*c.Match.Origin == routeCfg.Origin)
+	return c.Match.Origin == nil || (*c.Match.Origin == string(routeCfg.Origin))
 }
 
 func (c *virtualHostModificator) routeConfigurationMatches(routeCfg *envoy_route.RouteConfiguration) bool {

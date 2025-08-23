@@ -15,7 +15,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -31,7 +31,7 @@ import (
 // Deprecated
 type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
-	Protocol core_mesh.Protocol
+	Protocol core_meta.Protocol
 	Element  subsetutils.Element
 }
 
@@ -59,11 +59,11 @@ func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listene
 	}
 	for _, filterChain := range listener.FilterChains {
 		switch c.Protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
-		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+		case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
 			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
@@ -115,10 +115,10 @@ type ClusterConfigurer struct {
 	IdleTimeout               *kube_meta.Duration
 	HTTPMaxStreamDuration     *kube_meta.Duration
 	HTTPMaxConnectionDuration *kube_meta.Duration
-	Protocol                  core_mesh.Protocol
+	Protocol                  core_meta.Protocol
 }
 
-func ClusterConfigurerFromConf(conf api.Conf, protocol core_mesh.Protocol) ClusterConfigurer {
+func ClusterConfigurerFromConf(conf api.Conf, protocol core_meta.Protocol) ClusterConfigurer {
 	return ClusterConfigurer{
 		ConnectionTimeout:         conf.ConnectionTimeout,
 		IdleTimeout:               conf.IdleTimeout,
@@ -131,7 +131,7 @@ func ClusterConfigurerFromConf(conf api.Conf, protocol core_mesh.Protocol) Clust
 func (c *ClusterConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	cluster.ConnectTimeout = toProtoDurationOrDefault(c.ConnectionTimeout, policies_defaults.DefaultConnectTimeout)
 	switch c.Protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 		err := clusters_v3.UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
 			if options.CommonHttpProtocolOptions == nil {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
@@ -219,7 +219,7 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 
 type ListenerConfigurer struct {
 	Conf     api.Conf
-	Protocol core_mesh.Protocol
+	Protocol core_meta.Protocol
 }
 
 func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -244,11 +244,11 @@ func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listene
 	}
 	for _, filterChain := range listener.FilterChains {
 		switch rc.Protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
-		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+		case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
 			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}

@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -24,11 +25,12 @@ var _ = Describe("AdminProxyGenerator", func() {
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile string
-		expected      string
-		adminAddress  string
-		readinessPort uint32
-		features      xds_types.Features
+		dataplaneFile    string
+		expected         string
+		adminAddress     string
+		readinessPort    uint32
+		features         xds_types.Features
+		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
 	}
 
 	DescribeTable("should generate envoy config",
@@ -46,6 +48,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{
+							MeshServices: &mesh_proto.Mesh_MeshServices{
+								Mode: given.meshServicesMode,
+							},
 						},
 					},
 				},
@@ -121,19 +128,21 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9400,
 		}),
 		Entry("should generate admin resources, unified naming, readiness with TCP port 9902", testCase{
-			dataplaneFile: "07.dataplane.input.yaml",
-			expected:      "07.envoy-config.golden.yaml",
-			adminAddress:  "",
-			readinessPort: 9902,
+			dataplaneFile:    "07.dataplane.input.yaml",
+			expected:         "07.envoy-config.golden.yaml",
+			adminAddress:     "",
+			readinessPort:    9902,
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
 		Entry("should generate admin resources, readiness with Unix socket", testCase{
-			dataplaneFile: "08.dataplane.input.yaml",
-			expected:      "08.envoy-config.golden.yaml",
-			adminAddress:  "127.0.0.1",
-			readinessPort: 9902,
+			dataplaneFile:    "08.dataplane.input.yaml",
+			expected:         "08.envoy-config.golden.yaml",
+			adminAddress:     "127.0.0.1",
+			readinessPort:    9902,
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 				xds_types.FeatureReadinessUnixSocket:   true,

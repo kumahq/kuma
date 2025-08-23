@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -35,7 +36,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshTrace", func() {
@@ -45,6 +46,7 @@ var _ = Describe("MeshTrace", func() {
 		outbounds       xds_types.Outbounds
 		goldenFile      string
 		features        xds_types.Features
+		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -58,14 +60,14 @@ var _ = Describe("MeshTrace", func() {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
-				Origin: generator.OriginOutbound,
+				Origin: metadata.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
@@ -77,14 +79,14 @@ var _ = Describe("MeshTrace", func() {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
-				Origin: generator.OriginOutbound,
+				Origin: metadata.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
@@ -108,7 +110,8 @@ var _ = Describe("MeshTrace", func() {
 					WithNamespace("backend-ns").
 					Build()},
 			}
-			context := xds_samples.SampleContextWith(meshResources)
+			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
+			context.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -175,7 +178,8 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
 		}),
 		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources: inboundAndOutboundRealMeshService(),
+			resources:       inboundAndOutboundRealMeshService(),
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
@@ -378,8 +382,9 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		rules    core_rules.SingleItemRules
-		features xds_types.Features
+		rules           core_rules.SingleItemRules
+		features        xds_types.Features
+		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 	}
 	DescribeTable("should generate proper Envoy config for gateways",
 		func(given gatewayTestCase) {
@@ -391,7 +396,8 @@ var _ = Describe("MeshTrace", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_samples.SampleContextWith(resources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
+			xdsCtx.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
@@ -436,6 +442,7 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}),
 		Entry("simple-gateway-with-unified-naming", gatewayTestCase{
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
