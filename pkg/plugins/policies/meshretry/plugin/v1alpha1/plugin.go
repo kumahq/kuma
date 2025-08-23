@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -118,12 +119,12 @@ func applyToGateway(
 			continue
 		}
 
-		var protocol core_mesh.Protocol
+		var protocol core_meta.Protocol
 		switch listenerInfo.Listener.Protocol {
 		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_mesh.ProtocolHTTP
+			protocol = core_meta.ProtocolHTTP
 		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_mesh.ProtocolTCP
+			protocol = core_meta.ProtocolTCP
 		}
 		configurer := plugin_xds.DeprecatedConfigurer{
 			Rules:    toRules.Rules,
@@ -186,7 +187,7 @@ func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.R
 	return nil
 }
 
-func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route.Route, protocol core_mesh.Protocol) error {
+func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route.Route, protocol core_meta.Protocol) error {
 	policy, err := plugin_xds.GetRouteRetryConfig(pointer.To(rctx.Conf()), protocol)
 	if err != nil {
 		return err

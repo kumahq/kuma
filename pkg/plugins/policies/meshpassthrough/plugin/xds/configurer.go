@@ -5,7 +5,7 @@ import (
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/metadata"
@@ -19,7 +19,7 @@ type Configurer struct {
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
-	clustersAccumulator := map[string]core_mesh.Protocol{}
+	clustersAccumulator := map[string]core_meta.Protocol{}
 	filterChainMatches, err := GetOrderedMatchers(c.Conf)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 func (c Configurer) configureListener(
 	orderedFilterChainMatches []FilterChainMatch,
 	listener *envoy_listener.Listener,
-	clustersAccumulator map[string]core_mesh.Protocol,
+	clustersAccumulator map[string]core_meta.Protocol,
 	isIPv6 bool,
 ) error {
 	if listener == nil {
@@ -73,7 +73,7 @@ func (c Configurer) configureListener(
 			Routes:            matcher.Routes,
 			IsIPv6:            isIPv6,
 		}
-		if matcher.Protocol == core_mesh.Protocol(api.MysqlProtocol) {
+		if matcher.Protocol == core_meta.Protocol(api.MysqlProtocol) {
 			listenerFiltersExcludedOnPorts = append(listenerFiltersExcludedOnPorts, matcher.Port)
 		}
 		err := configurer.Configure(listener, clustersAccumulator)

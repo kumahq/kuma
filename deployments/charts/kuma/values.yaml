@@ -56,6 +56,9 @@ controlPlane:
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 
+  # -- Pod restart policy for the Control Plane.
+  restartPolicy: Always
+
   # -- Minimum number of seconds for which a newly created pod should be ready for it to be considered available.
   minReadySeconds: 0
 
@@ -400,6 +403,9 @@ cni:
     # -- CNI image pull policy
     imagePullPolicy: IfNotPresent
 
+  # -- Pod restart policy for the CNI pods
+  restartPolicy: Always
+
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
 
@@ -475,6 +481,9 @@ ingress:
 
   # -- Log level for ingress (available values: off|info|debug)
   logLevel: info
+
+  # -- Pod restart policy for the ingress pods
+  restartPolicy: Always
 
   # -- Define the resources to allocate to mesh ingress
   resources:
@@ -615,6 +624,9 @@ egress:
   # -- Log level for egress (available values: off|info|debug)
   logLevel: info
 
+  # -- Pod restart policy for the egress pods
+  restartPolicy: Always
+
   # Horizontal Pod Autoscaling configuration
   autoscaling:
     # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
@@ -738,11 +750,11 @@ kumactl:
 kubectl:
   image:
     # -- The kubectl image registry
-    registry: docker.io
+    registry: registry.k8s.io
     # -- The kubectl image repository
-    repository: rancher/kubectl
+    repository: kubectl
     # -- The kubectl image tag
-    tag: "v1.33.3@sha256:26d09fcee6eb9a14b81c95e52dd90964a0a24263abb075f58651d2ac62651b59"
+    tag: v1.33.4@sha256:261a9ed843eb68e3d50da132245e2221d75ca19504130e47bd32788c0ff339a0
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

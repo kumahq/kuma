@@ -8,7 +8,7 @@ import (
 	core_generator "github.com/kumahq/kuma/pkg/core/resources/apis/core/generator"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
+	policies_generator "github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
 	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -46,7 +46,7 @@ type ProxyTemplateRawSource struct {
 	Resources []*mesh_proto.ProxyTemplateRawResource
 }
 
-func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, _ *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	for i, r := range s.Resources {
 		res, err := util_envoy.ResourceFromYaml(r.Resource)
@@ -86,7 +86,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
-		generator.NewGenerator(),
+		policies_generator.NewGenerator(),
 		generator_secrets.Generator{},
 		core_generator.NewGenerator(),
 	}
@@ -96,11 +96,8 @@ func NewEgressProxyProfile() core.ResourceGenerator {
 	return core.CompositeResourceGenerator{
 		AdminProxyGenerator{},
 		egress.Generator{
-			ZoneEgressGenerators: []egress.ZoneEgressGenerator{
-				&egress.InternalServicesGenerator{},
-				&egress.ExternalServicesGenerator{},
-			},
 			SecretGenerator: &generator_secrets.Generator{},
+			PolicyGenerator: policies_generator.NewGenerator(),
 		},
 	}
 }
@@ -120,8 +117,8 @@ var predefinedProfiles = make(map[string]core.ResourceGenerator)
 
 func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
-	RegisterProfile(IngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
-	RegisterProfile(egress.EgressProxy, NewEgressProxyProfile())
+	RegisterProfile(metadata.ProxyTemplateProfileIngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
+	RegisterProfile(metadata.ProxyTemplateProfileEgressProxy, NewEgressProxyProfile())
 	// we register this so that kumactl does not fail validation of profiles registered by plugins (only "gateway-proxy" for now)
 	// a proper solution for this is to rewrite as a custom ResourceManager
 	// TODO: https://github.com/kumahq/kuma/issues/5144

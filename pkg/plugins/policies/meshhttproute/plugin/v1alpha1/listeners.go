@@ -8,7 +8,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -35,8 +36,8 @@ func GenerateOutboundListener(
 	svc meshroute_xds.DestinationService,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
+	unifiedNaming bool,
 ) (*core_xds.Resource, error) {
-	unifiedNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	transparentProxyEnabled := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
 
 	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
@@ -46,9 +47,9 @@ func GenerateOutboundListener(
 	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
 	routeConfigName := svc.ConditionallyResolveKRIWithFallback(true, legacyRouteConfigName)
-	virtualHostName := svc.ConditionallyResolveKRIWithFallback(unifiedNamingEnabled, svc.KumaServiceTagValue)
-	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(unifiedNamingEnabled, "")
-	listenerName := svc.ConditionallyResolveKRIWithFallback(unifiedNamingEnabled, legacyListenerName)
+	virtualHostName := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, svc.KumaServiceTagValue)
+	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, "")
+	listenerName := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, legacyListenerName)
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -67,7 +68,7 @@ func GenerateOutboundListener(
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.AddFilterChainConfigurer(hcm)).
 		Configure(envoy_listeners.AddFilterChainConfigurer(route)).
-		ConfigureIf(svc.Protocol == core_mesh.ProtocolGRPC, envoy_listeners.GrpcStats()) // TODO: https://github.com/kumahq/kuma/issues/3325
+		ConfigureIf(svc.Protocol == core_meta.ProtocolGRPC, envoy_listeners.GrpcStats()) // TODO: https://github.com/kumahq/kuma/issues/3325
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
@@ -100,7 +101,7 @@ func generateFromService(
 ) (*core_xds.ResourceSet, error) {
 	var routes []xds.OutboundRoute
 
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx, unifiedNaming) {
 		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, unifiedNaming)
@@ -136,7 +137,7 @@ func generateFromService(
 		dpTags = proxy.Dataplane.Spec.TagSet()
 	}
 
-	listener, err := GenerateOutboundListener(proxy, svc, routes, dpTags)
+	listener, err := GenerateOutboundListener(proxy, svc, routes, dpTags, unifiedNaming)
 	if err != nil {
 		return nil, err
 	}
@@ -212,12 +213,8 @@ func prepareRoutes(
 		apiRules = conf.Rules
 	}
 
-	if len(apiRules) == 0 {
-		switch svc.Protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-		default:
-			return nil
-		}
+	if len(apiRules) == 0 && !core_meta.IsHTTPBased(svc.Protocol) {
+		return nil
 	}
 
 	var routes []api.Route

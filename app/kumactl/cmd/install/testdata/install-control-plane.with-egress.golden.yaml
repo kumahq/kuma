@@ -525,6 +525,7 @@ spec:
         runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
         
         kubernetes.io/os: linux
@@ -703,6 +704,7 @@ spec:
         runAsUser: 5678
       serviceAccountName: kuma-egress
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
       
         kubernetes.io/os: linux

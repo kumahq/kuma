@@ -3,7 +3,8 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -21,8 +22,8 @@ func GenerateOutboundListener(
 	proxy *core_xds.Proxy,
 	svc meshroute_xds.DestinationService,
 	splits []envoy_common.Split,
+	unifiedNaming bool,
 ) (*core_xds.Resource, error) {
-	unifiedNaming := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
 	bindOutbounds := proxy.Metadata.HasFeature(types.FeatureBindOutbounds)
 	transparentProxy := !bindOutbounds && proxy.GetTransparentProxy().Enabled()
 
@@ -42,7 +43,7 @@ func GenerateOutboundListener(
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
-		ConfigureIf(svc.Protocol == mesh.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
+		ConfigureIf(svc.Protocol == core_meta.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
@@ -74,7 +75,7 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules
-	unifiedNaming := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, meshCtx)
 	if len(backendRefs) == 0 {
@@ -83,7 +84,7 @@ func generateFromService(
 
 	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx, unifiedNaming)
 
-	listener, err := GenerateOutboundListener(proxy, svc, splits)
+	listener, err := GenerateOutboundListener(proxy, svc, splits, unifiedNaming)
 	if err != nil {
 		return nil, err
 	}

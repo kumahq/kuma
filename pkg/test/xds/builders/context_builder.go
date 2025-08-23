@@ -3,7 +3,7 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -95,7 +95,7 @@ func (mc *ContextBuilder) WithMeshLocalResources(rs []model.Resource) *ContextBu
 	return mc
 }
 
-func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_mesh.Protocol) *ContextBuilder {
+func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_meta.Protocol) *ContextBuilder {
 	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
 		info.Protocol = protocol
 	} else {

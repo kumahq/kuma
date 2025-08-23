@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -24,11 +25,12 @@ import (
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 	type testCase struct {
-		mesh      string
-		dataplane string
-		profile   string
-		expected  string
-		features  xds_types.Features
+		mesh            string
+		dataplane       string
+		profile         string
+		expected        string
+		features        xds_types.Features
+		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -87,20 +89,30 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: &mesh_proto.Mesh{},
+						Spec: &mesh_proto.Mesh{
+							MeshServices: &mesh_proto.Mesh_MeshServices{
+								Mode: given.meshServiceMode,
+							},
+						},
 					},
 					Resources: resources,
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
 						"db": {
 							TLSReadiness: true,
-							Protocol:     core_mesh.ProtocolUnknown,
+							Protocol:     core_meta.ProtocolUnknown,
 						},
 						"elastic": {
 							TLSReadiness: true,
-							Protocol:     core_mesh.ProtocolUnknown,
+							Protocol:     core_meta.ProtocolUnknown,
 						},
 					},
 				},
+			}
+
+			if given.features.HasFeature(xds_types.FeatureUnifiedResourceNaming) {
+				ctx.Mesh.Resource.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
+					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+				}
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
@@ -373,8 +385,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 tags:
                   kuma.io/service: elastic
 `,
-			profile:  core_mesh.ProfileDefaultProxy,
-			expected: "5-envoy-config.golden.yaml",
+			profile:         core_mesh.ProfileDefaultProxy,
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			expected:        "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 				xds_types.FeatureReadinessUnixSocket:   true,

@@ -1,21 +1,23 @@
-[
- {
-  "conf": [
-   {
-    "connectionTimeout": "2s",
-    "http": {
-     "requestTimeout": "20s"
+{
+ "policies": [
+  {
+   "conf": [
+    {
+     "connectionTimeout": "2s",
+     "http": {
+      "requestTimeout": "20s"
+     }
     }
-   }
-  ],
-  "kind": "MeshTimeout",
-  "origins": [
-   {
-    "kri": "kri_mt_default___mt-2_"
-   },
-   {
-    "kri": "kri_mt_default___mt-1_"
-   }
-  ]
- }
-]
+   ],
+   "kind": "MeshTimeout",
+   "origins": [
+    {
+     "kri": "kri_mt_default___mt-2_"
+    },
+    {
+     "kri": "kri_mt_default___mt-1_"
+    }
+   ]
+  }
+ ]
+}

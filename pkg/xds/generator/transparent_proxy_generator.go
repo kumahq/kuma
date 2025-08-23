@@ -5,7 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -13,17 +15,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
-)
-
-const (
-	OutboundNameIPv4  = "outbound:passthrough:ipv4"
-	OutboundNameIPv6  = "outbound:passthrough:ipv6"
-	InboundNameIPv4   = "inbound:passthrough:ipv4"
-	InboundNameIPv6   = "inbound:passthrough:ipv6"
-	InPassThroughIPv4 = "127.0.0.6"
-	InPassThroughIPv6 = "::6"
-	allIPv4           = "0.0.0.0"
-	allIPv6           = "::"
 )
 
 type TransparentProxyGenerator struct{}
@@ -82,7 +73,7 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 				envoy_common.TrafficDirectionUnspecified,
 				sourceService,
 				"external",
-				ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+				ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
 				proxy,
 			)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
@@ -137,9 +128,27 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 }
 
 func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	return tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, InPassThroughIPv4)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+	return tpg.generate(
+		ctx,
+		proxy,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), metadata.TransparentOutboundNameIPv4),
+		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4),
+		metadata.TransparentAllIPv4,
+		metadata.TransparentInPassThroughIPv4,
+	)
 }
 
 func (tpg TransparentProxyGenerator) generateIPv6(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	return tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+	return tpg.generate(
+		ctx,
+		proxy,
+		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 6), metadata.TransparentOutboundNameIPv6),
+		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6),
+		metadata.TransparentAllIPv6,
+		metadata.TransparentInPassThroughIPv6,
+	)
 }

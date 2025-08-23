@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -27,12 +27,12 @@ const (
 	IPV6
 )
 
-var protocolOrder = map[core_mesh.Protocol]int{
-	core_mesh.ProtocolTLS:   0,
-	core_mesh.ProtocolTCP:   1,
-	core_mesh.ProtocolHTTP:  2,
-	core_mesh.ProtocolHTTP2: 3,
-	core_mesh.ProtocolGRPC:  4,
+var protocolOrder = map[core_meta.Protocol]int{
+	core_meta.ProtocolTLS:   0,
+	core_meta.ProtocolTCP:   1,
+	core_meta.ProtocolHTTP:  2,
+	core_meta.ProtocolHTTP2: 3,
+	core_meta.ProtocolGRPC:  4,
 }
 
 type Route struct {
@@ -41,14 +41,14 @@ type Route struct {
 }
 
 type Matcher struct {
-	Protocol  core_mesh.Protocol
+	Protocol  core_meta.Protocol
 	Port      uint32
 	MatchType MatchType
 	Value     string
 }
 
 type FilterChainMatch struct {
-	Protocol  core_mesh.Protocol
+	Protocol  core_meta.Protocol
 	Port      uint32
 	MatchType MatchType
 	Value     string
@@ -57,10 +57,10 @@ type FilterChainMatch struct {
 
 func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
-	portProtocols := map[uint32]map[core_mesh.Protocol]bool{}
+	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
 	for _, match := range pointer.Deref(conf.AppendMatch) {
 		port := pointer.DerefOr[uint32](match.Port, 0)
-		protocol := core_mesh.ParseProtocol(string(match.Protocol))
+		protocol := core_meta.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)
 		matcher := Matcher{
 			Protocol:  protocol,
@@ -68,12 +68,12 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 			MatchType: matchType,
 		}
 		if _, found := portProtocols[port]; !found {
-			portProtocols[port] = map[core_mesh.Protocol]bool{protocol: true}
+			portProtocols[port] = map[core_meta.Protocol]bool{protocol: true}
 		} else {
 			portProtocols[port][protocol] = true
 		}
 		switch protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 			// when there are domains we want to create VirtualHosts with Domain match
 			if matchType == Domain {
 				if isWildcardDomain {
@@ -159,14 +159,14 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	return filterChainMatchers, nil
 }
 
-func getMatchType(match api.Match, protocol core_mesh.Protocol) (MatchType, bool) {
+func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool) {
 	var matchType MatchType
 	isWildcardDomain := false
 	switch match.Type {
 	case api.MatchType("Domain"):
 		matchType = Domain
 		// for L7 protocol we want to aggregate routes
-		if strings.HasPrefix(match.Value, "*") && slices.Contains([]core_mesh.Protocol{core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2}, protocol) {
+		if strings.HasPrefix(match.Value, "*") && slices.Contains([]core_meta.Protocol{core_meta.ProtocolGRPC, core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2}, protocol) {
 			matchType = Domain
 			isWildcardDomain = true
 		} else if strings.HasPrefix(match.Value, "*") {
@@ -189,17 +189,17 @@ func getMatchType(match api.Match, protocol core_mesh.Protocol) (MatchType, bool
 	return matchType, isWildcardDomain
 }
 
-func validatePortAndProtocol(portProtocols map[uint32]map[core_mesh.Protocol]bool) error {
+func validatePortAndProtocol(portProtocols map[uint32]map[core_meta.Protocol]bool) error {
 	var errs error
 	for port, protocols := range portProtocols {
 		var counter int
-		if _, found := protocols[core_mesh.ProtocolHTTP]; found {
+		if _, found := protocols[core_meta.ProtocolHTTP]; found {
 			counter++
 		}
-		if _, found := protocols[core_mesh.ProtocolHTTP2]; found {
+		if _, found := protocols[core_meta.ProtocolHTTP2]; found {
 			counter++
 		}
-		if _, found := protocols[core_mesh.ProtocolGRPC]; found {
+		if _, found := protocols[core_meta.ProtocolGRPC]; found {
 			counter++
 		}
 		if counter > 1 {

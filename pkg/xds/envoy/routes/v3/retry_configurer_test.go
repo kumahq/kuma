@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -24,7 +25,7 @@ var _ = Describe("RetryConfigurer", func() {
 		service          string
 		routes           envoy_common.Routes
 		dpTags           mesh_proto.MultiValueTagSet
-		protocol         core_mesh.Protocol
+		protocol         core_meta.Protocol
 		retry            *core_mesh.RetryResource
 		expected         string
 	}

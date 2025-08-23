@@ -3,25 +3,25 @@ experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
 container-structure-test = "1.19.3"
-ginkgo = "2.23.4"
+ginkgo = "2.24.0"
 hadolint = "2.12.1-beta"
-helm = "3.18.5"
+helm = "3.18.6"
 helm-docs = "1.14.2"
 kind = "0.29.0"
-kubectl = "1.32.6"
+kubectl = "1.33.4"
 protoc = "3.20.0"
 shellcheck = "0.11.0"
 yq = "4.47.1"
 "aqua:bufbuild/protoc-gen-validate" = "1.2.1"
 "aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.5.1"
-"aqua:helm/chart-releaser" = "1.7.0"
+"aqua:helm/chart-releaser" = "1.8.1"
 "aqua:k3d-io/k3d" = "5.8.3"
 "aqua:protocolbuffers/protobuf-go/protoc-gen-go" = "1.36.7"
-"aqua:stackrox/kube-linter" = "0.7.1"
+"aqua:stackrox/kube-linter" = "0.7.5"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.5.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.18.0"
-"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250813191507-c7df6d0236ed"
+"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250819114936-e4f9a2446c3d"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/workflows/_build_publish.yaml

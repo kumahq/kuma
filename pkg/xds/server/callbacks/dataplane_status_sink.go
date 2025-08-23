@@ -133,7 +133,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		switch {
 		case event != nil && event.Operation == events.Delete:
 			secretsInfo = nil
-		case event != nil:
+			// we don't need to store event once delete
+			lastEvent = nil
+		case event != nil && event.Operation == events.Create:
 			secretsInfo = &secrets.Info{
 				IssuedBackend: event.Origin.String(),
 			}
@@ -144,6 +146,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			} else {
 				secretsInfo.ManagedExternally = true
 			}
+			lastEvent = event
 		default:
 			secretsInfo = s.secrets.Info(proxyType, dataplaneID)
 		}
@@ -153,7 +156,6 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		lastEvent = event
 
 		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
 			return

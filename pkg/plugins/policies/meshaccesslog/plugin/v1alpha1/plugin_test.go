@@ -13,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -73,6 +74,7 @@ var _ = Describe("MeshAccessLog", func() {
 		expectedListeners []string
 		expectedClusters  []string
 		features          xds_types.Features
+		meshServicesMode  mesh_proto.Mesh_MeshServices_Mode
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -84,7 +86,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			xdsCtx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServicesMode)).
 				WithResources(xds_context.NewResources()).
 				WithEndpointMap(
 					xds_builders.EndpointMap().
@@ -92,9 +94,9 @@ var _ = Describe("MeshAccessLog", func() {
 						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service")).
 						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 				).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
-				AddServiceProtocol("other-service-http", core_mesh.ProtocolHTTP).
-				AddServiceProtocol("other-service-tcp", core_mesh.ProtocolTCP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 				Build()
 
 			proxy := xds_builders.Proxy().
@@ -433,6 +435,7 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
@@ -757,8 +760,8 @@ var _ = Describe("MeshAccessLog", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
-				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
@@ -861,7 +864,7 @@ func otherServiceHTTPListener() core_xds.Resource {
 				Address: "127.0.0.1",
 				Port:    27777,
 			},
-			Protocol:            core_mesh.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
 			KumaServiceTagValue: "other-service-http",
 		},
 		[]meshhttproute_xds.OutboundRoute{{
@@ -870,6 +873,7 @@ func otherServiceHTTPListener() core_xds.Resource {
 			},
 		}},
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -885,12 +889,13 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 				Address: "127.0.0.1",
 				Port:    port,
 			},
-			Protocol:            core_mesh.ProtocolTCP,
+			Protocol:            core_meta.ProtocolTCP,
 			KumaServiceTagValue: service,
 		},
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(service).Build(),
 		},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -907,11 +912,12 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Port:     uint32(port),
 				Resource: serviceResourceKRI,
 			},
-			Protocol:            core_mesh.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
 			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener

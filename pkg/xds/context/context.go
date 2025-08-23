@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
@@ -95,7 +96,7 @@ type MeshContext struct {
 
 type ServiceInformation struct {
 	TLSReadiness      bool
-	Protocol          core_mesh.Protocol
+	Protocol          core_meta.Protocol
 	IsExternalService bool
 }
 
@@ -105,7 +106,7 @@ type ReachableBackends map[kri.Identifier]bool
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
 func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
-	return mc.BaseMeshContext.DestinationIndex.ResolveResourceIdentifier(resType, labels)
+	return mc.BaseMeshContext.DestinationIndex.resolveResourceIdentifier(resType, labels)
 }
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
@@ -142,11 +143,11 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
-func (mc *MeshContext) GetServiceProtocol(serviceName string) core_mesh.Protocol {
+func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
 	if info, found := mc.ServicesInformation[serviceName]; found {
 		return info.Protocol
 	}
-	return core_mesh.ProtocolUnknown
+	return core_meta.ProtocolUnknown
 }
 
 func (mc *MeshContext) IsExternalService(serviceName string) bool {

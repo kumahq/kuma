@@ -1,25 +1,11 @@
 resources:
-- name: system_kri_mm_default___meshmetric1_default-backend
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
-    loadAssignment:
-      clusterName: system_kri_mm_default___meshmetric1_default-backend
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              pipe:
-                path: /tmp/kuma-mh-backend-default.sock
-    name: system_kri_mm_default___meshmetric1_default-backend
-    type: STATIC
-- name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+- name: system_meshmetric_otel_otel-collector-observability-svc-4317
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+      clusterName: system_meshmetric_otel_otel-collector-observability-svc-4317
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -27,10 +13,24 @@ resources:
               socketAddress:
                 address: otel-collector.observability.svc
                 portValue: 4317
-    name: system_kri_mm_default___meshmetric1_otel-collector-observability-svc-4317
+    name: system_meshmetric_otel_otel-collector-observability-svc-4317
     type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: system_meshmetric_prometheus_default-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: system_meshmetric_prometheus_default-backend
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-backend-default.sock
+    name: system_meshmetric_prometheus_default-backend
+    type: STATIC

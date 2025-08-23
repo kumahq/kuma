@@ -83,6 +83,8 @@ func ToTlsVersion(version *TlsVersion) tlsv3.TlsParameters_TlsProtocol {
 // +kubebuilder:validation:Enum=ECDHE-ECDSA-AES128-GCM-SHA256;ECDHE-ECDSA-AES256-GCM-SHA384;ECDHE-ECDSA-CHACHA20-POLY1305;ECDHE-RSA-AES128-GCM-SHA256;ECDHE-RSA-AES256-GCM-SHA384;ECDHE-RSA-CHACHA20-POLY1305
 type TlsCipher string
 
+func (c TlsCipher) String() string { return string(c) }
+
 const (
 	EcdheEcdsaAes128GcmSha256  TlsCipher = "ECDHE-ECDSA-AES128-GCM-SHA256"
 	EcdheEcdsaAes256GcmSha384  TlsCipher = "ECDHE-ECDSA-AES256-GCM-SHA384"

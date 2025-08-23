@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -264,7 +265,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 			ServicesInformation: map[string]*xds_context.ServiceInformation{
 				"api-http": {
-					Protocol: core_mesh.ProtocolHTTP,
+					Protocol: core_meta.ProtocolHTTP,
 				},
 			},
 		},
@@ -640,35 +641,35 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			given.ctx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
 				"api-http": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolHTTP,
+					Protocol:     core_meta.ProtocolHTTP,
 				},
 				"api-tcp": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolTCP,
+					Protocol:     core_meta.ProtocolTCP,
 				},
 				"api-http2": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolHTTP2,
+					Protocol:     core_meta.ProtocolHTTP2,
 				},
 				"api-grpc": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolGRPC,
+					Protocol:     core_meta.ProtocolGRPC,
 				},
 				"backend": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolUnknown,
+					Protocol:     core_meta.ProtocolUnknown,
 				},
 				"db": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolUnknown,
+					Protocol:     core_meta.ProtocolUnknown,
 				},
 				"es": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolHTTP,
+					Protocol:     core_meta.ProtocolHTTP,
 				},
 				"es2": {
 					TLSReadiness: true,
-					Protocol:     core_mesh.ProtocolHTTP2,
+					Protocol:     core_meta.ProtocolHTTP2,
 				},
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
@@ -998,10 +999,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
 		plainCtx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
 			"backend.kuma-system": {
-				Protocol: core_mesh.ProtocolUnknown,
+				Protocol: core_meta.ProtocolUnknown,
 			},
 			"db.kuma-system": {
-				Protocol: core_mesh.ProtocolUnknown,
+				Protocol: core_meta.ProtocolUnknown,
 			},
 		}
 		rs, err := gen.Generate(context.Background(), nil, plainCtx, proxy)

@@ -42,8 +42,10 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 		return ResolvedBackendRef{}, false
 	}
 
-	if br.Port != nil {
-		rr.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
+	if sectionName := pointer.Deref(br.SectionName); sectionName != "" {
+		rr.Resource.SectionName = sectionName
+	} else if port := pointer.Deref(br.Port); port > 0 {
+		rr.Resource.SectionName = fmt.Sprintf("%d", port)
 	}
 
 	return ResolvedBackendRef{Ref: rr}, true
