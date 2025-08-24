@@ -83,7 +83,7 @@ func RestoreState(bytes []byte) {
 	)
 	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
-	Expect(Cluster.AddPortForward(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
+	Cluster.AddPortForward(state.ZoneEgress, framework.Config.ZoneEgressApp)
 }
 
 func SynchronizedAfterSuite() {

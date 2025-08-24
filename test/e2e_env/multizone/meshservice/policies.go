@@ -297,7 +297,7 @@ spec:
 		portFwd, err := multizone.KubeZone1.PortForwardApp("test-client", namespace, 9901)
 		Expect(err).ToNot(HaveOccurred())
 
-		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.Endpoint())
+		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.Endpoint)
 		Expect(err).ToNot(HaveOccurred())
 		// then
 		Eventually(func() ([]client.FailureResponse, error) {
