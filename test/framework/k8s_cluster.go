@@ -99,7 +99,21 @@ func (c *K8sCluster) PortForwardApp(appName string, namespace string, remotePort
 		)
 	}
 
-	return c.portForward(k8s.ResourceTypePod, podName, namespace, remotePort)
+	tnl, err := c.portForward(k8s.ResourceTypePod, podName, namespace, remotePort)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err,
+			"failed to start port-forward to %s/%s in namespace %q (port %d)",
+			k8s.ResourceTypePod.String(),
+			podName,
+			namespace,
+			remotePort,
+		)
+	}
+
+	c.portForwards[appName] = tnl
+
+	return tnl, nil
 }
 
 func (c *K8sCluster) portForward(
@@ -143,8 +157,6 @@ func (c *K8sCluster) portForward(
 			remotePort,
 		)
 	}
-
-	c.portForwards[resourceName] = tnl
 
 	return tnl, nil
 }

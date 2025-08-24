@@ -88,14 +88,38 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 		)
 	}
 
+	localPortAPIServer, err := k8s.GetAvailablePortE(c.t)
+	if err != nil {
+		return errors.Wrapf(
+			err,
+			"failed to allocate a local port for port-forward to API Server (%s/%s in namespace %q [remote port: %d])",
+			k8s.ResourceTypeService.String(),
+			kumaCpSvc.Name,
+			kumaCpSvc.Namespace,
+			5681,
+		)
+	}
+
+	localPortMADS, err := k8s.GetAvailablePortE(c.t)
+	if err != nil {
+		return errors.Wrapf(
+			err,
+			"failed to allocate a local port for port-forward to MADS (%s/%s in namespace %q [remote port: %d])",
+			k8s.ResourceTypeService.String(),
+			kumaCpSvc.Name,
+			kumaCpSvc.Namespace,
+			5676,
+		)
+	}
+
 	kubectlOpts := c.GetKubectlOptions(Config.KumaNamespace)
 
-	c.portFwd = k8s.NewTunnel(kubectlOpts, k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5681)
+	c.portFwd = k8s.NewTunnel(kubectlOpts, k8s.ResourceTypeService, kumaCpSvc.Name, localPortAPIServer, 5681)
 	if err := c.portFwd.ForwardPortE(c.t); err != nil {
 		return errors.Wrapf(err, "failed to start port-forward to API Server (port %d)", 5681)
 	}
 
-	c.madsFwd = k8s.NewTunnel(kubectlOpts, k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5676)
+	c.madsFwd = k8s.NewTunnel(kubectlOpts, k8s.ResourceTypeService, kumaCpSvc.Name, localPortMADS, 5676)
 	if err := c.madsFwd.ForwardPortE(c.t); err != nil {
 		return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
 	}
