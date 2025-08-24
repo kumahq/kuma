@@ -124,7 +124,7 @@ spec:
 		portFwd, err := kubernetes.Cluster.PortForwardApp("test-server", namespace, 9901)
 		Expect(err).ToNot(HaveOccurred())
 
-		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(kubernetes.Cluster.GetTesting(), portFwd.Endpoint())
+		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(kubernetes.Cluster.GetTesting(), portFwd.Endpoint)
 		Expect(err).ToNot(HaveOccurred())
 
 		// and it's a tls traffic
