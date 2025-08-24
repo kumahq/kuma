@@ -121,13 +121,15 @@ spec:
 			g.Expect(resp.Instance).To(Equal("test-server-spire"))
 		}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
-		Expect(kubernetes.Cluster.PortForwardService("test-server", namespace, 9901)).To(Succeed())
-		portFwd := kubernetes.Cluster.GetPortForward("test-server")
-		admin := tunnel.NewK8sEnvoyAdminTunnel(kubernetes.Cluster.GetTesting(), portFwd.ApiServerEndpoint)
+		portFwd, err := kubernetes.Cluster.PortForwardApp("test-server", namespace, 9901)
+		Expect(err).ToNot(HaveOccurred())
+
+		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(kubernetes.Cluster.GetTesting(), portFwd.Endpoint)
+		Expect(err).ToNot(HaveOccurred())
 
 		// and it's a tls traffic
 		Eventually(func(g Gomega) {
-			s, err := admin.GetStats("listener.*_80.ssl.handshake")
+			s, err := adminTunnel.GetStats("listener.*_80.ssl.handshake")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(s).To(stats.BeGreaterThanZero())
 		}, "5s", "1s").Should(Succeed())
