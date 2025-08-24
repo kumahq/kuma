@@ -78,24 +78,29 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) PortForwardKumaCP() {
+func (c *K8sControlPlane) PortForwardKumaCP() error {
 	kumaCpSvc := c.GetKumaCPSvc()
 	if !k8s.IsServiceAvailable(&kumaCpSvc) {
-		c.t.Fatalf("%s service in namespace %q is not available for port-forwarding", kumaCpSvc.Name, Config.KumaNamespace)
-		return
+		return errors.Errorf(
+			"%s service in namespace %q is not available for port-forwarding",
+			kumaCpSvc.Name,
+			Config.KumaNamespace,
+		)
 	}
 
 	kubectlOpts := c.GetKubectlOptions(Config.KumaNamespace)
 
 	c.portFwd = k8s.NewTunnel(kubectlOpts, k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5681)
 	if err := c.portFwd.ForwardPortE(c.t); err != nil {
-		c.t.Fatalf("failed to start port-forward to API Server (port %d): %v", 5681, err)
+		return errors.Wrapf(err, "failed to start port-forward to API Server (port %d)", 5681)
 	}
 
 	c.madsFwd = k8s.NewTunnel(kubectlOpts, k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5676)
 	if err := c.madsFwd.ForwardPortE(c.t); err != nil {
-		c.t.Fatalf("failed to start port-forward to MADS (port: %d): %v", 5676, err)
+		return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
 	}
+
+	return nil
 }
 
 func (c *K8sControlPlane) ClosePortForwards() {
@@ -185,7 +190,10 @@ func (c *K8sControlPlane) MadsPortFwd() *k8s.Tunnel {
 }
 
 func (c *K8sControlPlane) FinalizeAdd() error {
-	c.PortForwardKumaCP()
+	if err := c.PortForwardKumaCP(); err != nil {
+		return err
+	}
+
 	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
 }
 

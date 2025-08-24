@@ -37,7 +37,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 type K8sNetworkingState struct {
@@ -90,7 +89,17 @@ func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 }
 
 func (c *K8sCluster) PortForwardApp(appName string, namespace string, remotePort int) (*k8s.Tunnel, error) {
-	return c.portForward(k8s.ResourceTypePod, appName, namespace, remotePort)
+	podName, err := PodNameOfApp(c, appName, namespace)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err,
+			"resolving target for port-forward failed: app %q in namespace %q could not be mapped to a Pod",
+			appName,
+			namespace,
+		)
+	}
+
+	return c.portForward(k8s.ResourceTypePod, podName, namespace, remotePort)
 }
 
 func (c *K8sCluster) portForward(
@@ -99,7 +108,7 @@ func (c *K8sCluster) portForward(
 	namespace string,
 	remotePort int,
 ) (*k8s.Tunnel, error) {
-	localPort, err := utils.GetFreePort()
+	localPort, err := k8s.GetAvailablePortE(c.t)
 	if err != nil {
 		return nil, errors.Wrapf(
 			err,
@@ -109,25 +118,6 @@ func (c *K8sCluster) portForward(
 			namespace,
 			remotePort,
 		)
-	}
-
-	// Resolve the concrete resource name before port-forwarding.
-	// - For pods, translate the logical app name to the actual Pod name because port-forward
-	//   must target a specific Pod object.
-	// - For deployments and services, no translation is needed as kubectl can address them directly
-	switch resourceType {
-	case k8s.ResourceTypeDeployment:
-	case k8s.ResourceTypeService:
-	case k8s.ResourceTypePod:
-		appName := resourceName
-		if resourceName, err = PodNameOfApp(c, appName, namespace); err != nil {
-			return nil, errors.Wrapf(
-				err,
-				"resolving target for port-forward failed: app %q in namespace %q could not be mapped to a Pod",
-				appName,
-				namespace,
-			)
-		}
 	}
 
 	tnl := k8s.NewTunnel(c.GetKubectlOptions(namespace), resourceType, resourceName, localPort, remotePort)
