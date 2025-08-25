@@ -62,8 +62,7 @@ func Matches(matches []common_api.Match, onMatchBuilder *Builder[matcher_config.
 
 		var predicates []*matcher_config.Matcher_MatcherList_Predicate
 		for _, match := range matches {
-			switch {
-			case match.SpiffeId != nil:
+			if match.SpiffeId != nil {
 				predicate, err := NewPredicate().Configure(SpiffeIdPredicate(match.SpiffeId)).Build()
 				if err != nil {
 					return err

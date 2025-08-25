@@ -181,11 +181,11 @@ func DestinationPortFromRef(
 	var ok bool
 
 	if dest = meshCtx.GetServiceByKRI(ref.Resource); dest == nil {
-		return dest, port, false
+		return nil, nil, false
 	}
 
 	if port, ok = dest.FindPortByName(ref.Resource.SectionName); !ok {
-		return dest, port, false
+		return nil, nil, false
 	}
 
 	return dest, port, true

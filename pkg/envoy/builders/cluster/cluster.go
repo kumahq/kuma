@@ -51,8 +51,8 @@ func Http2() Configurer[envoy_cluster.Cluster] {
 			s.TypedExtensionProtocolOptions = map[string]*anypb.Any{}
 		}
 		options := &envoy_upstream_http.HttpProtocolOptions{}
-		if any := s.TypedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]; any != nil {
-			if err := util_proto.UnmarshalAnyTo(any, options); err != nil {
+		if a := s.TypedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]; a != nil {
+			if err := util_proto.UnmarshalAnyTo(a, options); err != nil {
 				return err
 			}
 			options.UpstreamProtocolOptions = &envoy_upstream_http.HttpProtocolOptions_ExplicitHttpConfig_{
