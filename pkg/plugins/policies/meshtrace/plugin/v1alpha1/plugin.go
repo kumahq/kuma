@@ -230,8 +230,8 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	}
 
 	rs.Add(&xds.Resource{
-		Name: getNameOrDefault(name, plugin_xds.GetTracingClusterName(provider)),
-		Origin: metadata.OriginMeshTrace,
+		Name:     getNameOrDefault(name, plugin_xds.GetTracingClusterName(provider)),
+		Origin:   metadata.OriginMeshTrace,
 		Resource: res,
 	})
 
