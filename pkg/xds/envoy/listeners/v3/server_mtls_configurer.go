@@ -13,10 +13,11 @@ import (
 )
 
 type ServerSideMTLSConfigurer struct {
-	Mesh           *core_mesh.MeshResource
-	SecretsTracker core_xds.SecretsTracker
-	TlsVersion     *common_tls.Version
-	TlsCiphers     []common_tls.TlsCipher
+	Mesh                  *core_mesh.MeshResource
+	SecretsTracker        core_xds.SecretsTracker
+	TlsVersion            *common_tls.Version
+	TlsCiphers            []common_tls.TlsCipher
+	UnifiedResourceNaming bool
 }
 
 var _ FilterChainConfigurer = &ServerSideMTLSConfigurer{}
@@ -25,7 +26,11 @@ func (c *ServerSideMTLSConfigurer) Configure(filterChain *envoy_listener.FilterC
 	if !c.Mesh.MTLSEnabled() {
 		return nil
 	}
-	tlsContext, err := tls.CreateDownstreamTlsContext(c.SecretsTracker.RequestCa(c.Mesh.GetMeta().GetName()), c.SecretsTracker.RequestIdentityCert())
+	tlsContext, err := tls.CreateDownstreamTlsContext(
+		c.SecretsTracker.RequestCa(c.Mesh.GetMeta().GetName()),
+		c.SecretsTracker.RequestIdentityCert(),
+		c.UnifiedResourceNaming,
+	)
 	if err != nil {
 		return err
 	}

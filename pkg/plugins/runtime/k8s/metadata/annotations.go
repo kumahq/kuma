@@ -138,6 +138,12 @@ const (
 	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
 	// Available value is DELTA_GRPC
 	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
+
+	// KumaServiceAccount specifies the ServiceAccount associated with the Pod.
+	KumaServiceAccount = "k8s.kuma.io/service-account"
+
+	// KumaSpireSupport allows injecting Spire-related volumes into a single Pod.
+	KumaSpireSupport = "k8s.kuma.io/spire-support"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
@@ -156,10 +162,10 @@ type Deprecation struct {
 	Message string
 }
 
-func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
-	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, new)
+func NewReplaceByDeprecation(old, n string, removed bool) Deprecation {
+	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, n)
 	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, new)
+		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, n)
 	}
 	return Deprecation{
 		Key:     old,

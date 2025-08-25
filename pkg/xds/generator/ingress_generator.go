@@ -2,23 +2,21 @@ package generator
 
 import (
 	"context"
-
-	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"fmt"
+	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
-)
-
-const (
-	IngressProxy = "ingress-proxy"
-
-	// OriginIngress is a marker to indicate by which ProxyGenerator resources
-	// were generated.
-	OriginIngress = "ingress"
 )
 
 type IngressGenerator struct{}
@@ -29,77 +27,91 @@ func (i IngressGenerator) Generate(
 	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
-	resources := core_xds.NewResourceSet()
+	rs := core_xds.NewResourceSet()
+	cp := xdsCtx.ControlPlane
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
-	networking := proxy.ZoneIngressProxy.ZoneIngressResource.Spec.GetNetworking()
-	address, port := networking.GetAddress(), networking.GetPort()
-	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, address, port, core_xds.SocketAddressProtocolTCP).
+	zoneIngress := proxy.ZoneIngressProxy.ZoneIngressResource
+	address := zoneIngress.Spec.GetNetworking().GetAddress()
+	port := zoneIngress.Spec.GetNetworking().GetPort()
+
+	listenerName := getName(kri.From(zoneIngress).String(), envoy_names.GetInboundListenerName(address, port))
+	statPrefix := getName(naming.MustContextualInboundName(zoneIngress, port), "")
+
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TLSInspector())
 
-	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
-	for _, service := range proxy.ZoneIngressProxy.ZoneIngressResource.Spec.AvailableServices {
-		availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
+	availableServices := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
+	for _, service := range zoneIngress.Spec.AvailableServices {
+		availableServices[service.Mesh] = append(availableServices[service.Mesh], service)
 	}
+
+	var clusters []envoy_common.Cluster
 
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		meshName := mr.Mesh.GetMeta().GetName()
 
 		meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
+
 		// we only want to expose local mesh services
-		localMs := localMeshServices(xdsCtx.ControlPlane.Zone, meshResources.MeshServices().Items)
+		localMS := &meshservice_api.MeshServiceResourceList{}
+		for _, ms := range meshResources.MeshServices().GetItems() {
+			if labels := ms.GetMeta().GetLabels(); labels == nil || labels[mesh_proto.ZoneTag] == "" || labels[mesh_proto.ZoneTag] == cp.Zone {
+				_ = localMS.AddItem(ms)
+			}
+		}
+
 		dest := zoneproxy.BuildMeshDestinations(
-			availableSvcsByMesh[meshName],
+			availableServices[meshName],
+			cp.SystemNamespace,
 			meshResources,
-			localMs,
-			meshResources.MeshMultiZoneServices().Items,
-			nil,
-			xdsCtx.ControlPlane.SystemNamespace,
-			xdsCtx.Mesh.ResolveResourceIdentifier,
+			localMS,
+			meshResources.MeshMultiZoneServices(),
 		)
 
-		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
+		services := zoneproxy.GetServices(dest, mr.EndpointMap, availableServices[meshName], unifiedNaming)
 
-		cdsResources, err := zoneproxy.GenerateCDS(dest, services, proxy.APIVersion, meshName, OriginIngress)
+		clusters = slices.Concat(clusters, services.Clusters())
+
+		cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, unifiedNaming)
 		if err != nil {
 			return nil, err
 		}
-		resources.Add(cdsResources...)
+		rs.AddSet(cds)
 
-		edsResources, err := zoneproxy.GenerateEDS(services, mr.EndpointMap, proxy.APIVersion, meshName, OriginIngress)
+		eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress, unifiedNaming)
 		if err != nil {
 			return nil, err
 		}
-		resources.Add(edsResources...)
+		rs.AddSet(eds)
 	}
 
-	listener, err := listenerBuilder.Build()
+	for _, cluster := range clusters {
+		listener.Configure(envoy_listeners.FilterChain(zoneproxy.CreateFilterChain(proxy, cluster)))
+	}
+
+	if len(clusters) == 0 {
+		response := fmt.Sprintf(`{"proxy":%q,"zone":%q}`, proxy.Id.String(), proxy.Zone)
+
+		filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+			Configure(envoy_listeners.NetworkDirectResponse(response))
+
+		listener.Configure(envoy_listeners.FilterChain(filterChain))
+	}
+
+	resource, err := listener.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	hasFilterChain := len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0
-	if !hasFilterChain {
-		listener, err = zoneproxy.GenerateEmptyDirectResponseListener(proxy, address, port)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	resources.Add(&core_xds.Resource{
-		Name:     listener.GetName(),
-		Origin:   OriginIngress,
-		Resource: listener,
+	rs.Add(&core_xds.Resource{
+		Name:     resource.GetName(),
+		Origin:   metadata.OriginIngress,
+		Resource: resource,
 	})
-	return resources, nil
-}
 
-func localMeshServices(zone string, meshServices []*meshservice_api.MeshServiceResource) []*meshservice_api.MeshServiceResource {
-	var result []*meshservice_api.MeshServiceResource
-	for _, ms := range meshServices {
-		if labels := ms.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" && labels[mesh_proto.ZoneTag] != zone {
-			continue
-		}
-		result = append(result, ms)
-	}
-	return result
+	return rs, nil
 }

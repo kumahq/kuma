@@ -9,6 +9,7 @@ metadata:
     kuma.io/virtual-probes-port: 19000
     kuma.io/application-probe-proxy-port: "8662"
 spec:
+  serviceAccountName: test-sa
   containers:
     - readinessProbe:
         httpGet:

@@ -1,0 +1,29 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 37778
+filterChains:
+- filters:
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      accessLog:
+      - name: envoy.access_loggers.open_telemetry
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+          attributes: {}
+          body:
+            stringValue: default
+          commonConfig:
+            grpcService:
+              envoyGrpc:
+                clusterName: system_meshaccesslog_otel-collector-4317
+            logName: MeshAccessLog
+            transportApiVersion: V3
+      cluster: foo-service
+      statPrefix: foo-service
+metadata:
+  filterMetadata:
+    io.kuma.tags: {}
+name: outbound:127.0.0.1:37778
+trafficDirection: OUTBOUND

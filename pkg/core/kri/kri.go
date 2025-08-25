@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/constraints"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -25,6 +26,10 @@ func (i Identifier) MarshalText() ([]byte, error) {
 }
 
 func (i Identifier) String() string {
+	if i.IsEmpty() {
+		return ""
+	}
+
 	desc, err := registry.Global().DescriptorFor(i.ResourceType)
 	if err != nil {
 		panic(err)
@@ -33,18 +38,25 @@ func (i Identifier) String() string {
 	return fmt.Sprintf("kri_%s_%s_%s_%s_%s_%s", desc.ShortName, i.Mesh, i.Zone, i.Namespace, i.Name, i.SectionName)
 }
 
-func From(r core_model.Resource, sectionName string) Identifier {
-	return FromResourceMeta(r.GetMeta(), r.Descriptor().Name, sectionName)
+func (i Identifier) IsEmpty() bool {
+	return i == (Identifier{})
 }
 
-func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType, sectionName string) Identifier {
+func From(r core_model.Resource) Identifier {
+	return FromResourceMeta(r.GetMeta(), r.Descriptor().Name)
+}
+
+func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType) Identifier {
+	if rm == nil {
+		return Identifier{}
+	}
+
 	return Identifier{
 		ResourceType: resourceType,
 		Mesh:         rm.GetMesh(),
 		Zone:         rm.GetLabels()[mesh_proto.ZoneTag],
 		Namespace:    rm.GetLabels()[mesh_proto.KubeNamespaceTag],
 		Name:         core_model.GetDisplayName(rm),
-		SectionName:  sectionName,
 	}
 }
 
@@ -101,11 +113,11 @@ func Compare(a, b Identifier) int {
 	return strings.Compare(a.String(), b.String())
 }
 
-func (i Identifier) HasSectionName() bool {
-	return i.SectionName != ""
-}
-
-func WithSectionName(id Identifier, sectionName string) Identifier {
-	id.SectionName = sectionName
+func WithSectionName[T ~string | constraints.Unsigned](id Identifier, sectionName T) Identifier {
+	// cannot add section name to empty identifier
+	if id.IsEmpty() {
+		return id
+	}
+	id.SectionName = fmt.Sprintf("%v", sectionName)
 	return id
 }

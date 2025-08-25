@@ -14,14 +14,14 @@ type OriginalDstFilterConfigurer struct{}
 var _ ListenerConfigurer = &OriginalDstFilterConfigurer{}
 
 func (c *OriginalDstFilterConfigurer) Configure(l *envoy_listener.Listener) error {
-	any, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_listener_original_dst_v3.OriginalDst{})
+	typedConfig, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_listener_original_dst_v3.OriginalDst{})
 	if err != nil {
 		return err
 	}
 	l.ListenerFilters = append(l.ListenerFilters, &envoy_listener.ListenerFilter{
 		Name: OriginalDstName,
 		ConfigType: &envoy_listener.ListenerFilter_TypedConfig{
-			TypedConfig: any,
+			TypedConfig: typedConfig,
 		},
 	})
 	return nil

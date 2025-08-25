@@ -37,11 +37,11 @@ func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 					if err := h.applyHCMModification(hcm); err != nil {
 						return err
 					}
-					any, err := util_proto.MarshalAnyDeterministic(hcm)
+					typedConfig, err := util_proto.MarshalAnyDeterministic(hcm)
 					if err != nil {
 						return err
 					}
-					networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
+					networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = typedConfig
 				}
 			}
 		}
@@ -151,7 +151,7 @@ func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) boo
 	if h.Match.ListenerName != nil && *h.Match.ListenerName != resource.Name {
 		return false
 	}
-	if h.Match.Origin != nil && *h.Match.Origin != resource.Origin {
+	if h.Match.Origin != nil && *h.Match.Origin != string(resource.Origin) {
 		return false
 	}
 	if len(pointer.Deref(h.Match.ListenerTags)) > 0 {

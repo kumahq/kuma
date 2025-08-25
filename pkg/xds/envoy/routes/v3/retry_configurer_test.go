@@ -7,11 +7,13 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 var _ = Describe("RetryConfigurer", func() {
@@ -23,7 +25,7 @@ var _ = Describe("RetryConfigurer", func() {
 		service          string
 		routes           envoy_common.Routes
 		dpTags           mesh_proto.MultiValueTagSet
-		protocol         core_mesh.Protocol
+		protocol         core_meta.Protocol
 		retry            *core_mesh.RetryResource
 		expected         string
 	}
@@ -35,6 +37,7 @@ var _ = Describe("RetryConfigurer", func() {
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false, nil)).
 					Configure(HttpOutboundRoute(
+						envoy_names.GetOutboundRouteName(given.service),
 						given.service,
 						given.routes,
 						given.dpTags,

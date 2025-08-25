@@ -172,8 +172,10 @@ rules:
       - meshtrafficpermissions
       - hostnamegenerators
       - meshexternalservices
+      - meshidentities
       - meshmultizoneservices
       - meshservices
+      - meshtrusts
     verbs:
       - get
       - list
@@ -505,7 +507,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 6a2f07727a1696a33d23c83579635f9faa3f2932a0a4d2df17dd664002b92a44
+        checksum/tls-secrets: 78a59fe0ea29976965d43929e1c03a149b76e4686e1d304bea1820e85e9d875a
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -536,6 +538,7 @@ spec:
         runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
         
         kubernetes.io/os: linux
@@ -720,6 +723,7 @@ spec:
         runAsUser: 5678
       serviceAccountName: kuma-ingress
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -796,7 +800,7 @@ spec:
               - key: ca.crt
                 path: ca.crt
         - name: tmp
-          emptyDir: {}
+          emptyDir: { }
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -888,8 +892,10 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -949,8 +955,10 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
   
       
     sideEffects: None
@@ -1092,8 +1100,10 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     
       
     sideEffects: None

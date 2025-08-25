@@ -12,6 +12,12 @@ does not have any particular instructions.
 
 These endpoints were deprecated, and are now removed. You can achieve the same functionality with `/zones/_overview`.
 
+### Deprecation of readiness reporter TCP port in favor of Unix socket
+
+The readiness reporter TCP port is deprecated and will be removed in a future release. It is also no longer possible to disable the readiness reporter, which means TCP port 0 is now not allowed to be used.
+
+The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
+
 ## Upgrade to `2.11.x`
 
 ### Embedded Proxy DNS is Enabled by Default

@@ -31,11 +31,11 @@ func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 					if err := h.applyHCMModification(hcm); err != nil {
 						return err
 					}
-					any, err := util_proto.MarshalAnyDeterministic(hcm)
+					typedConfig, err := util_proto.MarshalAnyDeterministic(hcm)
 					if err != nil {
 						return err
 					}
-					networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
+					networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = typedConfig
 				}
 			}
 		}
@@ -72,13 +72,13 @@ func (h *httpFilterModificator) applyHCMModification(hcm *envoy_hcm.HttpConnecti
 func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filterPatch *envoy_hcm.HttpFilter) error {
 	for _, filter := range hcm.HttpFilters {
 		if h.filterMatches(filter) {
-			any, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+			typedConfig, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
 			if err != nil {
 				return err
 			}
 
 			filter.ConfigType = &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: any,
+				TypedConfig: typedConfig,
 			}
 		}
 	}
@@ -132,7 +132,7 @@ func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) boo
 	if h.Match.GetListenerName() != "" && h.Match.GetListenerName() != resource.Name {
 		return false
 	}
-	if h.Match.GetOrigin() != "" && h.Match.GetOrigin() != resource.Origin {
+	if h.Match.GetOrigin() != "" && h.Match.GetOrigin() != string(resource.Origin) {
 		return false
 	}
 	if len(h.Match.GetListenerTags()) > 0 {

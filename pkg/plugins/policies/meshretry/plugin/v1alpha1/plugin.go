@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -57,8 +58,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
 		svcCtx := rctx.
-			WithID(kri.NoSectionName(*r.ResourceOrigin)).
-			WithID(*r.ResourceOrigin)
+			WithID(kri.NoSectionName(r.ResourceOrigin)).
+			WithID(r.ResourceOrigin)
 
 		if err := applyToRealResource(svcCtx, r); err != nil {
 			return err
@@ -79,7 +80,7 @@ func applyToOutbounds(
 		serviceName := outbound.LegacyOutbound.GetService()
 
 		configurer := plugin_xds.DeprecatedConfigurer{
-			Element:  subsetutils.MeshServiceElement(serviceName),
+			Element:  subsetutils.KumaServiceTagElement(serviceName),
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}
@@ -118,12 +119,12 @@ func applyToGateway(
 			continue
 		}
 
-		var protocol core_mesh.Protocol
+		var protocol core_meta.Protocol
 		switch listenerInfo.Listener.Protocol {
 		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_mesh.ProtocolHTTP
+			protocol = core_meta.ProtocolHTTP
 		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_mesh.ProtocolTCP
+			protocol = core_meta.ProtocolTCP
 		}
 		configurer := plugin_xds.DeprecatedConfigurer{
 			Rules:    toRules.Rules,
@@ -151,8 +152,7 @@ func applyToGateway(
 }
 
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
-	switch envoyResource := r.Resource.(type) {
-	case *envoy_listener.Listener:
+	if envoyResource, ok := r.Resource.(*envoy_listener.Listener); ok {
 		configurer := plugin_xds.Configurer{Conf: rctx.Conf(), Protocol: r.Protocol}
 		if err := configurer.ConfigureListener(envoyResource); err != nil {
 			return err
@@ -186,7 +186,7 @@ func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.R
 	return nil
 }
 
-func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route.Route, protocol core_mesh.Protocol) error {
+func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route.Route, protocol core_meta.Protocol) error {
 	policy, err := plugin_xds.GetRouteRetryConfig(pointer.To(rctx.Conf()), protocol)
 	if err != nil {
 		return err
@@ -195,8 +195,7 @@ func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route
 		return nil
 	}
 
-	switch a := route.GetAction().(type) {
-	case *envoy_route.Route_Route:
+	if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
 		a.Route.RetryPolicy = policy
 	}
 

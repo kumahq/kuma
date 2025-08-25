@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -88,6 +89,11 @@ type AuthnAPIServerPlugin interface {
 	NewAuthenticator(PluginContext) (authn.Authenticator, error)
 }
 
+type IdentityProviderPlugin interface {
+	Plugin
+	NewIdentityProvider(PluginContext, PluginConfig) (providers.IdentityProvider, error)
+}
+
 type MatchedPoliciesConfig struct {
 	IncludeShadow bool
 }
@@ -130,4 +136,11 @@ type ProxyPlugin interface {
 	Plugin
 	// Apply mutate the proxy as needed.
 	Apply(ctx context.Context, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy) error
+}
+
+// CoreResourcePlugin a plugin to generate xDS resources based on core resources.
+type CoreResourcePlugin interface {
+	Plugin
+	// Apply to `rs` using `proxy` the mutation or new resources.
+	Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error
 }

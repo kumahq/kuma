@@ -28,6 +28,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
+| controlPlane.restartPolicy | string | `"Always"` | Pod restart policy for the Control Plane. |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
 | controlPlane.deploymentAnnotations | object | `{}` | Annotations applied only to the `Deployment` resource |
 | controlPlane.podAnnotations | object | `{}` | Annotations applied only to the `Pod` resource |
@@ -122,6 +123,7 @@ A Helm chart for the Kuma Control Plane
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
+| cni.restartPolicy | string | `"Always"` | Pod restart policy for the CNI pods |
 | cni.delayStartupSeconds | int | `0` | it's only useful in tests to trigger a possible race condition |
 | cni.experimental | object | `{"imageEbpf":{"registry":"docker.io/kumahq","repository":"merbridge","tag":"0.8.5"}}` | use new CNI (experimental) |
 | cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
@@ -144,6 +146,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress. Ignored when autoscaling is enabled. |
 | ingress.logLevel | string | `"info"` | Log level for ingress (available values: off|info|debug) |
+| ingress.restartPolicy | string | `"Always"` | Pod restart policy for the ingress pods |
 | ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
 | ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
@@ -182,6 +185,7 @@ A Helm chart for the Kuma Control Plane
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress. Ignored when autoscaling is enabled. |
 | egress.logLevel | string | `"info"` | Log level for egress (available values: off|info|debug) |
+| egress.restartPolicy | string | `"Always"` | Pod restart policy for the egress pods |
 | egress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | egress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
@@ -217,9 +221,9 @@ A Helm chart for the Kuma Control Plane
 | egress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
-| kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.33.2@sha256:e706851b19c0c4e668614b7c5a6b0c5bbcfbe7fb73f5d999250e0da8bfff42c6"` | The kubectl image tag |
+| kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"v1.33.4@sha256:261a9ed843eb68e3d50da132245e2221d75ca19504130e47bd32788c0ff339a0"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |

@@ -218,6 +218,10 @@ func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
 	return outbound.BackendRef == nil
 }
 
+func BackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef != nil
+}
+
 func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {
 	var result []*Dataplane_Networking_Outbound
 	for _, outbound := range n.GetOutbound() {
@@ -286,6 +290,21 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 		}
 	}
 	return nil
+}
+
+// InboundsSelectedBySectionName returns the list of inbound interfaces selected by sectionName. It returns all inbounds if
+// sectionName is empty
+func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
+	var selectedInbounds []InboundInterface
+	for _, inbound := range n.Inbound {
+		if inbound.State == Dataplane_Networking_Inbound_Ignored {
+			continue
+		}
+		if sectionName == "" || inbound.GetSectionName() == sectionName {
+			selectedInbounds = append(selectedInbounds, n.ToInboundInterface(inbound))
+		}
+	}
+	return selectedInbounds
 }
 
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {

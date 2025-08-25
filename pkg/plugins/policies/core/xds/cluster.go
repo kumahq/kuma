@@ -11,6 +11,7 @@ import (
 type Cluster struct {
 	service           string
 	name              string
+	sni               string
 	tags              tags.Tags
 	mesh              string
 	isExternalService bool
@@ -18,6 +19,7 @@ type Cluster struct {
 
 func (c *Cluster) Service() string { return c.service }
 func (c *Cluster) Name() string    { return c.name }
+func (c *Cluster) SNI() string     { return c.sni }
 func (c *Cluster) Tags() tags.Tags { return c.tags }
 
 // Mesh returns a non-empty string only if the cluster is in a different mesh
@@ -71,6 +73,13 @@ func (b *ClusterBuilder) WithName(name string) *ClusterBuilder {
 		if cluster.service == "" {
 			cluster.service = name
 		}
+	}))
+	return b
+}
+
+func (b *ClusterBuilder) WithSNI(sni string) *ClusterBuilder {
+	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
+		cluster.sni = sni
 	}))
 	return b
 }

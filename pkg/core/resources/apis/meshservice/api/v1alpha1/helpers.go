@@ -5,17 +5,12 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
-
-func (m *MeshServiceResource) DestinationName(port int32) string {
-	return destinationname.LegacyName(kri.From(m, ""), MeshServiceResourceTypeDescriptor.ShortName, port)
-}
 
 // FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
 func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
@@ -87,7 +82,7 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     uint32(port.Port),
-				Resource: pointer.To(kri.From(t, port.GetName())),
+				Resource: kri.WithSectionName(kri.From(t), port.GetName()),
 			})
 		}
 	}
@@ -124,6 +119,14 @@ func (p Port) GetValue() int32 {
 	return p.Port
 }
 
-func (p Port) GetProtocol() core_mesh.Protocol {
+func (p Port) GetProtocol() core_meta.Protocol {
 	return p.AppProtocol
+}
+
+func (l *MeshServiceResourceList) GetDestinations() []core.Destination {
+	var result []core.Destination
+	for _, item := range l.Items {
+		result = append(result, item)
+	}
+	return result
 }

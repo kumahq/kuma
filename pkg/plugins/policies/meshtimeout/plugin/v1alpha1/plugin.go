@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -75,8 +76,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
 		svcCtx := rctx.
-			WithID(kri.NoSectionName(*r.ResourceOrigin)).
-			WithID(*r.ResourceOrigin)
+			WithID(kri.NoSectionName(r.ResourceOrigin)).
+			WithID(r.ResourceOrigin)
 		if err := applyToRealResource(svcCtx, r); err != nil {
 			return err
 		}
@@ -98,7 +99,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
 		configurer := plugin_xds.ListenerConfigurer{
@@ -143,7 +144,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.DeprecatedListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
-			Element:  subsetutils.MeshServiceElement(serviceName),
+			Element:  subsetutils.KumaServiceTagElement(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -157,10 +158,10 @@ func applyToOutbounds(
 func applyToClusters(
 	rules core_rules.Rules,
 	serviceName string,
-	protocol core_mesh.Protocol,
+	protocol core_meta.Protocol,
 	clusters ...*envoy_cluster.Cluster,
 ) error {
-	conf, _ := getConf(rules, subsetutils.MeshServiceElement(serviceName))
+	conf, _ := getConf(rules, subsetutils.KumaServiceTagElement(serviceName))
 	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
 	for _, cluster := range clusters {
 		if err := configurer.Configure(cluster); err != nil {

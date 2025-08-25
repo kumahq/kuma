@@ -5,6 +5,7 @@ import (
 	"net"
 	"slices"
 	"strings"
+	"time"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -12,13 +13,17 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type APIVersion string
@@ -62,7 +67,7 @@ type TagSelectorSet []mesh_proto.TagSelector
 type (
 	DestinationMap  map[ServiceName]TagSelectorSet
 	ExternalService struct {
-		Protocol                 core_mesh.Protocol
+		Protocol                 core_meta.Protocol
 		TLSEnabled               bool
 		FallbackToSystemCa       bool
 		CaCert                   []byte
@@ -74,7 +79,7 @@ type (
 		SANs                     []SAN
 		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
 		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		OwnerResource            *kri.Identifier
+		OwnerResource            kri.Identifier
 	}
 )
 
@@ -112,12 +117,12 @@ func (e Endpoint) Address() string {
 	return fmt.Sprintf("%s:%d", e.Target, e.Port)
 }
 
-func (e Endpoint) Protocol() string {
-	protocol := e.Tags[mesh_proto.ProtocolTag]
+func (e Endpoint) Protocol() core_meta.Protocol {
 	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
-		protocol = string(e.ExternalService.Protocol)
+		return e.ExternalService.Protocol
 	}
-	return protocol
+
+	return core_meta.ParseProtocol(e.Tags[mesh_proto.ProtocolTag])
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -185,6 +190,9 @@ type Proxy struct {
 	// we can be sure to include only those secrets later on.
 	SecretsTracker SecretsTracker
 
+	// WorkloadIdentity stores information about identity of the proxy.
+	WorkloadIdentity *WorkloadIdentity
+
 	// ZoneEgressProxy is available only when XDS is generated for ZoneEgress data plane proxy.
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
@@ -201,6 +209,41 @@ func (p *Proxy) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
 	return tproxy_dp.GetDataplaneConfig(p.Dataplane, p.Metadata)
 }
 
+type ManagementMode string
+
+const (
+	// When kuma acts as a workload identity provider and SDS server.
+	KumaManagementMode ManagementMode = "kuma"
+	// When there is an external SDS server which provides workload identities.
+	ExternalManagementMode ManagementMode = "external"
+)
+
+type WorkloadIdentity struct {
+	// KRI identifies which MeshIdentity targets this Proxy.
+	KRI kri.Identifier
+	// ManagementMode indicates which system provides the identity for the Proxy.
+	ManagementMode ManagementMode
+	ExpirationTime *time.Time
+	GenerationTime *time.Time
+	// IdentitySourceConfigurer returns a function that configures the identity secret,
+	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
+	IdentitySourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
+	// ValidationSourceConfigurer returns a function that configures the validation secret,
+	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
+	ValidationSourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
+	// AdditionalResources contains Envoy resources that can be added to the resource set.
+	// It provides a simple way to create provider-specific Envoy resources and propagate them to Envoy.
+	AdditionalResources *ResourceSet
+}
+
+func (c *WorkloadIdentity) CertLifetime() time.Duration {
+	return c.ExpirationTime.Sub(pointer.Deref(c.GenerationTime))
+}
+
+func (i *WorkloadIdentity) ExpiringSoon() bool {
+	return core.Now().After(pointer.Deref(i.GenerationTime).Add(i.CertLifetime() / 5 * 4))
+}
+
 type ServerSideMTLSCerts struct {
 	CaPEM      []byte
 	ServerPair util_tls.KeyPair
@@ -213,6 +256,7 @@ type ServerSideTLSCertPaths struct {
 
 type IdentityCertRequest interface {
 	Name() string
+	MeshName() string
 }
 
 type CaRequest interface {
@@ -250,7 +294,7 @@ type MeshResources struct {
 func (r MeshResources) Get(id kri.Identifier) core_model.Resource {
 	// todo: we can probably optimize it by using indexing on ResourceIdentifier
 	list := r.ListOrEmpty(id.ResourceType).GetItems()
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r, "") == kri.NoSectionName(id) }); i >= 0 {
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r) == kri.NoSectionName(id) }); i >= 0 {
 		return list[i]
 	}
 	return nil
@@ -338,13 +382,13 @@ func InternalAddressesFromCIDRs(cidrs []string) []InternalAddress {
 	return internalAddresses
 }
 
-func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
+func (s TagSelectorSet) Add(n mesh_proto.TagSelector) TagSelectorSet {
 	for _, old := range s {
-		if new.Equal(old) {
+		if n.Equal(old) {
 			return s
 		}
 	}
-	return append(s, new)
+	return append(s, n)
 }
 
 func (s TagSelectorSet) Matches(tags map[string]string) bool {
@@ -361,7 +405,7 @@ func (e Endpoint) IsExternalService() bool {
 }
 
 func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && e.ExternalService.OwnerResource != nil
+	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
 }
 
 func (e Endpoint) LocalityString() string {

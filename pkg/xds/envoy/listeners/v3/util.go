@@ -9,6 +9,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -17,14 +18,34 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-func UpdateHTTPConnectionManager(filterChain *envoy_listener.FilterChain, updateFunc func(manager *envoy_hcm.HttpConnectionManager) error) error {
-	return UpdateFilterConfig(filterChain, "envoy.filters.network.http_connection_manager", func(filterConfig proto.Message) error {
-		hcm, ok := filterConfig.(*envoy_hcm.HttpConnectionManager)
-		if !ok {
-			return NewUnexpectedFilterConfigTypeError(filterConfig, (*envoy_hcm.HttpConnectionManager)(nil))
-		}
-		return updateFunc(hcm)
-	})
+type updater[T envoy_types.Resource] interface {
+	~func(T) error | ~func(T)
+}
+
+func UpdateHTTPConnectionManager[T updater[*envoy_hcm.HttpConnectionManager]](filterChain *envoy_listener.FilterChain, fn T) error {
+	return UpdateFilterConfig(
+		filterChain,
+		"envoy.filters.network.http_connection_manager",
+		func(filterConfig proto.Message) error {
+			hcm, ok := filterConfig.(*envoy_hcm.HttpConnectionManager)
+			if !ok {
+				return NewUnexpectedFilterConfigTypeError(filterConfig, (*envoy_hcm.HttpConnectionManager)(nil))
+			}
+
+			if fn == nil {
+				return nil
+			}
+
+			switch f := any(fn).(type) {
+			case func(*envoy_hcm.HttpConnectionManager) error:
+				return f(hcm)
+			case func(*envoy_hcm.HttpConnectionManager):
+				f(hcm)
+			}
+
+			return nil
+		},
+	)
 }
 
 func UpdateTCPProxy(filterChain *envoy_listener.FilterChain, updateFunc func(*envoy_tcp.TcpProxy) error) error {
@@ -54,13 +75,13 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 			return err
 		}
 
-		any, err := anypb.New(msg)
+		typedConfig, err := anypb.New(msg)
 		if err != nil {
 			return err
 		}
 
 		filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-			TypedConfig: any,
+			TypedConfig: typedConfig,
 		}
 	}
 	return nil

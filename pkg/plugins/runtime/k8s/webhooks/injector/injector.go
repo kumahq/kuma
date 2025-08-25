@@ -121,6 +121,7 @@ func New(
 			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
+			cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
 	}, nil
@@ -165,6 +166,20 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumeInitTmp, volumeSidecarTmp)
+
+	if enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabledWithDefault(i.cfg.Spire.Enabled, metadata.KumaSpireSupport); err != nil {
+		return errors.Wrapf(err, "getting %s annotation failed", metadata.KumaSpireSupport)
+	} else if enabled {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, kube_core.Volume{
+			Name: "kuma-spire-agent-socket",
+			VolumeSource: kube_core.VolumeSource{
+				CSI: &kube_core.CSIVolumeSource{
+					Driver:   "csi.spiffe.io",
+					ReadOnly: pointer.To(true),
+				},
+			},
+		})
+	}
 
 	patchedContainer, err := i.applyCustomPatches(logger, container, sidecarPatches)
 	if err != nil {
@@ -420,12 +435,12 @@ func (i *KumaInjector) getTransparentProxyConfigMap(
 	namespacedName := kube_types.NamespacedName{Name: name, Namespace: namespace}
 
 	var cm kube_core.ConfigMap
-	if err = i.client.Get(ctx, namespacedName, &cm); err != nil {
+	if err := i.client.Get(ctx, namespacedName, &cm); err != nil {
 		return tproxy_config.Config{}, err
 	}
 
 	if c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]; c != "" {
-		if err = loader.LoadBytes([]byte(c)); err != nil {
+		if err := loader.LoadBytes([]byte(c)); err != nil {
 			return tproxy_config.Config{}, err
 		}
 
@@ -544,6 +559,12 @@ func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMo
 		}
 
 		return nil, errors.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
+	}
+
+	if enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabledWithDefault(i.cfg.Spire.Enabled, metadata.KumaSpireSupport); err != nil {
+		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaSpireSupport)
+	} else if enabled {
+		out = append(out, kube_core.VolumeMount{Name: "kuma-spire-agent-socket", MountPath: i.cfg.Spire.MountPath, ReadOnly: true})
 	}
 
 	// If not specified with the above annotation, instead query each container in the pod to find a

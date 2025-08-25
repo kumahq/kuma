@@ -3,12 +3,14 @@
   {
    "kri": "kri_dp_default_test-zone__dp-1_main-port",
    "port": 8080,
-   "protocol": "http"
+   "protocol": "http",
+   "proxyResourceName": "self_inbound_dp_main-port"
   },
   {
    "kri": "kri_dp_default_test-zone__dp-1_secondary-port",
    "port": 8081,
-   "protocol": "tcp"
+   "protocol": "tcp",
+   "proxyResourceName": "self_inbound_dp_secondary-port"
   }
  ],
  "kri": "kri_dp_default_test-zone__dp-1_",
@@ -19,17 +21,20 @@
   {
    "kri": "kri_msvc_default_test-zone__test-server-1_main-port",
    "port": 80,
-   "protocol": "http"
+   "protocol": "http",
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server-1_main-port"
   },
   {
    "kri": "kri_msvc_default_test-zone__test-server-2_main-port",
    "port": 80,
-   "protocol": "http"
+   "protocol": "http",
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server-2_main-port"
   },
   {
    "kri": "kri_msvc_default_test-zone__test-server-2_secondary-port",
    "port": 8080,
-   "protocol": "http"
+   "protocol": "http",
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server-2_secondary-port"
   }
  ]
 }

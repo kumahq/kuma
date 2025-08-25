@@ -59,11 +59,11 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		resource.Descriptor(),
 		resource.GetSpec(),
 		opts.Labels,
-		core_model.UnsetNamespace,
 		opts.Mesh,
-		m.mode,
-		m.isK8s,
-		m.zone,
+		core_model.WithNamespace(core_model.UnsetNamespace),
+		core_model.WithMode(m.mode),
+		core_model.WithK8s(m.isK8s),
+		core_model.WithZone(m.zone),
 	)
 	if err != nil {
 		return err
@@ -100,11 +100,11 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		resource.Descriptor(),
 		resource.GetSpec(),
 		opts.Labels,
-		core_model.GetNamespace(resource.GetMeta(), m.systemNamespace),
 		resource.GetMeta().GetMesh(),
-		m.mode,
-		m.isK8s,
-		m.zone,
+		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), m.systemNamespace)),
+		core_model.WithMode(m.mode),
+		core_model.WithK8s(m.isK8s),
+		core_model.WithZone(m.zone),
 	)
 	if err != nil {
 		return err

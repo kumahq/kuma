@@ -8,7 +8,9 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -233,17 +235,14 @@ func makeHttpRouteEntry(
 		var dest map[string]string
 		var ref *resolve.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
-			ref = resolve.BackendRefOrNil(origin, b, resolver)
+			ref = resolve.BackendRefOrNil(kri.FromResourceMeta(origin, api.MeshHTTPRouteType), b, resolver)
 			if ref.ReferencesRealResource() {
-				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
-				if ok {
-					dest = map[string]string{
-						mesh_proto.ServiceTag: service,
-					}
+				if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
+					dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
 				}
 			}
 		}
-		if ref == nil || ref.ResourceOrNil() == nil {
+		if ref == nil || ref.Resource().IsEmpty() {
 			// We have a legacy backendRef
 			if !b.ReferencesRealObject() {
 				var ok bool
@@ -264,7 +263,7 @@ func makeHttpRouteEntry(
 			BackendRef:    ref,
 			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
-			RouteProtocol: core_mesh.ProtocolHTTP,
+			RouteProtocol: core_meta.ProtocolHTTP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)

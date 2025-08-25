@@ -1,16 +1,15 @@
 package v1alpha1
 
 import (
-	"slices"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshMultiZoneServiceResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	if len(r.Spec.Selector.MeshService.MatchLabels) == 0 {
+	if len(pointer.Deref(r.Spec.Selector.MeshService.MatchLabels)) == 0 {
 		verr.AddViolationAt(path.Field("selector").Field("meshService").Field("matchLabels"), "cannot be empty")
 	}
 	if len(r.Spec.Ports) == 0 {
@@ -20,8 +19,8 @@ func (r *MeshMultiZoneServiceResource) validate() error {
 		if port.Name != nil && *port.Name == "" {
 			verr.AddViolationAt(path.Field("ports").Index(i).Field("name"), validators.MustNotBeEmpty)
 		}
-		if !slices.Contains(mesh.SupportedProtocols, port.AppProtocol) {
-			verr.AddViolationAt(path.Field("ports").Index(i).Field("appProtocol"), validators.MustBeOneOf("appProtocol", mesh.SupportedProtocols.Strings()...))
+		if !core_meta.SupportedProtocols.Contains(port.AppProtocol) {
+			verr.AddViolationAt(path.Field("ports").Index(i).Field("appProtocol"), validators.MustBeOneOf("appProtocol", core_meta.SupportedProtocols.Strings()...))
 		}
 	}
 	return verr.OrNil()

@@ -16,7 +16,7 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -41,14 +41,14 @@ const (
 type DeprecatedConfigurer struct {
 	Element  subsetutils.Element
 	Rules    core_rules.Rules
-	Protocol core_mesh.Protocol
+	Protocol core_meta.Protocol
 }
 
 func (c *DeprecatedConfigurer) ConfigureListener(ln *envoy_listener.Listener) error {
 	conf := c.getConf(c.Element)
 
 	for _, fc := range ln.FilterChains {
-		if c.Protocol == core_mesh.ProtocolTCP && conf != nil && conf.TCP != nil && conf.TCP.MaxConnectAttempt != nil {
+		if c.Protocol == core_meta.ProtocolTCP && conf != nil && conf.TCP != nil && conf.TCP.MaxConnectAttempt != nil {
 			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
 				proxy.MaxConnectAttempts = util_proto.UInt32(*conf.TCP.MaxConnectAttempt)
 				return nil
@@ -85,8 +85,7 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 				}
 				policy = defaultPolicy
 			}
-			switch a := route.GetAction().(type) {
-			case *envoy_route.Route_Route:
+			if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
 				a.Route.RetryPolicy = policy
 			}
 		}
@@ -95,7 +94,7 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 	return nil
 }
 
-func GetRouteRetryConfig(conf *api.Conf, protocol core_mesh.Protocol) (*envoy_route.RetryPolicy, error) {
+func GetRouteRetryConfig(conf *api.Conf, protocol core_meta.Protocol) (*envoy_route.RetryPolicy, error) {
 	if conf == nil {
 		return nil, nil
 	}
@@ -433,12 +432,12 @@ func (c *DeprecatedConfigurer) getConf(element subsetutils.Element) *api.Conf {
 
 type Configurer struct {
 	Conf     api.Conf
-	Protocol core_mesh.Protocol
+	Protocol core_meta.Protocol
 }
 
 func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error {
 	for _, fc := range listener.FilterChains {
-		if c.Protocol == core_mesh.ProtocolTCP && c.Conf.TCP != nil && c.Conf.TCP.MaxConnectAttempt != nil {
+		if c.Protocol == core_meta.ProtocolTCP && c.Conf.TCP != nil && c.Conf.TCP.MaxConnectAttempt != nil {
 			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
 				proxy.MaxConnectAttempts = util_proto.UInt32(*c.Conf.TCP.MaxConnectAttempt)
 				return nil
@@ -467,8 +466,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	}
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
-			switch a := route.GetAction().(type) {
-			case *envoy_route.Route_Route:
+			if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
 				a.Route.RetryPolicy = policy
 			}
 		}

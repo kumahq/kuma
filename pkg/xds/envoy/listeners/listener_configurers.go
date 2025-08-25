@@ -17,6 +17,12 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OriginalDstForwarderConfigurer{})
 }
 
+func StatPrefix(prefix string) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.StatPrefixConfigurer{
+		StatPrefix: prefix,
+	})
+}
+
 func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
 		Protocol: protocol,
@@ -55,7 +61,7 @@ func TransparentProxying[T *tproxy_dp.DataplaneConfig | *core_xds.Proxy | bool](
 		return AddListenerConfigurer(&v3.TransparentProxyingConfigurer{})
 	}
 
-	return ListenerBuilderOptFunc(nil)
+	return listenerBuilderOptFunc(nil)
 }
 
 func NoBindToPort() ListenerBuilderOpt {

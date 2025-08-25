@@ -206,8 +206,8 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 	)
 	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp, networkingState.KumaCp)).To(Succeed())
 	zone.SetCP(kubeCp)
-	Expect(zone.AddPortForward(networkingState.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
-	Expect(zone.AddPortForward(networkingState.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+	zone.AddPortForward(networkingState.ZoneEgress, Config.ZoneEgressApp)
+	zone.AddPortForward(networkingState.ZoneIngress, Config.ZoneIngressApp)
 	return zone
 }
 

@@ -78,26 +78,31 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) PortForwardKumaCP() {
+func (c *K8sControlPlane) PortForwardKumaCP() error {
 	kumaCpSvc := c.GetKumaCPSvc()
-	if k8s.IsServiceAvailable(&kumaCpSvc) {
-		c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5681)
-		c.portFwd.apiServerTunnel.ForwardPort(c.t)
-		c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
-
-		c.madsFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5676)
-		c.madsFwd.apiServerTunnel.ForwardPort(c.t)
-		c.madsFwd.ApiServerEndpoint = c.madsFwd.apiServerTunnel.Endpoint()
-		return
+	if !k8s.IsServiceAvailable(&kumaCpSvc) {
+		return errors.Errorf(
+			"%s service in namespace %q is not available for port-forwarding",
+			kumaCpSvc.Name,
+			Config.KumaNamespace,
+		)
 	}
 
-	c.t.Fatalf("Failed finding an available service, service: %v", kumaCpSvc)
+	var err error
+	if c.portFwd, err = c.cluster.PortForward(k8s.ResourceTypeService, kumaCpSvc.Name, kumaCpSvc.Namespace, 5681); err != nil {
+		return errors.Wrapf(err, "failed to start port-forward to API Server (port %d)", 5681)
+	}
+
+	if c.madsFwd, err = c.cluster.PortForward(k8s.ResourceTypeService, kumaCpSvc.Name, kumaCpSvc.Namespace, 5676); err != nil {
+		return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
+	}
+
+	return nil
 }
 
 func (c *K8sControlPlane) ClosePortForwards() {
-	if c.portFwd.apiServerTunnel != nil {
-		c.portFwd.apiServerTunnel.Close()
-	}
+	c.portFwd.Close()
+	c.madsFwd.Close()
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
@@ -128,7 +133,7 @@ func (c *K8sControlPlane) GetKumaCPSyncSvc() v1.Service {
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
-	if c.portFwd.ApiServerEndpoint == "" {
+	if c.portFwd.Endpoint == "" {
 		return errors.Errorf("API port not forwarded")
 	}
 
@@ -181,7 +186,10 @@ func (c *K8sControlPlane) MadsPortFwd() PortFwd {
 }
 
 func (c *K8sControlPlane) FinalizeAdd() error {
-	c.PortForwardKumaCP()
+	if err := c.PortForwardKumaCP(); err != nil {
+		return err
+	}
+
 	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
 }
 
@@ -289,10 +297,11 @@ func (c *K8sControlPlane) getKumaCPAddress(svc v1.Service, portName string) stri
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {
-	if c.portFwd.ApiServerEndpoint == "" {
-		panic("Port forward wasn't setup!")
+	if c.portFwd.Endpoint != "" {
+		return fmt.Sprintf("http://%s", c.portFwd.Endpoint)
 	}
-	return "http://" + c.portFwd.ApiServerEndpoint
+
+	panic("Port forward wasn't setup!")
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
@@ -300,19 +309,16 @@ func (c *K8sControlPlane) GetMetrics() (string, error) {
 }
 
 func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
-	if c.madsFwd.ApiServerEndpoint == "" {
-		panic("MADS port forward wasn't setup!")
+	if c.madsFwd.Endpoint == "" {
+		return "", errors.New("MADS port forward wasn't setup!")
 	}
-	madsEndpoint := "http://" + c.madsFwd.ApiServerEndpoint
 
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
-		"POST",
-		madsEndpoint+"/v3/discovery:monitoringassignments",
+		http.MethodPost,
+		fmt.Sprintf("http://%s/v3/discovery:monitoringassignments", c.madsFwd.Endpoint),
 		[]byte(fmt.Sprintf(`{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId)),
-		map[string]string{
-			"content-type": "application/json",
-		},
+		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,
 		DefaultTimeout,

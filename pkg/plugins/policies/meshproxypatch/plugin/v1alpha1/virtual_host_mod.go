@@ -46,11 +46,11 @@ func (c *virtualHostModificator) apply(resources *core_xds.ResourceSet) error {
 				if err := c.applyHCMModification(hcm, virtualHost); err != nil {
 					return err
 				}
-				any, err := util_proto.MarshalAnyDeterministic(hcm)
+				typedConfig, err := util_proto.MarshalAnyDeterministic(hcm)
 				if err != nil {
 					return err
 				}
-				networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
+				networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = typedConfig
 			}
 		}
 	}
@@ -120,7 +120,7 @@ func (c *virtualHostModificator) originMatches(routeCfg *core_xds.Resource) bool
 	if c.Match == nil {
 		return true
 	}
-	return c.Match.Origin == nil || (*c.Match.Origin == routeCfg.Origin)
+	return c.Match.Origin == nil || (*c.Match.Origin == string(routeCfg.Origin))
 }
 
 func (c *virtualHostModificator) routeConfigurationMatches(routeCfg *envoy_route.RouteConfiguration) bool {

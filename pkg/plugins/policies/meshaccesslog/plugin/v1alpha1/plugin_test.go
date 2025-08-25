@@ -13,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -43,7 +44,8 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -71,6 +73,8 @@ var _ = Describe("MeshAccessLog", func() {
 		fromRules         core_rules.FromRules
 		expectedListeners []string
 		expectedClusters  []string
+		features          xds_types.Features
+		meshServicesMode  mesh_proto.Mesh_MeshServices_Mode
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -82,7 +86,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			xdsCtx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServicesMode)).
 				WithResources(xds_context.NewResources()).
 				WithEndpointMap(
 					xds_builders.EndpointMap().
@@ -90,15 +94,16 @@ var _ = Describe("MeshAccessLog", func() {
 						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service")).
 						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 				).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
-				AddServiceProtocol("other-service-http", core_mesh.ProtocolHTTP).
-				AddServiceProtocol("other-service-tcp", core_mesh.ProtocolTCP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 				Build()
 
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir: "/tmp",
+					WorkDir:  "/tmp",
+					Features: given.features,
 				}).
 				WithDataplane(
 					builders.Dataplane().
@@ -429,6 +434,91 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
 		}),
+		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+			resources: []core_xds.Resource{
+				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundServiceTCPListener("foo-service", 37778),
+				outboundServiceTCPListener("bar-service", 37779),
+			},
+			outbounds: xds_types.Outbounds{
+				{LegacyOutbound: builders.Outbound().
+					WithService("foo-service").
+					WithAddress("127.0.0.1").
+					WithPort(37778).Build()},
+				{LegacyOutbound: builders.Outbound().
+					WithService("bar-service").
+					WithAddress("127.0.0.1").
+					WithPort(37779).Build()},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "other-service-tcp",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "otel-collector",
+								},
+							}},
+						},
+					},
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "foo-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "otel-collector",
+									Body: &apiextensionsv1.JSON{
+										Raw: []byte("%KUMA_MESH%"),
+									},
+								},
+							}},
+						},
+					},
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "bar-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "other-otel-collector:5317",
+									Body: &apiextensionsv1.JSON{
+										Raw: []byte(`{
+										  "kvlistValue": {
+											"values": [
+											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
+											]
+										  }
+									    }`),
+									},
+								},
+							}},
+						},
+					},
+				},
+			},
+			expectedClusters: []string{
+				"outbound_otel_unified_naming.cluster.golden.yaml",
+				"outbound_otel_unified_naming_1.cluster.golden.yaml",
+			},
+			expectedListeners: []string{
+				"outbound_otel_unified_naming.listener.golden.yaml",
+				"outbound_otel_unified_naming_1.listener.golden.yaml",
+				"outbound_otel_unified_naming_2.listener.golden.yaml",
+			},
+		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
 				outboundServiceTCPListener("other-service-tcp", 37777),
@@ -585,12 +675,13 @@ var _ = Describe("MeshAccessLog", func() {
 		Entry("basic inbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
-				Origin: generator.OriginInbound,
+				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
 								"backend",
 								envoy_common.Routes{
 									{
@@ -619,7 +710,7 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: []interface{}{api.Conf{
+						Conf: &api.Rule{Default: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
@@ -669,8 +760,8 @@ var _ = Describe("MeshAccessLog", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
-				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
@@ -725,8 +816,8 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 8080}: {
-						{Conf: []interface{}{
-							api.Conf{
+						{Conf: &api.Rule{
+							Default: api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
 										Path: "/tmp/from-log",
@@ -765,23 +856,24 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 
 func otherServiceHTTPListener() core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address: "127.0.0.1",
 				Port:    27777,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: "other-service-http",
+			Protocol:            core_meta.ProtocolHTTP,
+			KumaServiceTagValue: "other-service-http",
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		[]meshhttproute_xds.OutboundRoute{{
 			Split: []envoy_common.Split{
 				xds.NewSplitBuilder().WithClusterName("other-service-http").Build(),
 			},
 		}},
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -789,19 +881,21 @@ func otherServiceHTTPListener() core_xds.Resource {
 
 func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 	listener, err := meshtcproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address: "127.0.0.1",
 				Port:    port,
 			},
-			Protocol:    core_mesh.ProtocolTCP,
-			ServiceName: service,
+			Protocol:            core_meta.ProtocolTCP,
+			KumaServiceTagValue: service,
 		},
-		false,
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(service).Build(),
 		},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -809,20 +903,21 @@ func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
 
 func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int32, routes []meshhttproute_xds.OutboundRoute) core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
-		envoy_common.APIV3,
+		&core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: &serviceResourceKRI,
+				Resource: serviceResourceKRI,
 			},
-			Protocol:    core_mesh.ProtocolHTTP,
-			ServiceName: serviceName(serviceResourceKRI, port),
+			Protocol:            core_meta.ProtocolHTTP,
+			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
-		false,
-		[]core_xds.InternalAddress{},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -831,7 +926,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 func serviceName(id kri.Identifier, port int32) string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	Expect(err).ToNot(HaveOccurred())
-	return destinationname.LegacyName(id, desc.ShortName, port)
+	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)
 }
 
 func routeKRI(name string) kri.Identifier {

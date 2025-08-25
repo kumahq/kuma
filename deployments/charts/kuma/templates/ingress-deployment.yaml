@@ -40,6 +40,7 @@ spec:
       {{- toYaml .Values.ingress.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-ingress
       automountServiceAccountToken: {{ .Values.ingress.automountServiceAccountToken }}
+      restartPolicy: {{ .Values.ingress.restartPolicy }}
       {{- with .Values.ingress.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
@@ -75,10 +76,6 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-            {{- if .Values.dataPlane.features.unifiedResourceNaming }}
-            - name: KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED
-              value: "true"
-            {{- end }}
           args:
             - run
             - --log-level={{ .Values.ingress.logLevel | default "info" }}
@@ -146,5 +143,5 @@ spec:
               - key: ca.crt
                 path: ca.crt
         - name: tmp
-          emptyDir: {}
+          emptyDir: { }
 {{- end }}

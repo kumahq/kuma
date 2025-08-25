@@ -15,6 +15,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -145,6 +146,10 @@ func (t *testRuntimeContext) MeshCache() *mesh.Cache {
 }
 
 func (t *testRuntimeContext) InterCPClientPool() *client.Pool {
+	panic("implement me")
+}
+
+func (t *testRuntimeContext) IdentityProviders() providers.IdentityProviders {
 	panic("implement me")
 }
 

@@ -4,21 +4,21 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 )
 
-func InferServiceProtocol(serviceProtocol core_mesh.Protocol, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
-	if serviceProtocol == core_mesh.ProtocolUnknown || serviceProtocol == "" {
+func InferServiceProtocol(serviceProtocol core_meta.Protocol, routeProtocol core_meta.Protocol) core_meta.Protocol {
+	if serviceProtocol == core_meta.ProtocolUnknown || serviceProtocol == "" {
 		switch routeProtocol {
-		case core_mesh.ProtocolHTTP:
-			return core_mesh.ProtocolHTTP
-		case core_mesh.ProtocolTCP:
-			return core_mesh.ProtocolTCP
+		case core_meta.ProtocolHTTP:
+			return core_meta.ProtocolHTTP
+		case core_meta.ProtocolTCP:
+			return core_meta.ProtocolTCP
 		default:
 			// HTTP is a better default than "unknown".
-			return core_mesh.ProtocolHTTP
+			return core_meta.ProtocolHTTP
 		}
 	}
 	return serviceProtocol
@@ -26,14 +26,14 @@ func InferServiceProtocol(serviceProtocol core_mesh.Protocol, routeProtocol core
 
 func InferForwardingProtocol(
 	destinations []Destination,
-) core_mesh.Protocol {
-	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
+) core_meta.Protocol {
+	protocol := core_meta.ProtocolUnknown
 	for _, d := range destinations {
-		currentProtocol := core_mesh.ParseProtocol(d.Destination[mesh_proto.ProtocolTag])
-		protocol = util_protocol.GetCommonProtocol(protocol, currentProtocol)
+		currentProtocol := core_meta.ParseProtocol(d.Destination[mesh_proto.ProtocolTag])
+		protocol = core_meta.GetCommonProtocol(protocol, currentProtocol)
 	}
 
-	return InferServiceProtocol(protocol, core_mesh.ProtocolHTTP)
+	return InferServiceProtocol(protocol, core_meta.ProtocolHTTP)
 }
 
 func HasExternalServiceEndpoint(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, d Destination) bool {

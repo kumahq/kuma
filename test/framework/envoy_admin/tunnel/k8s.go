@@ -23,11 +23,15 @@ var _ envoy_admin.Tunnel = &K8sTunnel{}
 func NewK8sEnvoyAdminTunnel(
 	t testing.TestingT,
 	endpoint string,
-) envoy_admin.Tunnel {
-	return &K8sTunnel{
-		endpoint: endpoint,
-		t:        t,
+) (envoy_admin.Tunnel, error) {
+	if endpoint == "" {
+		return nil, errors.New("invalid argument: empty endpoint; ensure a port-forward is established")
 	}
+
+	return &K8sTunnel{
+		t:        t,
+		endpoint: endpoint,
+	}, nil
 }
 
 func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {

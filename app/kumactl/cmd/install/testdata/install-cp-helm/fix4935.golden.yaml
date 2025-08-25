@@ -228,8 +228,10 @@ rules:
       - meshtrafficpermissions
       - hostnamegenerators
       - meshexternalservices
+      - meshidentities
       - meshmultizoneservices
       - meshservices
+      - meshtrusts
     verbs:
       - get
       - list
@@ -663,6 +665,7 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
+      restartPolicy: Always
       securityContext:
         {}
       containers:
@@ -750,7 +753,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: dd07006d086abef5b112a0f450a4969e01fcadcf605cdf25ad749b4099d111ec
+        checksum/tls-secrets: 33c77d33ab23ff4cf808bc85e7f86118779c14eaa9e70ff31028c773fc53a51c
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -782,6 +785,7 @@ spec:
         runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
         
         kubernetes.io/os: linux
@@ -973,6 +977,7 @@ spec:
         runAsUser: 5678
       serviceAccountName: kuma-egress
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -1107,6 +1112,7 @@ spec:
         runAsUser: 5678
       serviceAccountName: kuma-ingress
       automountServiceAccountToken: true
+      restartPolicy: Always
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -1183,7 +1189,7 @@ spec:
               - key: ca.crt
                 path: ca.crt
         - name: tmp
-          emptyDir: {}
+          emptyDir: { }
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -1276,8 +1282,10 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -1337,8 +1345,10 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
   
       
     sideEffects: None
@@ -1479,8 +1489,10 @@ webhooks:
           - meshtrafficpermissions
           - hostnamegenerators
           - meshexternalservices
+          - meshidentities
           - meshmultizoneservices
           - meshservices
+          - meshtrusts
     
       
     sideEffects: None

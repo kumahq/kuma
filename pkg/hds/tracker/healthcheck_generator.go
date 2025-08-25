@@ -13,6 +13,7 @@ import (
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -25,7 +26,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
@@ -137,11 +138,11 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 
 		meta := xds.DataplaneMetadataFromXdsMetadata(node.GetMetadata())
 		tpCfg := tproxy_dp.GetDataplaneConfig(dp, meta)
-		if tpCfg.Enabled() && (intf.WorkloadIP != mesh.IPv4Loopback.String() && intf.WorkloadIP != mesh.IPv6Loopback.String()) {
+		if tpCfg.Enabled() && (intf.WorkloadIP != core_meta.LoopbackIPv4.String() && intf.WorkloadIP != core_meta.LoopbackIPv6.String()) {
 			if net.IsAddressIPv6(intf.WorkloadIP) {
-				hc.UpstreamBindConfig = g.upstreamBindConfig(generator.InPassThroughIPv6, 0)
+				hc.UpstreamBindConfig = g.upstreamBindConfig(metadata.TransparentInPassThroughIPv6, 0)
 			} else {
-				hc.UpstreamBindConfig = g.upstreamBindConfig(generator.InPassThroughIPv4, 0)
+				hc.UpstreamBindConfig = g.upstreamBindConfig(metadata.TransparentInPassThroughIPv4, 0)
 			}
 		}
 

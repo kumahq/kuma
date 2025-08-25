@@ -16,14 +16,15 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	SecretsTracker   core_xds.SecretsTracker
-	UpstreamMesh     *core_mesh.MeshResource
-	UpstreamService  string
-	LocalMesh        *core_mesh.MeshResource
-	Tags             []tags.Tags
-	SNI              string
-	UpstreamTLSReady bool
-	VerifyIdentities []string
+	SecretsTracker        core_xds.SecretsTracker
+	UpstreamMesh          *core_mesh.MeshResource
+	UpstreamService       string
+	LocalMesh             *core_mesh.MeshResource
+	Tags                  []tags.Tags
+	SNI                   string
+	UpstreamTLSReady      bool
+	VerifyIdentities      []string
+	UnifiedResourceNaming bool
 }
 
 var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}
@@ -85,7 +86,7 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	if c.VerifyIdentities != nil {
 		verifyIdentities = c.VerifyIdentities
 	}
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities, c.UnifiedResourceNaming)
 	if err != nil {
 		return nil, err
 	}

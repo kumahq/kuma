@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/naming"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -64,7 +65,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
 	}
 
-	if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() == v1alpha1.Mesh_MeshServices_Disabled {
+	if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() != v1alpha1.Mesh_MeshServices_Exclusive {
 		rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _layout endpoint without meshService enabled"), "Bad Request")
 		return
 	}
@@ -78,9 +79,10 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 
 	inbounds := util_slices.Map(dataplane.Spec.GetNetworking().GetInbound(), func(inbound *v1alpha1.Dataplane_Networking_Inbound) api_common.DataplaneInbound {
 		return api_common.DataplaneInbound{
-			Kri:      kri.From(dataplane, inbound.GetSectionName()).String(),
-			Port:     int32(inbound.GetPort()),
-			Protocol: inbound.GetProtocol(),
+			Kri:               kri.WithSectionName(kri.From(dataplane), inbound.GetSectionName()).String(),
+			Port:              int32(inbound.GetPort()),
+			Protocol:          inbound.GetProtocol(),
+			ProxyResourceName: naming.MustContextualInboundName(dataplane, inbound.GetSectionName()),
 		}
 	})
 
@@ -88,9 +90,10 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	reachableOutbounds, _ := baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	for outboundKri, port := range reachableOutbounds {
 		outbounds = append(outbounds, api_common.DataplaneOutbound{
-			Kri:      outboundKri.String(),
-			Port:     port.GetValue(),
-			Protocol: string(port.GetProtocol()),
+			Kri:               outboundKri.String(),
+			Port:              port.GetValue(),
+			Protocol:          string(port.GetProtocol()),
+			ProxyResourceName: outboundKri.String(),
 		})
 	}
 
@@ -100,7 +103,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 
 	networkingLayout := types.DataplaneNetworkingLayout{
 		Inbounds:  inbounds,
-		Kri:       kri.From(dataplane, "").String(),
+		Kri:       kri.From(dataplane).String(),
 		Labels:    dataplane.GetMeta().GetLabels(),
 		Outbounds: outbounds,
 	}

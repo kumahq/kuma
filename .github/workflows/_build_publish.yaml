@@ -40,6 +40,8 @@ env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
+  GITHUB_TOKEN: ${{ github.token }}
+  MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
 jobs:
   build-binaries:
     timeout-minutes: 70
@@ -47,19 +49,13 @@ jobs:
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
       - run: |
           make build
       - id: annotate-image-tag
@@ -101,7 +97,7 @@ jobs:
       matrix:
         image: ${{ fromJSON(inputs.images) }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
@@ -111,15 +107,7 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
+      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
@@ -134,7 +122,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.2.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@e33f6f6d5ccdaa8af245f29896a51fada48c5d7e # v4.2.4
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -143,7 +131,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@8223e61a288ed9d31f507476da0d51e4f421a6af # v4.2.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@e33f6f6d5ccdaa8af245f29896a51fada48c5d7e # v4.2.4
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -165,7 +153,7 @@ jobs:
           make docker/push/${{ matrix.image }}
           make docker/manifest/${{ matrix.image }}
       - name: Install regctl
-        uses: regclient/actions/regctl-installer@0a960cee89b1ef446f3d33b58064083fdd7728cb
+        uses: regclient/actions/regctl-installer@03ca0eeb8348921b9447b7d5d6b6d350550ddb3b
       - name: image digest
         id: image_digest
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
@@ -192,7 +180,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a18abf762d6e2444bcbfd20de70451ea1e3bc1b1 # v4.1.1
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@80442c24d193f2a116f9305723ac144a297a8c6a # v4.1.2
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -206,7 +194,7 @@ jobs:
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           pattern: "image_*.digest.json"
           path: ./digests
@@ -222,7 +210,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
@@ -234,15 +222,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
+      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
       - name: package-helm-chart
         id: package-helm
         env:
@@ -272,7 +252,7 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ github.ref_type == 'tag' }}
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

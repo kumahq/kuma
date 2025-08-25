@@ -28,8 +28,7 @@ func (z *ZoneValidator) InjectDecoder(admission.Decoder) {
 }
 
 func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	switch req.Operation {
-	case v1.Delete:
+	if req.Operation == v1.Delete {
 		return z.ValidateDelete(ctx, req)
 	}
 	return admission.Allowed("")

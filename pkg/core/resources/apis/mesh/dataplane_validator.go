@@ -10,6 +10,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
@@ -33,10 +34,10 @@ func (d *DataplaneResource) Validate() error {
 	if admin := d.Spec.GetNetworking().GetAdmin(); admin != nil {
 		adminPort := net.Field("admin").Field("port")
 
-		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
+		if d.UsesInboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
 			err.AddViolationAt(adminPort, "must differ from inbound")
 		}
-		if d.UsesOutboundInterface(IPv4Loopback, admin.GetPort()) {
+		if d.UsesOutboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
 			err.AddViolationAt(adminPort, "must differ from outbound")
 		}
 	}
@@ -181,9 +182,9 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 		var result validators.ValidationError
 		if value, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if ParseProtocol(value) == ProtocolUnknown {
+			if core_meta.ParseProtocol(value) == core_meta.ProtocolUnknown {
 				result.AddViolationAt(
-					path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)),
+					path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(core_meta.SupportedProtocols.Strings()...)),
 				)
 			}
 		}
@@ -290,7 +291,7 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 		var result validators.ValidationError
 		if protocol, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if protocol != ProtocolTCP {
+			if core_meta.ParseProtocol(protocol) != core_meta.ProtocolTCP {
 				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf(`other values than tcp are not allowed, provided value %q`, protocol))
 			}
 		}

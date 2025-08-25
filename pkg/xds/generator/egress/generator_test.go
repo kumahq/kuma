@@ -16,6 +16,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	policies_generator "github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
@@ -134,7 +135,7 @@ var _ = Describe("EgressGenerator", func() {
 			loader := fakeLoader{}
 
 			for _, meshResources := range meshResourcesMap {
-				mes := []*meshexternalservice_api.MeshExternalServiceResource{}
+				var mes []*meshexternalservice_api.MeshExternalServiceResource
 				if _, found := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
 					for _, m := range meshResources.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems() {
 						mes = append(mes, m.(*meshexternalservice_api.MeshExternalServiceResource))
@@ -157,11 +158,8 @@ var _ = Describe("EgressGenerator", func() {
 			}
 
 			gen := egress.Generator{
-				ZoneEgressGenerators: []egress.ZoneEgressGenerator{
-					&egress.InternalServicesGenerator{},
-					&egress.ExternalServicesGenerator{},
-				},
 				SecretGenerator: &generator_secrets.Generator{},
+				PolicyGenerator: policies_generator.NewGenerator(),
 			}
 
 			var meshResourcesList []*core_xds.MeshResources
