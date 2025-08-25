@@ -99,6 +99,7 @@ function release {
   fi
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
+  echo "git clone execution result {$?}"
 
   # First upload the packaged charts to the release
   cr upload \
@@ -106,6 +107,8 @@ function release {
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
     --package-path "${CHARTS_PACKAGE_PATH}"
+  echo "cr upload execution result {$?}"
+
 
   # Then build and upload the index file to github pages
   cr index \
@@ -114,6 +117,7 @@ function release {
     --charts-repo "${CHARTS_REPO_URL}" \
     --package-path "${CHARTS_PACKAGE_PATH}" \
     --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
+  echo "cr index execution result {$?}"
 
   pushd ${GH_REPO}
 
