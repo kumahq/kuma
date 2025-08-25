@@ -101,9 +101,10 @@ function release {
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
   echo "git clone execution result {$?}"
 
-  echo "Exit!!!"
-  exit 0
+  echo "list files"
+  ls -l
 
+  echo "start cr uploading"
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
@@ -112,7 +113,7 @@ function release {
     --package-path "${CHARTS_PACKAGE_PATH}"
   echo "cr upload execution result {$?}"
 
-
+  echo "start cr indexing"
   # Then build and upload the index file to github pages
   cr index \
     --owner "${GH_OWNER}" \
@@ -122,17 +123,20 @@ function release {
     --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
   echo "cr index execution result {$?}"
 
-  pushd ${GH_REPO}
+  echo "Exit!!!"
+  exit 0
 
-  git config user.name "${GH_USER}"
-  git config user.email "${GH_EMAIL}"
-
-  git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm): publish charts"
-  git push
-
-  popd
-  rm -rf ${GH_REPO}
+#  pushd ${GH_REPO}
+#
+#  git config user.name "${GH_USER}"
+#  git config user.email "${GH_EMAIL}"
+#
+#  git add "${CHARTS_INDEX_FILE}"
+#  git commit -m "ci(helm): publish charts"
+#  git push
+#
+#  popd
+#  rm -rf ${GH_REPO}
 }
 
 
