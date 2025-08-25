@@ -7,10 +7,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
@@ -61,7 +61,7 @@ func (g Generator) GenerateForZoneEgress(
 
 	rs := core_xds.NewResourceSet()
 	meshName := mesh.GetMeta().GetName()
-	unifiedNaming := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, mesh)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	if secretsTracker.UsedIdentity() {
@@ -104,7 +104,7 @@ func (g Generator) Generate(
 	if proxy.Dataplane != nil {
 		log = log.WithValues("mesh", xdsCtx.Mesh.Resource.GetMeta().GetName())
 	}
-	getNameOrDefault := system_names.GetNameOrDefault(proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming))
+	getNameOrDefault := system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource))
 
 	usedIdentity := proxy.SecretsTracker.UsedIdentity()
 	usedCAs := proxy.SecretsTracker.UsedCas()
