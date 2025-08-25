@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhttproute"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshidentity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshmetric"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshpassthrough"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
@@ -95,4 +96,5 @@ var (
 	_ = Describe("Wait for Envoy", graceful.WaitForEnvoyReady, Ordered)
 	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
 	_ = Describe("ApplicationProbeProxy", appprobeproxy.ApplicationProbeProxy, Ordered)
+	_ = Describe("MeshIdentity Spire", meshidentity.Spire, Ordered)
 )

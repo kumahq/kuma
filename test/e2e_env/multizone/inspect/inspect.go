@@ -37,6 +37,10 @@ func Inspect() {
 		}).Should(Succeed())
 	})
 
+	BeforeEach(func() {
+		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+	})
+
 	AfterEachFailure(func() {
 		DebugUniversal(multizone.Global, meshName)
 		DebugUniversal(multizone.UniZone1, meshName)
@@ -48,9 +52,10 @@ func Inspect() {
 	})
 
 	type testCase struct {
-		cluster     func() Cluster
-		args        []string
-		expectedOut string
+		cluster      func() Cluster
+		args         []string
+		expectedOut  string
+		meshServices string
 	}
 	GlobalCluster := func() Cluster {
 		return multizone.Global
@@ -66,6 +71,9 @@ func Inspect() {
 	Context("Dataplane", func() {
 		DescribeTable("should execute envoy inspection",
 			func(given testCase) {
+				if given.meshServices != "" {
+					Expect(multizone.Global.Install(MTLSMeshWithMeshServicesUniversal(meshName, given.meshServices))).To(Succeed())
+				}
 				Eventually(func(g Gomega) {
 					args := append([]string{"inspect"}, given.args...)
 					out, err := given.cluster().GetKumactlOptions().RunKumactlAndGetOutput(args...)
@@ -84,9 +92,10 @@ func Inspect() {
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a dataplane using Global CP", testCase{
-				cluster:     GlobalCluster,
-				args:        []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
-				expectedOut: `system_envoy_admin::`,
+				cluster:      GlobalCluster,
+				args:         []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
+				meshServices: "Exclusive",
+				expectedOut:  `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a dataplane using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
@@ -99,9 +108,10 @@ func Inspect() {
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a dataplane using Zone CP", testCase{
-				cluster:     UniZone1Cluster,
-				args:        []string{"dataplane", "test-server", "--type", "clusters", "--mesh", meshName},
-				expectedOut: `system_envoy_admin::`,
+				cluster:      UniZone1Cluster,
+				args:         []string{"dataplane", "test-server", "--type", "clusters", "--mesh", meshName},
+				meshServices: "Exclusive",
+				expectedOut:  `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,

@@ -1,0 +1,37 @@
+{
+ "policies": [
+  {
+   "conf": [
+    {
+     "http": {
+      "requestTimeout": "20s"
+     }
+    }
+   ],
+   "kind": "MeshTimeout",
+   "origins": [
+    {
+     "kri": "kri_mt_default___mt-1_"
+    }
+   ]
+  },
+  {
+   "conf": [
+    {
+     "http": {
+      "numRetries": 10,
+      "retryOn": [
+       "503"
+      ]
+     }
+    }
+   ],
+   "kind": "MeshRetry",
+   "origins": [
+    {
+     "kri": "kri_mr_default___mr-1_"
+    }
+   ]
+  }
+ ]
+}

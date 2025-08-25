@@ -8,12 +8,13 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/origin"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 const defaultOverprovisioningFactor uint32 = 200
@@ -24,7 +25,7 @@ func NewEndpoints(
 	conf *api.Conf,
 	localZone string,
 	egressEnabled bool,
-	origin string,
+	origin origin.Origin,
 ) []*envoy_endpoint.LocalityLbEndpoints {
 	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, localZone)
 	var endpointsList []core_xds.Endpoint
@@ -37,7 +38,7 @@ func NewEndpoints(
 			if zoneName == localZone {
 				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
 				endpointsList = append(endpointsList, ed)
-			} else if egressEnabled && origin != egress.OriginEgress {
+			} else if egressEnabled && origin != generator_metadata.OriginEgress {
 				ed.Locality = egressLocality(crossZonePriorityGroups)
 				endpointsList = append(endpointsList, ed)
 			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {

@@ -12,9 +12,13 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path.Field("from"), "needs at least one item")
+	if len(pointer.Deref(r.Spec.From)) > 0 && len(pointer.Deref(r.Spec.Rules)) > 0 {
+		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
 	}
+	if len(pointer.Deref(r.Spec.From)) == 0 && len(pointer.Deref(r.Spec.Rules)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from' or 'rules' has to be defined")
+	}
+	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	return verr.OrNil()
 }
@@ -34,6 +38,29 @@ func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.Target
 		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
+}
+
+func validateRules(rules []Rule) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		if len(pointer.Deref(rule.Default.Deny)) == 0 && len(pointer.Deref(rule.Default.Allow)) == 0 && len(pointer.Deref(rule.Default.AllowWithShadowDeny)) == 0 {
+			verr.AddViolationAt(path, "at least one of 'allow', 'allowWithShadowDeny', 'deny' has to be defined")
+		}
+		verr.AddErrorAt(path, validateMatches("allow", pointer.Deref(rule.Default.Allow)))
+		verr.AddErrorAt(path, validateMatches("allowWithShadowDeny", pointer.Deref(rule.Default.AllowWithShadowDeny)))
+		verr.AddErrorAt(path, validateMatches("deny", pointer.Deref(rule.Default.Deny)))
+	}
+	return verr
+}
+
+func validateMatches(field string, matches []common_api.Match) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, match := range matches {
+		path := validators.RootedAt(field).Index(idx)
+		verr.AddErrorAt(path, mesh.ValidateMatch(match))
+	}
+	return verr
 }
 
 func validateFrom(from []From) validators.ValidationError {

@@ -17,10 +17,12 @@ type JsonPatchBlock struct {
 	Op string `json:"op"`
 	// Path is a jsonpatch path string.
 	// +required
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Path *string `json:"path"`
 	// Value must be a valid json value used by replace and add operations.
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Value json.RawMessage `json:"value,omitempty"`
 	// From is a jsonpatch from string, used by move and copy operations.
 	From *string `json:"from,omitempty"`

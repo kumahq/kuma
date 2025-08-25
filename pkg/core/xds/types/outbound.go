@@ -11,7 +11,7 @@ type Outbound struct {
 
 	Address  string
 	Port     uint32
-	Resource *kri.Identifier
+	Resource kri.Identifier
 }
 
 // AssociatedServiceResource
@@ -20,17 +20,24 @@ type Outbound struct {
 //   - if the outbound is defined using the old way with 'kuma.io/service' tag,
 //     then it returns empty kri.Identifier and false
 func (o *Outbound) AssociatedServiceResource() (kri.Identifier, bool) {
-	if o.Resource != nil {
-		return *o.Resource, true
-	}
-	return kri.Identifier{}, false
+	return o.Resource, !o.Resource.IsEmpty()
 }
 
 func (o *Outbound) GetAddress() string {
-	if o.LegacyOutbound != nil {
+	return o.GetAddressWithFallback("")
+}
+
+// GetAddressWithFallback returns the address from LegacyOutbound if set,
+// otherwise from Address. If both are empty, it returns the fallback value.
+func (o *Outbound) GetAddressWithFallback(fallback string) string {
+	switch {
+	case o.LegacyOutbound != nil && o.LegacyOutbound.Address != "":
 		return o.LegacyOutbound.Address
+	case o.Address != "":
+		return o.Address
+	default:
+		return fallback
 	}
-	return o.Address
 }
 
 // TagsOrNil returns tags if Outbound is defined using 'kuma.io/service' tag and so LegacyOutbound field is set.
@@ -40,15 +47,6 @@ func (o *Outbound) TagsOrNil() map[string]string {
 		return o.LegacyOutbound.Tags
 	}
 	return nil
-}
-
-// NameOrEmpty returns Outbound's name based on KRI if the Outbound has an associated service resource.
-// Otherwise, it returns an empty string.
-func (o *Outbound) NameOrEmpty() string {
-	if id, ok := o.AssociatedServiceResource(); ok {
-		return id.String()
-	}
-	return ""
 }
 
 func (o *Outbound) GetPort() uint32 {

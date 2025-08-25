@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
@@ -77,7 +78,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 			// given
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "backend").
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.Timeout(given.timeout, core_mesh.ProtocolHTTP)).
+				Configure(clusters.Timeout(given.timeout, core_meta.ProtocolHTTP)).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -144,7 +145,7 @@ typedExtensionProtocolOptions:
 			// given
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "backend").
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.Timeout(given.timeout, core_mesh.ProtocolGRPC)).
+				Configure(clusters.Timeout(given.timeout, core_meta.ProtocolGRPC)).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -211,7 +212,7 @@ typedExtensionProtocolOptions:
 		// given
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "localhost:8080").
 			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
-			Configure(clusters.Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)).
+			Configure(clusters.Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 

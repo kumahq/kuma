@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Enable OSV-based vulnerability alerts and route them to the security team. Also label and assign updates for 'Kong/public-shared-actions/security-actions/**' as security-related to ensure proper visibility and handling",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "addLabels": [
+      "area/security"
+    ],
+    "assignees": [
+      "@kumahq/kuma-security-managers"
+    ],
+    "commitMessageSuffix": ""
+  },
+  "packageRules": [
+    {
+      "description": "Add security label and assign security managers to updates for 'Kong/public-shared-actions/security-actions/**'",
+      "matchPackageNames": [
+        "Kong/public-shared-actions/security-actions/**"
+      ],
+      "addLabels": [
+        "area/security"
+      ],
+      "assignees": [
+        "@kumahq/kuma-security-managers"
+      ],
+      "prCreation": "immediate",
+      "schedule": []
+    }
+  ]
+}

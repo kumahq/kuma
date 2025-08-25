@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -10,40 +11,43 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
+	test_store "github.com/kumahq/kuma/pkg/test/store"
 )
+
+var meshBuilder = func(idx int) *mesh.MeshResource {
+	ca := fmt.Sprintf("ca-%d", idx)
+	meshName := fmt.Sprintf("mesh-%d", idx)
+	return &mesh.MeshResource{
+		Meta: &model2.ResourceMeta{
+			Name: meshName,
+		},
+		Spec: &mesh_proto.Mesh{
+			Mtls: &mesh_proto.Mesh_Mtls{
+				EnabledBackend: ca,
+				Backends: []*mesh_proto.CertificateAuthorityBackend{
+					{
+						Name: ca,
+						Type: "builtin",
+					},
+				},
+			},
+		},
+	}
+}
 
 var _ = Describe("SyncResourceStoreDelta", func() {
 	var syncer sync_store.ResourceSyncer
 	var resourceStore store.ResourceStore
-
-	meshBuilder := func(idx int) *mesh.MeshResource {
-		ca := fmt.Sprintf("ca-%d", idx)
-		meshName := fmt.Sprintf("mesh-%d", idx)
-		return &mesh.MeshResource{
-			Meta: &model2.ResourceMeta{
-				Name: meshName,
-			},
-			Spec: &mesh_proto.Mesh{
-				Mtls: &mesh_proto.Mesh_Mtls{
-					EnabledBackend: ca,
-					Backends: []*mesh_proto.CertificateAuthorityBackend{
-						{
-							Name: ca,
-							Type: "builtin",
-						},
-					},
-				},
-			},
-		}
-	}
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
@@ -286,5 +290,35 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		actual := mesh.NewMeshResource()
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
 		Expect(actual.GetMeta().GetVersion()).To(Equal(existing.GetMeta().GetVersion()))
+	})
+})
+
+var _ = Describe("SyncResourceStoreDelta errors", func() {
+	var syncer sync_store.ResourceSyncer
+	var resourceStore store.ResourceStore
+
+	BeforeEach(func() {
+		resourceStore = &test_store.FailingStore{CreateErr: errors.Join(store.ErrorResourceAlreadyExists(system.GlobalSecretType, "zone-token-signing-public-key-1", ""))}
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should correctly recognize user errors", func() {
+		upstreamResponse := client_v2.UpstreamResponse{}
+		upstream := &mesh.MeshResourceList{}
+		m := meshBuilder(1)
+		err := upstream.AddItem(m)
+		Expect(err).ToNot(HaveOccurred())
+		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.AddedResources = upstream
+
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse, sync_store.SkipConflictResource())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(util.IsUserError(nackError)).To(BeTrue())
+		Expect(util.IsUserErrorMessage(nackError.Error())).To(BeTrue())
+		Expect(nackError).To(MatchError(`user error
+resource already exists: type="GlobalSecret" name="zone-token-signing-public-key-1" mesh=""`))
 	})
 })

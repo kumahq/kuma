@@ -11,11 +11,15 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -47,6 +51,8 @@ func NewDataplaneInsightSink(
 	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store DataplaneInsightStore,
+	eventFactory events.ListenerFactory,
+	roResManager manager.ReadOnlyResourceManager,
 ) DataplaneInsightSink {
 	metadata := core_xds.DataplaneMetadataFromXdsMetadata(xdsMetadata)
 
@@ -73,11 +79,14 @@ func NewDataplaneInsightSink(
 		flushBackoff:     flushBackoff,
 		store:            store,
 		xdsMetadata:      xdsMetadata,
+		eventFactory:     eventFactory,
+		roResManager:     roResManager,
 	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
+// send events
 type dataplaneInsightSink struct {
 	flushTicker      func() *time.Ticker
 	generationTicker func() *time.Ticker
@@ -87,6 +96,8 @@ type dataplaneInsightSink struct {
 	store            DataplaneInsightStore
 	flushBackoff     time.Duration
 	xdsMetadata      *structpb.Struct
+	eventFactory     events.ListenerFactory
+	roResManager     manager.ReadOnlyResourceManager
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
@@ -98,6 +109,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
 	var lastStoredSecretsInfo *secrets.Info
+	var lastEvent *events.WorkloadIdentityChangedEvent
 	var generation uint32
 
 	proxyType, err := core_mesh.ProxyTypeFromResourceType(s.dataplaneType)
@@ -105,11 +117,39 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		sinkLog.Error(err, "failed to create dataplaneInsightSink")
 		return
 	}
+	dataplaneID, _ := s.accessor.GetStatus()
+	listener := s.eventFactory.Subscribe(func(event events.Event) bool {
+		if e, ok := event.(events.WorkloadIdentityChangedEvent); ok && e.ResourceKey == dataplaneID {
+			return true
+		}
+		return false
+	})
+	defer listener.Close()
 
-	flush := func(closing bool) {
+	flush := func(closing bool, event *events.WorkloadIdentityChangedEvent) {
+		ctx := context.TODO()
 		dataplaneID, currentState := s.accessor.GetStatus()
-		secretsInfo := s.secrets.Info(proxyType, dataplaneID)
-
+		var secretsInfo *secrets.Info
+		switch {
+		case event != nil && event.Operation == events.Delete:
+			secretsInfo = nil
+			// we don't need to store event once delete
+			lastEvent = nil
+		case event != nil && event.Operation == events.Create:
+			secretsInfo = &secrets.Info{
+				IssuedBackend: event.Origin.String(),
+			}
+			if event.ExpirationTime != nil && event.GenerationTime != nil {
+				secretsInfo.Expiration = pointer.Deref(event.ExpirationTime)
+				secretsInfo.Generation = pointer.Deref(event.GenerationTime)
+				secretsInfo.SupportedBackends = s.listMeshTrustBackends(ctx, dataplaneID.Mesh)
+			} else {
+				secretsInfo.ManagedExternally = true
+			}
+			lastEvent = event
+		default:
+			secretsInfo = s.secrets.Info(proxyType, dataplaneID)
+		}
 		select {
 		case <-generationTicker.C:
 			generation++
@@ -120,8 +160,6 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
 			return
 		}
-
-		ctx := context.TODO()
 
 		if err := s.store.Upsert(ctx, s.xdsMetadata, s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
 			switch {
@@ -134,16 +172,16 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 				// We could build a synchronous mechanism that waits for Sink to be stopped before moving on to next Callbacks, but this is potentially dangerous
 				// that we could block waiting for storage instead of executing next callbacks.
 				sinkLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time",
-					"dataplaneid", dataplaneID,
+					"dataplaneID", dataplaneID,
 					"err", err)
 			case store.IsAlreadyExists(err) || store.IsConflict(err):
 				sinkLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick",
-					"dataplaneid", dataplaneID)
+					"dataplaneID", dataplaneID)
 			default:
-				sinkLog.Error(err, "failed to flush DataplaneInsight", "dataplaneid", dataplaneID)
+				sinkLog.Error(err, "failed to flush DataplaneInsight", "dataplaneID", dataplaneID)
 			}
 		} else {
-			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneID, "subscription", currentState)
+			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneID", dataplaneID, "subscription", currentState)
 			lastStoredState = currentState
 			lastStoredSecretsInfo = secretsInfo
 		}
@@ -152,20 +190,39 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	// flush the first insight as quickly as possible so
 	// 1) user sees that DP is online in kumactl/GUI (even without any XDS updates)
 	// 2) we can have lower deregistrationDelay, see pkg/xds/server/callbacks/dataplane_lifecycle.go#deregisterProxy
-	flush(false)
+	flush(false, nil)
 
 	for {
 		select {
 		case <-flushTicker.C:
-			flush(false)
+			flush(false, lastEvent)
 			// On Kubernetes, because of the cache subsequent Get, Update requests can fail, because the cache is not strongly consistent.
 			// We handle the Resource Conflict logging on V1, but we can try to avoid the situation with backoff
 			time.Sleep(s.flushBackoff)
+		case e := <-listener.Recv():
+			workloadIdentity := e.(events.WorkloadIdentityChangedEvent)
+			flush(false, &workloadIdentity)
 		case <-stop:
-			flush(true)
+			flush(true, lastEvent)
 			return
 		}
 	}
+}
+
+// We use a ReadOnlyResourceManager, which is backed by a cache,
+// so performance is not a concern as data is always retrieved from the cache.
+func (s *dataplaneInsightSink) listMeshTrustBackends(ctx context.Context, mesh string) []string {
+	meshTrusts := &meshtrust_api.MeshTrustResourceList{}
+	if err := s.roResManager.List(ctx, meshTrusts, store.ListByMesh(mesh)); err != nil {
+		sinkLog.Error(err, "cannot list MeshTrusts")
+		return nil
+	}
+
+	var backends []string
+	for _, trust := range meshTrusts.Items {
+		backends = append(backends, kri.From(trust).String())
+	}
+	return backends
 }
 
 func NewDataplaneInsightStore(resManager manager.ResourceManager) DataplaneInsightStore {
@@ -209,14 +266,13 @@ func (s *dataplaneInsightStore) Upsert(
 			}
 
 			insight.Spec.Metadata = xdsMetadata
-
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil ||
 				insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration ||
 				insight.Spec.MTLS.IssuedBackend != secretsInfo.IssuedBackend ||
 				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, secretsInfo.SupportedBackends) {
-				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends); err != nil {
+				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends, secretsInfo.ManagedExternally); err != nil {
 					return err
 				}
 			}

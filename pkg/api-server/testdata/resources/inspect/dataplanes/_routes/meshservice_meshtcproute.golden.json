@@ -1,0 +1,38 @@
+{
+ "routes": [
+  {
+   "kind": "MeshTCPRoute",
+   "origins": [
+    {
+     "kri": "kri_mtcpr_default___the-tcp-route_"
+    }
+   ],
+   "rules": [
+    {
+     "conf": {
+      "backendRefs": [
+       {
+        "kind": "MeshService",
+        "labels": {
+         "kuma.io/display-name": "test-server-1"
+        },
+        "weight": 90,
+        "port": 80
+       },
+       {
+        "kind": "MeshService",
+        "labels": {
+         "kuma.io/display-name": "test-server-1"
+        },
+        "weight": 10,
+        "port": 8080
+       }
+      ]
+     },
+     "kri": "",
+     "matches": null
+    }
+   ]
+  }
+ ]
+}

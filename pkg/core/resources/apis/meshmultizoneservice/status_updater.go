@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
@@ -97,7 +98,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		ports := map[int32]meshservice_api.Port{}
 		for _, svc := range msList.Items {
 			if matchesService(mzSvc, svc) {
-				ri := kri.From(svc, "")
+				ri := kri.From(svc)
 				matched = append(matched, meshmzservice_api.MatchedMeshService{
 					Name:      ri.Name,
 					Namespace: ri.Namespace,
@@ -131,7 +132,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 }
 
 func matchesService(mzSvc *meshmzservice_api.MeshMultiZoneServiceResource, svc *meshservice_api.MeshServiceResource) bool {
-	for label, value := range mzSvc.Spec.Selector.MeshService.MatchLabels {
+	for label, value := range pointer.Deref(mzSvc.Spec.Selector.MeshService.MatchLabels) {
 		if svc.Meta.GetLabels()[label] != value {
 			return false
 		}

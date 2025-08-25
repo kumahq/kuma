@@ -57,8 +57,11 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_NAME":                                           "example",
 				"KUMA_DATAPLANE_DRAIN_TIME":                                     "60s",
 				"KUMA_DATAPLANE_PROXY_TYPE":                                     "ingress",
+				"KUMA_READINESS_PORT":                                           "9902",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                            "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                             "/var/run/envoy",
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":                             "/var/run/envoy",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":                               "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                             "/tmp/token",
 				"KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL":                        "trace",
 				"KUMA_DATAPLANE_RUNTIME_DYNAMIC_CONFIGURATION_REFRESH_INTERVAL": "5s",
@@ -94,6 +97,8 @@ var _ = Describe("Config", func() {
 			Expect(cfg.Dataplane.DrainTime.Duration).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
+			Expect(cfg.DataplaneRuntime.SocketDir).To(Equal("/var/run/envoy"))
+			Expect(cfg.DataplaneRuntime.WorkDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 			Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
 			Expect(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration).To(Equal(5 * time.Second))

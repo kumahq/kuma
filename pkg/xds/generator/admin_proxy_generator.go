@@ -8,6 +8,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
@@ -16,11 +18,9 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
-
-// OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginAdmin = "admin"
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
@@ -60,8 +60,11 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 
 	adminPort := proxy.Metadata.GetAdminPort()
 	readinessPort := proxy.Metadata.GetReadinessPort()
+	if readinessPort == 0 {
+		return nil, errors.New("ReadinessPort has to be in (0, 65353] range")
+	}
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
-	unifiedNamingEnabled := proxy.Metadata.HasFeature(types.FeatureUnifiedResourceNaming)
+	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
 	// the only reasonable alternatives are `::1`, `0.0.0.0` or `::`).
@@ -72,7 +75,12 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	if unifiedNamingEnabled {
 		envoyAdminClusterName = system_names.SystemResourceNameEnvoyAdmin
 	}
-	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
+
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
+	dppReadinessClusterName := getNameOrDefault(
+		system_names.SystemResourceNameReadiness,
+		envoy_names.GetDPPReadinessClusterName(),
+	)
 	adminAddress := proxy.Metadata.GetAdminAddress()
 	if _, ok := adminAddressAllowedValues[adminAddress]; !ok {
 		var allowedAddresses []string
@@ -98,24 +106,13 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
-	assignReadinessPort := func(se *envoy_common.StaticEndpointPath) {
-		if readinessPort > 0 {
-			// we only have /ready for now, so assign it to the readiness cluster directly
-			se.ClusterName = dppReadinessClusterName
-		} else {
-			// we keep the previous behavior if readinessPort is not set
-			// this can happen when an existing DPP is connecting to this CP, it does not have this metadata
-			se.ClusterName = envoyAdminClusterName
-		}
-	}
-
 	for _, se := range staticEndpointPaths {
-		assignReadinessPort(se)
+		se.ClusterName = dppReadinessClusterName
 	}
 	for _, se := range staticTlsEndpointPaths {
 		switch se.Path {
 		case "/ready":
-			assignReadinessPort(se)
+			se.ClusterName = dppReadinessClusterName
 		default:
 			se.ClusterName = envoyAdminClusterName
 		}
@@ -150,35 +147,42 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 		resources.Add(&core_xds.Resource{
 			Name:     listener.GetName(),
-			Origin:   OriginAdmin,
+			Origin:   metadata.OriginAdmin,
 			Resource: listener,
 		})
 	}
 
 	resources.Add(&core_xds.Resource{
 		Name:     envoyAdminCluster.GetName(),
-		Origin:   OriginAdmin,
+		Origin:   metadata.OriginAdmin,
 		Resource: envoyAdminCluster,
 	})
 
-	if readinessPort > 0 {
-		adminAddr := proxy.Metadata.GetAdminAddress()
-		readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
-			Configure(envoy_clusters.ProvidedEndpointCluster(
-				govalidator.IsIPv6(adminAddr),
-				core_xds.Endpoint{Target: adminAddr, Port: readinessPort})).
-			Configure(envoy_clusters.DefaultTimeout()).
-			Build()
-		if err != nil {
-			return nil, err
+	var xdsEndpoint core_xds.Endpoint
+	if proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket) {
+		xdsEndpoint = core_xds.Endpoint{
+			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}
-
-		resources.Add(&core_xds.Resource{
-			Name:     readinessCluster.GetName(),
-			Origin:   OriginAdmin,
-			Resource: readinessCluster,
-		})
+	} else {
+		xdsEndpoint = core_xds.Endpoint{
+			Target: adminAddress,
+			Port:   readinessPort,
+		}
 	}
+
+	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
+		Configure(envoy_clusters.ProvidedEndpointCluster(govalidator.IsIPv6(adminAddress), xdsEndpoint)).
+		Configure(envoy_clusters.DefaultTimeout()).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	resources.Add(&core_xds.Resource{
+		Name:     readinessCluster.GetName(),
+		Origin:   metadata.OriginAdmin,
+		Resource: readinessCluster,
+	})
 
 	return resources, nil
 }

@@ -60,7 +60,7 @@
          "connectionTimeout": "7s",
          "idleTimeout": "7s",
          "http": {
-          "requestTimeout": "2s"
+          "requestTimeout": "7s"
          }
         }
        ],
@@ -73,7 +73,18 @@
           "type": "MeshTimeout"
          },
          "ruleIndex": 0
-        },
+        }
+       ]
+      },
+      {
+       "conf": [
+        {
+         "http": {
+          "requestTimeout": "2s"
+         }
+        }
+       ],
+       "origin": [
         {
          "resourceMeta": {
           "labels": {},
@@ -99,7 +110,7 @@
       {
        "conf": [
         {
-         "connectionTimeout": "3s",
+         "connectionTimeout": "7s",
          "idleTimeout": "7s",
          "http": {
           "requestTimeout": "7s"
@@ -115,7 +126,16 @@
           "type": "MeshTimeout"
          },
          "ruleIndex": 0
-        },
+        }
+       ]
+      },
+      {
+       "conf": [
+        {
+         "connectionTimeout": "3s"
+        }
+       ],
+       "origin": [
         {
          "resourceMeta": {
           "labels": {},

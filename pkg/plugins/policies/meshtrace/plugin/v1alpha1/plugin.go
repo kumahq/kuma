@@ -9,8 +9,11 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -19,14 +22,13 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/metadata"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-const OriginMeshTrace = "mesh-trace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
@@ -42,21 +44,21 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 
 func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTraceType]
-	if !ok {
+	if !ok || len(policies.SingleItemRules.Rules) == 0 {
 		return nil
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
+	if err := applyToInbounds(ctx, policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
 		return err
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(ctx, policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
 		return err
 	}
 	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
@@ -66,12 +68,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	return nil
 }
 
-func applyToGateway(
-	rules core_rules.SingleItemRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	resources xds_context.ResourceMap,
-	dataplane *core_mesh.DataplaneResource,
-) error {
+func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, proxy *xds.Proxy) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
@@ -79,6 +76,7 @@ func applyToGateway(
 		return nil
 	}
 
+	dataplane := proxy.Dataplane
 	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
 	if gateway == nil {
 		return nil
@@ -96,12 +94,7 @@ func applyToGateway(
 			continue
 		}
 
-		if err := configureListener(
-			rules,
-			dataplane,
-			listener,
-			"",
-		); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, ""); err != nil {
 			return err
 		}
 	}
@@ -109,9 +102,9 @@ func applyToGateway(
 	return nil
 }
 
-func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
+func applyToInbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	for _, inboundListener := range inboundListeners {
-		if err := configureListener(rules, dataplane, inboundListener, ""); err != nil {
+		if err := configureListener(ctx, rules, proxy, inboundListener, ""); err != nil {
 			return err
 		}
 	}
@@ -119,12 +112,9 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 	return nil
 }
 
-func applyToOutbounds(
-	rules core_rules.SingleItemRules,
-	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	outbounds xds_types.Outbounds,
-	dataplane *core_mesh.DataplaneResource,
-) error {
+func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy) error {
+	outbounds := proxy.Outbounds
+	dataplane := proxy.Dataplane
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 
@@ -135,7 +125,7 @@ func applyToOutbounds(
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureListener(rules, dataplane, listener, serviceName); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, serviceName); err != nil {
 			return err
 		}
 	}
@@ -143,15 +133,10 @@ func applyToOutbounds(
 	return nil
 }
 
-func applyToRealResources(
-	ctx xds_context.Context,
-	rules core_rules.SingleItemRules,
-	rs *xds.ResourceSet,
-	proxy *xds.Proxy,
-) error {
+func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
-		service, _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
-			Resource: &uri,
+		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
+			Resource: uri,
 		})
 		if !found {
 			continue
@@ -159,7 +144,7 @@ func applyToRealResources(
 		for typ, resources := range resType {
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
-					if err := configureListener(rules, proxy.Dataplane, listener.Resource.(*envoy_listener.Listener), service); err != nil {
+					if err := configureListener(ctx, rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port)); err != nil {
 						return err
 					}
 				}
@@ -169,20 +154,18 @@ func applyToRealResources(
 	return nil
 }
 
-func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
-	serviceName := dataplane.Spec.GetIdentifyingService()
-	if len(rules.Rules) == 0 {
-		return nil
-	}
+func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
+	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
 	configurer := plugin_xds.Configurer{
-		Conf:             conf,
-		Service:          serviceName,
-		TrafficDirection: listener.TrafficDirection,
-		Destination:      destination,
-		IsGateway:        dataplane.Spec.IsBuiltinGateway(),
+		Conf:                  conf,
+		Service:               serviceName,
+		TrafficDirection:      listener.TrafficDirection,
+		Destination:           destination,
+		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
+		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -195,9 +178,6 @@ func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.Da
 }
 
 func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
-	if len(rules.Rules) == 0 {
-		return nil
-	}
 	rawConf := rules.Rules[0].Conf
 
 	conf := rawConf.(api.Conf)
@@ -212,19 +192,32 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 	var endpoint *xds.Endpoint
 	var provider string
 
+	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	name := ""
 	switch {
 	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
 		provider = plugin_xds.ZipkinProviderName
+		name = getNameOrDefault(
+			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url))),
+			plugin_xds.GetTracingClusterName(provider),
+		)
 	case backend.Datadog != nil:
 		endpoint = endpointForDatadog(backend.Datadog)
 		provider = plugin_xds.DatadogProviderName
+		name = getNameOrDefault(
+			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url))),
+			plugin_xds.GetTracingClusterName(provider),
+		)
 	case backend.OpenTelemetry != nil:
 		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
 		provider = plugin_xds.OpenTelemetryProviderName
+		name = getNameOrDefault(
+			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))),
+			plugin_xds.GetTracingClusterName(provider),
+		)
 	}
-	builder := clusters.NewClusterBuilder(proxy.APIVersion, plugin_xds.GetTracingClusterName(provider))
-
+	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
 	if backend.OpenTelemetry != nil {
 		builder.Configure(clusters.Http2())
 	}
@@ -236,7 +229,7 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 		return err
 	}
 
-	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: OriginMeshTrace, Resource: res})
+	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: metadata.OriginMeshTrace, Resource: res})
 
 	return nil
 }

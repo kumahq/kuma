@@ -33,7 +33,7 @@ func AsResourceContext[T any](conf T) *ResourceContext[T] {
 func RootContext[T any](mesh *core_mesh.MeshResource, rules ResourceRules) *ResourceContext[T] {
 	return &ResourceContext[T]{
 		ids: []kri.Identifier{
-			kri.From(mesh, ""),
+			kri.From(mesh),
 		},
 		rules: rules,
 	}
@@ -61,6 +61,15 @@ func (rc *ResourceContext[T]) Conf() T {
 		}
 	}
 	return rc.fallback
+}
+
+func (rc *ResourceContext[T]) ResourceRule() *ResourceRule {
+	for _, id := range rc.ids {
+		if rule, ok := rc.rules[id]; ok {
+			return &rule
+		}
+	}
+	return nil
 }
 
 func (rc *ResourceContext[T]) DirectConf() (T, bool) {

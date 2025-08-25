@@ -10,13 +10,19 @@ import (
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
+var _ FilterChainConfigurer = &HttpStaticRouteConfigurer{}
+
 // HttpStaticRouteConfigurer configures a static set of routes into the
 // HttpConnectionManager in the filter chain.
 type HttpStaticRouteConfigurer struct {
 	Builder *envoy_routes.RouteConfigurationBuilder
 }
 
-var _ FilterChainConfigurer = &HttpStaticRouteConfigurer{}
+func NewHttpStaticRouteConfigurer(builder *envoy_routes.RouteConfigurationBuilder) *HttpStaticRouteConfigurer {
+	return &HttpStaticRouteConfigurer{
+		Builder: builder,
+	}
+}
 
 func (c *HttpStaticRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routeConfig, err := c.Builder.Build()
@@ -66,6 +72,6 @@ type HttpScopedRouteConfigurer struct{}
 
 var _ FilterChainConfigurer = &HttpScopedRouteConfigurer{}
 
-func (c *HttpScopedRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *HttpScopedRouteConfigurer) Configure(_ *envoy_listener.FilterChain) error {
 	return errors.New("scoped routes not implemented")
 }

@@ -22,9 +22,10 @@ import (
 
 var _ = Describe("DNSGenerator", func() {
 	type testCase struct {
-		dataplaneFile string
-		expected      string
-		features      map[string]bool
+		dataplaneFile    string
+		expected         string
+		features         map[string]bool
+		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -38,7 +39,11 @@ var _ = Describe("DNSGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: &mesh_proto.Mesh{},
+						Spec: &mesh_proto.Mesh{
+							MeshServices: &mesh_proto.Mesh_MeshServices{
+								Mode: given.meshServicesMode,
+							},
+						},
 					},
 					VIPDomains: []xds_types.VIPDomains{
 						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
@@ -107,6 +112,19 @@ var _ = Describe("DNSGenerator", func() {
 			},
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
+		}),
+		Entry("05. DNS using proxy with unified naming", testCase{
+			dataplaneFile:    "5-dataplane.input.yaml",
+			expected:         "5-envoy-config.golden.yaml",
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				"feature-embedded-dns":            true,
+				"feature-unified-resource-naming": true,
+			},
+		}),
+		Entry("06. DNS enabled with unified naming", testCase{
+			dataplaneFile: "6-dataplane.input.yaml",
+			expected:      "6-envoy-config.golden.yaml",
 		}),
 	)
 })

@@ -5,11 +5,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -17,19 +19,30 @@ import (
 
 var _ = Describe("RBACConfigurer", func() {
 	type testCase struct {
-		rules    core_xds.Rules
-		mesh     string
-		stats    string
-		expected string
+		inboundRules []*inbound.Rule
+		stats        string
+		expected     string
+	}
+
+	mtpOrigin := func(policyName string) common.Origin {
+		return common.Origin{
+			Resource: &test_model.ResourceMeta{
+				Mesh: "default",
+				Name: policyName,
+				Labels: map[string]string{
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "ns-1",
+				},
+			},
+		}
 	}
 
 	DescribeTable("should generate proper envoy config",
 		func(given testCase) {
 			// given
 			configurer := &xds.RBACConfigurer{
-				Rules:     given.rules,
-				Mesh:      given.mesh,
-				StatsName: given.stats,
+				InboundRules: given.inboundRules,
+				StatsName:    given.stats,
 			}
 			res, err := listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -43,224 +56,326 @@ var _ = Describe("RBACConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("allow all", testCase{
+		Entry("allow all form mesh", testCase{
 			stats: "allow_all_prefix",
-			mesh:  "allow_all_mesh",
-			rules: []*core_xds.Rule{
+			inboundRules: []*inbound.Rule{
 				{
-					Subset: []subsetutils.Tag{},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.Allow),
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							Allow: &[]common_api.Match{
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffeId://trust-domain.mesh/",
+									},
+								},
+							},
+						},
 					},
+					Origin: mtpOrigin("mtp-1"),
 				},
 			},
 			expected: `
 filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules:
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - any: true
-      statPrefix: allow_all_prefix.`,
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffeId://trust-domain.mesh/
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: allow_all_prefix.`,
 		}),
-		Entry("deny all", testCase{
+		Entry("deny all from mesh", testCase{
 			stats: "deny_all_prefix",
-			mesh:  "deny_all_mesh",
-			rules: []*core_xds.Rule{
+			inboundRules: []*inbound.Rule{
 				{
-					Subset: []subsetutils.Tag{},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.Deny),
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							Deny: &[]common_api.Match{
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffeId://trust-domain.mesh/",
+									},
+								},
+							},
+						},
 					},
+					Origin: mtpOrigin("mtp-1"),
 				},
 			},
 			expected: `
 filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules: {}
-      statPrefix: deny_all_prefix.`,
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            action: DENY
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffeId://trust-domain.mesh/
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: deny_all_prefix.`,
 		}),
-		Entry("allow backend-v1 and web in us-east", testCase{
+		Entry("allow multiple services", testCase{
 			stats: "allow_2_services_prefix",
-			mesh:  "allow_2_service_mesh",
-			rules: []*core_xds.Rule{
+			inboundRules: []*inbound.Rule{
 				{
-					Subset: []subsetutils.Tag{
-						{Key: "kuma.io/service", Value: "backend"},
-						{Key: "version", Value: "v1"},
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							Allow: &[]common_api.Match{
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffeId://trust-domain.mesh/ns/backend/v1",
+									},
+								},
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffeId://trust-domain.mesh/ns/backend/v2",
+									},
+								},
+							},
+						},
 					},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.Allow),
-					},
-				},
-				{
-					Subset: []subsetutils.Tag{
-						{Key: "kuma.io/service", Value: "web"},
-						{Key: "kuma.io/zone", Value: "us-east"},
-					},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.Allow),
-					},
-				},
-			},
-			expected: `
-filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules:
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - andIds:
-                          ids:
-                              - authenticated:
-                                  principalName:
-                                      exact: spiffe://allow_2_service_mesh/backend
-                              - authenticated:
-                                  principalName:
-                                      exact: kuma://version/v1
-                      - andIds:
-                          ids:
-                              - authenticated:
-                                  principalName:
-                                      exact: spiffe://allow_2_service_mesh/web
-                              - authenticated:
-                                  principalName:
-                                      exact: kuma://kuma.io/zone/us-east
-      statPrefix: allow_2_services_prefix.`,
-		}),
-		Entry("allow rule with negation in kuma tag", testCase{
-			stats: "allow_negation_prefix",
-			mesh:  "allow_negation_mesh",
-			rules: []*core_xds.Rule{
-				{
-					Subset: []subsetutils.Tag{
-						{Key: "kuma.io/service", Value: "backend"},
-						{Key: "version", Value: "v2", Not: true},
-					},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.Allow),
-					},
+					Origin: mtpOrigin("mtp-1"),
 				},
 			},
 			expected: `
 filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules:
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - andIds:
-                          ids:
-                              - authenticated:
-                                  principalName:
-                                      exact: spiffe://allow_negation_mesh/backend
-                              - notId:
-                                  authenticated:
-                                      principalName:
-                                          exact: kuma://version/v2
-      statPrefix: allow_negation_prefix.`,
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    orMatcher:
+                        predicate:
+                            - singlePredicate:
+                                input:
+                                    name: envoy.matching.inputs.uri_san
+                                    typedConfig:
+                                        '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                                valueMatch:
+                                    exact: spiffeId://trust-domain.mesh/ns/backend/v1
+                            - singlePredicate:
+                                input:
+                                    name: envoy.matching.inputs.uri_san
+                                    typedConfig:
+                                        '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                                valueMatch:
+                                    exact: spiffeId://trust-domain.mesh/ns/backend/v2
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: allow_2_services_prefix.`,
 		}),
-		Entry("allow rule with negation in service tag", testCase{
-			stats: "allow_negation_prefix",
-			mesh:  "allow_negation_mesh",
-			rules: []*core_xds.Rule{
+		Entry("rules from merged policies", testCase{
+			stats: "rules_from_merged",
+			inboundRules: []*inbound.Rule{
 				{
-					Subset: []subsetutils.Tag{
-						{Key: "kuma.io/service", Value: "backend", Not: true},
-						{Key: "version", Value: "v2"},
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							Deny: &[]common_api.Match{
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffeId://trust-domain.mesh/ns/backend/v1",
+									},
+								},
+							},
+						},
 					},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.Allow),
+					Origin: mtpOrigin("mtp-1"),
+				},
+				{
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							Allow: &[]common_api.Match{
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffeId://trust-domain.mesh/ns/backend",
+									},
+								},
+							},
+						},
 					},
+					Origin: mtpOrigin("mtp-2"),
 				},
 			},
 			expected: `
 filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules:
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - andIds:
-                          ids:
-                              - notId:
-                                  authenticated:
-                                      principalName:
-                                          exact: spiffe://allow_negation_mesh/backend
-                              - authenticated:
-                                  principalName:
-                                      exact: kuma://version/v2
-      statPrefix: allow_negation_prefix.`,
-		}),
-		Entry("no rules", testCase{
-			stats: "no",
-			mesh:  "nothing",
-			rules: []*core_xds.Rule{},
-			expected: `
-filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules: {}
-      statPrefix: no.`,
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            action: DENY
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            exact: spiffeId://trust-domain.mesh/ns/backend/v1
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            name: kri_mtp_default_zone-1_ns-1_mtp-2_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffeId://trust-domain.mesh/ns/backend
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: rules_from_merged.`,
 		}),
 		Entry("shadow deny rule", testCase{
-			stats: "shadow_deny_prefix",
-			mesh:  "shadow_deny_mesh",
-			rules: []*core_xds.Rule{
+			stats: "shadow_deny",
+			inboundRules: []*inbound.Rule{
 				{
-					Subset: []subsetutils.Tag{
-						{Key: "kuma.io/service", Value: "backend"},
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							AllowWithShadowDeny: &[]common_api.Match{
+								{
+									SpiffeId: &common_api.SpiffeIdMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffeId://trust-domain.mesh/",
+									},
+								},
+							},
+						},
 					},
-					Conf: v1alpha1.Conf{
-						Action: pointer.To(v1alpha1.AllowWithShadowDeny),
-					},
+					Origin: mtpOrigin("mtp-1"),
 				},
 			},
 			expected: `
 filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules:
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - authenticated:
-                          principalName:
-                              exact: spiffe://shadow_deny_mesh/backend
-      shadowRules:
-          action: DENY
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - authenticated:
-                          principalName:
-                              exact: spiffe://shadow_deny_mesh/backend
-      statPrefix: shadow_deny_prefix.`,
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffeId://trust-domain.mesh/
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    shadowMatcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            action: DENY
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffeId://trust-domain.mesh/
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: shadow_deny.`,
 		}),
 	)
 })

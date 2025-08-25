@@ -1,8 +1,11 @@
 package events
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -30,6 +33,14 @@ type TriggerInsightsComputationEvent struct {
 type TriggerKDSResyncEvent struct {
 	Type   model.ResourceType
 	NodeID string
+}
+
+type WorkloadIdentityChangedEvent struct {
+	ResourceKey    model.ResourceKey
+	Operation      Op
+	GenerationTime *time.Time
+	ExpirationTime *time.Time
+	Origin         kri.Identifier
 }
 
 var ListenerStoppedErr = errors.New("listener closed")

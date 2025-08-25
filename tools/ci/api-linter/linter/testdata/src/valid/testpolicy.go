@@ -28,7 +28,7 @@ type Conf struct {
 
     Discriminator Discriminator `json:"discriminator"` // OK
 
-    // +kuma:nolint
+    // +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
     InvalidNolint *string `json:"invalid_nolint_ptr"` // OK
 }
 

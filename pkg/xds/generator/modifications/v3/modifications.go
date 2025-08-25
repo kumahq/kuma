@@ -7,9 +7,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-// OriginProxyTemplateModifications is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginProxyTemplateModifications = "proxy-template-modifications"
-
 type modificator interface {
 	apply(*core_xds.ResourceSet) error
 }

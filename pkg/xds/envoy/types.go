@@ -3,6 +3,7 @@ package envoy
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -18,6 +19,7 @@ import (
 type Cluster interface {
 	Service() string
 	Name() string
+	SNI() string
 	Mesh() string
 	Tags() tags.Tags
 	Hash() string
@@ -47,6 +49,7 @@ func (c *ClusterImpl) Service() string { return c.service }
 func (c *ClusterImpl) Name() string    { return c.name }
 func (c *ClusterImpl) Weight() uint32  { return c.weight }
 func (c *ClusterImpl) Tags() tags.Tags { return c.tags }
+func (c *ClusterImpl) SNI() string     { return "" }
 
 // Mesh returns a non-empty string only if the cluster is in a different mesh
 // from the context.
@@ -182,13 +185,23 @@ func (c *Service) BackendRef() *resolve.ResolvedBackendRef {
 
 type Services map[string]*Service
 
-func (c Services) Sorted() []string {
+func (s Services) Sorted() []string {
 	var keys []string
-	for key := range c {
+	for key := range s {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func (s Services) Clusters() []Cluster {
+	var clusters []Cluster
+
+	for _, serviceName := range s.Sorted() {
+		clusters = slices.Concat(clusters, s[serviceName].Clusters())
+	}
+
+	return clusters
 }
 
 type ServicesAccumulator struct {

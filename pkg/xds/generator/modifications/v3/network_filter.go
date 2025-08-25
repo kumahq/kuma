@@ -109,7 +109,7 @@ func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) 
 	if n.Match.GetListenerName() != "" && n.Match.GetListenerName() != resource.Name {
 		return false
 	}
-	if n.Match.GetOrigin() != "" && n.Match.GetOrigin() != resource.Origin {
+	if n.Match.GetOrigin() != "" && n.Match.GetOrigin() != string(resource.Origin) {
 		return false
 	}
 	if len(n.Match.GetListenerTags()) > 0 {

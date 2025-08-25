@@ -29,6 +29,7 @@ import (
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_apis "github.com/kumahq/kuma/pkg/core/resources/apis"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -79,6 +80,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	core_plugins.Init(cfg.CoreResources.Enabled, core_apis.NameToModule)
 	core_plugins.Init(cfg.Policies.Enabled, policies.NameToModule)
+	core_plugins.InitAllIf(cfg.CoreResources.Enabled, "meshidentities", meshidentity.NameToModule)
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
@@ -120,6 +122,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
 
 	if err := initializeCaManagers(builder); err != nil {
+		return nil, err
+	}
+	if err := initializeIdentityProviders(builder); err != nil {
 		return nil, err
 	}
 
@@ -368,6 +373,17 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
 		}
 		builder.WithCaManager(string(pluginName), caManager)
+	}
+	return nil
+}
+
+func initializeIdentityProviders(builder *core_runtime.Builder) error {
+	for pluginName, idpPlugin := range core_plugins.Plugins().IdentityProviders() {
+		idp, err := idpPlugin.NewIdentityProvider(builder, nil)
+		if err != nil {
+			return errors.Wrapf(err, "could not create Identity Provider for plugin %q", pluginName)
+		}
+		builder.WithIdentityProviders(string(pluginName), idp)
 	}
 	return nil
 }

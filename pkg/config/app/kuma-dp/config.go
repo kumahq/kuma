@@ -36,7 +36,7 @@ var DefaultConfig = func() Config {
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
-			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
+			WorkDir:    "", // if left empty, a temporary directory will be generated automatically
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
@@ -140,6 +140,9 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
+	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
+	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
+	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
@@ -193,8 +196,12 @@ type DataplaneRuntime struct {
 
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
-	// Dir to store auto-generated Envoy bootstrap config in.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	// ConfigDir was used to store Envoy bootstrap config.
+	// Deprecated: use WorkDir instead.
+	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir" deprecated:"use WorkDir instead"`
+	// WorkDir is the directory to store auto-generated Envoy bootstrap config.
+	// It overrides values from deprecated ConfigDir and SocketDir.
+	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir" overrides:"ConfigDir,SocketDir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
@@ -217,6 +224,7 @@ type DataplaneRuntime struct {
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process
+	// Deprecated: use WorkDir instead
 	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
@@ -238,6 +246,9 @@ type DataplaneRuntime struct {
 	// - System format for internal Kuma resources that users typically don't need to care about unless debugging Kuma
 	// - Contextual format for proxy-scoped resources like inbounds and transparent proxy passthrough
 	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_unified_resource_naming_enabled"`
+	// SpireSupported indicates whether the sidecar has mounted a volume that includes the socket for the Spire agent to retrieve its identity.
+	// Currently supported only on Kubernetes.
+	SpireSupported bool `json:"spireSupported,omitempty" envconfig:"kuma_dataplane_runtime_spire_supported"`
 }
 
 type Metrics struct {
@@ -333,8 +344,8 @@ func (d *Dataplane) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
-	if d.ReadinessPort > 65353 {
-		return errors.New(".ReadinessPort has to be in [0, 65353] range")
+	if d.ReadinessPort > 65353 || d.ReadinessPort == 0 {
+		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65353] range"))
 	}
 
 	return errs

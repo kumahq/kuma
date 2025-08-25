@@ -13,8 +13,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var Origin = "mesh-proxy-patch"
-
 type modificator interface {
 	apply(*core_xds.ResourceSet) error
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -58,7 +59,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		}
 
 		viewModificator = func(view *vips.VirtualOutboundMeshView) error {
-			view.DeleteByOrigin(vips.OriginKube)
+			view.DeleteByOrigin(string(metadata.OriginKube))
 			for _, entry := range kubeHostsView.HostnameEntries() {
 				for _, outbound := range kubeHostsView.Get(entry).Outbounds {
 					if err := view.Add(entry, outbound); err != nil {
@@ -88,6 +89,7 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Named("kuma-configmap-controller").
 		For(&kube_core.ConfigMap{}).
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
+		// Dataplane is needed because we can add labels (converted to tags) in runtime that are then picked by VirtualOutbounds
 		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Watches(&mesh_k8s.ZoneIngress{}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).

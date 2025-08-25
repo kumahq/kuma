@@ -14,10 +14,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
-
-// OriginTracing is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginTracing = "tracing"
 
 type TracingProxyGenerator struct{}
 
@@ -62,7 +60,7 @@ func (t TracingProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 	if err != nil {
 		return nil, err
 	}
-	resources.Add(&core_xds.Resource{Name: clusterName, Origin: OriginTracing, Resource: res})
+	resources.Add(&core_xds.Resource{Name: clusterName, Origin: metadata.OriginTracing, Resource: res})
 	return resources, nil
 }
 

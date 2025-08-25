@@ -12,10 +12,16 @@ type Conf struct {
 
     InvalidListNoOmitEmpty *[]string `json:"invalid_list_no_omit"` // want "mergeable field TestPolicy.Default.InvalidListNoOmitEmpty must have 'omitempty' in JSON tag"
 
-    A, B int // want "field must have exactly one name"
-    NestedType // want "field must have exactly one name"
+    A, B int // want "field in struct TestPolicy.Default must have exactly one name, got 'A,B'"
+    NestedType // want "field in struct TestPolicy.Default must have exactly one name, got ''"
+
+    NestedTypeWithoutPointer NestedTypeWithoutPointer `json:"nested_type_with_invalid_pointer,omitempty"` // want "mergeable field TestPolicy.Default.NestedTypeWithoutPointer must be a pointer"
 }
 
 type NestedType struct {
     C int `json:"c"` // OK
+}
+
+type NestedTypeWithoutPointer struct {
+    D *int `json:"d,omitempty"` // OK
 }

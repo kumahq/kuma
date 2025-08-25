@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: identifier must start with 'kri': \"id_dp_default_test-zone__dp-1_main-port\"",
+ "details": "bad request: identifier must start with 'kri': \"id_dp_default_test-zone__dp-1_main-port\""
+}

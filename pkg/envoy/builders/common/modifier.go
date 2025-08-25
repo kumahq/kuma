@@ -16,14 +16,6 @@ func (m *Modifier[R]) Configure(configurer Configurer[R]) *Modifier[R] {
 	return m
 }
 
-func (m *Modifier[R]) ConfigureIf(condition bool, fn func() Configurer[R]) *Modifier[R] {
-	if !condition {
-		return m
-	}
-	m.configurers = append(m.configurers, fn())
-	return m
-}
-
 func (m *Modifier[R]) Modify() error {
 	for _, configurer := range m.configurers {
 		if err := configurer(m.resource); err != nil {

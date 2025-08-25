@@ -86,6 +86,24 @@ from:
     default:
       action: Deny
 `),
+			Entry("full rules example", `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      deny: 
+        - spiffeId:
+            type: Exact
+            value: spiffe://trust.domain/service
+      allow:
+        - spiffeId:
+            type: Prefix
+            value: spiffe://trust.domain
+      allowWithShadowDeny:
+        - spiffeId:
+            type: Exact
+            value: spiffe://trust.domain/service-2
+`),
 		)
 
 		type testCase struct {
@@ -118,20 +136,20 @@ from: []
 `,
 				expected: `
 violations:
-  - field: spec.from
-    message: needs at least one item`,
+  - field: spec
+    message: at least one of 'from' or 'rules' has to be defined`,
 			}),
-			Entry("empty 'from' array", testCase{
+			Entry("empty 'rules' array", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
   name: backend
-from: []
+rules: []
 `,
 				expected: `
 violations:
-  - field: spec.from
-    message: needs at least one item`,
+  - field: spec
+    message: at least one of 'from' or 'rules' has to be defined`,
 			}),
 			Entry("sectionName without from or rules", testCase{
 				inputYaml: `
@@ -144,8 +162,8 @@ to: []
 violations:
 - field: spec.targetRef.sectionName
   message: can only be used with inbound policies
-- field: spec.from
-  message: needs at least one item`,
+- field: spec
+  message: at least one of 'from' or 'rules' has to be defined`,
 			}),
 			Entry("not supported kinds in 'from' array", testCase{
 				inputYaml: `
@@ -177,6 +195,49 @@ from:
 violations:
   - field: spec.from[0].default.action
     message: must be defined 
+`,
+			}),
+			Entry("rules default is nil", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      deny: []
+`,
+				expected: `
+violations:
+  - field: spec.rules[0]
+    message: at least one of 'allow', 'allowWithShadowDeny', 'deny' has to be defined
+`,
+			}),
+			Entry("matches with invalid spiffe id", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      deny: 
+        - spiffeId:
+            type: Exact
+            value: some-service
+      allow:
+        - spiffeId:
+            type: Prefix
+            value: wrong
+      allowWithShadowDeny:
+        - spiffeId:
+            type: Exact
+            value: test
+`,
+				expected: `
+violations:
+  - field: spec.rules[0].allow[0].spiffeId
+    message: must be a valid Spiffe ID
+  - field: spec.rules[0].allowWithShadowDeny[0].spiffeId
+    message: must be a valid Spiffe ID
+  - field: spec.rules[0].deny[0].spiffeId
+    message: must be a valid Spiffe ID
 `,
 			}),
 		)

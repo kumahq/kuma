@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -27,10 +28,11 @@ type Configurer struct {
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
-	Service          string
-	TrafficDirection envoy_core.TrafficDirection
-	Destination      string
-	IsGateway        bool
+	Service               string
+	TrafficDirection      envoy_core.TrafficDirection
+	Destination           string
+	IsGateway             bool
+	UnifiedResourceNaming bool
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -48,6 +50,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	} else {
 		backend = backends[0]
 	}
+	getNameOrDefault := core_system_names.GetNameOrDefault(c.UnifiedResourceNaming)
 
 	return v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{
@@ -83,7 +86,11 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.Zipkin != nil {
-			tracing, err := c.zipkinConfig(GetTracingClusterName(ZipkinProviderName))
+			name := getNameOrDefault(
+				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url))),
+				GetTracingClusterName(ZipkinProviderName),
+			)
+			tracing, err := c.zipkinConfig(name)
 			if err != nil {
 				return err
 			}
@@ -91,7 +98,11 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.Datadog != nil {
-			tracing, err := c.datadogConfig(GetTracingClusterName(DatadogProviderName))
+			name := getNameOrDefault(
+				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url))),
+				GetTracingClusterName(DatadogProviderName),
+			)
+			tracing, err := c.datadogConfig(name)
 			if err != nil {
 				return err
 			}
@@ -99,7 +110,11 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.OpenTelemetry != nil {
-			tracing, err := c.opentelemetryConfig(GetTracingClusterName(OpenTelemetryProviderName))
+			name := getNameOrDefault(
+				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))),
+				GetTracingClusterName(OpenTelemetryProviderName),
+			)
+			tracing, err := c.opentelemetryConfig(name)
 			if err != nil {
 				return err
 			}

@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -41,10 +40,6 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, b
 	return Port{}, false
 }
 
-func (m *MeshMultiZoneServiceResource) DestinationName(port int32) string {
-	return destinationname.LegacyName(kri.From(m, ""), MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
-}
-
 func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, vip := range m.Status.VIPs {
@@ -52,7 +47,7 @@ func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     uint32(port.Port),
-				Resource: pointer.To(kri.From(m, port.GetName())),
+				Resource: kri.WithSectionName(kri.From(m), port.GetName()),
 			})
 		}
 	}
@@ -92,6 +87,14 @@ func (p Port) GetValue() int32 {
 	return p.Port
 }
 
-func (p Port) GetProtocol() core_mesh.Protocol {
+func (p Port) GetProtocol() core_meta.Protocol {
 	return p.AppProtocol
+}
+
+func (l *MeshMultiZoneServiceResourceList) GetDestinations() []core.Destination {
+	var result []core.Destination
+	for _, item := range l.Items {
+		result = append(result, item)
+	}
+	return result
 }

@@ -73,7 +73,7 @@ properties:
                     description: DataSource defines the source of bytes to use.
                     properties:
                       Type:
-                        description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                        description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
                     required:
                     - Type
                     type: object

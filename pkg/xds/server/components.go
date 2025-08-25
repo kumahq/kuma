@@ -5,6 +5,7 @@ import (
 
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -77,6 +78,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	envoyCpCtx := &xds_context.ControlPlaneContext{
 		CLACache:        claCache,
 		Secrets:         secrets,
+		IdentityManager: providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus()),
 		Zone:            rt.Config().Multizone.Zone.Name,
 		SystemNamespace: systemNamespace,
 	}

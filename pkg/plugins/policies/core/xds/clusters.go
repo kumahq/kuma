@@ -6,10 +6,9 @@ import (
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
 )
 
 type Clusters struct {
@@ -33,7 +32,7 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 		cluster := res.Resource.(*envoy_cluster.Cluster)
 
 		switch res.Origin {
-		case generator.OriginOutbound:
+		case generator_metadata.OriginOutbound:
 			serviceName := tags.ServiceFromClusterName(cluster.Name)
 			if serviceName != cluster.Name {
 				// first group is service name and second split number
@@ -41,13 +40,13 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			} else {
 				clusters.Outbound[cluster.Name] = cluster
 			}
-		case generator.OriginInbound:
+		case generator_metadata.OriginInbound:
 			clusters.Inbound[cluster.Name] = cluster
-		case metadata.OriginGateway:
+		case gateway_metadata.OriginGateway:
 			clusters.Gateway[cluster.Name] = cluster
-		case egress.OriginEgress:
+		case generator_metadata.OriginEgress:
 			clusters.Egress[cluster.Name] = cluster
-		case generator.OriginPrometheus:
+		case generator_metadata.OriginPrometheus:
 			clusters.Prometheus = cluster
 		default:
 			continue

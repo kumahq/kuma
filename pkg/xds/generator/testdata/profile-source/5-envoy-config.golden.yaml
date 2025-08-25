@@ -22,12 +22,12 @@ resources:
                   exact: spiffe://demo/db
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: mesh_ca:secret:demo
+              name: system_mtls_ca_demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:demo
+          - name: system_mtls_identity_demo
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -67,12 +67,12 @@ resources:
                   exact: spiffe://demo/elastic
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: mesh_ca:secret:demo
+              name: system_mtls_ca_demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:demo
+          - name: system_mtls_identity_demo
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -83,13 +83,12 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: localhost:8080
+- name: self_inbound_dp_8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: localhost_8080
     connectTimeout: 10s
     loadAssignment:
-      clusterName: localhost:8080
+      clusterName: self_inbound_dp_8080
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -97,7 +96,7 @@ resources:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-    name: localhost:8080
+    name: self_inbound_dp_8080
     type: STATIC
 - name: system_envoy_admin
   resource:
@@ -113,6 +112,20 @@ resources:
                 address: 127.0.0.1
                 portValue: 9902
     name: system_envoy_admin
+    type: STATIC
+- name: system_probe_readiness
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: system_probe_readiness
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-readiness-reporter.sock
+    name: system_probe_readiness
     type: STATIC
 - name: db
   resource:
@@ -144,55 +157,6 @@ resources:
               address: 192.168.0.4
               portValue: 9200
         loadBalancingWeight: 1
-- name: inbound:192.168.0.1:80
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 192.168.0.1
-        portValue: 80
-    enableReusePort: false
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_1_80.
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:8080
-          idleTimeout: 7200s
-          statPrefix: localhost_8080
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://demo/
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: mesh_ca:secret:demo
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:demo
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          requireClientCertificate: true
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: backend
-    name: inbound:192.168.0.1:80
-    trafficDirection: INBOUND
 - name: outbound:127.0.0.1:54321
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -235,6 +199,56 @@ resources:
           kuma.io/service: elastic
     name: outbound:127.0.0.1:59200
     trafficDirection: OUTBOUND
+- name: self_inbound_dp_8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 80
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: self_inbound_dp_8080.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: self_inbound_dp_8080
+          idleTimeout: 7200s
+          statPrefix: self_inbound_dp_8080
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
+              validationContextSdsSecretConfig:
+                name: system_mtls_ca_demo
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: system_mtls_identity_demo
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: self_inbound_dp_8080
+    statPrefix: self_inbound_dp_8080
+    trafficDirection: INBOUND
 - name: system_envoy_admin
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -268,7 +282,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: system_envoy_admin
+                  cluster: system_probe_readiness
                   prefixRewrite: /ready
           statPrefix: system_envoy_admin
     - filterChainMatch:
@@ -297,7 +311,7 @@ resources:
               - match:
                   prefix: /ready
                 route:
-                  cluster: system_envoy_admin
+                  cluster: system_probe_readiness
                   prefixRewrite: /ready
               - match:
                   prefix: /
@@ -329,19 +343,19 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: system_envoy_admin
     trafficDirection: INBOUND
-- name: identity_cert:secret:demo
+- name: system_mtls_ca_demo
   resource:
     '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: identity_cert:secret:demo
+    name: system_mtls_ca_demo
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=
+- name: system_mtls_identity_demo
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: system_mtls_identity_demo
     tlsCertificate:
       certificateChain:
         inlineBytes: Q0VSVA==
       privateKey:
         inlineBytes: S0VZ
-- name: mesh_ca:secret:demo
-  resource:
-    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: mesh_ca:secret:demo
-    validationContext:
-      trustedCa:
-        inlineBytes: Q0E=

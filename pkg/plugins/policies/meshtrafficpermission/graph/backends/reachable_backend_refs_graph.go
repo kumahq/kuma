@@ -20,6 +20,9 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 	rules := map[kri.Identifier]core_rules.Rules{}
 	for _, ms := range meshServices {
 		dpTags := maps.Clone(pointer.Deref(ms.Spec.Selector.DataplaneTags))
+		if dpTags == nil {
+			dpTags = map[string]string{}
+		}
 		if origin, ok := core_model.ResourceOrigin(ms.GetMeta()); ok {
 			dpTags[mesh_proto.ResourceOriginLabel] = string(origin)
 		}
@@ -34,7 +37,7 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 		if !ok {
 			continue
 		}
-		rules[kri.From(ms, "")] = rl
+		rules[kri.From(ms)] = rl
 	}
 	return rules
 }

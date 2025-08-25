@@ -6,7 +6,7 @@ import (
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	xds_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -19,7 +19,7 @@ const NoMatchMsg = "This response comes from Kuma Sidecar. No routes matched thi
 type FilterChainConfigurer struct {
 	APIVersion        core_xds.APIVersion
 	InternalAddresses []core_xds.InternalAddress
-	Protocol          core_mesh.Protocol
+	Protocol          core_meta.Protocol
 	Port              uint32
 	MatchType         MatchType
 	MatchValue        string
@@ -27,7 +27,7 @@ type FilterChainConfigurer struct {
 	IsIPv6            bool
 }
 
-func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
+func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
 	if listener == nil {
 		return nil
 	}
@@ -37,20 +37,20 @@ func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clus
 	return nil
 }
 
-func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
+func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
 	switch c.Protocol {
-	case core_mesh.ProtocolTCP, core_mesh.ProtocolMysql:
+	case core_meta.ProtocolTCP, core_meta.ProtocolMysql:
 		if err := c.configureTcpFilterChain(listener, clustersAccumulator); err != nil {
 			return err
 		}
-	case core_mesh.ProtocolTLS:
+	case core_meta.ProtocolTLS:
 		if err := c.configureTlsFilterChain(listener, clustersAccumulator); err != nil {
 			return err
 		}
 	default:
 		switch c.MatchType {
 		case Domain, WildcardDomain:
-			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_mesh.Protocol) {
+			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_meta.Protocol) {
 				for _, route := range c.Routes {
 					if c.IsIPv6 && route.MatchType == IP {
 						continue
@@ -92,7 +92,7 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 				return err
 			}
 		default:
-			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_mesh.Protocol) {
+			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_meta.Protocol) {
 				clusterName := ClusterName(c.MatchValue, c.Protocol, c.Port)
 				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, c.MatchValue).
 					Configure(
@@ -112,8 +112,8 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 
 func (c FilterChainConfigurer) configureHttpFilterChain(
 	listener *envoy_listener.Listener,
-	routeFn func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_mesh.Protocol),
-	clustersAccumulator map[string]core_mesh.Protocol,
+	routeFn func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_meta.Protocol),
+	clustersAccumulator map[string]core_meta.Protocol,
 	filterChainName string,
 ) error {
 	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
@@ -143,15 +143,15 @@ func (c FilterChainConfigurer) configureHttpFilterChain(
 	return nil
 }
 
-func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
+func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
 	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
 		return nil
 	}
 	if !c.IsIPv6 && (c.MatchType == IPV6 || c.MatchType == CIDRV6) {
 		return nil
 	}
-	chainName := FilterChainName(c.MatchValue, core_mesh.ProtocolTCP, c.Port)
-	clusterName := ClusterName(c.MatchValue, core_mesh.ProtocolTCP, c.Port)
+	chainName := FilterChainName(c.MatchValue, core_meta.ProtocolTCP, c.Port)
+	clusterName := ClusterName(c.MatchValue, core_meta.ProtocolTCP, c.Port)
 	split := plugins_xds.NewSplitBuilder().
 		WithClusterName(clusterName).
 		Build()
@@ -173,15 +173,15 @@ func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.
 	return nil
 }
 
-func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
+func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
 	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
 		return nil
 	}
 	if !c.IsIPv6 && (c.MatchType == IPV6 || c.MatchType == CIDRV6) {
 		return nil
 	}
-	chainName := FilterChainName(c.MatchValue, core_mesh.ProtocolTLS, c.Port)
-	clusterName := ClusterName(c.MatchValue, core_mesh.ProtocolTLS, c.Port)
+	chainName := FilterChainName(c.MatchValue, core_meta.ProtocolTLS, c.Port)
+	clusterName := ClusterName(c.MatchValue, core_meta.ProtocolTLS, c.Port)
 	split := plugins_xds.NewSplitBuilder().
 		WithClusterName(clusterName).
 		Build()
@@ -218,14 +218,14 @@ func (c FilterChainConfigurer) configureAddressMatch(builder *xds_listeners.Filt
 	}
 }
 
-func ClusterName(matchValue string, protocol core_mesh.Protocol, port uint32) string {
+func ClusterName(matchValue string, protocol core_meta.Protocol, port uint32) string {
 	if port == 0 {
 		return fmt.Sprintf("meshpassthrough_%s_%s_*", protocol, matchValue)
 	}
 	return fmt.Sprintf("meshpassthrough_%s_%s_%d", protocol, matchValue, port)
 }
 
-func FilterChainName(name string, protocol core_mesh.Protocol, port uint32) string {
+func FilterChainName(name string, protocol core_meta.Protocol, port uint32) string {
 	displayPort := "*"
 	if port != 0 {
 		displayPort = fmt.Sprintf("%d", port)

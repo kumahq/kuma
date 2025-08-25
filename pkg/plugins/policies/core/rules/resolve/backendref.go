@@ -4,22 +4,22 @@ import (
 	"fmt"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) *kri.Identifier
+type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) kri.Identifier
 
-func BackendRefOrNil(meta core_model.ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
-	if br, ok := BackendRef(meta, br, resolver); ok {
+func BackendRefOrNil(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
+	if br, ok := BackendRef(origin, br, resolver); ok {
 		return &br
 	}
 	return nil
 }
 
-func BackendRef(meta core_model.ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) (ResolvedBackendRef, bool) {
+func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) (ResolvedBackendRef, bool) {
 	switch {
 	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
 	case br.Kind == common_api.MeshExternalService:
@@ -28,24 +28,27 @@ func BackendRef(meta core_model.ResourceMeta, br common_api.BackendRef, resolver
 		return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
 	}
 
-	rr := RealResourceBackendRef{
-		Resource: pointer.To(TargetRefToKRI(meta, br.TargetRef)),
+	rr := &RealResourceBackendRef{
+		Resource: TargetRefToKRI(origin, br.TargetRef),
+		Origin:   origin,
 		Weight:   pointer.DerefOr(br.Weight, 1),
 	}
 
-	if len(pointer.Deref(br.Labels)) > 0 {
-		ri := resolver(core_model.ResourceType(br.Kind), pointer.Deref(br.Labels))
-		if ri == nil {
-			return ResolvedBackendRef{}, false
-		}
-		rr.Resource = ri
+	if labels := pointer.Deref(br.Labels); len(labels) > 0 {
+		rr.Resource = resolver(core_model.ResourceType(br.Kind), labels)
 	}
 
-	if br.Port != nil {
-		rr.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
+	if rr.Resource.IsEmpty() {
+		return ResolvedBackendRef{}, false
 	}
 
-	return ResolvedBackendRef{Ref: &rr}, true
+	if sectionName := pointer.Deref(br.SectionName); sectionName != "" {
+		rr.Resource.SectionName = sectionName
+	} else if port := pointer.Deref(br.Port); port > 0 {
+		rr.Resource.SectionName = fmt.Sprintf("%d", port)
+	}
+
+	return ResolvedBackendRef{Ref: rr}, true
 }
 
 type IsResolvedBackendRef interface {
@@ -72,11 +75,11 @@ func (rbr *ResolvedBackendRef) ReferencesRealResource() bool {
 	return ok
 }
 
-func (rbr *ResolvedBackendRef) ResourceOrNil() *kri.Identifier {
+func (rbr *ResolvedBackendRef) Resource() kri.Identifier {
 	if rr := rbr.RealResourceBackendRef(); rr != nil {
 		return rr.Resource
 	}
-	return nil
+	return kri.Identifier{}
 }
 
 func (rbr *ResolvedBackendRef) LegacyBackendRef() *LegacyBackendRef {
@@ -98,32 +101,35 @@ type LegacyBackendRef common_api.BackendRef
 func (lbr *LegacyBackendRef) isResolvedBackendRef() {}
 
 type RealResourceBackendRef struct {
-	Resource *kri.Identifier
+	Resource kri.Identifier
+	Origin   kri.Identifier
 	Weight   uint
 }
 
 func (rbr *RealResourceBackendRef) isResolvedBackendRef() {}
 
-func TargetRefToKRI(meta core_model.ResourceMeta, tr common_api.TargetRef) kri.Identifier {
-	switch tr.Kind {
-	case common_api.Mesh:
+func TargetRefToKRI(origin kri.Identifier, ref common_api.TargetRef) kri.Identifier {
+	if origin.IsEmpty() {
+		return kri.Identifier{}
+	}
+
+	if ref.Kind == common_api.Mesh {
 		return kri.Identifier{
-			ResourceType: core_model.ResourceType(tr.Kind),
-			Name:         meta.GetMesh(),
+			ResourceType: core_mesh.MeshType,
+			Name:         origin.Mesh,
 		}
-	default:
-		var namespace string
-		if pointer.Deref(tr.Namespace) != "" {
-			namespace = pointer.Deref(tr.Namespace)
-		} else {
-			namespace = meta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		}
-		return kri.Identifier{
-			ResourceType: core_model.ResourceType(tr.Kind),
-			Mesh:         meta.GetMesh(),
-			Zone:         meta.GetLabels()[mesh_proto.ZoneTag],
-			Namespace:    namespace,
-			Name:         pointer.Deref(tr.Name),
-		}
+	}
+
+	var ns string
+	if ns = pointer.Deref(ref.Namespace); ns == "" {
+		ns = origin.Namespace
+	}
+
+	return kri.Identifier{
+		ResourceType: core_model.ResourceType(ref.Kind),
+		Name:         pointer.Deref(ref.Name),
+		Mesh:         origin.Mesh,
+		Zone:         origin.Zone,
+		Namespace:    ns,
 	}
 }

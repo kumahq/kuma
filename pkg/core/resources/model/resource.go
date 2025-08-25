@@ -549,18 +549,64 @@ func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
 	return UnsetNamespace
 }
 
+type LabelsOptions struct {
+	Mode           config_core.CpMode
+	IsK8s          bool
+	ZoneName       string
+	Namespace      Namespace
+	ServiceAccount string
+}
+
+type LabelsOptionsFunc func(*LabelsOptions)
+
+func NewLabelsOptions(fs ...LabelsOptionsFunc) *LabelsOptions {
+	opts := &LabelsOptions{}
+	for _, f := range fs {
+		f(opts)
+	}
+	return opts
+}
+
+func WithK8s(k8s bool) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.IsK8s = k8s
+	}
+}
+
+func WithNamespace(namespace Namespace) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.Namespace = namespace
+	}
+}
+
+func WithServiceAccount(name string) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.ServiceAccount = name
+	}
+}
+
+func WithZone(name string) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.ZoneName = name
+	}
+}
+
+func WithMode(mode config_core.CpMode) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.Mode = mode
+	}
+}
+
 // ComputeLabels computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
 // Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
 func ComputeLabels(
 	rd ResourceTypeDescriptor,
 	spec ResourceSpec,
 	existingLabels map[string]string,
-	ns Namespace,
 	mesh string,
-	mode config_core.CpMode,
-	isK8s bool,
-	localZone string,
+	opts ...LabelsOptionsFunc,
 ) (map[string]string, error) {
+	labelsOpts := NewLabelsOptions(opts...)
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
@@ -590,15 +636,15 @@ func ComputeLabels(
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
-	if mode == config_core.Zone {
+	if labelsOpts.Mode == config_core.Zone {
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
 		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
 		if rd.KDSFlags.Has(ProvidedByZoneFlag) {
 			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-				setIfNotExist(mesh_proto.ZoneTag, localZone)
+				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
 				env := mesh_proto.UniversalEnvironment
-				if isK8s {
+				if labelsOpts.IsK8s {
 					env = mesh_proto.KubernetesEnvironment
 				}
 				setIfNotExist(mesh_proto.EnvTag, env)
@@ -606,12 +652,12 @@ func ComputeLabels(
 		}
 	}
 
-	if ns.value != "" && isK8s && IsLocallyOriginated(mode, labels) {
-		setIfNotExist(mesh_proto.KubeNamespaceTag, ns.value)
+	if labelsOpts.Namespace.value != "" && labelsOpts.IsK8s && IsLocallyOriginated(labelsOpts.Mode, labels) {
+		setIfNotExist(mesh_proto.KubeNamespaceTag, labelsOpts.Namespace.value)
 	}
 
-	if ns.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
-		role, err := ComputePolicyRole(spec.(Policy), ns)
+	if labelsOpts.Namespace.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(labelsOpts.Mode, labels) {
+		role, err := ComputePolicyRole(spec.(Policy), labelsOpts.Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -622,6 +668,12 @@ func ComputeLabels(
 		proxy, ok := spec.(ProxyResource)
 		if ok {
 			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
+		}
+	}
+
+	if labelsOpts.IsK8s {
+		if labelsOpts.ServiceAccount != "" {
+			set(metadata.KumaServiceAccount, labelsOpts.ServiceAccount)
 		}
 	}
 

@@ -4,6 +4,7 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+    k8s.kuma.io/service-account: test-sa
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     version: "0.1"

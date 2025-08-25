@@ -56,6 +56,9 @@ type Info struct {
 	// this marks our info as having failed last time to get the mesh CAs that
 	// we wanted and so we should retry next time we want certs.
 	failedOtherMeshes bool
+
+	// adds information if the secrets is delivered and managed by a different SDS server
+	ManagedExternally bool
 }
 
 func (c *Info) CertLifetime() time.Duration {

@@ -151,9 +151,11 @@ func IncludesGateways(ref TargetRef) bool {
 
 // BackendRef defines where to forward traffic.
 type BackendRef struct {
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	TargetRef `json:","`
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=1
+	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Weight *uint `json:"weight,omitempty"`
 	// Port is only supported when this ref refers to a real MeshService object
 	Port *uint32 `json:"port,omitempty"`
@@ -162,7 +164,7 @@ type BackendRef struct {
 func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
 	case MeshService:
-		return b.Port != nil
+		return pointer.Deref(b.SectionName) != "" || b.Port != nil
 	case MeshServiceSubset:
 		return false
 	// empty targetRef should not be treated as real object

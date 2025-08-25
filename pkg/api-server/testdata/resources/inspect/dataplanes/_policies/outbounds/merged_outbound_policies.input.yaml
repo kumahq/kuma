@@ -1,0 +1,61 @@
+#/meshes/default/dataplanes/dp-1/_outbounds/kri_msvc_default_test-zone__test-server-1_main-port/_policies 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: MeshService
+name: test-server-1
+mesh: default
+labels:
+  kuma.io/display-name: test-server-1
+  kuma.io/zone: test-zone
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+    - port: 8080
+      targetPort: 8080
+      appProtocol: tcp
+      name: secondary-port
+---
+type: MeshTimeout
+name: mt-1
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+---
+type: MeshTimeout
+name: mt-2
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server-1
+      default:
+        http:
+          requestTimeout: 2s

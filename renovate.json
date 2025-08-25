@@ -2,7 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "Kong/public-shared-renovate:backend",
-    "kumahq/kuma//.renovate/go-control-plane"
+    "Kong/public-shared-renovate:makefile",
+    "kumahq/kuma//.renovate/go-control-plane",
+    "kumahq/kuma//.renovate/mise",
+    "kumahq/kuma//.renovate/security"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -10,7 +13,8 @@
     "github-actions",
     "gomod",
     "helm-values",
-    "kubernetes"
+    "kubernetes",
+    "mise"
   ],
   "ignorePaths": [],
   "kubernetes": {
@@ -26,7 +30,7 @@
         "github-actions"
       ],
       "extends": [
-        "local>kumahq/kuma//.renovate/github-actions"
+        "kumahq/kuma//.renovate/github-actions"
       ]
     },
     {
@@ -38,7 +42,7 @@
         "Kong/public-shared-actions/**"
       ],
       "extends": [
-        "local>kumahq/kuma//.renovate/github-actions"
+        "kumahq/kuma//.renovate/github-actions"
       ]
     },
     {
@@ -48,6 +52,27 @@
       "matchFileNames": [
         "app/kumactl/data/install/k8s/**"
       ]
+    },
+    {
+      "description": "Change commit message topic to 'envoy' for kumahq/envoy-builds, which are our own builds of released Envoy versions. This dependency is managed by the custom regex manager for Makefiles. We only change the topic to better reflect the component being updated",
+      "matchDepNames": [
+        "kumahq/envoy-builds"
+      ],
+      "commitMessageTopic": "envoy"
+    },
+    {
+      "description": "Disable pinning of openapi-tool which won't work and always will result in pailures. This dependency is managed by the custom regex manager for Makefiles",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "kumahq/openapi-tool"
+      ],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest"
+      ],
+      "enabled": false
     }
   ]
 }

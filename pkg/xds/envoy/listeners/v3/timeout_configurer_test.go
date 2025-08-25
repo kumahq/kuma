@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
@@ -78,7 +79,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
-					Configure(Timeout(given.timeout, core_mesh.ProtocolTCP)))).
+					Configure(Timeout(given.timeout, core_meta.ProtocolTCP)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -134,7 +135,7 @@ trafficDirection: OUTBOUND`,
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager("localhost:8080", false, nil)).
-					Configure(Timeout(given.timeout, core_mesh.ProtocolHTTP)))).
+					Configure(Timeout(given.timeout, core_meta.ProtocolHTTP)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -240,7 +241,7 @@ trafficDirection: OUTBOUND`,
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager("localhost:8080", false, nil)).
-					Configure(Timeout(given.timeout, core_mesh.ProtocolGRPC)))).
+					Configure(Timeout(given.timeout, core_meta.ProtocolGRPC)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -345,7 +346,7 @@ trafficDirection: OUTBOUND`,
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
-				Configure(Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolTCP)))).
+				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolTCP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 
@@ -379,7 +380,7 @@ trafficDirection: INBOUND
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(HttpConnectionManager("localhost:8080", false, nil)).
-				Configure(Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)))).
+				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 

@@ -14,7 +14,8 @@ import (
 	otlp "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	bldrs_accesslog "github.com/kumahq/kuma/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
@@ -29,8 +30,8 @@ const (
 	defaultHttpAccessLogFormat    = `[%START_TIME%] %KUMA_MESH% "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%"`
 )
 
-func DefaultFormat(protocol core_mesh.Protocol) string {
-	if protocol.IsHTTPBased() {
+func DefaultFormat(protocol core_meta.Protocol) string {
+	if core_meta.IsHTTPBased(protocol) {
 		return defaultHttpAccessLogFormat
 	} else {
 		return defaultNetworkAccessLogFormat
@@ -45,30 +46,30 @@ func BaseAccessLogBuilder(
 	accessLogSocketPath string,
 ) *Builder[envoy_accesslog.AccessLog] {
 	return bldrs_accesslog.NewBuilder().
-		ConfigureIf(backend.Tcp != nil, func() Configurer[envoy_accesslog.AccessLog] {
+		Configure(IfNotNil(backend.Tcp, func(tcpBackend api.TCPBackend) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
-				Configure(TCPBackendSFS(backend.Tcp, defaultFormat, values)).
+				Configure(TCPBackendSFS(&tcpBackend, defaultFormat, values)).
 				Configure(bldrs_accesslog.Path(accessLogSocketPath)))
-		}).
-		ConfigureIf(backend.File != nil, func() Configurer[envoy_accesslog.AccessLog] {
+		})).
+		Configure(IfNotNil(backend.File, func(fileBackend api.FileBackend) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
-				Configure(FileBackendSFS(backend.File, defaultFormat, values)).
-				Configure(bldrs_accesslog.Path(backend.File.Path)))
-		}).
-		ConfigureIf(backend.OpenTelemetry != nil, func() Configurer[envoy_accesslog.AccessLog] {
+				Configure(FileBackendSFS(&fileBackend, defaultFormat, values)).
+				Configure(bldrs_accesslog.Path(fileBackend.Path)))
+		})).
+		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
-				Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
-				Configure(OtelAttributes(backend.OpenTelemetry)).
+				Configure(OtelBody(&otelBackend, defaultFormat, values)).
+				Configure(OtelAttributes(&otelBackend)).
 				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
-					EndpointForOtel(backend.OpenTelemetry.Endpoint),
-				)))),
-			)
-		})
+					EndpointForOtel(otelBackend.Endpoint),
+				)))))
+		}))
 }
 
 type EndpointAccumulator struct {
-	endpoints map[LoggingEndpoint]int
-	latest    int
+	endpoints             map[LoggingEndpoint]int
+	latest                int
+	UnifiedResourceNaming bool
 }
 
 type endpointClusterName string
@@ -84,7 +85,12 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 		acc.latest += 1
 	}
 
-	return endpointClusterName(fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind))
+	getNameOrDefault := core_system_names.GetNameOrDefault(acc.UnifiedResourceNaming)
+	name := getNameOrDefault(
+		core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
+		fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+	)
+	return endpointClusterName(name)
 }
 
 const defaultOpenTelemetryGRPCPort uint32 = 4317

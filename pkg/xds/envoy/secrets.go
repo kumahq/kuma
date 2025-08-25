@@ -14,6 +14,10 @@ func (r identityCertRequest) Name() string {
 	return names.GetSecretName(xds_tls.IdentityCertResource, "secret", r.meshName)
 }
 
+func (r identityCertRequest) MeshName() string {
+	return r.meshName
+}
+
 type caRequest struct {
 	meshName string
 }
