@@ -101,6 +101,9 @@ function release {
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
   echo "git clone execution result {$?}"
 
+  echo "Exit!!!"
+  exit 0
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
