@@ -55,7 +55,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
+	if err := applyToClusters(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
 	if err := applyToGateway(ctx, policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
@@ -177,7 +177,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	return nil
 }
 
-func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	rawConf := rules.Rules[0].Conf
 
 	conf := rawConf.(api.Conf)
@@ -192,7 +192,7 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 	var endpoint *xds.Endpoint
 	var provider string
 
-	getNameOrDefault := core_system_names.GetNameOrDefault(proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming))
+	getNameOrDefault := core_system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
 	name := ""
 	switch {
 	case backend.Zipkin != nil:
@@ -229,7 +229,11 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 		return err
 	}
 
-	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: metadata.OriginMeshTrace, Resource: res})
+	rs.Add(&xds.Resource{
+		Name:     getNameOrDefault(name, plugin_xds.GetTracingClusterName(provider)),
+		Origin:   metadata.OriginMeshTrace,
+		Resource: res,
+	})
 
 	return nil
 }
