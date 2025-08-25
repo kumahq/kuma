@@ -12,6 +12,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	bldrs_auth "github.com/kumahq/kuma/pkg/envoy/builders/auth"
 	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
@@ -25,23 +26,24 @@ func NewPlugin() core_plugins.CoreResourcePlugin {
 }
 
 func (p *plugin) Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.WorkloadIdentity == nil {
+	kumaManaged := pointer.Deref(proxy.WorkloadIdentity).ManagementMode == core_xds.KumaManagementMode
+	hasTrustDomains := len(xdsCtx.Mesh.TrustsByTrustDomain) > 0
+
+	if !kumaManaged || !hasTrustDomains {
 		return nil
 	}
-	switch proxy.WorkloadIdentity.ManagementMode {
-	case core_xds.KumaManagementMode:
-		if len(xdsCtx.Mesh.TrustsByTrustDomain) > 0 {
-			config, err := validationCtx(xdsCtx)
-			if err != nil {
-				return err
-			}
-			rs.Add(&core_xds.Resource{
-				Name:     config.Name,
-				Origin:   metadata.OriginMeshTrust,
-				Resource: config,
-			})
-		}
+
+	config, err := validationCtx(xdsCtx)
+	if err != nil {
+		return err
 	}
+
+	rs.Add(&core_xds.Resource{
+		Name:     config.Name,
+		Origin:   metadata.OriginMeshTrust,
+		Resource: config,
+	})
+
 	return nil
 }
 

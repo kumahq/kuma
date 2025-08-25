@@ -152,8 +152,7 @@ func applyToGateway(
 }
 
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
-	switch envoyResource := r.Resource.(type) {
-	case *envoy_listener.Listener:
+	if envoyResource, ok := r.Resource.(*envoy_listener.Listener); ok {
 		configurer := plugin_xds.Configurer{Conf: rctx.Conf(), Protocol: r.Protocol}
 		if err := configurer.ConfigureListener(envoyResource); err != nil {
 			return err
@@ -196,8 +195,7 @@ func configureRoute(rctx *outbound.ResourceContext[api.Conf], route *envoy_route
 		return nil
 	}
 
-	switch a := route.GetAction().(type) {
-	case *envoy_route.Route_Route:
+	if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
 		a.Route.RetryPolicy = policy
 	}
 

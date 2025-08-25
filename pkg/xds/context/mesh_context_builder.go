@@ -332,8 +332,7 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 		return nil, fmt.Errorf("unknown resource scope:%s", desc.Scope)
 	}
 	// For some resources we apply extra filters
-	switch resType {
-	case core_mesh.ServiceInsightType:
+	if resType == core_mesh.ServiceInsightType {
 		if mesh == nil {
 			return desc.NewList(), nil
 		}

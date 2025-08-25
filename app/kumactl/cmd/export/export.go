@@ -189,9 +189,8 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					cleanKubeObject(obj)
 					// we don't want to export `kuma.io/origin: zone` in federation since the point is to import in global
 					removeExcludedLabels(excludedLabelsPerProfile[ctx.args.profile], obj)
-					switch res.Descriptor().Name {
-					// only for the mesh we edit object by changing mtls backend from builtin to provided and adding skip initial resources
-					case core_mesh.MeshType:
+					if res.Descriptor().Name == core_mesh.MeshType {
+						// only for the mesh we edit object by changing mtls backend from builtin to provided and adding skip initial resources
 						result, err := model.ToMap(res.GetSpec())
 						if err != nil {
 							return err
@@ -280,28 +279,28 @@ func removeExcludedLabels(excludedLabels map[string]struct{}, obj map[string]int
 func changeBuiltinBackendsToProvided(res *core_mesh.MeshResource) error {
 	if res.Spec.Mtls != nil {
 		for _, backend := range res.Spec.Mtls.GetBackends() {
-			switch backend.Type {
-			case "builtin":
-				cfg := &config.ProvidedCertificateAuthorityConfig{}
-				cfg.Cert = &v1alpha1.DataSource{
-					Type: &v1alpha1.DataSource_Secret{
-						Secret: core_system.BuiltinCertSecretName(res.Meta.GetName(), backend.Name),
-					},
-				}
-				cfg.Key = &v1alpha1.DataSource{
-					Type: &v1alpha1.DataSource_Secret{
-						Secret: core_system.BuiltinKeySecretName(res.Meta.GetName(), backend.Name),
-					},
-				}
-				conf, err := util_proto.ToStruct(cfg)
-				if err != nil {
-					return err
-				}
-				backend.Type = "provided"
-				backend.Conf = conf
-				// we want to create secrets at any time
-				res.Spec.Mtls.SkipValidation = true
+			if backend.Type != "builtin" {
+				continue
 			}
+			cfg := &config.ProvidedCertificateAuthorityConfig{}
+			cfg.Cert = &v1alpha1.DataSource{
+				Type: &v1alpha1.DataSource_Secret{
+					Secret: core_system.BuiltinCertSecretName(res.Meta.GetName(), backend.Name),
+				},
+			}
+			cfg.Key = &v1alpha1.DataSource{
+				Type: &v1alpha1.DataSource_Secret{
+					Secret: core_system.BuiltinKeySecretName(res.Meta.GetName(), backend.Name),
+				},
+			}
+			conf, err := util_proto.ToStruct(cfg)
+			if err != nil {
+				return err
+			}
+			backend.Type = "provided"
+			backend.Conf = conf
+			// we want to create secrets at any time
+			res.Spec.Mtls.SkipValidation = true
 		}
 	}
 	return nil

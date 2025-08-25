@@ -224,8 +224,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				}
 
 				for typ, resources := range typedResources {
-					switch typ {
-					case envoy_resource.ClusterType:
+					if typ == envoy_resource.ClusterType {
 						err := configureClusters(resources, conf.Conf[0].(api.Conf))
 						if err != nil {
 							return err
@@ -250,8 +249,7 @@ func applyToRealResource(
 	}
 
 	for typ, resources := range resourcesByType {
-		switch typ {
-		case envoy_resource.ClusterType:
+		if typ == envoy_resource.ClusterType {
 			err := configureClusters(resources, conf.Conf[0].(api.Conf))
 			if err != nil {
 				return err

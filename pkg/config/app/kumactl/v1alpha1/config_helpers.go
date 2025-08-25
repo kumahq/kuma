@@ -43,11 +43,11 @@ func (cfg *Configuration) RemoveContext(name string) bool {
 }
 
 func (cfg *Configuration) SwitchContext(name string) bool {
-	_, new := cfg.GetContext(name)
-	if new == nil {
+	_, ctx := cfg.GetContext(name)
+	if ctx == nil {
 		return false
 	}
-	cfg.CurrentContext = new.Name
+	cfg.CurrentContext = ctx.Name
 	return true
 }
 

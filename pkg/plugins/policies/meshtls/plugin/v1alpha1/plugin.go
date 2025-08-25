@@ -329,8 +329,11 @@ func configureListener(
 		Configure(envoy_listeners.NetworkRBAC(listenerName, true, proxy.Policies.TrafficPermissions[iface])).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
-	switch getMeshTLSMode(conf.Mode, proxy.WorkloadIdentity, xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()) {
-	case api.ModeStrict:
+	if getMeshTLSMode(
+		conf.Mode,
+		proxy.WorkloadIdentity,
+		xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend(),
+	) == api.ModeStrict {
 		return listener.Configure(envoy_listeners.FilterChain(filterChainKumaTLS)).Build()
 	}
 

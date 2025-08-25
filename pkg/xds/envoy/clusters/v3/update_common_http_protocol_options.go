@@ -13,8 +13,8 @@ func UpdateCommonHttpProtocolOptions(cluster *envoy_cluster.Cluster, fn func(*en
 		cluster.TypedExtensionProtocolOptions = map[string]*anypb.Any{}
 	}
 	options := &envoy_upstream_http.HttpProtocolOptions{}
-	if any := cluster.TypedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]; any != nil {
-		if err := util_proto.UnmarshalAnyTo(any, options); err != nil {
+	if a := cluster.TypedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]; a != nil {
+		if err := util_proto.UnmarshalAnyTo(a, options); err != nil {
 			return err
 		}
 	}

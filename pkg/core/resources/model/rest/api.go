@@ -48,7 +48,7 @@ func (r *nonMeshedApi) List(string) string {
 	return fmt.Sprintf("/%s", r.CollectionPath)
 }
 
-func (r *nonMeshedApi) Item(string, name string) string {
+func (r *nonMeshedApi) Item(_, name string) string {
 	return fmt.Sprintf("/%s/%s", r.CollectionPath, name)
 }
 

@@ -17,14 +17,14 @@ type HTTPInspectorConfigurer struct {
 var _ ListenerConfigurer = &HTTPInspectorConfigurer{}
 
 func (c *HTTPInspectorConfigurer) Configure(l *envoy_listener.Listener) error {
-	any, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_http_inspector_v3.HttpInspector{})
+	typedConfig, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_http_inspector_v3.HttpInspector{})
 	if err != nil {
 		return err
 	}
 	listenerFilter := &envoy_listener.ListenerFilter{
 		Name: "envoy.filters.listener.http_inspector",
 		ConfigType: &envoy_listener.ListenerFilter_TypedConfig{
-			TypedConfig: any,
+			TypedConfig: typedConfig,
 		},
 	}
 	if len(c.DisabledPorts) > 0 {

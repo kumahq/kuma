@@ -144,11 +144,11 @@ func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaRes
 		if err != nil {
 			return nil, err
 		}
-		if err = core_model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
+		if err := core_model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
 		if obj.Descriptor().HasStatus && kr.Status != nil {
-			if err = core_model.FromAny(kr.Status, obj.GetStatus()); err != nil {
+			if err := core_model.FromAny(kr.Status, obj.GetStatus()); err != nil {
 				return nil, err
 			}
 		}
