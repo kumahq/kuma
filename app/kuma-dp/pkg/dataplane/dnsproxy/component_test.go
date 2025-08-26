@@ -52,7 +52,7 @@ var _ = Describe("components", func() {
 		wg.Wait()
 	})
 	It("works with no local table", func() {
-		f := func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
+		f := func(req *dns.Msg) (*dns.Msg, error) { //nolint:unparam
 			response := new(dns.Msg)
 			response.SetRcode(req, dns.RcodeSuccess)
 			response.Authoritative = true
@@ -72,7 +72,7 @@ var _ = Describe("components", func() {
 		Expect(res.Answer[0].String()).To(ContainSubstring("17.0.0.1"))
 	})
 	It("failing upstream", func() {
-		f := func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
+		f := func(req *dns.Msg) (*dns.Msg, error) { //nolint:unparam
 			response := new(dns.Msg)
 			response.SetRcode(req, dns.RcodeServerFailure)
 			response.Authoritative = true
@@ -104,7 +104,7 @@ var _ = Describe("components", func() {
 		Expect(res).To(HaveField("Rcode", Equal(dns.RcodeServerFailure)))
 	})
 	It("hit the map", func() {
-		f := func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
+		f := func(req *dns.Msg) (*dns.Msg, error) { //nolint:unparam
 			if req.Question[0].Name == "example.com." {
 				Fail("should never call upstream for something in the map")
 			}
