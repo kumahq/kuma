@@ -2,6 +2,10 @@ package meshtrafficpermission
 
 import (
 	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -10,12 +14,9 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 func MeshTrafficPermissionRules() {
-
 	mesh := "mtp-rules"
 	namespace := "mtp-rules-ns"
 	testServerURL := fmt.Sprintf("test-server.%s.svc:80", namespace)
@@ -94,7 +95,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(ContainSubstring("test-server"))
 		}, "30s", "1s").Should(Succeed())
-
 	},
 		Entry("exact match on spiffeId", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
