@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"text/template"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
@@ -18,6 +20,9 @@ func newCoreResource(rootArgs *args) *cobra.Command {
 		Long:  "Generate a core model resource for the policy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			policyName := filepath.Base(rootArgs.pluginDir)
+			if !govalidator.IsAlphanumeric(policyName) {
+				return errors.New("resource name must be alphanumeric")
+			}
 			policyPath := filepath.Join(rootArgs.pluginDir, "api", rootArgs.version, policyName+".go")
 			if _, err := os.Stat(policyPath); err != nil {
 				return err
