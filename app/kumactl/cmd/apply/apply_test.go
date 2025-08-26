@@ -74,7 +74,6 @@ var _ = Describe("kumactl apply", func() {
 		// and
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Outbound[0].Port).To(Equal(uint32(3000)))
-		// nolint:staticcheck
 		Expect(resource.Spec.Networking.Outbound[0].GetService()).To(Equal("postgres"))
 	}
 
