@@ -158,6 +158,8 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		currentState.Generation = generation
 
 		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
+			// We compare secretsInfo and lastStoredSecretsInfo as pointers. It makes sense to short-circuit if flush() runs
+			// on tick without events and we're picking exactly the same secreetsInfo structure from the cachedCerts cache.
 			return
 		}
 
@@ -269,7 +271,7 @@ func (s *dataplaneInsightStore) Upsert(
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil ||
-				insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration ||
+				!insight.Spec.MTLS.CertificateExpirationTime.AsTime().Equal(secretsInfo.Expiration) ||
 				insight.Spec.MTLS.IssuedBackend != secretsInfo.IssuedBackend ||
 				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, secretsInfo.SupportedBackends) {
 				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends, secretsInfo.ManagedExternally); err != nil {
