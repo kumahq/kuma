@@ -402,8 +402,14 @@ func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext
 		if !kri.IsValid(route.Name) {
 			return
 		}
+
 		id, _ := kri.FromString(route.Name)
-		if conf, isDirect := svcCtx.WithID(id).DirectConf(); isDirect {
+
+		routeCtx := svcCtx.
+			WithID(kri.NoSectionName(id)).
+			WithID(id)
+
+		if conf, isDirect := routeCtx.DirectConf(); isDirect {
 			routes[id] = conf
 		}
 	}); err != nil {

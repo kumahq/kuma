@@ -62,7 +62,7 @@ func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.Resour
 
 func FromString(s string) (Identifier, error) {
 	parts := strings.Split(s, "_")
-	if len(parts) != 7 {
+	if len(parts) < 7 {
 		return Identifier{}, errors.Errorf("invalid identifier string: %q", s)
 	}
 	if parts[0] != "kri" {
@@ -80,7 +80,7 @@ func FromString(s string) (Identifier, error) {
 		Zone:         parts[3],
 		Namespace:    parts[4],
 		Name:         parts[5],
-		SectionName:  parts[6],
+		SectionName:  strings.Join(parts[6:], ""),
 	}, nil
 }
 
@@ -100,7 +100,7 @@ func NoSectionName(id Identifier) Identifier {
 
 func IsValid(s string) bool {
 	parts := strings.Split(s, "_")
-	if len(parts) != 7 {
+	if len(parts) < 7 {
 		return false
 	}
 	if parts[0] != "kri" {
