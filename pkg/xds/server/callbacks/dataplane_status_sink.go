@@ -269,7 +269,7 @@ func (s *dataplaneInsightStore) Upsert(
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil ||
-				insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration ||
+				!insight.Spec.MTLS.CertificateExpirationTime.AsTime().Equal(secretsInfo.Expiration) ||
 				insight.Spec.MTLS.IssuedBackend != secretsInfo.IssuedBackend ||
 				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, secretsInfo.SupportedBackends) {
 				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends, secretsInfo.ManagedExternally); err != nil {
