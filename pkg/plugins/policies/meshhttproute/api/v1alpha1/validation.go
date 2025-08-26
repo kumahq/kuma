@@ -43,6 +43,10 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
+		supportedKindsError := ""
+		if targetRef.Kind == common_api.MeshGateway {
+			supportedKindsError = fmt.Sprintf("value is not supported, %s is supported only on the system namespace", common_api.MeshGateway)
+		}
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
@@ -51,6 +55,7 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
+			SupportedKindsError: supportedKindsError,
 		})
 	}
 }

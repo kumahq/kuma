@@ -145,11 +145,10 @@ conf:
       name: https
 `),
 
-		ErrorCase("has a service tag",
-			validators.Violation{
-				Field:   `tags["kuma.io/service"]`,
-				Message: `tag name must not be "kuma.io/service"`,
-			}, `
+		ErrorCase("has a service tag", validators.Violation{
+			Field:   `tags["kuma.io/service"]`,
+			Message: `tag name must not be "kuma.io/service"`,
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -165,13 +164,12 @@ conf:
     protocol: HTTP
     tags:
       name: https
-`),
+`, nil),
 
-		ErrorCase("doesn't have a configuration spec",
-			validators.Violation{
-				Field:   "conf",
-				Message: "cannot be empty",
-			}, `
+		ErrorCase("doesn't have a configuration spec", validators.Violation{
+			Field:   "conf",
+			Message: "cannot be empty",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -181,13 +179,12 @@ selectors:
 tags:
   product: edge
 conf:
-`),
+`, nil),
 
-		ErrorCase("has an invalid port",
-			validators.Violation{
-				Field:   "conf.listeners[0].port",
-				Message: "port must be in the range [1, 65535]",
-			}, `
+		ErrorCase("has an invalid port", validators.Violation{
+			Field:   "conf.listeners[0].port",
+			Message: "port must be in the range [1, 65535]",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -201,13 +198,12 @@ conf:
   - protocol: HTTP
     tags:
       name: https
-`),
+`, nil),
 
-		ErrorCase("has an empty protocol",
-			validators.Violation{
-				Field:   "conf.listeners[0].protocol",
-				Message: "cannot be empty",
-			}, `
+		ErrorCase("has an empty protocol", validators.Violation{
+			Field:   "conf.listeners[0].protocol",
+			Message: "cannot be empty",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -221,13 +217,12 @@ conf:
   - port: 99
     tags:
       name: https
-`),
+`, nil),
 
-		ErrorCase("has an empty TLS mode",
-			validators.Violation{
-				Field:   "conf.listeners[0].tls.mode",
-				Message: "cannot be empty",
-			}, `
+		ErrorCase("has an empty TLS mode", validators.Violation{
+			Field:   "conf.listeners[0].tls.mode",
+			Message: "cannot be empty",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -244,13 +239,12 @@ conf:
       name: https
     tls:
       options:
-`),
+`, nil),
 
-		ErrorCase("is missing a TLS termination secret",
-			validators.Violation{
-				Field:   "conf.listeners[0].tls.certificates",
-				Message: "cannot be empty in TLS termination mode",
-			}, `
+		ErrorCase("is missing a TLS termination secret", validators.Violation{
+			Field:   "conf.listeners[0].tls.certificates",
+			Message: "cannot be empty in TLS termination mode",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -267,13 +261,12 @@ conf:
       name: https
     tls:
       mode: TERMINATE
-`),
+`, nil),
 
-		ErrorCase("has an invalid wildcard",
-			validators.Violation{
-				Field:   "conf.listeners[0].hostname",
-				Message: "invalid wildcard domain",
-			}, `
+		ErrorCase("has an invalid wildcard", validators.Violation{
+			Field:   "conf.listeners[0].hostname",
+			Message: "invalid wildcard domain",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -289,7 +282,7 @@ conf:
     port: 99
     tags:
       name: https
-`),
+`, nil),
 
 		ErrorCases("has an invalid hostname",
 			[]validators.Violation{{
@@ -321,11 +314,10 @@ conf:
       name: https
 `),
 
-		ErrorCase("crossMesh and HTTPS",
-			validators.Violation{
-				Field:   "conf.listeners[0].protocol",
-				Message: "protocol is not supported with crossMesh",
-			}, `
+		ErrorCase("crossMesh and HTTPS", validators.Violation{
+			Field:   "conf.listeners[0].protocol",
+			Message: "protocol is not supported with crossMesh",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -342,13 +334,12 @@ conf:
     crossMesh: true
     tags:
       name: https
-`),
+`, nil),
 
-		ErrorCase("HTTPS and PASSTHROUGH",
-			validators.Violation{
-				Field:   "conf.listeners[0].tls.mode",
-				Message: "mode is not supported on HTTPS listeners",
-			}, `
+		ErrorCase("HTTPS and PASSTHROUGH", validators.Violation{
+			Field:   "conf.listeners[0].tls.mode",
+			Message: "mode is not supported on HTTPS listeners",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -366,13 +357,12 @@ conf:
       name: https
     tls:
       mode: PASSTHROUGH
-`),
+`, nil),
 
-		ErrorCase("crossMesh and multiple services",
-			validators.Violation{
-				Field:   "selectors[1]",
-				Message: "there can be at most one selector",
-			}, `
+		ErrorCase("crossMesh and multiple services", validators.Violation{
+			Field:   "selectors[1]",
+			Message: "there can be at most one selector",
+		}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -387,7 +377,7 @@ conf:
     port: 443
     crossMesh: true
     protocol: HTTP
-`),
+`, nil),
 
 		ErrorCases("protocol conflict",
 			[]validators.Violation{{

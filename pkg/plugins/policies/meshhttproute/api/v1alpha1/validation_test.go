@@ -11,11 +11,10 @@ import (
 var _ = Describe("validation", func() {
 	DescribeErrorCases(
 		api.NewMeshHTTPRouteResource,
-		ErrorCase("spec.targetRef error",
-			validators.Violation{
-				Field:   `spec.targetRef.kind`,
-				Message: `value is not supported`,
-			}, `
+		ErrorCase("spec.targetRef error", validators.Violation{
+			Field:   `spec.targetRef.kind`,
+			Message: `value is not supported`,
+		}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -23,12 +22,24 @@ targetRef:
   kind: BlahBlah
   name: frontend
 to: []
-`),
-		ErrorCase("spec.to.targetRef error",
+`, nil),
+		ErrorCase("spec.targetRef error on producer role",
 			validators.Violation{
-				Field:   `spec.to[0].targetRef.kind`,
-				Message: `value is not supported`,
+				Field:   `spec.targetRef.kind`,
+				Message: `value is not supported, MeshGateway is supported only on the system namespace`,
 			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: frontend
+to: []
+`, map[string]string{"kuma.io/policy-role": "producer"}),
+		ErrorCase("spec.to.targetRef error", validators.Violation{
+			Field:   `spec.to[0].targetRef.kind`,
+			Message: `value is not supported`,
+		}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -39,12 +50,11 @@ to:
 - targetRef:
     kind: BlahBlah
     name: frontend
-`),
-		ErrorCase("spec.to.targetRef Mesh not allowed",
-			validators.Violation{
-				Field:   `spec.to[0].targetRef.kind`,
-				Message: `value is not supported`,
-			}, `
+`, nil),
+		ErrorCase("spec.to.targetRef Mesh not allowed", validators.Violation{
+			Field:   `spec.to[0].targetRef.kind`,
+			Message: `value is not supported`,
+		}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -54,12 +64,11 @@ targetRef:
 to:
 - targetRef:
     kind: Mesh
-`),
-		ErrorCase("spec.to.targetRef MeshService not allowed with top MeshGateway",
-			validators.Violation{
-				Field:   `spec.to[0].targetRef.kind`,
-				Message: `value is not supported`,
-			}, `
+`, nil),
+		ErrorCase("spec.to.targetRef MeshService not allowed with top MeshGateway", validators.Violation{
+			Field:   `spec.to[0].targetRef.kind`,
+			Message: `value is not supported`,
+		}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -70,7 +79,7 @@ to:
 - targetRef:
     kind: MeshService
     name: backend
-`),
+`, nil),
 		ErrorCases("incorrect path match value",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].matches[0].path.value`,
@@ -104,11 +113,10 @@ to:
           value: "relative"
           type: PathPrefix
 `),
-		ErrorCase("repeated match query param names",
-			validators.Violation{
-				Field:   `spec.to[0].rules[0].matches[0].queryParams[1].name`,
-				Message: `multiple entries for name foo`,
-			}, `
+		ErrorCase("repeated match query param names", validators.Violation{
+			Field:   `spec.to[0].rules[0].matches[0].queryParams[1].name`,
+			Message: `multiple entries for name foo`,
+		}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -128,7 +136,7 @@ to:
         - type: Exact
           name: foo
           value: baz
-`),
+`, nil),
 		ErrorCases("empty filter",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.filters[0].requestHeaderModifier`,
@@ -364,11 +372,10 @@ to:
           - kind: MeshService
             name: backend
 `),
-		ErrorCase("top level MeshGateway requires backendRefs",
-			validators.Violation{
-				Field:   `spec.to[0].rules[0].default.backendRefs`,
-				Message: `must not be empty`,
-			}, `
+		ErrorCase("top level MeshGateway requires backendRefs", validators.Violation{
+			Field:   `spec.to[0].rules[0].default.backendRefs`,
+			Message: `must not be empty`,
+		}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -390,7 +397,7 @@ to:
               path:
                 type: ReplacePrefixMatch
                 replacePrefixMatch: /other
-`),
+`, nil),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,

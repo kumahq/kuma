@@ -156,7 +156,7 @@ mesh: default
 selectors:
 - match:
     kuma.io/service: gateway
-`),
+`, nil),
 		ErrorCase("missing HTTP rules", validators.Violation{
 			Field:   "conf.http.rules",
 			Message: "cannot be empty",
@@ -170,7 +170,7 @@ selectors:
 conf:
   http:
     rules: []
-`),
+`, nil),
 		ErrorCase("missing HTTP rule matches", validators.Violation{
 			Field:   "conf.http.rules[0].matches",
 			Message: "cannot be empty",
@@ -188,7 +188,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("missing HTTP rule backends", validators.Violation{
 			Field:   "conf.http.rules[0].backends",
 			Message: "cannot be empty",
@@ -206,7 +206,7 @@ conf:
       - path:
           match: EXACT
           value: /
-`),
+`, nil),
 		ErrorCase("backends with no service", validators.Violation{
 			Field:   "conf.http.rules[0].backends[0]",
 			Message: `mandatory tag "kuma.io/service" is missing`,
@@ -228,7 +228,7 @@ conf:
       - weight: 5
         destination:
           phoney: target-2
-`),
+`, nil),
 		ErrorCase("rule with missing match", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0]",
 			Message: "cannot be empty",
@@ -248,7 +248,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with empty path", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].value",
 			Message: "cannot be empty",
@@ -269,7 +269,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with relative path", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].value",
 			Message: "must be an absolute path",
@@ -290,7 +290,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with empty header name", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].headers[0].name",
 			Message: "cannot be empty",
@@ -311,7 +311,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with empty header value", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].headers[0].value",
 			Message: "cannot be empty",
@@ -332,7 +332,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with header value when using PRESENT", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].headers[0].value",
 			Message: "cannot be set",
@@ -355,7 +355,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with empty query name", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].query_parameters[0].name",
 			Message: "cannot be empty",
@@ -376,7 +376,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("match with empty query value", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].query_parameters[0].value",
 			Message: "cannot be empty",
@@ -397,7 +397,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("empty request header filter", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].request_header",
 			Message: "cannot be empty",
@@ -420,7 +420,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("empty request header filter set", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].request_header.set[0].value",
 			Message: "cannot be empty",
@@ -450,7 +450,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("empty request header filter add", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].request_header.add[0].name",
 			Message: "cannot be empty",
@@ -480,7 +480,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("empty request header filter remove", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].request_header.remove[0]",
 			Message: "cannot be empty",
@@ -511,13 +511,12 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("request header filter for 'host' header when all"+
-			" backends have 'rewrite.host_to_backend_hostname' set to true",
-			validators.Violation{
-				Field:   "conf.http.rules[0].filters[0].request_header.set[0]",
-				Message: "cannot modify 'host' header, when route has set 'rewrite.host_to_backend_hostname' option",
-			}, `
+			" backends have 'rewrite.host_to_backend_hostname' set to true", validators.Violation{
+			Field:   "conf.http.rules[0].filters[0].request_header.set[0]",
+			Message: "cannot modify 'host' header, when route has set 'rewrite.host_to_backend_hostname' option",
+		}, `
 type: MeshGatewayRoute
 name: route
 mesh: default
@@ -541,7 +540,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-1
-`),
+`, nil),
 		ErrorCase("empty mirror filter backend", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].mirror.backend",
 			Message: "cannot be empty",
@@ -565,7 +564,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("mirror filter invalid percentage", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].mirror.percentage",
 			Message: "has to be in [0.0 - 100.0] range",
@@ -592,7 +591,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("redirect filter with invalid port", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].redirect.port",
 			Message: "port must be in the range [1, 65535]",
@@ -615,7 +614,7 @@ conf:
           hostname: example.com
           port: 128555
           status_code: 301
-`),
+`, nil),
 		ErrorCase("redirect filter with invalid status", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].redirect.status_code",
 			Message: "must be in the range [300, 308]",
@@ -637,7 +636,7 @@ conf:
           scheme: https
           hostname: example.com
           status_code: 500
-`),
+`, nil),
 		ErrorCase("redirect filter with backend routes", validators.Violation{
 			Field:   "conf.http.rules[0].backends",
 			Message: "must be empty when using redirect filters",
@@ -663,7 +662,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("redirect prevents other filters", validators.Violation{
 			Field:   "conf.http.rules[0].filters",
 			Message: "redirects cannot be used with other filters",
@@ -690,7 +689,7 @@ conf:
         - weight: 5
           destination:
             kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("prefix without leading slash and with trailing slash", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].value",
 			Message: "must be an absolute path",
@@ -712,7 +711,7 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 		ErrorCase("prefix match replacement without prefix match filter", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].rewrite.replacePrefixMatch",
 			Message: "cannot be used without a match on path prefix",
@@ -736,6 +735,6 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
+`, nil),
 	)
 })

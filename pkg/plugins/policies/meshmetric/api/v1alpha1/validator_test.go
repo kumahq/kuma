@@ -50,13 +50,10 @@ default:
 
 	DescribeErrorCases(
 		NewMeshMetricResource,
-		ErrorCase(
-			"missing Prometheus config",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].prometheus",
-				Message: "must be defined",
-			},
-			`
+		ErrorCase("missing Prometheus config", validators.Violation{
+			Field:   "spec.default.backends.backend[0].prometheus",
+			Message: "must be defined",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -66,14 +63,11 @@ targetRef:
 default:
   backends:
     - type: Prometheus
-`),
-		ErrorCase(
-			"invalid port for prometheus listener",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].port",
-				Message: "port must be a valid (1-65535)",
-			},
-			`
+`, nil),
+		ErrorCase("invalid port for prometheus listener", validators.Violation{
+			Field:   "spec.default.backends.backend[0].port",
+			Message: "port must be a valid (1-65535)",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -85,14 +79,11 @@ default:
     - type: Prometheus
       prometheus:
         port: 95599
-`),
-		ErrorCase(
-			"invalid port for application",
-			validators.Violation{
-				Field:   "spec.default.applications.application[0]",
-				Message: "port must be a valid (1-65535)",
-			},
-			`
+`, nil),
+		ErrorCase("invalid port for application", validators.Violation{
+			Field:   "spec.default.applications.application[0]",
+			Message: "port must be a valid (1-65535)",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -102,14 +93,11 @@ targetRef:
 default:
   applications:
     - port: 95599
-`),
-		ErrorCase(
-			"invalid exclude regexes",
-			validators.Violation{
-				Field:   "spec.default.sidecar.profiles.exclude[0].match",
-				Message: "invalid regex",
-			},
-			`
+`, nil),
+		ErrorCase("invalid exclude regexes", validators.Violation{
+			Field:   "spec.default.sidecar.profiles.exclude[0].match",
+			Message: "invalid regex",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -123,14 +111,11 @@ default:
         - type: Regex
           match: "())(!("
     includeUnused: true
-`),
-		ErrorCase(
-			"invalid include types",
-			validators.Violation{
-				Field:   "spec.default.sidecar.profiles.include[0].type",
-				Message: "unrecognized type 'not_supported' - 'Regex', 'Prefix', 'Exact' are supported",
-			},
-			`
+`, nil),
+		ErrorCase("invalid include types", validators.Violation{
+			Field:   "spec.default.sidecar.profiles.include[0].type",
+			Message: "unrecognized type 'not_supported' - 'Regex', 'Prefix', 'Exact' are supported",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -142,14 +127,11 @@ default:
     profiles:
       include:
         - type: not_supported
-`),
-		ErrorCase(
-			"invalid profile",
-			validators.Violation{
-				Field:   "spec.default.sidecar.profiles.appendProfiles[0].name",
-				Message: "unrecognized profile name 'not_supported' - 'All', 'None', 'Basic' are supported",
-			},
-			`
+`, nil),
+		ErrorCase("invalid profile", validators.Violation{
+			Field:   "spec.default.sidecar.profiles.appendProfiles[0].name",
+			Message: "unrecognized profile name 'not_supported' - 'All', 'None', 'Basic' are supported",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -161,14 +143,11 @@ default:
     profiles:
       appendProfiles:
         - name: not_supported
-`),
-		ErrorCase(
-			"invalid url",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be a valid url",
-			},
-			`
+`, nil),
+		ErrorCase("invalid url", validators.Violation{
+			Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
+			Message: "must be a valid url",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -180,14 +159,11 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         endpoint: "asdasd123"
-`),
-		ErrorCase(
-			"invalid url",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must not use schema",
-			},
-			`
+`, nil),
+		ErrorCase("invalid url", validators.Violation{
+			Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
+			Message: "must not use schema",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -199,14 +175,11 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         endpoint: "http://endpoint:8023"
-`),
-		ErrorCase(
-			"undefined openTelemetry backend when type is OpenTelemetry",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "must be defined",
-			},
-			`
+`, nil),
+		ErrorCase("undefined openTelemetry backend when type is OpenTelemetry", validators.Violation{
+			Field:   "spec.default.backends.backend[0].openTelemetry",
+			Message: "must be defined",
+		}, `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
@@ -218,6 +191,6 @@ default:
     - type: OpenTelemetry
       prometheus:
         port: 5670
-`),
+`, nil),
 	)
 })

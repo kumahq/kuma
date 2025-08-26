@@ -11,52 +11,47 @@ import (
 var _ = Describe("validation", func() {
 	DescribeErrorCases(
 		api.NewHostnameGeneratorResource,
-		ErrorCase("spec.template error",
-			validators.Violation{
-				Field:   `spec.template`,
-				Message: `couldn't parse template: template: :1: bad character U+005B '['`,
-			}, `
+		ErrorCase("spec.template error", validators.Violation{
+			Field:   `spec.template`,
+			Message: `couldn't parse template: template: :1: bad character U+005B '['`,
+		}, `
 template: "{{ .Name[4 }}.mesh"
 selector:
   meshService: {}
-`),
-		ErrorCase("spec.template empty",
-			validators.Violation{
-				Field:   `spec.template`,
-				Message: `must not be empty`,
-			}, `
+`, nil),
+		ErrorCase("spec.template empty", validators.Violation{
+			Field:   `spec.template`,
+			Message: `must not be empty`,
+		}, `
 template: ""
 selector:
   meshService: {}
-`),
-		ErrorCase("spec.selector empty",
-			validators.Violation{
-				Field:   `spec.selector`,
-				Message: `exact one selector (meshService, meshExternalService) must be defined`,
-			}, `
+`, nil),
+		ErrorCase("spec.selector empty", validators.Violation{
+			Field:   `spec.selector`,
+			Message: `exact one selector (meshService, meshExternalService) must be defined`,
+		}, `
 template: "{{ .Name }}.mesh"
-`),
-		ErrorCase("spec.extension.type empty",
-			validators.Violation{
-				Field:   `spec.extension.type`,
-				Message: `must not be empty`,
-			}, `
+`, nil),
+		ErrorCase("spec.extension.type empty", validators.Violation{
+			Field:   `spec.extension.type`,
+			Message: `must not be empty`,
+		}, `
 template: "{{ .Name }}.mesh"
 selector:
   meshService: {}
 extension:
   config: {}
-`),
-		ErrorCase("spec.selector has too many selectors",
-			validators.Violation{
-				Field:   `spec.selector`,
-				Message: `exact one selector (meshService, meshExternalService) must be defined`,
-			}, `
+`, nil),
+		ErrorCase("spec.selector has too many selectors", validators.Violation{
+			Field:   `spec.selector`,
+			Message: `exact one selector (meshService, meshExternalService) must be defined`,
+		}, `
 template: "{{ .Name }}.mesh"
 selector:
   meshService: {}
   meshExternalService: {}
-`),
+`, nil),
 	)
 	DescribeValidCases(
 		api.NewHostnameGeneratorResource,
