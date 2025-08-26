@@ -171,7 +171,11 @@ func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.R
 							return err
 						}
 
-						if err := configureRoute(rctx.WithID(id), route, r.Protocol); err != nil {
+						routeCtx := rctx.
+							WithID(kri.NoSectionName(id)).
+							WithID(id)
+
+						if err := configureRoute(routeCtx, route, r.Protocol); err != nil {
 							return err
 						}
 					}

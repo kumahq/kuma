@@ -239,7 +239,9 @@ var defaultConf = E2eConfig{
 				AdditionalYamlConfig: "",
 			},
 			KubeZone1: ControlPlaneConfig{
-				Envs:                 map[string]string{},
+				Envs: map[string]string{
+					"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
+				},
 				AdditionalYamlConfig: "",
 			},
 			KubeZone2: ControlPlaneConfig{

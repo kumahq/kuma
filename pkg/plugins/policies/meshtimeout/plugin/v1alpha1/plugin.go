@@ -293,7 +293,9 @@ func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.R
 							return err
 						}
 
-						routeCtx := rctx.WithID(id)
+						routeCtx := rctx.
+							WithID(kri.NoSectionName(id)).
+							WithID(id)
 
 						plugin_xds.ConfigureRouteAction(
 							route.GetRoute(),

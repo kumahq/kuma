@@ -208,7 +208,9 @@ func filterChainConfigurer(rctx *rules_outbound.ResourceContext[api.Conf]) Confi
 	return bldrs_listener.RoutesOnFilterChain(func(route *envoy_route.Route) error {
 		var routeCtx *rules_outbound.ResourceContext[api.Conf]
 		if routeID, err := kri.FromString(route.Name); err == nil {
-			routeCtx = rctx.WithID(routeID)
+			routeCtx = rctx.
+				WithID(kri.NoSectionName(routeID)).
+				WithID(routeID)
 		} else {
 			routeCtx = rctx
 		}
