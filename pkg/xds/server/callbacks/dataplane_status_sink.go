@@ -158,6 +158,8 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		currentState.Generation = generation
 
 		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
+			// We compare secretsInfo and lastStoredSecretsInfo as pointers. It makes sense to short-circuit if flush() runs
+			// on tick without events and we're picking exactly the same secreetsInfo structure from the cachedCerts cache.
 			return
 		}
 
