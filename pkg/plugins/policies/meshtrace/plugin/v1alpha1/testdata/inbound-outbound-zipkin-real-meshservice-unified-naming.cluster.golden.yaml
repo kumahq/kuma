@@ -1,5 +1,5 @@
 resources:
-- name: meshtrace:zipkin
+- name: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
