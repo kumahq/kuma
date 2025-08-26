@@ -34,7 +34,7 @@ type Program struct {
 	Cleanup func(cfg config.InitializedConfigIPvX) error
 }
 
-func (p Program) LoadAndAttach(cfg config.InitializedConfigIPvX, programs embed.FS, cgroup string, bpffs string) error {
+func (p Program) LoadAndAttach(cfg config.InitializedConfigIPvX, programs embed.FS, cgroup, bpffs string) error {
 	programBytes, err := programs.ReadFile(p.Name)
 	if err != nil {
 		return fmt.Errorf("reading ebpf program bytes failed: %s", err)
@@ -240,7 +240,7 @@ func getBpffsPath(cfg config.InitializedConfigIPvX) (string, error) {
 }
 
 func Flags(flags map[string]string) FlagGenerator {
-	return func(cfg config.InitializedConfigIPvX, _ string, bpffs string) ([]string, error) {
+	return func(cfg config.InitializedConfigIPvX, _, bpffs string) ([]string, error) {
 		f := map[string]string{
 			"--bpffs": bpffs,
 		}

@@ -14,7 +14,7 @@ import (
 )
 
 type DataplaneOverviewClient interface {
-	List(ctx context.Context, meshName string, tags map[string]string, gateway bool, ingress bool) (*mesh.DataplaneOverviewResourceList, error)
+	List(ctx context.Context, meshName string, tags map[string]string, gateway, ingress bool) (*mesh.DataplaneOverviewResourceList, error)
 }
 
 func NewDataplaneOverviewClient(client util_http.Client) DataplaneOverviewClient {
@@ -27,7 +27,7 @@ type httpDataplaneOverviewClient struct {
 	Client util_http.Client
 }
 
-func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string, tags map[string]string, gateway bool, ingress bool) (*mesh.DataplaneOverviewResourceList, error) {
+func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string, tags map[string]string, gateway, ingress bool) (*mesh.DataplaneOverviewResourceList, error) {
 	resUrl, err := constructUrl(meshName, tags, gateway, ingress)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not construct the url")
@@ -50,7 +50,7 @@ func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string,
 	return &overviews, nil
 }
 
-func constructUrl(meshName string, tags map[string]string, gateway bool, ingress bool) (*url.URL, error) {
+func constructUrl(meshName string, tags map[string]string, gateway, ingress bool) (*url.URL, error) {
 	result, err := url.Parse(fmt.Sprintf("/meshes/%s/%s/_overview", meshName, mesh.DataplaneResourceTypeDescriptor.WsPath))
 	if err != nil {
 		return nil, err

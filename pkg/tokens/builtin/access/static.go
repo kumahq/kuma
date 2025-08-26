@@ -29,7 +29,7 @@ func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStat
 	return s
 }
 
-func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error {
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name, mesh string, tags map[string][]string, user user.User) error {
 	return access.Validate(s.usernames, s.groups, user, "generate dataplane token")
 }
 

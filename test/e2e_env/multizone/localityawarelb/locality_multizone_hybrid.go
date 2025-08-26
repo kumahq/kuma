@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
-func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress string) string {
+func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, zoneEgress string) string {
 	return fmt.Sprintf(`
 type: Mesh
 name: %s
@@ -32,7 +32,7 @@ routing:
 `, mesh, zoneEgress)
 }
 
-func externalService(mesh string, ip string) string {
+func externalService(mesh, ip string) string {
 	return fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"
@@ -56,7 +56,7 @@ func InstallExternalService(name string) InstallFunc {
 }
 
 func ExternalServicesWithLocalityAwareLb() {
-	zoneExternalService := func(mesh string, ip string, name string, zone string) string {
+	zoneExternalService := func(mesh, ip, name, zone string) string {
 		return fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"

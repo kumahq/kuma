@@ -17,7 +17,7 @@ func (r *RateLimitValidator) ValidateCreate(ctx context.Context, mesh string, re
 	return r.validateDestinations(ctx, mesh, resource.Destinations())
 }
 
-func (r *RateLimitValidator) ValidateUpdate(ctx context.Context, previousRateLimit *core_mesh.RateLimitResource, newRateLimit *core_mesh.RateLimitResource) error {
+func (r *RateLimitValidator) ValidateUpdate(ctx context.Context, previousRateLimit, newRateLimit *core_mesh.RateLimitResource) error {
 	return r.validateDestinations(ctx, previousRateLimit.GetMeta().GetMesh(), newRateLimit.Destinations())
 }
 

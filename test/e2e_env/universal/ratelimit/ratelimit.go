@@ -55,7 +55,7 @@ conf:
 		Expect(universal.Cluster.DeleteApp("rate-limit")).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
-	requestRateLimited := func(container string, svc string, responseCode int) func(g Gomega) {
+	requestRateLimited := func(container, svc string, responseCode int) func(g Gomega) {
 		return func(g Gomega) {
 			response, err := client.CollectFailure(
 				universal.Cluster, container, fmt.Sprintf("%s.mesh", svc),

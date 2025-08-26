@@ -26,7 +26,7 @@ func NewGraph(rules map[string]core_rules.Rules, backendRules map[kri.Identifier
 	}
 }
 
-func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) bool {
+func (r *Graph) CanReach(fromTags, toTags map[string]string) bool {
 	if _, crossMeshTagExist := toTags[mesh_proto.MeshTag]; crossMeshTagExist {
 		// we cannot compute graph for cross mesh, so it's better to allow the traffic
 		return true

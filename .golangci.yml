@@ -64,7 +64,6 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - paramTypeCombine
         - rangeValCopy
         - unnamedResult
         - whyNoLint
@@ -189,3 +188,8 @@ formatters:
         - default
         - prefix(github.com/kumahq/kuma)
       custom-order: true
+    gofumpt:
+      # Module path which contains the source code being formatted.
+      module-path: github.com/kumahq/kuma
+      # Choose whether to use the extra rules.
+      extra-rules: true

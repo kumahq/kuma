@@ -114,7 +114,7 @@ func InboundPassthrough() {
 
 	Context("k8s communication", func() {
 		DescribeTable("should succeed when application",
-			func(url string, expectedInstance string) {
+			func(url, expectedInstance string) {
 				// when
 				Eventually(func(g Gomega) {
 					response, err := client.CollectEchoResponse(
@@ -152,7 +152,7 @@ func InboundPassthrough() {
 
 	Context("universal communication", func() {
 		DescribeTable("should succeed when application",
-			func(url string, expectedInstance string) {
+			func(url, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
 					response, err := client.CollectEchoResponse(multizone.UniZone1, "uni-demo-client", url)

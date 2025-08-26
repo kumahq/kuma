@@ -202,7 +202,7 @@ spec:
 `, meshName, namespace)))).To(Succeed())
 
 		// when
-		meshRoutes := func(meshName string, namespace string) string {
+		meshRoutes := func(meshName, namespace string) string {
 			meshHTTPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -290,7 +290,7 @@ spec:
 `, meshName, namespace)))).To(Succeed())
 
 		// when
-		meshRoutes := func(meshName string, namespace string) string {
+		meshRoutes := func(meshName, namespace string) string {
 			meshHTTPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute

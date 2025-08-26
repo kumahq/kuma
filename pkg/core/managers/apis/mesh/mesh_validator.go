@@ -13,7 +13,7 @@ import (
 
 type MeshValidator interface {
 	ValidateCreate(ctx context.Context, name string, resource *core_mesh.MeshResource) error
-	ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error
+	ValidateUpdate(ctx context.Context, previousMesh, newMesh *core_mesh.MeshResource) error
 	ValidateDelete(ctx context.Context, name string) error
 }
 
@@ -60,7 +60,7 @@ func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name
 	return verr
 }
 
-func (m *meshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
+func (m *meshValidator) ValidateUpdate(ctx context.Context, previousMesh, newMesh *core_mesh.MeshResource) error {
 	var verr validators.ValidationError
 	verr.Add(m.validateMTLSBackendChange(previousMesh, newMesh))
 	verr.Add(ValidateMTLSBackends(ctx, m.CaManagers, newMesh.Meta.GetName(), newMesh))
@@ -87,7 +87,7 @@ func ValidateNoActiveDP(ctx context.Context, name string, store core_store.Resou
 	return nil
 }
 
-func (m *meshValidator) validateMTLSBackendChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) validators.ValidationError {
+func (m *meshValidator) validateMTLSBackendChange(previousMesh, newMesh *core_mesh.MeshResource) validators.ValidationError {
 	verr := validators.ValidationError{}
 	if previousMesh.MTLSEnabled() && newMesh.MTLSEnabled() && previousMesh.Spec.GetMtls().GetEnabledBackend() != newMesh.Spec.GetMtls().GetEnabledBackend() {
 		verr.AddViolation("mtls.enabledBackend", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")

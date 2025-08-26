@@ -1,6 +1,6 @@
 package slices
 
-func FlatMap[A any, B any](input []A, f func(A) []B) []B {
+func FlatMap[A, B any](input []A, f func(A) []B) []B {
 	var result []B
 	for _, a := range input {
 		result = append(result, f(a)...)
@@ -8,7 +8,7 @@ func FlatMap[A any, B any](input []A, f func(A) []B) []B {
 	return result
 }
 
-func FilterMap[A any, B any](input []A, f func(A) (B, bool)) []B {
+func FilterMap[A, B any](input []A, f func(A) (B, bool)) []B {
 	var output []B
 	for _, a := range input {
 		if b, ok := f(a); ok {
@@ -28,7 +28,7 @@ func Filter[A any](input []A, f func(A) bool) []A {
 	return output
 }
 
-func Map[A any, B any](input []A, f func(A) B) []B {
+func Map[A, B any](input []A, f func(A) B) []B {
 	output := make([]B, len(input))
 	for i, a := range input {
 		output[i] = f(a)

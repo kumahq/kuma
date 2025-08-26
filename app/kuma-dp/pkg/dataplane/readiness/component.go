@@ -33,7 +33,7 @@ type Reporter struct {
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32) *Reporter {
+func NewReporter(unixSocketDisabled bool, socketDir, localIPAddr string, localListenPort uint32) *Reporter {
 	return &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,

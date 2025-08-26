@@ -275,7 +275,7 @@ func (k *K8SDeployment) serviceAccount() *corev1.ServiceAccount {
 	}
 }
 
-func meta(namespace string, name string, labels map[string]string) metav1.ObjectMeta {
+func meta(namespace, name string, labels map[string]string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      name,
 		Namespace: namespace,

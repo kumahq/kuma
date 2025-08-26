@@ -269,7 +269,7 @@ func (g *Generator) NeedLeaderElection() bool {
 	return true
 }
 
-func EvaluateTemplate(localZone string, generatorTemplate string, meta model.ResourceMeta) (string, error) {
+func EvaluateTemplate(localZone, generatorTemplate string, meta model.ResourceMeta) (string, error) {
 	sb := strings.Builder{}
 	tmpl := template.New("").Funcs(
 		map[string]any{

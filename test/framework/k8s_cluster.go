@@ -99,7 +99,7 @@ func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 	return c
 }
 
-func (c *K8sCluster) PortForwardApp(appName string, namespace string, remotePort int) (PortFwd, error) {
+func (c *K8sCluster) PortForwardApp(appName, namespace string, remotePort int) (PortFwd, error) {
 	podName, err := PodNameOfApp(c, appName, namespace)
 	if err != nil {
 		return PortFwd{}, errors.Wrapf(
@@ -238,7 +238,7 @@ func (c *K8sCluster) Deployment(name string) Deployment {
 	return c.deployments[name]
 }
 
-func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
+func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace, service, yamlPath string) error {
 	options := c.GetKubectlOptions(namespace)
 
 	err := k8s.KubectlApplyE(c.t,
@@ -1068,7 +1068,7 @@ func (c *K8sCluster) deleteKumaViaHelm() error {
 	return errs
 }
 
-func (c *K8sCluster) getPods(namespace string, appName string) []v1.Pod {
+func (c *K8sCluster) getPods(namespace, appName string) []v1.Pod {
 	return k8s.ListPods(c.t,
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
@@ -1389,7 +1389,7 @@ func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 
 // CreateNode creates a new node
 // warning: there seems to be a bug in k3s1 v1.19.16 so that each tests needs a unique node name
-func (c *K8sCluster) CreateNode(name string, label string) error {
+func (c *K8sCluster) CreateNode(name, label string) error {
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
 		container := c.name
@@ -1481,7 +1481,7 @@ func (c *K8sCluster) KillAppPod(app, namespace string) error {
 }
 
 // K8sVersionCompare compares the cluster's version with another version
-func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) (int, string) {
+func (c *K8sCluster) K8sVersionCompare(otherVersion, baseMessage string) (int, string) {
 	version, err := c.GetK8sVersion()
 	if err != nil {
 		c.t.Fatal(err)

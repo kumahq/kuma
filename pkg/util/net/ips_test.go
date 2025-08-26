@@ -8,7 +8,7 @@ import (
 )
 
 var _ = DescribeTable("ToV6",
-	func(given string, expected string) {
+	func(given, expected string) {
 		Expect(net.ToV6(given)).To(Equal(expected))
 	},
 	Entry("v6 already", "2001:db8::ff00:42:8329", "2001:db8::ff00:42:8329"),

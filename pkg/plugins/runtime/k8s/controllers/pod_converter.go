@@ -449,7 +449,7 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 	return aggregateConfig, nil
 }
 
-func mergeLabels(existingLabels map[string]string, podLabels map[string]string) map[string]string {
+func mergeLabels(existingLabels, podLabels map[string]string) map[string]string {
 	mergedLabels := map[string]string{}
 	if existingLabels != nil {
 		mergedLabels = maps.Clone(existingLabels)

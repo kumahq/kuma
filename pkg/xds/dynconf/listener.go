@@ -23,7 +23,7 @@ import (
 
 const ListenerName = "_kuma:dynamicconfig"
 
-func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNamingEnabled bool, name string, path string, bytes []byte) error {
+func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNamingEnabled bool, name, path string, bytes []byte) error {
 	var listener *envoy_listener.Listener
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	listenerName := getNameOrDefault(system_names.SystemResourceNameDynamicConfigListener, ListenerName)

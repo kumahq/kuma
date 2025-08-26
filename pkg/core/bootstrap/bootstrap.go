@@ -483,7 +483,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	}
 	var secretValidator secret_manager.SecretValidator
 	if cfg.IsFederatedZoneCP() {
-		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
+		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName, secretMesh string) error { return nil })
 	} else {
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	}

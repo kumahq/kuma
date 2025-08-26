@@ -53,7 +53,7 @@ func (s *signingKeyManager) GetLatestSigningKey(ctx context.Context) (*rsa.Priva
 	return latestSigningKey(&resources, s.signingKeyPrefix, model.NoMesh)
 }
 
-func latestSigningKey(list model.ResourceList, prefix string, mesh string) (*rsa.PrivateKey, string, error) {
+func latestSigningKey(list model.ResourceList, prefix, mesh string) (*rsa.PrivateKey, string, error) {
 	var signingKey model.Resource
 	highestSerialNumber := -1
 	for _, resource := range list.GetItems() {

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, clientKey string) error {
+func ConfigureMTLS(httpClient *http.Client, caCert, clientCert, clientKey string) error {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,

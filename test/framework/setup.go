@@ -143,7 +143,7 @@ metadata:
 	return YamlK8s(mesh)
 }
 
-func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
+func MeshWithMeshServicesKubernetes(name, meshServicesEnabled string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -190,7 +190,7 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesMode string) InstallFunc {
+func MTLSMeshWithMeshServicesKubernetes(name, meshServicesMode string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -228,7 +228,7 @@ spec:
 	return YamlK8s(mtp)
 }
 
-func MeshWithMeshServicesUniversal(name string, meshServicesMode string) InstallFunc {
+func MeshWithMeshServicesUniversal(name, meshServicesMode string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
@@ -251,7 +251,7 @@ mtls:
 	return YamlUniversal(mesh)
 }
 
-func MTLSMeshWithMeshServicesUniversal(name string, meshServicesEnabled string) InstallFunc {
+func MTLSMeshWithMeshServicesUniversal(name, meshServicesEnabled string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
@@ -794,7 +794,7 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 	)
 }
 
-func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
+func DemoClientUniversal(name, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
@@ -893,7 +893,7 @@ func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...
 	}
 }
 
-func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
+func TestServerUniversal(name, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)

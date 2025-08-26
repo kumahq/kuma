@@ -39,7 +39,7 @@ func UnmarshalAnyTo(src *anypb.Any, dst proto.Message) error {
 
 // MergeAnys merges two Any messages of the same type. We cannot just use proto#Merge on Any directly because values are encoded in byte slices.
 // Instead we have to unmarshal types, merge them and marshal again.
-func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
+func MergeAnys(dst, src *anypb.Any) (*anypb.Any, error) {
 	if src == nil {
 		return dst, nil
 	}

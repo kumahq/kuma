@@ -55,7 +55,7 @@ func makeHostname(name string) Hostname {
 	return Hostname{Host: parts[0], DomainParts: parts[1:]}
 }
 
-func Contains(target string, test string) bool {
+func Contains(target, test string) bool {
 	targetHost := makeHostname(target)
 	testHost := makeHostname(test)
 	return targetHost.contains(testHost)

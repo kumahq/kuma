@@ -82,7 +82,7 @@ var _ = Describe("SNI", func() {
 		Expect(tags).To(Equal(expectedTags))
 	})
 
-	DescribeTable("should fail when converting SNI to tags", func(sni string, errorMessage string) {
+	DescribeTable("should fail when converting SNI to tags", func(sni, errorMessage string) {
 		// when
 		_, err := tls.TagsFromSNI(sni)
 

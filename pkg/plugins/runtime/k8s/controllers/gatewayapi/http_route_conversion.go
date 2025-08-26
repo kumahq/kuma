@@ -393,7 +393,7 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 }
 
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
-	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
+	ctx context.Context, mesh, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,

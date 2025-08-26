@@ -90,7 +90,7 @@ func keyBytesToRsaPublicKey(keyBytes []byte) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
-func signingKeySerialNumber(secretName string, signingKeyPrefix string) (int, error) {
+func signingKeySerialNumber(secretName, signingKeyPrefix string) (int, error) {
 	serialNumberStr := strings.ReplaceAll(secretName, signingKeyPrefix+"-", "")
 	serialNumber, err := strconv.Atoi(serialNumberStr)
 	if err != nil {

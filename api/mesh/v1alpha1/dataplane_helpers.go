@@ -513,7 +513,7 @@ func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
 }
 
 // MergeAs is just syntactic sugar which converts merged result to assumed type
-func MergeAs[R ~map[string]string, T ~map[string]string](other ...T) R {
+func MergeAs[R, T ~map[string]string](other ...T) R {
 	return R(Merge(other...))
 }
 

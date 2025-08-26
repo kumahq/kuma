@@ -66,7 +66,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func deleteResource(name string, mesh string, desc model.ResourceTypeDescriptor, rs store.ResourceStore) error {
+func deleteResource(name, mesh string, desc model.ResourceTypeDescriptor, rs store.ResourceStore) error {
 	resource := desc.NewObject()
 	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {

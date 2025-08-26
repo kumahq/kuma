@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bool, federatedZone bool) api_types.ResourceTypeDescriptionList {
+func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly, federatedZone bool) api_types.ResourceTypeDescriptionList {
 	response := api_types.ResourceTypeDescriptionList{}
 	for _, def := range defs {
 		td := api_common.ResourceTypeDescription{

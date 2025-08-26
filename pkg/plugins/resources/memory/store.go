@@ -308,7 +308,7 @@ func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...
 }
 
 func (c *memoryStore) findRecord(
-	resourceType string, name string, mesh string,
+	resourceType, name, mesh string,
 ) (int, *memoryStoreRecord) {
 	for idx, rec := range c.records {
 		if rec.ResourceType == resourceType &&
@@ -320,7 +320,7 @@ func (c *memoryStore) findRecord(
 	return -1, nil
 }
 
-func (c *memoryStore) findRecords(resourceType string, mesh string, contains string) []*memoryStoreRecord {
+func (c *memoryStore) findRecords(resourceType, mesh, contains string) []*memoryStoreRecord {
 	res := make([]*memoryStoreRecord, 0)
 	for _, rec := range c.records {
 		if rec.ResourceType != resourceType {

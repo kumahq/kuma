@@ -60,7 +60,7 @@ var _ = Describe("MeshReconciler", func() {
 		secretManager := secret_manager.NewSecretManager(
 			secretStore,
 			secret_cipher.None(),
-			secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil }),
+			secret_manager.ValidateDelete(func(ctx context.Context, secretName, secretMesh string) error { return nil }),
 			false,
 		)
 

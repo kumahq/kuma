@@ -103,7 +103,7 @@ func (k *k8SDeployment) getAnnotations() map[string]string {
 	return annotations
 }
 
-func meta(namespace string, name string) metav1.ObjectMeta {
+func meta(namespace, name string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      name,
 		Namespace: namespace,

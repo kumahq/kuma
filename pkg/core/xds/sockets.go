@@ -20,7 +20,7 @@ func MeshMetricsDynamicConfigurationSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-mesh-metric-config"))
 }
 
-func OpenTelemetrySocketName(workdir string, backendName string) string {
+func OpenTelemetrySocketName(workdir, backendName string) string {
 	return socketName(filepath.Join(workdir, "kuma-otel-"+backendName))
 }
 

@@ -75,7 +75,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			},
 		}
 	}
-	podFn := func(name string, labels map[string]string, annotations map[string]string) kube_core.Pod {
+	podFn := func(name string, labels, annotations map[string]string) kube_core.Pod {
 		return kube_core.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        name,

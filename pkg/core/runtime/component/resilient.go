@@ -15,7 +15,7 @@ type resilientComponent struct {
 	backoffMaxTime  time.Duration
 }
 
-func NewResilientComponent(log logr.Logger, component Component, backoffBaseTime time.Duration, backoffMaxTime time.Duration) Component {
+func NewResilientComponent(log logr.Logger, component Component, backoffBaseTime, backoffMaxTime time.Duration) Component {
 	return &resilientComponent{
 		log:             log,
 		component:       component,

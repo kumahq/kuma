@@ -48,7 +48,7 @@ func E2EAfterSuite(fn func()) bool {
 	return ginkgo.AfterSuite(doIfNoSkipCleanup(fn))
 }
 
-func E2ESynchronizedBeforeSuite(process1Body interface{}, allProcessBody interface{}, args ...interface{}) bool {
+func E2ESynchronizedBeforeSuite(process1Body, allProcessBody interface{}, args ...interface{}) bool {
 	ginkgo.AfterEach(func() {
 		if ginkgo.CurrentSpecReport().Failed() {
 			suiteFailed = true

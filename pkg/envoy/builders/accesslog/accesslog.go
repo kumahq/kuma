@@ -74,7 +74,7 @@ func NewOtelBuilder() *Builder[access_loggers_otel.OpenTelemetryAccessLogConfig]
 	return &Builder[access_loggers_otel.OpenTelemetryAccessLogConfig]{}
 }
 
-func CommonConfig(logName string, clusterName string) Configurer[access_loggers_otel.OpenTelemetryAccessLogConfig] {
+func CommonConfig(logName, clusterName string) Configurer[access_loggers_otel.OpenTelemetryAccessLogConfig] {
 	return func(otel *access_loggers_otel.OpenTelemetryAccessLogConfig) error {
 		otel.CommonConfig = &access_loggers_grpc.CommonGrpcAccessLogConfig{
 			LogName:             logName,

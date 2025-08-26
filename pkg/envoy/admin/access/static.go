@@ -37,7 +37,7 @@ func NewStaticEnvoyAdminAccess(
 	}
 }
 
-func mapAccess(users []string, groups []string) accessMaps {
+func mapAccess(users, groups []string) accessMaps {
 	m := accessMaps{
 		usernames: make(map[string]struct{}, len(users)),
 		groups:    make(map[string]struct{}, len(groups)),

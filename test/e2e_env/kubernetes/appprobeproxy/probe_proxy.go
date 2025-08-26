@@ -218,7 +218,7 @@ func getAppContainer(pod *corev1.Pod, appName string) *corev1.Container {
 	return nil
 }
 
-func patchAndWait(t testing.TestingT, g Gomega, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string, jsonPatch string) string {
+func patchAndWait(t testing.TestingT, g Gomega, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName, jsonPatch string) string {
 	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
 	g.Expect(err).ToNot(HaveOccurred())
 

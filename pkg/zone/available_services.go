@@ -81,7 +81,7 @@ func (t *ZoneAvailableServicesTracker) NeedLeaderElection() bool {
 	return true
 }
 
-func availableServicesEqual(services []*mesh_proto.ZoneIngress_AvailableService, other []*mesh_proto.ZoneIngress_AvailableService) bool {
+func availableServicesEqual(services, other []*mesh_proto.ZoneIngress_AvailableService) bool {
 	if len(services) != len(other) {
 		return false
 	}

@@ -17,7 +17,7 @@ import (
 
 type PolicyInspectClient interface {
 	Inspect(ctx context.Context, policyDesc core_model.ResourceTypeDescriptor, mesh, name string) (*api_server_types.PolicyInspectEntryList, error)
-	DataplanesForPolicy(ctx context.Context, desc core_model.ResourceTypeDescriptor, mesh string, name string) (types.InspectDataplanesForPolicyResponse, error)
+	DataplanesForPolicy(ctx context.Context, desc core_model.ResourceTypeDescriptor, mesh, name string) (types.InspectDataplanesForPolicyResponse, error)
 }
 
 func NewPolicyInspectClient(client util_http.Client) PolicyInspectClient {
@@ -32,7 +32,7 @@ type httpPolicyInspectClient struct {
 	Client util_http.Client
 }
 
-func (h *httpPolicyInspectClient) DataplanesForPolicy(ctx context.Context, policyDesc core_model.ResourceTypeDescriptor, mesh string, name string) (types.InspectDataplanesForPolicyResponse, error) {
+func (h *httpPolicyInspectClient) DataplanesForPolicy(ctx context.Context, policyDesc core_model.ResourceTypeDescriptor, mesh, name string) (types.InspectDataplanesForPolicyResponse, error) {
 	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/%s/%s/-resources/dataplanes", mesh, policyDesc.WsPath, name))
 	if err != nil {
 		return types.InspectDataplanesForPolicyResponse{}, errors.Wrap(err, "could not construct the url")

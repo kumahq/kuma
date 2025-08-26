@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func traceAllK8s(meshName string, url string) string {
+func traceAllK8s(meshName, url string) string {
 	return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrace

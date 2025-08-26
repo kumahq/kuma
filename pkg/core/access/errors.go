@@ -19,7 +19,7 @@ func (a *AccessDeniedError) Is(err error) bool {
 	return reflect.TypeOf(a) == reflect.TypeOf(err)
 }
 
-func Validate(usernames map[string]struct{}, groups map[string]struct{}, user user.User, action string) error {
+func Validate(usernames, groups map[string]struct{}, user user.User, action string) error {
 	if _, ok := usernames[user.Name]; ok {
 		return nil
 	}

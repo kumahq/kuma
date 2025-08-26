@@ -199,7 +199,7 @@ func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts .
 }
 
 // proxySecureRequests tests that basic HTTPS requests are proxied to the echo-server.
-func proxySecureRequests(cluster Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) func(Gomega) {
+func proxySecureRequests(cluster Cluster, instance, gateway string, opts ...client.CollectResponsesOptsFn) func(Gomega) {
 	Logf("expecting 200 response from %q", gateway)
 	return func(g Gomega) {
 		target := fmt.Sprintf("https://%s/%s",

@@ -544,7 +544,7 @@ func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneOverviewResourceTypeDescriptor
 }
 
-func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+func (t *ZoneOverviewResource) SetOverviewSpec(resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
 	overview := &system_proto.ZoneOverview{
 		Zone: resource.GetSpec().(*system_proto.Zone),

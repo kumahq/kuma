@@ -97,7 +97,7 @@ var protocolStacks = map[Protocol]ProtocolList{
 // a common protocol between HTTP and TCP   is TCP,
 // a common protocol between GRPC and HTTP2 is HTTP2,
 // a common protocol between HTTP and HTTP2 is HTTP.
-func GetCommonProtocol[T ~string, U ~string](a T, b U) Protocol {
+func GetCommonProtocol[T, U ~string](a T, b U) Protocol {
 	protoA, protoB := ParseProtocol(a), ParseProtocol(b)
 
 	switch {

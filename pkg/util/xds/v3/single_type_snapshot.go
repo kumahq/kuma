@@ -27,7 +27,7 @@ var _ envoy_cache.ResourceSnapshot = &SingleTypeSnapshot{}
 
 // NewSingleTypeSnapshot creates a snapshot from response types and a version.
 // The resources map is keyed off the type URL of a resource, followed by the slice of resource objects.
-func NewSingleTypeSnapshot(version string, typeURL string, resources []types.Resource) *SingleTypeSnapshot {
+func NewSingleTypeSnapshot(version, typeURL string, resources []types.Resource) *SingleTypeSnapshot {
 	return &SingleTypeSnapshot{
 		TypeUrl:   typeURL,
 		Resources: envoy_cache.NewResources(version, resources),
@@ -36,7 +36,7 @@ func NewSingleTypeSnapshot(version string, typeURL string, resources []types.Res
 
 // NewSingleTypeSnapshotWithNamedResources creates a snapshot from response types and a version.
 // The resources map is keyed off the type URL of a resource, followed by the slice of resource objects.
-func NewSingleTypeSnapshotWithNamedResources(version string, typeURL string, resources map[string]types.Resource) *SingleTypeSnapshot {
+func NewSingleTypeSnapshotWithNamedResources(version, typeURL string, resources map[string]types.Resource) *SingleTypeSnapshot {
 	resourcesByName := make(map[string]types.ResourceWithTTL, len(resources))
 	for n, item := range resources {
 		resourcesByName[n] = types.ResourceWithTTL{Resource: item}

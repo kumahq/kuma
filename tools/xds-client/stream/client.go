@@ -77,7 +77,7 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-func (s *Stream) Request(clientId string, typ string, dp rest.Resource) error {
+func (s *Stream) Request(clientId, typ string, dp rest.Resource) error {
 	dpJSON, err := json.Marshal(dp)
 	if err != nil {
 		return err

@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, isFederatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
+func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal, isFederatedZone, readOnly bool, defs []model.ResourceTypeDescriptor) {
 	ws.Route(ws.GET("/policies").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.PoliciesResponse{}
 		for _, def := range defs {

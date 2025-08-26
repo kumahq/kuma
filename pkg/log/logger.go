@@ -57,7 +57,7 @@ func NewLogger(level LogLevel) logr.Logger {
 	return NewLoggerTo(os.Stderr, level)
 }
 
-func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
+func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize, maxBackups, maxAge int) logr.Logger {
 	return NewLoggerTo(&lumberjack.Logger{
 		Filename:   outputPath,
 		MaxSize:    maxSize,

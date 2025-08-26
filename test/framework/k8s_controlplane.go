@@ -193,7 +193,7 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
 }
 
-func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd, madsPortForward PortFwd) error {
+func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd, madsPortForward PortFwd) error {
 	c.portFwd = portFwd
 	c.madsFwd = madsPortForward
 	if !c.cluster.opts.setupKumactl {

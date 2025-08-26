@@ -40,7 +40,7 @@ func Ago(m *time.Time, now time.Time) string {
 }
 
 // TimeSince to calculate age of resources
-func TimeSince(m time.Time, now time.Time) string {
+func TimeSince(m, now time.Time) string {
 	d := now.Sub(m)
 	return Duration(d)
 }

@@ -37,10 +37,10 @@ var _ = Describe("Resource", func() {
 	})
 
 	DescribeTable("KDS flags",
-		func(flags core_model.KDSFlagType, against core_model.KDSFlagType, expected bool) {
+		func(flags, against core_model.KDSFlagType, expected bool) {
 			Expect(flags.Has(against)).To(Equal(expected))
 		},
-		func(flags core_model.KDSFlagType, against core_model.KDSFlagType, expected bool) string {
+		func(flags, against core_model.KDSFlagType, expected bool) string {
 			return fmt.Sprintf("%v.Has(%v) = %v", flags, against, expected)
 		},
 		Entry(nil, core_model.ProvidedByGlobalFlag, core_model.GlobalToZonesFlag, false),

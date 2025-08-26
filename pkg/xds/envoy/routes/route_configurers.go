@@ -62,7 +62,7 @@ func RouteMatchRegexPath(regex string) RouteConfigurer {
 }
 
 // RouteMatchExactHeader appends an exact match for the value of the named HTTP request header.
-func RouteMatchExactHeader(name string, value string) RouteConfigurer {
+func RouteMatchExactHeader(name, value string) RouteConfigurer {
 	if name == "" || value == "" {
 		return RouteConfigureFunc(nil)
 	}
@@ -85,7 +85,7 @@ func RouteMatchExactHeader(name string, value string) RouteConfigurer {
 }
 
 // RouteMatchRegexHeader appends a regex match for the value of the named HTTP request header.
-func RouteMatchRegexHeader(name string, regex string) RouteConfigurer {
+func RouteMatchRegexHeader(name, regex string) RouteConfigurer {
 	if name == "" || regex == "" {
 		return RouteConfigureFunc(nil)
 	}
@@ -127,7 +127,7 @@ func RouteMatchPresentHeader(name string, presentMatch bool) RouteConfigurer {
 }
 
 // RouteMatchPrefixHeader appends a prefix match for the names HTTP request header
-func RouteMatchPrefixHeader(name string, match string) RouteConfigurer {
+func RouteMatchPrefixHeader(name, match string) RouteConfigurer {
 	if name == "" {
 		return RouteConfigureFunc(nil)
 	}
@@ -145,7 +145,7 @@ func RouteMatchPrefixHeader(name string, match string) RouteConfigurer {
 }
 
 // RouteMatchExactQuery appends an exact match for the value of the named query parameter.
-func RouteMatchExactQuery(name string, value string) RouteConfigurer {
+func RouteMatchExactQuery(name, value string) RouteConfigurer {
 	if name == "" || value == "" {
 		return RouteConfigureFunc(nil)
 	}
@@ -169,7 +169,7 @@ func RouteMatchExactQuery(name string, value string) RouteConfigurer {
 }
 
 // RouteMatchRegexQuery appends a regex match for the value of the named query parameter.
-func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
+func RouteMatchRegexQuery(name, regex string) RouteConfigurer {
 	if name == "" || regex == "" {
 		return RouteConfigureFunc(nil)
 	}
@@ -192,7 +192,7 @@ func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
 	})
 }
 
-func RouteAppendHeader(name string, value string) *envoy_config_core_v3.HeaderValueOption {
+func RouteAppendHeader(name, value string) *envoy_config_core_v3.HeaderValueOption {
 	return &envoy_config_core_v3.HeaderValueOption{
 		AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 		Header: &envoy_config_core_v3.HeaderValue{
@@ -202,7 +202,7 @@ func RouteAppendHeader(name string, value string) *envoy_config_core_v3.HeaderVa
 	}
 }
 
-func RouteReplaceHeader(name string, value string) *envoy_config_core_v3.HeaderValueOption {
+func RouteReplaceHeader(name, value string) *envoy_config_core_v3.HeaderValueOption {
 	return &envoy_config_core_v3.HeaderValueOption{
 		AppendAction: envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 		Header: &envoy_config_core_v3.HeaderValue{

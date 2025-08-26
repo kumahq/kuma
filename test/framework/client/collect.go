@@ -133,7 +133,7 @@ func WithPathPrefix(prefix string) CollectResponsesOptsFn {
 
 // Resolve sets the curl --resolve flag.
 // See https://curl.se/docs/manpage.html#--resolve.
-func Resolve(hostPort string, address string) CollectResponsesOptsFn {
+func Resolve(hostPort, address string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.Flags = append(opts.Flags,
 			"--resolve",
@@ -188,7 +188,7 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 //
 // Note that the caller of CollectEchoResponse still needs to specify the
 // source container name within the Pod.
-func FromKubernetesPod(namespace string, application string) CollectResponsesOptsFn {
+func FromKubernetesPod(namespace, application string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.namespace = namespace
 		opts.application = application

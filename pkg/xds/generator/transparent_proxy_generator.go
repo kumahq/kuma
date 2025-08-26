@@ -44,7 +44,7 @@ func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.Resour
 	return resources, nil
 }
 
-func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName string, inboundName string, allIP string, inPassThroughIP string) (*model.ResourceSet, error) {
+func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName, inboundName, allIP, inPassThroughIP string) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	tpCfg := proxy.GetTransparentProxy()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()

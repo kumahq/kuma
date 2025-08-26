@@ -128,14 +128,14 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 	return nil
 }
 
-func certSecretResKey(mesh string, backendName string) core_model.ResourceKey {
+func certSecretResKey(mesh, backendName string) core_model.ResourceKey {
 	return core_model.ResourceKey{
 		Mesh: mesh,
 		Name: core_system.BuiltinCertSecretName(mesh, backendName),
 	}
 }
 
-func keySecretResKey(mesh string, backendName string) core_model.ResourceKey {
+func keySecretResKey(mesh, backendName string) core_model.ResourceKey {
 	return core_model.ResourceKey{
 		Mesh: mesh,
 		Name: core_system.BuiltinKeySecretName(mesh, backendName),
@@ -171,7 +171,7 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 	return *keyPair, nil
 }
 
-func (b *builtinCaManager) getCa(ctx context.Context, mesh string, backendName string) (core_ca.KeyPair, error) {
+func (b *builtinCaManager) getCa(ctx context.Context, mesh, backendName string) (core_ca.KeyPair, error) {
 	certSecret := core_system.NewSecretResource()
 	if err := b.secretManager.Get(ctx, certSecret, core_store.GetBy(certSecretResKey(mesh, backendName))); err != nil {
 		return core_ca.KeyPair{}, err

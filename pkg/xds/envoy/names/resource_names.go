@@ -113,7 +113,7 @@ func GetDNSListenerName() string {
 	return Join("kuma", "dns")
 }
 
-func GetGatewayListenerName(gatewayName string, protoName string, port uint32) string {
+func GetGatewayListenerName(gatewayName, protoName string, port uint32) string {
 	return Join(gatewayName, protoName, formatPort(port))
 }
 
@@ -135,7 +135,7 @@ func ParseGatewayListenerName(listenerName string) (string, string, uint32, erro
 // GetMeshClusterName will be used everywhere where there is a potential of name
 // clashes (i.e. when Zone Egress is configuring clusters for services with
 // the same name but in different meshes)
-func GetMeshClusterName(meshName string, serviceName string) string {
+func GetMeshClusterName(meshName, serviceName string) string {
 	return Join(meshName, serviceName)
 }
 
@@ -150,10 +150,10 @@ func GetMeshClusterName(meshName string, serviceName string) string {
 // DataSources, but may collide with the name of a secret DataSource.
 //
 // identifier is a name that should be unique within a category and scope.
-func GetSecretName(category string, scope string, identifier string) string {
+func GetSecretName(category, scope, identifier string) string {
 	return Join(category, scope, identifier)
 }
 
-func GetEgressFilterChainName(serviceName string, meshName string) string {
+func GetEgressFilterChainName(serviceName, meshName string) string {
 	return fmt.Sprintf("%s_%s", serviceName, meshName)
 }

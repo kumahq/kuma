@@ -9,7 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-func InferServiceProtocol(serviceProtocol core_meta.Protocol, routeProtocol core_meta.Protocol) core_meta.Protocol {
+func InferServiceProtocol(serviceProtocol, routeProtocol core_meta.Protocol) core_meta.Protocol {
 	if serviceProtocol == core_meta.ProtocolUnknown || serviceProtocol == "" {
 		switch routeProtocol {
 		case core_meta.ProtocolHTTP:

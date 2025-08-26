@@ -544,7 +544,7 @@ var _ = Describe("ServiceValidator", func() {
 
 type testSecretValidator struct{}
 
-func (t *testSecretValidator) ValidateDelete(ctx context.Context, secretName string, secretMesh string) error {
+func (t *testSecretValidator) ValidateDelete(ctx context.Context, secretName, secretMesh string) error {
 	var verr core_validators.ValidationError
 	if secretName == "secret-in-use" {
 		verr.AddViolation("name", fmt.Sprintf(`The secret %q that you are trying to remove is currently in use in Mesh %q in mTLS backend %q. Please remove the reference from the %q backend before removing the secret.`, secretName, secretMesh, "ca-1", "ca-1"))

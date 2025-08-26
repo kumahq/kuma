@@ -108,7 +108,7 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, string, 
 	return 0, "", nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
 }
 
-func findContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+func findContainerStatus(containerName string, status, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
 	for _, cs := range append(status, initStatus...) {
 		if cs.Name == containerName {
 			return &cs
@@ -121,7 +121,7 @@ func FindContainerStatus(containerName string, status []kube_core.ContainerStatu
 	return findContainerStatus(containerName, status, nil)
 }
 
-func FindContainerOrInitContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+func FindContainerOrInitContainerStatus(containerName string, status, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
 	return findContainerStatus(containerName, status, initStatus)
 }
 

@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("Hostname matching", func() {
 	DescribeTable("Matches should match",
-		func(hostname string, candidate string) {
+		func(hostname, candidate string) {
 			Expect(match.Hostnames(hostname, candidate)).To(BeTrue())
 		},
 		Entry("equal exact", "foo.example.com", "foo.example.com"),
@@ -22,7 +22,7 @@ var _ = Describe("Hostname matching", func() {
 		Entry("smaller wild matches larger exact", "foo.examples.com", "*.com"),
 	)
 	DescribeTable("Matches should not match",
-		func(hostname string, candidate string) {
+		func(hostname, candidate string) {
 			Expect(match.Hostnames(hostname, candidate)).To(BeFalse())
 		},
 		Entry("exact unequal", "foo.example.com", "bar.example.com"),
@@ -31,7 +31,7 @@ var _ = Describe("Hostname matching", func() {
 		Entry("both wild with rest unequal", "*.example.com", "*.examples.com"),
 	)
 	DescribeTable("Contains",
-		func(hostname string, candidate string, expect bool) {
+		func(hostname, candidate string, expect bool) {
 			Expect(match.Contains(hostname, candidate)).To(Equal(expect))
 		},
 		Entry("equal exact succeeds", "foo.example.com", "foo.example.com", true),
@@ -44,7 +44,7 @@ var _ = Describe("Hostname matching", func() {
 		Entry("smaller wildcard doesn't contain larger", "*.foo.com", "*.com", false),
 	)
 	DescribeTable("SortHostnamesDecByInclusion",
-		func(hostnames []string, expect []string) {
+		func(hostnames, expect []string) {
 			Expect(match.SortHostnamesByExactnessDec(hostnames)).To(Equal(expect))
 		},
 		Entry("simple exact", []string{"foo.example.com", "bar.example.com"}, []string{"bar.example.com", "foo.example.com"}),
@@ -55,7 +55,7 @@ var _ = Describe("Hostname matching", func() {
 		Entry("specific wild less than wild", []string{"*.com", "*.example.com"}, []string{"*.example.com", "*.com"}),
 	)
 	DescribeTable("SortHostnamesOn",
-		func(hostnames []string, expect []string) {
+		func(hostnames, expect []string) {
 			Expect(match.SortHostnamesOn(hostnames, func(e string) string { return e })).To(Equal(expect))
 		},
 		Entry("simple exact", []string{"foo.example.com", "bar.example.com"}, []string{"bar.example.com", "foo.example.com"}),

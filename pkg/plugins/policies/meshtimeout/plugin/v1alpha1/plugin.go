@@ -264,7 +264,7 @@ func getConf(
 	return api.Conf{}, false
 }
 
-func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
+func createInboundClusterName(servicePort, listenerPort uint32) string {
 	if servicePort != 0 {
 		return envoy_names.GetLocalClusterName(servicePort)
 	} else {

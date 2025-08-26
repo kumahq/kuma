@@ -205,7 +205,7 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 // in which it looks weird for the API to each service. Ref: https://github.com/kumahq/kuma/issues/9729
 func removeDisplayNameLabel(resource *rest_unversioned.Resource) {
 	tmpMeta := resource.GetMeta()
-	maps.DeleteFunc(tmpMeta.Labels, func(key string, val string) bool {
+	maps.DeleteFunc(tmpMeta.Labels, func(key, val string) bool {
 		return key == v1alpha1.DisplayName
 	})
 	resource.Meta = tmpMeta

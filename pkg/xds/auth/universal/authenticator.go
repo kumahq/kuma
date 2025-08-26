@@ -94,7 +94,7 @@ func (u *universalAuthenticator) authZoneEntity(
 	return nil
 }
 
-func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.MultiValueTagSet) error {
+func validateTags(tokenTags, dpTags mesh_proto.MultiValueTagSet) error {
 	for tagName, allowedValues := range tokenTags {
 		dpValues, exist := dpTags[tagName]
 		if !exist {

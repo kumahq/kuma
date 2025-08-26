@@ -132,7 +132,7 @@ type UpsertOpts struct {
 
 type UpsertFunc func(opts *UpsertOpts)
 
-func WithConflictRetry(baseBackoff time.Duration, maxTimes uint, jitterPercent uint) UpsertFunc {
+func WithConflictRetry(baseBackoff time.Duration, maxTimes, jitterPercent uint) UpsertFunc {
 	return func(opts *UpsertOpts) {
 		opts.ConflictRetry.BaseBackoff = baseBackoff
 		opts.ConflictRetry.MaxTimes = maxTimes

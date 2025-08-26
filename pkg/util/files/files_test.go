@@ -10,10 +10,10 @@ import (
 )
 
 var _ = DescribeTable("",
-	func(in string, out string) string {
+	func(in, out string) string {
 		return fmt.Sprintf(`ToUnixFilename(%q)=%q`, in, out)
 	},
-	func(in string, out string) {
+	func(in, out string) {
 		Expect(files.ToValidUnixFilename(in)).To(Equal(out))
 	},
 	Entry(nil, "", ""),

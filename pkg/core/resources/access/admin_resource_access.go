@@ -35,7 +35,7 @@ func (a *adminResourceAccess) ValidateCreate(ctx context.Context, _ model.Resour
 	return a.validateAdminAccess(ctx, user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateUpdate(ctx context.Context, _ model.ResourceKey, _ model.ResourceSpec, _ model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
+func (a *adminResourceAccess) ValidateUpdate(ctx context.Context, _ model.ResourceKey, _, _ model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(ctx, user, descriptor)
 }
 

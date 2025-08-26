@@ -7,7 +7,7 @@ import (
 
 // VersionCompatible returns true if the given version of
 // envoy is compatible with this DP, false otherwise, expectedVersion is in Masterminds/semver/v3 format.
-func VersionCompatible(expectedVersion string, envoyVersion string) (bool, error) {
+func VersionCompatible(expectedVersion, envoyVersion string) (bool, error) {
 	if expectedVersion == envoyVersion {
 		return true, nil
 	}

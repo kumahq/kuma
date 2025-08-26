@@ -9,7 +9,7 @@ import (
 // We can test whether the DPP of given tags can reach a service.
 // This way we can trim the configuration for a DPP, so it won't include unnecessary configuration.
 type ReachableServicesGraph interface {
-	CanReach(fromTags map[string]string, toTags map[string]string) bool
+	CanReach(fromTags, toTags map[string]string) bool
 	CanReachBackend(fromTags map[string]string, backendIdentifier kri.Identifier) bool
 }
 

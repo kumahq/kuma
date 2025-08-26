@@ -85,7 +85,7 @@ func createMeshInsight(name string, rs store.ResourceStore) error {
 		Create(rs)
 }
 
-func createServiceInsight(name string, mesh string, rs store.ResourceStore) error {
+func createServiceInsight(name, mesh string, rs store.ResourceStore) error {
 	return builders.ServiceInsight().
 		WithName(name).
 		WithMesh(mesh).
@@ -128,7 +128,7 @@ func createZoneInsight(name string, online bool, rs store.ResourceStore) error {
 	return builder.Create(rs)
 }
 
-func createZoneIngressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
+func createZoneIngressInsight(name, mesh string, online bool, rs store.ResourceStore) error {
 	builder := builders.ZoneIngressInsight().WithName(name).WithMesh(mesh)
 
 	if online {
@@ -145,7 +145,7 @@ func createZoneIngressInsight(name string, mesh string, online bool, rs store.Re
 	return builder.Create(rs)
 }
 
-func createZoneEgressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
+func createZoneEgressInsight(name, mesh string, online bool, rs store.ResourceStore) error {
 	builder := builders.ZoneEgressInsight().WithName(name).WithMesh(mesh)
 
 	if online {
