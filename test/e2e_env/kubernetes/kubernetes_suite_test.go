@@ -81,6 +81,7 @@ var (
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
+	_ = Describe("MeshTrafficPermission Rules", meshtrafficpermission.MeshTrafficPermissionRules, Ordered)
 	_ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)
 	_ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 	_ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
