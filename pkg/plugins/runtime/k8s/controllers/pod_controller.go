@@ -338,6 +338,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
+		r.Log.Info("UPDATING DATAPLANE", "dataplane", dataplane)
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
@@ -552,24 +553,19 @@ func MeshToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.Map
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		mesh := obj.(*mesh_k8s.Mesh)
 
-		l := l.WithValues(
-			"Mesh",
-			kube_types.NamespacedName{Namespace: mesh.Namespace, Name: mesh.Name},
-		)
+		l := l.WithValues("Mesh", mesh.Name)
 
 		pods := &kube_core.PodList{}
-		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(map[string]string{
+		if err := client.List(ctx, pods, kube_client.MatchingLabels(map[string]string{
 			mesh_proto.MeshTag: mesh.Name,
 		})); err != nil {
-			l.Error(err, "failed to fetch Pods matching for mesh")
+			l.Error(err, "failed to fetch Pods for Mesh")
 			return nil
 		}
 
 		var req []kube_reconcile.Request
 		for _, pod := range pods.Items {
-			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
-			})
+			req = append(req, kube_reconcile.Request{NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name}})
 		}
 		return req
 	}
