@@ -47,7 +47,7 @@ func DescribeValidCases[T core_model.Resource](generator func() T, cases ...Tabl
 			err := core_model.FromYAML([]byte(given.Resource), resource.GetSpec())
 			if given.Name != "" || len(given.Labels) > 0 {
 				resource.SetMeta(&test_model.ResourceMeta{
-					Name: given.Name,
+					Name:   given.Name,
 					Labels: given.Labels,
 				})
 			}
@@ -81,7 +81,7 @@ func DescribeErrorCases[T core_model.Resource](generator func() T, cases ...Tabl
 
 			if given.Name != "" || len(given.Labels) > 0 {
 				resource.SetMeta(&test_model.ResourceMeta{
-					Name: given.Name,
+					Name:   given.Name,
 					Labels: given.Labels,
 				})
 			}
