@@ -13,12 +13,16 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -438,6 +442,7 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 		// on Service update reconcile affected Pods (all Pods selected by this service)
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
 		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(MeshServiceExclusivePredicate{})).
 		Complete(r)
 }
 
@@ -540,4 +545,59 @@ func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_ha
 		}
 		return req
 	}
+}
+
+func MeshToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("mesh-to-pods-mapper")
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
+		mesh := obj.(*mesh_k8s.Mesh)
+
+		l := l.WithValues("Mesh", mesh.Name)
+
+		pods := &kube_core.PodList{}
+		if err := client.List(ctx, pods, kube_client.MatchingLabels(map[string]string{
+			mesh_proto.MeshTag: mesh.Name,
+		})); err != nil {
+			l.Error(err, "failed to fetch Pods for Mesh")
+			return nil
+		}
+
+		var req []kube_reconcile.Request
+		for _, pod := range pods.Items {
+			req = append(req, kube_reconcile.Request{NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name}})
+		}
+		return req
+	}
+}
+
+type MeshServiceExclusivePredicate struct {
+	predicate.Funcs
+}
+
+func (p MeshServiceExclusivePredicate) Update(e event.UpdateEvent) bool {
+	oldMesh, err := e.ObjectOld.(*mesh_k8s.Mesh).GetSpec()
+	if err != nil {
+		return false
+	}
+	newMesh, err := e.ObjectNew.(*mesh_k8s.Mesh).GetSpec()
+	if err != nil {
+		return false
+	}
+
+	oldMSMode := oldMesh.(*mesh_proto.Mesh).GetMeshServices().GetMode()
+	newMSMode := newMesh.(*mesh_proto.Mesh).GetMeshServices().GetMode()
+
+	// MeshService mode changed to Exclusive
+	if newMSMode == mesh_proto.Mesh_MeshServices_Exclusive &&
+		oldMSMode != mesh_proto.Mesh_MeshServices_Exclusive {
+		return true
+	}
+
+	// MeshService mode changed back from Exclusive
+	if newMSMode != mesh_proto.Mesh_MeshServices_Exclusive &&
+		oldMSMode == mesh_proto.Mesh_MeshServices_Exclusive {
+		return true
+	}
+
+	return false
 }
