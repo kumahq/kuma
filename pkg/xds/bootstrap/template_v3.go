@@ -1,9 +1,6 @@
 package bootstrap
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/system_names"
 	"net"
 	"strconv"
 	"time"
@@ -28,7 +25,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/xds"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -481,7 +481,7 @@ func buildGrpcService(params configParameters, useTokenPath bool, clusterName st
 		envoyGrpcSerivce := &envoy_core_v3.GrpcService{
 			TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
 				EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-					ClusterName:  clusterName,
+					ClusterName: clusterName,
 				},
 			},
 		}

@@ -219,7 +219,12 @@ func ISSANMismatchErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "A data plane proxy is trying to connect to the control plane using")
 }
 
-func (b *bootstrapGenerator) getMetricsConfig(ctx context.Context, dataplane *core_mesh.DataplaneResource, kumaDpBootstrap *KumaDpBootstrap, meshResource *core_mesh.MeshResource, ) error {
+func (b *bootstrapGenerator) getMetricsConfig(
+	_ context.Context,
+	dataplane *core_mesh.DataplaneResource,
+	kumaDpBootstrap *KumaDpBootstrap,
+	meshResource *core_mesh.MeshResource,
+) error {
 	config, err := dataplane.GetPrometheusConfig(meshResource)
 	if err != nil {
 		return err
