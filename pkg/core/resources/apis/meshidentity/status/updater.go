@@ -121,7 +121,7 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 	conditions := []common_api.Condition{}
 	if mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
 		conditions = append(conditions, common_api.Condition{
-			Type:    meshidentity_api.ProviderConditionType,
+			Type:    meshidentity_api.DependenciesReadyType,
 			Status:  kube_meta.ConditionFalse,
 			Reason:  "MeshServicesDisabled",
 			Message: "MeshIdentity requires MeshServices to be enabled on the mesh. To enable, set `spec.meshServices.mode: Exclusive` on the mesh.",
