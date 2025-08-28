@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/portforward"
 	"github.com/kumahq/kuma/test/framework/report"
 	kssh "github.com/kumahq/kuma/test/framework/ssh"
 	"github.com/kumahq/kuma/test/framework/universal"
@@ -169,19 +170,31 @@ func SetupAndGetState() []byte {
 
 	wg.Wait()
 
+	zeSpec := portforward.Spec{
+		AppName:    Config.ZoneEgressApp,
+		Namespace:  Config.KumaNamespace,
+		RemotePort: 9901,
+	}
+
+	ziSpec := portforward.Spec{
+		AppName:    Config.ZoneIngressApp,
+		Namespace:  Config.KumaNamespace,
+		RemotePort: 9901,
+	}
+
 	state := State{
 		Global:   Global.GetUniversalNetworkingState(),
 		UniZone1: UniZone1.GetUniversalNetworkingState(),
 		UniZone2: UniZone2.GetUniversalNetworkingState(),
 		KubeZone1: K8sNetworkingState{
-			ZoneEgress:  KubeZone1.GetPortForward(Config.ZoneEgressApp),
-			ZoneIngress: KubeZone1.GetPortForward(Config.ZoneIngressApp),
+			ZoneEgress:  KubeZone1.GetPortForward(zeSpec),
+			ZoneIngress: KubeZone1.GetPortForward(ziSpec),
 			KumaCp:      KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
 			MADS:        KubeZone1.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 		KubeZone2: K8sNetworkingState{
-			ZoneEgress:  KubeZone2.GetPortForward(Config.ZoneEgressApp),
-			ZoneIngress: KubeZone2.GetPortForward(Config.ZoneIngressApp),
+			ZoneEgress:  KubeZone2.GetPortForward(zeSpec),
+			ZoneIngress: KubeZone2.GetPortForward(ziSpec),
 			KumaCp:      KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
 			MADS:        KubeZone2.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
@@ -206,8 +219,16 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 	)
 	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp, networkingState.KumaCp)).To(Succeed())
 	zone.SetCP(kubeCp)
-	zone.AddPortForward(networkingState.ZoneEgress, Config.ZoneEgressApp)
-	zone.AddPortForward(networkingState.ZoneIngress, Config.ZoneIngressApp)
+	zone.AddPortForward(networkingState.ZoneEgress, portforward.Spec{
+		AppName:    Config.ZoneEgressApp,
+		Namespace:  Config.KumaNamespace,
+		RemotePort: 9901,
+	})
+	zone.AddPortForward(networkingState.ZoneIngress, portforward.Spec{
+		AppName:    Config.ZoneIngressApp,
+		Namespace:  Config.KumaNamespace,
+		RemotePort: 9901,
+	})
 	return zone
 }
 

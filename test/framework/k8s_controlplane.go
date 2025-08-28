@@ -20,6 +20,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework/kumactl"
+	"github.com/kumahq/kuma/test/framework/portforward"
 )
 
 var _ ControlPlane = &K8sControlPlane{}
@@ -31,8 +32,8 @@ type K8sControlPlane struct {
 	kubeconfig string
 	kumactl    *kumactl.KumactlOptions
 	cluster    *K8sCluster
-	portFwd    PortFwd
-	madsFwd    PortFwd
+	portFwd    portforward.Tunnel
+	madsFwd    portforward.Tunnel
 	verbose    bool
 	replicas   int
 	apiHeaders []string
@@ -177,11 +178,11 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 	)
 }
 
-func (c *K8sControlPlane) PortFwd() PortFwd {
+func (c *K8sControlPlane) PortFwd() portforward.Tunnel {
 	return c.portFwd
 }
 
-func (c *K8sControlPlane) MadsPortFwd() PortFwd {
+func (c *K8sControlPlane) MadsPortFwd() portforward.Tunnel {
 	return c.madsFwd
 }
 
@@ -193,7 +194,10 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
 }
 
-func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd, madsPortForward PortFwd) error {
+func (c *K8sControlPlane) FinalizeAddWithPortFwd(
+	portFwd portforward.Tunnel,
+	madsPortForward portforward.Tunnel,
+) error {
 	c.portFwd = portFwd
 	c.madsFwd = madsPortForward
 	if !c.cluster.opts.setupKumactl {

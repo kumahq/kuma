@@ -16,8 +16,8 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/spire"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/test/framework/portforward"
 )
 
 func Spire() {
@@ -121,15 +121,15 @@ spec:
 			g.Expect(resp.Instance).To(Equal("test-server-spire"))
 		}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
-		portFwd, err := kubernetes.Cluster.PortForwardApp("test-server", namespace, 9901)
-		Expect(err).ToNot(HaveOccurred())
-
-		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(kubernetes.Cluster.GetTesting(), portFwd.Endpoint)
+		admin, err := kubernetes.Cluster.GetOrCreateAdminTunnel(portforward.Spec{
+			AppName:   "test-server",
+			Namespace: namespace,
+		})
 		Expect(err).ToNot(HaveOccurred())
 
 		// and it's a tls traffic
 		Eventually(func(g Gomega) {
-			s, err := adminTunnel.GetStats("listener.*_80.ssl.handshake")
+			s, err := admin.GetStats("listener.*_80.ssl.handshake")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(s).To(stats.BeGreaterThanZero())
 		}, "5s", "1s").Should(Succeed())

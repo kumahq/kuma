@@ -19,8 +19,8 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/test/framework/portforward"
 )
 
 func MeshServiceTargeting() {
@@ -294,11 +294,12 @@ spec:
 `, Config.KumaNamespace, meshName))(multizone.KubeZone2)).To(Succeed())
 		// given
 		// create a tunnel to test-client admin
-		portFwd, err := multizone.KubeZone1.PortForwardApp("test-client", namespace, 9901)
+		admin, err := multizone.KubeZone1.GetOrCreateAdminTunnel(portforward.Spec{
+			AppName:   "test-client",
+			Namespace: namespace,
+		})
 		Expect(err).ToNot(HaveOccurred())
 
-		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.Endpoint)
-		Expect(err).ToNot(HaveOccurred())
 		// then
 		Eventually(func() ([]client.FailureResponse, error) {
 			return client.CollectResponsesAndFailures(
@@ -315,7 +316,7 @@ spec:
 		))
 
 		Eventually(func(g Gomega) {
-			g.Expect(retryStat(adminTunnel)).To(stats.BeEqualZero())
+			g.Expect(retryStat(admin)).To(stats.BeEqualZero())
 		}, "5s", "1s").Should(Succeed())
 
 		meshRetryPolicy := fmt.Sprintf(`
@@ -359,7 +360,7 @@ spec:
 		))
 
 		// and
-		Expect(retryStat(adminTunnel)).To(stats.BeGreaterThanZero())
+		Expect(retryStat(admin)).To(stats.BeGreaterThanZero())
 
 		// remove Policies
 		Expect(DeleteMeshPolicyOrError(multizone.KubeZone1, meshretry_api.MeshRetryResourceTypeDescriptor, "mr-for-ms-in-zone-2")).To(Succeed())
