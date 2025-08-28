@@ -37,24 +37,14 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/kumactl"
+	"github.com/kumahq/kuma/test/framework/portforward"
 )
 
-type PortFwd struct {
-	tunnel   *k8s.Tunnel
-	Endpoint string `json:"endpoint"`
-}
-
-func (p PortFwd) Close() {
-	if p.tunnel != nil {
-		p.tunnel.Close()
-	}
-}
-
 type K8sNetworkingState struct {
-	ZoneEgress  PortFwd `json:"zoneEgress"`
-	ZoneIngress PortFwd `json:"zoneIngress"`
-	KumaCp      PortFwd `json:"kumaCp"`
-	MADS        PortFwd `json:"mads"`
+	ZoneEgress  portforward.Tunnel `json:"zoneEgress"`
+	ZoneIngress portforward.Tunnel `json:"zoneIngress"`
+	KumaCp      portforward.Tunnel `json:"kumaCp"`
+	MADS        portforward.Tunnel `json:"mads"`
 }
 
 type K8sCluster struct {
@@ -69,7 +59,8 @@ type K8sCluster struct {
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
-	portForwards        map[string]PortFwd
+	portForwards        map[portforward.Spec]portforward.Tunnel
+	adminTunnels        map[portforward.Spec]envoy_admin.Tunnel
 }
 
 var _ Cluster = &K8sCluster{}
@@ -84,7 +75,8 @@ func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sClu
 		deployments:         map[string]Deployment{},
 		defaultRetries:      Config.DefaultClusterStartupRetries,
 		defaultTimeout:      Config.DefaultClusterStartupTimeout,
-		portForwards:        map[string]PortFwd{},
+		portForwards:        map[portforward.Spec]portforward.Tunnel{},
+		adminTunnels:        map[portforward.Spec]envoy_admin.Tunnel{},
 	}
 }
 
@@ -99,30 +91,34 @@ func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 	return c
 }
 
-func (c *K8sCluster) PortForwardApp(appName string, namespace string, remotePort int) (PortFwd, error) {
-	podName, err := PodNameOfApp(c, appName, namespace)
+func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, error) {
+	if err := spec.ValidateFullSpec(); err != nil {
+		return portforward.Tunnel{}, err
+	}
+
+	podName, err := PodNameOfApp(c, spec.AppName, spec.Namespace)
 	if err != nil {
-		return PortFwd{}, errors.Wrapf(
+		return portforward.Tunnel{}, errors.Wrapf(
 			err,
 			"resolving target for port-forward failed: app %q in namespace %q could not be mapped to a Pod",
-			appName,
-			namespace,
+			spec.AppName,
+			spec.Namespace,
 		)
 	}
 
-	fwd, err := c.PortForward(k8s.ResourceTypePod, podName, namespace, remotePort)
+	fwd, err := c.PortForward(k8s.ResourceTypePod, podName, spec.Namespace, spec.RemotePort)
 	if err != nil {
-		return PortFwd{}, errors.Wrapf(
+		return portforward.Tunnel{}, errors.Wrapf(
 			err,
 			"failed to start port-forward to %s/%s in namespace %q (port %d)",
 			k8s.ResourceTypePod.String(),
 			podName,
-			namespace,
-			remotePort,
+			spec.Namespace,
+			spec.RemotePort,
 		)
 	}
 
-	c.portForwards[appName] = fwd
+	c.portForwards[spec] = fwd
 
 	return fwd, nil
 }
@@ -132,10 +128,10 @@ func (c *K8sCluster) PortForward(
 	resourceName string,
 	namespace string,
 	remotePort int,
-) (PortFwd, error) {
+) (portforward.Tunnel, error) {
 	localPort, err := k8s.GetAvailablePortE(c.t)
 	if err != nil {
-		return PortFwd{}, errors.Wrapf(
+		return portforward.Tunnel{}, errors.Wrapf(
 			err,
 			"failed to allocate a local port for port-forward to %s/%s in namespace %q (remote port: %d)",
 			resourceType,
@@ -147,7 +143,7 @@ func (c *K8sCluster) PortForward(
 
 	tnl := k8s.NewTunnel(c.GetKubectlOptions(namespace), resourceType, resourceName, localPort, remotePort)
 	if err := tnl.ForwardPortE(c.t); err != nil {
-		return PortFwd{}, errors.Wrapf(
+		return portforward.Tunnel{}, errors.Wrapf(
 			err,
 			"failed to start port-forward to %s/%s in namespace %q (mapping %d -> %d)",
 			resourceType,
@@ -159,7 +155,7 @@ func (c *K8sCluster) PortForward(
 	}
 
 	if tnl.Endpoint() == "" {
-		return PortFwd{}, errors.Errorf(
+		return portforward.Tunnel{}, errors.Errorf(
 			"empty endpoint after port-forward to %s/%s in %q (local %d -> remote %d); verify the target and port-forward",
 			resourceType,
 			resourceName,
@@ -169,34 +165,46 @@ func (c *K8sCluster) PortForward(
 		)
 	}
 
-	return PortFwd{
-		tunnel:   tnl,
-		Endpoint: tnl.Endpoint(),
-	}, nil
+	return portforward.NewTunnel(tnl, tnl.Endpoint()), nil
 }
 
-func (c *K8sCluster) AddPortForward(portFwd PortFwd, name string) {
-	c.portForwards[name] = portFwd
+func (c *K8sCluster) AddPortForward(portFwd portforward.Tunnel, spec portforward.Spec) {
+	if err := spec.ValidateFullSpec(); err != nil {
+		c.t.Fatalf("invalid port-forward spec: %s", err)
+	}
+
+	c.portForwards[spec] = portFwd
 }
 
-func (c *K8sCluster) GetPortForward(name string) PortFwd {
-	return c.portForwards[name]
+func (c *K8sCluster) GetPortForward(spec portforward.Spec) portforward.Tunnel {
+	return c.portForwards[spec]
 }
 
-func (c *K8sCluster) ClosePortForward(name string) {
-	if fwd, ok := c.portForwards[name]; ok {
-		fwd.Close()
-		delete(c.portForwards, name)
+func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
+	for _, spec := range specs {
+		for fwdSpec, tnl := range c.portForwards {
+			if !fwdSpec.Matches(spec) {
+				continue
+			}
+
+			tnl.Close()
+
+			delete(c.portForwards, spec)
+		}
+
+		for tnlSpec := range c.adminTunnels {
+			if tnlSpec.Matches(spec) {
+				delete(c.adminTunnels, spec)
+			}
+		}
 	}
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	fwd, ok := c.portForwards[Config.ZoneEgressApp]
-	if !ok {
-		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
-	}
-
-	tnl, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
+	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+		AppName:   Config.ZoneEgressApp,
+		Namespace: Config.KumaNamespace,
+	})
 	if err != nil {
 		c.t.Fatal(err)
 	}
@@ -205,12 +213,10 @@ func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	fwd, ok := c.portForwards[Config.ZoneIngressApp]
-	if !ok {
-		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
-	}
-
-	tnl, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
+	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+		AppName:   Config.ZoneIngressApp,
+		Namespace: Config.KumaNamespace,
+	})
 	if err != nil {
 		c.t.Fatal(err)
 	}
@@ -728,7 +734,10 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
 		}
 
-		if _, err := c.PortForwardApp(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
+		if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+			AppName:   Config.ZoneEgressApp,
+			Namespace: Config.KumaNamespace,
+		}); err != nil {
 			return err
 		}
 	}
@@ -738,7 +747,10 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
 		}
 
-		if _, err := c.PortForwardApp(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
+		if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+			AppName:   Config.ZoneIngressApp,
+			Namespace: Config.KumaNamespace,
+		}); err != nil {
 			return err
 		}
 	}
@@ -857,9 +869,14 @@ func (c *K8sCluster) StartZoneIngress() error {
 	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if _, err := c.PortForwardApp(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
+
+	if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+		AppName:   Config.ZoneIngressApp,
+		Namespace: Config.KumaNamespace,
+	}); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -868,7 +885,12 @@ func (c *K8sCluster) StopZoneIngress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
 		return err
 	}
-	c.ClosePortForward(Config.ZoneIngressApp)
+
+	c.ClosePortForwards(portforward.Spec{
+		AppName:   Config.ZoneIngressApp,
+		Namespace: Config.KumaNamespace,
+	})
+
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone ingress to be down",
 		c.defaultRetries,
@@ -878,7 +900,7 @@ func (c *K8sCluster) StopZoneIngress() error {
 			if len(pods) == 0 {
 				return "Done", nil
 			}
-			names := []string{}
+			var names []string
 			for _, p := range pods {
 				names = append(names, p.Name)
 			}
@@ -896,9 +918,14 @@ func (c *K8sCluster) StartZoneEgress() error {
 	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if _, err := c.PortForwardApp(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
+
+	if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+		AppName:   Config.ZoneEgressApp,
+		Namespace: Config.KumaNamespace,
+	}); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -907,7 +934,12 @@ func (c *K8sCluster) StopZoneEgress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
 		return err
 	}
-	c.ClosePortForward(Config.ZoneEgressApp)
+
+	c.ClosePortForwards(portforward.Spec{
+		AppName:   Config.ZoneEgressApp,
+		Namespace: Config.KumaNamespace,
+	})
+
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone egress to be down",
 		c.defaultRetries,
@@ -1494,6 +1526,44 @@ func (c *K8sCluster) ZoneName() string {
 		return c.opts.zoneName
 	}
 	return c.Name()
+}
+
+func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.Tunnel, error) {
+	args = args.WithDefaults(portforward.EnvoyAdminDefaultSpec)
+
+	if err := args.ValidateFullSpec(); err != nil {
+		return nil, errors.Wrap(err, "invalid port-forward spec")
+	}
+
+	if tnl := c.adminTunnels[args]; tnl != nil {
+		return tnl, nil
+	}
+
+	fwd, err := c.PortForwardApp(args)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err,
+			"failed to start port-forward to %s in namespace %q (port %d)",
+			args.AppName,
+			args.Namespace,
+			args.RemotePort,
+		)
+	}
+
+	tnl, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err,
+			"failed to create admin tunnel to %s in namespace %q (port %d)",
+			args.AppName,
+			args.Namespace,
+			args.RemotePort,
+		)
+	}
+
+	c.adminTunnels[args] = tnl
+
+	return tnl, nil
 }
 
 type appInstallation struct {

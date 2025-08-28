@@ -3,6 +3,7 @@ package tunnel
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/config_dump"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
@@ -82,6 +84,31 @@ func (t *K8sTunnel) GetClusters() (*clusters.Clusters, error) {
 	}
 
 	return &c, nil
+}
+
+func (t *K8sTunnel) GetConfigDump() (*config_dump.EnvoyConfig, error) {
+	url := fmt.Sprintf("http://%s/config_dump?format=json", t.endpoint)
+
+	response, err := http.Post(url, "application/json", nil) // #nosec G107 -- make the url configurable is intended
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf(
+			"got response with unexpected status code: %+q, Expected: %+q",
+			response.Status,
+			http.StatusText(http.StatusOK),
+		)
+	}
+
+	bs, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return config_dump.ParseEnvoyConfig(bs)
 }
 
 func (t *K8sTunnel) ResetCounters() error {

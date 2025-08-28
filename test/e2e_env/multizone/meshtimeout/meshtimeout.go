@@ -18,8 +18,8 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/test/framework/portforward"
 )
 
 func MeshTimeout() {
@@ -273,10 +273,10 @@ spec:
 	It("should apply MeshTimeout policy on MeshService from other zone", func() {
 		// given
 		// create a tunnel to test-client admin
-		portFwd, err := multizone.KubeZone1.PortForwardApp("test-client", k8sZoneNamespace, 9901)
-		Expect(err).ToNot(HaveOccurred())
-
-		adminTunnel, err := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.Endpoint)
+		admin, err := multizone.KubeZone1.GetOrCreateAdminTunnel(portforward.Spec{
+			AppName:   "test-client",
+			Namespace: k8sZoneNamespace,
+		})
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -288,7 +288,7 @@ spec:
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		// should have active connection
 		Consistently(func(g Gomega) {
-			g.Expect(activeCxStat(adminTunnel)).To(stats.BeGreaterThanZero())
+			g.Expect(activeCxStat(admin)).To(stats.BeGreaterThanZero())
 		}, "5s", "1s").Should(Succeed())
 
 		Expect(YamlUniversal(fmt.Sprintf(`
@@ -314,7 +314,7 @@ spec:
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		// should close the connection shortly after
 		Eventually(func(g Gomega) {
-			g.Expect(activeCxStat(adminTunnel)).To(stats.BeEqualZero())
+			g.Expect(activeCxStat(admin)).To(stats.BeEqualZero())
 		}, "30s", "1s").Should(Succeed())
 	})
 }

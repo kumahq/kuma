@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/config_dump"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
@@ -45,6 +46,15 @@ func (t *UniversalTunnel) GetClusters() (*clusters.Clusters, error) {
 	}
 
 	return &c, nil
+}
+
+func (t *UniversalTunnel) GetConfigDump() (*config_dump.EnvoyConfig, error) {
+	stdout, err := t.remoteExec("getconfig_dump", "curl -s --max-time 3 --fail http://localhost:9901/config_dump?format=json")
+	if err != nil {
+		return nil, err
+	}
+
+	return config_dump.ParseEnvoyConfig([]byte(stdout))
 }
 
 func (t *UniversalTunnel) ResetCounters() error {
