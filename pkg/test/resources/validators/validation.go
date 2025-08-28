@@ -114,7 +114,9 @@ func ErrorCase(description string, err validators.Violation, yaml string, labels
 
 // FErrorCase is a helper that generates a focused table entry for DescribeErrorCases.
 func FErrorCase(description string, err validators.Violation, yaml string, labels map[string]string) TableEntry {
-	return FEntry(
+	// you need to manually set this to FEntry because `make check` will fail because it will try to un-focus this
+	// and there is no way to exclude things from `ginkgo unfocus`
+	return Entry(
 		description,
 		ResourceValidationCase{
 			Violations: []validators.Violation{err},
