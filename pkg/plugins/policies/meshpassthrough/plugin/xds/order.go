@@ -251,7 +251,7 @@ func orderMatchers(matchers []FilterChainMatch) {
 	})
 }
 
-func sortDomains(i string, j string) bool {
+func sortDomains(i, j string) bool {
 	splitI := strings.Split(i, ".")
 	splitJ := strings.Split(j, ".")
 

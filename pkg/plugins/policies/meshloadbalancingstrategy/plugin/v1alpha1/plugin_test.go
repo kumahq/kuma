@@ -1758,7 +1758,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 	)
 })
 
-func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
+func createEndpointWith(zone, ip string, extraTags map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).
@@ -1768,7 +1768,7 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		Build()
 }
 
-func createEndpointBuilderWith(zone string, ip string, extraTags map[string]string) *xds_builders.EndpointBuilder {
+func createEndpointBuilderWith(zone, ip string, extraTags map[string]string) *xds_builders.EndpointBuilder {
 	return xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).

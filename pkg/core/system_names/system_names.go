@@ -52,8 +52,8 @@ func JoinSectionParts(parts ...string) string {
 	return strings.Join(parts, sectionPartsSeparator)
 }
 
-func GetNameOrDefault(predicate bool) func(name string, defaultName string) string {
-	return func(name string, defaultName string) string {
+func GetNameOrDefault(predicate bool) func(name, defaultName string) string {
+	return func(name, defaultName string) string {
 		if predicate {
 			return name
 		}

@@ -21,7 +21,7 @@ const (
 	kumaOtelScope      = "kuma"
 )
 
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, kumaVersion string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh, dataplane, service, kumaVersion string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
 
 	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
@@ -183,7 +183,7 @@ func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantil
 	return otelQuantiles
 }
 
-func extraAttributesFrom(mesh string, dataplane string, service string, extraLabels map[string]string) []attribute.KeyValue {
+func extraAttributesFrom(mesh, dataplane, service string, extraLabels map[string]string) []attribute.KeyValue {
 	var extraAttributes []attribute.KeyValue
 	if mesh != "" {
 		extraAttributes = append(extraAttributes, attribute.String("mesh", mesh))

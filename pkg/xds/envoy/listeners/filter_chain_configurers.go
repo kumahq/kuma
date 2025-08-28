@@ -265,7 +265,7 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	})
 }
 
-func HttpInboundRoutes(routeConfigName string, virtualHostName string, routes envoy_common.Routes) FilterChainBuilderOpt {
+func HttpInboundRoutes(routeConfigName, virtualHostName string, routes envoy_common.Routes) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
 		VirtualHostName: virtualHostName,

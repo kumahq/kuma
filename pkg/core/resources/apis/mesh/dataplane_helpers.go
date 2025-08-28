@@ -49,7 +49,7 @@ func (d *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) b
 	return false
 }
 
-func overlap(address1 net.IP, address2 net.IP) bool {
+func overlap(address1, address2 net.IP) bool {
 	if address1.IsUnspecified() || address2.IsUnspecified() {
 		// wildcard match (either IPv4 address "0.0.0.0" or the IPv6 address "::")
 		return true

@@ -432,7 +432,7 @@ func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneOverviewResourceTypeDescriptor
 }
 
-func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+func (t *DataplaneOverviewResource) SetOverviewSpec(resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
 	overview := &mesh_proto.DataplaneOverview{
 		Dataplane: resource.GetSpec().(*mesh_proto.Dataplane),
@@ -3005,7 +3005,7 @@ func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressOverviewResourceTypeDescriptor
 }
 
-func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
 	overview := &mesh_proto.ZoneEgressOverview{
 		ZoneEgress: resource.GetSpec().(*mesh_proto.ZoneEgress),
@@ -3375,7 +3375,7 @@ func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor 
 	return ZoneIngressOverviewResourceTypeDescriptor
 }
 
-func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
 	overview := &mesh_proto.ZoneIngressOverview{
 		ZoneIngress: resource.GetSpec().(*mesh_proto.ZoneIngress),

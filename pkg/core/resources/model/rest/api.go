@@ -14,7 +14,7 @@ type Api interface {
 
 type ResourceApi interface {
 	List(mesh string) string
-	Item(mesh string, name string) string
+	Item(mesh, name string) string
 }
 
 func NewResourceApi(scope model.ResourceScope, path string) ResourceApi {
@@ -36,7 +36,7 @@ func (r *meshedApi) List(mesh string) string {
 	return fmt.Sprintf("/meshes/%s/%s", mesh, r.CollectionPath)
 }
 
-func (r meshedApi) Item(mesh string, name string) string {
+func (r meshedApi) Item(mesh, name string) string {
 	return fmt.Sprintf("/meshes/%s/%s/%s", mesh, r.CollectionPath, name)
 }
 

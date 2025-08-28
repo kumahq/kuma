@@ -111,7 +111,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	return nil
 }
 
-func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, cniApp string, cniNamespace string) error {
+func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, cniApp, cniNamespace string) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}

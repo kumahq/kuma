@@ -214,7 +214,7 @@ func ValidateIntegerGreaterThanZeroOrNil(path PathBuilder, value *uint32) Valida
 	return ValidateIntegerGreaterThan(path, *value, 0)
 }
 
-func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32) ValidationError {
+func ValidateIntegerGreaterThan(path PathBuilder, value, minValue uint32) ValidationError {
 	var err ValidationError
 	if value <= minValue {
 		err.AddViolationAt(path, fmt.Sprintf("%s %d", HasToBeGreaterThan, minValue))

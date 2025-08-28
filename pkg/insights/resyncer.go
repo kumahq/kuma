@@ -416,7 +416,7 @@ func (r *resyncer) dpOverviews(ctx context.Context, mesh string) ([]*core_mesh.D
 	return overviews.Items, nil
 }
 
-func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID string, reason string) {
+func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID, reason string) {
 	meshList := &core_mesh.MeshResourceList{}
 	tenantCtx := multitenant.WithTenant(ctx, tenantID)
 	if err := r.rm.List(tenantCtx, meshList); err != nil && !errors.Is(err, context.Canceled) {
@@ -429,7 +429,7 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 	}
 }
 
-func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
+func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend, addressPort string) {
 	if _, ok := insight.Services[svcName]; !ok {
 		insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
 			IssuedBackends: map[string]uint32{},

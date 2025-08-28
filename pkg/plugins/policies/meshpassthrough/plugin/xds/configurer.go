@@ -18,7 +18,7 @@ type Configurer struct {
 	Conf              api.Conf
 }
 
-func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
+func (c Configurer) Configure(ipv4, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_meta.Protocol{}
 	filterChainMatches, err := GetOrderedMatchers(c.Conf)
 	if err != nil {

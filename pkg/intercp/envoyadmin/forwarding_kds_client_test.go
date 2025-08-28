@@ -64,7 +64,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createZoneInsightConnectedToGlobal := func(insight string, globalInstanceID string, offline bool) {
+	createZoneInsightConnectedToGlobal := func(insight, globalInstanceID string, offline bool) {
 		zoneInsight := system.NewZoneInsightResource()
 		zoneInsight.Spec.EnvoyAdminStreams = &system_proto.EnvoyAdminStreams{
 			ConfigDumpGlobalInstanceId: globalInstanceID,

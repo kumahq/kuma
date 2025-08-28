@@ -40,7 +40,7 @@ func CreateDownstreamTlsContext(
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
-func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string, verifyIdentities []string, unifiedResourceNaming bool) (*envoy_tls.UpstreamTlsContext, error) {
+func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService, sni string, verifyIdentities []string, unifiedResourceNaming bool) (*envoy_tls.UpstreamTlsContext, error) {
 	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := upstreamMesh.MeshName()
 	for _, meshName := range meshNames {
@@ -236,7 +236,7 @@ func MeshSpiffeIDPrefixMatcher(mesh string) *envoy_tls.SubjectAltNameMatcher {
 	}
 }
 
-func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.StringMatcher {
+func ServiceSpiffeIDMatcher(mesh, service string) *envoy_type_matcher.StringMatcher {
 	return &envoy_type_matcher.StringMatcher{
 		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 			Exact: xds_tls.ServiceSpiffeID(mesh, service),
@@ -280,7 +280,7 @@ func StaticDownstreamTlsContextWithValue(keyPair *tls.KeyPair) *envoy_tls.Downst
 	return staticDownstreamTlsContext(cert, key)
 }
 
-func staticDownstreamTlsContext(cert *envoy_core.DataSource, key *envoy_core.DataSource) *envoy_tls.DownstreamTlsContext {
+func staticDownstreamTlsContext(cert, key *envoy_core.DataSource) *envoy_tls.DownstreamTlsContext {
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext: &envoy_tls.CommonTlsContext{
 			TlsCertificates: []*envoy_tls.TlsCertificate{

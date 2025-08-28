@@ -49,7 +49,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	networking := dataplane.Spec.GetNetworking()
 
-	processRef := func(kind string, name string, port *uint32, labels map[string]string) {
+	processRef := func(kind, name string, port *uint32, labels map[string]string) {
 		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), labels)
 		if len(ids) == 0 {
 			ids = []kri.Identifier{

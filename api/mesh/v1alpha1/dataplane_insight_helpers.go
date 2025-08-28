@@ -65,7 +65,7 @@ func (x *DataplaneInsight) GetSubscription(id string) generic.Subscription {
 	return generic.GetSubscription[*DiscoverySubscription](x, id)
 }
 
-func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string, managedExternally bool) error {
+func (x *DataplaneInsight) UpdateCert(generation, expiration time.Time, issuedBackend string, supportedBackends []string, managedExternally bool) error {
 	if x.MTLS == nil {
 		x.MTLS = &DataplaneInsight_MTLS{}
 	}

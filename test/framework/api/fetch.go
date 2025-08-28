@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
-func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, mesh string, name string) {
+func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, mesh, name string) {
 	desc := out.Descriptor()
 	path := ""
 	switch desc.Scope {

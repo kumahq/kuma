@@ -31,7 +31,7 @@ const (
 // that is meant to make source code more readable.
 var ResourceNameExtensionsUnsupported = ResourceNameExtensions(nil)
 
-func WithMesh(mesh string, name string) ResourceKey {
+func WithMesh(mesh, name string) ResourceKey {
 	return ResourceKey{Mesh: mesh, Name: name}
 }
 
@@ -137,7 +137,7 @@ func Deprecations(resource Resource) []string {
 }
 
 type OverviewResource interface {
-	SetOverviewSpec(resource Resource, insight Resource) error
+	SetOverviewSpec(resource, insight Resource) error
 }
 
 type ResourceWithInsights interface {
@@ -292,7 +292,7 @@ func (d ResourceTypeDescriptor) IsInsight() bool {
 	return strings.HasSuffix(string(d.Name), "Insight")
 }
 
-func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool {
+func (d ResourceTypeDescriptor) IsReadOnly(isGlobal, isFederated bool) bool {
 	if d.ReadOnly {
 		return true
 	}

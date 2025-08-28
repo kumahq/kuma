@@ -134,7 +134,7 @@ func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	return s
 }
 
-func (s *ResourceSet) Remove(typ string, name string) {
+func (s *ResourceSet) Remove(typ, name string) {
 	if s.typeToNamesIndex[typ] != nil {
 		delete(s.typeToNamesIndex[typ], name)
 	}

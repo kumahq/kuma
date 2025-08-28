@@ -183,7 +183,7 @@ func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	return b
 }
 
-func (b *Builder) WithExtension(key interface{}, value interface{}) *Builder {
+func (b *Builder) WithExtension(key, value interface{}) *Builder {
 	b.ext = context.WithValue(b.ext, key, value)
 	return b
 }

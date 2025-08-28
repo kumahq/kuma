@@ -49,7 +49,7 @@ func RequireTLS() VirtualHostBuilderOpt {
 }
 
 // SetResponseHeader unconditionally sets the named response header to the given value.
-func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
+func SetResponseHeader(name, value string) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
 			hsts := &envoy_config_core_v3.HeaderValueOption{
@@ -88,7 +88,7 @@ func DirectResponseRoute(status uint32, responseMsg string) VirtualHostBuilderOp
 		})
 }
 
-func Route(matchPath string, newPath string, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
+func Route(matchPath, newPath, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&VirtualHostRouteConfigurer{
 			MatchPath:    matchPath,

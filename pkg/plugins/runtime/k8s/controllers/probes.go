@@ -81,7 +81,7 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 	return dpProbes, nil
 }
 
-func probeFor(podProbe *kube_core.Probe, port uint32, probeProxyPort uint32) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
+func probeFor(podProbe *kube_core.Probe, port, probeProxyPort uint32) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
 	// if is using application probe proxy, we override it back to the virtual probes port to pass the validation
 	kumaProbe := probes.KumaProbe(*podProbe)
 	if probeProxyPort > 0 && kumaProbe.Port() == probeProxyPort {

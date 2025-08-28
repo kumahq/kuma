@@ -242,7 +242,7 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 
 // Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
 // We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
-func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
+func SplitLabelsAndAnnotations(coreLabels, currentAnnotations map[string]string) (map[string]string, map[string]string) {
 	labels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
 	if annotations == nil {

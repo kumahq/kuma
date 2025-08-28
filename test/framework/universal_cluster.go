@@ -303,7 +303,7 @@ func (c *UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) e
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool, dpVersion string) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool, dpVersion string) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent, dpVersion)

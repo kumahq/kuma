@@ -257,7 +257,7 @@ func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool
 	return a.GetBooleanWithDefault(def, true, keys...)
 }
 
-func (a Annotations) GetBooleanWithDefault(def bool, supportEnabled bool, keys ...string) (bool, bool, error) {
+func (a Annotations) GetBooleanWithDefault(def, supportEnabled bool, keys ...string) (bool, bool, error) {
 	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		switch value {
 		case AnnotationTrue, AnnotationYes:
@@ -287,7 +287,7 @@ func (a Annotations) GetUint32(keys ...string) (uint32, bool, error) {
 }
 
 func (a Annotations) GetUint32WithDefault(def uint32, keys ...string) (uint32, bool, error) {
-	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		u, err := strconv.ParseUint(value, 10, 32)
 		if err != nil {
 			return 0, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
@@ -305,14 +305,14 @@ func (a Annotations) GetString(keys ...string) (string, bool) {
 }
 
 func (a Annotations) GetStringWithDefault(def string, keys ...string) (string, bool) {
-	v, exists, _ := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+	v, exists, _ := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		return value, nil
 	}, keys...)
 	return v.(string), exists
 }
 
 func (a Annotations) GetDurationWithDefault(def time.Duration, keys ...string) (time.Duration, bool, error) {
-	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		return time.ParseDuration(value)
 	}, keys...)
 	if err != nil {
@@ -328,7 +328,7 @@ func (a Annotations) GetList(keys ...string) ([]string, bool) {
 func (a Annotations) GetListWithDefault(def []string, keys ...string) ([]string, bool) {
 	defCopy := []string{}
 	defCopy = append(defCopy, def...)
-	v, exists, _ := a.getWithDefault(defCopy, func(key string, value string) (interface{}, error) {
+	v, exists, _ := a.getWithDefault(defCopy, func(key, value string) (interface{}, error) {
 		r := strings.Split(value, ",")
 		var res []string
 		for _, v := range r {
@@ -351,7 +351,7 @@ func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (m
 	for k, v := range def {
 		defCopy[k] = v
 	}
-	v, exists, err := a.getWithDefault(defCopy, func(key string, value string) (interface{}, error) {
+	v, exists, err := a.getWithDefault(defCopy, func(key, value string) (interface{}, error) {
 		result := map[string]string{}
 
 		pairs := strings.Split(value, ";")

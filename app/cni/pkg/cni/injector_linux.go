@@ -16,7 +16,7 @@ import (
 )
 
 // Deprecated
-func convertToUint16(field string, value string) (uint16, error) {
+func convertToUint16(field, value string) (uint16, error) {
 	converted, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
 		return 0, errors.Wrapf(err, "could not convert field %v", field)

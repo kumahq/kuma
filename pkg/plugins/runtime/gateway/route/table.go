@@ -55,7 +55,7 @@ type KeyValue struct {
 }
 
 // Pair combines key and value into a KeyValue.
-func Pair(key string, value string) KeyValue {
+func Pair(key, value string) KeyValue {
 	return KeyValue{
 		Key:   key,
 		Value: value,

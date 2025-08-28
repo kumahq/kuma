@@ -18,7 +18,7 @@ func (u User) Authenticated() User {
 	return u
 }
 
-func (u User) IsPartOf(usernames map[string]bool, groups map[string]bool) bool {
+func (u User) IsPartOf(usernames, groups map[string]bool) bool {
 	if _, ok := usernames[u.Name]; ok {
 		return true
 	}

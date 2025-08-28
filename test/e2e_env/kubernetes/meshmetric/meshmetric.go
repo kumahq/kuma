@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func BasicMeshMetricForMesh(policyName string, mesh string) InstallFunc {
+func BasicMeshMetricForMesh(policyName, mesh string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -46,7 +46,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func BasicMeshMetricWithProfileForMesh(policyName string, mesh string) InstallFunc {
+func BasicMeshMetricWithProfileForMesh(policyName, mesh string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -82,7 +82,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricMultiplePrometheusBackends(policyName string, mesh string, firstPrometheus string, secondPrometheus string) InstallFunc {
+func MeshMetricMultiplePrometheusBackends(policyName, mesh, firstPrometheus, secondPrometheus string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -118,7 +118,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricWithSpecificPrometheusClientId(policyName string, mesh string, clientId string) InstallFunc {
+func MeshMetricWithSpecificPrometheusClientId(policyName, mesh, clientId string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -147,7 +147,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricWithSpecificPrometheusBackendForMeshService(mesh string, clientId string, serviceName string) InstallFunc {
+func MeshMetricWithSpecificPrometheusBackendForMeshService(mesh, clientId, serviceName string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -294,7 +294,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricWithMultipleOpenTelemetryBackends(mesh, primaryOpenTelemetryEndpoint string, secondaryOpenTelemetryEndpoint string) InstallFunc {
+func MeshMetricWithMultipleOpenTelemetryBackends(mesh, primaryOpenTelemetryEndpoint, secondaryOpenTelemetryEndpoint string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric

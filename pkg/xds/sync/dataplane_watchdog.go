@@ -336,7 +336,7 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context) (SyncResult, error) 
 	return result, nil
 }
 
-func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string, advertisedAddress string) (core_xds.ServerSideMTLSCerts, error) {
+func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address, advertisedAddress string) (core_xds.ServerSideMTLSCerts, error) {
 	if d.envoyAdminMTLS == nil || d.dpAddress != address {
 		ca, err := envoy_admin_tls.LoadCA(ctx, d.ResManager)
 		if err != nil {

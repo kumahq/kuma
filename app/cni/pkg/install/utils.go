@@ -33,7 +33,7 @@ func CreateNewLogger(name string, logLevel kuma_log.LogLevel) logr.Logger {
 	return core.NewLoggerTo(os.Stderr, logLevel).WithName(name)
 }
 
-func SetLogLevel(logger *logr.Logger, level string, name string) error {
+func SetLogLevel(logger *logr.Logger, level, name string) error {
 	logLevel, err := kuma_log.ParseLogLevel(level)
 	if err != nil {
 		return err

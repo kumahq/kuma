@@ -16,7 +16,7 @@ type perProxyTypeAuthenticator struct {
 
 var _ Authenticator = &perProxyTypeAuthenticator{}
 
-func NewPerProxyTypeAuthenticator(dpProxyAuthenticator Authenticator, zoneProxyAuthenticator Authenticator) Authenticator {
+func NewPerProxyTypeAuthenticator(dpProxyAuthenticator, zoneProxyAuthenticator Authenticator) Authenticator {
 	return &perProxyTypeAuthenticator{
 		dpProxyAuthenticator:   dpProxyAuthenticator,
 		zoneProxyAuthenticator: zoneProxyAuthenticator,

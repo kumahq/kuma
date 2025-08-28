@@ -16,15 +16,15 @@ func eval[T boolOrFunc](p T) bool {
 	}
 }
 
-func GetNameOrFallback[T boolOrFunc](pred T, name string, fallback string) string {
+func GetNameOrFallback[T boolOrFunc](pred T, name, fallback string) string {
 	if eval(pred) {
 		return name
 	}
 	return fallback
 }
 
-func GetNameOrFallbackFunc[T boolOrFunc](pred T) func(value string, fallback string) string {
-	return func(name string, fallback string) string {
+func GetNameOrFallbackFunc[T boolOrFunc](pred T) func(value, fallback string) string {
+	return func(name, fallback string) string {
 		return GetNameOrFallback(pred, name, fallback)
 	}
 }
