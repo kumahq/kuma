@@ -134,6 +134,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 	}
 
+	meshResource := core_mesh.NewMeshResource()
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
@@ -171,7 +172,11 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
-		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap)
+		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
+		if err != nil {
+			return nil, kumaDpBootstrap, err
+		}
+		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap, meshResource)
 		if err != nil {
 			return nil, kumaDpBootstrap, err
 		}
@@ -184,7 +189,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params, b.proxyConfig, b.enableReloadableTokens)
+	config, err := genConfig(params, b.proxyConfig, b.enableReloadableTokens, meshResource)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}
@@ -215,15 +220,11 @@ func ISSANMismatchErr(err error) bool {
 }
 
 func (b *bootstrapGenerator) getMetricsConfig(
-	ctx context.Context,
+	_ context.Context,
 	dataplane *core_mesh.DataplaneResource,
 	kumaDpBootstrap *KumaDpBootstrap,
+	meshResource *core_mesh.MeshResource,
 ) error {
-	meshResource := core_mesh.NewMeshResource()
-	err := b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
-	if err != nil {
-		return err
-	}
 	config, err := dataplane.GetPrometheusConfig(meshResource)
 	if err != nil {
 		return err

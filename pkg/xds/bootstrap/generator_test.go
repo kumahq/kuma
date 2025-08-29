@@ -81,6 +81,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		// when
 		err := resManager.Create(context.Background(), &core_mesh.MeshResource{
 			Spec: &mesh_proto.Mesh{
+				MeshServices: &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive},
 				Metrics: &mesh_proto.Metrics{
 					EnabledBackend: "prometheus-1",
 					Backends: []*mesh_proto.MetricsBackend{

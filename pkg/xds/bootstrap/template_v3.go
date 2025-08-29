@@ -25,7 +25,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/xds"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -50,12 +53,25 @@ const (
 )
 
 var (
-	adsClusterName           = RegisterBootstrapCluster(names.GetAdsClusterName())
-	accessLogSinkClusterName = RegisterBootstrapCluster(names.GetAccessLogSinkClusterName())
+	adsClusterName                 = RegisterBootstrapCluster(names.GetAdsClusterName())
+	accessLogSinkClusterName       = RegisterBootstrapCluster(names.GetAccessLogSinkClusterName())
+	systemAdsClusterName           = RegisterBootstrapCluster(system_names.MustBeSystemName("ads"))
+	systemAccessLogSinkClusterName = RegisterBootstrapCluster(system_names.MustBeSystemName("access_log_sink"))
 )
 
-func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool) (*envoy_bootstrap_v3.Bootstrap, error) {
-	staticClusters, err := buildStaticClusters(parameters, enableReloadableTokens)
+func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
+	getNameOrDefault := system_names.GetNameOrDefault(meshResource != nil &&
+		parameters.Features != nil &&
+		parameters.Features.HasFeature(xds_types.FeatureUnifiedResourceNaming) &&
+		meshResource.Spec.GetMeshServices().GetMode() == mesh_proto.Mesh_MeshServices_Exclusive,
+	)
+
+	staticClusters, err := buildStaticClusters(
+		parameters,
+		enableReloadableTokens,
+		getNameOrDefault(systemAdsClusterName, adsClusterName),
+		getNameOrDefault(systemAccessLogSinkClusterName, accessLogSinkClusterName),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +191,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{
-					buildGrpcService(parameters, enableReloadableTokens),
+					buildGrpcService(parameters, enableReloadableTokens, getNameOrDefault(systemAdsClusterName, adsClusterName)),
 				},
 			},
 		},
@@ -203,7 +219,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {
-		if r.Name == adsClusterName {
+		if r.Name == getNameOrDefault(systemAdsClusterName, adsClusterName) {
 			transport := &envoy_tls.UpstreamTlsContext{
 				Sni: parameters.XdsHost,
 				CommonTlsContext: &envoy_tls.CommonTlsContext{
@@ -235,7 +251,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{
-				buildGrpcService(parameters, enableReloadableTokens),
+				buildGrpcService(parameters, enableReloadableTokens, getNameOrDefault(systemAdsClusterName, adsClusterName)),
 			},
 		}
 	}
@@ -420,7 +436,7 @@ func clusterTypeFromHost(host string) envoy_cluster_v3.Cluster_DiscoveryType {
 	return envoy_cluster_v3.Cluster_STRICT_DNS
 }
 
-func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3.GrpcService {
+func buildGrpcService(params configParameters, useTokenPath bool, clusterName string) *envoy_core_v3.GrpcService {
 	if useTokenPath && params.DataplaneTokenPath != "" {
 		googleGrpcService := &envoy_core_v3.GrpcService{
 			TargetSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_{
@@ -465,7 +481,7 @@ func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3
 		envoyGrpcSerivce := &envoy_core_v3.GrpcService{
 			TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
 				EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-					ClusterName: adsClusterName,
+					ClusterName: clusterName,
 				},
 			},
 		}
@@ -473,7 +489,7 @@ func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3
 	}
 }
 
-func buildStaticClusters(parameters configParameters, enableReloadableTokens bool) ([]*envoy_cluster_v3.Cluster, error) {
+func buildStaticClusters(parameters configParameters, enableReloadableTokens bool, adsName string, logSinkName string) ([]*envoy_cluster_v3.Cluster, error) {
 	proxyId, err := core_xds.ParseProxyIdFromString(parameters.Id)
 	if err != nil {
 		return nil, err
@@ -481,7 +497,7 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 
 	accessLogSink := &envoy_cluster_v3.Cluster{
 		// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
-		Name:           accessLogSinkClusterName,
+		Name:           logSinkName,
 		ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),
 		LbPolicy:       envoy_cluster_v3.Cluster_ROUND_ROBIN,
 		UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
@@ -493,7 +509,7 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 		},
 		ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-			ClusterName: accessLogSinkClusterName,
+			ClusterName: logSinkName,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 				{
 					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
@@ -519,7 +535,7 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 
 	if parameters.DataplaneTokenPath == "" || !enableReloadableTokens {
 		adsCluster := &envoy_cluster_v3.Cluster{
-			Name:           adsClusterName,
+			Name:           adsName,
 			ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),
 			LbPolicy:       envoy_cluster_v3.Cluster_ROUND_ROBIN,
 			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
@@ -532,7 +548,7 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 			ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
 			DnsLookupFamily:      dnsLookupFamilyFromXdsHost(parameters.XdsHost, net.LookupIP),
 			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-				ClusterName: adsClusterName,
+				ClusterName: adsName,
 				Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 					{
 						LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
