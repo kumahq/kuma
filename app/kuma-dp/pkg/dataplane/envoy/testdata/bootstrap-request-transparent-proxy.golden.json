@@ -21,6 +21,7 @@
  "dynamicMetadata": null,
  "dnsPort": 15054,
  "readinessPort": 9902,
+ "appProbeProxyDisabled": true,
  "operatingSystem": "linux",
  "features": [
   "feature-tcp-accesslog-via-named-pipe",
