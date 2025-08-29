@@ -45,6 +45,10 @@ func (i *IdentityProviderManager) GetWorkloadIdentity(ctx context.Context, proxy
 
 	if !identity.Status.IsInitialized() {
 		i.logger.V(1).Info("identity hasn't been initialized yet", "identity", identity.Meta.GetName())
+		i.eventWriter.Send(events.WorkloadIdentityChangedEvent{
+			ResourceKey: model.MetaToResourceKey(proxy.Dataplane.GetMeta()),
+			Operation:   events.Delete,
+		})
 		return nil, nil
 	}
 	i.logger.V(1).Info("providing identity", "identity", identity.Meta.GetName(), "dataplane", proxy.Dataplane.Meta.GetName())
