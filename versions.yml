@@ -61,7 +61,11 @@
   endOfLifeDate: "2026-06-10"
   branch: release-2.11
 - edition: kuma
-  version: preview
+  version: 2.12.0
   release: 2.12.x
+  branch: release-2.12
+- edition: kuma
+  version: preview
+  release: 2.13.x
   branch: master
   label: dev
