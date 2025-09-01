@@ -115,7 +115,7 @@ spec:
 			Setup(multizone.KubeZone2),
 		).To(Succeed())
 
-		Consistently(multizone.KubeZone2.GetKumaCPLogs(), "5s", "1s").
+		Consistently(multizone.KubeZone2.GetKumaCPLogs, "5s", "1s").
 			ShouldNot(ContainElement(ContainSubstring("loading container patches failed")))
 
 		assertUnifiedNamingFlag(multizone.KubeZone2, true, "test-server")
@@ -129,7 +129,7 @@ spec:
 			Setup(multizone.KubeZone2),
 		).To(Succeed())
 
-		Consistently(multizone.KubeZone2.GetKumaCPLogs(), "5s", "1s").
+		Consistently(multizone.KubeZone2.GetKumaCPLogs, "5s", "1s").
 			ShouldNot(ContainElement(ContainSubstring("loading container patches failed")))
 
 		By("verifying unified naming is enabled on both apps in Kube Zone 2")
@@ -272,7 +272,6 @@ func appsKube(c *K8sCluster, unifiedNaming bool, apps ...string) InstallFunc {
 				testserver.WithPodAnnotations(annotations),
 			))
 		}
-
 	}
 
 	return Parallel(install...)
