@@ -13,11 +13,14 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
 	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -66,11 +69,16 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 				continue
 			}
 			for _, mid := range mids.Items {
+				mesh := mesh.NewMeshResource()
+				if err := i.roResManager.Get(ctx, mesh, store.GetByKey(mid.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
+					i.logger.Error(err, "failed to list Meshes")
+					continue
+				}
 				conditions := []common_api.Condition{}
 				message := "Successfully initialized"
 				generationConditionStatus := kube_meta.ConditionTrue
 				reason := "Ready"
-				initConditions := i.initialize(ctx, mid)
+				initConditions := i.initialize(ctx, mid, mesh)
 				conditions = append(conditions, initConditions...)
 				for _, condition := range initConditions {
 					if condition.Status == kube_meta.ConditionFalse {
@@ -109,8 +117,17 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshidentity_api.MeshIdentityResource) []common_api.Condition {
+func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshidentity_api.MeshIdentityResource, mesh *mesh.MeshResource) []common_api.Condition {
 	conditions := []common_api.Condition{}
+	if mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.DependenciesReadyType,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  "MeshServicesDisabled",
+			Message: "MeshIdentity requires MeshServices to be enabled on the mesh. To enable, set `spec.meshServices.mode: Exclusive` on the mesh.",
+		})
+		return conditions
+	}
 	provider, found := i.providers[string(mid.Spec.Provider.Type)]
 	if !found {
 		conditions = append(conditions, common_api.Condition{

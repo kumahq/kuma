@@ -102,6 +102,7 @@ const (
 	ReadyConditionType     string = "Ready"
 	ProviderConditionType  string = "Provider"
 	MeshTrustConditionType string = "MeshTrustCreated"
+	DependenciesReadyType  string = "DependenciesReady"
 )
 
 type MeshIdentityStatus struct {
