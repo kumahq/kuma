@@ -612,12 +612,16 @@ func WaitService(namespace, service string) InstallFunc {
 
 func WaitNumPods(namespace string, num int, app string) InstallFunc {
 	return func(c Cluster) error {
-		ck8s := c.(*K8sCluster)
-		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
+		return k8s.WaitUntilNumPodsCreatedE(
+			c.GetTesting(),
+			c.GetKubectlOptions(namespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
-			}, num, ck8s.defaultRetries, ck8s.defaultTimeout)
-		return nil
+			},
+			num,
+			c.(*K8sCluster).defaultRetries,
+			c.(*K8sCluster).defaultTimeout,
+		)
 	}
 }
 
