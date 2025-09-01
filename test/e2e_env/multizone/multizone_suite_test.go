@@ -29,6 +29,7 @@ import (
 	multizone_sync "github.com/kumahq/kuma/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/unifiednaming"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/virtualoutbound"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
@@ -88,4 +89,5 @@ var (
 	_ = Describe("MeshServiceReachableBackends", reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", meshidentity.Identity, Ordered)
+	_ = Describe("Unified Resource Naming", unifiednaming.UnifiedNaming, Ordered)
 )
