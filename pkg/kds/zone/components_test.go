@@ -214,7 +214,7 @@ var _ = Describe("Zone Sync", func() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				_ = newPolicySyncClient(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
+				_ = newPolicySyncClient(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive("global")
 			}()
 			closeFunc = func() {
 				defer GinkgoRecover()

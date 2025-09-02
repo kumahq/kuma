@@ -81,7 +81,7 @@ func Setup(rt core_runtime.Runtime) error {
 			rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
-			err := syncClient.Receive()
+			err := syncClient.Receive(rt.Config().Mode)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
 				select {

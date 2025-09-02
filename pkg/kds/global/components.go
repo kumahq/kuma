@@ -124,7 +124,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
-			err := sink.Receive()
+			err := sink.Receive(rt.Config().Mode)
 			if err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
 				err = errors.Wrap(err, "KDSSyncClient finished with an error")
 				select {

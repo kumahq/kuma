@@ -212,6 +212,21 @@ k3d/deploy/kuma: build/kumactl k3d/load
 		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get mesh default ; \
 	do echo "Waiting for default mesh to be present" && sleep 1; done
 
+k3d/deploy/kuma-zone:
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \
+		--set "controlPlane.mode=zone" \
+		--set "controlPlane.zone=zone" \
+		--set "ingress.enabled=true" \
+		--set "controlPlane.tls.kdsZoneClient.skipVerify=true" \
+		--set "controlPlane.kdsGlobalAddress=grpcs://172.28.1.0:5685" \
+		--set "controlPlane.logLevel=debug" \
+		| KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+	until \
+	 $(KUBECTL) get mesh default ; \
+	do echo "Waiting for default mesh to be present" && sleep 1; done
+
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load
 ifndef K3D_DEPLOY_HELM_DONT_DELETE_NS
