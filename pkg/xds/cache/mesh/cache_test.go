@@ -122,6 +122,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			"mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
 		)
 		meshCache, err = mesh.NewCache(
 			expiration,

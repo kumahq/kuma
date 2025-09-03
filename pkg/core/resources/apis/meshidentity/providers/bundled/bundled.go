@@ -43,7 +43,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 const (
@@ -269,13 +268,12 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	b.logger.V(1).Info("identity created", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeId", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
 
 	return &xds.WorkloadIdentity{
-		KRI:                        identifier,
-		ManagementMode:             xds.KumaManagementMode,
-		ExpirationTime:             pointer.To(template.NotAfter),
-		GenerationTime:             pointer.To(now),
-		IdentitySourceConfigurer:   sourceConfigurer(identifier.String()),
-		ValidationSourceConfigurer: sourceConfigurer(system_names.SystemResourceNameCABundle),
-		AdditionalResources:        resources,
+		KRI:                      identifier,
+		ManagementMode:           xds.KumaManagementMode,
+		ExpirationTime:           pointer.To(template.NotAfter),
+		GenerationTime:           pointer.To(now),
+		IdentitySourceConfigurer: sourceConfigurer(identifier.String()),
+		AdditionalResources:      resources,
 	}, nil
 }
 

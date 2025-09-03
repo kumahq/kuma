@@ -1,6 +1,8 @@
 package meshroute
 
 import (
+	"sort"
+
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
@@ -8,12 +10,13 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
 	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
@@ -25,6 +28,7 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 func GenerateClusters(
@@ -123,20 +127,22 @@ func GenerateClusters(
 						}
 						sni := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
-						edsClusterBuilder.ConfigureIf(proxy.WorkloadIdentity == nil, envoy_clusters.ClientSideMultiIdentitiesMTLS(
-							proxy.SecretsTracker,
-							unifiedNaming,
-							meshCtx.Resource,
-							tlsReady,
-							sni,
-							Identities(realResourceRef, meshCtx, false),
-						))
 						if proxy.WorkloadIdentity != nil {
 							upstreamCtx, err := UpstreamTLSContext(realResourceRef, meshCtx, proxy, sni)
 							if err != nil {
 								return nil, err
 							}
 							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+						} else {
+							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
+								proxy.SecretsTracker,
+								unifiedNaming,
+								meshCtx.Resource,
+								tlsReady,
+								sni,
+								Identities(realResourceRef, meshCtx, false),
+								len(meshCtx.TrustsByTrustDomain) > 0,
+							))
 						}
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags))
@@ -168,11 +174,24 @@ func UpstreamTLSContext(realResourceRef *resolve.RealResourceBackendRef, meshCtx
 		conf := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.ExactMatcher(san))))
 		sanMatchers = append(sanMatchers, conf)
 	}
-	validationSds := bldrs_tls.ValidationContextSdsSecretConfig(
-		bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
-			proxy.WorkloadIdentity.ValidationSourceConfigurer(),
-		),
-	)
+	var validationSds bldrs_common.Configurer[envoy_tls.CommonTlsContext_CombinedCertificateValidationContext]
+	if proxy.WorkloadIdentity.ValidationSourceConfigurer != nil {
+		validationSds = bldrs_tls.ValidationContextSdsSecretConfig(
+			bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
+				proxy.WorkloadIdentity.ValidationSourceConfigurer(),
+			),
+		)
+	} else {
+		validationSds = bldrs_tls.ValidationContextSdsSecretConfig(
+			bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
+				bldrs_tls.SdsSecretConfigSource(
+					system_names.SystemResourceNameCABundle,
+					bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+				),
+			),
+		)
+	}
+
 	defaultValidation := bldrs_tls.DefaultValidationContext(
 		bldrs_tls.NewDefaultValidationContext().Configure(
 			bldrs_tls.SANs(sanMatchers),
@@ -230,7 +249,7 @@ func Identities(
 	serviceTagTransformer := func(serviceTag string) string {
 		return serviceTag
 	}
-	// we don't use function which transform service tag to the spiffe id on cluster configuratio
+	// we don't use function which transform service tag to the spiffe id on cluster configuration
 	// instead we want to set it here. It's not required for SpiffeID type, only ServiceTag
 	if includeSpiffeID {
 		serviceTagTransformer = func(serviceTag string) string {
@@ -280,6 +299,9 @@ func Identities(
 		}
 		result = util_maps.SortedKeys(identities)
 	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
 	return result
 }
 

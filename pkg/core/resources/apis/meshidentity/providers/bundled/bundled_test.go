@@ -33,7 +33,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 var _ = Describe("Bundled Providers Test", func() {
@@ -164,13 +163,6 @@ var _ = Describe("Bundled Providers Test", func() {
 				),
 			).Build()
 			Expect(err).ToNot(HaveOccurred())
-			expectedValidation, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
-				bldrs_tls.SdsSecretConfigSource(
-					system_names.SystemResourceNameCABundle,
-					bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-				),
-			).Build()
-			Expect(err).ToNot(HaveOccurred())
 
 			// create MeshIdentity
 			Expect(resourceManager.Create(context.TODO(), meshIdentity, core_store.CreateBy(model.MetaToResourceKey(meshIdentity.Meta)))).To(Succeed())
@@ -200,10 +192,6 @@ var _ = Describe("Bundled Providers Test", func() {
 			identitySource, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(identity.IdentitySourceConfigurer()).Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identitySource).To(Equal(expectedIdentity))
-
-			validatorSource, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(identity.ValidationSourceConfigurer()).Build()
-			Expect(err).ToNot(HaveOccurred())
-			Expect(validatorSource).To(Equal(expectedValidation))
 
 			// secrets are also created
 			Expect(identity.AdditionalResources.Resources(envoy_resource.SecretType)).To(HaveKey(kri.From(meshIdentity).String()))

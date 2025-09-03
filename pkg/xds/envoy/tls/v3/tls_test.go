@@ -66,6 +66,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 					&caRequest{mesh: mesh.GetMeta().GetName()},
 					&identityRequest{mesh: mesh.GetMeta().GetName()},
 					false,
+					false,
 				)
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -114,7 +115,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, false)
+				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, false, false)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

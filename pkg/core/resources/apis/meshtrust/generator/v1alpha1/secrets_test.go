@@ -8,14 +8,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	generator "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/generator/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -24,7 +22,7 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 	type testCase struct {
 		caseName         string
 		workloadIdentity *core_xds.WorkloadIdentity
-		trustDomains     map[string][]*meshtrust_api.MeshTrust
+		trustDomains     map[string][]string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -55,42 +53,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
 				ManagementMode: core_xds.KumaManagementMode,
 			},
-			trustDomains: map[string][]*meshtrust_api.MeshTrust{
-				"domain-1": {
-					{
-						TrustDomain: "domain-1",
-						Origin: &meshtrust_api.Origin{
-							KRI: pointer.To(kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Name: "domain-1"}.String()),
-						},
-						CABundles: []meshtrust_api.CABundle{
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "123",
-								},
-							},
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "456",
-								},
-							},
-						},
-					},
-				},
-				"domain-2": {
-					{
-						TrustDomain: "domain-2",
-						CABundles: []meshtrust_api.CABundle{
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "789",
-								},
-							},
-						},
-					},
-				},
+			trustDomains: map[string][]string{
+				"domain-1": {"123", "456"},
+				"domain-2": {"789"},
 			},
 		}),
 		Entry("with-multiple-trust-domains-and-default-name", testCase{
@@ -99,42 +64,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
 				ManagementMode: core_xds.KumaManagementMode,
 			},
-			trustDomains: map[string][]*meshtrust_api.MeshTrust{
-				"domain-1": {
-					{
-						TrustDomain: "domain-1",
-						Origin: &meshtrust_api.Origin{
-							KRI: pointer.To(kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Name: "domain-1"}.String()),
-						},
-						CABundles: []meshtrust_api.CABundle{
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "123",
-								},
-							},
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "456",
-								},
-							},
-						},
-					},
-				},
-				"domain-2": {
-					{
-						TrustDomain: "domain-2",
-						CABundles: []meshtrust_api.CABundle{
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "789",
-								},
-							},
-						},
-					},
-				},
+			trustDomains: map[string][]string{
+				"domain-1": {"123", "456"},
+				"domain-2": {"789"},
 			},
 		}),
 		Entry("no workload identity and trusts", testCase{
@@ -146,42 +78,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
 				ManagementMode: core_xds.ExternalManagementMode,
 			},
-			trustDomains: map[string][]*meshtrust_api.MeshTrust{
-				"domain-1": {
-					{
-						TrustDomain: "domain-1",
-						Origin: &meshtrust_api.Origin{
-							KRI: pointer.To(kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Name: "domain-1"}.String()),
-						},
-						CABundles: []meshtrust_api.CABundle{
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "123",
-								},
-							},
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "456",
-								},
-							},
-						},
-					},
-				},
-				"domain-2": {
-					{
-						TrustDomain: "domain-2",
-						CABundles: []meshtrust_api.CABundle{
-							{
-								Type: meshtrust_api.PemCABundleType,
-								PEM: &meshtrust_api.PEM{
-									Value: "789",
-								},
-							},
-						},
-					},
-				},
+			trustDomains: map[string][]string{
+				"domain-1": {"123", "456"},
+				"domain-2": {"789"},
 			},
 		}),
 	)

@@ -15,12 +15,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
 	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -38,6 +39,7 @@ import (
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 var logger = core.Log.WithName("MeshTLS")
@@ -377,6 +379,16 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		}
 	}
 
+	var validationCtx *bldrs_common.Builder[envoy_tls.SdsSecretConfig]
+	if proxy.WorkloadIdentity.ValidationSourceConfigurer != nil {
+		validationCtx = bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(proxy.WorkloadIdentity.ValidationSourceConfigurer())
+	} else {
+		validationCtx = bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(bldrs_tls.SdsSecretConfigSource(
+			system_names.SystemResourceNameCABundle,
+			bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+		))
+	}
+
 	return bldrs_tls.NewDownstreamTLSContext().
 		Configure(
 			bldrs_tls.DownstreamCommonTlsContext(
@@ -396,10 +408,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 							bldrs_tls.DefaultValidationContext(bldrs_tls.NewDefaultValidationContext().Configure(
 								bldrs_tls.SANs(sanMatchers),
 							)),
-						).Configure(bldrs_tls.ValidationContextSdsSecretConfig(
-							bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
-								proxy.WorkloadIdentity.ValidationSourceConfigurer())),
-						))).
+						).Configure(bldrs_tls.ValidationContextSdsSecretConfig(validationCtx)))).
 					Configure(bldrs_tls.TlsCertificateSdsSecretConfigs([]*bldrs_common.Builder[envoy_tls.SdsSecretConfig]{
 						bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 							proxy.WorkloadIdentity.IdentitySourceConfigurer()),
