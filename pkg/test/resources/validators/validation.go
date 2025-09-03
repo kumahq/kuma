@@ -19,6 +19,7 @@ type ResourceValidationCase struct {
 	Resource   string
 	Name       string
 	Violations []validators.Violation
+	Labels     map[string]string
 }
 
 // DescribeValidCases creates a Ginkgo table test for the given entries,
@@ -44,9 +45,10 @@ func DescribeValidCases[T core_model.Resource](generator func() T, cases ...Tabl
 
 			// when
 			err := core_model.FromYAML([]byte(given.Resource), resource.GetSpec())
-			if given.Name != "" {
+			if given.Name != "" || len(given.Labels) > 0 {
 				resource.SetMeta(&test_model.ResourceMeta{
-					Name: given.Name,
+					Name:   given.Name,
+					Labels: given.Labels,
 				})
 			}
 
@@ -77,9 +79,10 @@ func DescribeErrorCases[T core_model.Resource](generator func() T, cases ...Tabl
 				core_model.FromYAML([]byte(given.Resource), resource.GetSpec()),
 			).ToNot(HaveOccurred())
 
-			if given.Name != "" {
+			if given.Name != "" || len(given.Labels) > 0 {
 				resource.SetMeta(&test_model.ResourceMeta{
-					Name: given.Name,
+					Name:   given.Name,
+					Labels: given.Labels,
 				})
 			}
 
@@ -98,23 +101,27 @@ func DescribeErrorCases[T core_model.Resource](generator func() T, cases ...Tabl
 }
 
 // ErrorCase is a helper that generates a table entry for DescribeErrorCases.
-func ErrorCase(description string, err validators.Violation, yaml string) TableEntry {
+func ErrorCase(description string, err validators.Violation, yaml string, labels map[string]string) TableEntry {
 	return Entry(
 		description,
 		ResourceValidationCase{
 			Violations: []validators.Violation{err},
 			Resource:   yaml,
+			Labels:     labels,
 		},
 	)
 }
 
 // FErrorCase is a helper that generates a focused table entry for DescribeErrorCases.
-func FErrorCase(description string, err validators.Violation, yaml string) TableEntry {
+func FErrorCase(description string, err validators.Violation, yaml string, labels map[string]string) TableEntry {
+	// you need to manually set this to FEntry because `make check` will fail because it will try to un-focus this
+	// and there is no way to exclude things from `ginkgo unfocus`
 	return Entry(
 		description,
 		ResourceValidationCase{
 			Violations: []validators.Violation{err},
 			Resource:   yaml,
+			Labels:     labels,
 		},
 	)
 }
