@@ -89,6 +89,6 @@ var (
 	_ = Describe("MeshServiceReachableBackends", reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", meshidentity.Identity, Ordered)
-	_ = FDescribe("MeshIdentity Migration", meshidentity.Migration, Ordered)
+	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
 	_ = Describe("Unified Resource Naming", unifiednaming.UnifiedNaming, Ordered)
 )
