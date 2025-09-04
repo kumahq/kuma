@@ -22,7 +22,7 @@ spec:
   rules:
     - default:
         deny:
-          - spiffeId:
+          - spiffeID:
               type: Exact
               value: spiffe://trust-domain.mesh/ns/backend/v1
 ---
@@ -33,6 +33,6 @@ spec:
   rules:
     - default:
         allow:
-          - spiffeId:
+          - spiffeID:
               type: Prefix
               value: spiffe://trust-domain.mesh/ns/backend

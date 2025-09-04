@@ -14568,15 +14568,15 @@ components:
                           be allowed
                         items:
                           properties:
-                            spiffeId:
+                            spiffeID:
                               description: >-
-                                SpiffeId defines a matcher configuration for
-                                SpiffeId matching
+                                SpiffeID defines a matcher configuration for
+                                SpiffeID matching
                               properties:
                                 type:
                                   description: >-
                                     Type defines how to match incoming traffic
-                                    by SpiffeId. `Exact` or `Prefix` are
+                                    by SpiffeID. `Exact` or `Prefix` are
                                     allowed.
                                   enum:
                                     - Exact
@@ -14601,15 +14601,15 @@ components:
                           requests are denied
                         items:
                           properties:
-                            spiffeId:
+                            spiffeID:
                               description: >-
-                                SpiffeId defines a matcher configuration for
-                                SpiffeId matching
+                                SpiffeID defines a matcher configuration for
+                                SpiffeID matching
                               properties:
                                 type:
                                   description: >-
                                     Type defines how to match incoming traffic
-                                    by SpiffeId. `Exact` or `Prefix` are
+                                    by SpiffeID. `Exact` or `Prefix` are
                                     allowed.
                                   enum:
                                     - Exact
@@ -14632,15 +14632,15 @@ components:
                           be denied
                         items:
                           properties:
-                            spiffeId:
+                            spiffeID:
                               description: >-
-                                SpiffeId defines a matcher configuration for
-                                SpiffeId matching
+                                SpiffeID defines a matcher configuration for
+                                SpiffeID matching
                               properties:
                                 type:
                                   description: >-
                                     Type defines how to match incoming traffic
-                                    by SpiffeId. `Exact` or `Prefix` are
+                                    by SpiffeID. `Exact` or `Prefix` are
                                     allowed.
                                   enum:
                                     - Exact
