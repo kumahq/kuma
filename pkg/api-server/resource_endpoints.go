@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"io"
 	"net/http"
 	"slices"
@@ -1024,10 +1025,18 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		}
 
 		var policyRules []api_common.PolicyRule
-		for _, rule := range rules {
+		switch matched.Type {
+		case v1alpha1.MeshTrafficPermissionType:
+			for _, rule := range rules {
+				policyRules = append(policyRules, api_common.PolicyRule{
+					Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
+					Conf: rule.Conf.GetDefault(),
+				})
+			}
+		default:
+			mergedConf := inbound.MatchesAllIncomingTraffic[interface{}](rules)
 			policyRules = append(policyRules, api_common.PolicyRule{
-				Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
-				Conf: rule.Conf.GetDefault(),
+				Conf: mergedConf,
 			})
 		}
 
