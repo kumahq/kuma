@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"io"
 	"net/http"
 	"slices"
@@ -47,6 +46,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -1026,7 +1026,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 
 		var policyRules []api_common.PolicyRule
 		switch matched.Type {
-		case v1alpha1.MeshTrafficPermissionType:
+		case meshtrafficpermission_api.MeshTrafficPermissionType:
 			for _, rule := range rules {
 				policyRules = append(policyRules, api_common.PolicyRule{
 					Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
