@@ -15,7 +15,7 @@
      "conf": {
       "allow": [
        {
-        "spiffeId": {
+        "spiffeID": {
          "type": "Prefix",
          "value": "spiffe://trust-domain.mesh/ns/backend"
         }
@@ -28,7 +28,7 @@
      "conf": {
       "deny": [
        {
-        "spiffeId": {
+        "spiffeID": {
          "type": "Exact",
          "value": "spiffe://trust-domain.mesh/ns/backend/v1"
         }
