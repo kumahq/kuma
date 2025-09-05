@@ -62,8 +62,8 @@ func Matches(matches []common_api.Match, onMatchBuilder *Builder[matcher_config.
 
 		var predicates []*matcher_config.Matcher_MatcherList_Predicate
 		for _, match := range matches {
-			if match.SpiffeId != nil {
-				predicate, err := NewPredicate().Configure(SpiffeIdPredicate(match.SpiffeId)).Build()
+			if match.SpiffeID != nil {
+				predicate, err := NewPredicate().Configure(SpiffeIDPredicate(match.SpiffeID)).Build()
 				if err != nil {
 					return err
 				}
@@ -105,20 +105,20 @@ func NewPredicate() *Builder[matcher_config.Matcher_MatcherList_Predicate] {
 	return &Builder[matcher_config.Matcher_MatcherList_Predicate]{}
 }
 
-func SpiffeIdPredicate(spiffeId *common_api.SpiffeIdMatch) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+func SpiffeIDPredicate(spiffeID *common_api.SpiffeIDMatch) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
 	return func(predicate *matcher_config.Matcher_MatcherList_Predicate) error {
 		var stringMatcher matcher_config.StringMatcher
-		switch spiffeId.Type {
+		switch spiffeID.Type {
 		case common_api.ExactMatchType:
 			stringMatcher = matcher_config.StringMatcher{
 				MatchPattern: &matcher_config.StringMatcher_Exact{
-					Exact: spiffeId.Value,
+					Exact: spiffeID.Value,
 				},
 			}
 		case common_api.PrefixMatchType:
 			stringMatcher = matcher_config.StringMatcher{
 				MatchPattern: &matcher_config.StringMatcher_Prefix{
-					Prefix: spiffeId.Value,
+					Prefix: spiffeID.Value,
 				},
 			}
 		}

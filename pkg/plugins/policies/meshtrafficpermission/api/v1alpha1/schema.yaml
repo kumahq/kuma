@@ -115,11 +115,11 @@ properties:
                   description: Allow definees a list of matches for which access will be allowed
                   items:
                     properties:
-                      spiffeId:
-                        description: SpiffeId defines a matcher configuration for SpiffeId matching
+                      spiffeID:
+                        description: SpiffeID defines a matcher configuration for SpiffeID matching
                         properties:
                           type:
-                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
+                            description: Type defines how to match incoming traffic by SpiffeID. `Exact` or `Prefix` are allowed.
                             enum:
                               - Exact
                               - Prefix
@@ -139,11 +139,11 @@ properties:
                     requests are denied
                   items:
                     properties:
-                      spiffeId:
-                        description: SpiffeId defines a matcher configuration for SpiffeId matching
+                      spiffeID:
+                        description: SpiffeID defines a matcher configuration for SpiffeID matching
                         properties:
                           type:
-                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
+                            description: Type defines how to match incoming traffic by SpiffeID. `Exact` or `Prefix` are allowed.
                             enum:
                               - Exact
                               - Prefix
@@ -161,11 +161,11 @@ properties:
                   description: Deny defines a list of matches for which access will be denied
                   items:
                     properties:
-                      spiffeId:
-                        description: SpiffeId defines a matcher configuration for SpiffeId matching
+                      spiffeID:
+                        description: SpiffeID defines a matcher configuration for SpiffeID matching
                         properties:
                           type:
-                            description: Type defines how to match incoming traffic by SpiffeId. `Exact` or `Prefix` are allowed.
+                            description: Type defines how to match incoming traffic by SpiffeID. `Exact` or `Prefix` are allowed.
                             enum:
                               - Exact
                               - Prefix
