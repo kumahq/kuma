@@ -1,6 +1,6 @@
 violations:
 - field: spec.from[0].targetRef.kind
-  message: value is not supported
+  message: value 'MeshHTTPRoute' is not supported
 - field: spec.from[1].default.mode
   message: '"mode" must be one of ["Strict", "Permissive"]'
 - field: spec.from[1].default.tlsCiphers

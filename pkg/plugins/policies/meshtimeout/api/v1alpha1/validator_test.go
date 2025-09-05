@@ -181,7 +181,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshGatewayRoute' is not supported`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
@@ -197,7 +197,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshServiceSubset' is not supported`,
 			}),
 			Entry("sectionName with outbound policy", testCase{
 				inputYaml: `
@@ -215,7 +215,7 @@ violations:
   - field: spec.targetRef.sectionName
     message: can only be used with inbound policies
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshServiceSubset' is not supported`,
 			}),
 			Entry("missing timeout configuration", testCase{
 				inputYaml: `
@@ -325,7 +325,7 @@ violations:
   - field: spec.from
     message: must not be defined
   - field: spec.to[0].targetRef.kind
-    message: value is not supported
+    message: value 'MeshService' is not supported
   - field: spec.to[0].default.connectionTimeout
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
   - field: spec.to[0].default.idleTimeout
@@ -362,7 +362,7 @@ violations:
   - field: spec.from
     message: must not be defined
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 			}),
 			Entry("to TargetRef using labels and name for MeshExternalService", testCase{
 				inputYaml: `

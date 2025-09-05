@@ -253,9 +253,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: value is not supported
+    message: value 'MeshSubset' is not supported
   - field: spec.to[1].targetRef.kind
-    message: value is not supported
+    message: value 'MeshServiceSubset' is not supported
 `,
 			}),
 			Entry("empty 'default", testCase{
@@ -537,7 +537,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 			}),
 			Entry("top-level targetRef MeshHTTPRoute", testCase{
 				inputYaml: `
@@ -555,7 +555,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 			}),
 		)
 	})

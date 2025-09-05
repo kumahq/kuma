@@ -461,7 +461,7 @@ to:
 				expected: `
 violations:
 - field: spec.to[0].targetRef.kind
-  message: value is not supported`,
+  message: value 'MeshService' is not supported`,
 			}),
 		)
 	})

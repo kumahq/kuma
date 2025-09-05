@@ -211,7 +211,7 @@ from:
 				},
 				{
 					Field:   "spec.to[1].targetRef.kind",
-					Message: "value is not supported",
+					Message: "value 'MeshService' is not supported",
 				},
 			}, `
 type: MeshFaultInjection
