@@ -391,7 +391,7 @@ kind: Mesh
 			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported
+    message: value 'Mesh' is not supported
 `,
 		}),
 		Entry("Mesh with mesh and tags", testCase{
@@ -442,7 +442,7 @@ kind: MeshSubset
 			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshSubset' is not supported`,
 		}),
 		Entry("MeshSubset with name", testCase{
 			inputYaml: `
@@ -535,7 +535,7 @@ kind: MeshService
 			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 		}),
 		Entry("MeshService with mesh", testCase{
 			inputYaml: `
@@ -691,7 +691,7 @@ kind: MeshGateway
 			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshGateway' is not supported`,
 		}),
 		Entry("MeshGateway with mesh", testCase{
 			inputYaml: `
@@ -754,7 +754,7 @@ kind: MeshServiceSubset
 			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported
+    message: value 'MeshServiceSubset' is not supported
 `,
 		}),
 		Entry("MeshServiceSubset without name with empty tags", testCase{
@@ -821,7 +821,7 @@ kind: MeshGatewayRoute
 			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported
+    message: value 'MeshGatewayRoute' is not supported
 `,
 		}),
 		Entry("MeshGateway and no tags allowed", testCase{
