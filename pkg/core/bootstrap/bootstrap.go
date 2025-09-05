@@ -535,6 +535,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 		rsGraphBuilder,
+		builder.CAProvider(),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

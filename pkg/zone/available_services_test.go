@@ -53,6 +53,7 @@ var _ = Describe("AvailableServices Tracker", func() {
 				".mesh",
 				80,
 				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
 			)
 			var err error
 			metrics, err = core_metrics.NewMetrics("Zone")
@@ -167,6 +168,7 @@ var _ = Describe("AvailableServices Tracker", func() {
 				".mesh",
 				80,
 				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
 				1*time.Second,

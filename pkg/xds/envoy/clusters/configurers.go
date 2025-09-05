@@ -75,6 +75,7 @@ func ClientSideMultiIdentitiesMTLS(
 	upstreamTLSReady bool,
 	sni string,
 	identities []string,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -87,6 +88,7 @@ func ClientSideMultiIdentitiesMTLS(
 			Tags:                  nil,
 			UpstreamTLSReady:      upstreamTLSReady,
 			VerifyIdentities:      identities,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }
