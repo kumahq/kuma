@@ -180,7 +180,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported
+    message: value 'MeshGatewayRoute' is not supported
 `,
 			}),
 			Entry("default is nil", testCase{

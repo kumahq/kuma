@@ -126,7 +126,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec.targetRef.kind
-    message: value is not supported`, // this could be more specific
+    message: value 'MeshGatewayRoute' is not supported`, // this could be more specific
 			}),
 			Entry("required fields are missing", testCase{
 				inputYaml: `

@@ -185,7 +185,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshGatewayRoute' is not supported`,
 			}),
 			Entry("not allow invalid values", testCase{
 				inputYaml: `
@@ -234,7 +234,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 			}),
 			Entry("not allow from to be MeshService when http and tcp set", testCase{
 				inputYaml: `
@@ -258,7 +258,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 			}),
 			Entry("not allow from to be MeshService", testCase{
 				inputYaml: `
@@ -278,7 +278,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
+    message: value 'MeshService' is not supported`,
 			}),
 			Entry("empty default", testCase{
 				inputYaml: `

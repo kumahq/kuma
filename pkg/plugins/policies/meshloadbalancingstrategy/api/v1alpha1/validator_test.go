@@ -16,7 +16,7 @@ var _ = Describe("validation", func() {
 			[]validators.Violation{
 				{
 					Field:   "spec.targetRef.kind",
-					Message: "value is not supported",
+					Message: "value 'MeshGatewayRoute' is not supported",
 				},
 				{
 					Field:   "spec.to",
@@ -36,7 +36,7 @@ to: []
 			"spec.to errors",
 			[]validators.Violation{{
 				Field:   "spec.to[0].targetRef.kind",
-				Message: "value is not supported",
+				Message: "value 'MeshServiceSubset' is not supported",
 			}, {
 				Field:   "spec.to[1].default.localityAwareness.crossZone",
 				Message: "must not be set: MeshService traffic is local",
@@ -431,7 +431,7 @@ to:
 			"invalid MeshGateway and to MeshService",
 			[]validators.Violation{{
 				Field:   "spec.to[0].targetRef.kind",
-				Message: "value is not supported, only Mesh is allowed if loadBalancer is set",
+				Message: "value 'MeshGateway' is not supported, only Mesh is allowed if loadBalancer is set",
 			}},
 			`
 type: MeshLoadBalancingStrategy

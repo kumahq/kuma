@@ -14,7 +14,7 @@ var _ = Describe("validator", func() {
 		ErrorCase("spec.targetRef error",
 			validators.Violation{
 				Field:   "spec.targetRef.kind",
-				Message: "value is not supported",
+				Message: "value 'BlahBlah' is not supported",
 			}, `
 type: MeshTCPRoute
 mesh: mesh-1
@@ -30,7 +30,7 @@ to:
 		ErrorCase("spec.to.targetRef error",
 			validators.Violation{
 				Field:   "spec.to[0].targetRef.kind",
-				Message: "value is not supported",
+				Message: "value 'Mesh' is not supported",
 			}, `
 type: MeshTCPRoute
 mesh: mesh-1
@@ -45,7 +45,7 @@ to:
 		ErrorCase("spec.to.targetRef error",
 			validators.Violation{
 				Field:   "spec.to[0].targetRef.kind",
-				Message: "value is not supported",
+				Message: "value 'MeshService' is not supported",
 			}, `
 type: MeshTCPRoute
 mesh: mesh-1

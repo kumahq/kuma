@@ -363,7 +363,7 @@ func ValidateTargetRef(
 		return err
 	}
 	if !slices.Contains(opts.SupportedKinds, ref.Kind) {
-		errMsg := "value is not supported"
+		errMsg := fmt.Sprintf("value '%s' is not supported", ref.Kind)
 		if optsErr := opts.SupportedKindsError; optsErr != "" {
 			errMsg = optsErr
 		}

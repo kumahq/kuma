@@ -603,7 +603,7 @@ default:
 				expected: `
                 violations:
                 - field: spec.targetRef.kind
-                  message: value is not supported`,
+                  message: value 'Unknown' is not supported`,
 			}),
 			Entry("multiple types in one modification", testCase{
 				inputYaml: `
