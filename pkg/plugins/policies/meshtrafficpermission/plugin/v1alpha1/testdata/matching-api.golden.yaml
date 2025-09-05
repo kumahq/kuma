@@ -33,7 +33,7 @@ resources:
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                          exact: spiffeId://trust-domain.mesh/ns/backend/v1
+                          exact: spiffe://trust-domain.mesh/ns/backend/v1
                   - onMatch:
                       action:
                         name: envoy.filters.rbac.action
@@ -49,14 +49,14 @@ resources:
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                             valueMatch:
-                              prefix: spiffeId://trust-domain.mesh/ns/backend/
+                              prefix: spiffe://trust-domain.mesh/ns/backend/
                         - singlePredicate:
                             input:
                               name: envoy.matching.inputs.uri_san
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                             valueMatch:
-                              exact: spiffeId://trust-domain.mesh/ns/backend/v2
+                              exact: spiffe://trust-domain.mesh/ns/backend/v2
                 onNoMatch:
                   action:
                     name: envoy.filters.rbac.action
@@ -81,7 +81,7 @@ resources:
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                          exact: spiffeId://trust-domain.mesh/ns/backend/v2
+                          exact: spiffe://trust-domain.mesh/ns/backend/v2
                 onNoMatch:
                   action:
                     name: envoy.filters.rbac.action

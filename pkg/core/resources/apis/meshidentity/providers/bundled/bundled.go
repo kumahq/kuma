@@ -236,7 +236,7 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 		return nil, err
 	}
 	certValidity := pointer.DerefOr(identity.Spec.Provider.Bundled.CertificateParameters.Expiry, DefaultWorkloadCertValidityPeriod)
-	b.logger.V(1).Info("creating an identity", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeId", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
+	b.logger.V(1).Info("creating an identity", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeID", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
 
 	template := &x509.Certificate{
 		SerialNumber: serialNumber,
@@ -266,7 +266,7 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	if err != nil {
 		return nil, err
 	}
-	b.logger.V(1).Info("identity created", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeId", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
+	b.logger.V(1).Info("identity created", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeID", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
 
 	return &xds.WorkloadIdentity{
 		KRI:                        identifier,
