@@ -214,25 +214,25 @@ var _ = Describe("RBAC", func() {
 											Default: policies_api.RuleConf{
 												Deny: &[]common_api.Match{
 													{
-														SpiffeId: &common_api.SpiffeIdMatch{
+														SpiffeID: &common_api.SpiffeIDMatch{
 															Type:  common_api.ExactMatchType,
-															Value: "spiffeId://trust-domain.mesh/ns/backend/v1",
+															Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 														},
 													},
 												},
 												AllowWithShadowDeny: &[]common_api.Match{
 													{
-														SpiffeId: &common_api.SpiffeIdMatch{
+														SpiffeID: &common_api.SpiffeIDMatch{
 															Type:  common_api.ExactMatchType,
-															Value: "spiffeId://trust-domain.mesh/ns/backend/v2",
+															Value: "spiffe://trust-domain.mesh/ns/backend/v2",
 														},
 													},
 												},
 												Allow: &[]common_api.Match{
 													{
-														SpiffeId: &common_api.SpiffeIdMatch{
+														SpiffeID: &common_api.SpiffeIDMatch{
 															Type:  common_api.PrefixMatchType,
-															Value: "spiffeId://trust-domain.mesh/ns/backend/",
+															Value: "spiffe://trust-domain.mesh/ns/backend/",
 														},
 													},
 												},
