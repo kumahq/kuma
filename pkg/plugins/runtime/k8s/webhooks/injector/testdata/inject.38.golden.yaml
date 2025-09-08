@@ -14,7 +14,6 @@ metadata:
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/exclude-outbound-ips: 10.0.0.1,172.16.0.0/16,fe80::1,fe80::/10
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
     run: busybox

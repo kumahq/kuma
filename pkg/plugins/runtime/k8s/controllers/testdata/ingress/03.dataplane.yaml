@@ -1,5 +1,4 @@
 metadata:
-  creationTimestamp: null
   labels:
     app: kuma-ingress
     k8s.kuma.io/namespace: kuma-system
