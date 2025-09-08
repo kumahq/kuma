@@ -11,7 +11,7 @@ require (
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20240527124623-de85860b7d21
 	github.com/cilium/ebpf v0.19.0
 	github.com/containernetworking/cni v1.3.0
-	github.com/containernetworking/plugins v1.7.1
+	github.com/containernetworking/plugins v1.8.0
 	github.com/emicklei/go-restful/v3 v3.13.0
 	github.com/envoyproxy/go-control-plane v0.13.4
 	github.com/envoyproxy/go-control-plane/contrib v1.32.4
