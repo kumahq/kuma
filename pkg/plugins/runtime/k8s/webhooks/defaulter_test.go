@@ -107,8 +107,7 @@ var _ = Describe("Defaulter", func() {
               "apiVersion": "kuma.io/v1alpha1",
               "kind": "Mesh",
               "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
+				"name": "empty"
               },
               "spec": {
 				"metrics": {
@@ -127,7 +126,6 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null,
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -160,8 +158,7 @@ var _ = Describe("Defaulter", func() {
               "apiVersion": "kuma.io/v1alpha1",
               "kind": "Mesh",
               "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
+				"name": "empty"
               },
               "spec": {
 				"metrics": {
@@ -183,7 +180,6 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null,
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -438,8 +434,7 @@ var _ = Describe("Defaulter", func() {
               "mesh":"demo",
               "metadata":{
                 "namespace":"example",
-                "name":"empty",
-                "creationTimestamp":null
+                "name":"empty"
               },
               "spec":{
                 "networking": {
@@ -463,7 +458,6 @@ var _ = Describe("Defaulter", func() {
               "metadata":{
                 "namespace":"example",
                 "name":"empty",
-                "creationTimestamp":null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "demo",
