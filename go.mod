@@ -49,7 +49,7 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.13.0
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.9
+	github.com/spf13/pflag v1.0.10
 	github.com/spiffe/go-spiffe/v2 v2.6.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
