@@ -262,6 +262,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
 
+require github.com/prometheus/otlptranslator v0.0.2
+
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -272,7 +274,6 @@ require (
 	github.com/google/cel-go v0.23.2 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/moby/go-archive v0.1.0 // indirect
-	github.com/prometheus/otlptranslator v0.0.2 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect

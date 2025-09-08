@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
@@ -169,7 +170,7 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		ErrorLog:          adapter.ToStd(logger),
 	}
 
-	promExporter, err := prometheus.New(prometheus.WithProducer(s.producer), prometheus.WithoutCounterSuffixes())
+	promExporter, err := prometheus.New(prometheus.WithProducer(s.producer), prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithoutSuffixes))
 	if err != nil {
 		return err
 	}
