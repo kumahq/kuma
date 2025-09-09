@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/otlptranslator"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -74,7 +75,7 @@ func newEchoHTTPCmd() *cobra.Command {
 				}
 			}
 
-			promExporter, err := prometheus.New(prometheus.WithoutCounterSuffixes())
+			promExporter, err := prometheus.New(prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithoutSuffixes))
 			if err != nil {
 				return err
 			}
