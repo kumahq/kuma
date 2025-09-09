@@ -13,7 +13,6 @@ metadata:
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
-  creationTimestamp: null
   generateName: coredns-fb8b8dccf-
   labels:
     k8s-app: kube-dns

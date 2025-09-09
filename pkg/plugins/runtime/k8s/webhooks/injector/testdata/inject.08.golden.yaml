@@ -16,7 +16,6 @@ metadata:
     prometheus.io/path: /appmetrics
     prometheus.io/port: "5678"
     prometheus.io/scrape: "true"
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
     run: busybox
