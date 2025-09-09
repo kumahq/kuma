@@ -279,3 +279,7 @@ func (d dummyClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
 func (d dummyClient) Watch(ctx context.Context, obj kube_client.ObjectList, opts ...kube_client.ListOption) (watch.Interface, error) {
 	return nil, nil
 }
+
+func (d dummyClient) Apply(ctx context.Context, cfg runtime.ApplyConfiguration, opts ...kube_client.ApplyOption) error {
+	return nil
+}
