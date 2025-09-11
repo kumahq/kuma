@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -39,7 +40,7 @@ type meshContextBuilder struct {
 	topLevelDomain  string
 	vipPort         uint32
 	rsGraphBuilder  ReachableServicesGraphBuilder
-	// map of identities
+	caProvider      secrets.CaProvider
 }
 
 // MeshContextBuilder
@@ -70,6 +71,7 @@ func NewMeshContextBuilder(
 	topLevelDomain string,
 	vipPort uint32,
 	rsGraphBuilder ReachableServicesGraphBuilder,
+	caProvider secrets.CaProvider,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -85,6 +87,7 @@ func NewMeshContextBuilder(
 		topLevelDomain:  topLevelDomain,
 		vipPort:         vipPort,
 		rsGraphBuilder:  rsGraphBuilder,
+		caProvider:      caProvider,
 	}
 }
 
@@ -157,8 +160,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		domains = append(domains, vipDomains...)
 	}
 
-	trustDomainToTrusts := getTrustDomainToTrusts(resources.MeshTrusts().Items)
-
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
 	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
@@ -172,8 +173,18 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
-
 	mesh := baseMeshContext.Mesh
+	trustDomainToTrusts := getTrustDomainToTrusts(resources.MeshTrusts().Items)
+	// add a mesh mTLS CA
+	if len(trustDomainToTrusts) > 0 && mesh.MTLSEnabled() {
+		cas, _, err := m.caProvider.Get(ctx, mesh)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not fetch mesh CA")
+		}
+		for _, ca := range cas.PemCerts {
+			trustDomainToTrusts[meshName] = append(trustDomainToTrusts[meshName], string(ca))
+		}
+	}
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
@@ -583,10 +594,12 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_meta.Protocol {
 	return serviceProtocol
 }
 
-func getTrustDomainToTrusts(trusts []*meshtrust_api.MeshTrustResource) map[string][]*meshtrust_api.MeshTrust {
-	trustDomainToMeshTrust := map[string][]*meshtrust_api.MeshTrust{}
+func getTrustDomainToTrusts(trusts []*meshtrust_api.MeshTrustResource) map[string][]string {
+	trustDomainToMeshTrust := map[string][]string{}
 	for _, trust := range trusts {
-		trustDomainToMeshTrust[trust.Spec.TrustDomain] = append(trustDomainToMeshTrust[trust.Spec.TrustDomain], trust.Spec)
+		for _, ca := range trust.Spec.CABundles {
+			trustDomainToMeshTrust[trust.Spec.TrustDomain] = append(trustDomainToMeshTrust[trust.Spec.TrustDomain], ca.PEM.Value)
+		}
 	}
 	return trustDomainToMeshTrust
 }

@@ -24,11 +24,12 @@ import (
 
 var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
-		dataplaneFile   string
-		dataplaneMeta   *model.DataplaneMetadata
-		expected        string
-		mode            mesh_proto.CertificateAuthorityBackend_Mode
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		dataplaneFile       string
+		dataplaneMeta       *model.DataplaneMetadata
+		expected            string
+		mode                mesh_proto.CertificateAuthorityBackend_Mode
+		meshServiceMode     mesh_proto.Mesh_MeshServices_Mode
+		trustsByTrustDomain map[string][]string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -61,7 +62,8 @@ var _ = Describe("InboundProxyGenerator", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: mesh,
+					Resource:            mesh,
+					TrustsByTrustDomain: given.trustsByTrustDomain,
 				},
 			}
 
@@ -273,6 +275,15 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
 			expected:        "8-envoy-config.golden.yaml",
 			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+		}),
+		Entry("09. transparent_proxying=false, ip_addresses=2, ports=2, trust with old mesh mtls", testCase{
+			dataplaneFile:   "9-dataplane.input.yaml",
+			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:        "9-envoy-config.golden.yaml",
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			trustsByTrustDomain: map[string][]string{
+				"my-test.domain.com": {"123"},
+			},
 		}),
 	)
 })

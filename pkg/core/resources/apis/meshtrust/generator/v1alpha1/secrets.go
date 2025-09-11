@@ -26,10 +26,10 @@ func NewPlugin() core_plugins.CoreResourcePlugin {
 }
 
 func (p *plugin) Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
-	kumaManaged := pointer.Deref(proxy.WorkloadIdentity).ManagementMode == core_xds.KumaManagementMode
+	externallyManaged := pointer.Deref(proxy.WorkloadIdentity).ManagementMode == core_xds.ExternalManagementMode
 	hasTrustDomains := len(xdsCtx.Mesh.TrustsByTrustDomain) > 0
 
-	if !kumaManaged || !hasTrustDomains {
+	if externallyManaged || !hasTrustDomains {
 		return nil
 	}
 
@@ -37,7 +37,6 @@ func (p *plugin) Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, 
 	if err != nil {
 		return err
 	}
-
 	rs.Add(&core_xds.Resource{
 		Name:     config.Name,
 		Origin:   metadata.OriginMeshTrust,
@@ -52,10 +51,8 @@ func validationCtx(xdsCtx xds_context.Context) (*envoy_auth.Secret, error) {
 	for domain, trusts := range xdsCtx.Mesh.TrustsByTrustDomain {
 		// concatenate multiple CAs
 		allCAs := [][]byte{}
-		for _, trust := range trusts {
-			for _, ca := range trust.CABundles {
-				allCAs = append(allCAs, []byte(ca.PEM.Value))
-			}
+		for _, ca := range trusts {
+			allCAs = append(allCAs, []byte(ca))
 		}
 		concatenatedCA := bytes.Join(allCAs, []byte("\n"))
 		validator, err := bldrs_auth.NewSPIFFECertValidator().
