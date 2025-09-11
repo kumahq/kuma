@@ -1,10 +1,10 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["master", "release-*", "!*-merge-master", "294"]
     tags: ["*"]
   pull_request:
-    branches: ["master", "release-*"]
+    branches: ["master", "release-*", "294"]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
   contents: read
