@@ -115,16 +115,36 @@ var timerVal = func() int {
 	return result
 }()
 
+var runGoroutine = func() bool {
+	result := false
+	tickerEnv := os.Getenv("RUN_GOROUTINE")
+	if tickerEnv == "true" {
+		result = true
+	}
+	return result
+}()
+
 func (s *kdsSyncClient) Receive(mode string) error {
 	s.log.Info("Starting DeltaDiscoveryRequest!!!!!!", "Order", orderVal, "Mode", mode)
-	for i := range orderVal {
-		for _, typ := range s.resourceTypes {
-			s.log.V(1).Info("sending DeltaDiscoveryRequest", "type", typ, "Order", i)
-			if err := s.kdsStream.DeltaDiscoveryRequest(typ); err != nil {
-				return errors.Wrap(err, "discovering failed")
+	fn := func() {
+		for i := range orderVal {
+			for _, typ := range s.resourceTypes {
+				s.log.Info("sending DeltaDiscoveryRequest", "type", typ, "Order", i)
+				if err := s.kdsStream.DeltaDiscoveryRequest(typ); err != nil {
+					err = errors.Wrap(err, "discovering failed")
+					s.log.Error(err, "failed to send a delta discovery request")
+					return
+				}
 			}
+			time.Sleep(time.Duration(orderInterval()) * time.Second)
 		}
-		time.Sleep(time.Duration(orderInterval()) * time.Second)
+		s.log.Info("Finish DeltaDiscoveryRequest!!!!!!")
+	}
+
+	if runGoroutine {
+		go fn()
+	} else {
+		fn()
 	}
 
 	s.log.Info("START Timer!!!!!!")
