@@ -91,6 +91,18 @@ var orderVal = func() int {
 	return result
 }()
 
+var orderInterval = func() int {
+	result := 1
+	orderIntervalEnv := os.Getenv("ORDER_INTERVAL")
+	if orderIntervalEnv != "" {
+		atoi, err := strconv.Atoi(orderIntervalEnv)
+		if err == nil {
+			result = atoi
+		}
+	}
+	return result
+}
+
 var timerVal = func() int {
 	result := 5
 	tickerEnv := os.Getenv("TICKER")
@@ -112,6 +124,7 @@ func (s *kdsSyncClient) Receive(mode string) error {
 				return errors.Wrap(err, "discovering failed")
 			}
 		}
+		time.Sleep(time.Duration(orderInterval()) * time.Second)
 	}
 
 	s.log.Info("START Timer!!!!!!")
