@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    ":assignAndReview(team:kuma-security-managers)",
     ":configMigration",
     ":enableVulnerabilityAlerts",
     "customManagers:makefileVersions",
@@ -17,6 +16,9 @@
     "mise"
   ],
   "vulnerabilityAlerts": {
+    "extends": [
+      ":assignAndReview(team:kuma-security-managers)"
+    ],
     "addLabels": ["area/security"],
     "commitMessageSuffix": ""
   },
