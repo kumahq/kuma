@@ -27,7 +27,7 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
-K8S_MIN_VERSION = v1.31.12-k3s1
+K8S_MIN_VERSION=v1.31.12-k3s1
 K8S_MAX_VERSION=v1.33.4-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.33
