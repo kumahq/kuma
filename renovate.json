@@ -4,7 +4,7 @@
     ":configMigration",
     ":enableVulnerabilityAlerts",
     "customManagers:makefileVersions",
-    "Kong/public-shared-renovate:backend",
+    "Kong/public-shared-renovate:backend"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -19,7 +19,9 @@
     "extends": [
       ":assignAndReview(team:kuma-security-managers)"
     ],
-    "addLabels": ["area/security"],
+    "addLabels": [
+      "area/security"
+    ],
     "commitMessageSuffix": ""
   },
   "osvVulnerabilityAlerts": true,
@@ -30,7 +32,9 @@
       " 'kumactl install demo|observability'. Limits matching to the generated YAML under",
       " app/kumactl/data/install/k8s/"
     ],
-    "managerFilePatterns": ["/app/kumactl/data/install/k8s/.+\\.ya?ml$/"]
+    "managerFilePatterns": [
+      "/app/kumactl/data/install/k8s/.+\\.ya?ml$/"
+    ]
   },
   "customManagers": [
     {
@@ -40,7 +44,9 @@
         " the 'go' datasource and rewrites the version string"
       ],
       "customType": "regex",
-      "fileMatch": ["(^|/)go\\.mod$"],
+      "managerFilePatterns": [
+        "/(^|/)go\\.mod$/"
+      ],
       "matchStrings": [
         "(?<packageName>github.com\\/kumahq\\/(?<depName>go-control-plane)) (?<currentValue>[^\\s]+)",
         "(?<packageName>github.com\\/kumahq\\/go-control-plane\\/(?<depName>.+)) (?<currentValue>[^\\s]+)"
@@ -59,12 +65,16 @@
         " are created immediately (no scheduling constraints) to prioritize security-related",
         " changes"
       ],
-      "matchPackageNames": ["Kong/public-shared-actions/security-actions/**"],
+      "matchPackageNames": [
+        "Kong/public-shared-actions/security-actions/**"
+      ],
       "extends": [
         ":assignAndReview(team:kuma-security-managers)",
         ":prImmediately"
       ],
-      "addLabels": ["area/security"],
+      "addLabels": [
+        "area/security"
+      ],
       "schedule": []
     },
     {
@@ -73,8 +83,12 @@
         " body/footer so these routine workflow bumps don't trigger full CI or clutter the",
         " changelog"
       ],
-      "matchManagers": ["github-actions"],
-      "addLabels": ["ci/skip-test"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "ci/skip-test"
+      ],
       "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
       "prFooter": "> Changelog: skip"
     },
@@ -84,9 +98,15 @@
         " as other workflow bumps: apply 'ci/skip-test' and keep the PR body minimal to avoid",
         " unnecessary CI load and changelog noise"
       ],
-      "matchManagers": ["regex"],
-      "matchPackageNames": ["Kong/public-shared-actions/**"],
-      "addLabels": ["ci/skip-test"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "Kong/public-shared-actions/**"
+      ],
+      "addLabels": [
+        "ci/skip-test"
+      ],
       "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
       "prFooter": "> Changelog: skip"
     },
@@ -97,7 +117,9 @@
       ],
       "groupName": "kumactl install demo|observability container images",
       "groupSlug": "kumactl-install-k8s",
-      "matchFileNames": ["app/kumactl/data/install/k8s/**"]
+      "matchFileNames": [
+        "app/kumactl/data/install/k8s/**"
+      ]
     },
     {
       "description": [
@@ -105,7 +127,9 @@
         " Kuma-maintained builds of released Envoy versions and are handled by the Makefile",
         " regex manager. Using 'envoy' as the topic makes PR titles clearer"
       ],
-      "matchDepNames": ["kumahq/envoy-builds"],
+      "matchDepNames": [
+        "kumahq/envoy-builds"
+      ],
       "commitMessageTopic": "envoy"
     },
     {
@@ -114,17 +138,26 @@
         " version is not supported in our current setup and consistently fails, so we skip 'pin'",
         " and 'pinDigest' updates for it. Managed by the Makefile regex manager"
       ],
-      "matchManagers": ["regex"],
-      "matchDepNames": ["kumahq/openapi-tool"],
-      "matchUpdateTypes": ["pin", "pinDigest"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "kumahq/openapi-tool"
+      ],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest"
+      ],
       "enabled": false
     },
     {
       "description": [
         " Enable PRs for all mise-managed dev tools and set a semantic commit scope of 'deps/dev'.",
-        " This keeps these routine tool bumps out of the main changelog",
+        " This keeps these routine tool bumps out of the main changelog"
       ],
-      "matchManagers": ["mise"],
+      "matchManagers": [
+        "mise"
+      ],
       "semanticCommitScope": "deps/dev",
       "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
       "prFooter": "> Changelog: skip"
@@ -135,7 +168,10 @@
         " versions, as protobuf usage in Kuma is deprecated, so upgrading would add churn without",
         " practical benefit"
       ],
-      "matchDepNames": ["clang-format", "protoc"],
+      "matchDepNames": [
+        "clang-format",
+        "protoc"
+      ],
       "enabled": false
     },
     {
@@ -144,7 +180,9 @@
         " namespace prefix from the dependency name. This makes commit titles shorter and easier",
         " to scan"
       ],
-      "matchDepNames": ["/^(?:aqua|go):/"],
+      "matchDepNames": [
+        "/^(?:aqua|go):/"
+      ],
       "commitMessageTopic": "{{{replace '([^\\/]*?\\/)*' '' depName}}}"
     },
     {
@@ -152,7 +190,9 @@
         " Extract the version for 'aqua:grpc/grpc-go/protoc-gen-go-grpc' from its command path",
         " so Renovate can correctly detect and propose updates for this tool"
       ],
-      "matchDepNames": ["aqua:grpc/grpc-go/protoc-gen-go-grpc"],
+      "matchDepNames": [
+        "aqua:grpc/grpc-go/protoc-gen-go-grpc"
+      ],
       "extractVersion": "^cmd/protoc-gen-go-grpc/(?<version>.*)$"
     },
     {
@@ -162,19 +202,33 @@
         " our custom regex manager instead"
       ],
       "groupName": "github.com/kumahq/go-control-plane*",
-      "matchManagers": ["gomod"],
-      "matchDepNames": ["github.com/kumahq/go-control-plane{/,}**"],
-      "matchDepTypes": ["replace"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "github.com/kumahq/go-control-plane{/,}**"
+      ],
+      "matchDepTypes": [
+        "replace"
+      ],
       "enabled": false
     },
     {
       "description": [
         " Route updates for 'github.com/kumahq/go-control-plane' through our custom manager"
       ],
-      "matchManagers": ["regex"],
-      "matchDatasources": ["go"],
-      "matchDepTypes": ["replace"],
-      "matchPackageNames": ["github.com/kumahq/go-control-plane{/,}**"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDatasources": [
+        "go"
+      ],
+      "matchDepTypes": [
+        "replace"
+      ],
+      "matchPackageNames": [
+        "github.com/kumahq/go-control-plane{/,}**"
+      ],
       "commitMessageTopic": "{{{packageName}}}"
     },
     {
@@ -184,8 +238,12 @@
       ],
       "groupName": "github.com/envoyproxy/go-control-plane*",
       "groupSlug": "github.com-envoyproxy-go-control-plane",
-      "matchDatasources": ["go"],
-      "matchPackageNames": ["github.com/{envoyproxy,kumahq}/go-control-plane{/,}**"],
+      "matchDatasources": [
+        "go"
+      ],
+      "matchPackageNames": [
+        "github.com/{envoyproxy,kumahq}/go-control-plane{/,}**"
+      ],
       "prBodyDefinitions": {
         "Package": "[{{{packageName}}}]({{{sourceUrl}}}) ([source]({{{sourceUrl}}}/tree/{{#if newVersion}}{{{depName}}}/{{{newVersion}}}{{else}}main{{/if}}/{{{depName}}}))"
       }
