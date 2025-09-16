@@ -1,8 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
+    ":configMigration",
+    "customManagers:makefileVersions",
     "Kong/public-shared-renovate:backend",
-    "Kong/public-shared-renovate:makefile",
     "kumahq/kuma//.renovate/go-control-plane",
     "kumahq/kuma//.renovate/mise",
     "kumahq/kuma//.renovate/security"
@@ -18,60 +19,60 @@
   ],
   "ignorePaths": [],
   "kubernetes": {
-    "description": "Update image versions in Kubernetes manifests from 'kumactl install demo|observability'",
-    "managerFilePatterns": [
-      "/app/kumactl/data/install/k8s/.+\\.ya?ml$/"
-    ]
+    "description": [
+      " Update container image tags in Kubernetes manifests installed via",
+      " 'kumactl install demo|observability'. Limits matching to the generated YAML under",
+      " app/kumactl/data/install/k8s/"
+    ],
+    "managerFilePatterns": ["/app/kumactl/data/install/k8s/.+\\.ya?ml$/"]
   },
   "packageRules": [
     {
-      "description": "Skip tests and apply preset config for GitHub Actions updates",
-      "matchManagers": [
-        "github-actions"
+      "description": [
+        " Apply the local GitHub Actions preset for updates managed by the built-in github-actions",
+        " manager. This standardizes PR content and labels these PRs so our CI can skip the full",
+        " test matrix and changelog generation"
       ],
-      "extends": [
-        "kumahq/kuma//.renovate/github-actions"
-      ]
+      "matchManagers": ["github-actions"],
+      "extends": ["kumahq/kuma//.renovate/github-actions"]
     },
     {
-      "description": "Skip tests and apply GitHub Actions preset for 'Kong/public-shared-actions' managed by custom regex manager",
-      "matchManagers": [
-        "custom.regex"
+      "description": [
+        " Apply the same GitHub Actions preset to updates for 'Kong/public-shared-actions/**'",
+        " that are discovered by our custom regex manager. Ensures consistent PR formatting",
+        " and CI behavior even when actions are parsed via regex"
       ],
-      "matchPackageNames": [
-        "Kong/public-shared-actions/**"
-      ],
-      "extends": [
-        "kumahq/kuma//.renovate/github-actions"
-      ]
+      "matchManagers": ["regex"],
+      "matchPackageNames": ["Kong/public-shared-actions/**"],
+      "extends": ["kumahq/kuma//.renovate/github-actions"]
     },
     {
-      "description": "Group container image updates for 'kumactl install demo|observability' Kubernetes manifests",
+      "description": [
+        " Group related container image updates in the 'kumactl install demo|observability'",
+        " Kubernetes manifests so they land in a single PR"
+      ],
       "groupName": "kumactl install demo|observability container images",
       "groupSlug": "kumactl-install-k8s",
-      "matchFileNames": [
-        "app/kumactl/data/install/k8s/**"
-      ]
+      "matchFileNames": ["app/kumactl/data/install/k8s/**"]
     },
     {
-      "description": "Change commit message topic to 'envoy' for kumahq/envoy-builds, which are our own builds of released Envoy versions. This dependency is managed by the custom regex manager for Makefiles. We only change the topic to better reflect the component being updated",
-      "matchDepNames": [
-        "kumahq/envoy-builds"
+      "description": [
+        " Change the commit message topic to 'envoy' for 'kumahq/envoy-builds'. These are",
+        " Kuma-maintained builds of released Envoy versions and are handled by the Makefile",
+        " regex manager. Using 'envoy' as the topic makes PR titles clearer"
       ],
+      "matchDepNames": ["kumahq/envoy-builds"],
       "commitMessageTopic": "envoy"
     },
     {
-      "description": "Disable pinning of openapi-tool which won't work and always will result in pailures. This dependency is managed by the custom regex manager for Makefiles",
-      "matchManagers": [
-        "custom.regex"
+      "description": [
+        " Disable pinning for 'kumahq/openapi-tool'. Pinning this tool to a specific commit or",
+        " version is not supported in our current setup and consistently fails, so we skip 'pin'",
+        " and 'pinDigest' updates for it. Managed by the Makefile regex manager"
       ],
-      "matchDepNames": [
-        "kumahq/openapi-tool"
-      ],
-      "matchUpdateTypes": [
-        "pin",
-        "pinDigest"
-      ],
+      "matchManagers": ["regex"],
+      "matchDepNames": ["kumahq/openapi-tool"],
+      "matchUpdateTypes": ["pin", "pinDigest"],
       "enabled": false
     }
   ]
