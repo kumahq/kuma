@@ -65,7 +65,12 @@ func (c *InstallerConfig) PostProcess() error {
 			continue
 		}
 
-		if file, ok := lookForValidConfig(matches, isValidConfFile); ok {
+		checkerFn := isValidConfFile
+		if ext == "*.conflist" {
+			checkerFn = isValidConflistFile
+		}
+
+		if file, ok := lookForValidConfig(matches, checkerFn); ok {
 			log.Info("found CNI config file", "file", file)
 			c.CniConfName = filepath.Base(file)
 			return nil
