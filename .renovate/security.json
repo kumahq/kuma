@@ -1,29 +1,33 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Enable OSV-based vulnerability alerts and route them to the security team. Also label and assign updates for 'Kong/public-shared-actions/security-actions/**' as security-related to ensure proper visibility and handling",
-  "osvVulnerabilityAlerts": true,
+  "description": [
+    " This preset enables vulnerability alerts (including OSV) and routes them to the Kuma",
+    "  security managers. It also labels and assigns updates related to",
+    " 'Kong/public-shared-actions/security-actions/**' as security-related to ensure proper",
+    " visibility and handling by the right people"
+  ],
+  "extends": [
+    ":enableVulnerabilityAlerts",
+    ":assignAndReview(team:kuma-security-managers)"
+  ],
   "vulnerabilityAlerts": {
-    "addLabels": [
-      "area/security"
-    ],
-    "assignees": [
-      "@kumahq/kuma-security-managers"
-    ],
+    "addLabels": ["area/security"],
     "commitMessageSuffix": ""
   },
+  "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
-      "description": "Add security label and assign security managers to updates for 'Kong/public-shared-actions/security-actions/**'",
-      "matchPackageNames": [
-        "Kong/public-shared-actions/security-actions/**"
+      "description": [
+        " Label and assign security managers to updates for '.../security-actions/**'. These PRs",
+        " are created immediately (no scheduling constraints) to prioritize security-related",
+        " changes"
       ],
-      "addLabels": [
-        "area/security"
+      "matchPackageNames": ["Kong/public-shared-actions/security-actions/**"],
+      "extends": [
+        ":assignAndReview(team:kuma-security-managers)",
+        ":prImmediately"
       ],
-      "assignees": [
-        "@kumahq/kuma-security-managers"
-      ],
-      "prCreation": "immediate",
+      "addLabels": ["area/security"],
       "schedule": []
     }
   ]
