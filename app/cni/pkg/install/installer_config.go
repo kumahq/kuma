@@ -58,19 +58,19 @@ func (c *InstallerConfig) PostProcess() error {
 		return nil
 	}
 
-	for _, ext := range []string{"*.conf", "*.conflist"} {
+	configValidators := map[string]func(string) error{
+		"*.conf":     isValidConfFile,
+		"*.conflist": isValidConflistFile,
+	}
+
+	for ext, validator := range configValidators {
 		matches, err := filepath.Glob(filepath.Join(c.MountedCniNetDir, ext))
 		if err != nil {
 			log.Info("failed to search for CNI config files", "error", err)
 			continue
 		}
 
-		checkerFn := isValidConfFile
-		if ext == "*.conflist" {
-			checkerFn = isValidConflistFile
-		}
-
-		if file, ok := lookForValidConfig(matches, checkerFn); ok {
+		if file, ok := lookForValidConfig(matches, validator); ok {
 			log.Info("found CNI config file", "file", file)
 			c.CniConfName = filepath.Base(file)
 			return nil
