@@ -60,6 +60,20 @@ var _ = Describe("InstallerConfig", func() {
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(ic.CniConfName).To(Equal("10-flannel.conf"))
 		})
+
+		It("should find and use the CNI conflist file if it exists", func() {
+			// given
+			ic := InstallerConfig{
+				MountedCniNetDir: path.Join("testdata", "find-conflist-dir"),
+			}
+
+			// when
+			err := ic.PostProcess()
+
+			// then
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(ic.CniConfName).To(Equal("10-calico.conflist"))
+		})
 	})
 
 	Describe("PrepareKubeconfig", func() {
