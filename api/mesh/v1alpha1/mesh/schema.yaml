@@ -59,7 +59,6 @@ properties:
       backends:
         description: List of available logging backends
         items:
-          description: LoggingBackend defines logging backend available to mesh.
           properties:
             conf:
               oneOf:
@@ -104,7 +103,6 @@ properties:
       backends:
         description: List of available Metrics backends
         items:
-          description: MetricsBackend defines metric backends
           properties:
             conf:
               oneOf:
@@ -130,7 +128,6 @@ properties:
       backends:
         description: List of available Certificate Authority backends
         items:
-          description: CertificateAuthorityBackend defines Certificate Authority backend
           properties:
             conf:
               oneOf:
@@ -241,7 +238,6 @@ properties:
       backends:
         description: List of available tracing backends
         items:
-          description: TracingBackend defines tracing backend available to mesh.
           properties:
             conf:
               oneOf:
@@ -257,7 +253,10 @@ properties:
               description: |-
                 Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
                 Empty value defaults to 100.0%
-              type: number
+              properties:
+                value:
+                  type: number
+              type: object
             type:
               description: Type of the backend (Kuma ships with 'zipkin')
               type: string

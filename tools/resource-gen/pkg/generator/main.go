@@ -460,6 +460,10 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
 	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
 	reflect.TypeOf(system_proto.Zone{}),
+	// reflect.TypeOf(system_proto.DataSource_File{}),
+	// reflect.TypeOf(system_proto.DataSource_Inline{}),
+	// reflect.TypeOf(system_proto.DataSource_InlineString{}),
+	// reflect.TypeOf(system_proto.DataSource_Secret{}),
 }
 
 var ProtoTypeToType = map[string]reflect.Type{
@@ -469,24 +473,36 @@ var ProtoTypeToType = map[string]reflect.Type{
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
-	// this is where the new types need to be added if we want to generate openAPI for it
-	reflector := jsonschema.Reflector{
-		ExpandedStruct:            true,
-		DoNotReference:            true,
-		AllowAdditionalProperties: true,
-		IgnoredTypes:              []any{structpb.Struct{}},
-		KeyNamer: func(key string) string {
-			if key == "RSAbits" {
-				return "rsaBits"
-			}
-			return snakeToCamel(key)
-		},
+	// // this is where the new types need to be added if we want to generate openAPI for it
+	// reflector := jsonschema.Reflector{
+	// 	ExpandedStruct:            true,
+	// 	DoNotReference:            true,
+	// 	AllowAdditionalProperties: true,
+	// 	IgnoredTypes:              []any{structpb.Struct{}},
+	// 	KeyNamer: func(key string) string {
+	// 		if key == "RSAbits" {
+	// 			return "rsaBits"
+	// 		}
+	// 		return snakeToCamel(key)
+	// 	},
+	// }
+	// err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
+	// if err != nil {
+	// 	return err
+	// }
+	// typeSet := map[reflect.Type]struct{}{}
+	//
+	// mapper1 := &mapper{
+	// 	pkg:       pkg,
+	// 	reflector: reflector,
+	// 	typeSet:   typeSet,
+	// }
+	// reflector.Mapper = mapper1.Map
+
+	reflector := reflector{
+		pkg:     pkg,
+		typeSet: map[reflect.Type]struct{}{},
 	}
-	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
-	if err != nil {
-		return err
-	}
-	reflector.Mapper = typeMapperFactory(reflector)
 	for _, r := range resources {
 		tpe, exists := ProtoTypeToType[r.ResourceType]
 		if !exists {
@@ -499,8 +515,11 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
-		properties := reflector.ReflectFromType(tpe).Properties
-		for pair := properties.Oldest(); pair != nil; pair = pair.Next() {
+		s, err := reflector.reflectFromType(tpe, true, false, true, "")
+		if err != nil {
+			return err
+		}
+		for pair := s.Properties.Oldest(); pair != nil; pair = pair.Next() {
 			schemaMap.Set(pair.Key, pair.Value)
 		}
 
@@ -541,7 +560,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if r.Global {
 			scope = "Global"
 		}
-		opts := map[string]interface{}{
+		opts := map[string]any{
 			"Package":   "v1alpha1",
 			"Name":      r.ResourceType,
 			"ShortName": r.ShortName,
@@ -555,46 +574,217 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	}
 
 	for _, tpe := range AdditionalProtoTypes {
-		properties := reflector.ReflectFromType(tpe).Properties
-
-		schema := jsonschema.Schema{
-			Type:       "object",
-			Properties: properties,
-		}
-
-		wrapped := map[string]interface{}{
-			"openapi": "3.1.0",
-			"info": map[string]string{
-				"x-ref-schema-name": tpe.Name(),
-			},
-			"components": map[string]interface{}{
-				"schemas": map[string]jsonschema.Schema{
-					tpe.Name(): schema,
-				},
-			},
-		}
-
-		out, err := yaml.Marshal(wrapped)
+		s, err := reflector.reflectFromType(tpe, false, false, true, "")
 		if err != nil {
 			return err
 		}
-
-		outDir := path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(tpe.Name()))
-
-		// Ensure the directory exists
-		err = os.MkdirAll(outDir, 0o755)
-		if err != nil {
-			return fmt.Errorf("failed to create directory: %w", err)
-		}
-
-		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600)
-		if err != nil {
+		if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
 			return err
 		}
 	}
 
 	return nil
 }
+
+type reference struct {
+	dir       string
+	file      string
+	ref       string
+	refPrefix string
+}
+
+func (r reference) OutDir() string {
+	return r.dir
+}
+
+func (r reference) Path() string {
+	return path.Join(r.dir, r.file)
+}
+
+func (r reference) FullRef() string {
+	return path.Join(r.refPrefix, r.file) + r.ref
+}
+
+func getReference(r reflect.Type, pkg string) reference {
+	return reference{
+		dir:       path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(r.Name())),
+		file:      "schema.yaml",
+		ref:       "#/components/schemas/" + r.Name(),
+		refPrefix: "/specs/protoresources/" + strings.ToLower(r.Name()),
+	}
+}
+
+func writeSchemaToFile(schema *jsonschema.Schema, schemaName string, ref reference) error {
+	wrapped := map[string]any{
+		"openapi": "3.1.0",
+		"info": map[string]string{
+			"x-ref-schema-name": schemaName,
+		},
+		"components": map[string]any{
+			"schemas": map[string]*jsonschema.Schema{
+				schemaName: schema,
+			},
+		},
+	}
+
+	out, err := yaml.Marshal(wrapped)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the directory exists
+	if err = os.MkdirAll(ref.OutDir(), 0o755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	if err = os.WriteFile(ref.Path(), out, 0o600); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type reflector struct {
+	typeSet map[reflect.Type]struct{}
+	pkg     string
+}
+
+func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype, withBackendCheck bool, name string) (*jsonschema.Schema, error) {
+	reflector := jsonschema.Reflector{
+		ExpandedStruct:            expandedStruct,
+		DoNotReference:            true,
+		AllowAdditionalProperties: true,
+		IgnoredTypes:              []any{structpb.Struct{}},
+		KeyNamer: func(key string) string {
+			if key == "RSAbits" {
+				return "rsaBits"
+			}
+			return snakeToCamel(key)
+		},
+		Mapper: func(t reflect.Type) *jsonschema.Schema {
+			s, err := r.mapper(t, withBackendCheck)
+			if err != nil {
+				// log
+				return nil
+			}
+			return s
+		},
+	}
+	if !withBackendCheck {
+		reflector.Mapper = nil
+	}
+	fmt.Println("DEBUG", "new reflector for", t.Name(), "is created", expandedStruct, oneOfSubtype, withBackendCheck)
+	if err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/")); err != nil {
+		return nil, err
+	}
+
+	s := reflector.ReflectFromType(t)
+	if oneOfSubtype {
+		s.Properties.Set("type", &jsonschema.Schema{Type: "string", Const: name})
+	}
+	return &jsonschema.Schema{
+		Type:       "object",
+		Properties: s.Properties,
+		OneOf:      s.OneOf,
+		Extras:     s.Extras,
+	}, nil
+}
+
+func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {
+	if !hasOneofField(t) && withBackendCheck {
+		if backendConf := BackendToOneOfs[t.Name()]; backendConf != nil {
+			schema, err := r.reflectFromType(t, false, false, false, "")
+			if err != nil {
+				return nil, err
+			}
+			schema.ID = ""
+			schema.Version = ""
+			schema.Properties.Set("conf", &jsonschema.Schema{
+				Type:  "object",
+				OneOf: backendConf,
+			})
+			return schema, nil
+		}
+		return valueMapper(t), nil
+	}
+
+	s := &jsonschema.Schema{}
+	for i := range t.NumField() {
+		fd := t.Field(i)
+		_, ok := fd.Tag.Lookup("protobuf_oneof")
+		if !ok {
+			// skip proto specific fields like 'state', 'unknownFields', 'sizeCache'
+			continue
+		}
+		types, err := OneofWrapperTypes(t, fd)
+		if err != nil {
+			return nil, err
+		}
+
+		mapping := map[string]string{}
+		for discriminator, t := range types {
+			fmt.Println("DEBUG", discriminator, t.String())
+			ref := getReference(t, r.pkg)
+			s.OneOf = append(s.OneOf, &jsonschema.Schema{
+				Ref: ref.FullRef(),
+			})
+			mapping["oneOf" + strings.ToTitle(discriminator)] = ref.FullRef()
+			if _, ok := r.typeSet[t]; ok {
+				continue
+			}
+			r.typeSet[t] = struct{}{}
+			schema, err := r.reflectFromType(t, false, true, true, discriminator)
+			if err != nil {
+				return nil, err
+			}
+			if err := writeSchemaToFile(schema, t.Name(), getReference(t, r.pkg)); err != nil {
+				return nil, err
+			}
+		}
+		s.Extras = map[string]any{
+			"discriminator": map[string]any{
+				"propertyName": "type",
+				"mapping":      mapping,
+			},
+		}
+	}
+
+	return s, nil
+}
+
+// func generateSchemaToFile(r reflect.Type, pkg string, typeSet map[reflect.Type]struct{}) error {
+// 	reflector := jsonschema.Reflector{
+// 		ExpandedStruct:            false,
+// 		DoNotReference:            true,
+// 		AllowAdditionalProperties: true,
+// 		IgnoredTypes:              []any{structpb.Struct{}},
+// 		KeyNamer: func(key string) string {
+// 			if key == "RSAbits" {
+// 				return "rsaBits"
+// 			}
+// 			return snakeToCamel(key)
+// 		},
+// 		// Mapper: (&mapper{pkg: pkg, }).Map,
+// 	}
+//
+// 	if err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/")); err != nil {
+// 		return err
+// 	}
+// 	mapper := &mapper{
+// 		pkg:       pkg,
+// 		reflector: reflector,
+// 		typeSet:   typeSet,
+// 	}
+// 	reflector.Mapper = mapper.Map
+// 	properties := reflector.ReflectFromType(r).Properties
+//
+// 	schema := &jsonschema.Schema{
+// 		Type:       "object",
+// 		Properties: properties,
+// 	}
+//
+// 	return writeSchemaToFile(schema, r.Name(), getReference(r, pkg))
+// }
 
 type GeneratorFn func(pkg string, resources []ResourceInfo) error
 
@@ -640,20 +830,35 @@ var BackendToOneOfs = map[string][]*jsonschema.Schema{
 	},
 }
 
-func typeMapperFactory(self jsonschema.Reflector) func(r reflect.Type) *jsonschema.Schema {
-	f := func(r reflect.Type) *jsonschema.Schema {
-		schema, done := confMapper(r, self)
-		if done {
-			return schema
-		}
-
-		return valueMapper(r)
-	}
-
-	self.Mapper = valueMapper
-
-	return f
-}
+// func typeMapperFactory(self jsonschema.Reflector, typeSet map[reflect.Type]struct{}) func(r reflect.Type) *jsonschema.Schema {
+// 	f := func(r reflect.Type) *jsonschema.Schema {
+// 		schema, done := confMapper(r, self, typeSet)
+// 		if done {
+// 			return schema
+// 		}
+//
+// 		return valueMapper(r)
+// 	}
+//
+// 	self.Mapper = valueMapper
+//
+// 	return f
+// }
+//
+// func typeMapperFactory2(self jsonschema.Reflector, typeSet map[reflect.Type]struct{}) func(r reflect.Type) *jsonschema.Schema {
+// 	f := func(r reflect.Type) *jsonschema.Schema {
+// 		schema, done := confMapper2(r, self, typeSet)
+// 		if done {
+// 			return schema
+// 		}
+//
+// 		return valueMapper(r)
+// 	}
+//
+// 	self.Mapper = valueMapper
+//
+// 	return f
+// }
 
 func valueMapper(r reflect.Type) *jsonschema.Schema {
 	switch r {
@@ -699,22 +904,240 @@ func valueMapper(r reflect.Type) *jsonschema.Schema {
 	}
 }
 
-func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, bool) {
-	backendConf := BackendToOneOfs[r.Name()]
-	if backendConf != nil {
-		schema := self.ReflectFromType(r)
-		schema.ID = ""
-		schema.Version = ""
-		schema.Properties.Set("conf", &jsonschema.Schema{
-			Type:  "object",
-			OneOf: backendConf,
-		})
-		return schema, true
+// // Ensure we have the pointer type that implements proto.Message.
+// // Returns the message descriptor if t is a generated protobuf message.
+// func ProtoDescFromType(t reflect.Type) (protoreflect.MessageDescriptor, bool) {
+// 	// Unwrap pointers until a non-pointer (generated messages are structs).
+// 	for t.Kind() == reflect.Pointer {
+// 		t = t.Elem()
+// 	}
+// 	if t.Kind() != reflect.Struct {
+// 		return nil, false
+// 	}
+// 	// The pointer to the struct implements proto.Message.
+// 	pt := reflect.PointerTo(t)
+// 	msg, ok := reflect.Zero(pt).Interface().(proto.Message)
+// 	if !ok {
+// 		return nil, false
+// 	}
+// 	return msg.ProtoReflect().Descriptor(), true
+// }
+
+func hasOneofField(r reflect.Type) bool {
+	md, ok := protoDescFromType(r)
+	if !ok {
+		return false
 	}
-	return nil, false
+	return md.Oneofs().Len() > 0
 }
 
+// type mapper struct {
+// 	pkg       string
+// 	typeSet   map[reflect.Type]struct{}
+// 	reflector *reflector
+// }
+//
+// func (m *mapper) Map(r reflect.Type) *jsonschema.Schema {
+// 	if !hasOneofField(r) {
+// 		if backendConf := BackendToOneOfs[r.Name()]; backendConf != nil {
+// 			schema := m.reflector.reflectFromType(r, true, false)
+// 			schema.ID = ""
+// 			schema.Version = ""
+// 			schema.Properties.Set("conf", &jsonschema.Schema{
+// 				Type:  "object",
+// 				OneOf: backendConf,
+// 			})
+// 			return schema
+// 		}
+// 		return valueMapper(r)
+// 	}
+//
+// 	s := &jsonschema.Schema{}
+// 	for i := range r.NumField() {
+// 		fd := r.Field(i)
+// 		_, ok := fd.Tag.Lookup("protobuf_oneof")
+// 		if !ok {
+// 			// skip proto specific fields like 'state', 'unknownFields', 'sizeCache'
+// 			continue
+// 		}
+// 		types, err := OneofWrapperTypes(r, fd)
+// 		if err != nil {
+// 			fmt.Println("ERROR", err)
+// 			return nil
+// 		}
+//
+// 		mapping := map[string]string{}
+// 		for discriminator, t := range types {
+// 			fmt.Println("DEBUG", discriminator, t.String())
+// 			ref := getReference(t, m.pkg)
+// 			s.OneOf = append(s.OneOf, &jsonschema.Schema{
+// 				Ref: ref.FullRef(),
+// 			})
+// 			mapping[discriminator] = ref.FullRef()
+// 			if _, ok := m.typeSet[t]; ok {
+// 				continue
+// 			}
+// 			m.typeSet[t] = struct{}{}
+// 			if err := generateSchemaToFile(t, m.pkg, m.typeSet); err != nil {
+// 				fmt.Println("ERROR", err)
+// 				return nil
+// 			}
+// 		}
+// 		s.Extras = map[string]any{
+// 			"discriminator": map[string]any{
+// 				"propertyName": "type",
+// 				"mapping":      mapping,
+// 			},
+// 		}
+// 	}
+//
+// 	return s
+// }
+
+// func confMapper(r reflect.Type, self jsonschema.Reflector, typeSet map[reflect.Type]struct{}) (*jsonschema.Schema, bool) {
+// 	if !hasOneofField(r) {
+// 		if backendConf := BackendToOneOfs[r.Name()]; backendConf != nil {
+// 			schema := self.ReflectFromType(r)
+// 			schema.ID = ""
+// 			schema.Version = ""
+// 			schema.Properties.Set("conf", &jsonschema.Schema{
+// 				Type:  "object",
+// 				OneOf: backendConf,
+// 			})
+// 			return schema, true
+// 		}
+// 		return nil, false
+// 	}
+//
+// 	s := &jsonschema.Schema{}
+// 	// for i := range r.NumField() {
+// 	// 	fd := r.Field(i)
+// 	// 	_, ok := fd.Tag.Lookup("protobuf_oneof")
+// 	// 	if !ok {
+// 	// 		// skip proto specific fields like 'state', 'unknownFields', 'sizeCache'
+// 	// 		continue
+// 	// 	}
+// 	// 	types, err := OneofWrapperTypes(r, fd)
+// 	// 	if err != nil {
+// 	// 		fmt.Println("ERROR", err)
+// 	// 		return nil, false
+// 	// 	}
+// 	// 	for _, t := range types {
+// 	// 		ref := getReference(r, m.pkg)
+// 	// 		s.OneOf = append(s.OneOf, &jsonschema.Schema{
+// 	// 			Ref: "/specs/protoresources/" + strings.ToLower(name) + "/schema.yaml#/components/schemas/" + name,
+// 	// 		})
+// 	// 		typeSet[t.Elem()] = struct{}{}
+// 	// 	}
+// 	// }
+//
+// 	// types, err := OneofWrapperTypesV2(r, "type")
+// 	// if err != nil {
+// 	// 	fmt.Println("ERROR", err)
+// 	// 	return nil, false
+// 	// }
+// 	// for _, t := range types {
+// 	// 	typeSet[t] = struct{}{}
+// 	// }
+// 	//
+// 	// s := &jsonschema.Schema{}
+// 	// for i := range md.Fields().Len() {
+// 	// 	fd := md.Fields().Get(i)
+// 	// 	fd.
+// 	// 		od := fd.ContainingOneof()
+// 	// 	if od == nil {
+// 	// 		fmt.Println("DEBUG", "is it even the case?")
+// 	// 	}
+// 	// 	for j := range od.Fields().Len() {
+// 	// 		odField := od.Fields().Get(j)
+// 	// 		s.OneOf = append(s.OneOf, &jsonschema.Schema{Ref: string(odField.FullName())})
+// 	// 		fmt.Println("DEBUG", ReflectTypeFromFD(odField).Kind())
+// 	// 	}
+// 	// }
+// 	return s, true
+// 	// oneofs := pdesc.Oneofs()
+// 	//
+// 	// if oneofs.Len() > 0 {
+// 	// }
+// 	//
+// 	// for i := range oneofs.Len() {
+// 	// 	od := oneofs.Get(i)
+// 	// 	for j := range od.Fields().Len() {
+// 	// 		odField := od.Fields().Get(j)
+// 	// 		odField.ContainingOneof()
+// 	// 		fmt.Println("DEBUG", odField.FullName())
+// 	// 		desc := ReflectTypeFromFD(odField)
+// 	// 		self.ReflectFromType(desc)
+// 	// 	}
+// 	// }
+//
+// 	// od := pdesc.Oneofs().ByName("type")
+// 	// if od != nil {
+// 	// 	for i := range od.Fields().Len() {
+// 	// 		if od.Fields().Get(i).Kind() == protoreflect.MessageKind {
+// 	// 			msg := od.Fields().Get(i).Message()
+// 	// 			fmt.Println("DEBUG", od.Fields().Get(i).Name())
+// 	// 			fmt.Println("DEBUG", msg.FullName())
+// 	// 		}
+// 	// 	}
+// 	// }
+// 	// if r.Kind() == reflect.Struct {
+// 	// 	for i := range r.NumField() {
+// 	// 		f := r.Field(i)
+// 	// 		if oneofName, ok := f.Tag.Lookup("protobuf_oneof"); ok {
+// 	// 			fmt.Println("Field", f.Name, "is a oneof:", oneofName, r.Name())
+// 	// 		}
+// 	// 	}
+// 	// }
+// 	// backendConf := BackendToOneOfs[r.Name()]
+// 	// if backendConf != nil {
+// 	// 	schema := self.ReflectFromType(r)
+// 	// 	schema.ID = ""
+// 	// 	schema.Version = ""
+// 	// 	schema.Properties.Set("conf", &jsonschema.Schema{
+// 	// 		Type:  "object",
+// 	// 		OneOf: backendConf,
+// 	// 	})
+// 	// 	return schema, true
+// 	// }
+// 	// if r.Name() == "DataSource" {
+// 	// 	return &jsonschema.Schema{
+// 	// 		OneOf: []*jsonschema.Schema{
+// 	// 			{Ref: "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File"},
+// 	// 			{Ref: "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_Inline"},
+// 	// 			{Ref: "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_InlineString"},
+// 	// 			{Ref: "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_Secret"},
+// 	// 		},
+// 	// 		Extras: map[string]any{
+// 	// 			"discriminator": map[string]any{
+// 	// 				"propertyName": "type",
+// 	// 				"mapping": map[string]any{
+// 	// 					"file":         "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File",
+// 	// 					"inline":       "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_Inline",
+// 	// 					"inlineString": "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_InlineString",
+// 	// 					"secret":       "/specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_Secret",
+// 	// 				},
+// 	// 			},
+// 	// 		},
+// 	// 	}, true
+// 	// }
+// 	return nil, false
+// }
+
 // snakeToCamel converts a snake_case string to camelCase
+// func confMapper2(r reflect.Type, self jsonschema.Reflector, typeSet map[reflect.Type]struct{}) (*jsonschema.Schema, bool) {
+// 	if s, ok := confMapper(r, self, typeSet); ok {
+// 		return s, ok
+// 	}
+// 	if strings.HasPrefix(r.Name(), "DataSource_") {
+// 		schema := self.ReflectFromType(r)
+// 		parts := strings.Split(r.Name(), "_")
+// 		schema.Properties.Set("type", &jsonschema.Schema{Type: "string", Const: strings.ToLower(parts[1])})
+// 		return schema, true
+// 	}
+// 	return nil, false
+// }
+
 func snakeToCamel(s string) string {
 	parts := strings.Split(s, "_")
 	if len(parts) == 1 {

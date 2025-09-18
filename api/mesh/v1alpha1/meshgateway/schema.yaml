@@ -70,13 +70,18 @@ properties:
                     should contain an RSA key and certificate, and the other an
                     ECDSA key and certificate.
                   items:
-                    description: DataSource defines the source of bytes to use.
-                    properties:
-                      Type:
-                        description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-                    required:
-                    - Type
-                    type: object
+                    discriminator:
+                      mapping:
+                        file: /specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File
+                        inline: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline
+                        inlineString: /specs/protoresources/datasource_inlinestring/schema.yaml#/components/schemas/DataSource_InlineString
+                        secret: /specs/protoresources/datasource_secret/schema.yaml#/components/schemas/DataSource_Secret
+                      propertyName: type
+                    oneOf:
+                    - $ref: /specs/protoresources/datasource_secret/schema.yaml#/components/schemas/DataSource_Secret
+                    - $ref: /specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File
+                    - $ref: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline
+                    - $ref: /specs/protoresources/datasource_inlinestring/schema.yaml#/components/schemas/DataSource_InlineString
                   type: array
                 mode:
                   description: |-

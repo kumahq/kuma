@@ -1,0 +1,14 @@
+components:
+  schemas:
+    DataSource_InlineString:
+      properties:
+        InlineString:
+          description: Data source is inline string
+          type: string
+        type:
+          const: inlineString
+          type: string
+      type: object
+info:
+  x-ref-schema-name: DataSource_InlineString
+openapi: 3.1.0

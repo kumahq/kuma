@@ -1,0 +1,15 @@
+components:
+  schemas:
+    DataSource_Inline:
+      properties:
+        Inline:
+          description: Data source is inline bytes.
+          format: byte
+          type: string
+        type:
+          const: inline
+          type: string
+      type: object
+info:
+  x-ref-schema-name: DataSource_Inline
+openapi: 3.1.0
