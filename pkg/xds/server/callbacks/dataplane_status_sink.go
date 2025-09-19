@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -224,6 +225,9 @@ func (s *dataplaneInsightSink) listMeshTrustBackends(ctx context.Context, mesh s
 	for _, trust := range meshTrusts.Items {
 		backends = append(backends, kri.From(trust).String())
 	}
+	sort.SliceStable(backends, func(i, j int) bool {
+		return backends[i] < backends[j]
+	})
 	return backends
 }
 

@@ -171,7 +171,7 @@ func buildExternalServiceFilterChain(
 	virtualHostName := esName
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
-		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming)).
+		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming, false)).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
 		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
 		// Zone Egress will configure these filter chains only for meshes with mTLS enabled, so we can safely pass here true
