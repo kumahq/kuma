@@ -72,7 +72,7 @@ spec:
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should use MeshHTTPRoute if no TrafficRoutes are present", func() {
+	It("should receive identity from Spire and traffic works", func() {
 		// when
 		yaml := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -116,7 +116,7 @@ spec:
 		// then
 		// traffic works
 		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server.%s:80", namespace), client.FromKubernetesPod(namespace, "demo-client"))
+			resp, err := client.CollectEchoResponse(kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server.%s.svc.cluster.local:80", namespace), client.FromKubernetesPod(namespace, "demo-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server-spire"))
 		}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
