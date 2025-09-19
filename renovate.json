@@ -3,17 +3,9 @@
   "extends": [
     ":configMigration",
     "customManagers:makefileVersions",
-    "Kong/public-shared-renovate:backend",
-    "Kong/public-shared-renovate:security-extended(area/security,team:kuma-security-managers)"
-  ],
-  "enabledManagers": [
-    "custom.regex",
-    "dockerfile",
-    "github-actions",
-    "gomod",
-    "helm-values",
-    "kubernetes",
-    "mise"
+    "Kong/public-shared-renovate:backend#1.13.1",
+    "Kong/public-shared-renovate:security-extended(area/security,team:kuma-security-managers)#1.13.1",
+    "Kong/public-shared-renovate//modules/kuma/go-control-plane#1.13.1"
   ],
   "ignorePaths": [],
   "kubernetes": {
@@ -24,26 +16,6 @@
     ],
     "managerFilePatterns": ["/app/kumactl/data/install/k8s/.+\\.ya?ml$/"]
   },
-  "customManagers": [
-    {
-      "description": [
-        " Custom regex manager for updating 'github.com/kumahq/go-control-plane' entries in go.mod",
-        " files. It matches both the root module and any subpackages, then looks up versions via",
-        " the 'go' datasource and rewrites the version string"
-      ],
-      "customType": "regex",
-      "managerFilePatterns": ["/(^|/)go\\.mod$/"],
-      "matchStrings": [
-        "(?<packageName>github.com\\/kumahq\\/(?<depName>go-control-plane)) (?<currentValue>[^\\s]+)",
-        "(?<packageName>github.com\\/kumahq\\/go-control-plane\\/(?<depName>.+)) (?<currentValue>[^\\s]+)"
-      ],
-      "datasourceTemplate": "go",
-      "depTypeTemplate": "replace",
-      "extractVersionTemplate": "^(?:{{{depName}}}\\/)?(?<version>v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>kong-.+))",
-      "autoReplaceStringTemplate": "{{{packageName}}} {{{newValue}}}",
-      "versioningTemplate": "loose"
-    }
-  ],
   "packageRules": [
     {
       "description": [
@@ -53,7 +25,6 @@
       ],
       "matchManagers": ["github-actions"],
       "addLabels": ["ci/skip-test"],
-      "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
       "prFooter": "> Changelog: skip"
     },
     {
@@ -65,7 +36,6 @@
       "matchManagers": ["custom.regex"],
       "matchPackageNames": ["Kong/public-shared-actions/**"],
       "addLabels": ["ci/skip-test"],
-      "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
       "prFooter": "> Changelog: skip"
     },
     {
@@ -104,7 +74,6 @@
       ],
       "matchManagers": ["mise"],
       "semanticCommitScope": "deps/dev",
-      "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
       "prFooter": "> Changelog: skip"
     },
     {
@@ -132,41 +101,6 @@
       ],
       "matchDepNames": ["aqua:grpc/grpc-go/protoc-gen-go-grpc"],
       "extractVersion": "^cmd/protoc-gen-go-grpc/(?<version>.*)$"
-    },
-    {
-      "description": [
-        " Disable updates from the default Go module manager for any 'kumahq/go-control-plane'",
-        " entries that are declared as 'replace' dependencies. These are intentionally handled by",
-        " our custom regex manager instead"
-      ],
-      "groupName": "github.com/kumahq/go-control-plane*",
-      "matchManagers": ["gomod"],
-      "matchDepNames": ["github.com/kumahq/go-control-plane{/,}**"],
-      "matchDepTypes": ["replace"],
-      "enabled": false
-    },
-    {
-      "description": [
-        " Route updates for 'github.com/kumahq/go-control-plane' through our custom manager"
-      ],
-      "matchManagers": ["custom.regex"],
-      "matchDatasources": ["go"],
-      "matchDepTypes": ["replace"],
-      "matchPackageNames": ["github.com/kumahq/go-control-plane{/,}**"],
-      "commitMessageTopic": "{{{packageName}}}"
-    },
-    {
-      "description": [
-        " Group go-control-plane module updates (from both 'envoyproxy' and 'kumahq' orgs) into",
-        " a cohesive PR and enrich the PR body with links to the module and its source tree"
-      ],
-      "groupName": "github.com/envoyproxy/go-control-plane*",
-      "groupSlug": "github.com-envoyproxy-go-control-plane",
-      "matchDatasources": ["go"],
-      "matchPackageNames": ["github.com/{envoyproxy,kumahq}/go-control-plane{/,}**"],
-      "prBodyDefinitions": {
-        "Package": "[{{{packageName}}}]({{{sourceUrl}}}) ([source]({{{sourceUrl}}}/tree/{{#if newVersion}}{{{depName}}}/{{{newVersion}}}{{else}}main{{/if}}/{{{depName}}}))"
-      }
     }
   ]
 }
