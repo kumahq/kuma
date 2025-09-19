@@ -23,6 +23,9 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 			//	2. have KDS from global to zone
 			IncludeInFederation: def.KDSFlags.Has(model.GlobalToZonesFlag) && !def.ReadOnly,
 		}
+		if def.ShortName != "" {
+			td.ShortName = &def.ShortName
+		}
 		if def.IsPolicy {
 			td.Policy = &api_common.PolicyDescription{
 				HasToTargetRef:   def.HasToTargetRef,

@@ -20,6 +20,9 @@ components:
           type: string
         pluralDisplayName:
           type: string
+        shortName:
+          description: the short name of the resource type used in KRIs and kubectl
+          type: string
         includeInFederation:
           description: description resources of this type should be included in federetion-with-policies export profile (especially useful for moving from non-federated to federated or migrating to a new global).
           type: boolean
