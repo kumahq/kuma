@@ -59,7 +59,7 @@ spec:
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(kubernetes.Cluster, meshName, namespace)
+		DebugKube(kubernetes.Cluster, meshName, namespace, spireNamespace)
 	})
 
 	E2EAfterEach(func() {
