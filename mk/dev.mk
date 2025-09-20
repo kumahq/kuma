@@ -33,7 +33,7 @@ K8S_MAX_VERSION=v1.33.4-k3s1
 KUBEBUILDER_ASSETS_VERSION=1.33
 
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-# renovate: datasource=github-releases depName=golangci/golangci-lint versioning=semver-coerced
+# renovate: datasource=github-tags depName=golangci/golangci-lint versioning=semver-coerced
 export GOLANGCI_LINT_VERSION=v2.4.0
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
