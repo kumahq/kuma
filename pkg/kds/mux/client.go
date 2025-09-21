@@ -105,10 +105,9 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	defer cancel()
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
-	errorCh := make(chan error)
+	errorCh := make(chan error, 6)
 
 	go c.startHealthCheck(withKDSCtx, log, conn, errorCh)
-
 	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
 	go c.startStats(withKDSCtx, log, conn, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, errorCh)
@@ -134,7 +133,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	processingErrorsCh := make(chan error)
+	processingErrorsCh := make(chan error, 2)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
 	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
@@ -261,22 +260,22 @@ func (c *client) handleProcessingErrors(
 	errorCh chan error,
 ) {
 	err := <-processingErrorsCh
-	if status.Code(err) == codes.Unimplemented {
-		log.Error(err, "rpc stream failed, because global CP does not implement this rpc. Upgrade remote CP.")
-		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
-		return
-	}
-	if errors.Is(err, context.Canceled) {
-		log.Info("rpc stream shutting down")
-		// Let's not propagate this error further as we've already cancelled the context
-		err = nil
-	} else {
-		log.Error(err, "rpc stream failed prematurely, will restart in background")
-	}
-	if err := stream.CloseSend(); err != nil {
-		log.Error(err, "CloseSend returned an error")
-	}
 	if err != nil {
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "rpc stream failed, because global CP does not implement this rpc. Upgrade remote CP.")
+			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
+			return
+		}
+		if errors.Is(err, context.Canceled) {
+			log.Info("rpc stream shutting down")
+			// Let's not propagate this error further as we've already cancelled the context
+			err = nil
+		} else {
+			log.Error(err, "rpc stream failed prematurely, will restart in background")
+		}
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
 		errorCh <- err
 	}
 }

@@ -33,16 +33,16 @@ type FilterV2 interface {
 	InterceptClientStream(stream grpc.ClientStream) error
 }
 
-type OnGlobalToZoneSyncConnectFunc func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error
+type OnGlobalToZoneSyncConnectFunc func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errCh chan error)
 
-func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
-	return f(stream)
+func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errCh chan error) {
+	f(stream, errCh)
 }
 
-type OnZoneToGlobalSyncConnectFunc func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error
+type OnZoneToGlobalSyncConnectFunc func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errCh chan error)
 
-func (f OnZoneToGlobalSyncConnectFunc) OnZoneToGlobalSyncConnect(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
-	return f(stream)
+func (f OnZoneToGlobalSyncConnectFunc) OnZoneToGlobalSyncConnect(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errCh chan error) {
+	f(stream, errCh)
 }
 
 var clientLog = core.Log.WithName("kds-delta-client")
@@ -94,11 +94,8 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error, 1)
-	go func() {
-		if err := g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream); err != nil {
-			processingErrorsCh <- err
-		}
-	}()
+	go g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
+
 	if err := g.storeStreamConnection(stream.Context(), zone, service.GlobalToZone, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
 			return status.Error(codes.Canceled, "stream was cancelled")
@@ -143,12 +140,8 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone, service.ZoneToGlobal, connectTime)
 	defer shouldDisconnectStream.Close()
 
-	processingErrorsCh := make(chan error, 1)
-	go func() {
-		if err := g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream); err != nil {
-			processingErrorsCh <- err
-		}
-	}()
+	processingErrorsCh := make(chan error, 2)
+	g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
 
 	if err := g.storeStreamConnection(stream.Context(), zone, service.ZoneToGlobal, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {

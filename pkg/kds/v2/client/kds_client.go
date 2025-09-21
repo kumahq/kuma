@@ -47,7 +47,8 @@ type DeltaKDSStream interface {
 }
 
 type KDSSyncClient interface {
-	Receive() error
+	SendReq() error
+	ReceiveResp() error
 }
 
 type kdsSyncClient struct {
@@ -74,14 +75,18 @@ func NewKDSSyncClient(
 	}
 }
 
-func (s *kdsSyncClient) Receive() error {
+func (s *kdsSyncClient) SendReq() error {
 	for _, typ := range s.resourceTypes {
 		s.log.V(1).Info("sending DeltaDiscoveryRequest", "type", typ)
 		if err := s.kdsStream.DeltaDiscoveryRequest(typ); err != nil {
-			return errors.Wrap(err, "discovering failed")
+			return errors.Wrap(err, "failed to send a discovery request")
 		}
 	}
+	return nil
+}
 
+func (s *kdsSyncClient) ReceiveResp() error {
+	s.log.V(1).Info("start to receive discovery responses")
 	for {
 		received, err := s.kdsStream.Receive()
 		if err != nil {
