@@ -18,7 +18,10 @@ func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes
 		item := clientStreams[i]
 		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client_v2.NewDeltaKDSStream(item, clientID, runtimeInfo, ""), cb, 0)
 		go func() {
-			_ = comp.Receive()
+			_ = comp.SendReq()
+		}()
+		go func() {
+			_ = comp.ReceiveResp()
 			_ = item.CloseSend()
 		}()
 	}
