@@ -73,7 +73,7 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 
 		go func() {
-			if err := syncClient.SendReq(); err != nil {
+			if err := syncClient.Subscribe(); err != nil {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient send request finished with an error")
 				log.Error(err, "failed to send initial discovery requests")
 				errChan <- err
@@ -82,7 +82,7 @@ func Setup(rt core_runtime.Runtime) error {
 			}
 		}()
 		go func() {
-			if err := syncClient.ReceiveResp(); err != nil && !errors.Is(err, context.Canceled) {
+			if err := syncClient.Watch(); err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
 				log.Error(err, "failed to receive discovery responses")
 				errChan <- err

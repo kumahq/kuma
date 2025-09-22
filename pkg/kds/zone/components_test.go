@@ -223,13 +223,13 @@ var _ = Describe("Zone Sync", func() {
 				defer GinkgoRecover()
 				defer wg.Done()
 
-				_ = syncClient.SendReq()
+				_ = syncClient.Subscribe()
 			}()
 			go func() {
 				defer GinkgoRecover()
 				defer wg.Done()
 
-				_ = syncClient.ReceiveResp()
+				_ = syncClient.Watch()
 			}()
 			closeFunc = func() {
 				defer GinkgoRecover()

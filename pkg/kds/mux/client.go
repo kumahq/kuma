@@ -105,7 +105,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	defer cancel()
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
-	errorCh := make(chan error, 6)
+	errorCh := make(chan error)
 
 	go c.startHealthCheck(withKDSCtx, log, conn, errorCh)
 	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
@@ -133,7 +133,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	processingErrorsCh := make(chan error, 2)
+	processingErrorsCh := make(chan error)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
 	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
