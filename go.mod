@@ -54,7 +54,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/spiffe/go-spiffe/v2 v2.6.0
-	github.com/testcontainers/testcontainers-go v0.38.0
+	github.com/testcontainers/testcontainers-go v0.39.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
