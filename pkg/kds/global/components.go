@@ -82,12 +82,14 @@ func Setup(rt runtime.Runtime) error {
 			return
 		}
 
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-			errCh <- errors.Wrap(err, " GlobalToZoneSync finished with an error")
-			return
-		}
-
-		log.V(1).Info("GlobalToZoneSync finished gracefully")
+		go func() {
+			log.V(1).Info("start GlobalToZoneSync stream handler")
+			if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+				errCh <- errors.Wrap(err, " GlobalToZoneSync finished with an error")
+			} else {
+				log.V(1).Info("GlobalToZoneSync finished gracefully")
+			}
+		}()
 	})
 
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errCh chan error) {
@@ -109,7 +111,7 @@ func Setup(rt runtime.Runtime) error {
 		)
 
 		go func() {
-			if err := sink.SendReq(); err != nil {
+			if err := sink.Subscribe(); err != nil {
 				err = errors.Wrap(err, "ZoneToGlobalSyncClient send request finished with an error")
 				log.Error(err, "failed to send discovery requests")
 				errCh <- err
@@ -118,7 +120,7 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 		go func() {
-			if err := sink.ReceiveResp(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			if err := sink.Watch(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
 				err = errors.Wrap(err, "ZoneToGlobalSyncClient finished with an error")
 				log.Error(err, " failed to receive discovery responses")
 				errCh <- err

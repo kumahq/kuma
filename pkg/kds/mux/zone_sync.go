@@ -94,7 +94,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error, 1)
-	go g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
+	g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
 
 	if err := g.storeStreamConnection(stream.Context(), zone, service.GlobalToZone, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
@@ -140,6 +140,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone, service.ZoneToGlobal, connectTime)
 	defer shouldDisconnectStream.Close()
 
+	// the buffer needs to be 2, because the callback would start 2 goroutines that can write the error to the channel
 	processingErrorsCh := make(chan error, 2)
 	g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
 

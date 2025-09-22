@@ -100,11 +100,11 @@ var _ = Describe("Zone Delta Sync", func() {
 		)
 		go func() {
 			defer wg.Done()
-			_ = policySync.SendReq()
+			_ = policySync.Subscribe()
 		}()
 		go func() {
 			defer wg.Done()
-			_ = policySync.ReceiveResp()
+			_ = policySync.Watch()
 		}()
 		closeFunc = func() {
 			defer GinkgoRecover()

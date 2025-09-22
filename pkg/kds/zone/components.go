@@ -73,23 +73,27 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 
 		go func() {
-			if err := syncClient.SendReq(); err != nil {
+			if err := syncClient.Subscribe(); err != nil {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient send request finished with an error")
-				log.Error(err, "failed to send initial discovery requests")
-				errChan <- err
+				select {
+				case errChan <- err:
+				default:
+					log.Error(err, "failed to send initial discovery requests to closed channel")
+				}
 			} else {
 				log.V(1).Info("all discovery requests sent")
 			}
 		}()
 		go func() {
-			if err := syncClient.ReceiveResp(); err != nil && !errors.Is(err, context.Canceled) {
+			if err := syncClient.Watch(); err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
-				log.Error(err, "failed to receive discovery responses")
-				errChan <- err
+				select {
+				case errChan <- err:
+				default:
+					log.Error(err, "failed to receive discovery responses to closed channel")
+				}
 			} else {
 				log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
-				// ref: https://github.com/kumahq/kuma/issues/14517
-				errChan <- nil
 			}
 		}()
 	})
@@ -103,8 +107,6 @@ func Setup(rt core_runtime.Runtime) error {
 				errChan <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
 			} else {
 				log.V(1).Info("ZoneToGlobalSync finished gracefully")
-				// ref: https://github.com/kumahq/kuma/issues/14517
-				errChan <- nil
 			}
 		}()
 	})
