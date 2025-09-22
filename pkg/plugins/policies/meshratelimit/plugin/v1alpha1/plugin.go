@@ -48,7 +48,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshRateLimitType]
-	if !ok {
+	if !ok || (!policies.FromRules.Configured() && !policies.GatewayRules.Configured()) {
 		return nil
 	}
 	listeners := xds.GatherListeners(rs)

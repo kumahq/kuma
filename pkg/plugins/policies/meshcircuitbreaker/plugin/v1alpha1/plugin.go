@@ -54,7 +54,7 @@ func (p plugin) Apply(
 		return applyToEgressRealResources(rs, proxy)
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
-	if !ok {
+	if !ok || (!policies.FromRules.Configured() && !policies.ToRules.Configured() && !policies.GatewayRules.Configured()) {
 		return nil
 	}
 

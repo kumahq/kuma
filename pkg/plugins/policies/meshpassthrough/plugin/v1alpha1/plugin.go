@@ -38,7 +38,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshPassthroughType]
-	if !ok {
+	if !ok || !policies.SingleItemRules.Configured() {
 		return nil
 	}
 	if proxy.Dataplane.Spec.GetNetworking().GetGateway().GetType() == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {

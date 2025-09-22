@@ -55,9 +55,17 @@ type FromRules struct {
 	InboundRules map[InboundListener][]*inbound.Rule
 }
 
+func (f FromRules) Configured() bool {
+	return len(f.Rules) > 0 || len(f.InboundRules) > 0
+}
+
 type ToRules struct {
 	Rules         Rules
 	ResourceRules outbound.ResourceRules
+}
+
+func (t ToRules) Configured() bool {
+	return len(t.Rules) > 0 || len(t.ResourceRules) > 0
 }
 
 type InboundListenerHostname struct {
@@ -104,8 +112,16 @@ type GatewayRules struct {
 	InboundRules map[InboundListener][]*inbound.Rule
 }
 
+func (g GatewayRules) Configured() bool {
+	return len(g.FromRules) > 0 || len(g.InboundRules) > 0 || len(g.ToRules.ByListener) > 0 || len(g.ToRules.ByListenerAndHostname) > 0
+}
+
 type SingleItemRules struct {
 	Rules Rules
+}
+
+func (s SingleItemRules) Configured() bool {
+	return len(s.Rules) > 0
 }
 
 // Deprecated: use common.WithPolicyAttributes instead

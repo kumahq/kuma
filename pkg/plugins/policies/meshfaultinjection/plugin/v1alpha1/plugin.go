@@ -49,7 +49,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshFaultInjectionType]
-	if !ok {
+	if !ok || (!policies.FromRules.Configured() && !policies.GatewayRules.Configured()) {
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)

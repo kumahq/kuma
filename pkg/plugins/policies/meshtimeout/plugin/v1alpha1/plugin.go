@@ -43,6 +43,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTimeoutType]
+	// We don't check if any policies were actually configured because we want to apply default timeouts
 	if !ok {
 		return nil
 	}

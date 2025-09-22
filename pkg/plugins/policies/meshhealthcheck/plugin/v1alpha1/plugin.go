@@ -45,7 +45,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return applyToEgressRealResources(rs, proxy)
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshHealthCheckType]
-	if !ok {
+	if !ok || (!policies.ToRules.Configured() && !policies.GatewayRules.Configured()) {
 		return nil
 	}
 

@@ -60,7 +60,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
-	if !ok {
+	if !ok || (!policies.FromRules.Configured() && !policies.ToRules.Configured() && !policies.GatewayRules.Configured()) {
 		return nil
 	}
 
