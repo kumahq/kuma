@@ -2,24 +2,22 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // ZoneIngress allows us to configure dataplane in the Ingress mode. In this
 // mode, dataplane has only inbound interfaces. Every inbound interface matches
 // with services that reside in that cluster.
 message ZoneIngress {
-
   option (kuma.mesh.resource).name = "ZoneIngressResource";
   option (kuma.mesh.resource).type = "ZoneIngress";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
   // ZoneIngresses resources come from zones always and get copied to other
   // zones.
-  option (kuma.mesh.resource).kds =
-      "model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag";
+  option (kuma.mesh.resource).kds = "model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag";
   option (kuma.mesh.resource).ws.name = "zoneingress";
   option (kuma.mesh.resource).ws.plural = "zoneingresses";
   option (kuma.mesh.resource).ws.alias_name = "zone-ingress";
@@ -29,9 +27,9 @@ message ZoneIngress {
   option (kuma.mesh.resource).short_name = "zi";
   option (kuma.mesh.resource).is_proxy = true;
   option (kuma.mesh.resource).additional_printer_columns =
-      "description=\"Zone name\""
-      ",JSONPath=`.spec.zone`"
-      ",name=\"zone\",type=string";
+    "description=\"Zone name\""
+    ",JSONPath=`.spec.zone`"
+    ",name=\"zone\",type=string";
 
   // Zone field contains Zone name where ingress is serving, field will be
   // automatically set by Global Kuma CP

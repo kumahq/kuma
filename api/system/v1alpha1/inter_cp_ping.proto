@@ -11,6 +11,10 @@ message PingRequest {
   bool ready = 4;
 }
 
-message PingResponse { bool leader = 1; }
+message PingResponse {
+  bool leader = 1;
+}
 
-service InterCpPingService { rpc Ping(PingRequest) returns (PingResponse); }
+service InterCpPingService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}

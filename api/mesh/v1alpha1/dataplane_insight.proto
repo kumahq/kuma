@@ -2,16 +2,15 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // DataplaneInsight defines the observed state of a Dataplane.
 message DataplaneInsight {
-
   option (kuma.mesh.resource).name = "DataplaneInsightResource";
   option (kuma.mesh.resource).type = "DataplaneInsight";
   option (kuma.mesh.resource).package = "mesh";
@@ -58,23 +57,20 @@ message DataplaneInsight {
 // - Control Plane restart (i.e. rolling update or crash)
 // - etc
 message DiscoverySubscription {
-
   // Unique id per ADS subscription.
-  string id = 1 [ (validate.rules).string.min_len = 1 ];
+  string id = 1 [(validate.rules).string.min_len = 1];
 
   // Control Plane instance that handled given subscription.
-  string control_plane_instance_id = 2 [ (validate.rules).string.min_len = 1 ];
+  string control_plane_instance_id = 2 [(validate.rules).string.min_len = 1];
 
   // Time when a given Dataplane connected to the Control Plane.
-  google.protobuf.Timestamp connect_time = 3
-      [ (validate.rules).timestamp.required = true ];
+  google.protobuf.Timestamp connect_time = 3 [(validate.rules).timestamp.required = true];
 
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
 
   // Status of the ADS subscription.
-  DiscoverySubscriptionStatus status = 5
-      [ (validate.rules).message.required = true ];
+  DiscoverySubscriptionStatus status = 5 [(validate.rules).message.required = true];
 
   // Version of Envoy and Kuma dataplane
   Version version = 6;
@@ -86,7 +82,6 @@ message DiscoverySubscription {
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
 message DiscoverySubscriptionStatus {
-
   // Time when status of a given ADS subscription was most recently updated.
   google.protobuf.Timestamp last_update_time = 1;
 
@@ -108,7 +103,6 @@ message DiscoverySubscriptionStatus {
 
 // DiscoveryServiceStats defines all stats over a single xDS service.
 message DiscoveryServiceStats {
-
   // Number of xDS responses sent to the Dataplane.
   uint64 responses_sent = 1;
 
@@ -121,7 +115,6 @@ message DiscoveryServiceStats {
 
 // Version defines version of Kuma Dataplane and Envoy
 message Version {
-
   // Version of Kuma Dataplane
   KumaDpVersion kumaDp = 1;
 
@@ -134,7 +127,6 @@ message Version {
 
 // KumaDpVersion describes details of Kuma Dataplane version
 message KumaDpVersion {
-
   // Version number of Kuma Dataplane
   string version = 1;
 
@@ -153,7 +145,6 @@ message KumaDpVersion {
 
 // EnvoyVersion describes details of Envoy version
 message EnvoyVersion {
-
   // Version number of Envoy
   string version = 1;
 
