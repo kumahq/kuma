@@ -20,6 +20,16 @@ type MeshFaultInjection struct {
 
 	// To list makes a match between clients and corresponding configurations
 	To *[]To `json:"to,omitempty"`
+
+	// Rules defines inbound fault injection configuration
+	Rules *[]Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Matches defines list of matches for which fault injection will be applied
+	Matches *[]common_api.Match `json:"matches,omitempty"`
+	// Default defines fault configuration
+	Default Conf `json:"default"`
 }
 
 type From struct {

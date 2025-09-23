@@ -168,7 +168,7 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,
-	HasRulesTargetRef:            false,
+	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
