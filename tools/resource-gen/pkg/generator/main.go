@@ -673,7 +673,6 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 	if !withBackendCheck {
 		reflector.Mapper = nil
 	}
-	fmt.Println("DEBUG", "new reflector for", t.Name(), "is created", expandedStruct, oneOfSubtype, withBackendCheck)
 	if err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/")); err != nil {
 		return nil, err
 	}
@@ -723,12 +722,11 @@ func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.S
 
 		mapping := map[string]string{}
 		for discriminator, t := range types {
-			fmt.Println("DEBUG", discriminator, t.String())
 			ref := getReference(t, r.pkg)
 			s.OneOf = append(s.OneOf, &jsonschema.Schema{
 				Ref: ref.FullRef(),
 			})
-			mapping["oneOf" + strings.ToTitle(discriminator)] = ref.FullRef()
+			mapping[discriminator] = ref.FullRef()
 			if _, ok := r.typeSet[t]; ok {
 				continue
 			}
