@@ -202,8 +202,8 @@ type ResourceTypeDescription struct {
 	Scope    ResourceTypeDescriptionScope `json:"scope"`
 
 	// ShortName the short name of the resource type used in KRIs and kubectl
-	ShortName           *string `json:"shortName,omitempty"`
-	SingularDisplayName string  `json:"singularDisplayName"`
+	ShortName           string `json:"shortName"`
+	SingularDisplayName string `json:"singularDisplayName"`
 }
 
 // ResourceTypeDescriptionScope defines model for ResourceTypeDescription.Scope.

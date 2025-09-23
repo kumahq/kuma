@@ -3,7 +3,7 @@ components:
     ResourceTypeDescription:
       description: Description of a resource type, this is useful for dynamically generated clients and the gui
       type: object
-      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederation]
+      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederation, shortName]
       properties:
         name:
           description: the name of the resource type

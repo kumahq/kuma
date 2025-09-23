@@ -13,6 +13,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Circuit Breaker"
   },
   {
@@ -22,6 +23,7 @@
    "pluralDisplayName": "Dataplanes",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "dp",
    "singularDisplayName": "Dataplane"
   },
   {
@@ -31,6 +33,7 @@
    "pluralDisplayName": "Dataplane Insights",
    "readOnly": true,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Dataplane Insight"
   },
   {
@@ -40,6 +43,7 @@
    "pluralDisplayName": "External Services",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "External Service"
   },
   {
@@ -55,6 +59,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Fault Injection"
   },
   {
@@ -64,6 +69,7 @@
    "pluralDisplayName": "Global Secrets",
    "readOnly": false,
    "scope": "Global",
+   "shortName": "",
    "singularDisplayName": "Global Secret"
   },
   {
@@ -79,6 +85,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Health Check"
   },
   {
@@ -88,6 +95,7 @@
    "pluralDisplayName": "Hostname Generators",
    "readOnly": false,
    "scope": "Global",
+   "shortName": "hg",
    "singularDisplayName": "Hostname Generator"
   },
   {
@@ -97,6 +105,7 @@
    "pluralDisplayName": "Meshes",
    "readOnly": false,
    "scope": "Global",
+   "shortName": "m",
    "singularDisplayName": "Mesh"
   },
   {
@@ -112,6 +121,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mal",
    "singularDisplayName": "Mesh Access Log"
   },
   {
@@ -127,6 +137,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mcb",
    "singularDisplayName": "Mesh Circuit Breaker"
   },
   {
@@ -136,6 +147,7 @@
    "pluralDisplayName": "Mesh External Services",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "extsvc",
    "singularDisplayName": "Mesh External Service"
   },
   {
@@ -151,6 +163,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mfi",
    "singularDisplayName": "Mesh Fault Injection"
   },
   {
@@ -160,6 +173,7 @@
    "pluralDisplayName": "Mesh Gateways",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mgw",
    "singularDisplayName": "Mesh Gateway"
   },
   {
@@ -175,6 +189,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Mesh Gateway Route"
   },
   {
@@ -190,6 +205,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mhttpr",
    "singularDisplayName": "Mesh HTTP Route"
   },
   {
@@ -205,6 +221,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mhc",
    "singularDisplayName": "Mesh Health Check"
   },
   {
@@ -214,6 +231,7 @@
    "pluralDisplayName": "Mesh Identities",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mid",
    "singularDisplayName": "Mesh Identity"
   },
   {
@@ -223,6 +241,7 @@
    "pluralDisplayName": "Mesh Insights",
    "readOnly": true,
    "scope": "Global",
+   "shortName": "",
    "singularDisplayName": "Mesh Insight"
   },
   {
@@ -238,6 +257,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mlbs",
    "singularDisplayName": "Mesh Load Balancing Strategy"
   },
   {
@@ -253,6 +273,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mm",
    "singularDisplayName": "Mesh Metric"
   },
   {
@@ -262,6 +283,7 @@
    "pluralDisplayName": "Mesh Multi Zone Services",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mzsvc",
    "singularDisplayName": "Mesh Multi Zone Service"
   },
   {
@@ -277,6 +299,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mp",
    "singularDisplayName": "Mesh Passthrough"
   },
   {
@@ -292,6 +315,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mpp",
    "singularDisplayName": "Mesh Proxy Patch"
   },
   {
@@ -307,6 +331,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mrl",
    "singularDisplayName": "Mesh Rate Limit"
   },
   {
@@ -322,6 +347,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mr",
    "singularDisplayName": "Mesh Retry"
   },
   {
@@ -331,6 +357,7 @@
    "pluralDisplayName": "Mesh Services",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "msvc",
    "singularDisplayName": "Mesh Service"
   },
   {
@@ -346,6 +373,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mtcpr",
    "singularDisplayName": "Mesh TCP Route"
   },
   {
@@ -361,6 +389,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mtls",
    "singularDisplayName": "Mesh TLS"
   },
   {
@@ -376,6 +405,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mt",
    "singularDisplayName": "Mesh Timeout"
   },
   {
@@ -391,6 +421,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mtr",
    "singularDisplayName": "Mesh Trace"
   },
   {
@@ -406,6 +437,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mtp",
    "singularDisplayName": "Mesh Traffic Permission"
   },
   {
@@ -415,6 +447,7 @@
    "pluralDisplayName": "Mesh Trusts",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "mtrust",
    "singularDisplayName": "Mesh Trust"
   },
   {
@@ -430,6 +463,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Proxy Template"
   },
   {
@@ -445,6 +479,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Rate Limit"
   },
   {
@@ -460,6 +495,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Retry"
   },
   {
@@ -469,6 +505,7 @@
    "pluralDisplayName": "Secrets",
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Secret"
   },
   {
@@ -478,6 +515,7 @@
    "pluralDisplayName": "Service Insights",
    "readOnly": true,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Service Insight"
   },
   {
@@ -493,6 +531,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Timeout"
   },
   {
@@ -508,6 +547,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Traffic Log"
   },
   {
@@ -523,6 +563,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Traffic Permission"
   },
   {
@@ -538,6 +579,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Traffic Route"
   },
   {
@@ -553,6 +595,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Traffic Trace"
   },
   {
@@ -568,6 +611,7 @@
    },
    "readOnly": false,
    "scope": "Mesh",
+   "shortName": "",
    "singularDisplayName": "Virtual Outbound"
   },
   {
@@ -577,6 +621,7 @@
    "pluralDisplayName": "Zones",
    "readOnly": false,
    "scope": "Global",
+   "shortName": "",
    "singularDisplayName": "Zone"
   },
   {
@@ -586,6 +631,7 @@
    "pluralDisplayName": "Zone Egresses",
    "readOnly": false,
    "scope": "Global",
+   "shortName": "ze",
    "singularDisplayName": "Zone Egress"
   },
   {
@@ -595,6 +641,7 @@
    "pluralDisplayName": "Zone Egress Insights",
    "readOnly": true,
    "scope": "Global",
+   "shortName": "",
    "singularDisplayName": "Zone Egress Insight"
   },
   {
@@ -604,6 +651,7 @@
    "pluralDisplayName": "Zone Ingresses",
    "readOnly": false,
    "scope": "Global",
+   "shortName": "zi",
    "singularDisplayName": "Zone Ingress"
   },
   {
@@ -613,6 +661,7 @@
    "pluralDisplayName": "Zone Ingress Insights",
    "readOnly": true,
    "scope": "Global",
+   "shortName": "",
    "singularDisplayName": "Zone Ingress Insight"
   },
   {
@@ -622,6 +671,7 @@
    "pluralDisplayName": "Zone Insights",
    "readOnly": true,
    "scope": "Global",
+   "shortName": "",
    "singularDisplayName": "Zone Insight"
   }
  ]
