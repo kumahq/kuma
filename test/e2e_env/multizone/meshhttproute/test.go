@@ -89,7 +89,7 @@ func test(meshName string, meshBuilder *builders.MeshBuilder) {
 	It("should use MeshHTTPRoute for cross-zone communication", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
-name: route-1
+name: route-alias-test-server
 mesh: %s
 spec:
   targetRef:
@@ -129,7 +129,7 @@ spec:
 	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
-name: route-1
+name: route-test-server-subset
 mesh: %s
 spec:
   targetRef:
