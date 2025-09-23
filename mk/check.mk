@@ -1,10 +1,6 @@
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run buf format on .proto files
-ifndef CI
 	$(BUF) format -w
-else
-	@echo "skipping buf format as it's done as a github action"
-endif
 
 .PHONY: tidy
 tidy:

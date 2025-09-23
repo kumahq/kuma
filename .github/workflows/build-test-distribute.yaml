@@ -73,9 +73,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-      - name: Run buf format check for Protobuf
-        run: |
-          buf format --diff --exit-code
+
       - run: |
           make clean
       - run: |
