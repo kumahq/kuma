@@ -2,14 +2,13 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
 
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
 // TrafficTrace defines trace configuration for selected dataplanes.
 message TrafficTrace {
-
   option (kuma.mesh.resource).name = "TrafficTraceResource";
   option (kuma.mesh.resource).type = "TrafficTrace";
   option (kuma.mesh.resource).package = "mesh";

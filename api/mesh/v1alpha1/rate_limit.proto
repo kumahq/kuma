@@ -2,17 +2,15 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
-
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
-message RateLimit {
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+message RateLimit {
   option (kuma.mesh.resource).name = "RateLimitResource";
   option (kuma.mesh.resource).type = "RateLimit";
   option (kuma.mesh.resource).package = "mesh";
@@ -21,11 +19,10 @@ message RateLimit {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes that rate limit will be applied for
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1 [(validate.rules).repeated.min_items = 1];
 
   // List of selectors to match services that need to be rate limited.
-  repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector destinations = 2 [(validate.rules).repeated.min_items = 1];
 
   message Conf {
     message Http {

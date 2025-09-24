@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package kuma.mesh;
 
-option go_package = "github.com/kumahq/kuma/api/mesh";
-
 import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh";
 
 message KumaResourceOptions {
   // Name of the Kuma resource struct.
@@ -83,5 +83,5 @@ message KumaPolicyOptions {
 
 extend google.protobuf.MessageOptions {
   KumaResourceOptions resource = 43534533; // 'kuma'
-  KumaPolicyOptions policy = 43534534;     // 'kuma'
+  KumaPolicyOptions policy = 43534534; // 'kuma'
 }

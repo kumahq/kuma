@@ -16,6 +16,7 @@ for any tools/libraries that you may be missing.
 - [`unzip`](http://infozip.sourceforge.net/UnZip.html)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://golang.org/)
+<<<<<<< HEAD
 - [`jq`](https://jqlang.github.io/jq/download/)
 - [`yq`](https://mikefarah.gitbook.io/yq)
 - [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) # normally included in
@@ -23,6 +24,9 @@ for any tools/libraries that you may be missing.
   ```bash
   clang-format --version
   ```
+=======
+- [`mise`](https://mise.jdx.dev)
+>>>>>>> efb80db2ce (ci(lint): clang-format with buf format for protobuf formatting (#14538))
 
 ### Helper commands
 

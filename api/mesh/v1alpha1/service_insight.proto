@@ -2,12 +2,11 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 
-message ServiceInsight {
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+message ServiceInsight {
   option (kuma.mesh.resource).name = "ServiceInsightResource";
   option (kuma.mesh.resource).type = "ServiceInsight";
   option (kuma.mesh.resource).package = "mesh";

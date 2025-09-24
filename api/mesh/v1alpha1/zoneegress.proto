@@ -2,14 +2,13 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
 
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
 // ZoneEgress allows us to configure dataplane in the Egress mode.
 message ZoneEgress {
-
   option (kuma.mesh.resource).name = "ZoneEgressResource";
   option (kuma.mesh.resource).type = "ZoneEgress";
   option (kuma.mesh.resource).global = true;
@@ -21,9 +20,9 @@ message ZoneEgress {
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
   option (kuma.mesh.resource).additional_printer_columns =
-      "description=\"Zone name\""
-      ",JSONPath=`.spec.zone`"
-      ",name=\"zone\",type=string";
+    "description=\"Zone name\""
+    ",JSONPath=`.spec.zone`"
+    ",name=\"zone\",type=string";
 
   // Zone field contains Zone name where egress is serving, field will be
   // automatically set by Global Kuma CP
