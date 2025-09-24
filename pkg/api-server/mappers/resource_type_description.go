@@ -18,6 +18,7 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 			SingularDisplayName: def.SingularDisplayName,
 			PluralDisplayName:   def.PluralDisplayName,
 			Scope:               api_common.ResourceTypeDescriptionScope(def.Scope),
+			ShortName:           def.ShortName,
 			// Things in the federation export should be:
 			//	1. not system managed .i.e: not ReadOnly (ServiceInsight for example is like this)
 			//	2. have KDS from global to zone
