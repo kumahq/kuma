@@ -37,11 +37,8 @@ ginkgo/unfocus:
 ginkgo/lint:
 	go run $(TOOLS_DIR)/ci/check_test_files.go
 
-.PHONY: format/common
-format/common: generate docs tidy ginkgo/unfocus fmt/ci
-
 .PHONY: format
-format: fmt/proto fmt/ci format/common
+format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
