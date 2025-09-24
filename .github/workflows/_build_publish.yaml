@@ -41,7 +41,7 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
   GITHUB_TOKEN: ${{ github.token }}
-  MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
+  MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   build-binaries:
     timeout-minutes: 70

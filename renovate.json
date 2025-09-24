@@ -78,15 +78,6 @@
     },
     {
       "description": [
-        " Disable updates for 'clang-format' and 'protoc'. We intentionally stick to legacy",
-        " versions, as protobuf usage in Kuma is deprecated, so upgrading would add churn without",
-        " practical benefit"
-      ],
-      "matchDepNames": ["clang-format", "protoc"],
-      "enabled": false
-    },
-    {
-      "description": [
         " Simplify commit message topics for 'aqua:*' and 'go:*' tools by stripping any leading",
         " namespace prefix from the dependency name. This makes commit titles shorter and easier",
         " to scan"

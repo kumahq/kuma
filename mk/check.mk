@@ -1,10 +1,6 @@
 .PHONY: fmt/proto
-fmt/proto: ## Dev: Run clang-format on .proto files
-ifndef CI
-	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT) -i
-else
-	@echo "skipping clang-format as it's done as a github action"
-endif
+fmt/proto: ## Dev: Run buf format on .proto files
+	$(BUF) format -w
 
 .PHONY: tidy
 tidy:
@@ -41,11 +37,8 @@ ginkgo/unfocus:
 ginkgo/lint:
 	go run $(TOOLS_DIR)/ci/check_test_files.go
 
-.PHONY: format/common
-format/common: generate docs tidy ginkgo/unfocus fmt/ci
-
 .PHONY: format
-format: fmt/proto fmt/ci format/common
+format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
