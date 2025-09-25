@@ -28,7 +28,7 @@ jobs:
           github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |
             const branch = process.env.GITHUB_REF_NAME;
-            return github.rest.repos.createDispatchEvent({
+            github.rest.repos.createDispatchEvent({
               owner: '${{ secrets.NOTIFY_OWNER }}',
               repo: '${{ env.TARGET_REPO }}',
               event_type: '${{ env.EVENT_TYPE }}',
