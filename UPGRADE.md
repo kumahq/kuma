@@ -58,7 +58,7 @@ Before upgrading, ensure that your configuration does not override this setting.
 
 ### System namespace requires the `kuma.io/sidecar-injection: false` label
 
-To simplify the namespace selector logic in webhooks, we now require the `kuma.io/sidecar-injection: false` label to be set on the system namespace.
+To simplify the namespace selector logic in webhooks, we now require the `kuma.io/sidecar-injection: false` label to be set on Kuma's system namespace (`kuma-system` by default).
 
 Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
 
