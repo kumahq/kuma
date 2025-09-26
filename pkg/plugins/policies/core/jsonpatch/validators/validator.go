@@ -129,7 +129,12 @@ func TopLevelTargetRefDeprecations(targetRef *common_api.TargetRef) []string {
 	}
 	if _, ok := replacedByDataplane[targetRef.Kind]; ok {
 		return []string{
-			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with labels instead", common_api.MeshSubset, common_api.Dataplane),
+			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with labels instead", targetRef.Kind, common_api.Dataplane),
+		}
+	}
+	if targetRef.Kind == common_api.MeshHTTPRoute {
+		return []string{
+			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s in spec.to[].targetRef", common_api.MeshHTTPRoute, common_api.MeshHTTPRoute),
 		}
 	}
 	return nil

@@ -1,0 +1,8 @@
+Patches: null
+allowed: true
+status:
+  code: 200
+  metadata: {}
+uid: "12345"
+warnings:
+- MeshHTTPRoute value for 'targetRef.kind' is deprecated, use MeshHTTPRoute in spec.to[].targetRef
