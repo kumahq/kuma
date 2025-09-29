@@ -122,7 +122,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@7040193cacd1787991b11b6b2ddb0a9719cbb533 # v5.1.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@ba5f6140d799d220f6417e74d9bfda1116fddc9a # v6.0.0
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -131,7 +131,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@7040193cacd1787991b11b6b2ddb0a9719cbb533 # v5.1.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@ba5f6140d799d220f6417e74d9bfda1116fddc9a # v6.0.0
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
