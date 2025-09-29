@@ -1,22 +1,87 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    ":configMigration",
-    "customManagers:makefileVersions",
-    "Kong/public-shared-renovate:backend#1.13.1",
-    "Kong/public-shared-renovate:security-extended(area/security,team:kuma-security-managers)#1.13.1",
-    "Kong/public-shared-renovate//modules/kuma/go-control-plane#1.13.1"
+    "Kong/public-shared-renovate",
+    "Kong/public-shared-renovate//scoped/kuma/go-control-plane",
+    "Kong/public-shared-renovate//overrides/security-labels(area/security)",
+    "Kong/public-shared-renovate//overrides/security-reviewers(team:kuma-security-managers)",
+    ":automergeRequireAllStatusChecks",
+    ":automergeMinor",
+    ":automergePatch",
+    ":combinePatchMinorReleases",
+    ":disableRateLimiting",
+    ":semanticCommitTypeAll(chore)",
+    "docker:pinDigests",
+    "schedule:earlyMondays"
   ],
-  "ignorePaths": [],
+  "ignorePresets": [
+    ":ignoreModulesAndTests",
+    "customManagers:dockerfileVersions",
+    "customManagers:helmChartYamlAppVersions",
+    "customManagers:tfvarsVersions"
+  ],
+  "enabledManagers": [
+    "custom.regex",
+    "dockerfile",
+    "github-actions",
+    "gomod",
+    "helm-values",
+    "kubernetes",
+    "mise"
+  ],
+  "automergeStrategy": "squash",
+  "internalChecksFilter": "strict",
+  "keepUpdatedLabel": "renovate/keep-updated",
+  "rebaseWhen": "conflicted",
   "kubernetes": {
     "description": [
       " Update container image tags in Kubernetes manifests installed via",
       " 'kumactl install demo|observability'. Limits matching to the generated YAML under",
       " app/kumactl/data/install/k8s/"
     ],
-    "managerFilePatterns": ["/app/kumactl/data/install/k8s/.+\\.ya?ml$/"]
+    "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
   "packageRules": [
+    {
+      "description": [
+        " Show 'Adoption' instead of 'Confidence' in PR body tables for Go updates"
+      ],
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["patch", "minor", "major"],
+      "prBodyColumns": ["Package", "Type", "Change", "Age", "Adoption"]
+    },
+    {
+      "description": [
+        " Update golden test YAML under app/kumactl/cmd/install/testdata to the correct",
+        " image versions in the same Renovate run/PR. Combined with the kubernetes",
+        " managerFilePatterns, this keeps golden files in sync so we don't have to update them",
+        " manually"
+      ],
+      "matchManagers": ["kubernetes"],
+      "matchPackageNames": ["/^gcr.io/octo/", "/^docker.io/kumahq/", "/^kuma-ci/"],
+      "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
+      "enabled": false
+    },
+    {
+      "description": [
+        " Disable 'kubernetes-api' updates (e.g. apiVersion fields like 'rbac.authorization.k8s.io/v1')",
+        " in golden test manifests under app/kumactl/cmd/install/testdata so Renovate does not rewrite",
+        " Kubernetes API versions in test data"
+      ],
+      "matchDatasources": ["kubernetes-api"],
+      "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
+      "enabled": false
+    },
+    {
+      "description": [
+        " Group related container image updates in the 'kumactl install demo|observability'",
+        " Kubernetes manifests so they land in a single PR"
+      ],
+      "matchFileNames": ["app/kumactl/{cmd,data}/install/{k8s,testdata}/**"],
+      "groupName": "kumactl install demo|observability images",
+      "groupSlug": "kumactl-install-k8s",
+      "prFooter": "> Changelog: skip"
+    },
     {
       "description": [
         " For GitHub Actions dependency updates, add a 'ci/skip-test' label and use a terse PR",
@@ -29,32 +94,26 @@
     },
     {
       "description": [
-        " Treat updates to shared Kong GitHub Actions (managed via the regex manager) the same",
-        " as other workflow bumps: apply 'ci/skip-test' and keep the PR body minimal to avoid",
-        " unnecessary CI load and changelog noise"
+        "Treat updates to shared Kong GitHub Actions (tracked by the regex manager) like other",
+        "workflow bumps: apply the 'ci/skip-test' label to avoid unnecessary test runs, wait 24h",
+        "before proposing updates to catch issues with freshly published tags and reduce churn,",
+        "and add a 'Changelog: skip' footer to avoid release-notes noise"
       ],
       "matchManagers": ["custom.regex"],
-      "matchPackageNames": ["Kong/public-shared-actions/**"],
+      "matchPackageNames": ["*/public-shared-actions/**"],
+      "minimumReleaseAge": "24h",
       "addLabels": ["ci/skip-test"],
       "prFooter": "> Changelog: skip"
     },
     {
       "description": [
-        " Group related container image updates in the 'kumactl install demo|observability'",
-        " Kubernetes manifests so they land in a single PR"
+        "Apply a 24h minimumReleaseAge to dependencies from the 'kumahq' GitHub org",
+        "(matching both 'kumahq/*' and 'github.com/kumahq/*'). Unlike the default 12-day delay,",
+        "this shorter window gives us enough time to catch mistakes or regressions in freshly",
+        "published tags, while still allowing fixes to flow quickly once releases stabilize"
       ],
-      "groupName": "kumactl install demo|observability container images",
-      "groupSlug": "kumactl-install-k8s",
-      "matchFileNames": ["app/kumactl/data/install/k8s/**"]
-    },
-    {
-      "description": [
-        " Change the commit message topic to 'envoy' for 'kumahq/envoy-builds'. These are",
-        " Kuma-maintained builds of released Envoy versions and are handled by the Makefile",
-        " regex manager. Using 'envoy' as the topic makes PR titles clearer"
-      ],
-      "matchDepNames": ["kumahq/envoy-builds"],
-      "commitMessageTopic": "envoy"
+      "matchPackageNames": ["{github.com/,}kumahq/*"],
+      "minimumReleaseAge": "24h"
     },
     {
       "description": [
@@ -69,21 +128,14 @@
     },
     {
       "description": [
-        " Enable PRs for all mise-managed dev tools and set a semantic commit scope of 'deps/dev'.",
-        " This keeps these routine tool bumps out of the main changelog"
+        " For mise-managed dev tools: use semantic commit scope 'deps/dev' for individual",
+        " (non-grouped) PRs, and 'deps' when updates are grouped. Add a '> Changelog: skip' footer",
+        " to individual PRs only, keeping routine tool bumps out of the main changelog without",
+        " affecting grouped PRs"
       ],
       "matchManagers": ["mise"],
-      "semanticCommitScope": "deps/dev",
-      "prFooter": "> Changelog: skip"
-    },
-    {
-      "description": [
-        " Simplify commit message topics for 'aqua:*' and 'go:*' tools by stripping any leading",
-        " namespace prefix from the dependency name. This makes commit titles shorter and easier",
-        " to scan"
-      ],
-      "matchDepNames": ["/^(?:aqua|go):/"],
-      "commitMessageTopic": "{{{replace '([^\\/]*?\\/)*' '' depName}}}"
+      "semanticCommitScope": "deps{{#unless isGroup}}/dev{{/unless}}",
+      "prFooter": "{{#unless isGroup}}> Changelog: skip{{/unless}}"
     },
     {
       "description": [
@@ -92,6 +144,42 @@
       ],
       "matchDepNames": ["aqua:grpc/grpc-go/protoc-gen-go-grpc"],
       "extractVersion": "^cmd/protoc-gen-go-grpc/(?<version>.*)$"
+    },
+    {
+      "description": [
+        " Group dependency bumps from selected GitHub sources into a single PR across managers",
+        " (e.g., mise and gomod) to avoid separate PRs per manager"
+      ],
+      "matchSourceUrls": ["https://github.com/{onsi/ginkgo,golangci/golangci-lint,helm/helm}"],
+      "groupName": "{{{replace 'https://github\\.com/[a-z-]+/' '' sourceUrl}}}"
+    },
+    {
+      "description": [
+        " Group kubectl updates (registry.k8s.io/kubectl or standalone 'kubectl') into a single PR",
+        " across managers"
+      ],
+      "matchDepNames": ["{registry.k8s.io/,}kubectl"],
+      "groupName": "kubectl"
+    },
+    {
+      "description": [
+        " Set commit message fields at the package-rule level with a catch-all match ('*') rather",
+        " than at the root. Root-level fields can be overridden by more specific sub-configs and",
+        " packageRules from composed presets. By defining commitMessageAction/topic/extra in",
+        " a packageRule that matches every dependency, this baseline is applied uniformly after",
+        " composition, while still allowing even more specific packageRules to override it when",
+        " needed",
+        " See: https://docs.renovatebot.com/configuration-options/#packagerules"
+      ],
+      "matchDepNames": "*",
+      "commitMessageAction": "bump",
+      "commitMessageLowerCase": "never",
+      "commitMessageTopic": "{{#if (containsString packageName '/public-shared-actions/')}}{{{packageName}}}{{else}}{{{replace '^(?:go|aqua):[^\\/]*?\\/' '' depName}}}{{/if}}{{#if (and (equals updateType 'digest') (equals currentValue newValue))}}:{{newValue}}{{/if}}",
+      "commitMessageExtra": "{{#if (or (and (or isMajor isMinor isPatch) (or isSingleVersion currentDigestShort)) (and (equals updateType 'digest') currentDigestShort))}}from {{#if (equals updateType 'digest')}}{{currentDigestShort}}{{else if (containsString currentVersion 'v0.0.0-')}}{{replace '^v0.0.0-[0-9]+-(?<digest>[0-9a-z]{7}).*$' '$<digest>' currentVersion}}{{else if isSingleVersion}}{{replace '^v?' '' currentVersion}}{{else if currentDigestShort}}{{#unless currentVersion}}currentDigestShort{{/unless}}{{/if}} {{/if}}to {{#if isPinDigest}}{{newDigestShort}}{{else if (containsString newVersion 'v0.0.0-')}}{{replace '^v0.0.0-[0-9]+-(?<digest>[0-9a-z]{7}).*$' '$<digest>' newVersion}}{{else if isSingleVersion}}{{replace '^v?' '' newVersion}}{{else if newDigestShort}}{{#unless newVersion}}{{newDigestShort}}{{/unless}}{{else}}{{newValue}}{{/if}}",
+      "pin": {"commitMessageAction": "pin"},
+      "pinDigest": {"commitMessageAction": "pin"},
+      "replacement": {"commitMessageAction": "replace"},
+      "rollback": {"commitMessageAction": "roll back"}
     }
   ]
 }
