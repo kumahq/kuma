@@ -14,10 +14,10 @@ type BootstrapRequest struct {
 	Host               string  `json:"-"`
 	Version            Version `json:"version"`
 	// CaCert is a PEM-encoded CA cert that DP uses to verify CP
-	CaCert               string                     `json:"caCert"`
-	DynamicMetadata      map[string]string          `json:"dynamicMetadata"`
-	DNSPort              uint32                     `json:"dnsPort,omitempty"`
-	ReadinessPort        uint32                     `json:"readinessPort,omitempty"`
+	CaCert          string            `json:"caCert"`
+	DynamicMetadata map[string]string `json:"dynamicMetadata"`
+	DNSPort         uint32            `json:"dnsPort,omitempty"`
+	ReadinessPort   uint32            `json:"readinessPort,omitempty"`
 	// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 	//
 	// IMPORTANT: Backward compatibility trap

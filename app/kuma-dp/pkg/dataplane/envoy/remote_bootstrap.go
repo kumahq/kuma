@@ -185,9 +185,9 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 				KumaDpCompatible: envoyVersion.KumaDpCompatible,
 			},
 		},
-		DynamicMetadata:      metadata,
-		DNSPort:              opts.Config.DNS.EnvoyDNSPort,
-		ReadinessPort:        opts.Config.Dataplane.ReadinessPort,
+		DynamicMetadata: metadata,
+		DNSPort:         opts.Config.DNS.EnvoyDNSPort,
+		ReadinessPort:   opts.Config.Dataplane.ReadinessPort,
 		// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 		//
 		// IMPORTANT: The BootstrapRequest JSON tag for this field is intentionally
