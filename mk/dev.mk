@@ -7,7 +7,7 @@ GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
-# renovate: datasource=github-releases depName=kumahq/envoy-builds versioning=semver
+# renovate: datasource=github-tags depName=envoy packageName=kumahq/envoy-builds versioning=semver
 ENVOY_VERSION ?= 1.35.3
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
@@ -33,8 +33,6 @@ K8S_MAX_VERSION=v1.33.4-k3s1
 KUBEBUILDER_ASSETS_VERSION=1.33
 
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-# renovate: datasource=github-tags depName=golangci/golangci-lint versioning=semver-coerced
-export GOLANGCI_LINT_VERSION=v2.4.0
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
