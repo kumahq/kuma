@@ -20,12 +20,12 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-type Configurer struct {
+type LegacyConfigurer struct {
 	FaultInjections []api.FaultInjectionConf
 	From            subsetutils.Subset
 }
 
-func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterChain) error {
+func (c *LegacyConfigurer) ConfigureHttpListener(filterChain *envoy_listener.FilterChain) error {
 	// Do not add new faults if old ones were applied
 	for _, filter := range filterChain.Filters {
 		if filter.Name == "envoy.filters.http.fault" {
@@ -38,26 +38,26 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 
 		for _, fi := range c.FaultInjections {
 			config := &envoy_http_fault.HTTPFault{}
-			delay, err := c.convertDelay(fi.Delay)
+			delay, err := convertDelay(fi.Delay)
 			if err != nil {
 				return err
 			}
 			config.Delay = delay
 
-			abort, err := c.convertAbort(fi.Abort)
+			abort, err := convertAbort(fi.Abort)
 			if err != nil {
 				return err
 			}
 			config.Abort = abort
 
-			rrl, err := c.convertResponseRateLimit(fi.ResponseBandwidth)
+			rrl, err := convertResponseRateLimit(fi.ResponseBandwidth)
 			if err != nil {
 				return err
 			}
 			config.ResponseRateLimit = rrl
 
 			if len(c.From) > 0 {
-				config.Headers = c.createHeaders(c.From)
+				config.Headers = createHeaders(c.From)
 			}
 
 			pbst, err := util_proto.MarshalAnyDeterministic(config)
@@ -95,7 +95,7 @@ func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy
 	}
 }
 
-func (c *Configurer) createHeaders(from subsetutils.Subset) []*envoy_route.HeaderMatcher {
+func createHeaders(from subsetutils.Subset) []*envoy_route.HeaderMatcher {
 	tagsMap := map[bool]map[string]string{false: {}, true: {}}
 	for _, tag := range from {
 		tagsMap[tag.Not][tag.Key] = tag.Value
@@ -116,7 +116,7 @@ func (c *Configurer) createHeaders(from subsetutils.Subset) []*envoy_route.Heade
 	return matchers
 }
 
-func (c *Configurer) convertDelay(delay *api.DelayConf) (*envoy_filter_fault.FaultDelay, error) {
+func convertDelay(delay *api.DelayConf) (*envoy_filter_fault.FaultDelay, error) {
 	if delay == nil {
 		return nil, nil
 	}
@@ -130,7 +130,7 @@ func (c *Configurer) convertDelay(delay *api.DelayConf) (*envoy_filter_fault.Fau
 	}, nil
 }
 
-func (c *Configurer) convertAbort(abort *api.AbortConf) (*envoy_http_fault.FaultAbort, error) {
+func convertAbort(abort *api.AbortConf) (*envoy_http_fault.FaultAbort, error) {
 	if abort == nil {
 		return nil, nil
 	}
@@ -144,7 +144,7 @@ func (c *Configurer) convertAbort(abort *api.AbortConf) (*envoy_http_fault.Fault
 	}, nil
 }
 
-func (c *Configurer) convertResponseRateLimit(responseBandwidth *api.ResponseBandwidthConf) (*envoy_filter_fault.FaultRateLimit, error) {
+func convertResponseRateLimit(responseBandwidth *api.ResponseBandwidthConf) (*envoy_filter_fault.FaultRateLimit, error) {
 	if responseBandwidth == nil {
 		return nil, nil
 	}
