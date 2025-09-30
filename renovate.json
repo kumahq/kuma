@@ -163,23 +163,14 @@
     },
     {
       "description": [
-        " Set commit message fields at the package-rule level with a catch-all match ('*') rather",
-        " than at the root. Root-level fields can be overridden by more specific sub-configs and",
-        " packageRules from composed presets. By defining commitMessageAction/topic/extra in",
-        " a packageRule that matches every dependency, this baseline is applied uniformly after",
-        " composition, while still allowing even more specific packageRules to override it when",
-        " needed",
-        " See: https://docs.renovatebot.com/configuration-options/#packagerules"
+        " Catch-all rule that applies the standard commit message format for all dependencies",
+        "",
+        " This rule extends the shared baseline preset to ensure consistent commit message",
+        " action/topic/extra rendering across all updates. It must be the last packageRule",
+        " in renovate.json, so it takes precedence after any more specific rules."
       ],
       "matchDepNames": "*",
-      "commitMessageAction": "bump",
-      "commitMessageLowerCase": "never",
-      "commitMessageTopic": "{{#if (containsString packageName '/public-shared-actions/')}}{{{packageName}}}{{else}}{{{replace '^(?:go|aqua):[^\\/]*?\\/' '' depName}}}{{/if}}{{#if (and (equals updateType 'digest') (equals currentValue newValue))}}:{{newValue}}{{/if}}",
-      "commitMessageExtra": "{{#if (or (and (or isMajor isMinor isPatch) (or isSingleVersion currentDigestShort)) (and (equals updateType 'digest') currentDigestShort))}}from {{#if (equals updateType 'digest')}}{{currentDigestShort}}{{else if (containsString currentVersion 'v0.0.0-')}}{{replace '^v0.0.0-[0-9]+-(?<digest>[0-9a-z]{7}).*$' '$<digest>' currentVersion}}{{else if isSingleVersion}}{{replace '^v?' '' currentVersion}}{{else if currentDigestShort}}{{#unless currentVersion}}currentDigestShort{{/unless}}{{/if}} {{/if}}to {{#if isPinDigest}}{{newDigestShort}}{{else if (containsString newVersion 'v0.0.0-')}}{{replace '^v0.0.0-[0-9]+-(?<digest>[0-9a-z]{7}).*$' '$<digest>' newVersion}}{{else if isSingleVersion}}{{replace '^v?' '' newVersion}}{{else if newDigestShort}}{{#unless newVersion}}{{newDigestShort}}{{/unless}}{{else}}{{newValue}}{{/if}}",
-      "pin": {"commitMessageAction": "pin"},
-      "pinDigest": {"commitMessageAction": "pin"},
-      "replacement": {"commitMessageAction": "replace"},
-      "rollback": {"commitMessageAction": "roll back"}
+      "extends": ["Kong/public-shared-renovate//scoped/kuma/commit-message-baseline"]
     }
   ]
 }
