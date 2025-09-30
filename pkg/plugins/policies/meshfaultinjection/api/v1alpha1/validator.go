@@ -137,7 +137,7 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 		}
 		if fault.ResponseBandwidth != nil {
 			path := path.Field("responseBandwidth").Index(idx)
-			verr.Add(validators.ValidateBandwidth(path.Field("responseBandwidth"), fault.ResponseBandwidth.Limit))
+			verr.Add(validators.ValidateBandwidth(path.Field("limit"), fault.ResponseBandwidth.Limit))
 			verr.Add(validators.ValidatePercentage(path.Field("percentage"), &fault.ResponseBandwidth.Percentage, true))
 		}
 	}

@@ -119,7 +119,7 @@ rules:
 					Message: `must be in inclusive range [0.0, 100.0]`,
 				},
 				{
-					Field:   `spec.from[0].default.http.responseBandwidth[2].responseBandwidth`,
+					Field:   `spec.from[0].default.http.responseBandwidth[2].limit`,
 					Message: `must be in kbps/Mbps/Gbps units`,
 				},
 				{
@@ -168,7 +168,7 @@ from:
 					Message: `must be in inclusive range [0.0, 100.0]`,
 				},
 				{
-					Field:   `spec.rules[0].default.http.responseBandwidth[2].responseBandwidth`,
+					Field:   `spec.rules[0].default.http.responseBandwidth[2].limit`,
 					Message: `must be in kbps/Mbps/Gbps units`,
 				},
 				{
@@ -227,7 +227,7 @@ rules:
 					Message: "must be in inclusive range [100, 599]",
 				},
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[2].responseBandwidth",
+					Field:   "spec.from[0].default.http.responseBandwidth[2].limit",
 					Message: "must be in kbps/Mbps/Gbps units",
 				},
 			}, `
@@ -279,7 +279,7 @@ to:
 		ErrorCases("incorrect value in percentage",
 			[]validators.Violation{
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[0].responseBandwidth",
+					Field:   "spec.from[0].default.http.responseBandwidth[0].limit",
 					Message: "must be in kbps/Mbps/Gbps units",
 				},
 				{
