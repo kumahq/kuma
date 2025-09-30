@@ -125,7 +125,7 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-      - name: "Start ssh session"
+      - name: "Start SSH session"
         if: failure()
         uses: mxschmitt/action-tmate@v3
         with:
