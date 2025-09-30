@@ -187,7 +187,7 @@ func configure(
 			conf := rule.Conf.(api.Conf)
 			from := rule.Subset
 
-			configurer := plugin_xds.Configurer{
+			configurer := plugin_xds.LegacyConfigurer{
 				FaultInjections: pointer.Deref(conf.Http),
 				From:            from,
 			}
