@@ -61,12 +61,11 @@ Single file, no duplication, immediately useful to Renovate.
 
 ## Scope of Change
 
-Update consumers in:
+Update all consumers that rely on `active-branches.json`, including:
 
 * `kumahq/kuma` workflows and scripts
 * `kumahq/ci-tools` release-tool
-* `kong/kong-mesh` mirrored workflows
-* `kong/team-mesh` helpers fetching the file via GitHub API
+* Relevant private repositories
 
 ## Backwards Compatibility and Migration
 
