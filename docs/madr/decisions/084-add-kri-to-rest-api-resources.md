@@ -2,8 +2,9 @@
 
 * Status: Accepted
 
-Technical Story: https://github.com/kumahq/kuma/issues/14462
-GUI Issue: https://github.com/kumahq/kuma-gui/issues/4220
+Technical Story: [https://github.com/kumahq/kuma/issues/14462](https://github.com/kumahq/kuma/issues/14462)
+GUI Issue: [https://github.com/kumahq/kuma-gui/issues/4220](https://github.com/kumahq/kuma-gui/issues/4220)
+Related Work: [https://github.com/kumahq/kuma/issues/13882](https://github.com/kumahq/kuma/issues/13882) (endpoints to get/list resources by KRI)
 
 ## Context and Problem Statement
 
@@ -13,7 +14,9 @@ This task focuses only on **changing the REST API responses** to include KRI. It
 
 Having KRI available directly in CRD resources returned by the Kubernetes API, or more generally in resources returned by any store/manager, would also be useful. However, that would likely require storing KRI as part of the resource itself. Storing KRI comes with drawbacks: it depends on values that are already part of the resource (`name`, `mesh`, `labels`) as well as the resource type. This means that every time those values change, the stored KRI would have to be recalculated and updated. Ensuring this consistency would require many code changes and additional design effort.
 
-Because of that complexity, storing KRI in backends is not included in the scope of this MADR. The current decision only addresses returning KRI in REST API responses by computing it at marshalling time. At the same time, this MADR does not prevent us from exploring persistent KRI storage in the future if it becomes valuable. That broader discussion will be handled in a separate MADR.
+Because of that complexity, storing KRI in backends is not included in the scope of this MADR. The current decision only addresses returning KRI in REST API responses by computing it at marshalling time. At the same time, this MADR does not prevent us from exploring persistent KRI storage in the future if that becomes valuable. That broader discussion will be handled in a separate MADR.
+
+In parallel, there is ongoing work to implement dedicated endpoints that allow **getting or listing resources by their KRI**. That effort is tracked in [#13882](https://github.com/kumahq/kuma/issues/13882). The two efforts complement each other: this MADR ensures all REST resources expose their KRI, while the parallel work introduces APIs to query resources directly by KRI.
 
 ## Decision Drivers
 
@@ -21,6 +24,7 @@ Because of that complexity, storing KRI in backends is not included in the scope
 * Avoid unnecessary work on legacy protobuf-based resources that are being deprecated
 * Make KRI reliably available to GUI and tooling
 * Minimize schema churn and developer confusion
+* Align with parallel work on KRI-based query endpoints
 
 ## Options Considered
 
@@ -41,7 +45,7 @@ Because of that complexity, storing KRI in backends is not included in the scope
 
 **Idea**
 
-* In `pkg/core/resources/model/rest/v1alpha1/ResourceMeta`, override JSON marshalling to insert a computed `kri` based on `type`, `mesh`, `labels` and `name`.
+* In [`pkg/core/resources/model/rest/v1alpha1/ResourceMeta`](./pkg/core/resources/model/rest/v1alpha1/meta.go), override JSON marshalling to insert a computed `kri` based on `type`, `mesh`, `labels`, and `name`.
 
 **Pros**
 
@@ -67,9 +71,11 @@ Because of that complexity, storing KRI in backends is not included in the scope
 
 ## Decision
 
-We choose Option B: compute and inject `kri` during JSON marshalling of `ResourceMeta`. This meets our goal of minimal, safe change, while making KRI available in REST API responses without touching storage or reconciliation. Our OpenAPI templates will be updated to include the field and mark it as `readOnly`. This also aligns with how KRI is used in the Inspect API for per-rule origin.
+We choose Option B: compute and inject `kri` during JSON marshalling of `ResourceMeta`. This meets our goal of minimal, safe change, while making KRI available in REST API responses without touching storage or reconciliation. Our OpenAPI templates will be updated to include the field and mark it as `readOnly`. This aligns with Inspect API usage of KRI and complements the parallel work on endpoints for retrieving resources by KRI.
 
 ## Design
+
+We extend `ResourceMeta` marshalling so that a `kri` field is computed dynamically and added to REST responses:
 
 ```go
 type ResourceMeta struct {
@@ -97,21 +103,9 @@ func (r ResourceMeta) MarshalJSON() ([]byte, error) {
 * Anywhere `ResourceMeta` is rendered in a REST response, `meta.kri` will be included
 * No changes to storage, reconciliation, or resource logic
 
-### Scope and Legacy Resources
+### OpenAPI Schema Updates
 
-* Resources defined in protobuf that are part of the core data model, such as `Dataplane`, `Mesh`, `ZoneIngress`, and `ZoneEgress`, are **not** considered deprecated or legacy. When returned by the REST API, they will also include the `kri` field
-* We will not retrofit full KRI support into truly legacy protobuf-based policies that are being phased out. Those remain covered only by what the [Inspect API](./075-inspect-api-redesign.md) already provides
-* Adding KRI to deprecated policies would require defining short names and introducing additional logic, which we plan to remove in version 3.0.0
-* Only the new Inspect API endpoints can return an origin resource by its KRI for use in the GUI. Deprecated policy types will not appear as origins
-
-### Compatibility
-
-* The change is **additive**: a new `kri` field is included in JSON responses. Clients that ignore unknown fields will continue to work without modification.
-* There is **no impact** on storage, reconciliation, hashing, or overall system behavior.
-* OpenAPI templates are updated so that `meta.kri` is fully documented as a `string` with `readOnly: true`. This ensures the field is visible in generated specifications and SDKs.
-* SDKs and tooling generated from the OpenAPI schema will include the `kri` field, allowing typed clients to consume it directly.
-
-Schema updates include:
+To ensure SDKs and tooling (for example Terraform provider codegen) correctly handle the new field, we extend the OpenAPI templates so that `kri` is documented as `string` and **marked as `readOnly: true`**. This should be the only change needed to avoid confusing client code generators.
 
 ```patch
 diff --git a/tools/openapi/templates/schema.yaml b/tools/openapi/templates/schema.yaml
@@ -153,7 +147,7 @@ diff --git a/api/openapi/specs/common/resource.yaml b/api/openapi/specs/common/r
            additionalProperties:
 ```
 
-Example of how the field appears in a policy schema:
+Example for a policy schema:
 
 ```patch
 diff --git a/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml b/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml
@@ -174,6 +168,12 @@ diff --git a/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml
      description: 'Name of the Kuma resource'
      type: string
 ```
+
+## Compatibility
+
+* The change is **additive**: a new `kri` field is included in JSON responses. Clients that ignore unknown fields will continue to work without modification
+* There is **no impact** on storage, reconciliation, hashing, or overall system behavior
+* SDKs and tooling generated from the OpenAPI schema will include the `kri` field. Because it is flagged as `readOnly: true`, clients such as the Terraform provider should treat it as output-only and avoid confusion with user-settable fields
 
 ## Security
 
@@ -198,6 +198,7 @@ diff --git a/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml
 * The value matches Inspect API KRI for the same resource
 * GUI no longer needs to reconstruct KRI
 * No breakage observed in existing API clients
+* Complements the parallel work on new KRI-based query endpoints
 
 ## Implication for Kong Mesh
 
