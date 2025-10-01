@@ -97,9 +97,10 @@ func (r ResourceMeta) MarshalJSON() ([]byte, error) {
 
 ## Scope and Legacy Resources
 
-* We will not retrofit full KRI support into legacy protobuf-based resources beyond what [Inspect API](./075-inspect-api-redesign.md) already covers
-* Adding KRI to legacy resources would require defining short names and extra logic, which we intend to remove in version 3.0.0
-* Only the new Inspect API endpoints can return an origin resource by its KRI used in the GUI. Legacy resources will not appear as origins
+* Resources defined in protobuf that are part of the core data model, such as `Dataplane`, `Mesh`, `ZoneIngress`, and `ZoneEgress`, are **not** considered deprecated or legacy. When returned by the REST API, they will also include the `kri` field
+* We will not retrofit full KRI support into truly legacy protobuf-based policies that are being phased out. Those remain covered only by what the [Inspect API](./075-inspect-api-redesign.md) already provides
+* Adding KRI to deprecated policies would require defining short names and introducing additional logic, which we plan to remove in version 3.0.0
+* Only the new Inspect API endpoints can return an origin resource by its KRI for use in the GUI. Deprecated policy types will not appear as origins
 
 ## Compatibility
 
