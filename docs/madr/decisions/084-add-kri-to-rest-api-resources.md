@@ -9,7 +9,9 @@ GUI Issue: https://github.com/kumahq/kuma-gui/issues/4220
 
 The GUI needs a stable, machine-generated identifier to link any resource or policy from the REST API with the origin that produced its Envoy configuration. We already use KRI (Kuma Resource Identifier) in new components and in the Inspect API, where per-rule origins are exposed. But most REST list/get endpoints do not return the KRI field. Clients must reconstruct it manually, which is fragile and error-prone.
 
-We need a lightweight way to expose KRI across REST API responses without major refactors or storage changes.
+This task focuses only on **changing the REST API responses** to include KRI. It does not cover modifying resource stores or managers such as Kubernetes, In-Memory, or Postgres. Storing KRI in backends would require widespread changes across the codebase and is not in scope here.
+
+The problem is that without KRI directly available in REST responses, client applications like the GUI need to build it themselves, leading to inconsistency and potential errors. At the same time, this MADR does not rule out the possibility of storing KRI in backends in the future if that becomes valuable.
 
 ## Decision Drivers
 
