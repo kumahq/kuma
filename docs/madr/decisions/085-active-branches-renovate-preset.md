@@ -2,8 +2,6 @@
 
 * Status: Accepted
 
-Technical Story: TBA
-
 ## Context and Problem Statement
 
 `active-branches.json` is a raw JSON array of branch patterns:
