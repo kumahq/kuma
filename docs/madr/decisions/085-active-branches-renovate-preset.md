@@ -86,7 +86,7 @@ After migration, callers can read `.baseBranchPatterns` directly.
 
 * The file becomes a preset named `active-branches`
 * Extending it sets `baseBranchPatterns` in Renovate
-* OSV vulnerability alerts are enabled by default in Renovate
+* OSV vulnerability alerts are enabled by the `Kong/public-shared-renovate` default preset we use
 
 ## Example Renovate Configuration for Release Branches
 
