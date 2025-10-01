@@ -1,0 +1,100 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 17777
+enableReusePort: false
+filterChains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      httpFilters:
+      - name: kri_mfi_default_zone-1_ns-1_mfi-1_
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+          extensionConfig:
+            name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              abort:
+                httpStatus: 444
+                percentage:
+                  numerator: 12
+          xdsMatcher:
+            matcherList:
+              matchers:
+              - onMatch:
+                  action:
+                    name: skip
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter
+                predicate:
+                  notMatcher:
+                    singlePredicate:
+                      input:
+                        name: envoy.matching.inputs.uri_san
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                      valueMatch:
+                        prefix: spiffe://trust-domain.mesh/
+      - name: kri_mfi_default_zone-1_ns-1_mfi-1_
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+          extensionConfig:
+            name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              delay:
+                fixedDelay: 55s
+                percentage:
+                  numerator: 55
+              responseRateLimit:
+                fixedLimit:
+                  limitKbps: "111000"
+                percentage:
+                  denominator: TEN_THOUSAND
+                  numerator: 6290
+          xdsMatcher:
+            matcherList:
+              matchers:
+              - onMatch:
+                  action:
+                    name: skip
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter
+                predicate:
+                  notMatcher:
+                    singlePredicate:
+                      input:
+                        name: envoy.matching.inputs.uri_san
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                      valueMatch:
+                        prefix: spiffe://trust-domain.mesh/
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      internalAddressConfig:
+        cidrRanges:
+        - addressPrefix: 127.0.0.1
+          prefixLen: 32
+        - addressPrefix: ::1
+          prefixLen: 128
+      routeConfig:
+        name: inbound:backend
+        requestHeadersToRemove:
+        - x-kuma-tags
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: backend
+          routes:
+          - match:
+              prefix: /
+            route:
+              cluster: backend
+              timeout: 0s
+      statPrefix: "127_0_0_1_17777"
+name: inbound:127.0.0.1:17777
+trafficDirection: INBOUND

@@ -169,7 +169,7 @@ func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) 
 }
 
 func buildMatchers(matches []common_api.Match, action rbac_config.RBAC_Action, origin common.Origin) (*matcher_config.Matcher_MatcherList_FieldMatcher, error) {
-	return bldrs_matchers.NewFieldMatcherList().
+	return bldrs_matchers.NewFieldMatcher().
 		Configure(bldrs_matchers.Matches(
 			matches,
 			bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.RbacAction(action, kri.FromResourceMeta(origin.Resource, policies_api.MeshTrafficPermissionType).String())),

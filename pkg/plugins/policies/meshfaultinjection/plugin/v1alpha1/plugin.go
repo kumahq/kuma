@@ -84,14 +84,28 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-		rules, ok := fromRules.Rules[listenerKey]
-		if !ok {
-			continue
-		}
 
-		for _, filterChain := range listener.FilterChains {
-			if err := configure(rules, filterChain, protocol); err != nil {
-				return err
+		inboundRules, ok := fromRules.InboundRules[listenerKey]
+		if !ok || len(inboundRules) == 0 {
+			rules, ok := fromRules.Rules[listenerKey]
+			if !ok {
+				continue
+			}
+
+			for _, filterChain := range listener.FilterChains {
+				if err := configure(rules, filterChain, protocol); err != nil {
+					return err
+				}
+			}
+		} else {
+			switch protocol {
+			case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+				configurer := plugin_xds.Configurer{Rules: inboundRules}
+				for _, filterChain := range listener.FilterChains {
+					if err := configurer.ConfigureHttpListener(filterChain); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

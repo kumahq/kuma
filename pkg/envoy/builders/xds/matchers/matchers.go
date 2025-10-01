@@ -3,8 +3,12 @@ package matchers
 import (
 	xds_config "github.com/cncf/xds/go/xds/core/v3"
 	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
+	matcher_extension "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	actionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/matcher/action/v3"
 	sslv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/ssl/v3"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
@@ -34,6 +38,14 @@ func MatchersList(fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatch
 	}
 }
 
+func FieldMatcher(fieldMatcherBuilder *Builder[matcher_config.Matcher_MatcherList_FieldMatcher]) Configurer[matcher_config.Matcher] {
+	fieldMatcher, err := fieldMatcherBuilder.Build()
+	if err != nil {
+		return nil
+	}
+	return MatchersList([]*matcher_config.Matcher_MatcherList_FieldMatcher{fieldMatcher})
+}
+
 func OnNoMatch(actionBuilder *Builder[matcher_config.Matcher_OnMatch]) Configurer[matcher_config.Matcher] {
 	return func(matcher *matcher_config.Matcher) error {
 		action, err := actionBuilder.Build()
@@ -45,11 +57,19 @@ func OnNoMatch(actionBuilder *Builder[matcher_config.Matcher_OnMatch]) Configure
 	}
 }
 
-func NewFieldMatcherList() *Builder[matcher_config.Matcher_MatcherList_FieldMatcher] {
+func NewFieldMatcher() *Builder[matcher_config.Matcher_MatcherList_FieldMatcher] {
 	return &Builder[matcher_config.Matcher_MatcherList_FieldMatcher]{}
 }
 
 func Matches(matches []common_api.Match, onMatchBuilder *Builder[matcher_config.Matcher_OnMatch]) Configurer[matcher_config.Matcher_MatcherList_FieldMatcher] {
+	return matchesConfigurer(matches, onMatchBuilder, false)
+}
+
+func NotMatches(matches []common_api.Match, onMatchBuilder *Builder[matcher_config.Matcher_OnMatch]) Configurer[matcher_config.Matcher_MatcherList_FieldMatcher] {
+	return matchesConfigurer(matches, onMatchBuilder, true)
+}
+
+func matchesConfigurer(matches []common_api.Match, onMatchBuilder *Builder[matcher_config.Matcher_OnMatch], negate bool) Configurer[matcher_config.Matcher_MatcherList_FieldMatcher] {
 	return func(fm *matcher_config.Matcher_MatcherList_FieldMatcher) error {
 		onMatch, err := onMatchBuilder.Build()
 		if err != nil {
@@ -76,6 +96,13 @@ func Matches(matches []common_api.Match, onMatchBuilder *Builder[matcher_config.
 			return err
 		}
 
+		if negate {
+			combinedPredicate, err = NewPredicate().Configure(NotPredicate(combinedPredicate)).Build()
+			if err != nil {
+				return err
+			}
+		}
+
 		fm.Predicate = combinedPredicate
 		fm.OnMatch = onMatch
 		return nil
@@ -95,6 +122,18 @@ func RbacAction(action rbac_config.RBAC_Action, name string) Configurer[matcher_
 					Name:   name,
 					Action: action,
 				}),
+			},
+		}
+		return nil
+	}
+}
+
+func SkipFilterAction() Configurer[matcher_config.Matcher_OnMatch] {
+	return func(onMatch *matcher_config.Matcher_OnMatch) error {
+		onMatch.OnMatch = &matcher_config.Matcher_OnMatch_Action{
+			Action: &xds_config.TypedExtensionConfig{
+				Name:        "skip",
+				TypedConfig: util_proto.MustMarshalAny(&actionv3.SkipFilter{}),
 			},
 		}
 		return nil
@@ -147,6 +186,40 @@ func CombinedPredicate(matchers []*matcher_config.Matcher_MatcherList_Predicate)
 					Predicate: matchers,
 				},
 			}
+		}
+		return nil
+	}
+}
+
+func NotPredicate(predicate *matcher_config.Matcher_MatcherList_Predicate) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+	return func(notPredicate *matcher_config.Matcher_MatcherList_Predicate) error {
+		notPredicate.MatchType = &matcher_config.Matcher_MatcherList_Predicate_NotMatcher{
+			NotMatcher: predicate,
+		}
+		return nil
+	}
+}
+
+func NewExtensionWithMatcher() *Builder[matcher_extension.ExtensionWithMatcher] {
+	return &Builder[matcher_extension.ExtensionWithMatcher]{}
+}
+
+func Matcher(matcherBuilder *Builder[matcher_config.Matcher]) Configurer[matcher_extension.ExtensionWithMatcher] {
+	return func(extension *matcher_extension.ExtensionWithMatcher) error {
+		matcher, err := matcherBuilder.Build()
+		if err != nil {
+			return err
+		}
+		extension.XdsMatcher = matcher
+		return nil
+	}
+}
+
+func Filter(name string, filter *anypb.Any) Configurer[matcher_extension.ExtensionWithMatcher] {
+	return func(extension *matcher_extension.ExtensionWithMatcher) error {
+		extension.ExtensionConfig = &corev3.TypedExtensionConfig{
+			Name:        name,
+			TypedConfig: filter,
 		}
 		return nil
 	}
