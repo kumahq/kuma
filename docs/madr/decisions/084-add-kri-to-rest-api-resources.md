@@ -97,22 +97,83 @@ func (r ResourceMeta) MarshalJSON() ([]byte, error) {
 * Anywhere `ResourceMeta` is rendered in a REST response, `meta.kri` will be included
 * No changes to storage, reconciliation, or resource logic
 
-## Scope and Legacy Resources
+### Scope and Legacy Resources
 
 * Resources defined in protobuf that are part of the core data model, such as `Dataplane`, `Mesh`, `ZoneIngress`, and `ZoneEgress`, are **not** considered deprecated or legacy. When returned by the REST API, they will also include the `kri` field
 * We will not retrofit full KRI support into truly legacy protobuf-based policies that are being phased out. Those remain covered only by what the [Inspect API](./075-inspect-api-redesign.md) already provides
 * Adding KRI to deprecated policies would require defining short names and introducing additional logic, which we plan to remove in version 3.0.0
 * Only the new Inspect API endpoints can return an origin resource by its KRI for use in the GUI. Deprecated policy types will not appear as origins
 
-## Compatibility
+### Compatibility
 
-* The change is additive in JSON. Clients ignoring unknown fields continue to work
-* No change to storage, hashing, reconciliation, or system behavior
+* The change is **additive**: a new `kri` field is included in JSON responses. Clients that ignore unknown fields will continue to work without modification.
+* There is **no impact** on storage, reconciliation, hashing, or overall system behavior.
+* OpenAPI templates are updated so that `meta.kri` is fully documented as a `string` with `readOnly: true`. This ensures the field is visible in generated specifications and SDKs.
+* SDKs and tooling generated from the OpenAPI schema will include the `kri` field, allowing typed clients to consume it directly.
 
-## API Schema and OpenAPI
+Schema updates include:
 
-* OpenAPI templates will be updated so `meta.kri` is documented as `string` and `readOnly: true`
-* Clients will see it in generated SDKs
+```patch
+diff --git a/tools/openapi/templates/schema.yaml b/tools/openapi/templates/schema.yaml
+--- a/tools/openapi/templates/schema.yaml
++++ b/tools/openapi/templates/schema.yaml
+@@ -11,6 +11,15 @@
+ type: string
+ default: default
+ {{- end}}
++  {{- if ne .ShortName ""}}
++  kri:
++    description: 'A unique identifier for this resource instance, derived from
++      resource attributes such as type, mesh, and name. Used by internal tooling
++      and integrations for cross-references or indexing'
++    type: string
++    readOnly: true
++    example: 'kri_{{ .ShortName }}_default__kuma-system_{{ .ShortName }}123_'
++  {{- end}}
+   name:
+   description: 'Name of the Kuma resource'
+   type: string
+```
+
+```patch
+diff --git a/api/openapi/specs/common/resource.yaml b/api/openapi/specs/common/resource.yaml
+--- a/api/openapi/specs/common/resource.yaml
++++ b/api/openapi/specs/common/resource.yaml
+@@ -61,6 +61,11 @@
+           type: string
+           example: my-resource
+           description: the name of the resource
++        kri:
++          type: string
++          readOnly: true
++          example: kri_mtp_default_zone1_kuma-system_mtp_
++          description: a unique identifier for this resource (KRI)
+         labels:
+           type: object
+           additionalProperties:
+```
+
+Example of how the field appears in a policy schema:
+
+```patch
+diff --git a/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml b/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml
+--- a/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml
++++ b/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/schema.yaml
+@@ -10,6 +10,11 @@
+     description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+     type: string
+     default: default
++  kri:
++    description: 'A unique identifier for this resource instance, derived from
++      attributes such as type, mesh, and name. Useful for cross-references and
++      indexing by tooling or integrations'
++    type: string
++    readOnly: true
++    example: 'kri_mtp_default__kuma-system_mtp123_'
+   name:
+     description: 'Name of the Kuma resource'
+     type: string
+```
 
 ## Security
 
