@@ -9,9 +9,11 @@ GUI Issue: https://github.com/kumahq/kuma-gui/issues/4220
 
 The GUI needs a stable, machine-generated identifier to link any resource or policy from the REST API with the origin that produced its Envoy configuration. We already use KRI (Kuma Resource Identifier) in new components and in the Inspect API, where per-rule origins are exposed. But most REST list/get endpoints do not return the KRI field. Clients must reconstruct it manually, which is fragile and error-prone.
 
-This task focuses only on **changing the REST API responses** to include KRI. It does not cover modifying resource stores or managers such as Kubernetes, In-Memory, or Postgres. Storing KRI in backends would require widespread changes across the codebase and is not in scope here.
+This task focuses only on **changing the REST API responses** to include KRI. It does not cover modifying resource stores or managers such as Kubernetes, In-Memory, or Postgres.
 
-The problem is that without KRI directly available in REST responses, client applications like the GUI need to build it themselves, leading to inconsistency and potential errors. At the same time, this MADR does not rule out the possibility of storing KRI in backends in the future if that becomes valuable.
+Having KRI available directly in CRD resources returned by the Kubernetes API, or more generally in resources returned by any store/manager, would also be useful. However, that would likely require storing KRI as part of the resource itself. Storing KRI comes with drawbacks: it depends on values that are already part of the resource (`name`, `mesh`, `labels`) as well as the resource type. This means that every time those values change, the stored KRI would have to be recalculated and updated. Ensuring this consistency would require many code changes and additional design effort.
+
+Because of that complexity, storing KRI in backends is not included in the scope of this MADR. The current decision only addresses returning KRI in REST API responses by computing it at marshalling time. At the same time, this MADR does not prevent us from exploring persistent KRI storage in the future if it becomes valuable. That broader discussion will be handled in a separate MADR.
 
 ## Decision Drivers
 
