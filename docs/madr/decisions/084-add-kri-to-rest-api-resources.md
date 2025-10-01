@@ -1,4 +1,4 @@
-# Add KRI to All REST API Resources
+# Add KRI to REST API Resources
 
 * Status: Accepted
 
