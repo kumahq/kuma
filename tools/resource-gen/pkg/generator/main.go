@@ -482,7 +482,12 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return snakeToCamel(key)
 		},
 	}
-	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
+	// workaround for https://github.com/Kong/kong-mesh/issues/7376
+	base := "kuma"
+	if readDir == "kuma" {
+		base = ""
+	}
+	err := reflector.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
 	if err != nil {
 		return err
 	}
