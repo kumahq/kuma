@@ -487,7 +487,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	if readDir == "kuma" {
 		base = ""
 	}
-	err := reflector.AddGoComments("github.com/kumahq/" + base, path.Join(readDir, "api/"))
+	err := reflector.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
 	if err != nil {
 		return err
 	}
