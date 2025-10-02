@@ -26,57 +26,57 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 			return nil
 		}
 	}
-
-	httpRoutes := func(hcm *envoy_hcm.HttpConnectionManager) error {
-		var fiFilters []*envoy_hcm.HttpFilter
-
-		for _, rule := range c.Rules {
-			matchesConf := rule.Conf.(*policies_api.Rule)
-			matcher := bldrs_matchers.Matcher(
-				bldrs_matchers.NewMatcherBuilder().Configure(
-					bldrs_matchers.FieldMatcher(
-						bldrs_matchers.NewFieldMatcher().Configure(
-							bldrs_matchers.NotMatches(
-								pointer.Deref(matchesConf.Matches),
-								bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.SkipFilterAction()),
-							),
-						),
-					)),
-			)
-
-			for _, fault := range pointer.Deref(matchesConf.Default.Http) {
-				faultConfig, _ := configureFault(fault)
-				faultFilter, err := util_proto.MarshalAnyDeterministic(faultConfig)
-				if err != nil {
-					return err
-				}
-
-				extensionWithMatcher, err := bldrs_matchers.NewExtensionWithMatcher().
-					Configure(matcher).
-					Configure(bldrs_matchers.Filter("envoy.filters.http.fault", faultFilter)).
-					Build()
-				if err != nil {
-					return err
-				}
-				typedExtension, err := util_proto.MarshalAnyDeterministic(extensionWithMatcher)
-				if err != nil {
-					return err
-				}
-
-				fiFilters = append(fiFilters, &envoy_hcm.HttpFilter{
-					Name: kri.FromResourceMeta(rule.Origin.Resource, policies_api.MeshFaultInjectionType).String(),
-					ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-						TypedConfig: typedExtension,
-					},
-				})
-			}
-		}
-		return policies_xds.InsertHTTPFiltersBeforeRouter(hcm, fiFilters...)
-	}
-	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpRoutes); err != nil {
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, c.addFaultFilters); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c *Configurer) addFaultFilters(hcm *envoy_hcm.HttpConnectionManager) error {
+	var fiFilters []*envoy_hcm.HttpFilter
+
+	for _, rule := range c.Rules {
+		matchesConf := rule.Conf.(*policies_api.Rule)
+		matcher := bldrs_matchers.Matcher(
+			bldrs_matchers.NewMatcherBuilder().Configure(
+				bldrs_matchers.FieldMatcher(
+					bldrs_matchers.NewFieldMatcher().Configure(
+						bldrs_matchers.NotMatches(
+							pointer.Deref(matchesConf.Matches),
+							bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.SkipFilterAction()),
+						),
+					),
+				)),
+		)
+
+		for _, fault := range pointer.Deref(matchesConf.Default.Http) {
+			faultConfig, _ := configureFault(fault)
+			faultFilter, err := util_proto.MarshalAnyDeterministic(faultConfig)
+			if err != nil {
+				return err
+			}
+
+			extensionWithMatcher, err := bldrs_matchers.NewExtensionWithMatcher().
+				Configure(matcher).
+				Configure(bldrs_matchers.Filter("envoy.filters.http.fault", faultFilter)).
+				Build()
+			if err != nil {
+				return err
+			}
+			typedExtension, err := util_proto.MarshalAnyDeterministic(extensionWithMatcher)
+			if err != nil {
+				return err
+			}
+
+			fiFilters = append(fiFilters, &envoy_hcm.HttpFilter{
+				Name: kri.FromResourceMeta(rule.Origin.Resource, policies_api.MeshFaultInjectionType).String(),
+				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+					TypedConfig: typedExtension,
+				},
+			})
+		}
+	}
+	return policies_xds.InsertHTTPFiltersBeforeRouter(hcm, fiFilters...)
 }
 
 func configureFault(fault policies_api.FaultInjectionConf) (*envoy_http_fault.HTTPFault, error) {

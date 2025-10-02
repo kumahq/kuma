@@ -110,8 +110,8 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.ResponseCode).To(Equal(500))
-		}, "30s", "1s").Should(Succeed())
+			g.Expect(resp.ResponseCode).To(Equal(501))
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	},
 		Entry("exact match on spiffeID", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -130,7 +130,7 @@ spec:
       default:
         http:
           - abort: 
-              httpStatus: 500
+              httpStatus: 501
               percentage: 100
 `, namespace, mesh, mesh, namespace)),
 		Entry("prefix match on spiffeID", fmt.Sprintf(`
@@ -150,7 +150,7 @@ spec:
       default:
         http:
           - abort: 
-              httpStatus: 500
+              httpStatus: 501
               percentage: 100
 `, namespace, mesh, mesh)))
 }
