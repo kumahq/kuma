@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/spf13/cobra"
 
@@ -39,24 +38,12 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return nil
 			}
 			crdPath := filepath.Join(rootArgs.pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
-
-			tmpl, err := template.ParseFiles(localArgs.openAPITemplate)
-			if err != nil {
-				return err
-			}
-
 			openApiOutPath := filepath.Join(filepath.Dir(policyPath), "rest.yaml")
-			err = save.PlainTemplate(tmpl, pconfig, openApiOutPath)
-			if err != nil {
-				return err
-			}
-			schemaTmpl, err := template.ParseFiles(localArgs.jsonSchemaTemplate)
-			if err != nil {
+			if err := save.PlainFileTemplate(localArgs.openAPITemplate, openApiOutPath, pconfig); err != nil {
 				return err
 			}
 			schemaOutPath := filepath.Join(filepath.Dir(policyPath), "schema.yaml")
-			err = save.PlainTemplate(schemaTmpl, pconfig, schemaOutPath)
-			if err != nil {
+			if err := save.PlainFileTemplate(localArgs.jsonSchemaTemplate, schemaOutPath, pconfig); err != nil {
 				return err
 			}
 
