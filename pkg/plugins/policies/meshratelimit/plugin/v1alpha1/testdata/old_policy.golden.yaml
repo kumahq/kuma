@@ -5,22 +5,10 @@ address:
 enableReusePort: false
 filterChains:
 - filters:
-  - name: envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
-      statPrefix: tcp_rate_limit
-      tokenBucket:
-        fillInterval: 99s
-        maxTokens: 100
-        tokensPerFill: 100
   - name: envoy.filters.network.http_connection_manager
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
       httpFilters:
-      - name: envoy.filters.http.local_ratelimit
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-          statPrefix: rate_limit
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
