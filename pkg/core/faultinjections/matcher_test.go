@@ -131,6 +131,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "1.2.3.4",
 					WorkloadPort: 8080,
+					InboundName:  "0",
 				}: {
 					policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
@@ -180,6 +181,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "1.2.3.4",
 					WorkloadPort: 8081,
+					InboundName:  "0",
 				}: {
 					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
@@ -244,6 +246,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "1.2.3.4",
 					WorkloadPort: 8080,
+					InboundName:  "0",
 				}: {
 					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
