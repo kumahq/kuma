@@ -284,7 +284,7 @@ func configureListener(
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	inboundID := kri.WithSectionName(kri.From(proxy.Dataplane), iface.WorkloadPort).String()
-	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, inbound.GetSectionName())
+	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
 	legacyClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
 	legacyListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
