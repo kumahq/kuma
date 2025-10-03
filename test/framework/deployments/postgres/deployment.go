@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"errors"
+	"fmt"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -109,8 +110,11 @@ func WithPostgresPassword(postgresPassword string) DeployOptionsFunc {
 	}
 }
 
+// Wrap initScript in braces because CloudNativePG's `cluster.initdb.postInitSQL`
+// is defined as a list of SQL statements. Using braces forces a single-item list,
+// matching the API requirement
 func WithInitScript(initScript string) DeployOptionsFunc {
 	return func(o *deployOptions) {
-		o.initScript = initScript
+		o.initScript = fmt.Sprintf("{%s}", initScript)
 	}
 }
