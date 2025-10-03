@@ -44,19 +44,9 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 				postgres.WithDatabase("mesh"),
 				postgres.WithPrimaryName("postgres"),
 			)).
-			Install(YamlK8s(fmt.Sprintf(`
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres
-  namespace: %s
-type: Opaque
-stringData:
-  password: "mesh"
-`, Config.KumaNamespace))).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "app.kubernetes.io/name", "postgresql")(globalCluster)).To(Succeed())
+		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "cnpg.io/cluster", "postgres-cluster")(globalCluster)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
@@ -69,7 +59,7 @@ stringData:
 				WithCPReplicas(2),
 				WithHelmOpt("controlPlane.environment", "universal"),
 				WithHelmOpt("controlPlane.envVars.KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED", "false"),
-				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_HOST", "postgres-release-postgresql"),
+				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_HOST", "postgres-cluster-rw"),
 				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_PORT", "5432"),
 				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_USER", "mesh"),
 				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_DB_NAME", "mesh"),
