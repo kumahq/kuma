@@ -354,6 +354,7 @@ var _ = Describe("MeshRateLimit", func() {
 					DataplanePort:         17777,
 					WorkloadIP:            "127.0.0.1",
 					WorkloadPort:          17777,
+					InboundName:           "17777",
 				}: []*core_mesh.RateLimitResource{
 					{
 						Spec: &mesh_proto.RateLimit{

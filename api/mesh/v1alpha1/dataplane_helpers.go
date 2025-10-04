@@ -178,6 +178,7 @@ type InboundInterface struct {
 	DataplanePort         uint32
 	WorkloadIP            string
 	WorkloadPort          uint32
+	InboundName           string
 }
 
 // We need to implement TextMarshaler because InboundInterface is used
@@ -331,6 +332,7 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	} else {
 		iface.WorkloadPort = inbound.Port
 	}
+	iface.InboundName = inbound.GetSectionName()
 	return iface
 }
 
