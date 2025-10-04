@@ -11,9 +11,16 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
+// NOTE: We intentionally do not use the tag form like
+// "oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg:<version>@<digest>"
+// for these charts because the tags appear to be mutable and sometimes
+// get overridden by the maintainers with new digests. This would cause
+// issues in our CI where all branches could suddenly resolve to a
+// different digest, leading to inconsistent and flaky runs. To keep CI
+// stable and reproducible, we pin the charts by immutable digest only
 const (
-	cnpgChart    = "oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg:0.26.0@sha256:b294ea82771c9049b2f1418a56cbab21716343fd44fe68721967c95ca7f5c523"
-	clusterChart = "oci://ghcr.io/cloudnative-pg/charts/cluster:0.3.1@sha256:3f4f1a26dc0388f47bc456e0ec733255c1a8469b0742ce052df3885ba935c388"
+	cnpgChart    = "oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg@sha256:b294ea82771c9049b2f1418a56cbab21716343fd44fe68721967c95ca7f5c523" // 0.26.0
+	clusterChart = "oci://ghcr.io/cloudnative-pg/charts/cluster@sha256:3f4f1a26dc0388f47bc456e0ec733255c1a8469b0742ce052df3885ba935c388"        // 0.3.1
 )
 
 type k8SDeployment struct {
