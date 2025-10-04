@@ -169,31 +169,6 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", cfg.KumaDPUser),
 		)
 
-	if cfg.Redirect.DNS.Enabled {
-		if cfg.Redirect.DNS.CaptureAll {
-			meshOutbound.AddRules(
-				rules.
-					NewAppendRule(
-						Protocol(Tcp(DestinationPort(consts.DNSPort))),
-						Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
-					).
-					WithCommentf("redirect all DNS requests sent via TCP to kuma-dp DNS proxy (listening on port %d)", cfg.Redirect.DNS.Port),
-			)
-		} else {
-			for _, dnsIp := range cfg.Redirect.DNS.Servers {
-				meshOutbound.AddRules(
-					rules.
-						NewAppendRule(
-							Destination(dnsIp),
-							Protocol(Tcp(DestinationPort(consts.DNSPort))),
-							Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
-						).
-						WithCommentf("redirect DNS requests sent via TCP to %s to kuma-dp DNS proxy (listening on port %d)", dnsIp, cfg.Redirect.DNS.Port),
-				)
-			}
-		}
-	}
-
 	meshOutbound.AddRules(
 		rules.
 			NewAppendRule(
