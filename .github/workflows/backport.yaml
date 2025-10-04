@@ -30,7 +30,7 @@ jobs:
       pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
       pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
       branches: ${{ steps.generate-matrix.outputs.branches }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - id: get-pr-info
         name: get-pr-info
@@ -88,23 +88,66 @@ jobs:
           fi
       - id: generate-matrix
         name: generate-matrix
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
         run: |
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            set -x
+          [[ "${GH_DEBUG}" == "1" ]] && set -x
+          set -euo pipefail
+
+          pr_base_ref="${{ steps.get-pr-info.outputs.pr_base_ref }}"
+          
+          # Converts "a,b, c" -> ["a","b","c"]
+          to_json_array_from_csv() {
+            printf '%s' "$1" | jq -Rc '
+              split(",")
+              | map(gsub("^[[:space:]]+|[[:space:]]+$";""))
+              | map(select(. != ""))
+            '
+          }
+          
+          # Reads env.BRANCH_FILE_PATH from repo and returns a JSON array
+          # Support both formats:
+          # New: {"baseBranchPatterns": ["release-...","master"]}
+          # Old: ["release-...","master"]
+          read_branches_file() {
+            local raw
+            raw="$(gh api -H 'Accept: application/vnd.github.raw' \
+              "/repos/${{ github.repository }}/contents/${{ env.BRANCH_FILE_PATH }}")"
+
+            printf '%s' "$raw" | jq -c '
+              try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
+              | map(select(type == "string"))
+              | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+              | map(select(. != ""))
+            '
+          }
+
+          # If pr_base_ref is present in the list, return everything before it
+          # Otherwise return the list unchanged
+          slice_before_base() {
+            jq -c --arg base "$pr_base_ref" '
+              if ($base | length) == 0 then .
+              else (if (index($base)) != null then .[:index($base)] else . end)
+              end
+            '
+          }
+
+          if [[ -n "${{ inputs.branches }}" ]]; then
+            TARGET_BRANCHES="$(to_json_array_from_csv "${{ inputs.branches }}")"
+          else
+            TARGET_BRANCHES="$(read_branches_file | slice_before_base)"
           fi
           
-          # target_branches
-          if [[ "${{ inputs.branches }}" != "" ]]; then
-            TARGET_BRANCHES=$(echo "[\"${{ inputs.branches }}\"]" | sed 's/ //g' | sed 's/,/","/g')
-            echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
-          else
-            # The head -1 is because GITHUB_OUTPUT is easier to work with single line output
-            TARGET_BRANCHES=$(gh api /repos/${{ github.repository }}/contents/${{ env.BRANCH_FILE_PATH }} --jq '.content | @base64d' | jq  -cM '.[:index("${{ steps.get-pr-info.outputs.pr_base_ref }}")]')
-            echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
-          fi
+          {
+            echo "Target branches:"
+            echo '```json'
+            echo "${TARGET_BRANCHES}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "branches=${TARGET_BRANCHES}" >> "$GITHUB_OUTPUT"
   open-prs:
     needs:
       - collect-info
@@ -112,7 +155,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.collect-info.outputs.branches) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PR_NUMBER: ${{ inputs.PR }}
       PR_TITLE: ${{ needs.collect-info.outputs.pr_title }}
