@@ -182,7 +182,7 @@ spec:
       serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
-          image: "bitnami/kube-state-metrics:2.15.0@sha256:929ee8c6bb15788412becb9de354098121517771f3ecf5dc94a3148854243c3c"
+          image: "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.15.0@sha256:db384bf43222b066c378e77027a675d4cd9911107adba46c2922b3a55e10d6fb"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: metrics
