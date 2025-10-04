@@ -48,6 +48,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 			".mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
 		)
 
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))).To(Succeed())
