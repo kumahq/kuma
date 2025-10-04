@@ -12,12 +12,40 @@ jobs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
     steps:
       - id: generate-matrix
-        run: |
-          # The head -1 is because GITHUB_OUTPUT is easier to work with single line output and this file is created with automation in `lifecycle.yaml`
-          ACTIVE_BRANCHES=`gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' | head -1`
-          echo "branches=${ACTIVE_BRANCHES}" >> $GITHUB_OUTPUT
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: ${{ runner.debug == '1' }}
+        run: |
+          [[ "${GH_DEBUG}" == "1" ]] && set -x
+          set -euo pipefail
+
+          # Fetch raw file content (avoids manual base64 decoding)
+          if ! content="$(gh api -H 'Accept: application/vnd.github.raw' \
+              "/repos/${{ github.repository }}/contents/active-branches.json" 2>/dev/null)"; then
+            echo "branches=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Normalize to array format (supports old and new formats):
+          # New: {"baseBranchPatterns": ["release-...","master"]}
+          # Old: ["release-...","master"]
+          branches="$(printf '%s' "$content" | jq -c '
+            try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
+            | map(select(type == "string"))
+            | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+            | map(select(. != ""))
+            | sort | unique
+          ')"
+          
+          {
+            echo "Active branches:"
+            echo '```json'
+            echo "${branches}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "branches=${branches}" >> "$GITHUB_OUTPUT"
   update-insecure-dependencies:
     env:
       OSV_SCANNER_ADDITIONAL_OPTS: ""

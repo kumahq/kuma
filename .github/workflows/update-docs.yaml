@@ -31,21 +31,47 @@ jobs:
         with:
           go-version-file: repo/go.mod
       - name: "sync docs" # loop over all the branches and generate the docs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: ${{ runner.debug == '1' }}
         run: |
+          [[ "${GH_DEBUG}" == "1" ]] && set -x
+          set -euo pipefail
           cd repo
-          for b in $(jq -r '.[]' active-branches.json); do
-            name=$(echo "${b}" | sed 's/release-\(.*\)/\1.x/g' | sed 's/master/dev/g')
-            echo "${b} ${name}"
-            git checkout --force "${b}"
-            mkdir -p ../docs-build/${name}/raw
-            cp -R docs/generated/raw ../docs-build/${name}/
+
+          # Parse branches from file (supports both formats):
+          # New: {"baseBranchPatterns": ["release-...","master"]}
+          # Old: ["release-...","master"]
+          branches="$(jq -c '
+            try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
+            | map(select(type == "string"))
+            | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+            | map(select(. != ""))
+            | sort | unique
+          ' active-branches.json)"
+          
+          {
+            echo "Active branches:"
+            echo '```json'
+            echo "${branches}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          # Loop over branches and generate docs
+          jq -r '.[]' <<< "$branches" | while read -r b; do
+            name="$(echo "$b" | sed 's/^release-\(.*\)/\1.x/' | sed 's/^master$/dev/')"
+            echo "Processing branch $b -> $name"
+
+            git checkout --force "$b"
+            mkdir -p "../docs-build/${name}/raw"
+            cp -R docs/generated/raw "../docs-build/${name}/"
+
             mkdir -p ../docs-build/raw
-            if [[ "${b}" == "master" ]]; then
-              if [[ -f UPGRADE.md ]]; then
-                cp UPGRADE.md ../docs-build/raw/
-              fi
-              cp CHANGELOG.md ../docs-build/raw/
-              cp versions.yml ../docs-build/raw/
+            if [[ "$b" == "master" ]]; then
+              [[ -f UPGRADE.md ]] && cp UPGRADE.md ../docs-build/raw/
+              [[ -f CHANGELOG.md ]] && cp CHANGELOG.md ../docs-build/raw/
+              [[ -f versions.yml ]] && cp versions.yml ../docs-build/raw/
             fi
           done
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0

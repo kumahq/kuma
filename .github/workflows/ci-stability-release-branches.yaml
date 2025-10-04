@@ -27,19 +27,42 @@ jobs:
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           REPOSITORY: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: ${{ runner.debug == '1' }}
         run: |
-          branches=$(gh api repos/$REPOSITORY/contents/active-branches.json \
-            --jq '[.content | @base64d | fromjson | .[] | select(. != "'"$DEFAULT_BRANCH"'")]')
-
-          if [[ "$branches" == "[]" || -z "$branches" ]]; then
+          [[ "${GH_DEBUG}" == "1" ]] && set -x
+          set -euo pipefail
+          
+          # Fetch raw file content to avoid manual base64 decoding
+          if ! content="$(gh api -H 'Accept: application/vnd.github.raw' "repos/${REPOSITORY}/contents/active-branches.json" 2>/dev/null)"; then
+            echo "active-branches.json not found in ${REPOSITORY}"
+            exit 1
+          fi
+          
+          # Support both formats:
+          # New: {"baseBranchPatterns": ["release-...","master"]}
+          # Old: ["release-...","master"]
+          branches="$(echo "$content" | jq -c --arg DEFAULT_BRANCH "$DEFAULT_BRANCH" '
+            try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
+            | map(select(type == "string"))
+            | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+            | map(select(. != "" and . != $DEFAULT_BRANCH))
+            | sort | unique
+          ')"
+          
+          if [[ -z "${branches}" || "${branches}" == "[]" ]]; then
             echo "No active branches to process"
             exit 1
           fi
-
-          echo -e "Active release branches:\n\`\`\`json\n$branches\n\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-          echo "branches=$branches" >> $GITHUB_OUTPUT
+          
+          {
+            echo "Active branches:"
+            echo '```json'
+            echo "${branches}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          echo "branches=${branches}" >> "$GITHUB_OUTPUT"
 
   trigger-build-test-distribute:
     needs: get-active-release-branches
