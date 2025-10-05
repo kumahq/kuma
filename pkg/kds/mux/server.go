@@ -43,8 +43,6 @@ func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_pr
 
 type server struct {
 	config               multizone.KdsServerConfig
-	CallbacksGlobal      OnGlobalToZoneSyncConnectFunc
-	CallbacksZone        OnZoneToGlobalSyncConnectFunc
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer

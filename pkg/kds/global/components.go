@@ -6,13 +6,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -23,13 +19,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/service"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
-	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	kds_server "github.com/kumahq/kuma/pkg/kds/v2/server"
+	kds_sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 )
 
 var (
@@ -43,7 +36,7 @@ func Setup(rt runtime.Runtime) error {
 		return nil
 	}
 
-	kdsServerV2, err := kds_server_v2.New(
+	deltaServer, err := kds_server.New(
 		kdsDeltaGlobalLog,
 		rt,
 		rt.KDSContext().TypesSentByGlobal,
@@ -57,57 +50,11 @@ func Setup(rt runtime.Runtime) error {
 		return err
 	}
 
-	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaGlobalLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
+	resourceSyncer, err := kds_sync_store.NewResourceSyncer(kdsDeltaGlobalLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
 	if err != nil {
 		return err
 	}
-	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 
-	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
-		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-		if err != nil {
-			return err
-		}
-		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
-		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
-		log.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager(), rt.KDSContext().CreateZoneOnFirstConnect); err != nil {
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			return errors.Wrap(err, "Global CP could not create a zone")
-		}
-
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-			return err
-		}
-
-		log.V(1).Info("GlobalToZoneSync finished gracefully")
-		return nil
-	})
-
-	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
-		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-		if err != nil {
-			return err
-		}
-		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
-		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zoneID, rt, "")
-		sink := kds_client_v2.NewKDSSyncClient(
-			log,
-			rt.KDSContext().TypesSentByZone,
-			kdsStream,
-			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
-			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
-		)
-		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-			return errors.Wrap(err, "KDSSyncClient finished with an error")
-		}
-
-		log.V(1).Info("KDSSyncClient finished gracefully")
-		return nil
-	})
 	var streamInterceptors []service.StreamInterceptor
 	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {
 		streamInterceptors = append(streamInterceptors, filter)
@@ -147,15 +94,10 @@ func Setup(rt runtime.Runtime) error {
 			rt.Config().Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration,
 		),
 		mux.NewKDSSyncServiceServer(
-			rt.AppContext(),
-			onGlobalToZoneSyncConnect,
-			onZoneToGlobalSyncConnect,
-			rt.KDSContext().GlobalServerFiltersV2,
-			rt.Extensions(),
-			rt.EventBus(),
-			rt.ResourceManager(),
-			rt.Config().Store.Upsert,
-			rt.GetInstanceId(),
+			rt,
+			deltaServer,
+			resourceSyncer,
+			rt.Config().Store.Type == store_config.KubernetesStore,
 		),
 	),
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,
