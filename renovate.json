@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
+    "kumahq/kuma:active-branches",
     "Kong/public-shared-renovate",
     "Kong/public-shared-renovate//scoped/kuma/go-control-plane",
     "Kong/public-shared-renovate//overrides/security-labels(area/security)",
@@ -33,6 +34,8 @@
   "internalChecksFilter": "strict",
   "keepUpdatedLabel": "renovate/keep-updated",
   "rebaseWhen": "conflicted",
+  "prTitleStrict": true,
+  "vulnerabilityAlerts": {"commitMessageSuffix": ""},
   "kubernetes": {
     "description": [
       " Update container image tags in Kubernetes manifests installed via",
@@ -42,6 +45,15 @@
     "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
   "packageRules": [
+    {
+      "description": [
+        " For PRs targeting branches other than 'main' or 'master', add a label with",
+        " the base branch name (e.g. 'release-2.8') so reviewers can quickly identify",
+        " which release branch the PR targets"
+      ],
+      "matchBaseBranches": ["!/(?:master|main)/"],
+      "addLabels": ["{{baseBranch}}"]
+    },
     {
       "description": [
         " Show 'Adoption' instead of 'Confidence' in PR body tables for Go updates"
@@ -160,6 +172,25 @@
       ],
       "matchDepNames": ["{registry.k8s.io/,}kubectl"],
       "groupName": "kubectl"
+    },
+    {
+      "description": [
+        " Disable all dependency updates by default on 'release-*' branches to keep",
+        " those branches stable and predictable"
+      ],
+      "matchBaseBranches": ["release-*"],
+      "matchPackageNames": ["*"],
+      "enabled": false
+    },
+    {
+      "description": [
+        " Exception for release branches: allow patch-level updates to 'envoy' so we can pick up",
+        " bugfixes and security patches without enabling all updates"
+      ],
+      "matchBaseBranches": ["release-*"],
+      "matchDepNames": ["envoy"],
+      "matchUpdateTypes": ["patch"],
+      "enabled": true
     },
     {
       "description": [
