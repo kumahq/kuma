@@ -14,7 +14,6 @@ jobs:
       - name: "Get active branches"
         id: generate-matrix
         uses: ./.github/workflows/_get-active-branches.yaml
-        secrets: inherit
   update-insecure-dependencies:
     env:
       OSV_SCANNER_ADDITIONAL_OPTS: ""

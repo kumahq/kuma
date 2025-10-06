@@ -24,7 +24,6 @@ jobs:
       - id: active-branches
         name: Get active branches
         uses: ./.github/workflows/_get-active-branches.yaml
-        secrets: inherit
       - id: get-recent-prs
         name: Get recent PRs
         run: |

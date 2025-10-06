@@ -102,7 +102,6 @@ jobs:
         if: inputs.branches == ''
         id: generate-matrix
         uses: ./.github/workflows/_get-active-branches.yaml
-        secrets: inherit
         with:
           beforeBranch: ${{ steps.get-pr-info.outputs.pr_base_ref }}
   open-prs:
