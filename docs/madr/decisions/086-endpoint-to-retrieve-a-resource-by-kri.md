@@ -80,23 +80,23 @@ return rm.GetName()
 
 ### Frontend & OpenAPI
 
-#### Option A: Single endpoint `/_kri/{kri}` with runtime type guards (chosen)
+#### Option A: Single endpoint `/_kri/{kri}` with runtime type guards
 
 **Idea**: Provide a single generic endpoint for all resources.
-Clients rely on `type: <ResourceType>` inside the response and infer type at runtime using type guards. OpenAPI schema describes the endpoint generically with `oneOf`s.
+Clients rely on `type: <ResourceType>` inside the response and manually specify type at runtime using type guards and/or casting. OpenAPI schema describes the endpoint generically with `oneOf`s.
 
 **Pros**
 
-* Minimal API surface.
+* Minimal API surface for consumers.
 * Pure KRI-driven design, consistent with intent of KRIs.
 * Flexible for new resource types without adding new endpoints.
-* Frontend can infer type using runtime type guards.
 
 **Cons**
 
-* Weaker compile-time safety compared to OpenAPI  typing.
-* Requires additional runtime type guard implementation in frontend.
-* Slightly more effort for GUI developers to validate resource shape
+* Weaker compile-time safety compared to OpenAPI typing.
+* Requires additional runtime type guard/casting implementation in frontend.
+* Slightly more effort for GUI developers to validate resource shape.
+* Moves API specification responsibilities from OpenAPI to Typescript against existing boundaries.
 
 #### Option B: Typed endpoint with `shortName` segment (not chosen)
 
@@ -114,15 +114,44 @@ This would allow OpenAPI/Typescript SDKs to generate more precise types for each
 * Redundant endpoints for each resource type.
 * More maintenance overhead as new resource types are added..
 
+#### Option C: Single endpoint with multiple statically defined variants (chosen)
+
+**Idea**: Provide a single endpoint rooted under `/_kri` but provide statically defined "variants" for all resources based on the KRI shortname.
+
+- `/_kri/kri_msvc_{...remainingKRI}`
+- `/_kri/kri_zi_{...remainingKRI}`
+
+Note: this option differs to Option A in that we are statically specifying _each resource type_ in OpenAPI instead of relying on a single generic specification (`/_kri/{kri}`) for very differently shaped responses. The key difference here is that we are using `_` separated segments in the KRI instead of `/` separated segments in the URL.
+
+Lastly we _also_ provide one endpoint specification for generic usage (for example non-static policy retrieval)
+
+- `/_kri/{kri}`
+
+The type associated with with endpoint can just use a very generic type containing fields common to all KRI based resources, such as `name`, `type` and preferably a `kri` field itself.
+
+**Pros**
+
+* Minimal API surface for consumers.
+* Pure KRI-driven design, consistent with intent of KRIs.
+* Stronger typing in generated SDKs.
+* Frontend can leverage OpenAPI type information directly.
+* Uses existing standards and application patterns.
+* Maintains existing engineering boundaries
+* Static escape hatch for dynamic retrieval (in the case of policies), exchanging dynamism for a less narrow type.
+
+**Cons**
+
+* More maintenance overhead as new resource types are added (mostly offset by the fact that these specifications are automatically generated)
+
 ## Design
 
-We introduce a new endpoint:
+We introduce new automatically generated endpoints for each new resource (note: gotemplate variables begin with `.`, OpenAPI params don't):
 
 ```yaml
-/_kri/{kri}:
+/_kri/kri_{.ShortName}_{mesh}_{zone}_{ns}_{name}_{sectionName}:
   get:
-    operationId: getByKri
-    summary: Returns resource by KRI
+    operationId: get{.Shortname}ByKri
+    summary: Returns a {.ShortName} resource by KRI
     tags: [ "KRI" ]
     parameters:
       - in: path
@@ -136,8 +165,7 @@ We introduce a new endpoint:
         description: The resource
         content:
           application/json:
-            schema:
-              oneOf: ... # TODO: add schema
+            schema: # TODO: add schema
       '400':
         $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
       '404':
@@ -148,7 +176,7 @@ We introduce a new endpoint:
 
 * Endpoint is additive.
 * No changes to existing flows.
-* Runtime type guard approach ensures frontend object mapping is correct.
+* Buildtime static specification approach ensures frontend object mapping is correct.
 
 ## Implications for Kong Mesh
 
