@@ -25,7 +25,6 @@ jobs:
       - name: "Get active branches"
         id: active-branches
         uses: ./.github/workflows/_get-active-branches.yaml
-        secrets: inherit
         with:
           excludeDefault: true
           summary: true

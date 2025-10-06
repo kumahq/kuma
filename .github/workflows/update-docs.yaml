@@ -33,7 +33,6 @@ jobs:
       - name: "Get active branches"
         id: active-branches
         uses: ./.github/workflows/_get-active-branches.yaml
-        secrets: inherit
       - name: "sync docs" # loop over all the branches and generate the docs
         shell: bash
         env:
