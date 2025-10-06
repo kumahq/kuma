@@ -16268,6 +16268,50 @@ components:
               type: array
           type: object
       type: object
+    DataSource:
+      properties:
+        Type:
+          description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+      type: object
+    DataSource_File:
+      properties:
+        file:
+          description: |-
+            Data source is a path to a file.
+            Deprecated, use other sources of a data.
+          type: string
+        type:
+          const: file
+          type: string
+      type: object
+    DataSource_Inline:
+      properties:
+        inline:
+          description: Data source is inline bytes.
+          format: byte
+          type: string
+        type:
+          const: inline
+          type: string
+      type: object
+    DataSource_InlineString:
+      properties:
+        inlineString:
+          description: Data source is inline string
+          type: string
+        type:
+          const: inlineString
+          type: string
+      type: object
+    DataSource_Secret:
+      properties:
+        secret:
+          description: Data source is a secret with given Secret key.
+          type: string
+        type:
+          const: secret
+          type: string
+      type: object
     FileLoggingBackendConfig:
       properties:
         path:
@@ -16356,7 +16400,6 @@ components:
             backends:
               description: List of available logging backends
               items:
-                description: LoggingBackend defines logging backend available to mesh.
                 properties:
                   conf:
                     oneOf:
@@ -16410,7 +16453,6 @@ components:
             backends:
               description: List of available Metrics backends
               items:
-                description: MetricsBackend defines metric backends
                 properties:
                   conf:
                     oneOf:
@@ -16438,9 +16480,6 @@ components:
             backends:
               description: List of available Certificate Authority backends
               items:
-                description: >-
-                  CertificateAuthorityBackend defines Certificate Authority
-                  backend
                 properties:
                   conf:
                     oneOf:
@@ -16566,7 +16605,6 @@ components:
             backends:
               description: List of available tracing backends
               items:
-                description: TracingBackend defines tracing backend available to mesh.
                 properties:
                   conf:
                     oneOf:
@@ -16586,7 +16624,10 @@ components:
                       (range 0.0 - 100.0).
 
                       Empty value defaults to 100.0%
-                    type: number
+                    properties:
+                      value:
+                        type: number
+                    type: object
                   type:
                     description: Type of the backend (Kuma ships with 'zipkin')
                     type: string
@@ -16628,19 +16669,31 @@ components:
     ProvidedCertificateAuthorityConfig:
       properties:
         cert:
-          properties:
-            Type:
-              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-          required:
-            - Type
-          type: object
+          discriminator:
+            mapping:
+              file: '#/components/schemas/DataSource_File'
+              inline: '#/components/schemas/DataSource_Inline'
+              inlineString: '#/components/schemas/DataSource_InlineString'
+              secret: '#/components/schemas/DataSource_Secret'
+            propertyName: type
+          oneOf:
+            - $ref: '#/components/schemas/DataSource_InlineString'
+            - $ref: '#/components/schemas/DataSource_Secret'
+            - $ref: '#/components/schemas/DataSource_File'
+            - $ref: '#/components/schemas/DataSource_Inline'
         key:
-          properties:
-            Type:
-              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-          required:
-            - Type
-          type: object
+          discriminator:
+            mapping:
+              file: '#/components/schemas/DataSource_File'
+              inline: '#/components/schemas/DataSource_Inline'
+              inlineString: '#/components/schemas/DataSource_InlineString'
+              secret: '#/components/schemas/DataSource_Secret'
+            propertyName: type
+          oneOf:
+            - $ref: '#/components/schemas/DataSource_Secret'
+            - $ref: '#/components/schemas/DataSource_File'
+            - $ref: '#/components/schemas/DataSource_Inline'
+            - $ref: '#/components/schemas/DataSource_InlineString'
       type: object
     ZipkinTracingBackendConfig:
       properties:
@@ -16780,13 +16833,18 @@ components:
 
                           ECDSA key and certificate.
                         items:
-                          description: DataSource defines the source of bytes to use.
-                          properties:
-                            Type:
-                              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-                          required:
-                            - Type
-                          type: object
+                          discriminator:
+                            mapping:
+                              file: '#/components/schemas/DataSource_File'
+                              inline: '#/components/schemas/DataSource_Inline'
+                              inlineString: '#/components/schemas/DataSource_InlineString'
+                              secret: '#/components/schemas/DataSource_Secret'
+                            propertyName: type
+                          oneOf:
+                            - $ref: '#/components/schemas/DataSource_Secret'
+                            - $ref: '#/components/schemas/DataSource_File'
+                            - $ref: '#/components/schemas/DataSource_Inline'
+                            - $ref: '#/components/schemas/DataSource_InlineString'
                         type: array
                       mode:
                         description: >-

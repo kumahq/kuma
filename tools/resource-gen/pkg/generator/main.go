@@ -462,10 +462,6 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
 	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
 	reflect.TypeOf(system_proto.Zone{}),
-	// reflect.TypeOf(system_proto.DataSource_File{}),
-	// reflect.TypeOf(system_proto.DataSource_Inline{}),
-	// reflect.TypeOf(system_proto.DataSource_InlineString{}),
-	// reflect.TypeOf(system_proto.DataSource_Secret{}),
 }
 
 var ProtoTypeToType = map[string]reflect.Type{
