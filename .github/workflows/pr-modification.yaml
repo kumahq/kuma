@@ -23,10 +23,7 @@ jobs:
     steps:
       - id: active-branches
         name: Get active branches
-        run: |
-          echo "out<<EOF" >> $GITHUB_OUTPUT
-          gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+        uses: ./.github/workflows/_get-active-branches.yaml
       - id: get-recent-prs
         name: Get recent PRs
         run: |

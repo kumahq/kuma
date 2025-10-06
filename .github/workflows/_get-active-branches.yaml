@@ -1,0 +1,136 @@
+on:
+  workflow_call:
+    inputs:
+      excludeDefault:
+        description: "Exclude the repository default branch from the results"
+        type: boolean
+        required: false
+        default: false
+      summary:
+        description: "Show branches summary in the job summary (true = always; false = only when debug is enabled)"
+        type: boolean
+        required: false
+        default: false
+      beforeBranch:
+        description: "If set, return only branches that appear before this branch in the config order"
+        type: string
+        required: false
+        default: ""
+    outputs:
+      out:
+        description: "JSON array of active branch patterns (filtered if requested)"
+        value: ${{ jobs.get.outputs.out }}
+
+permissions:
+  contents: read
+
+jobs:
+  get:
+    runs-on: ubuntu-24.04
+    outputs:
+      out: ${{ steps.main.outputs.out }}
+    steps:
+      - id: main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: ${{ runner.debug == '1' }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EXCLUDE_DEFAULT: ${{ inputs.excludeDefault }}
+          SHOW_SUMMARY: ${{ inputs.summary }}
+          BEFORE_BRANCH: ${{ inputs.beforeBranch }}
+        run: |
+          # shellcheck shell=bash
+          [[ "${GH_DEBUG}" == "1" ]] && set -x
+          set -euo pipefail
+          
+          readonly REPOSITORY="${REPOSITORY:?REPOSITORY is required}"
+          readonly GITHUB_OUTPUT="${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
+          readonly GITHUB_STEP_SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          readonly EXCLUDE_DEFAULT="${EXCLUDE_DEFAULT:-false}"
+          readonly DEFAULT_BRANCH="${DEFAULT_BRANCH:-master}"
+          readonly SHOW_SUMMARY="${SHOW_SUMMARY:-${GH_DEBUG:-0}}"
+          readonly BEFORE_BRANCH="${BEFORE_BRANCH:-}"
+          
+          # Write summary to $GITHUB_STEP_SUMMARY when enabled
+          write_summary() {
+            local json="${1:-[]}"
+          
+            # treat 1/true/TRUE/yes as truthy
+            case "${SHOW_SUMMARY}" in
+            1 | true | TRUE | yes | YES) ;;
+            *) return 0 ;;
+            esac
+          
+            local header="Active Branches"
+            local parts=()
+          
+            if [[ "${EXCLUDE_DEFAULT}" == "true" ]]; then
+              parts+=("without ${DEFAULT_BRANCH}")
+            fi
+          
+            if [[ -n "${BEFORE_BRANCH}" ]]; then
+              parts+=("before ${BEFORE_BRANCH}")
+            fi
+          
+            if ((${#parts[@]})); then
+              local IFS=', '
+              header+=" (${parts[*]})"
+            fi
+          
+            {
+              echo "${header}:"
+              echo '```json'
+              echo "${json}"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
+          
+          # Read raw file to avoid manual base64 decoding
+          if ! content="$(
+            gh api -H 'Accept: application/vnd.github.raw' \
+              "/repos/${REPOSITORY}/contents/active-branches.json" 2> /dev/null
+          )"; then
+            echo 'out=[]' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Parse both legacy and new formats in a single jq pass, with optional filtering
+          # Supported input formats:
+          # - New: {"baseBranchPatterns": ["release-...","master"]}
+          # - Old: ["release-...","master"]
+          filtered="$(
+            jq -c \
+              --arg exclude "${EXCLUDE_DEFAULT}" \
+              --arg default "${DEFAULT_BRANCH}" \
+              --arg before "${BEFORE_BRANCH}" '
+                def trim: gsub("^[[:space:]]+|[[:space:]]+$";"");
+                def as_array: if type=="array" then . else (.baseBranchPatterns // []) end;
+                def uniq_preserve(a): reduce a[] as $i ([]; if index($i) then . else . + [$i] end);
+                def sort_key($def):
+                  if test("^release-[0-9]+\\.[0-9]+$") then
+                    (capture("^release-(?<maj>[0-9]+)\\.(?<min>[0-9]+)$")
+                    | [0, (.maj|tonumber), (.min|tonumber), ""])
+                  elif ($def|length)>0 and . == $def then
+                    [2, 0, 0, .]      # default branch last
+                  else
+                    [1, 0, 0, .]      # other branches between releases and default
+                  end;
+          
+                (try as_array catch [])
+                | map(select(type=="string") | trim)
+                | map(select(length>0))
+                | if ($exclude=="true" and ($default|length)>0) then map(select(. != $default)) else . end
+                | uniq_preserve(.)
+                | (if ($before|length)>0 and (index($before) != null)
+                     then .[:index($before)]
+                     else . end)
+                | sort_by(sort_key($default))
+              ' <<< "$content"
+          )"
+          
+          echo "out=${filtered}" >> "$GITHUB_OUTPUT"
+          
+          # usage:
+          write_summary "$filtered"

@@ -2,16 +2,15 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
-import "google/protobuf/duration.proto";
 import "api/mesh/v1alpha1/selector.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // FaultInjection defines the configuration of faults between dataplanes.
 message FaultInjection {
-
   option (kuma.mesh.resource).name = "FaultInjectionResource";
   option (kuma.mesh.resource).type = "FaultInjection";
   option (kuma.mesh.resource).package = "mesh";
@@ -28,7 +27,6 @@ message FaultInjection {
   // Conf defines several types of faults, at least one fault should be
   // specified
   message Conf {
-
     // Delay defines configuration of delaying a response from a destination
     message Delay {
       // Percentage of requests on which delay will be injected, has to be in

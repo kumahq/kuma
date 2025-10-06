@@ -29,8 +29,8 @@ jobs:
       pr_state: ${{ steps.get-pr-info.outputs.pr_state }}
       pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
       pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
-      branches: ${{ steps.generate-matrix.outputs.branches }}
-    runs-on: ubuntu-latest
+      branches: ${{ steps.generate-matrix.outputs.out }}
+    runs-on: ubuntu-24.04
     steps:
       - id: get-pr-info
         name: get-pr-info
@@ -86,25 +86,24 @@ jobs:
             echo "PR #${{ inputs.PR }} is not merged, current state: '$PR_STATE'"
             exit 1
           fi
-      - id: generate-matrix
-        name: generate-matrix
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_DEBUG: ${{ runner.debug == '1' }}
+      # If explicit branches are provided via workflow_dispatch input, use them; otherwise compute
+      # from active branches before the PR base
+      - name: "generate-matrix (from input)"
+        if: inputs.branches != ''
+        id: generate-matrix
+        shell: bash
         run: |
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            set -x
-          fi
-          
-          # target_branches
-          if [[ "${{ inputs.branches }}" != "" ]]; then
-            TARGET_BRANCHES=$(echo "[\"${{ inputs.branches }}\"]" | sed 's/ //g' | sed 's/,/","/g')
-            echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
-          else
-            # The head -1 is because GITHUB_OUTPUT is easier to work with single line output
-            TARGET_BRANCHES=$(gh api /repos/${{ github.repository }}/contents/${{ env.BRANCH_FILE_PATH }} --jq '.content | @base64d' | jq  -cM '.[:index("${{ steps.get-pr-info.outputs.pr_base_ref }}")]')
-            echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
-          fi
+          echo "out=$(printf '${{ inputs.branches }}' | jq -Rc '
+            split(",")
+            | map(gsub("^[[:space:]]+|[[:space:]]+$";""))
+            | map(select(. != ""))
+          ')" >> "$GITHUB_OUTPUT"
+      - name: "generate-matrix (active branches)"
+        if: inputs.branches == ''
+        id: generate-matrix
+        uses: ./.github/workflows/_get-active-branches.yaml
+        with:
+          beforeBranch: ${{ steps.get-pr-info.outputs.pr_base_ref }}
   open-prs:
     needs:
       - collect-info
@@ -112,7 +111,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.collect-info.outputs.branches) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PR_NUMBER: ${{ inputs.PR }}
       PR_TITLE: ${{ needs.collect-info.outputs.pr_title }}

@@ -1,0 +1,38 @@
+name: Sync Kuma OAS to Kuma GUI
+
+on:
+  push:
+    branches:
+      - master
+      - release-[0-9]+.[0-9]+
+    paths:
+      - 'docs/generated/openapi.yaml'
+  workflow_dispatch: {}
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+
+permissions: {}
+
+jobs:
+  dispatch-event:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TARGET_REPO: kuma-gui
+      EVENT_TYPE: SYNC_KUMA_OAS
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          script: |
+            const branch = process.env.GITHUB_REF_NAME;
+            github.rest.repos.createDispatchEvent({
+              owner: '${{ secrets.NOTIFY_OWNER }}',
+              repo: '${{ env.TARGET_REPO }}',
+              event_type: '${{ env.EVENT_TYPE }}',
+              client_payload: {
+                branch
+              },
+            })

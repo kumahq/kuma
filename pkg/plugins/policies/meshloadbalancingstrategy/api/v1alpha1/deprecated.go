@@ -25,6 +25,9 @@ func validateHashPoliciesType(confs []To) []string {
 			if conf.Default.LoadBalancer.RingHash == nil || conf.Default.LoadBalancer.RingHash.HashPolicies == nil {
 				continue
 			}
+			if conf.Default.LoadBalancer.RingHash.HashPolicies != nil {
+				deprecations = append(deprecations, fmt.Sprintf("configuration 'spec.to[%d].default.loadBalancer.ringHash.hashPolicies' is deprecated, use 'spec.to[%d].default.hashPolicies' instead", ruleIdx, ruleIdx))
+			}
 			for lbIdx, lbConf := range *conf.Default.LoadBalancer.RingHash.HashPolicies {
 				if lbConf.Type == SourceIPType {
 					deprecations = append(deprecations, fmt.Sprintf("%s type for 'spec.to[%d].default.loadBalancer.ringHash.hashPolicies[%d].type' is deprecated, use %s instead", SourceIPType, ruleIdx, lbIdx, ConnectionType))
@@ -33,6 +36,9 @@ func validateHashPoliciesType(confs []To) []string {
 		case MaglevType:
 			if conf.Default.LoadBalancer.Maglev == nil || conf.Default.LoadBalancer.Maglev.HashPolicies == nil {
 				continue
+			}
+			if conf.Default.LoadBalancer.Maglev.HashPolicies != nil {
+				deprecations = append(deprecations, fmt.Sprintf("configuration 'spec.to[%d].default.loadBalancer.maglev.hashPolicies' is deprecated, use 'spec.to[%d].default.hashPolicies' instead", ruleIdx, ruleIdx))
 			}
 			for lbIdx, lbConf := range *conf.Default.LoadBalancer.Maglev.HashPolicies {
 				if lbConf.Type == SourceIPType {

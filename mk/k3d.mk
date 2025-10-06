@@ -53,7 +53,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--registry-config "/tmp/.kuma-dev/k3d-registry.yaml" \
-	--timeout 120s
+	--timeout 300s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
 	K3D_CLUSTER_CREATE_OPTS += --k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'

@@ -34,13 +34,11 @@ func OnKumaResourceMessage(pkg string, f ProtoMessageFunc) ProtoMessageFunc {
 
 // KumaResourceForMessage fetches the Kuma resource option out of a message.
 func KumaResourceForMessage(desc protoreflect.MessageDescriptor) *mesh.KumaResourceOptions {
-	ext := proto.GetExtension(desc.Options(), mesh.E_Resource)
-	var resOption *mesh.KumaResourceOptions
-	if r, ok := ext.(*mesh.KumaResourceOptions); ok {
-		resOption = r
+	if r, ok := proto.GetExtension(desc.Options(), mesh.E_Resource).(*mesh.KumaResourceOptions); ok {
+		return r
 	}
 
-	return resOption
+	return &mesh.KumaResourceOptions{}
 }
 
 // SelectorsForMessage finds all the top-level fields in the message are

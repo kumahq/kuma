@@ -11455,7 +11455,7 @@ spec:
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:12.1.1@sha256:a1701c2180249361737a99a01bc770db39381640e4d631825d38ff4535efa47d"
+          image: "grafana/grafana:12.2.0@sha256:74144189b38447facf737dfd0f3906e42e0776212bf575dc3334c3609183adf7"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -12079,7 +12079,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:3.5.4@sha256:11b3ef0bd371bdddd65ed49bc35773412a24de9d022b105eb14a35bd5a827408"
+          image: "grafana/promtail:3.5.5@sha256:784743d283f71f644e290d7b9fadf5e1edff405d2756974c6e13fa7978c08b64"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -12179,7 +12179,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:3.5.4@sha256:0b9846377113bc6a56eea2e56fe5963afdea2962178bd171190e30fa25157542"
+          image: "grafana/loki:3.5.5@sha256:31628519045e7f28692a7ae73b4a3fd293dccb425585ed5d16ceea3b5c9592e6"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"

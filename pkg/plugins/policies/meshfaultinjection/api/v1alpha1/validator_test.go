@@ -67,6 +67,35 @@ to:
     default:
       http: []
 `),
+		Entry("accepts valid resource with rules", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://trust.domain/service
+    default:
+      http:
+        - abort:
+            httpStatus: 503
+            percentage: 50
+          delay:
+            value: 10s
+            percentage: 5
+        - delay:
+            value: 5s
+            percentage: 5
+        - responseBandwidth:
+            limit: 100Mbps
+            percentage: 5
+        - abort:
+            httpStatus: 500
+            percentage: "50.5"
+`),
 	)
 
 	DescribeErrorCases(
@@ -90,7 +119,7 @@ to:
 					Message: `must be in inclusive range [0.0, 100.0]`,
 				},
 				{
-					Field:   `spec.from[0].default.http.responseBandwidth[2].responseBandwidth`,
+					Field:   `spec.from[0].default.http.responseBandwidth[2].limit`,
 					Message: `must be in kbps/Mbps/Gbps units`,
 				},
 				{
@@ -120,6 +149,77 @@ from:
           limit: 1000
           percentage: 1111
 `),
+		ErrorCases("incorrect values with rules",
+			[]validators.Violation{
+				{
+					Field:   `spec.rules[0].default.http.abort[0].httpStatus`,
+					Message: `must be in inclusive range [100, 599]`,
+				},
+				{
+					Field:   `spec.rules[0].default.http.abort[0].percentage`,
+					Message: `must be in inclusive range [0.0, 100.0]`,
+				},
+				{
+					Field:   "spec.rules[0].default.http.delay[1].value",
+					Message: "must not be negative when defined",
+				},
+				{
+					Field:   `spec.rules[0].default.http.delay[1].percentage`,
+					Message: `must be in inclusive range [0.0, 100.0]`,
+				},
+				{
+					Field:   `spec.rules[0].default.http.responseBandwidth[2].limit`,
+					Message: `must be in kbps/Mbps/Gbps units`,
+				},
+				{
+					Field:   `spec.rules[0].default.http.responseBandwidth[2].percentage`,
+					Message: `must be in inclusive range [0.0, 100.0]`,
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://trust.domain/service
+    default:
+      http:
+      - abort:
+          httpStatus: 677
+          percentage: 111
+      - delay: 
+          value: -5s
+          percentage: 1111
+      - responseBandwidth:
+          limit: 1000
+          percentage: 1111
+`),
+		ErrorCases("matches spiffeID incorrect",
+			[]validators.Violation{
+				{
+					Field:   "spec.rules[0].matches[0].spiffeID",
+					Message: "must be a valid Spiffe ID",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: not-valid
+    default:
+      http:
+      - responseBandwidth:
+          limit: 1000Mbps
+`),
 		ErrorCases("empty values",
 			[]validators.Violation{
 				{
@@ -127,7 +227,7 @@ from:
 					Message: "must be in inclusive range [100, 599]",
 				},
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[2].responseBandwidth",
+					Field:   "spec.from[0].default.http.responseBandwidth[2].limit",
 					Message: "must be in kbps/Mbps/Gbps units",
 				},
 			}, `
@@ -179,7 +279,7 @@ to:
 		ErrorCases("incorrect value in percentage",
 			[]validators.Violation{
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[0].responseBandwidth",
+					Field:   "spec.from[0].default.http.responseBandwidth[0].limit",
 					Message: "must be in kbps/Mbps/Gbps units",
 				},
 				{

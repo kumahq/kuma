@@ -128,7 +128,7 @@
                     "items": {
                         "type": "integer",
                         "title": "U Int 32 Value",
-                        "description": "Wrapper message for `uint32`. The JSON representation for `UInt32Value` is JSON number."
+                        "description": "Wrapper message for `uint32`. The JSON representation for `UInt32Value` is JSON number. Not recommended for use in new APIs, but still useful for legacy APIs and has no plan to be removed."
                     },
                     "type": "array",
                     "description": "List of HTTP response statuses which are considered healthy  +optional"
@@ -182,7 +182,7 @@
                     "items": {
                         "type": "string",
                         "title": "Bytes Value",
-                        "description": "Wrapper message for `bytes`. The JSON representation for `BytesValue` is JSON string."
+                        "description": "Wrapper message for `bytes`. The JSON representation for `BytesValue` is JSON string. Not recommended for use in new APIs, but still useful for legacy APIs and has no plan to be removed."
                     },
                     "type": "array",
                     "description": "Bytes blocks expected as a response. When checking the response, “fuzzy” matching is performed such that each block must be found, and in the order specified, but not necessarily contiguous."

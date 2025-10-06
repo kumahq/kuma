@@ -22,7 +22,7 @@ jobs:
       - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
+          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json

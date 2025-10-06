@@ -605,8 +605,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		// disable until https://github.com/kumahq/kuma/issues/14072 is fixed
-		XIt("should route to only one instance", func() {
+		It("should route to only one instance", func() {
 			Eventually(func(g Gomega) {
 				responses, err := client.CollectResponsesByInstance(
 					kubernetes.Cluster, "demo-client",

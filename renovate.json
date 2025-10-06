@@ -1,11 +1,25 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "Kong/public-shared-renovate:backend",
-    "Kong/public-shared-renovate:makefile",
-    "kumahq/kuma//.renovate/go-control-plane",
-    "kumahq/kuma//.renovate/mise",
-    "kumahq/kuma//.renovate/security"
+    "kumahq/kuma:active-branches",
+    "Kong/public-shared-renovate",
+    "Kong/public-shared-renovate//scoped/kuma/go-control-plane",
+    "Kong/public-shared-renovate//overrides/security-labels(area/security)",
+    "Kong/public-shared-renovate//overrides/security-reviewers(team:kuma-security-managers)",
+    ":automergeRequireAllStatusChecks",
+    ":automergeMinor",
+    ":automergePatch",
+    ":combinePatchMinorReleases",
+    ":disableRateLimiting",
+    ":semanticCommitTypeAll(chore)",
+    "docker:pinDigests",
+    "schedule:earlyMondays"
+  ],
+  "ignorePresets": [
+    ":ignoreModulesAndTests",
+    "customManagers:dockerfileVersions",
+    "customManagers:helmChartYamlAppVersions",
+    "customManagers:tfvarsVersions"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -16,63 +30,178 @@
     "kubernetes",
     "mise"
   ],
-  "ignorePaths": [],
+  "automergeStrategy": "squash",
+  "internalChecksFilter": "strict",
+  "keepUpdatedLabel": "renovate/keep-updated",
+  "rebaseWhen": "conflicted",
+  "prTitleStrict": true,
+  "vulnerabilityAlerts": {"commitMessageSuffix": ""},
   "kubernetes": {
-    "description": "Update image versions in Kubernetes manifests from 'kumactl install demo|observability'",
-    "managerFilePatterns": [
-      "/app/kumactl/data/install/k8s/.+\\.ya?ml$/"
-    ]
+    "description": [
+      " Update container image tags in Kubernetes manifests installed via",
+      " 'kumactl install demo|observability'. Limits matching to the generated YAML under",
+      " app/kumactl/data/install/k8s/"
+    ],
+    "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
   "packageRules": [
     {
-      "description": "Skip tests and apply preset config for GitHub Actions updates",
-      "matchManagers": [
-        "github-actions"
+      "description": [
+        " For PRs targeting branches other than 'main' or 'master', add a label with",
+        " the base branch name (e.g. 'release-2.8') so reviewers can quickly identify",
+        " which release branch the PR targets"
       ],
-      "extends": [
-        "kumahq/kuma//.renovate/github-actions"
-      ]
+      "matchBaseBranches": ["!/(?:master|main)/"],
+      "addLabels": ["{{baseBranch}}"]
     },
     {
-      "description": "Skip tests and apply GitHub Actions preset for 'Kong/public-shared-actions' managed by custom regex manager",
-      "matchManagers": [
-        "custom.regex"
+      "description": [
+        " Show 'Adoption' instead of 'Confidence' in PR body tables for Go updates"
       ],
-      "matchPackageNames": [
-        "Kong/public-shared-actions/**"
-      ],
-      "extends": [
-        "kumahq/kuma//.renovate/github-actions"
-      ]
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["patch", "minor", "major"],
+      "prBodyColumns": ["Package", "Type", "Change", "Age", "Adoption"]
     },
     {
-      "description": "Group container image updates for 'kumactl install demo|observability' Kubernetes manifests",
-      "groupName": "kumactl install demo|observability container images",
-      "groupSlug": "kumactl-install-k8s",
-      "matchFileNames": [
-        "app/kumactl/data/install/k8s/**"
-      ]
-    },
-    {
-      "description": "Change commit message topic to 'envoy' for kumahq/envoy-builds, which are our own builds of released Envoy versions. This dependency is managed by the custom regex manager for Makefiles. We only change the topic to better reflect the component being updated",
-      "matchDepNames": [
-        "kumahq/envoy-builds"
+      "description": [
+        " Update golden test YAML under app/kumactl/cmd/install/testdata to the correct",
+        " image versions in the same Renovate run/PR. Combined with the kubernetes",
+        " managerFilePatterns, this keeps golden files in sync so we don't have to update them",
+        " manually"
       ],
-      "commitMessageTopic": "envoy"
-    },
-    {
-      "description": "Disable pinning of openapi-tool which won't work and always will result in pailures. This dependency is managed by the custom regex manager for Makefiles",
-      "matchManagers": [
-        "custom.regex"
-      ],
-      "matchDepNames": [
-        "kumahq/openapi-tool"
-      ],
-      "matchUpdateTypes": [
-        "pin",
-        "pinDigest"
-      ],
+      "matchManagers": ["kubernetes"],
+      "matchPackageNames": ["/^gcr.io/octo/", "/^docker.io/kumahq/", "/^kuma-ci/"],
+      "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
       "enabled": false
+    },
+    {
+      "description": [
+        " Disable 'kubernetes-api' updates (e.g. apiVersion fields like 'rbac.authorization.k8s.io/v1')",
+        " in golden test manifests under app/kumactl/cmd/install/testdata so Renovate does not rewrite",
+        " Kubernetes API versions in test data"
+      ],
+      "matchDatasources": ["kubernetes-api"],
+      "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
+      "enabled": false
+    },
+    {
+      "description": [
+        " Group related container image updates in the 'kumactl install demo|observability'",
+        " Kubernetes manifests so they land in a single PR"
+      ],
+      "matchFileNames": ["app/kumactl/{cmd,data}/install/{k8s,testdata}/**"],
+      "groupName": "kumactl install demo|observability images",
+      "groupSlug": "kumactl-install-k8s",
+      "prFooter": "> Changelog: skip"
+    },
+    {
+      "description": [
+        " For GitHub Actions dependency updates, add a 'ci/skip-test' label and use a terse PR",
+        " body/footer so these routine workflow bumps don't trigger full CI or clutter the",
+        " changelog"
+      ],
+      "matchManagers": ["github-actions"],
+      "addLabels": ["ci/skip-test"],
+      "prFooter": "> Changelog: skip"
+    },
+    {
+      "description": [
+        "Treat updates to shared Kong GitHub Actions (tracked by the regex manager) like other",
+        "workflow bumps: apply the 'ci/skip-test' label to avoid unnecessary test runs, wait 24h",
+        "before proposing updates to catch issues with freshly published tags and reduce churn,",
+        "and add a 'Changelog: skip' footer to avoid release-notes noise"
+      ],
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["*/public-shared-actions/**"],
+      "minimumReleaseAge": "24h",
+      "addLabels": ["ci/skip-test"],
+      "prFooter": "> Changelog: skip"
+    },
+    {
+      "description": [
+        "Apply a 24h minimumReleaseAge to dependencies from the 'kumahq' GitHub org",
+        "(matching both 'kumahq/*' and 'github.com/kumahq/*'). Unlike the default 12-day delay,",
+        "this shorter window gives us enough time to catch mistakes or regressions in freshly",
+        "published tags, while still allowing fixes to flow quickly once releases stabilize"
+      ],
+      "matchPackageNames": ["{github.com/,}kumahq/*"],
+      "minimumReleaseAge": "24h"
+    },
+    {
+      "description": [
+        " Disable pinning for 'kumahq/openapi-tool'. Pinning this tool to a specific commit or",
+        " version is not supported in our current setup and consistently fails, so we skip 'pin'",
+        " and 'pinDigest' updates for it. Managed by the Makefile regex manager"
+      ],
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["kumahq/openapi-tool"],
+      "matchUpdateTypes": ["pin", "pinDigest"],
+      "enabled": false
+    },
+    {
+      "description": [
+        " For mise-managed dev tools: use semantic commit scope 'deps/dev' for individual",
+        " (non-grouped) PRs, and 'deps' when updates are grouped. Add a '> Changelog: skip' footer",
+        " to individual PRs only, keeping routine tool bumps out of the main changelog without",
+        " affecting grouped PRs"
+      ],
+      "matchManagers": ["mise"],
+      "semanticCommitScope": "deps{{#unless isGroup}}/dev{{/unless}}",
+      "prFooter": "{{#unless isGroup}}> Changelog: skip{{/unless}}"
+    },
+    {
+      "description": [
+        " Extract the version for 'aqua:grpc/grpc-go/protoc-gen-go-grpc' from its command path",
+        " so Renovate can correctly detect and propose updates for this tool"
+      ],
+      "matchDepNames": ["aqua:grpc/grpc-go/protoc-gen-go-grpc"],
+      "extractVersion": "^cmd/protoc-gen-go-grpc/(?<version>.*)$"
+    },
+    {
+      "description": [
+        " Group dependency bumps from selected GitHub sources into a single PR across managers",
+        " (e.g., mise and gomod) to avoid separate PRs per manager"
+      ],
+      "matchSourceUrls": ["https://github.com/{onsi/ginkgo,golangci/golangci-lint,helm/helm}"],
+      "groupName": "{{{replace 'https://github\\.com/[a-z-]+/' '' sourceUrl}}}"
+    },
+    {
+      "description": [
+        " Group kubectl updates (registry.k8s.io/kubectl or standalone 'kubectl') into a single PR",
+        " across managers"
+      ],
+      "matchDepNames": ["{registry.k8s.io/,}kubectl"],
+      "groupName": "kubectl"
+    },
+    {
+      "description": [
+        " Disable all dependency updates by default on 'release-*' branches to keep",
+        " those branches stable and predictable"
+      ],
+      "matchBaseBranches": ["release-*"],
+      "matchPackageNames": ["*"],
+      "enabled": false
+    },
+    {
+      "description": [
+        " Exception for release branches: allow patch-level updates to 'envoy' so we can pick up",
+        " bugfixes and security patches without enabling all updates"
+      ],
+      "matchBaseBranches": ["release-*"],
+      "matchDepNames": ["envoy"],
+      "matchUpdateTypes": ["patch"],
+      "enabled": true
+    },
+    {
+      "description": [
+        " Catch-all rule that applies the standard commit message format for all dependencies",
+        "",
+        " This rule extends the shared baseline preset to ensure consistent commit message",
+        " action/topic/extra rendering across all updates. It must be the last packageRule",
+        " in renovate.json, so it takes precedence after any more specific rules."
+      ],
+      "matchDepNames": "*",
+      "extends": ["Kong/public-shared-renovate//scoped/kuma/commit-message-baseline"]
     }
   ]
 }

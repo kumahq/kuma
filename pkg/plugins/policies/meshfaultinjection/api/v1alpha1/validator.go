@@ -17,6 +17,10 @@ func (r *MeshFaultInjectionResource) validate() error {
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	if len(pointer.Deref(r.Spec.From)) > 0 && len(pointer.Deref(r.Spec.Rules)) > 0 {
+		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
+	}
+	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	verr.AddErrorAt(path, validateFrom(topLevel, pointer.Deref(r.Spec.From)))
 	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
@@ -52,6 +56,25 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 			IsInboundPolicy: isInboundPolicy,
 		})
 	}
+}
+
+func validateRules(rules []Rule) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path, validateMatches("matches", pointer.Deref(rule.Matches)))
+		verr.Add(validateDefault(path.Field("default"), rule.Default))
+	}
+	return verr
+}
+
+func validateMatches(field string, matches []common_api.Match) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, match := range matches {
+		path := validators.RootedAt(field).Index(idx)
+		verr.AddErrorAt(path, mesh.ValidateMatch(match))
+	}
+	return verr
 }
 
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
@@ -114,7 +137,7 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 		}
 		if fault.ResponseBandwidth != nil {
 			path := path.Field("responseBandwidth").Index(idx)
-			verr.Add(validators.ValidateBandwidth(path.Field("responseBandwidth"), fault.ResponseBandwidth.Limit))
+			verr.Add(validators.ValidateBandwidth(path.Field("limit"), fault.ResponseBandwidth.Limit))
 			verr.Add(validators.ValidatePercentage(path.Field("percentage"), &fault.ResponseBandwidth.Percentage, true))
 		}
 	}

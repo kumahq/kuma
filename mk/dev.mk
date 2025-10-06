@@ -7,7 +7,7 @@ GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
-# renovate: datasource=github-releases depName=kumahq/envoy-builds versioning=semver
+# renovate: datasource=github-tags depName=envoy packageName=kumahq/envoy-builds versioning=semver
 ENVOY_VERSION ?= 1.35.3
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
@@ -27,14 +27,12 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
-K8S_MIN_VERSION = v1.27.16-k3s1
-K8S_MAX_VERSION=v1.32.2-k3s1
+K8S_MIN_VERSION=v1.31.12-k3s1
+K8S_MAX_VERSION=v1.33.4-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
-KUBEBUILDER_ASSETS_VERSION=1.32
+KUBEBUILDER_ASSETS_VERSION=1.33
 
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-# renovate: datasource=github-releases depName=golangci/golangci-lint versioning=semver-coerced
-export GOLANGCI_LINT_VERSION=v2.4.0
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
@@ -57,7 +55,7 @@ PROTO_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PG
 PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
 PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
-CLANG_FORMAT=$(shell $(MISE) which clang-format)
+BUF=$(shell $(MISE) which buf)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
 K3D_BIN=$(shell $(MISE) which k3d)
@@ -96,7 +94,7 @@ cmd/check/%:
 
 # Install all dependencies on tools and protobuf files
 .PHONY: install
-install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/go cmd/check/ninja
+install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/go
 	$(MISE) install
 
 $(KUBECONFIG_DIR):

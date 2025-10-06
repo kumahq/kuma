@@ -1,10 +1,6 @@
 .PHONY: fmt/proto
-fmt/proto: ## Dev: Run clang-format on .proto files
-ifndef CI
-	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT) -i
-else
-	@echo "skipping clang-format as it's done as a github action"
-endif
+fmt/proto: ## Dev: Run buf format on .proto files
+	$(BUF) format -w
 
 .PHONY: tidy
 tidy:
@@ -28,7 +24,6 @@ endif
 .PHONY: fmt/ci
 fmt/ci:
 	$(YQ) -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"_test.yaml
-	grep -r "golangci/golangci-lint-action" .github/workflows --include \*ml | cut -d ':' -f 1 | xargs -n 1 $(YQ) -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
 
 .PHONY: helm-lint
 helm-lint:
@@ -42,11 +37,8 @@ ginkgo/unfocus:
 ginkgo/lint:
 	go run $(TOOLS_DIR)/ci/check_test_files.go
 
-.PHONY: format/common
-format/common: generate docs tidy ginkgo/unfocus fmt/ci
-
 .PHONY: format
-format: fmt/proto fmt/ci format/common
+format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
@@ -88,7 +80,7 @@ check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)
 
 .PHONY: check/rbac
 check/rbac:
-	@BASE=$$(git merge-base HEAD master); \
+	@BASE=$$(git merge-base HEAD origin/master); \
 	RBAC_CHANGED=$$(git --no-pager diff $$BASE --name-only -- deployments/ | xargs grep -E 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' || true); \
 	UPGRADE_CHANGED=$$(git --no-pager diff $$BASE --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
 	if [ -n "$$RBAC_CHANGED" ] && [ -z "$$UPGRADE_CHANGED" ]; then \
