@@ -75,7 +75,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_PORT", "5432"),
 				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_USER", "mesh"),
 				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_DB_NAME", "mesh"),
-				WithHelmOpt("controlPlane.secrets.postgresPassword.Secret", "postgres"),
+				WithHelmOpt("controlPlane.secrets.postgresPassword.Secret", "db-mesh-secret"),
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Key", "password"),
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Env", "KUMA_STORE_POSTGRES_PASSWORD"),
 			)).
