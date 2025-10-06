@@ -29,7 +29,7 @@ jobs:
       pr_state: ${{ steps.get-pr-info.outputs.pr_state }}
       pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
       pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
-      branches: ${{ steps.generate-matrix.outputs.out }}
+      branches: ${{ steps.generate-matrix.outputs.out || steps.generate-matrix-active.outputs.out }}
     runs-on: ubuntu-24.04
     steps:
       - id: get-pr-info
@@ -100,7 +100,7 @@ jobs:
           ')" >> "$GITHUB_OUTPUT"
       - name: "generate-matrix (active branches)"
         if: inputs.branches == ''
-        id: generate-matrix
+        id: generate-matrix-active
         uses: ./.github/workflows/_get-active-branches.yaml
         with:
           beforeBranch: ${{ steps.get-pr-info.outputs.pr_base_ref }}
