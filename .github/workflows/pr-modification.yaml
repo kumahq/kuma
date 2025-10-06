@@ -21,8 +21,9 @@ jobs:
       recent_prs: ${{ steps.get-recent-prs.outputs.out }}
       active_branches: ${{ steps.active-branches.outputs.out }}
     steps:
-      - id: active-branches
-        name: Get active branches
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Get active branches
+        id: active-branches
         uses: ./.github/workflows/_get-active-branches.yaml
       - id: get-recent-prs
         name: Get recent PRs
