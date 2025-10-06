@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"errors"
-	"fmt"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -46,7 +45,7 @@ type deployOptions struct {
 	database         string
 	primaryName      string
 	postgresPassword string
-	initScript       string
+	initScripts      []string
 }
 type DeployOptionsFunc func(*deployOptions)
 
@@ -55,10 +54,20 @@ func From(cluster Cluster, name string) Postgres {
 }
 
 func Install(name string, optFns ...DeployOptionsFunc) InstallFunc {
-	opts := &deployOptions{deploymentName: name, namespace: Config.KumaNamespace}
+	opts := &deployOptions{
+		deploymentName:   name,
+		namespace:        Config.KumaNamespace,
+		primaryName:      AppPostgres,
+		database:         DefaultPostgresDBName,
+		username:         DefaultPostgresUser,
+		password:         DefaultPostgresPassword,
+		postgresPassword: DefaultPostgresPassword,
+	}
+
 	for _, optFn := range optFns {
 		optFn(opts)
 	}
+
 	return func(cluster Cluster) error {
 		var deployment PostgresDeployment
 		switch cluster.(type) {
@@ -110,11 +119,8 @@ func WithPostgresPassword(postgresPassword string) DeployOptionsFunc {
 	}
 }
 
-// Wrap initScript in braces because CloudNativePG's `cluster.initdb.postInitSQL`
-// is defined as a list of SQL statements. Using braces forces a single-item list,
-// matching the API requirement
 func WithInitScript(initScript string) DeployOptionsFunc {
 	return func(o *deployOptions) {
-		o.initScript = fmt.Sprintf("{%s}", initScript)
+		o.initScripts = append(o.initScripts, initScript)
 	}
 }
