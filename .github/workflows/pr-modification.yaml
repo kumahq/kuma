@@ -23,33 +23,8 @@ jobs:
     steps:
       - id: active-branches
         name: Get active branches
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_DEBUG: ${{ runner.debug == '1' }}
-        run: |
-          [[ "${GH_DEBUG}" == "1" ]] && set -x
-          set -euo pipefail
-
-          # Read raw file to avoid manual base64 decoding
-          if ! content="$(gh api -H 'Accept: application/vnd.github.raw' \
-              "/repos/${{ github.repository }}/contents/active-branches.json" 2>/dev/null)"; then
-            echo "branches=[]" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Support both formats:
-          # New: {"baseBranchPatterns": ["release-...","master"]}
-          # Old: ["release-...","master"]
-          branches="$(printf '%s' "$content" | jq -c '
-            try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
-            | map(select(type == "string"))
-            | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
-            | map(select(. != ""))
-            | sort | unique
-          ')"
-
-          echo "branches=${branches}" >> "$GITHUB_OUTPUT"
+        uses: ./.github/workflows/_get-active-branches.yaml
+        secrets: inherit
       - id: get-recent-prs
         name: Get recent PRs
         run: |

@@ -29,7 +29,7 @@ jobs:
       pr_state: ${{ steps.get-pr-info.outputs.pr_state }}
       pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
       pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
-      branches: ${{ steps.generate-matrix.outputs.branches }}
+      branches: ${{ steps.generate-matrix.outputs.out }}
     runs-on: ubuntu-24.04
     steps:
       - id: get-pr-info
@@ -86,68 +86,25 @@ jobs:
             echo "PR #${{ inputs.PR }} is not merged, current state: '$PR_STATE'"
             exit 1
           fi
-      - id: generate-matrix
-        name: generate-matrix
+      # If explicit branches are provided via workflow_dispatch input, use them; otherwise compute
+      # from active branches before the PR base
+      - name: "generate-matrix (from input)"
+        if: inputs.branches != ''
+        id: generate-matrix
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_DEBUG: ${{ runner.debug == '1' }}
         run: |
-          [[ "${GH_DEBUG}" == "1" ]] && set -x
-          set -euo pipefail
-
-          pr_base_ref="${{ steps.get-pr-info.outputs.pr_base_ref }}"
-          
-          # Converts "a,b, c" -> ["a","b","c"]
-          to_json_array_from_csv() {
-            printf '%s' "$1" | jq -Rc '
-              split(",")
-              | map(gsub("^[[:space:]]+|[[:space:]]+$";""))
-              | map(select(. != ""))
-            '
-          }
-          
-          # Reads env.BRANCH_FILE_PATH from repo and returns a JSON array
-          # Support both formats:
-          # New: {"baseBranchPatterns": ["release-...","master"]}
-          # Old: ["release-...","master"]
-          read_branches_file() {
-            local raw
-            raw="$(gh api -H 'Accept: application/vnd.github.raw' \
-              "/repos/${{ github.repository }}/contents/${{ env.BRANCH_FILE_PATH }}")"
-
-            printf '%s' "$raw" | jq -c '
-              try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
-              | map(select(type == "string"))
-              | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
-              | map(select(. != ""))
-            '
-          }
-
-          # If pr_base_ref is present in the list, return everything before it
-          # Otherwise return the list unchanged
-          slice_before_base() {
-            jq -c --arg base "$pr_base_ref" '
-              if ($base | length) == 0 then .
-              else (if (index($base)) != null then .[:index($base)] else . end)
-              end
-            '
-          }
-
-          if [[ -n "${{ inputs.branches }}" ]]; then
-            TARGET_BRANCHES="$(to_json_array_from_csv "${{ inputs.branches }}")"
-          else
-            TARGET_BRANCHES="$(read_branches_file | slice_before_base)"
-          fi
-          
-          {
-            echo "Target branches:"
-            echo '```json'
-            echo "${TARGET_BRANCHES}"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          echo "branches=${TARGET_BRANCHES}" >> "$GITHUB_OUTPUT"
+          echo "out=$(printf '${{ inputs.branches }}' | jq -Rc '
+            split(",")
+            | map(gsub("^[[:space:]]+|[[:space:]]+$";""))
+            | map(select(. != ""))
+          ')" >> "$GITHUB_OUTPUT"
+      - name: "generate-matrix (active branches)"
+        if: inputs.branches == ''
+        id: generate-matrix
+        uses: ./.github/workflows/_get-active-branches.yaml
+        secrets: inherit
+        with:
+          beforeBranch: ${{ steps.get-pr-info.outputs.pr_base_ref }}
   open-prs:
     needs:
       - collect-info

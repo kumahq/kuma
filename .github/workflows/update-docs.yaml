@@ -30,33 +30,23 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: repo/go.mod
+      - name: "Get active branches"
+        id: active-branches
+        uses: ./.github/workflows/_get-active-branches.yaml
+        secrets: inherit
       - name: "sync docs" # loop over all the branches and generate the docs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
+          BRANCHES: ${{ steps.active-branches.outputs.out }}
         run: |
           [[ "${GH_DEBUG}" == "1" ]] && set -x
           set -euo pipefail
           cd repo
 
-          # Parse branches from file (supports both formats):
-          # New: {"baseBranchPatterns": ["release-...","master"]}
-          # Old: ["release-...","master"]
-          branches="$(jq -c '
-            try (if type == "array" then . else (.baseBranchPatterns // []) end) catch []
-            | map(select(type == "string"))
-            | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
-            | map(select(. != ""))
-            | sort | unique
-          ' active-branches.json)"
-          
-          {
-            echo "Active branches:"
-            echo '```json'
-            echo "${branches}"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          # Use active branches from reusable workflow output
+          branches="${BRANCHES}"
           
           # Loop over branches and generate docs
           jq -r '.[]' <<< "$branches" | while read -r b; do
