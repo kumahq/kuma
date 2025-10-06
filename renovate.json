@@ -44,28 +44,6 @@
     ],
     "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": [
-        " Enable Renovate to manage OCI Helm chart references embedded in our Go test deployments.",
-        " Renovate does not natively scan Go source for image/chart digests, so without this manager",
-        " those dependencies could silently drift and risk CI instability. We intentionally pin charts",
-        " by immutable digest for reproducibility because some upstream tags can be re-published with",
-        " new digests; the trailing ' // <version>' comment captures the human-readable version so",
-        " Renovate can apply semver logic for meaningful release notes and sanity checks. We scope",
-        " matching to test/framework/deployments/** to avoid false positives elsewhere"
-      ],
-      "managerFilePatterns": ["test/framework/deployments/**/*.go"],
-      "matchStrings": [
-        "\"oci://(?<host>[^/]+)/(?<org>[^/]+)/(?<packageName>(?:.*?/)?(?<depName>[^@]+))@(?<currentDigest>sha256:[0-9a-f]{64})\" *// *(?<currentValue>\\S+)(?<indentation>\\s*)"
-      ],
-      "registryUrlTemplate": "https://{{host}}/{{org}}",
-      "depNameTemplate": "{{#unless (equals org depName)}}{{org}}/{{/unless}}{{depName}}",
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "semver",
-    }
-  ],
   "packageRules": [
     {
       "description": [
@@ -105,19 +83,6 @@
       "matchDatasources": ["kubernetes-api"],
       "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
       "enabled": false
-    },
-    {
-      "description": [
-        " Group updates originating from the cloudnative-pg/charts repository into a single PR",
-        " so that related Helm chart bumps land together and are easier to review/roll back",
-        " For these dependencies, enable auto-merge for digest updates via the ':automergeDigest'",
-        " preset. Rationale: chart tags from this repo can be mutable and may be re-published with",
-        " new digests, which would cause flaky CI. To keep CI stable and reproducible, we pin by",
-        " immutable image digest and set auto-merge for digest bumps"
-      ],
-      "matchSourceUrls": ["https://github.com/cloudnative-pg/charts"],
-      "extends": [":automergeDigest"],
-      "groupName": "cloudnative-pg charts"
     },
     {
       "description": [
