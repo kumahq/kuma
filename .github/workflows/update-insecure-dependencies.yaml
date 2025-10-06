@@ -11,6 +11,7 @@ jobs:
     outputs:
       branches: ${{ steps.generate-matrix.outputs.out }}
     steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: "Get active branches"
         id: generate-matrix
         uses: ./.github/workflows/_get-active-branches.yaml
