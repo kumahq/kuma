@@ -2,7 +2,7 @@ components:
   schemas:
     DataSource_InlineString:
       properties:
-        InlineString:
+        inlineString:
           description: Data source is inline string
           type: string
         type:

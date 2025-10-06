@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -678,6 +680,12 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 	}
 
 	s := reflector.ReflectFromType(t)
+	current := s.Properties.Oldest()
+	for current != nil {
+		s.Properties.Delete(current.Key)
+		s.Properties.Set(lowerFirst(current.Key), current.Value)
+		current = current.Next()
+	}
 	if oneOfSubtype {
 		s.Properties.Set("type", &jsonschema.Schema{Type: "string", Const: name})
 	}
@@ -687,6 +695,14 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 		OneOf:      s.OneOf,
 		Extras:     s.Extras,
 	}, nil
+}
+
+func lowerFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	r, size := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[size:]
 }
 
 func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {

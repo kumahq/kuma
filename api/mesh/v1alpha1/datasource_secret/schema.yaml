@@ -2,7 +2,7 @@ components:
   schemas:
     DataSource_Secret:
       properties:
-        Secret:
+        secret:
           description: Data source is a secret with given Secret key.
           type: string
         type:

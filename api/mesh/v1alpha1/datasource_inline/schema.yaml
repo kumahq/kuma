@@ -2,7 +2,7 @@ components:
   schemas:
     DataSource_Inline:
       properties:
-        Inline:
+        inline:
           description: Data source is inline bytes.
           format: byte
           type: string
