@@ -29,6 +29,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
@@ -475,16 +476,6 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		pkg:     pkg,
 		typeSet: map[reflect.Type]struct{}{},
 	}
-	// workaround for https://github.com/Kong/kong-mesh/issues/7376
-	base := "kuma"
-	if readDir == "kuma" {
-		base = ""
-	}
-	err := reflector.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
-	if err != nil {
-		return err
-	}
-	reflector.Mapper = typeMapperFactory(reflector)
 	for _, r := range resources {
 		tpe, exists := ProtoTypeToType[r.ResourceType]
 		if !exists {
@@ -651,7 +642,13 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 	if !withBackendCheck {
 		reflector.Mapper = nil
 	}
-	if err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/")); err != nil {
+	base := "kuma"
+	if readDir == "kuma" {
+		base = ""
+	}
+	// workaround for https://github.com/Kong/kong-mesh/issues/7376
+	err := reflector.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
+	if err != nil {
 		return nil, err
 	}
 
@@ -712,8 +709,10 @@ func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.S
 			return nil, err
 		}
 
+		keys := maps.SortedKeys(types)
 		mapping := map[string]string{}
-		for discriminator, t := range types {
+		for _, discriminator := range keys {
+			t := types[discriminator]
 			ref := getReference(t, r.pkg)
 			s.OneOf = append(s.OneOf, &jsonschema.Schema{
 				Ref: ref.FullRef(),
