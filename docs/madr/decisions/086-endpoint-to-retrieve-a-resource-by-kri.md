@@ -69,7 +69,21 @@ Use cases:
 - `/_kri/kri_msvc_{mesh}_{zone}_{namespace}_{name}_{sectionName}`
 - `/_kri/kri_zi_{mesh}_{zone}_{namespace}_{name}_{sectionName}`
 
-Note: this option differs to Option A in that we are statically specifying _each resource type_ in OpenAPI instead of relying on a single generic specification (`/_kri/{kri}`) for very differently shaped responses. The key difference here is that we are using `_` separated segments in the KRI instead of `/` separated segments in the URL.
+Note: this option differs to Option B in that we are statically specifying _each resource type_ in OpenAPI instead of relying on a single generic specification (`/_kri/{kri}`) for very differently shaped responses.
+The key difference here is that we are using `_` separated segments in the KRI instead of `/` separated segments in the URL.
+
+##### Optional parameters
+
+Some of the parameters in the KRI are optional (like `zone` for universal resources, or `mesh` for `ZoneIngress`).
+Usually parameters take out the whole segment, e.g. `/meshes/{mesh}`, but here we have a parameter in the middle of a segment.
+This is a gray area in the OpenAPI spec.
+We could handle this by defining multiple endpoints for each combination of optional parameters, but that would lead to an explosion of paths.
+We could also not care about this and just let the parameter be empty and handle it on our side, but that would lead to:
+- OpenAPI spec technically being invalid.
+- OpenAPI spec being updated in the future to handle this case some other way.
+- Some generated tools not handling this case well (e.g. Swagger UI doesn't allow this).
+
+##### Generic endpoint
 
 Lastly we _also_ provide one endpoint specification for generic usage (for example non-static policy retrieval)
 
@@ -89,6 +103,7 @@ The type associated with endpoint can just use a very generic type containing fi
 
 **Cons**
 
+* Some of the parameters can be empty which is problematic.
 * More endpoint definitions as new resource types are added (mostly offset by the fact that these specifications are automatically generated)
 
 #### Option B: Single endpoint `/_kri/{kri}` with runtime type guards
@@ -133,28 +148,58 @@ We introduce new automatically generated endpoints for each new resource (note: 
 These endpoints will be next to existing endpoints in [endpoints.yaml](https://github.com/kumahq/kuma/blob/46b6807f56c08c79f34db20cfc452b8f5203bf90/tools/openapi/templates/endpoints.yaml#L9).
 
 ```yaml
-/_kri/kri_{.ShortName}_{mesh}_{zone}_{namespace}_{name}_{sectionName}:
-  get:
-    operationId: get{.Shortname}ByKri
-    summary: Returns a {.ShortName} resource by KRI
-    tags: [ "KRI" ]
-    parameters:
-      - in: path
-        name: kri
-        schema:
-          type: string
-        required: true
-        description: KRI of the resource
-    responses:
-      '200':
-        description: The resource
-        content:
-          application/json:
-            schema: # the schema of the specific resource type
-      '400':
-        $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
-      '404':
-        $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+openapi: 3.0.0
+info:
+  title: KRI API
+  version: 1.0.0
+paths:
+  /_kri/kri_mtp_{mesh}_{zone}_{namespace}_{name}_{sectionName}:
+    get:
+      operationId: getMtpByKri
+      summary: Returns a MTP resource by KRI
+      tags: [ "KRI" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+        - in: path
+          name: zone
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+        - in: path
+          name: namespace
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+        - in: path
+          name: sectionName
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource
+          content:
+            application/json:
+              schema: 
+                type: string # ... the rest of the schema of the specific resource type
+        '400':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 ```
 
 ### Resource fetching
