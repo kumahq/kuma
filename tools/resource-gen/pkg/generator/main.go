@@ -473,8 +473,8 @@ var ProtoTypeToType = map[string]reflect.Type{
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	reflector := reflector{
-		pkg:     pkg,
-		typeSet: map[reflect.Type]struct{}{},
+		pkg:      pkg,
+		typeSet:  map[reflect.Type]struct{}{},
 	}
 	for _, r := range resources {
 		tpe, exists := ProtoTypeToType[r.ResourceType]
@@ -614,8 +614,8 @@ func writeSchemaToFile(schema *jsonschema.Schema, schemaName string, ref referen
 }
 
 type reflector struct {
-	typeSet map[reflect.Type]struct{}
-	pkg     string
+	typeSet  map[reflect.Type]struct{}
+	pkg      string
 }
 
 func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype, withBackendCheck bool, name string) (*jsonschema.Schema, error) {
@@ -631,7 +631,7 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 			return snakeToCamel(key)
 		},
 		Mapper: func(t reflect.Type) *jsonschema.Schema {
-			s, err := r.mapper(t, withBackendCheck)
+			s, err := r.mapper(t)
 			if err != nil {
 				// log
 				return nil
@@ -640,7 +640,17 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 		},
 	}
 	if !withBackendCheck {
-		reflector.Mapper = nil
+		reflector.Mapper = func(t reflect.Type) *jsonschema.Schema {
+			if hasOneofField(t) {
+				s, err := r.handleOneOf(t)
+				if err != nil {
+					// log
+					return nil
+				}
+				return s
+			}
+			return valueMapper(t)
+		}
 	}
 	base := "kuma"
 	if readDir == "kuma" {
@@ -663,10 +673,11 @@ func (r *reflector) reflectFromType(t reflect.Type, expandedStruct, oneOfSubtype
 		s.Properties.Set("type", &jsonschema.Schema{Type: "string", Const: name})
 	}
 	return &jsonschema.Schema{
-		Type:       "object",
-		Properties: s.Properties,
-		OneOf:      s.OneOf,
-		Extras:     s.Extras,
+		Type:        "object",
+		Properties:  s.Properties,
+		OneOf:       s.OneOf,
+		Extras:      s.Extras,
+		Description: s.Description,
 	}, nil
 }
 
@@ -678,24 +689,30 @@ func lowerFirst(s string) string {
 	return string(unicode.ToLower(r)) + s[size:]
 }
 
-func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {
-	if !hasOneofField(t) && withBackendCheck {
-		if backendConf := BackendToOneOfs[t.Name()]; backendConf != nil {
-			schema, err := r.reflectFromType(t, false, false, false, "")
-			if err != nil {
-				return nil, err
-			}
-			schema.ID = ""
-			schema.Version = ""
-			schema.Properties.Set("conf", &jsonschema.Schema{
-				Type:  "object",
-				OneOf: backendConf,
-			})
-			return schema, nil
-		}
-		return valueMapper(t), nil
+func (r *reflector) mapper(t reflect.Type) (*jsonschema.Schema, error) {
+	if hasOneofField(t) {
+		return r.handleOneOf(t)
 	}
 
+	backendConf := BackendToOneOfs[t.Name()]
+	if backendConf == nil {
+		return valueMapper(t), nil
+		// return nil, errors.Errorf("can't find backend for %s", t.Name())
+	}
+	schema, err := r.reflectFromType(t, false, false, false, "")
+	if err != nil {
+		return nil, err
+	}
+	schema.ID = ""
+	schema.Version = ""
+	schema.Properties.Set("conf", &jsonschema.Schema{
+		Type:  "object",
+		OneOf: backendConf,
+	})
+	return schema, nil
+}
+
+func (r reflector) handleOneOf(t reflect.Type) (*jsonschema.Schema, error) {
 	s := &jsonschema.Schema{}
 	for i := range t.NumField() {
 		fd := t.Field(i)

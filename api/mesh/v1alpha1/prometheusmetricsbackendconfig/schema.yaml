@@ -1,6 +1,8 @@
 components:
   schemas:
     PrometheusMetricsBackendConfig:
+      description: PrometheusMetricsBackendConfig defines configuration of Prometheus
+        backend
       properties:
         aggregate:
           description: |-
