@@ -148,7 +148,7 @@ The type associated with with endpoint can just use a very generic type containi
 We introduce new automatically generated endpoints for each new resource (note: gotemplate variables begin with `.`, OpenAPI params don't):
 
 ```yaml
-/_kri/kri_{.ShortName}_{mesh}_{zone}_{ns}_{name}_{sectionName}:
+/_kri/kri_{.ShortName}_{mesh}_{zone}_{namespace}_{name}_{sectionName}:
   get:
     operationId: get{.Shortname}ByKri
     summary: Returns a {.ShortName} resource by KRI
