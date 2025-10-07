@@ -16816,10 +16816,10 @@ components:
               secret: '#/components/schemas/DataSource_Secret'
             propertyName: type
           oneOf:
-            - $ref: '#/components/schemas/DataSource_InlineString'
-            - $ref: '#/components/schemas/DataSource_Secret'
             - $ref: '#/components/schemas/DataSource_File'
             - $ref: '#/components/schemas/DataSource_Inline'
+            - $ref: '#/components/schemas/DataSource_InlineString'
+            - $ref: '#/components/schemas/DataSource_Secret'
         key:
           discriminator:
             mapping:
@@ -16829,10 +16829,10 @@ components:
               secret: '#/components/schemas/DataSource_Secret'
             propertyName: type
           oneOf:
-            - $ref: '#/components/schemas/DataSource_Secret'
             - $ref: '#/components/schemas/DataSource_File'
             - $ref: '#/components/schemas/DataSource_Inline'
             - $ref: '#/components/schemas/DataSource_InlineString'
+            - $ref: '#/components/schemas/DataSource_Secret'
       type: object
     ZipkinTracingBackendConfig:
       properties:
@@ -16980,10 +16980,10 @@ components:
                               secret: '#/components/schemas/DataSource_Secret'
                             propertyName: type
                           oneOf:
-                            - $ref: '#/components/schemas/DataSource_Secret'
                             - $ref: '#/components/schemas/DataSource_File'
                             - $ref: '#/components/schemas/DataSource_Inline'
                             - $ref: '#/components/schemas/DataSource_InlineString'
+                            - $ref: '#/components/schemas/DataSource_Secret'
                         type: array
                       mode:
                         description: >-

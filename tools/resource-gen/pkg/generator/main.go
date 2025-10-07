@@ -602,11 +602,11 @@ func writeSchemaToFile(schema *jsonschema.Schema, schemaName string, ref referen
 	}
 
 	// Ensure the directory exists
-	if err = os.MkdirAll(ref.OutDir(), 0o755); err != nil {
+	if err := os.MkdirAll(ref.OutDir(), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	if err = os.WriteFile(ref.Path(), out, 0o600); err != nil {
+	if err := os.WriteFile(ref.Path(), out, 0o600); err != nil {
 		return err
 	}
 
