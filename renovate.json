@@ -119,6 +119,15 @@
     },
     {
       "description": [
+        " For GitHub Actions workflow updates to 'ci-tools/release-tool' under '.github/workflows/**':",
+        " add the 'ci/skip-test' label so these workflow-only bumps don't run the full test matrix"
+      ],
+      "matchFileNames": [".github/workflows/**"],
+      "matchDepNames": ["ci-tools/release-tool"],
+      "addLabels": ["ci/skip-test"]
+    },
+    {
+      "description": [
         "Apply a 24h minimumReleaseAge to dependencies from the 'kumahq' GitHub org",
         "(matching both 'kumahq/*' and 'github.com/kumahq/*'). Unlike the default 12-day delay,",
         "this shorter window gives us enough time to catch mistakes or regressions in freshly",
