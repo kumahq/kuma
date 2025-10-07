@@ -78,7 +78,7 @@ Some of the parameters in the KRI are optional (like `zone` for universal resour
 Usually parameters take out the whole segment, e.g. `/meshes/{mesh}`, but here we have a parameter in the middle of a segment.
 This is a gray area in the OpenAPI spec.
 We could handle this by defining multiple endpoints for each combination of optional parameters, but that would lead to an explosion of paths.
-We could also not care about this and just let the parameter be empty and handle it on our side, but that would lead to:
+We could also not care about this and just let the parameter be empty and handle it on our side, but that could lead to:
 - OpenAPI spec technically being invalid.
 - OpenAPI spec being updated in the future to handle this case some other way.
 - Some generated tools not handling this case well (e.g. Swagger UI doesn't allow this).
