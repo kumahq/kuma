@@ -5,26 +5,17 @@ on:
     - cron: 0 3 * * *
 permissions: read-all
 jobs:
-  build-matrix:
-    timeout-minutes: 10
-    runs-on: ubuntu-24.04
-    outputs:
-      branches: ${{ steps.generate-matrix.outputs.out }}
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - name: "Get active branches"
-        id: generate-matrix
-        uses: ./.github/workflows/_get-active-branches.yaml
+  active-branches:
+    uses: ./.github/workflows/_get-active-branches.yaml
   update-insecure-dependencies:
     env:
       OSV_SCANNER_ADDITIONAL_OPTS: ""
     timeout-minutes: 20
-    needs:
-      - build-matrix
+    needs: active-branches
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
+        branch: ${{ fromJSON(needs.active-branches.outputs.out) }}
     runs-on: ubuntu-24.04
     steps:
       - name: Set Swap Space

@@ -15,23 +15,16 @@ env:
   WORKFLOW_ID_TO_TRIGGER: build-test-distribute.yaml
 
 jobs:
-  get-active-release-branches:
-    runs-on: ubuntu-24.04
+  active-branches:
+    uses: ./.github/workflows/_get-active-branches.yaml
     permissions:
       contents: read
-    outputs:
-      branches: ${{ steps.active-branches.outputs.out }}
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - name: "Get active branches"
-        id: active-branches
-        uses: ./.github/workflows/_get-active-branches.yaml
-        with:
-          excludeDefault: true
-          summary: true
+    with:
+      excludeDefault: true
+      summary: true
 
   trigger-build-test-distribute:
-    needs: get-active-release-branches
+    needs: active-branches
     runs-on: ubuntu-24.04
     permissions:
       actions: write # required to trigger workflows
@@ -39,7 +32,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        branch: ${{ fromJSON(needs.get-active-release-branches.outputs.branches) }}
+        branch: ${{ fromJSON(needs.active-branches.outputs.out) }}
       fail-fast: false
       max-parallel: 1
     env:

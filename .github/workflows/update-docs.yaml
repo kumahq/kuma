@@ -18,7 +18,10 @@ env:
 permissions:
   contents: read
 jobs:
+  active-branches:
+    uses: ./.github/workflows/_get-active-branches.yaml
   generate-docs:
+    needs: active-branches
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
@@ -30,15 +33,12 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: repo/go.mod
-      - name: "Get active branches"
-        id: active-branches
-        uses: ./.github/workflows/_get-active-branches.yaml
       - name: "sync docs" # loop over all the branches and generate the docs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
-          BRANCHES: ${{ steps.active-branches.outputs.out }}
+          BRANCHES: ${{ needs.active-branches.outputs.out }}
         run: |
           [[ "${GH_DEBUG}" == "1" ]] && set -x
           set -euo pipefail
