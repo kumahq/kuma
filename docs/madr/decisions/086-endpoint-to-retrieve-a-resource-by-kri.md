@@ -66,8 +66,8 @@ Use cases:
 
 **Idea**: Provide a single endpoint rooted under `/_kri` but provide statically defined "variants" for all resources based on the KRI shortname.
 
-- `/_kri/kri_msvc_{...remainingKRI}`
-- `/_kri/kri_zi_{...remainingKRI}`
+- `/_kri/kri_msvc_{mesh}_{zone}_{namespace}_{name}_{sectionName}`
+- `/_kri/kri_zi_{mesh}_{zone}_{namespace}_{name}_{sectionName}`
 
 Note: this option differs to Option A in that we are statically specifying _each resource type_ in OpenAPI instead of relying on a single generic specification (`/_kri/{kri}`) for very differently shaped responses. The key difference here is that we are using `_` separated segments in the KRI instead of `/` separated segments in the URL.
 
