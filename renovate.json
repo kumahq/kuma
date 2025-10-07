@@ -175,6 +175,17 @@
     },
     {
       "description": [
+        " Apply the 'immediately' helper for all dependencies from the 'kumahq' org (matching both",
+        " 'kumahq/*' and 'github.com/kumahq/*') so Renovate proposes updates as soon as they're",
+        " available, without waiting for the default release-age delay. This lets us consume our own",
+        " releases quickly while other third-party dependencies continue to observe their configured",
+        " delays"
+      ],
+      "matchPackageNames": ["{,github.com/}kumahq/**"],
+      "extends": ["Kong/public-shared-renovate//helpers/immediately"]
+    },
+    {
+      "description": [
         " Disable all dependency updates by default on 'release-*' branches to keep",
         " those branches stable and predictable"
       ],

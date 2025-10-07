@@ -20,27 +20,23 @@ env:
   GH_USER: kumahq[bot]
   GH_EMAIL: <110050114+kumahq[bot]@users.noreply.github.com>
   GH_REPO: ${{ github.repository }}
-  BRANCH_FILE_PATH: active-branches.json
 jobs:
-  collect-info:
+  pr-info:
+    runs-on: ubuntu-24.04
     outputs:
       pr_title: ${{ steps.get-pr-info.outputs.pr_title }}
       pr_change_log: ${{ steps.get-pr-info.outputs.pr_change_log }}
       pr_state: ${{ steps.get-pr-info.outputs.pr_state }}
       pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
       pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
-      branches: ${{ steps.generate-matrix.outputs.out || steps.generate-matrix-active.outputs.out }}
-    runs-on: ubuntu-24.04
     steps:
-      - id: get-pr-info
-        name: get-pr-info
+      - name: get-pr-info
+        id: get-pr-info
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
         run: |
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            set -x
-          fi
+          [[ "${GH_DEBUG}" == "true" ]] && set -x
 
           function get_change_log() {
             awk '
@@ -86,36 +82,23 @@ jobs:
             echo "PR #${{ inputs.PR }} is not merged, current state: '$PR_STATE'"
             exit 1
           fi
-      # If explicit branches are provided via workflow_dispatch input, use them; otherwise compute
-      # from active branches before the PR base
-      - name: "generate-matrix (from input)"
-        if: inputs.branches != ''
-        id: generate-matrix
-        shell: bash
-        run: |
-          echo "out=$(printf '${{ inputs.branches }}' | jq -Rc '
-            split(",")
-            | map(gsub("^[[:space:]]+|[[:space:]]+$";""))
-            | map(select(. != ""))
-          ')" >> "$GITHUB_OUTPUT"
-      - name: "generate-matrix (active branches)"
-        if: inputs.branches == ''
-        id: generate-matrix-active
-        uses: ./.github/workflows/_get-active-branches.yaml
-        with:
-          beforeBranch: ${{ steps.get-pr-info.outputs.pr_base_ref }}
+  active-branches:
+    needs: pr-info
+    uses: ./.github/workflows/_get-active-branches.yaml
+    with:
+      beforeBranch: ${{ needs.pr-info.outputs.pr_base_ref }}
+      branches: ${{ inputs.branches }}
   open-prs:
-    needs:
-      - collect-info
+    needs: [pr-info, active-branches]
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.collect-info.outputs.branches) }}
-    runs-on: ubuntu-24.04
+        branch: ${{ fromJSON(needs.active-branches.outputs.out) }}
     env:
       PR_NUMBER: ${{ inputs.PR }}
-      PR_TITLE: ${{ needs.collect-info.outputs.pr_title }}
-      SHA: ${{ needs.collect-info.outputs.pr_merge_commit_sha }}
+      PR_TITLE: ${{ needs.pr-info.outputs.pr_title }}
+      SHA: ${{ needs.pr-info.outputs.pr_merge_commit_sha }}
       TARGET_BRANCH: ${{ matrix.branch }}
       USE_APP_TOKEN: ${{ secrets.APP_ID != '' }}
     steps:
@@ -123,16 +106,13 @@ jobs:
         with:
           append: true
           message: backporting to ${{ matrix.branch }} with [action](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-      - id: github-app-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
         if: ${{ env.USE_APP_TOKEN == 'true' }}
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-      - id: github-context-token
-        if: ${{ env.USE_APP_TOKEN != 'true' }}
-        run: |
-          echo "token=${{ github.token }}" >> $GITHUB_OUTPUT
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: ${{ env.TARGET_BRANCH }}
@@ -175,7 +155,7 @@ jobs:
             
             ${{ env.DIFF }}
             
-            ${{ needs.collect-info.outputs.pr_change_log }}
+            ${{ needs.pr-info.outputs.pr_change_log }}
           commit-message: |
             Automatic cherry-pick of PR ${{ env.PR_NUMBER }} for branch ${{ env.TARGET_BRANCH }}
             
@@ -183,6 +163,6 @@ jobs:
           delete-branch: true
           draft: ${{ contains(env.LABELS, 'conflict') }}
           labels: ${{ env.LABELS }}
-          token: ${{env.USE_APP_TOKEN == 'true' && steps.github-app-token.outputs.token || steps.github-context-token.outputs.token }}
+          token: ${{ env.USE_APP_TOKEN == 'true' && steps.github-app-token.outputs.token || github.token }}
           committer: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}
           author: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}

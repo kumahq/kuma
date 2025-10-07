@@ -16,6 +16,11 @@ on:
         type: string
         required: false
         default: ""
+      branches:
+        description: "If set, return only this comma-separated list of branches"
+        type: string
+        required: false
+        default: ""
     outputs:
       out:
         description: "JSON array of active branch patterns (filtered if requested)"
@@ -30,7 +35,8 @@ jobs:
     outputs:
       out: ${{ steps.main.outputs.out }}
     steps:
-      - id: main
+      - name: Get active branches
+        id: main
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -40,9 +46,10 @@ jobs:
           EXCLUDE_DEFAULT: ${{ inputs.excludeDefault }}
           SHOW_SUMMARY: ${{ inputs.summary }}
           BEFORE_BRANCH: ${{ inputs.beforeBranch }}
+          BRANCHES: ${{ inputs.branches }}
         run: |
           # shellcheck shell=bash
-          [[ "${GH_DEBUG}" == "1" ]] && set -x
+          [[ "${GH_DEBUG}" == "true" ]] && set -x
           set -euo pipefail
           
           readonly REPOSITORY="${REPOSITORY:?REPOSITORY is required}"
@@ -52,6 +59,17 @@ jobs:
           readonly DEFAULT_BRANCH="${DEFAULT_BRANCH:-master}"
           readonly SHOW_SUMMARY="${SHOW_SUMMARY:-${GH_DEBUG:-0}}"
           readonly BEFORE_BRANCH="${BEFORE_BRANCH:-}"
+          readonly BRANCHES="${BRANCHES:-}"
+          
+          # If branches input is provided, short-circuit and return it as JSON array
+          if [[ -n "${BRANCHES}" ]]; then
+            echo "out=$(printf '%s' "${BRANCHES}" | jq --raw-input --compact-output '
+              split(",")
+              | map(gsub("^[[:space:]]+|[[:space:]]+$";""))
+              | map(select(. != ""))
+            ')" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           
           # Write summary to $GITHUB_STEP_SUMMARY when enabled
           write_summary() {
