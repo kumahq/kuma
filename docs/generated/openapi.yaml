@@ -15525,6 +15525,9 @@ components:
       type: object
       properties: {}
     PrometheusMetricsBackendConfig:
+      description: >-
+        PrometheusMetricsBackendConfig defines configuration of Prometheus
+        backend
       properties:
         aggregate:
           description: >-
@@ -15638,6 +15641,7 @@ components:
         - $ref: '#/components/schemas/Meta'
         - $ref: '#/components/schemas/DataplaneOverview'
     DataplaneOverview:
+      description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
         dataplane:
           properties:
@@ -16452,6 +16456,9 @@ components:
           type: string
       type: object
     FileLoggingBackendConfig:
+      description: >-
+        FileLoggingBackendConfig defines configuration for file based access
+        logs
       properties:
         path:
           description: Path to a file that logs will be written to
@@ -16539,6 +16546,7 @@ components:
             backends:
               description: List of available logging backends
               items:
+                description: LoggingBackend defines logging backend available to mesh.
                 properties:
                   conf:
                     oneOf:
@@ -16592,6 +16600,7 @@ components:
             backends:
               description: List of available Metrics backends
               items:
+                description: MetricsBackend defines metric backends
                 properties:
                   conf:
                     oneOf:
@@ -16619,6 +16628,9 @@ components:
             backends:
               description: List of available Certificate Authority backends
               items:
+                description: >-
+                  CertificateAuthorityBackend defines Certificate Authority
+                  backend
                 properties:
                   conf:
                     oneOf:
@@ -16744,6 +16756,7 @@ components:
             backends:
               description: List of available tracing backends
               items:
+                description: TracingBackend defines tracing backend available to mesh.
                 properties:
                   conf:
                     oneOf:
@@ -16797,6 +16810,7 @@ components:
       type: object
       properties: {}
     TcpLoggingBackendConfig:
+      description: TcpLoggingBackendConfig defines configuration for TCP based access logs
       properties:
         address:
           description: Address to TCP service that will receive logs
@@ -17065,6 +17079,9 @@ components:
       type: object
       properties: {}
     Zone:
+      description: >-
+        Zone defines the Zone configuration used at the Global Control Plane
+        within a distributed deployment
       properties:
         enabled:
           description: >-
