@@ -118,20 +118,15 @@ Note: This is is essentially the same approach as option A, but avoids the requi
 
 **Pros**
 
-* Minimal API surface for consumers.
-* Pure KRI-driven design, consistent with intent of KRIs.
-* Stronger typing in generated SDKs.
-* Frontend can leverage OpenAPI type information directly.
-* Uses existing standards and application patterns.
-* Maintains existing engineering boundaries.
-* Static escape hatch for dynamic retrieval (in the case of policies), exchanging dynamism for a less narrow type.
+The pros are the same as Option A's but additionally:
+
 * Avoids problems of Option A due to OpenAPI required path parameters. i.e. technically this is valid OpenAPI.
 
 **Cons**
 
-* More awkward to use in Typescript, providing "the rest of the KRI" is more awkward and not as safe nor user-friendly as providing individual KRI parameters.
-* More endpoint definitions as new resource types are added (mostly offset by the fact that these specifications are automatically generated)
+The cons are the same as Option A's but additionally:
 
+* More awkward to use in Typescript, providing "the rest of the KRI" is more awkward and not as safe nor user-friendly as providing individual KRI parameters.
 
 #### Option C: Single endpoint `/_kri/{kri}` only with runtime type guards
 
