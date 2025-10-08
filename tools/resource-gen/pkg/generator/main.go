@@ -632,8 +632,7 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 		Mapper: func(t reflect.Type) *jsonschema.Schema {
 			s, err := r.mapper(t, withBackendCheck)
 			if err != nil {
-				// log
-				fmt.Printf("error occured during mapping: %v\n", err)
+				fmt.Printf("error occurred during mapping: %v\n", err)
 				return nil
 			}
 			return s
