@@ -57,15 +57,42 @@ func UpgradingWithHelmChartMultizone() {
 	DescribeTable("upgrade helm multizone",
 		func(version string) {
 			releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
+
+			globalOpts := []KumaDeploymentOption{
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmChartPath(Config.HelmChartName),
+				WithHelmReleaseName(releaseName),
+				WithHelmChartVersion(version),
+				WithoutHelmOpt("global.image.tag"),
+			}
+
+			zoneOpts := []KumaDeploymentOption{
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmChartPath(Config.HelmChartName),
+				WithHelmReleaseName(releaseName),
+				WithHelmChartVersion(version),
+				WithHelmOpt("ingress.enabled", "true"),
+				WithoutHelmOpt("global.image.tag"),
+			}
+			// Bitnami registry changes:
+			// We switched the kubectl image source from Bitnami to the official registry.k8s.io
+			// on supported release branches. These changes were not backported to 2.8.x, which is
+			// out of support and still uses the Bitnami image. After Bitnami's registry changes,
+			// installation of 2.8 fails in our upgrade tests because the Bitnami kubectl repository
+			// does not provide versioned tags.
+			// Our upgrade tests purposely install older versions (like 2.8.4) and then upgrade them,
+			// so fixing this properly would require releasing a new, long out-of-support 2.8 just to
+			// change the registry. Instead, for 2.8.x only, we set kubectl.image.tag to "latest"
+			// (a tag that still exists), which should keep these tests passing until upgrades only
+			// involve supported versions that already use the new registry.
+			if strings.HasPrefix(version, "2.8.") {
+				globalOpts = append(globalOpts, WithHelmOpt("kubectl.image.tag", "latest"))
+				zoneOpts = append(zoneOpts, WithHelmOpt("kubectl.image.tag", "latest"))
+			}
+
 			By("Install global with version: " + version)
 			err := NewClusterSetup().
-				Install(Kuma(core.Global,
-					WithInstallationMode(HelmInstallationMode),
-					WithHelmChartPath(Config.HelmChartName),
-					WithHelmReleaseName(releaseName),
-					WithHelmChartVersion(version),
-					WithoutHelmOpt("global.image.tag"),
-				)).
+				Install(Kuma(core.Global, globalOpts...)).
 				Setup(global)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -73,16 +100,9 @@ func UpgradingWithHelmChartMultizone() {
 			Expect(globalCP).ToNot(BeNil())
 
 			By("Install zone with version: " + version)
+			zoneOpts = append(zoneOpts, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 			err = NewClusterSetup().
-				Install(Kuma(core.Zone,
-					WithInstallationMode(HelmInstallationMode),
-					WithHelmChartPath(Config.HelmChartName),
-					WithHelmReleaseName(releaseName),
-					WithHelmChartVersion(version),
-					WithGlobalAddress(globalCP.GetKDSServerAddress()),
-					WithHelmOpt("ingress.enabled", "true"),
-					WithoutHelmOpt("global.image.tag"),
-				)).
+				Install(Kuma(core.Zone, zoneOpts...)).
 				Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -128,6 +148,7 @@ spec:
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),
+				WithoutHelmOpt("kubectl.image.tag"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -148,6 +169,7 @@ spec:
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),
+				WithoutHelmOpt("kubectl.image.tag"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
