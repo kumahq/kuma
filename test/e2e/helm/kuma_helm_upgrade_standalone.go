@@ -33,15 +33,32 @@ func UpgradingWithHelmChartStandalone() {
 				strings.ToLower(random.UniqueId()),
 			)
 
+			opts := []KumaDeploymentOption{
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmChartPath(Config.HelmChartName),
+				WithHelmReleaseName(releaseName),
+				WithHelmChartVersion(version),
+				WithoutHelmOpt("global.image.tag"),
+			}
+
+			// Bitnami registry changes:
+			// We switched the kubectl image source from Bitnami to the official registry.k8s.io
+			// on supported release branches. These changes were not backported to 2.8.x, which is
+			// out of support and still uses the Bitnami image. After Bitnami's registry changes,
+			// installation of 2.8 fails in our upgrade tests because the Bitnami kubectl repository
+			// does not provide versioned tags.
+			// Our upgrade tests purposely install older versions (like 2.8.4) and then upgrade them,
+			// so fixing this properly would require releasing a new, long out-of-support 2.8 just to
+			// change the registry. Instead, for 2.8.x only, we set kubectl.image.tag to "latest"
+			// (a tag that still exists), which should keep these tests passing until upgrades only
+			// involve supported versions that already use the new registry.
+			if strings.HasPrefix(version, "2.8.") {
+				opts = append(opts, WithHelmOpt("kubectl.image.tag", "latest"))
+			}
+
 			// nolint:staticcheck
 			err := NewClusterSetup().
-				Install(Kuma(core.Standalone,
-					WithInstallationMode(HelmInstallationMode),
-					WithHelmChartPath(Config.HelmChartName),
-					WithHelmReleaseName(releaseName),
-					WithHelmChartVersion(version),
-					WithoutHelmOpt("global.image.tag"),
-				)).
+				Install(Kuma(core.Standalone, opts...)).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
