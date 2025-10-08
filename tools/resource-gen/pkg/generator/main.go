@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -27,6 +29,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
@@ -469,29 +472,10 @@ var ProtoTypeToType = map[string]reflect.Type{
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
-	// this is where the new types need to be added if we want to generate openAPI for it
-	reflector := jsonschema.Reflector{
-		ExpandedStruct:            true,
-		DoNotReference:            true,
-		AllowAdditionalProperties: true,
-		IgnoredTypes:              []any{structpb.Struct{}},
-		KeyNamer: func(key string) string {
-			if key == "RSAbits" {
-				return "rsaBits"
-			}
-			return snakeToCamel(key)
-		},
+	reflector := reflector{
+		pkg:     pkg,
+		typeSet: map[reflect.Type]struct{}{},
 	}
-	// workaround for https://github.com/Kong/kong-mesh/issues/7376
-	base := "kuma"
-	if readDir == "kuma" {
-		base = ""
-	}
-	err := reflector.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
-	if err != nil {
-		return err
-	}
-	reflector.Mapper = typeMapperFactory(reflector)
 	for _, r := range resources {
 		tpe, exists := ProtoTypeToType[r.ResourceType]
 		if !exists {
@@ -504,8 +488,11 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
-		properties := reflector.ReflectFromType(tpe).Properties
-		for pair := properties.Oldest(); pair != nil; pair = pair.Next() {
+		s, err := reflector.reflectFromType(tpe, true)
+		if err != nil {
+			return err
+		}
+		for pair := s.Properties.Oldest(); pair != nil; pair = pair.Next() {
 			schemaMap.Set(pair.Key, pair.Value)
 		}
 
@@ -556,45 +543,190 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	}
 
 	for _, tpe := range AdditionalProtoTypes {
-		properties := reflector.ReflectFromType(tpe).Properties
-
-		schema := jsonschema.Schema{
-			Type:       "object",
-			Properties: properties,
-		}
-
-		wrapped := map[string]interface{}{
-			"openapi": "3.1.0",
-			"info": map[string]string{
-				"x-ref-schema-name": tpe.Name(),
-			},
-			"components": map[string]interface{}{
-				"schemas": map[string]jsonschema.Schema{
-					tpe.Name(): schema,
-				},
-			},
-		}
-
-		out, err := yaml.Marshal(wrapped)
+		s, err := reflector.reflectFromType(tpe, true)
 		if err != nil {
 			return err
 		}
-
-		outDir := path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(tpe.Name()))
-
-		// Ensure the directory exists
-		err = os.MkdirAll(outDir, 0o755)
-		if err != nil {
-			return fmt.Errorf("failed to create directory: %w", err)
-		}
-
-		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600)
-		if err != nil {
+		if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+type reference struct {
+	dir       string
+	file      string
+	ref       string
+	refPrefix string
+}
+
+func (r reference) OutDir() string {
+	return r.dir
+}
+
+func (r reference) Path() string {
+	return path.Join(r.dir, r.file)
+}
+
+func (r reference) FullRef() string {
+	return path.Join(r.refPrefix, r.file) + r.ref
+}
+
+func getReference(r reflect.Type, pkg string) reference {
+	return reference{
+		dir:       path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(r.Name())),
+		file:      "schema.yaml",
+		ref:       "#/components/schemas/" + r.Name(),
+		refPrefix: "/specs/protoresources/" + strings.ToLower(r.Name()),
+	}
+}
+
+func writeSchemaToFile(schema *jsonschema.Schema, schemaName string, ref reference) error {
+	wrapped := map[string]any{
+		"openapi": "3.1.0",
+		"info": map[string]string{
+			"x-ref-schema-name": schemaName,
+		},
+		"components": map[string]any{
+			"schemas": map[string]*jsonschema.Schema{
+				schemaName: schema,
+			},
+		},
+	}
+
+	out, err := yaml.Marshal(wrapped)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the directory exists
+	if err := os.MkdirAll(ref.OutDir(), 0o755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	if err := os.WriteFile(ref.Path(), out, 0o600); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type reflector struct {
+	typeSet map[reflect.Type]struct{}
+	pkg     string
+}
+
+func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {
+	rflctr := &jsonschema.Reflector{
+		DoNotReference:            true,
+		AllowAdditionalProperties: true,
+		IgnoredTypes:              []any{structpb.Struct{}},
+		KeyNamer: func(key string) string {
+			if key == "RSAbits" {
+				return "rsaBits"
+			}
+			return lowerFirst(snakeToCamel(key))
+		},
+		Mapper: func(t reflect.Type) *jsonschema.Schema {
+			s, err := r.mapper(t, withBackendCheck)
+			if err != nil {
+				fmt.Printf("error occurred during mapping: %v\n", err)
+				return nil
+			}
+			return s
+		},
+	}
+	base := "kuma"
+	if readDir == "kuma" {
+		base = ""
+	}
+	// workaround for https://github.com/Kong/kong-mesh/issues/7376
+	err := rflctr.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
+	if err != nil {
+		return nil, err
+	}
+
+	s := rflctr.ReflectFromType(t)
+	return &jsonschema.Schema{
+		Type:        "object",
+		Properties:  s.Properties,
+		OneOf:       s.OneOf,
+		Extras:      s.Extras,
+		Description: s.Description,
+	}, nil
+}
+
+func lowerFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	r, size := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[size:]
+}
+
+func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {
+	if hasOneofField(t) {
+		return r.handleOneOf(t)
+	}
+
+	backendConf := BackendToOneOfs[t.Name()]
+	if !withBackendCheck || backendConf == nil {
+		return valueMapper(t), nil
+	}
+
+	schema, err := r.reflectFromType(t, false)
+	if err != nil {
+		return nil, err
+	}
+	schema.ID = ""
+	schema.Version = ""
+	schema.Properties.Set("conf", &jsonschema.Schema{
+		Type:  "object",
+		OneOf: backendConf,
+	})
+	return schema, nil
+}
+
+func (r reflector) handleOneOf(t reflect.Type) (*jsonschema.Schema, error) {
+	s := &jsonschema.Schema{}
+	for i := range t.NumField() {
+		fd := t.Field(i)
+		_, ok := fd.Tag.Lookup("protobuf_oneof")
+		if !ok {
+			// skip proto specific fields like 'state', 'unknownFields', 'sizeCache'
+			continue
+		}
+		types, err := OneofWrapperTypes(t, fd)
+		if err != nil {
+			return nil, err
+		}
+
+		keys := maps.SortedKeys(types)
+		mapping := map[string]string{}
+		for _, discriminator := range keys {
+			t := types[discriminator]
+			ref := getReference(t, r.pkg)
+			s.OneOf = append(s.OneOf, &jsonschema.Schema{
+				Ref: ref.FullRef(),
+			})
+			mapping[discriminator] = ref.FullRef()
+			if _, ok := r.typeSet[t]; ok {
+				continue
+			}
+			r.typeSet[t] = struct{}{}
+			schema, err := r.reflectFromType(t, true)
+			if err != nil {
+				return nil, err
+			}
+			if err := writeSchemaToFile(schema, t.Name(), getReference(t, r.pkg)); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return s, nil
 }
 
 type GeneratorFn func(pkg string, resources []ResourceInfo) error
@@ -641,21 +773,6 @@ var BackendToOneOfs = map[string][]*jsonschema.Schema{
 	},
 }
 
-func typeMapperFactory(self jsonschema.Reflector) func(r reflect.Type) *jsonschema.Schema {
-	f := func(r reflect.Type) *jsonschema.Schema {
-		schema, done := confMapper(r, self)
-		if done {
-			return schema
-		}
-
-		return valueMapper(r)
-	}
-
-	self.Mapper = valueMapper
-
-	return f
-}
-
 func valueMapper(r reflect.Type) *jsonschema.Schema {
 	switch r {
 	case reflect.TypeOf(wrapperspb.DoubleValue{}), reflect.TypeOf(wrapperspb.FloatValue{}):
@@ -700,22 +817,14 @@ func valueMapper(r reflect.Type) *jsonschema.Schema {
 	}
 }
 
-func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, bool) {
-	backendConf := BackendToOneOfs[r.Name()]
-	if backendConf != nil {
-		schema := self.ReflectFromType(r)
-		schema.ID = ""
-		schema.Version = ""
-		schema.Properties.Set("conf", &jsonschema.Schema{
-			Type:  "object",
-			OneOf: backendConf,
-		})
-		return schema, true
+func hasOneofField(r reflect.Type) bool {
+	md, ok := protoDescFromType(r)
+	if !ok {
+		return false
 	}
-	return nil, false
+	return md.Oneofs().Len() > 0
 }
 
-// snakeToCamel converts a snake_case string to camelCase
 func snakeToCamel(s string) string {
 	parts := strings.Split(s, "_")
 	if len(parts) == 1 {

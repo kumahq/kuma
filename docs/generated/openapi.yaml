@@ -15525,6 +15525,9 @@ components:
       type: object
       properties: {}
     PrometheusMetricsBackendConfig:
+      description: >-
+        PrometheusMetricsBackendConfig defines configuration of Prometheus
+        backend
       properties:
         aggregate:
           description: >-
@@ -15638,6 +15641,7 @@ components:
         - $ref: '#/components/schemas/Meta'
         - $ref: '#/components/schemas/DataplaneOverview'
     DataplaneOverview:
+      description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
         dataplane:
           properties:
@@ -16407,7 +16411,42 @@ components:
               type: array
           type: object
       type: object
+    DataSource:
+      properties:
+        Type:
+          description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+      type: object
+    DataSource_File:
+      properties:
+        file:
+          description: |-
+            Data source is a path to a file.
+            Deprecated, use other sources of a data.
+          type: string
+      type: object
+    DataSource_Inline:
+      properties:
+        inline:
+          description: Data source is inline bytes.
+          format: byte
+          type: string
+      type: object
+    DataSource_InlineString:
+      properties:
+        inlineString:
+          description: Data source is inline string
+          type: string
+      type: object
+    DataSource_Secret:
+      properties:
+        secret:
+          description: Data source is a secret with given Secret key.
+          type: string
+      type: object
     FileLoggingBackendConfig:
+      description: >-
+        FileLoggingBackendConfig defines configuration for file based access
+        logs
       properties:
         path:
           description: Path to a file that logs will be written to
@@ -16759,6 +16798,7 @@ components:
       type: object
       properties: {}
     TcpLoggingBackendConfig:
+      description: TcpLoggingBackendConfig defines configuration for TCP based access logs
       properties:
         address:
           description: Address to TCP service that will receive logs
@@ -16767,19 +16807,17 @@ components:
     ProvidedCertificateAuthorityConfig:
       properties:
         cert:
-          properties:
-            Type:
-              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-          required:
-            - Type
-          type: object
+          oneOf:
+            - $ref: '#/components/schemas/DataSource_File'
+            - $ref: '#/components/schemas/DataSource_Inline'
+            - $ref: '#/components/schemas/DataSource_InlineString'
+            - $ref: '#/components/schemas/DataSource_Secret'
         key:
-          properties:
-            Type:
-              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-          required:
-            - Type
-          type: object
+          oneOf:
+            - $ref: '#/components/schemas/DataSource_File'
+            - $ref: '#/components/schemas/DataSource_Inline'
+            - $ref: '#/components/schemas/DataSource_InlineString'
+            - $ref: '#/components/schemas/DataSource_Secret'
       type: object
     ZipkinTracingBackendConfig:
       properties:
@@ -16919,13 +16957,11 @@ components:
 
                           ECDSA key and certificate.
                         items:
-                          description: DataSource defines the source of bytes to use.
-                          properties:
-                            Type:
-                              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-                          required:
-                            - Type
-                          type: object
+                          oneOf:
+                            - $ref: '#/components/schemas/DataSource_File'
+                            - $ref: '#/components/schemas/DataSource_Inline'
+                            - $ref: '#/components/schemas/DataSource_InlineString'
+                            - $ref: '#/components/schemas/DataSource_Secret'
                         type: array
                       mode:
                         description: >-
@@ -17010,6 +17046,9 @@ components:
       type: object
       properties: {}
     Zone:
+      description: >-
+        Zone defines the Zone configuration used at the Global Control Plane
+        within a distributed deployment
       properties:
         enabled:
           description: >-
