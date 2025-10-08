@@ -67,8 +67,8 @@ func UpgradingWithHelmChartStandalone() {
 			err = k8sCluster.UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
-				WithoutHelmOpt("kubectl.image.tag"),
 				ClearNoHelmOpts(),
+				WithoutHelmOpt("kubectl.image.tag"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
