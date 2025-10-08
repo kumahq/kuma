@@ -7,9 +7,6 @@ components:
             Data source is a path to a file.
             Deprecated, use other sources of a data.
           type: string
-        type:
-          const: file
-          type: string
       type: object
 info:
   x-ref-schema-name: DataSource_File

@@ -6,9 +6,6 @@ components:
           description: Data source is inline bytes.
           format: byte
           type: string
-        type:
-          const: inline
-          type: string
       type: object
 info:
   x-ref-schema-name: DataSource_Inline

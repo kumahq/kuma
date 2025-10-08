@@ -16423,9 +16423,6 @@ components:
             Data source is a path to a file.
             Deprecated, use other sources of a data.
           type: string
-        type:
-          const: file
-          type: string
       type: object
     DataSource_Inline:
       properties:
@@ -16433,26 +16430,17 @@ components:
           description: Data source is inline bytes.
           format: byte
           type: string
-        type:
-          const: inline
-          type: string
       type: object
     DataSource_InlineString:
       properties:
         inlineString:
           description: Data source is inline string
           type: string
-        type:
-          const: inlineString
-          type: string
       type: object
     DataSource_Secret:
       properties:
         secret:
           description: Data source is a secret with given Secret key.
-          type: string
-        type:
-          const: secret
           type: string
       type: object
     FileLoggingBackendConfig:
@@ -16819,26 +16807,12 @@ components:
     ProvidedCertificateAuthorityConfig:
       properties:
         cert:
-          discriminator:
-            mapping:
-              file: '#/components/schemas/DataSource_File'
-              inline: '#/components/schemas/DataSource_Inline'
-              inlineString: '#/components/schemas/DataSource_InlineString'
-              secret: '#/components/schemas/DataSource_Secret'
-            propertyName: type
           oneOf:
             - $ref: '#/components/schemas/DataSource_File'
             - $ref: '#/components/schemas/DataSource_Inline'
             - $ref: '#/components/schemas/DataSource_InlineString'
             - $ref: '#/components/schemas/DataSource_Secret'
         key:
-          discriminator:
-            mapping:
-              file: '#/components/schemas/DataSource_File'
-              inline: '#/components/schemas/DataSource_Inline'
-              inlineString: '#/components/schemas/DataSource_InlineString'
-              secret: '#/components/schemas/DataSource_Secret'
-            propertyName: type
           oneOf:
             - $ref: '#/components/schemas/DataSource_File'
             - $ref: '#/components/schemas/DataSource_Inline'
@@ -16983,13 +16957,6 @@ components:
 
                           ECDSA key and certificate.
                         items:
-                          discriminator:
-                            mapping:
-                              file: '#/components/schemas/DataSource_File'
-                              inline: '#/components/schemas/DataSource_Inline'
-                              inlineString: '#/components/schemas/DataSource_InlineString'
-                              secret: '#/components/schemas/DataSource_Secret'
-                            propertyName: type
                           oneOf:
                             - $ref: '#/components/schemas/DataSource_File'
                             - $ref: '#/components/schemas/DataSource_Inline'

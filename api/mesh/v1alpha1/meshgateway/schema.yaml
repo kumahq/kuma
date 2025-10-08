@@ -70,13 +70,6 @@ properties:
                     should contain an RSA key and certificate, and the other an
                     ECDSA key and certificate.
                   items:
-                    discriminator:
-                      mapping:
-                        file: /specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File
-                        inline: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline
-                        inlineString: /specs/protoresources/datasource_inlinestring/schema.yaml#/components/schemas/DataSource_InlineString
-                        secret: /specs/protoresources/datasource_secret/schema.yaml#/components/schemas/DataSource_Secret
-                      propertyName: type
                     oneOf:
                     - $ref: /specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File
                     - $ref: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline

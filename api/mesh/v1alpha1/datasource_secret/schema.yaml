@@ -5,9 +5,6 @@ components:
         secret:
           description: Data source is a secret with given Secret key.
           type: string
-        type:
-          const: secret
-          type: string
       type: object
 info:
   x-ref-schema-name: DataSource_Secret
