@@ -48,44 +48,6 @@ func OneofWrapperTypes(parentT reflect.Type, oneofField reflect.StructField) (ma
 	return out, nil
 }
 
-func OneofWrapperTypesV2(parentT reflect.Type, oneofTag string) ([]reflect.Type, error) {
-	md, ok := protoDescFromType(parentT)
-	if !ok {
-		return nil, fmt.Errorf("not a v2 protobuf message: %v", parentT)
-	}
-	sf, ok := findOneofStructField(parentT, oneofTag) // field with protobuf_oneof:"<tag>"
-	if !ok {
-		return nil, fmt.Errorf("oneof %q not found on %v", oneofTag, parentT)
-	}
-
-	od := md.Oneofs().ByName(protoreflect.Name(oneofTag))
-	if od == nil || od.IsSynthetic() {
-		return nil, fmt.Errorf("oneof %q missing or synthetic (proto3 optional)", oneofTag)
-	}
-
-	var out []reflect.Type
-	fs := od.Fields()
-	for i := range fs.Len() {
-		fd := fs.Get(i)
-
-		// Fresh parent each loop => no need to clear anything
-		pm := newParent(parentT).ProtoReflect()
-
-		val, err := zeroValueFor(fd) // benign value for this alternative
-		if err != nil {
-			return nil, fmt.Errorf("build value for %s: %w", fd.FullName(), err)
-		}
-		pm.Set(fd, val) // sets this oneof alternative (and only this one)
-
-		// Read the Go oneof interface field value and capture its concrete type
-		parent := pm.Interface() // proto.Message; underlying *T
-		rv := reflect.ValueOf(parent).Elem()
-		wrap := rv.FieldByName(sf.Name).Interface() // e.g. &pb.DataSource_File{}
-		out = append(out, reflect.TypeOf(wrap))
-	}
-	return out, nil
-}
-
 func protoDescFromType(t reflect.Type) (protoreflect.MessageDescriptor, bool) {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
@@ -99,22 +61,6 @@ func protoDescFromType(t reflect.Type) (protoreflect.MessageDescriptor, bool) {
 		return nil, false
 	}
 	return m.ProtoReflect().Descriptor(), true
-}
-
-func findOneofStructField(parentT reflect.Type, tag string) (reflect.StructField, bool) {
-	for parentT.Kind() == reflect.Pointer {
-		parentT = parentT.Elem()
-	}
-	if parentT.Kind() != reflect.Struct {
-		return reflect.StructField{}, false
-	}
-	for i := 0; i < parentT.NumField(); i++ {
-		f := parentT.Field(i)
-		if got, ok := f.Tag.Lookup("protobuf_oneof"); ok && got == tag {
-			return f, true
-		}
-	}
-	return reflect.StructField{}, false
 }
 
 func newParent(parentT reflect.Type) proto.Message {

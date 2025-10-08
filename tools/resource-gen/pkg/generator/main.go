@@ -633,6 +633,7 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 			s, err := r.mapper(t, withBackendCheck)
 			if err != nil {
 				// log
+				fmt.Printf("error occured during mapping: %v\n", err)
 				return nil
 			}
 			return s
