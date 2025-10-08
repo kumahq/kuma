@@ -35,7 +35,7 @@ func UpgradingWithHelmChartStandalone() {
 
 			opts := []KumaDeploymentOption{
 				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(Config.HelmChartPath),
+				WithHelmChartPath(Config.HelmChartName),
 				WithHelmReleaseName(releaseName),
 				WithHelmChartVersion(version),
 				WithoutHelmOpt("global.image.tag"),
