@@ -64,7 +64,7 @@ Use cases:
 
 #### Generic endpoint
 
-There are multiple options that we are considering mainly around issues with automatic type generation for frontend clients etc. Whichever one of those we choose we would recommend always having an additional generic endpoint specified in the OpenAPI schema. This allows people to discover use the API simply by using the form `/_kri/:kri` if they wish, but they get no types. Moreover this approach is necessary in order to retrieve user-defined policies which we cannot statically define at build time.
+There are multiple options that we are considering mainly around issues with automatic type generation for frontend clients etc. Whichever one of those we choose we would recommend always having an additional generic endpoint specified in the OpenAPI schema. This allows people to discover and use the API simply by using the form `/_kri/:kri` if they wish, but they get no types. Moreover this approach is necessary in order to retrieve user-defined policies which we cannot statically define at build time.
 
 The type associated with endpoint can just use a very generic type containing fields common to all KRI based resources, such as `name`, `type` and preferably a `kri` field itself.
 
@@ -235,8 +235,8 @@ paths:
 
 To compute the name we implement a function that takes a KRI and returns a ResourceKey:
 1. Figure out if resource originated on this CP or not. This can be done via a function [IsLocallyOriginated](https://github.com/kumahq/kuma/blob/9e9ad8aadf73f240763c30174cfed7ea7ef416eb/pkg/core/resources/model/resource.go#L475-L486).
-2. If it's locally originated adjust the name for the k8s store because on k8s we have CoreName (which is ${name}.${namespace}). If it's universal that's not the case.
-3. If it's not locally originated you need to compute the hash from the data from KRI using [HashSuffixMapper](https://github.com/kumahq/kuma/blob/c989d3d842850aa468248e76298b9729af217a3b/pkg/kds/context/context.go#L232).
+2. If it's locally originated, adjust the name for the k8s store because on k8s we have CoreName (which is ${name}.${namespace}). If it's universal that's not the case.
+3. If it's not locally originated, you need to compute the hash from the data from KRI using [HashSuffixMapper](https://github.com/kumahq/kuma/blob/c989d3d842850aa468248e76298b9729af217a3b/pkg/kds/context/context.go#L232).
 
 #### Endpoint handling
 
@@ -254,18 +254,11 @@ We will add the new endpoint next to the existing endpoints in [addFindEndpoint]
 
 ## Decision
 
-We choose "Option A: Single endpoint with multiple statically defined variants".
-This keeps the API minimal.
-It avoids redundant typed endpoints.
-It lets the frontend enforce typing at runtime.
+We choose "Option D: Typed endpoint with `shortName` segment", along with a generic `/_kri/:kri` endpoint.
+It provides automatic build-time types for frontend usage.
 Backend parses the KRI and uses existing store lookup routines.
 SectionName is stripped as needed.
 
 This approach ensures KRIs are first-class in the system.
 It avoids adding unnecessary complexity to the API surface.
-
-## Notes
-
-* Typed endpoints were considered but rejected due to added complexity and redundancy.
-
-* Scope is limited to single-resource fetch.
+It avoids technical gray areas in OpenAPI specifications.
