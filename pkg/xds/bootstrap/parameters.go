@@ -89,4 +89,5 @@ type configParameters struct {
 	Resources            types.ProxyResources
 	SystemCaPath         string
 	TransparentProxy     *tproxy_config.DataplaneConfig
+	IPv6Enabled          bool
 }
