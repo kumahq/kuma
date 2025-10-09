@@ -150,6 +150,7 @@ Clients rely on `type: <ResourceType>` inside the response and manually specify 
 
 **Idea**: Use a separate endpoint per resource type including `shortName` in the path, e.g., `/_kri/{shortName}/{kri}`.
 This would allow OpenAPI/Typescript SDKs to generate more precise types for each resource.
+This can also be hidden behind `x-internal` so it's not published as a public spec.
 
 **Pros**
 
