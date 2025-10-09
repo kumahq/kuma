@@ -186,27 +186,60 @@ paths:
           schema:
             type: string
           required: true
-          description: KRI of the resource
+          description: mesh of the resource
         - in: path
           name: zone
           schema:
             type: string
           required: true
-          description: KRI of the resource
+          description: zone of the resource
         - in: path
           name: namespace
           schema:
             type: string
           required: true
-          description: KRI of the resource
+          description: namespace of the resource
         - in: path
           name: name
           schema:
             type: string
           required: true
-          description: KRI of the resource
+          description: name of the resource
         - in: path
           name: sectionName
+          schema:
+            type: string
+          required: true
+          description: section name of the resource
+      responses:
+        '200':
+          description: The resource
+          content:
+            application/json:
+              schema: 
+                type: string # ... the rest of the schema of the specific resource type
+        '400':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+```
+
+For the generic `/_kri/{kri}` endpoint we would have:
+
+```yaml
+openapi: 3.0.0
+info:
+  title: KRI API
+  version: 1.0.0
+paths:
+  /_kri/{kri}:
+    get:
+      operationId: getByKri
+      summary: Returns a resource by KRI
+      tags: [ "KRI" ]
+      parameters:
+        - in: path
+          name: kri
           schema:
             type: string
           required: true
@@ -217,7 +250,9 @@ paths:
           content:
             application/json:
               schema: 
-                type: string # ... the rest of the schema of the specific resource type
+                name: string
+                type: string # type of the resource
+                spec: string # spec of the resource
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
         '404':
