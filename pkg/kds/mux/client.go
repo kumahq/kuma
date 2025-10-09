@@ -108,6 +108,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	errorCh := make(chan error)
 
 	go c.startHealthCheck(withKDSCtx, log, conn, errorCh)
+
 	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
 	go c.startStats(withKDSCtx, log, conn, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, errorCh)

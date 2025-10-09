@@ -63,42 +63,34 @@ func Setup(rt runtime.Runtime) error {
 	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 
-	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errCh chan error) {
+	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errCh <- errors.Wrap(err, "failed to extract Zone ID from context on GlobalToZoneSyncConnect")
-			return
+			return err
 		}
-
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager(), rt.KDSContext().CreateZoneOnFirstConnect); err != nil {
 			if errors.Is(err, context.Canceled) {
-				log.Info("failed to create a zone on context canceled")
-			} else {
-				errCh <- errors.Wrap(err, "Global CP could not create a zone")
+				return nil
 			}
-			return
+			return errors.Wrap(err, "Global CP could not create a zone")
 		}
 
-		go func() {
-			log.V(1).Info("start GlobalToZoneSync stream handler")
-			if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-				errCh <- errors.Wrap(err, " GlobalToZoneSync finished with an error")
-			} else {
-				log.V(1).Info("GlobalToZoneSync finished gracefully")
-			}
-		}()
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			return err
+		}
+
+		log.V(1).Info("GlobalToZoneSync finished gracefully")
+		return nil
 	})
 
-	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errCh chan error) {
+	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errCh <- errors.Wrap(err, "failed to extract Zone ID from context on ZoneToGlobalSyncConnect")
-			return
+			return err
 		}
-
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zoneID, rt, "")
@@ -109,27 +101,13 @@ func Setup(rt runtime.Runtime) error {
 			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
+		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			return errors.Wrap(err, "KDSSyncClient finished with an error")
+		}
 
-		go func() {
-			if err := sink.Subscribe(); err != nil {
-				err = errors.Wrap(err, "ZoneToGlobalSyncClient send request finished with an error")
-				log.Error(err, "failed to send discovery requests")
-				errCh <- err
-			} else {
-				log.V(1).Info("all discovery requests sent")
-			}
-		}()
-		go func() {
-			if err := sink.Watch(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-				err = errors.Wrap(err, "ZoneToGlobalSyncClient finished with an error")
-				log.Error(err, " failed to receive discovery responses")
-				errCh <- err
-			} else {
-				log.V(1).Info("ZoneToGlobalSyncClient finished gracefully")
-			}
-		}()
+		log.V(1).Info("KDSSyncClient finished gracefully")
+		return nil
 	})
-
 	var streamInterceptors []service.StreamInterceptor
 	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {
 		streamInterceptors = append(streamInterceptors, filter)

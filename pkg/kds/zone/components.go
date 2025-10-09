@@ -71,26 +71,14 @@ func Setup(rt core_runtime.Runtime) error {
 			),
 			rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 		)
-
 		go func() {
-			if err := syncClient.Subscribe(); err != nil {
-				err = errors.Wrap(err, "GlobalToZoneSyncClient send request finished with an error")
-				select {
-				case errChan <- err:
-				default:
-					log.Error(err, "failed to send initial discovery requests to closed channel")
-				}
-			} else {
-				log.V(1).Info("all discovery requests sent")
-			}
-		}()
-		go func() {
-			if err := syncClient.Watch(); err != nil && !errors.Is(err, context.Canceled) {
+			err := syncClient.Receive()
+			if err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
 				select {
 				case errChan <- err:
 				default:
-					log.Error(err, "failed to receive discovery responses to closed channel")
+					log.Error(err, "failed to write error to closed channel")
 				}
 			} else {
 				log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
@@ -103,8 +91,14 @@ func Setup(rt core_runtime.Runtime) error {
 		log.Info("ZoneToGlobalSync new session created")
 		session := kds_server_v2.NewServerStream(stream)
 		go func() {
-			if err := kdsServerV2.ZoneToGlobal(session); err != nil && !errors.Is(err, context.Canceled) {
-				errChan <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+			err := kdsServerV2.ZoneToGlobal(session)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				err = errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+				select {
+				case errChan <- err:
+				default:
+					log.Error(err, "failed to write error to closed channel")
+				}
 			} else {
 				log.V(1).Info("ZoneToGlobalSync finished gracefully")
 			}

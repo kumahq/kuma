@@ -51,8 +51,12 @@ func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core
 	}
 }
 
-func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) error {
-	cpVersion, err := util_proto.ToStruct(&system_proto.Version{
+func (s *stream) SendMsg(request *envoy_sd.DeltaDiscoveryRequest) error {
+	return s.streamClient.Send(request)
+}
+
+func (s *stream) BuildDeltaSubScribeRequest(resourceType core_model.ResourceType) *envoy_sd.DeltaDiscoveryRequest {
+	cpVersion := util_proto.MustToStruct(&system_proto.Version{
 		KumaCp: &system_proto.KumaCpVersion{
 			Version:   kuma_version.Build.Version,
 			GitTag:    kuma_version.Build.GitTag,
@@ -60,9 +64,6 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 			BuildDate: kuma_version.Build.BuildDate,
 		},
 	})
-	if err != nil {
-		return err
-	}
 
 	req := &envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce: "",
@@ -88,7 +89,7 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 		ResourceNamesSubscribe: []string{"*"},
 		TypeUrl:                string(resourceType),
 	}
-	return s.streamClient.Send(req)
+	return req
 }
 
 func (s *stream) Receive() (UpstreamResponse, error) {
@@ -116,31 +117,28 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	}, err
 }
 
-func (s *stream) ACK(resourceType core_model.ResourceType) error {
+func (s *stream) BuildACKRequest(resourceType core_model.ResourceType) *envoy_sd.DeltaDiscoveryRequest {
 	latestReceived := s.latestReceived[resourceType]
 	if latestReceived == nil {
 		return nil
 	}
-	err := s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
+
+	req := &envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce: latestReceived.nonce,
 		Node: &envoy_core.Node{
 			Id: s.clientId,
 		},
 		TypeUrl: string(resourceType),
-	})
-	if err == nil {
-		s.initialRequestDone[resourceType] = true
 	}
-	return err
+	return req
 }
 
-func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
+func (s *stream) BuildNACKRequest(resourceType core_model.ResourceType, err error) *envoy_sd.DeltaDiscoveryRequest {
 	latestReceived, found := s.latestReceived[resourceType]
 	if !found {
 		return nil
 	}
-	s.initialRequestDone[resourceType] = true
-	return s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
+	req := &envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce:          latestReceived.nonce,
 		ResourceNamesSubscribe: []string{"*"},
 		TypeUrl:                string(resourceType),
@@ -150,7 +148,12 @@ func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 		ErrorDetail: &status.Status{
 			Message: fmt.Sprintf("%s", err),
 		},
-	})
+	}
+	return req
+}
+
+func (s *stream) MarkInitialRequestDone(resourceType core_model.ResourceType) {
+	s.initialRequestDone[resourceType] = true
 }
 
 // go-contro-plane cache keeps them as a <resource_name>.<mesh_name>

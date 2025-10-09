@@ -211,25 +211,18 @@ var _ = Describe("Zone Sync", func() {
 			zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
-			wg.Add(2)
-			syncClient := kds_client_v2.NewKDSSyncClient(
-				core.Log.WithName("kds-sink"),
-				kdsCtx.TypesSentByGlobal,
-				kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
-				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
-				0,
-			)
+			wg.Add(1)
 			go func() {
 				defer GinkgoRecover()
 				defer wg.Done()
-
-				_ = syncClient.Subscribe()
-			}()
-			go func() {
-				defer GinkgoRecover()
-				defer wg.Done()
-
-				_ = syncClient.Watch()
+				syncClient := kds_client_v2.NewKDSSyncClient(
+					core.Log.WithName("kds-sink"),
+					kdsCtx.TypesSentByGlobal,
+					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
+					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
+					0,
+				)
+				_ = syncClient.Receive()
 			}()
 			closeFunc = func() {
 				defer GinkgoRecover()
