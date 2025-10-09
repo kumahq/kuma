@@ -250,9 +250,11 @@ paths:
           content:
             application/json:
               schema: 
-                name: string
-                type: string # type of the resource
-                spec: string # spec of the resource
+                oneOf:
+                  - $ref: '#/components/schemas/MeshAccessLog'
+                  - $ref: '#/components/schemas/MeshTrafficPermission'
+                  - $ref: '#/components/schemas/MeshTrace'
+                  # ... all other resource types
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
         '404':
