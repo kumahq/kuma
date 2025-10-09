@@ -499,6 +499,7 @@ func configureTLS(
 			listener.Proxy.SecretsTracker.RequestAllInOneCa(),
 			listener.Proxy.SecretsTracker.RequestIdentityCert(),
 			false,
+			len(ctx.Mesh.TrustsByTrustDomain) > 0,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")

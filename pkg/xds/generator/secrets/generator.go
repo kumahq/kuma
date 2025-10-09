@@ -122,7 +122,9 @@ func (g Generator) Generate(
 			system_names.AsSystemName("mtls_ca_all_meshes"),
 			proxy.SecretsTracker.RequestAllInOneCa().Name(),
 		)
-		resources.Add(createCaSecretResource(caSecretName, allInOneCa))
+		if len(xdsCtx.Mesh.TrustsByTrustDomain) == 0 {
+			resources.Add(createCaSecretResource(caSecretName, allInOneCa))
+		}
 		identitySecretName := getNameOrDefault(
 			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
 			proxy.SecretsTracker.RequestIdentityCert().Name(),
@@ -151,6 +153,10 @@ func (g Generator) Generate(
 
 		var addedCas []string
 		for mesh := range usedCAs {
+			// when there is a MeshTrust we create a different secret which includes the mTLS Mesh CA
+			if len(xdsCtx.Mesh.TrustsByTrustDomain) > 0 {
+				break
+			}
 			identityName := getNameOrDefault(
 				system_names.AsSystemName("mtls_ca_"+mesh),
 				proxy.SecretsTracker.RequestCa(mesh).Name(),
