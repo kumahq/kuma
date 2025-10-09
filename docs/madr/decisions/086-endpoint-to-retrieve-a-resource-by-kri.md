@@ -142,8 +142,7 @@ Clients rely on `type: <ResourceType>` inside the response and manually specify 
 **Cons**
 
 * Weaker compile-time safety compared to OpenAPI typing.
-* Requires additional runtime type guard/casting implementation in frontend.
-* Slightly more effort for GUI developers to validate resource shape.
+* Requires additional effort of runtime type guard/casting implementation to validate the shape of the requested resource.
 * Moves API specification responsibilities from OpenAPI to Typescript against existing boundaries.
 
 #### Option D: Typed endpoint with `shortName` segment (chosen)
