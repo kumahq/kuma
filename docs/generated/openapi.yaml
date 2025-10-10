@@ -4053,11 +4053,11 @@ paths:
                   - $ref: '#/components/schemas/MeshTLSItem'
                   - $ref: '#/components/schemas/MeshTraceItem'
                   - $ref: '#/components/schemas/MeshTrafficPermissionItem'
-                  - $ref: '#/components/schemas/ZoneIngressItem'
                   - $ref: '#/components/schemas/MeshGatewayItem'
-                  - $ref: '#/components/schemas/MeshItem'
-                  - $ref: '#/components/schemas/DataplaneItem'
                   - $ref: '#/components/schemas/ZoneEgressItem'
+                  - $ref: '#/components/schemas/ZoneIngressItem'
+                  - $ref: '#/components/schemas/DataplaneItem'
+                  - $ref: '#/components/schemas/MeshItem'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':

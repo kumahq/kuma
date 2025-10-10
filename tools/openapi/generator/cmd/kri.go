@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -43,6 +44,11 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 				resources = slices.Concat(resources, gatherProtoResources())
 			}
 
+			// sort resources deterministically by ResourceType
+			sort.Slice(resources, func(i, j int) bool {
+				return resources[i].ResourceType < resources[j].ResourceType
+			})
+
 			data := struct {
 				Resources []resource
 			}{
@@ -71,6 +77,7 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 
 	return cmd
 }
+
 
 func gatherProtoResources() []resource {
 	var resources []resource
