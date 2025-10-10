@@ -267,12 +267,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -328,12 +324,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.1.6",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "default-without-hijacker.envoy-config.golden.yaml",
@@ -397,12 +389,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "custom.envoy-config.golden.yaml",
@@ -470,12 +458,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 				// internal addresses are set to "localhost" addresses to the "prometheus" listener
 				InternalAddresses: DummyInternalAddresses,
@@ -544,12 +528,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
@@ -615,12 +595,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -688,16 +664,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
 					MetricsCertPath:   "/path/cert",
 					MetricsKeyPath:    "/path/key",
-=======
-					WorkDir:         "/tmp",
-					MetricsCertPath: "/path/cert",
-					MetricsKeyPath:  "/path/key",
-					IPv6Enabled:     true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "delegated-tls.envoy-config.golden.yaml",
@@ -765,16 +735,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
 					MetricsCertPath:   "/path/cert",
 					MetricsKeyPath:    "/path/key",
-=======
-					WorkDir:         "/tmp",
-					MetricsCertPath: "/path/cert",
-					MetricsKeyPath:  "/path/key",
-					IPv6Enabled:     true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "disabled-tls.envoy-config.golden.yaml",
@@ -842,12 +806,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
 					MetricsSocketPath: "/foo/bar",
-=======
-					WorkDir:     "/tmp",
-					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					IPv6Enabled:       true,
 				},
 			},
 			expected: "delegated-tls-fallback.envoy-config.golden.yaml",
@@ -897,13 +857,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Spec: &mesh_proto.Dataplane{},
 					},
 					Metadata: &core_xds.DataplaneMetadata{
-<<<<<<< HEAD
 						AdminPort:         9902,
 						MetricsSocketPath: "/foo/bar",
-=======
-						AdminPort:   9902,
-						IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+						IPv6Enabled:       true,
 					},
 				}
 				Expect(util_proto.FromYAML([]byte(given.dataplane), proxy.Dataplane.Spec)).To(Succeed())

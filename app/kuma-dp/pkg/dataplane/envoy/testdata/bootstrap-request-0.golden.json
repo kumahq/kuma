@@ -32,11 +32,6 @@
   "socketPath": "/tmp/metric",
   "certPath": "/tmp/cert.pem",
   "keyPath": "/tmp/key.pem"
-<<<<<<< HEAD:app/kuma-dp/pkg/dataplane/envoy/testdata/bootstrap-request-0.golden.json
- }
-=======
  },
- "systemCaPath": "",
- "ipv6Enabled": true
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652)):app/kuma-dp/pkg/dataplane/envoy/testdata/bootstrap-request-metrics-metadata.golden.json
+ "ipv6Enabled": false
 }

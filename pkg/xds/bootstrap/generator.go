@@ -114,7 +114,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 				KumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
 			},
 		},
-<<<<<<< HEAD
 		DynamicMetadata:     request.DynamicMetadata,
 		DNSPort:             request.DNSPort,
 		ReadinessPort:       request.ReadinessPort,
@@ -127,21 +126,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsSocketPath:   metricsSocketPath,
 		MetricsCertPath:     request.MetricsResources.CertPath,
 		MetricsKeyPath:      request.MetricsResources.KeyPath,
-=======
-		DynamicMetadata:      request.DynamicMetadata,
-		DNSPort:              request.DNSPort,
-		ReadinessPort:        request.ReadinessPort,
-		AppProbeProxyEnabled: request.AppProbeProxyEnabled,
-		ProxyType:            request.ProxyType,
-		Features:             features,
-		Resources:            request.Resources,
-		Workdir:              request.Workdir,
-		MetricsCertPath:      request.MetricsResources.CertPath,
-		MetricsKeyPath:       request.MetricsResources.KeyPath,
-		SystemCaPath:         request.SystemCaPath,
-		TransparentProxy:     request.TransparentProxy,
-		IPv6Enabled:          request.IPv6Enabled,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+		IPv6Enabled:         request.IPv6Enabled,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

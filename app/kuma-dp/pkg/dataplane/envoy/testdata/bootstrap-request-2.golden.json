@@ -30,28 +30,6 @@
   "socketPath": "/tmp/metric",
   "certPath": "",
   "keyPath": ""
-<<<<<<< HEAD:app/kuma-dp/pkg/dataplane/envoy/testdata/bootstrap-request-2.golden.json
- }
-=======
  },
- "systemCaPath": "",
- "dataplaneConfig": {
-  "ipFamilyMode": "ipv4",
-  "redirect": {
-   "inbound": {
-    "enabled": false,
-    "port": 1234
-   },
-   "outbound": {
-    "enabled": false,
-    "port": 2345
-   },
-   "dns": {
-    "enabled": false,
-    "port": 3456
-   }
-  }
- },
- "ipv6Enabled": true
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652)):app/kuma-dp/pkg/dataplane/envoy/testdata/bootstrap-request-transparent-proxy.golden.json
+ "ipv6Enabled": false
 }

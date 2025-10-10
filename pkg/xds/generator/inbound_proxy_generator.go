@@ -98,14 +98,14 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 			// configuration for HTTP case
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolGRPC:
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
@@ -175,85 +175,3 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 	}
 	return resources, nil
 }
-<<<<<<< HEAD
-=======
-
-func FilterChainBuilder(
-	serverSideMTLS bool,
-	protocol core_meta.Protocol,
-	proxy *core_xds.Proxy,
-	localClusterName string,
-	xdsCtx xds_context.Context,
-	endpoint mesh_proto.InboundInterface,
-	service string,
-	routes *envoy_common.Routes,
-	tlsVersion *tls.Version,
-	ciphers []tls.TlsCipher,
-) *envoy_listeners.FilterChainBuilder {
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
-	routeConfigName := getName(contextualName, envoy_names.GetInboundRouteName(service))
-	virtualHostName := getName(contextualName, service)
-
-	cluster := plugins_xds.NewClusterBuilder().WithName(localClusterName).Build()
-
-	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
-
-	switch protocol {
-	// configuration for HTTP case
-	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
-		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
-	case core_meta.ProtocolGRPC:
-		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-			Configure(envoy_listeners.GrpcStats()).
-			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
-	case core_meta.ProtocolKafka:
-		filterChainBuilder.
-			Configure(envoy_listeners.Kafka(localClusterName)).
-			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
-	default:
-		// configuration for non-HTTP cases
-		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
-	}
-	if serverSideMTLS {
-		filterChainBuilder.
-			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, unifiedNaming))
-	}
-	return filterChainBuilder.
-		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
-}
-
-func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster envoy_common.Cluster) envoy_common.Routes {
-	routes := envoy_common.Routes{}
-
-	// Iterate over that RateLimits and generate the relevant Routes.
-	// We do assume that the rateLimits resource is sorted, so the most
-	// specific source matches come first.
-	for _, rl := range proxy.Policies.RateLimitsInbound[endpoint] {
-		if rl.Spec.GetConf().GetHttp() == nil {
-			continue
-		}
-
-		routes = append(routes, envoy_common.NewRoute(
-			envoy_common.WithCluster(cluster),
-			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-			envoy_common.WithRateLimit(rl.Spec),
-		))
-	}
-
-	// Add the default fall-back route
-	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
-
-	return routes
-}
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
