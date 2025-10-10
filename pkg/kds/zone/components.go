@@ -6,8 +6,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/service"
-	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	kds_server "github.com/kumahq/kuma/pkg/kds/v2/server"
+	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 )
 
 var (

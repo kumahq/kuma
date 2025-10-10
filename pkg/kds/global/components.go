@@ -1,28 +1,19 @@
 package global
 
 import (
-	"context"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	kds_server "github.com/kumahq/kuma/pkg/kds/v2/server"
 	kds_sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 )
 
 var (
@@ -103,23 +94,4 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,
 		rt.Config().General.ResilientComponentMaxBackoff.Duration),
 	)
-}
-
-func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
-	ctx = user.Ctx(ctx, user.ControlPlane)
-	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
-		if !store.IsNotFound(err) || !createZoneOnConnect {
-			return err
-		}
-		log.Info("creating Zone", "name", name)
-		zone := &system.ZoneResource{
-			Spec: &system_proto.Zone{
-				Enabled: util_proto.Bool(true),
-			},
-		}
-		if err := resManager.Create(ctx, zone, store.CreateByKey(name, model.NoMesh)); err != nil {
-			return err
-		}
-	}
-	return nil
 }

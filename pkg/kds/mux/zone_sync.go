@@ -13,16 +13,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/api/system/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -36,7 +32,6 @@ import (
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -48,7 +43,7 @@ type KDSSyncServiceServer struct {
 	eventBus   events.EventBus
 	mesh_proto.UnimplementedKDSSyncServiceServer
 	context                  context.Context
-	resManager               manager.ResourceManager
+	resManager               core_manager.ResourceManager
 	upsertCfg                config_store.UpsertConfig
 	instanceID               string
 	createZoneOnFirstConnect bool
@@ -88,8 +83,8 @@ var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
 
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
 	ctx = user.Ctx(ctx, user.ControlPlane)
-	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
-		if !store.IsNotFound(err) || !createZoneOnConnect {
+	if err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh)); err != nil {
+		if !core_store.IsNotFound(err) || !createZoneOnConnect {
 			return err
 		}
 		log.Info("creating Zone", "name", name)
@@ -98,7 +93,7 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 				Enabled: util_proto.Bool(true),
 			},
 		}
-		if err := resManager.Create(ctx, zone, store.CreateByKey(name, model.NoMesh)); err != nil {
+		if err := resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh)); err != nil {
 			return err
 		}
 	}
@@ -138,7 +133,6 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 			err = errorStream.Err()
 		}
 		processingErrorsCh <- err
-		return
 	}()
 	if err := g.storeStreamConnection(stream.Context(), zone, service.GlobalToZone, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
@@ -259,7 +253,7 @@ func (g *KDSSyncServiceServer) watchZoneHealthCheck(streamContext context.Contex
 }
 
 func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone string, typ service.StreamType, connectTime time.Time) error {
-	key := model.ResourceKey{Name: zone}
+	key := core_model.ResourceKey{Name: zone}
 
 	// wait for Zone to be created, only then we can create Zone Insight
 	err := retry.Do(
@@ -281,17 +275,17 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
 
 	zoneInsight := system.NewZoneInsightResource()
-	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
+	return core_manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		if zoneInsight.Spec.KdsStreams == nil {
-			zoneInsight.Spec.KdsStreams = &v1alpha1.KDSStreams{}
+			zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{}
 		}
 		stream := zoneInsight.Spec.GetKDSStream(string(typ))
 		if stream == nil {
-			stream = &v1alpha1.KDSStream{}
+			stream = &system_proto.KDSStream{}
 		}
-		if stream.GetConnectTime() == nil || proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
+		if stream.GetConnectTime() == nil || util_proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
 			stream.GlobalInstanceId = g.instanceID
-			stream.ConnectTime = proto.MustTimestampProto(connectTime)
+			stream.ConnectTime = util_proto.MustTimestampProto(connectTime)
 		}
 		switch typ {
 		case service.GlobalToZone:
@@ -300,5 +294,5 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 			zoneInsight.Spec.KdsStreams.ZoneToGlobal = stream
 		}
 		return nil
-	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
+	}, core_manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
 }

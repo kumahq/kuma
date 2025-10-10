@@ -11,7 +11,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
@@ -21,9 +20,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	"github.com/kumahq/kuma/pkg/kds/v2/server"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -35,7 +34,6 @@ import (
 var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
 
-	runtimeInfo := core_runtime.NewRuntimeInfo("zone-inst", config_core.Zone)
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
 		return &mesh_proto.ZoneIngress{
 			Zone: zone,
@@ -79,7 +77,9 @@ var _ = Describe("Zone Delta Sync", func() {
 				wg.Done()
 				GinkgoRecover()
 			}()
-			Expect(srv.GlobalToZoneSync(serverStream)).ToNot(HaveOccurred())
+			errorStream := server.NewErrorRecorderStream(serverStream)
+			Expect(srv.DeltaStreamHandler(errorStream, "")).To(Succeed())
+			Expect(errorStream.Err()).ToNot(HaveOccurred())
 		}()
 
 		stop := make(chan struct{})
@@ -97,7 +97,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			policySync := client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				kdsCtx.TypesSentByGlobal,
-				client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
+				client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", ""),
 				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
 			)
 			_ = policySync.Receive()

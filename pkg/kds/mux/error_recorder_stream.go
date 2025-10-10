@@ -7,6 +7,7 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 )
+
 // ErrorRecorderStream is a DeltaStream that records an error
 // We need this because go-control-plane@v0.11.1/pkg/server/delta/v3/server.go:190 swallows an error on Recv()
 type ErrorRecorderStream interface {

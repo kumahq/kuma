@@ -30,9 +30,9 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds"
-	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	kds_sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -52,7 +52,6 @@ type client struct {
 	envoyAdminProcessor service.EnvoyAdminProcessor
 	deltaServer         delta.Server
 	typesSentByGlobal   []core_model.ResourceType
-	instanceID          string
 	rt                  core_runtime.Runtime
 	resourceSyncer      kds_sync_store.ResourceSyncer
 }
