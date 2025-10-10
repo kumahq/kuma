@@ -38,6 +38,7 @@ type BootstrapParams struct {
 	MetricsCertPath      string
 	MetricsKeyPath       string
 	SystemCaPath         string
+	IPv6Enabled          bool
 }
 
 type BootstrapConfigFactoryFunc func(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)

@@ -21,6 +21,7 @@ type BootstrapRequest struct {
 	Workdir              string            `json:"workdir"`
 	MetricsResources     MetricsResources  `json:"metricsResources"`
 	SystemCaPath         string            `json:"systemCaPath"`
+	IPv6Enabled          bool              `json:"ipv6Enabled"`
 }
 
 type Version struct {

@@ -171,7 +171,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
-					WorkDir: "/tmp",
+					WorkDir:     "/tmp",
+					IPv6Enabled: true,
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
