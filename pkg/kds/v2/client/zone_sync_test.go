@@ -21,8 +21,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	"github.com/kumahq/kuma/pkg/kds/mux"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
-	"github.com/kumahq/kuma/pkg/kds/v2/server"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -77,7 +77,7 @@ var _ = Describe("Zone Delta Sync", func() {
 				wg.Done()
 				GinkgoRecover()
 			}()
-			errorStream := server.NewErrorRecorderStream(serverStream)
+			errorStream := mux.NewErrorRecorderStream(serverStream)
 			Expect(srv.DeltaStreamHandler(errorStream, "")).To(Succeed())
 			Expect(errorStream.Err()).ToNot(HaveOccurred())
 		}()

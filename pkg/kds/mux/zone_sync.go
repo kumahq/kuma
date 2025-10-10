@@ -119,9 +119,10 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
+		logger.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager, g.createZoneOnFirstConnect); err != nil {
 			if errors.Is(err, context.Canceled) {
-				processingErrorsCh <- err
+				processingErrorsCh <- nil
 				return
 			}
 			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
@@ -132,7 +133,13 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		if err == nil {
 			err = errorStream.Err()
 		}
-		processingErrorsCh <- err
+
+		if err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			processingErrorsCh <- err
+			return
+		}
+
+		logger.V(1).Info("GlobalToZoneSync finished gracefully")
 	}()
 	if err := g.storeStreamConnection(stream.Context(), zone, service.GlobalToZone, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
@@ -154,9 +161,6 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		logger.Info("app context done")
 		return status.Error(codes.Unavailable, "stream unavailable")
 	case err := <-processingErrorsCh:
-		if err == nil {
-			return nil
-		}
 		if status.Code(err) == codes.Unimplemented {
 			return errors.Wrap(err, "GlobalToZoneSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
@@ -201,6 +205,9 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			processingErrorsCh <- errors.Wrap(err, "KDSSyncClient finished with an error")
 			return
 		}
+
+		logger.V(1).Info("KDSSyncClient finished gracefully")
+		processingErrorsCh <- nil
 	}()
 
 	if err := g.storeStreamConnection(stream.Context(), zone, service.ZoneToGlobal, connectTime); err != nil {

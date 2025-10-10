@@ -79,6 +79,7 @@ func NewClient(
 		resourceSyncer:      resourceSyncer,
 		rt:                  rt,
 		deltaServer:         deltaServer,
+		typesSentByGlobal:   rt.KDSContext().TypesSentByGlobal,
 	}
 }
 
@@ -205,6 +206,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}
 	processingErrorsCh := make(chan error)
 	go func() {
+		log.Info("ZoneToGlobalSync new session created")
 		errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
 		err := c.deltaServer.DeltaStreamHandler(errorStream, "")
 		if err == nil {
