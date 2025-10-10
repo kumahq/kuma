@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/tools/common/save"
+	commontemplate "github.com/kumahq/kuma/tools/common/template"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
 )
 
@@ -46,7 +46,7 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 			}
 
 			outPath := filepath.Join(rootArgs.pluginDir, "zz_generated.plugin.go")
-			return save.GoTemplate(pluginGoTemplate, struct {
+			return commontemplate.GoTemplate(pluginGoTemplate, struct {
 				Package           string
 				Versions          []string
 				Name              string

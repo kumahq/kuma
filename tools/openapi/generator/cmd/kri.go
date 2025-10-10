@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	"github.com/kumahq/kuma/tools/common/save"
+	commontemplate "github.com/kumahq/kuma/tools/common/template"
 	commontypes "github.com/kumahq/kuma/tools/common/types"
 	"github.com/kumahq/kuma/tools/openapi/gotemplates"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
@@ -50,7 +50,7 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			}
 
 			// render template
-			tmpl := template.Must(template.New("kri").Funcs(save.FuncMap).Parse(gotemplates.KriEndpointTemplate))
+			tmpl := template.Must(template.New("kri").Funcs(commontemplate.FuncMap).Parse(gotemplates.KriEndpointTemplate))
 			var outBuf bytes.Buffer
 			if err := tmpl.Execute(&outBuf, data); err != nil {
 				return errors.Wrapf(err, "failed to execute KRI template")
