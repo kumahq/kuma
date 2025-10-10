@@ -61,6 +61,7 @@ type BootstrapRequest struct {
 	MetricsResources     MetricsResources           `json:"metricsResources"`
 	SystemCaPath         string                     `json:"systemCaPath"`
 	TransparentProxy     *tproxy_dp.DataplaneConfig `json:"dataplaneConfig,omitempty"`
+	IPv6Enabled          bool                       `json:"ipv6Enabled"`
 }
 
 type Version struct {

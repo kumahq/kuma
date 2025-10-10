@@ -128,12 +128,12 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(envoyAdminListenerName, staticEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticEndpointPaths)),
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).
-			Configure(envoy_listeners.StaticEndpoints(envoyAdminListenerName, staticTlsEndpointPaths)).
+			Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticTlsEndpointPaths)).
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 

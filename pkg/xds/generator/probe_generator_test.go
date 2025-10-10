@@ -41,6 +41,7 @@ var _ = Describe("ProbeGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AppProbeProxyEnabled: given.appProbeProxyEnabled,
+					IPv6Enabled:          true,
 				},
 				APIVersion: envoy_common.APIV3,
 				// internal addresses are set to "localhost" addresses to the "probe" listener
