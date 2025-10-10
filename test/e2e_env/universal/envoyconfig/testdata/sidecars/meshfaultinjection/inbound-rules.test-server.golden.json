@@ -2,35 +2,162 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/commonLbConfig",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/httpFilters/1",
       "value": {
-        "healthyPanicThreshold": {}
+        "name": "kri_mfi_envoyconfig_kuma-3__mfi-1_",
+        "typedConfig": {
+          "@type": "type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher",
+          "extensionConfig": {
+            "name": "envoy.filters.http.fault",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault",
+              "delay": {
+                "fixedDelay": "5s",
+                "percentage": {
+                  "numerator": 5
+                }
+              }
+            }
+          },
+          "xdsMatcher": {
+            "matcherList": {
+              "matchers": [
+                {
+                  "onMatch": {
+                    "action": {
+                      "name": "skip",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter"
+                      }
+                    }
+                  },
+                  "predicate": {
+                    "notMatcher": {
+                      "singlePredicate": {
+                        "input": {
+                          "name": "envoy.matching.inputs.uri_san",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                          }
+                        },
+                        "valueMatch": {
+                          "prefix": "spiffe://default.default.mesh.local"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/outlierDetection",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/httpFilters/1",
       "value": {
-        "baseEjectionTime": "30s",
-        "consecutive5xx": 10,
-        "consecutiveGatewayFailure": 10,
-        "consecutiveLocalOriginFailure": 10,
-        "enforcingConsecutive5xx": 100,
-        "enforcingConsecutiveGatewayFailure": 100,
-        "enforcingConsecutiveLocalOriginFailure": 100,
-        "enforcingFailurePercentage": 100,
-        "enforcingFailurePercentageLocalOrigin": 100,
-        "enforcingLocalOriginSuccessRate": 100,
-        "enforcingSuccessRate": 100,
-        "failurePercentageMinimumHosts": 5,
-        "failurePercentageRequestVolume": 10,
-        "failurePercentageThreshold": 85,
-        "interval": "5s",
-        "maxEjectionPercent": 20,
-        "splitExternalLocalOriginErrors": true,
-        "successRateMinimumHosts": 5,
-        "successRateRequestVolume": 10,
-        "successRateStdevFactor": 1900000
+        "name": "kri_mfi_envoyconfig_kuma-3__mfi-1_",
+        "typedConfig": {
+          "@type": "type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher",
+          "extensionConfig": {
+            "name": "envoy.filters.http.fault",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault",
+              "abort": {
+                "httpStatus": 500,
+                "percentage": {
+                  "numerator": 10
+                }
+              }
+            }
+          },
+          "xdsMatcher": {
+            "matcherList": {
+              "matchers": [
+                {
+                  "onMatch": {
+                    "action": {
+                      "name": "skip",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter"
+                      }
+                    }
+                  },
+                  "predicate": {
+                    "notMatcher": {
+                      "singlePredicate": {
+                        "input": {
+                          "name": "envoy.matching.inputs.uri_san",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                          }
+                        },
+                        "valueMatch": {
+                          "prefix": "spiffe://default.default.mesh.local"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/httpFilters/1",
+      "value": {
+        "name": "kri_mfi_envoyconfig_kuma-3__mfi-1_",
+        "typedConfig": {
+          "@type": "type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher",
+          "extensionConfig": {
+            "name": "envoy.filters.http.fault",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault",
+              "abort": {
+                "httpStatus": 500,
+                "percentage": {
+                  "denominator": "TEN_THOUSAND",
+                  "numerator": 250
+                }
+              }
+            }
+          },
+          "xdsMatcher": {
+            "matcherList": {
+              "matchers": [
+                {
+                  "onMatch": {
+                    "action": {
+                      "name": "skip",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter"
+                      }
+                    }
+                  },
+                  "predicate": {
+                    "notMatcher": {
+                      "singlePredicate": {
+                        "input": {
+                          "name": "envoy.matching.inputs.uri_san",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                          }
+                        },
+                        "valueMatch": {
+                          "prefix": "spiffe://default.default.mesh.local"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   ],
@@ -96,9 +223,6 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
-        "commonLbConfig": {
-          "healthyPanicThreshold": {}
-        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -107,28 +231,6 @@
           }
         },
         "name": "envoyconfig_test-server__kuma-3_msvc_80",
-        "outlierDetection": {
-          "baseEjectionTime": "30s",
-          "consecutive5xx": 10,
-          "consecutiveGatewayFailure": 10,
-          "consecutiveLocalOriginFailure": 10,
-          "enforcingConsecutive5xx": 100,
-          "enforcingConsecutiveGatewayFailure": 100,
-          "enforcingConsecutiveLocalOriginFailure": 100,
-          "enforcingFailurePercentage": 100,
-          "enforcingFailurePercentageLocalOrigin": 100,
-          "enforcingLocalOriginSuccessRate": 100,
-          "enforcingSuccessRate": 100,
-          "failurePercentageMinimumHosts": 5,
-          "failurePercentageRequestVolume": 10,
-          "failurePercentageThreshold": 85,
-          "interval": "5s",
-          "maxEjectionPercent": 20,
-          "splitExternalLocalOriginErrors": true,
-          "successRateMinimumHosts": 5,
-          "successRateRequestVolume": 10,
-          "successRateStdevFactor": 1900000
-        },
         "transportSocket": {
           "name": "envoy.transport_sockets.tls",
           "typedConfig": {
@@ -436,6 +538,154 @@
                                 }
                               ]
                             }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "name": "kri_mfi_envoyconfig_kuma-3__mfi-1_",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher",
+                        "extensionConfig": {
+                          "name": "envoy.filters.http.fault",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault",
+                            "abort": {
+                              "httpStatus": 500,
+                              "percentage": {
+                                "denominator": "TEN_THOUSAND",
+                                "numerator": 250
+                              }
+                            }
+                          }
+                        },
+                        "xdsMatcher": {
+                          "matcherList": {
+                            "matchers": [
+                              {
+                                "onMatch": {
+                                  "action": {
+                                    "name": "skip",
+                                    "typedConfig": {
+                                      "@type": "type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter"
+                                    }
+                                  }
+                                },
+                                "predicate": {
+                                  "notMatcher": {
+                                    "singlePredicate": {
+                                      "input": {
+                                        "name": "envoy.matching.inputs.uri_san",
+                                        "typedConfig": {
+                                          "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                        }
+                                      },
+                                      "valueMatch": {
+                                        "prefix": "spiffe://default.default.mesh.local"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "name": "kri_mfi_envoyconfig_kuma-3__mfi-1_",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher",
+                        "extensionConfig": {
+                          "name": "envoy.filters.http.fault",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault",
+                            "abort": {
+                              "httpStatus": 500,
+                              "percentage": {
+                                "numerator": 10
+                              }
+                            }
+                          }
+                        },
+                        "xdsMatcher": {
+                          "matcherList": {
+                            "matchers": [
+                              {
+                                "onMatch": {
+                                  "action": {
+                                    "name": "skip",
+                                    "typedConfig": {
+                                      "@type": "type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter"
+                                    }
+                                  }
+                                },
+                                "predicate": {
+                                  "notMatcher": {
+                                    "singlePredicate": {
+                                      "input": {
+                                        "name": "envoy.matching.inputs.uri_san",
+                                        "typedConfig": {
+                                          "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                        }
+                                      },
+                                      "valueMatch": {
+                                        "prefix": "spiffe://default.default.mesh.local"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "name": "kri_mfi_envoyconfig_kuma-3__mfi-1_",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher",
+                        "extensionConfig": {
+                          "name": "envoy.filters.http.fault",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault",
+                            "delay": {
+                              "fixedDelay": "5s",
+                              "percentage": {
+                                "numerator": 5
+                              }
+                            }
+                          }
+                        },
+                        "xdsMatcher": {
+                          "matcherList": {
+                            "matchers": [
+                              {
+                                "onMatch": {
+                                  "action": {
+                                    "name": "skip",
+                                    "typedConfig": {
+                                      "@type": "type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter"
+                                    }
+                                  }
+                                },
+                                "predicate": {
+                                  "notMatcher": {
+                                    "singlePredicate": {
+                                      "input": {
+                                        "name": "envoy.matching.inputs.uri_san",
+                                        "typedConfig": {
+                                          "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                        }
+                                      },
+                                      "valueMatch": {
+                                        "prefix": "spiffe://default.default.mesh.local"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
                           }
                         }
                       }
@@ -853,6 +1103,14 @@
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {
                     "name": "kri_msvc_envoyconfig_kuma-3__test-server_80",
+                    "requestHeadersToAdd": [
+                      {
+                        "header": {
+                          "key": "x-kuma-tags",
+                          "value": "\u0026instance=1\u0026\u0026kuma.io/protocol=http\u0026\u0026kuma.io/service=test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
+                        }
+                      }
+                    ],
                     "validateClusters": false,
                     "virtualHosts": [
                       {

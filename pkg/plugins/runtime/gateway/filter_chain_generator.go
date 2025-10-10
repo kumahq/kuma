@@ -203,7 +203,7 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		// forwarding for the client certificate URI, which is OK for SPIFFE-
 		// oriented mesh use cases, but unlikely to be appropriate for a
 		// general-purpose gateway.
-		envoy_listeners.HttpConnectionManager(service, false, info.Proxy.InternalAddresses),
+		envoy_listeners.HttpConnectionManager(service, false, info.Proxy.InternalAddresses, info.Proxy.Metadata.GetIPv6Enabled()),
 		envoy_listeners.ServerHeader("Kuma Gateway"),
 	)
 
