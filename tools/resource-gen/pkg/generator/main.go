@@ -470,7 +470,7 @@ var ProtoTypeToType = map[string]reflect.Type{
 	"Dataplane":   reflect.TypeOf(v1alpha1.Dataplane{}),
 	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 	"ZoneIngress": reflect.TypeOf(v1alpha1.ZoneIngress{}),
-	"ZoneEgress": reflect.TypeOf(v1alpha1.ZoneEgress{}),
+	"ZoneEgress":  reflect.TypeOf(v1alpha1.ZoneEgress{}),
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
