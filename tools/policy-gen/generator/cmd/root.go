@@ -30,6 +30,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newCoreResource(rootArgs))
 	cmd.AddCommand(newK8sResource(rootArgs))
 	cmd.AddCommand(newOpenAPI(rootArgs))
+	cmd.AddCommand(newKriPolicies(rootArgs))
 	cmd.AddCommand(newPluginFile(rootArgs))
 	cmd.AddCommand(newHelpers(rootArgs))
 

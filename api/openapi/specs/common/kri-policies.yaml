@@ -1,0 +1,47 @@
+
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+
+paths:
+  /_kri/{kri}:
+    get:
+      operationId: getByKri
+      summary: Returns a resource by KRI
+      tags: [ "KRI" ]
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource
+          content:
+            application/json:
+              schema: 
+                oneOf:
+                  - $ref: '#/components/schemas/MeshAccessLogItem'
+                  - $ref: '#/components/schemas/MeshCircuitBreakerItem'
+                  - $ref: '#/components/schemas/MeshFaultInjectionItem'
+                  - $ref: '#/components/schemas/MeshHealthCheckItem'
+                  - $ref: '#/components/schemas/MeshHTTPRouteItem'
+                  - $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
+                  - $ref: '#/components/schemas/MeshMetricItem'
+                  - $ref: '#/components/schemas/MeshPassthroughItem'
+                  - $ref: '#/components/schemas/MeshProxyPatchItem'
+                  - $ref: '#/components/schemas/MeshRateLimitItem'
+                  - $ref: '#/components/schemas/MeshRetryItem'
+                  - $ref: '#/components/schemas/MeshTCPRouteItem'
+                  - $ref: '#/components/schemas/MeshTimeoutItem'
+                  - $ref: '#/components/schemas/MeshTLSItem'
+                  - $ref: '#/components/schemas/MeshTraceItem'
+                  - $ref: '#/components/schemas/MeshTrafficPermissionItem'
+        '400':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
