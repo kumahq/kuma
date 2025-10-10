@@ -7,18 +7,16 @@ import (
 )
 
 type args struct {
-	pluginDir string
 	version   string
-	goModule  string
 }
 
 func newRootCmd() *cobra.Command {
 	rootArgs := &args{}
 
 	cmd := &cobra.Command{
-		Use:   "policy-gen",
-		Short: "Tool to generate plugin-based policies for Kuma",
-		Long:  "Tool to generate plugin-based policies for Kuma.",
+		Use:   "oapi-gen",
+		Short: "Tool to generate OpenAPI for Kuma",
+		Long:  "Tool to generate OpenAPI for Kuma",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
@@ -27,15 +25,9 @@ func newRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCoreResource(rootArgs))
-	cmd.AddCommand(newK8sResource(rootArgs))
-	cmd.AddCommand(newOpenAPI(rootArgs))
-	cmd.AddCommand(newPluginFile(rootArgs))
-	cmd.AddCommand(newHelpers(rootArgs))
+	cmd.AddCommand(newKriPolicies(rootArgs))
 
-	cmd.PersistentFlags().StringVar(&rootArgs.pluginDir, "plugin-dir", "", "path to the policy plugin director")
 	cmd.PersistentFlags().StringVar(&rootArgs.version, "version", "v1alpha1", "policy version")
-	cmd.PersistentFlags().StringVar(&rootArgs.goModule, "gomodule", "github.com/kumahq/kuma", "Where to put the generated code")
 
 	return cmd
 }

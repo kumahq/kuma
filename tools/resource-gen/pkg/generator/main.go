@@ -17,6 +17,7 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/kumahq/kuma/pkg/util/slices"
+	"github.com/kumahq/kuma/tools/common/save"
 	"github.com/kumahq/kuma/tools/openapi/gotemplates"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
@@ -32,7 +33,6 @@ import (
 	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
