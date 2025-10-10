@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/kumahq/kuma/tools/common/save"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/tools/common/save"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
 )
 

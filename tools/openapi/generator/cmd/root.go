@@ -7,7 +7,7 @@ import (
 )
 
 type args struct {
-	version   string
+	version string
 }
 
 func newRootCmd() *cobra.Command {

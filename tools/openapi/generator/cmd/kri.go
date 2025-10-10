@@ -8,13 +8,14 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+
 	"github.com/kumahq/kuma/tools/common/save"
 	"github.com/kumahq/kuma/tools/openapi/gotemplates"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
 	"github.com/kumahq/kuma/tools/resource-gen/genutils"
-	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 func newKriPolicies(rootArgs *args) *cobra.Command {
@@ -32,7 +33,7 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 
 			type resource struct {
 				ResourceType string
-				Path 		 string
+				Path         string
 			}
 			var resources []resource
 
@@ -56,11 +57,11 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 				}
 				resources = append(resources, resource{
 					ResourceType: pconfig.Name,
-					Path: "/specs/policies/" + strings.ToLower(pconfig.Name) + "/rest.yaml",
+					Path:         "/specs/policies/" + strings.ToLower(pconfig.Name) + "/rest.yaml",
 				})
 			}
 
-			var KriResources = map[string]bool{
+			KriResources := map[string]bool{
 				"Dataplane":   true,
 				"MeshGateway": true,
 			}
@@ -85,7 +86,7 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 				if ok {
 					data.Resources = append(data.Resources, resource{
 						ResourceType: resourceInfo.ResourceType,
-						Path: "/specs/protoresources/" + strings.ToLower(resourceInfo.ResourceType) + "/rest.yaml",
+						Path:         "/specs/protoresources/" + strings.ToLower(resourceInfo.ResourceType) + "/rest.yaml",
 					})
 				}
 			}

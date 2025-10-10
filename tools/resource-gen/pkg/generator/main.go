@@ -16,7 +16,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
-	"github.com/kumahq/kuma/tools/common/save"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -31,6 +30,7 @@ import (
 	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/tools/common/save"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
@@ -394,7 +394,6 @@ func init() {
 {{end}}
 `))
 
-
 var (
 	readDir  = "."
 	writeDir = "."
@@ -471,8 +470,6 @@ var ProtoTypeToType = map[string]reflect.Type{
 	"Dataplane":   reflect.TypeOf(v1alpha1.Dataplane{}),
 	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 }
-
-
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	reflector := reflector{
