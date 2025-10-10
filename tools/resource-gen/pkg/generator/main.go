@@ -31,6 +31,7 @@ import (
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/tools/common/save"
+	"github.com/kumahq/kuma/tools/common/types"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
@@ -465,21 +466,13 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(system_proto.Zone{}),
 }
 
-var ProtoTypeToType = map[string]reflect.Type{
-	"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
-	"Dataplane":   reflect.TypeOf(v1alpha1.Dataplane{}),
-	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
-	"ZoneIngress": reflect.TypeOf(v1alpha1.ZoneIngress{}),
-	"ZoneEgress":  reflect.TypeOf(v1alpha1.ZoneEgress{}),
-}
-
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	reflector := reflector{
 		pkg:     pkg,
 		typeSet: map[reflect.Type]struct{}{},
 	}
 	for _, r := range resources {
-		tpe, exists := ProtoTypeToType[r.ResourceType]
+		tpe, exists := types.ProtoTypeToType[r.ResourceType]
 		if !exists {
 			continue
 		}

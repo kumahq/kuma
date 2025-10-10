@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/kumahq/kuma/tools/common/save"
+	commontypes "github.com/kumahq/kuma/tools/common/types"
 	"github.com/kumahq/kuma/tools/openapi/gotemplates"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
 	"github.com/kumahq/kuma/tools/resource-gen/genutils"
@@ -81,6 +83,13 @@ func gatherProtoResources() []resource {
 
 	for _, t := range types {
 		resourceInfo := genutils.ToResourceInfo(t.Descriptor())
+		if resourceInfo.ShortName != "" {
+			log.Printf("Skipping %s because it does not have shortName", resourceInfo.ResourceType)
+		}
+		_, exists := commontypes.ProtoTypeToType[resourceInfo.ResourceType]
+		if !exists {
+			log.Printf("Skipping %s because it does not have mapping defined in tools/common/types/proto.go. Please add it there.", resourceInfo.ResourceType)
+		}
 		if resourceInfo.ShortName != "" {
 			resources = append(resources, resource{
 				ResourceType: resourceInfo.ResourceType,
