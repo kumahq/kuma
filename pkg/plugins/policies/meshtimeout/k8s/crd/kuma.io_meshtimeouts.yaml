@@ -13,6 +13,8 @@ spec:
     kind: MeshTimeout
     listKind: MeshTimeoutList
     plural: meshtimeouts
+    shortNames:
+    - mt
     singular: meshtimeout
   scope: Namespaced
   versions:

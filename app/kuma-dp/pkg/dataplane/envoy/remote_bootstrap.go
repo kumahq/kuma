@@ -189,13 +189,8 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 			CertPath: params.MetricsCertPath,
 			KeyPath:  params.MetricsKeyPath,
 		},
-<<<<<<< HEAD
 		SystemCaPath: params.SystemCaPath,
-=======
-		SystemCaPath:     opts.Config.DataplaneRuntime.SystemCaPath,
-		TransparentProxy: opts.Config.DataplaneRuntime.TransparentProxy,
-		IPv6Enabled:      opts.Config.DataplaneRuntime.IPv6Enabled,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+		IPv6Enabled:  params.IPv6Enabled,
 	}
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {

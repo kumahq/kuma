@@ -11479,6 +11479,7 @@ components:
                   type: string
               type: object
           type: object
+          readOnly: true
     MeshExternalServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11682,6 +11683,7 @@ components:
                 type: object
               type: array
           type: object
+          readOnly: true
     MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11911,6 +11913,7 @@ components:
                 type: object
               type: array
           type: object
+          readOnly: true
     MeshServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:

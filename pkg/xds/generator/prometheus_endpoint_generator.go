@@ -112,9 +112,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 		case mesh_proto.PrometheusTlsConfig_activeMTLSBackend:
 			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-<<<<<<< HEAD
 					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil),
-					envoy_listeners.StaticEndpoints(prometheusListenerName,
+					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName,
 						[]*envoy_common.StaticEndpointPath{
 							{
 								ClusterName: metricsHijackerClusterName,
@@ -122,16 +121,6 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 								RewritePath: statsPath,
 							},
 						}),
-=======
-					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil, unifiedNaming),
-					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{
-						{
-							ClusterName: metricsHijackerClusterName,
-							Path:        prometheusEndpoint.Path,
-							RewritePath: statsPath,
-						},
-					}),
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 				),
 			))
 		case mesh_proto.PrometheusTlsConfig_providedTLS:

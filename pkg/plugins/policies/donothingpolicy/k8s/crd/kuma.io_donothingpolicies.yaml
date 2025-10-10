@@ -13,6 +13,8 @@ spec:
     kind: DoNothingPolicy
     listKind: DoNothingPolicyList
     plural: donothingpolicies
+    shortNames:
+    - dnp
     singular: donothingpolicy
   scope: Namespaced
   versions:
