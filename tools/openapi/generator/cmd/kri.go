@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -39,8 +40,7 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			}
 
 			if ProcessProtoResources {
-				protoResources := gatherProtoResources()
-				resources = append(resources, protoResources...)
+				resources = slices.Concat(resources, gatherProtoResources())
 			}
 
 			data := struct {
