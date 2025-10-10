@@ -13,8 +13,6 @@ spec:
     kind: MeshMultiZoneService
     listKind: MeshMultiZoneServiceList
     plural: meshmultizoneservices
-    shortNames:
-    - mmzs
     singular: meshmultizoneservice
   scope: Namespaced
   versions:

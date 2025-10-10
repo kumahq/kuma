@@ -13,8 +13,6 @@ spec:
     kind: MeshFaultInjection
     listKind: MeshFaultInjectionList
     plural: meshfaultinjections
-    shortNames:
-    - mfi
     singular: meshfaultinjection
   scope: Namespaced
   versions:

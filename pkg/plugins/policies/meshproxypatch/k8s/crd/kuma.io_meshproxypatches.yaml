@@ -13,8 +13,6 @@ spec:
     kind: MeshProxyPatch
     listKind: MeshProxyPatchList
     plural: meshproxypatches
-    shortNames:
-    - mpp
     singular: meshproxypatch
   scope: Namespaced
   versions:

@@ -13,8 +13,6 @@ spec:
     kind: MeshMetric
     listKind: MeshMetricList
     plural: meshmetrics
-    shortNames:
-    - mm
     singular: meshmetric
   scope: Namespaced
   versions:

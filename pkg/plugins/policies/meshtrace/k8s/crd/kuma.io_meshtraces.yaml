@@ -13,8 +13,6 @@ spec:
     kind: MeshTrace
     listKind: MeshTraceList
     plural: meshtraces
-    shortNames:
-    - mt
     singular: meshtrace
   scope: Namespaced
   versions:

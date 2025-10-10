@@ -13,8 +13,6 @@ spec:
     kind: MeshHealthCheck
     listKind: MeshHealthCheckList
     plural: meshhealthchecks
-    shortNames:
-    - mhc
     singular: meshhealthcheck
   scope: Namespaced
   versions:

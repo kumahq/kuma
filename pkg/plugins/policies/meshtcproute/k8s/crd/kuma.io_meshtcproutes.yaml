@@ -13,8 +13,6 @@ spec:
     kind: MeshTCPRoute
     listKind: MeshTCPRouteList
     plural: meshtcproutes
-    shortNames:
-    - mtcpr
     singular: meshtcproute
   scope: Namespaced
   versions:

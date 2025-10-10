@@ -13,8 +13,6 @@ spec:
     kind: MeshService
     listKind: MeshServiceList
     plural: meshservices
-    shortNames:
-    - ms
     singular: meshservice
   scope: Namespaced
   versions:

@@ -13,8 +13,6 @@ spec:
     kind: MeshExternalService
     listKind: MeshExternalServiceList
     plural: meshexternalservices
-    shortNames:
-    - mes
     singular: meshexternalservice
   scope: Namespaced
   versions:

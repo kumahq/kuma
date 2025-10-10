@@ -281,4 +281,3 @@ properties:
             type: string
         type: object
     type: object
-    readOnly: true

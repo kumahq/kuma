@@ -13,8 +13,6 @@ spec:
     kind: HostnameGenerator
     listKind: HostnameGeneratorList
     plural: hostnamegenerators
-    shortNames:
-    - hg
     singular: hostnamegenerator
   scope: Namespaced
   versions:

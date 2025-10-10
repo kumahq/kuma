@@ -13,8 +13,6 @@ spec:
     kind: MeshRateLimit
     listKind: MeshRateLimitList
     plural: meshratelimits
-    shortNames:
-    - mrl
     singular: meshratelimit
   scope: Namespaced
   versions:

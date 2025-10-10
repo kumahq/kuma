@@ -13,8 +13,6 @@ spec:
     kind: MeshLoadBalancingStrategy
     listKind: MeshLoadBalancingStrategyList
     plural: meshloadbalancingstrategies
-    shortNames:
-    - mlbs
     singular: meshloadbalancingstrategy
   scope: Namespaced
   versions:

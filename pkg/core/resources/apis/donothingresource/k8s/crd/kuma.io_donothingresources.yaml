@@ -13,8 +13,6 @@ spec:
     kind: DoNothingResource
     listKind: DoNothingResourceList
     plural: donothingresources
-    shortNames:
-    - dnr
     singular: donothingresource
   scope: Namespaced
   versions:

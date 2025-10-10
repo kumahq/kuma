@@ -13,8 +13,6 @@ spec:
     kind: MeshRetry
     listKind: MeshRetryList
     plural: meshretries
-    shortNames:
-    - mr
     singular: meshretry
   scope: Namespaced
   versions:

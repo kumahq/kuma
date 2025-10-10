@@ -186,4 +186,3 @@ properties:
           type: object
         type: array
     type: object
-    readOnly: true

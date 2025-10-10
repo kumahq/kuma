@@ -13,8 +13,6 @@ spec:
     kind: ZoneEgress
     listKind: ZoneEgressList
     plural: zoneegresses
-    shortNames:
-    - ze
     singular: zoneegress
   scope: Namespaced
   versions:

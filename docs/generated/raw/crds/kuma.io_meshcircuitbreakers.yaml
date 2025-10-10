@@ -13,8 +13,6 @@ spec:
     kind: MeshCircuitBreaker
     listKind: MeshCircuitBreakerList
     plural: meshcircuitbreakers
-    shortNames:
-    - mcb
     singular: meshcircuitbreaker
   scope: Namespaced
   versions:

@@ -13,8 +13,6 @@ spec:
     kind: MeshGateway
     listKind: MeshGatewayList
     plural: meshgateways
-    shortNames:
-    - mgw
     singular: meshgateway
   scope: Cluster
   versions:

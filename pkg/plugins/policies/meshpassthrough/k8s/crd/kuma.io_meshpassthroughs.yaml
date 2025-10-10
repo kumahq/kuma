@@ -13,8 +13,6 @@ spec:
     kind: MeshPassthrough
     listKind: MeshPassthroughList
     plural: meshpassthroughs
-    shortNames:
-    - mp
     singular: meshpassthrough
   scope: Namespaced
   versions:
