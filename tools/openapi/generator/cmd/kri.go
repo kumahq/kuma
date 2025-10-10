@@ -18,6 +18,11 @@ import (
 	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
+var KriResources = map[string]bool{
+	"Dataplane":   true,
+	"MeshGateway": true,
+}
+
 func newKriPolicies(rootArgs *args) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kri",
@@ -59,11 +64,6 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 					ResourceType: pconfig.Name,
 					Path:         "/specs/policies/" + strings.ToLower(pconfig.Name) + "/rest.yaml",
 				})
-			}
-
-			KriResources := map[string]bool{
-				"Dataplane":   true,
-				"MeshGateway": true,
 			}
 
 			var types []protoreflect.MessageType
