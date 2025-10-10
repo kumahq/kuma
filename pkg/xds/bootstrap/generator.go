@@ -124,11 +124,15 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsKeyPath:       request.MetricsResources.KeyPath,
 		SystemCaPath:         request.SystemCaPath,
 		TransparentProxy:     request.TransparentProxy,
+<<<<<<< HEAD
 		UseDeltaXds:          b.deltaXdsEnabled,
 	}
 
 	if params.Features.HasFeature(xds_types.FeatureDeltaGRPC) {
 		params.UseDeltaXds = true
+=======
+		IPv6Enabled:          request.IPv6Enabled,
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

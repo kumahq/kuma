@@ -168,6 +168,46 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
+<<<<<<< HEAD
+=======
+
+			// We want to check if IPv6 is enabled on machine, but we want to override config only if support was enabled to
+			// avoid issues with envoy internal addresses. We don't want to override this config if IPv6 support disabled by user explicitly
+			hasLocalIPv6, _ := tproxy_config.HasLocalIPv6()
+			if cfg.DataplaneRuntime.IPv6Enabled && !hasLocalIPv6 {
+				cfg.DataplaneRuntime.IPv6Enabled = false
+			}
+
+			rootCtx.Features = []string{
+				xds_types.FeatureTCPAccessLogViaNamedPipe,
+			}
+
+			if cfg.DNS.ProxyPort != 0 {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
+			}
+
+			if cfg.DataplaneRuntime.TransparentProxy != nil {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
+			}
+
+			if cfg.DataplaneRuntime.BindOutbounds {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
+			}
+			if cfg.DataplaneRuntime.EnvoyXdsTransportProtocolVariant == "DELTA_GRPC" {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)
+			}
+
+			if cfg.DataplaneRuntime.UnifiedResourceNamingEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
+			}
+			if cfg.DataplaneRuntime.SpireSupported {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
+			}
+			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
+			}
+
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {

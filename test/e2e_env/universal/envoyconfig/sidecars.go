@@ -90,10 +90,26 @@ func SetupSidecarCluster() {
 		).
 		Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 		Install(DemoClientUniversal("demo-client", meshName,
+<<<<<<< HEAD
 			WithTransparentProxy(true)),
 		).
 		Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "universal-1"})),
+=======
+			WithTransparentProxy(true),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+			})),
+		).
+		Install(TestServerUniversal("test-server", meshName,
+			WithArgs([]string{"echo", "--instance", "universal-1"}),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+			}),
+		),
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 		).
 		Setup(universal.Cluster)
 	Expect(err).ToNot(HaveOccurred())

@@ -108,8 +108,17 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 			Backend:         backend,
 			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
+<<<<<<< HEAD
 			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
 			StatsPath:       PrometheusDataplaneStatsPath,
+=======
+			ClusterName: getNameOrDefault(
+				systemName,
+				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
+			),
+			StatsPath:   PrometheusDataplaneStatsPath,
+			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
@@ -159,6 +168,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		ClusterName:  envoy_names.GetOpenTelemetryClusterName(backendName),
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
+		IPv6Enabled:  proxy.Metadata.GetIPv6Enabled(),
 	}
 
 	cluster, err := configurer.ConfigureCluster(proxy.Dataplane.IsIPv6())

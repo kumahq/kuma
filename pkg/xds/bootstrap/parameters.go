@@ -54,5 +54,9 @@ type configParameters struct {
 	Resources            types.ProxyResources
 	SystemCaPath         string
 	TransparentProxy     *tproxy_config.DataplaneConfig
+<<<<<<< HEAD
 	UseDeltaXds          bool
+=======
+	IPv6Enabled          bool
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 }
