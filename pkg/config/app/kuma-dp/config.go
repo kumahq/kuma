@@ -37,6 +37,7 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
+			IPv6Enabled: true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -217,6 +218,29 @@ type DataplaneRuntime struct {
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 	// SystemCaPath defines path of system provided Ca
 	SystemCaPath string `json:"systemCaPath,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_system_ca_path"`
+<<<<<<< HEAD
+=======
+	// TransparentProxy configures transparent proxy settings for the dataplane,
+	// including redirect behavior, DNS capture, and IP family mode.
+	// This is used to determine how traffic redirection and interception is handled.
+	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
+	// BindOutbounds configure dataplane to bind to real loopback addresses
+	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
+	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
+	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
+	// UnifiedResourceNamingEnabled enables the new naming format for Envoy resource and stat names.
+	// When set to true, the data plane proxy uses:
+	// - KRI-based format for resources tied to distinct Kuma resources
+	// - System format for internal Kuma resources that users typically don't need to care about unless debugging Kuma
+	// - Contextual format for proxy-scoped resources like inbounds and transparent proxy passthrough
+	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_unified_resource_naming_enabled"`
+	// SpireSupported indicates whether the sidecar has mounted a volume that includes the socket for the Spire agent to retrieve its identity.
+	// Currently supported only on Kubernetes.
+	SpireSupported bool `json:"spireSupported,omitempty" envconfig:"kuma_dataplane_runtime_spire_supported"`
+	// IPv6Enabled indicates if IPv6 support is enabled on the machine. By default, dataplane will check if support is enabled
+	// on machine and adjust this config accordingly
+	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 }
 
 type Metrics struct {

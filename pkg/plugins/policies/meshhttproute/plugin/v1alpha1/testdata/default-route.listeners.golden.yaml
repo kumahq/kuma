@@ -19,8 +19,6 @@ resources:
             cidrRanges:
             - addressPrefix: 192.168.0.0
               prefixLen: 16
-            - addressPrefix: ::1
-              prefixLen: 128
           normalizePath: true
           routeConfig:
             name: outbound:backend
@@ -63,8 +61,6 @@ resources:
             cidrRanges:
             - addressPrefix: 192.168.0.0
               prefixLen: 16
-            - addressPrefix: ::1
-              prefixLen: 128
           normalizePath: true
           routeConfig:
             name: outbound:external-service

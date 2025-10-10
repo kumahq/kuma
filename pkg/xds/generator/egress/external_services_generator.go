@@ -112,6 +112,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		clusterBuilder.
 			Configure(envoy_clusters.DefaultTimeout())
 
+<<<<<<< HEAD
 		switch endpoints[0].Protocol() {
 		case core_mesh.ProtocolHTTP:
 			clusterBuilder.Configure(envoy_clusters.Http())
@@ -323,4 +324,11 @@ func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 		return endpoints[0].IsMeshExternalService()
 	}
 	return false
+=======
+	return filterChain.
+		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
+		Configure(envoy_listeners.FaultInjection(resources.ExternalServiceFaultInjections[esName]...)).
+		Configure(envoy_listeners.RateLimit(resources.ExternalServiceRateLimits[esName])).
+		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 }

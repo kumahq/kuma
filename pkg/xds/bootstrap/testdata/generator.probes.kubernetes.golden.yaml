@@ -47,6 +47,7 @@ node:
     dataplane.proxyType: dataplane
     dataplane.readinessReporter.port: "15000"
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""

@@ -101,3 +101,75 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
 	)
 }
+<<<<<<< HEAD
+=======
+
+func TestSidecarConfig(inputFile string) {
+	// given
+	input, err := os.ReadFile(inputFile)
+	Expect(err).ToNot(HaveOccurred())
+
+	// when
+	if len(input) > 0 {
+		Expect(universal.Cluster.Install(YamlUniversal(string(input)))).To(Succeed())
+	}
+
+	// then
+	Eventually(func(g Gomega) {
+		g.Expect(getConfig(meshName, "demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
+		g.Expect(getConfig(meshName, "test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
+	}).Should(Succeed())
+}
+
+func SetupSidecarCluster() {
+	err := NewClusterSetup().
+		Install(
+			Yaml(
+				builders.Mesh().
+					WithName(meshName).
+					WithoutInitialPolicies().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+			),
+		).
+		Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+		Install(DemoClientUniversal("demo-client", meshName,
+			WithTransparentProxy(true),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+			})),
+		).
+		Install(TestServerUniversal("test-server", meshName,
+			WithArgs([]string{"echo", "--instance", "universal-1"}),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+			}),
+		),
+		).
+		Setup(universal.Cluster)
+	Expect(err).ToNot(HaveOccurred())
+
+	waitMeshServiceReady(meshName, "demo-client")
+	waitMeshServiceReady(meshName, "test-server")
+
+	Eventually(func(g Gomega) {
+		_, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
+		g.Expect(err).ToNot(HaveOccurred())
+	}).Should(Succeed())
+}
+
+func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
+	return cleanupAfterTest(meshName, policies...)
+}
+
+func CleanupAfterSidecarSuite() {
+	Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+	Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+}
+
+func AfterSidecarFailure() {
+	DebugUniversal(universal.Cluster, meshName)
+}
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))

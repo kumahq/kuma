@@ -141,3 +141,65 @@ spec:
 		test.EntriesForFolder(filepath.Join("builtingateway", "meshtimeout"), "envoyconfig"),
 	)
 }
+<<<<<<< HEAD
+=======
+
+func TestBuiltinGatewayConfig(inputFile string) {
+	// given
+	input, err := os.ReadFile(inputFile)
+	Expect(err).ToNot(HaveOccurred())
+
+	// when
+	if len(input) > 0 {
+		Expect(universal.Cluster.Install(YamlUniversal(string(input)))).To(Succeed())
+	}
+
+	// then
+	Eventually(func(g Gomega) {
+		g.Expect(getConfig(mesh, "gateway-proxy")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "gateway-proxy.golden.json", 1)))
+	}).Should(Succeed())
+}
+
+func SetupGatewayCluster() {
+	setup := NewClusterSetup().
+		Install(
+			Yaml(
+				builders.Mesh().
+					WithName(mesh).
+					WithoutInitialPolicies().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+			),
+		).
+		Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+		Install(GatewayClientAppUniversal("gateway-client")).
+		Install(EchoServerApp(mesh, "echo-server", "echo-service", "universal")).
+		Install(GatewayProxyUniversal(mesh, "gateway-proxy", WithDpEnvs(map[string]string{
+			"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+			"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+		}))).
+		Install(YamlUniversal(meshGateway())).
+		Install(YamlUniversal(meshHTTPRoute()))
+
+	Expect(setup.Setup(universal.Cluster)).To(Succeed())
+
+	waitMeshServiceReady(mesh, "echo-service")
+
+	Eventually(ProxySimpleRequests(universal.Cluster, "universal",
+		gatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io"), "60s", "1s").Should(Succeed())
+}
+
+func CleanupAfterGatewayTest(policies ...core_model.ResourceTypeDescriptor) func() {
+	return cleanupAfterTest(mesh, policies...)
+}
+
+func CleanupAfterGatewaySuite() {
+	Expect(universal.Cluster.DeleteApp("gateway-client")).To(Succeed())
+	Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+	Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
+}
+
+func AfterGatewayFailure() {
+	DebugUniversal(universal.Cluster, mesh)
+}
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))

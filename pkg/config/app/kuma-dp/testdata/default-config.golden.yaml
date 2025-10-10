@@ -11,6 +11,7 @@ dataplane:
   proxyType: dataplane
   readinessPort: 9902
 dataplaneRuntime:
+  IPv6Enabled: true
   binaryPath: envoy
   dynamicConfiguration:
     refreshInterval: 10s
