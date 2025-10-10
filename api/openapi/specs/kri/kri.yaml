@@ -41,8 +41,11 @@ paths:
                   - $ref: '/specs/policies/meshtls/rest.yaml#/components/responses/MeshTLSItem'
                   - $ref: '/specs/policies/meshtrace/rest.yaml#/components/responses/MeshTraceItem'
                   - $ref: '/specs/policies/meshtrafficpermission/rest.yaml#/components/responses/MeshTrafficPermissionItem'
+                  - $ref: '/specs/protoresources/mesh/rest.yaml#/components/responses/MeshItem'
                   - $ref: '/specs/protoresources/dataplane/rest.yaml#/components/responses/DataplaneItem'
                   - $ref: '/specs/protoresources/meshgateway/rest.yaml#/components/responses/MeshGatewayItem'
+                  - $ref: '/specs/protoresources/zoneingress/rest.yaml#/components/responses/ZoneIngressItem'
+                  - $ref: '/specs/protoresources/zoneegress/rest.yaml#/components/responses/ZoneEgressItem'
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
         '404':

@@ -18,9 +18,11 @@ import (
 	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
-var KriResources = map[string]bool{
-	"Dataplane":   true,
-	"MeshGateway": true,
+var ProcessProtoResources = true
+
+type resource struct {
+	ResourceType string
+	Path         string
 }
 
 func newKriPolicies(rootArgs *args) *cobra.Command {
@@ -29,66 +31,20 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 		Short: "Generate KRI OpenAPI fragment",
 		Long:  "Collect all policies and resources to render the KRI endpoint OpenAPI fragment for them.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// locate policy plugin dirs under pkg/plugins/policies
-			base := filepath.Join("pkg", "plugins", "policies")
-			entries, err := os.ReadDir(base)
+			resources, err := gatherPlugins(rootArgs)
 			if err != nil {
-				return fmt.Errorf("failed to read policies directory %s: %w", base, err)
+				return err
 			}
 
-			type resource struct {
-				ResourceType string
-				Path         string
-			}
-			var resources []resource
-
-			for _, e := range entries {
-				if !e.IsDir() {
-					continue
-				}
-				policyDir := filepath.Join(base, e.Name())
-				// assume api/<version>/<policyName>.go
-				policyPath := filepath.Join(policyDir, "api", rootArgs.version, e.Name()+".go")
-				if _, err := os.Stat(policyPath); err != nil {
-					// skip missing policy files
-					continue
-				}
-				pconfig, err := parse.Policy(policyPath)
-				if err != nil {
-					return fmt.Errorf("failed to parse %s: %w", policyPath, err)
-				}
-				if pconfig.SkipRegistration {
-					continue
-				}
-				resources = append(resources, resource{
-					ResourceType: pconfig.Name,
-					Path:         "/specs/policies/" + strings.ToLower(pconfig.Name) + "/rest.yaml",
-				})
+			if ProcessProtoResources {
+				protoResources := gatherProtoResources()
+				resources = append(resources, protoResources...)
 			}
 
-			var types []protoreflect.MessageType
-			protoregistry.GlobalTypes.RangeMessages(
-				genutils.OnKumaResourceMessage("mesh", func(m protoreflect.MessageType) bool {
-					types = append(types, m)
-					return true
-				}))
-
-			// prepare template data matching the template expectations
 			data := struct {
 				Resources []resource
 			}{
 				Resources: resources,
-			}
-
-			for _, t := range types {
-				resourceInfo := genutils.ToResourceInfo(t.Descriptor())
-				_, ok := KriResources[resourceInfo.ResourceType]
-				if ok {
-					data.Resources = append(data.Resources, resource{
-						ResourceType: resourceInfo.ResourceType,
-						Path:         "/specs/protoresources/" + strings.ToLower(resourceInfo.ResourceType) + "/rest.yaml",
-					})
-				}
 			}
 
 			// render template
@@ -112,4 +68,60 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 	}
 
 	return cmd
+}
+
+func gatherProtoResources() []resource {
+	var resources []resource
+	var types []protoreflect.MessageType
+	protoregistry.GlobalTypes.RangeMessages(
+		genutils.OnKumaResourceMessage("mesh", func(m protoreflect.MessageType) bool {
+			types = append(types, m)
+			return true
+		}))
+
+	for _, t := range types {
+		resourceInfo := genutils.ToResourceInfo(t.Descriptor())
+		if resourceInfo.ShortName != "" {
+			resources = append(resources, resource{
+				ResourceType: resourceInfo.ResourceType,
+				Path:         "/specs/protoresources/" + strings.ToLower(resourceInfo.ResourceType) + "/rest.yaml",
+			})
+		}
+	}
+	return resources
+}
+
+func gatherPlugins(rootArgs *args) ([]resource, error) {
+	var resources []resource
+	// locate policy plugin dirs under pkg/plugins/policies
+	base := filepath.Join("pkg", "plugins", "policies")
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read policies directory %s: %w", base, err)
+	}
+
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		policyDir := filepath.Join(base, e.Name())
+		// assume api/<version>/<policyName>.go
+		policyPath := filepath.Join(policyDir, "api", rootArgs.version, e.Name()+".go")
+		if _, err := os.Stat(policyPath); err != nil {
+			// skip missing policy files
+			continue
+		}
+		pconfig, err := parse.Policy(policyPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", policyPath, err)
+		}
+		if pconfig.SkipRegistration || pconfig.ShortName == "" {
+			continue
+		}
+		resources = append(resources, resource{
+			ResourceType: pconfig.Name,
+			Path:         "/specs/policies/" + strings.ToLower(pconfig.Name) + "/rest.yaml",
+		})
+	}
+	return resources, nil
 }
