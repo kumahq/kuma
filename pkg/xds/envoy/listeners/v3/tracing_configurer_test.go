@@ -23,9 +23,15 @@ var _ = Describe("TracingConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
+<<<<<<< HEAD
 			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(HttpConnectionManager("localhost:8080", false, nil)).
+=======
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+					Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 					Configure(Tracing(given.backend, "service", given.direction, given.destination, false)))).
 				Build()
 			// then

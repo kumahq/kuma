@@ -24,6 +24,70 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+<<<<<<< HEAD
+=======
+func GenerateOutboundListener(
+	proxy *core_xds.Proxy,
+	svc meshroute_xds.DestinationService,
+	routes []xds.OutboundRoute,
+	originDPPTags mesh_proto.MultiValueTagSet,
+	unifiedNaming bool,
+) (*core_xds.Resource, error) {
+	transparentProxyEnabled := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
+
+	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
+	port := svc.Outbound.GetPort()
+
+	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
+	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
+
+	routeConfigName := svc.ConditionallyResolveKRIWithFallback(true, legacyRouteConfigName)
+	virtualHostName := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, svc.KumaServiceTagValue)
+	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, "")
+	listenerName := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, legacyListenerName)
+
+	route := &xds.HttpOutboundRouteConfigurer{
+		RouteConfigName: routeConfigName,
+		VirtualHostName: virtualHostName,
+		Routes:          routes,
+		DpTags:          originDPPTags,
+	}
+
+	hcm := &envoy_listeners_v3.HttpConnectionManagerConfigurer{
+		StatsName:                virtualHostName,
+		ForwardClientCertDetails: false,
+		NormalizePath:            true,
+		InternalAddresses:        proxy.InternalAddresses,
+		IPv6Enabled:              proxy.Metadata.GetIPv6Enabled(),
+	}
+
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.AddFilterChainConfigurer(hcm)).
+		Configure(envoy_listeners.AddFilterChainConfigurer(route)).
+		ConfigureIf(svc.Protocol == core_meta.ProtocolGRPC, envoy_listeners.GrpcStats()) // TODO: https://github.com/kumahq/kuma/issues/3325
+
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
+		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.FilterChain(filterChain))
+
+	resource, err := listener.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return &core_xds.Resource{
+		Name:           resource.GetName(),
+		Origin:         metadata.OriginOutbound,
+		Resource:       resource,
+		ResourceOrigin: svc.Outbound.Resource,
+		Protocol:       svc.Protocol,
+	}, nil
+}
+
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 func generateFromService(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
