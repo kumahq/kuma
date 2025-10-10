@@ -3,21 +3,44 @@ components:
     InvalidParameters:
       type: object
       title: Invalid Parameters
+      required:
+        - field
+        - reason
+        - source
       properties:
         field:
           type: string
+          description: The name of the field that caused the error.
         reason:
           type: string
+          description: |
+            A short, human-readable description of the problem.
+            _Should_ be provided as "Sentence case" for direct use in a UI.
         rule:
           type: string
+          description: |
+            May be provided as a hint to the user to help understand the type of failure.
+            Additional guidance may be provided in additional fields, i.e. `choices`.
         choices:
           type: array
+          description: |
+            Optional field to provide a list of valid choices for the field that caused the error.
           items:
             type: string
+        source:
+          type: string
+          description: |
+            The location of the field that caused the error.
+          enum:
+            - body
+            - query
+            - header
+            - path
     Error:
       type: object
       title: Error
-      description: standard error
+      description: |
+        Standard error. Follows the [AIP #193 - Errors](https://kong-aip.netlify.app/aip/193/) specification.
       x-examples:
         Example 1:
           status: 404
@@ -29,6 +52,8 @@ components:
         - status
         - title
         - instance
+        - type
+        - detail
       properties:
         status:
           type: integer
@@ -36,23 +61,34 @@ components:
           example: 404
         title:
           type: string
-          description: The error response code.
+          description: |
+            A short, human-readable summary of the problem.
+            It **should not** change between occurrences of a problem, except for localization.
+            Should be provided as "Sentence case" for potential direct use in a UI
           example: Not Found
         type:
           type: string
-          description: The error type.
+          description: |
+            A unique identifier for this error. When dereferenced it must provide human-readable documentation for the problem.
           example: Not Found
         instance:
           type: string
           example: 'portal:trace:2287285207635123011'
-          description: The portal traceback code
+          description: |
+            Used to return the correlation ID back to the user, in the format `<app>:trace:<correlation_id>`.
         detail:
           type: string
           example: The requested team was not found
-          description: Details about the error.
+          description: |
+            A human readable explanation specific to this occurrence of the problem.
+            This field may contain request/entity data to help the user understand what went wrong.
+            Enclose variable values in square brackets.
+            _Should_ be provided as "Sentence case" for direct use in a UI
         invalid_parameters:
           type: array
-          description: TODO
+          description: |
+            All 400 errors **MUST** return an `invalid_parameters` key in the response.
+            Used to indicate which fields have invalid values when validated.
           items:
             $ref: "#/components/schemas/InvalidParameters"
     NotFoundError:
