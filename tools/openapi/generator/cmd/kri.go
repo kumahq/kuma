@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -53,16 +53,16 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			tmpl := template.Must(template.New("kri").Funcs(save.FuncMap).Parse(gotemplates.KriEndpointTemplate))
 			var outBuf bytes.Buffer
 			if err := tmpl.Execute(&outBuf, data); err != nil {
-				return fmt.Errorf("failed to execute KRI template: %w", err)
+				return errors.Wrapf(err, "failed to execute KRI template")
 			}
 
 			outDir := filepath.Join("api", "openapi", "specs", "kri")
 			if err := os.MkdirAll(outDir, 0o755); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", outDir, err)
+				return errors.Wrapf(err, "failed to create directory %s", outDir)
 			}
 			outPath := filepath.Join(outDir, "kri.yaml")
 			if err := os.WriteFile(outPath, outBuf.Bytes(), 0o600); err != nil {
-				return fmt.Errorf("failed to write %s: %w", outPath, err)
+				return errors.Wrapf(err, "failed to write %s", outPath)
 			}
 
 			return nil
@@ -106,7 +106,7 @@ func gatherPlugins(rootArgs *args) ([]resource, error) {
 	base := filepath.Join("pkg", "plugins", "policies")
 	entries, err := os.ReadDir(base)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read policies directory %s: %w", base, err)
+		return nil, errors.Wrapf(err, "failed to read policies directory %s", base)
 	}
 
 	for _, e := range entries {
@@ -122,7 +122,7 @@ func gatherPlugins(rootArgs *args) ([]resource, error) {
 		}
 		pconfig, err := parse.Policy(policyPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse %s: %w", policyPath, err)
+			return nil, errors.Wrapf(err, "failed to parse %s", policyPath)
 		}
 		if pconfig.SkipRegistration || pconfig.ShortName == "" {
 			continue
