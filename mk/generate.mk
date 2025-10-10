@@ -1,5 +1,6 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 RESOURCE_GEN := ./build/tools-${GOOS}-${GOARCH}/resource-gen
+OAPI_GEN := ./build/tools-${GOOS}-${GOARCH}/oapi-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
@@ -36,6 +37,9 @@ $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
+
+$(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
+	go build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
@@ -102,14 +106,15 @@ generate/policy-defaults:
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
-endpoints?=$(foreach dir,$(shell find api/openapi/specs -type f -name "*.yaml" | sort),$(basename $(dir)))
+endpoints?=$(foreach dir,$(shell find api/openapi/specs -type f -name '*.yaml' ! -iname '*kri*' | sort),$(basename $(dir)))
 
-generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN)
+generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN)
 	for endpoint in $(endpoints); do \
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml  || { echo "Failed to generate $$endpoint"; exit 1; }; \
 	done
 	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	$(OAPI_GEN) kri
 
 .PHONY: generate/oas-for-ts
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation

@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	commontemplate "github.com/kumahq/kuma/tools/common/template"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 )
 
 func newK8sResource(rootArgs *args) *cobra.Command {
@@ -41,12 +41,12 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 			}
 
 			k8sTypesPath := filepath.Join(k8sPath, "zz_generated.types.go")
-			if err := save.GoTemplate(customResourceTemplate, pconfig, k8sTypesPath); err != nil {
+			if err := commontemplate.GoTemplate(customResourceTemplate, pconfig, k8sTypesPath); err != nil {
 				return err
 			}
 
 			gvInfoPath := filepath.Join(k8sPath, "groupversion_info.go")
-			if err := save.GoTemplate(groupVersionInfoTemplate, pconfig, gvInfoPath); err != nil {
+			if err := commontemplate.GoTemplate(groupVersionInfoTemplate, pconfig, gvInfoPath); err != nil {
 				return err
 			}
 			controllerGenExec := exec.CommandContext(cmd.Context(), //nolint:gosec

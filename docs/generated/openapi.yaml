@@ -3011,6 +3011,226 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshGatewayList'
+  /zoneegresses/{name}:
+    get:
+      operationId: getZoneEgress
+      summary: Returns ZoneEgress entity
+      tags:
+        - ZoneEgress
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneEgress
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putZoneEgress
+      summary: Creates or Updates ZoneEgress entity
+      tags:
+        - ZoneEgress
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneEgress
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneEgressItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneEgressCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneEgressCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteZoneEgress
+      summary: Deletes ZoneEgress entity
+      tags:
+        - ZoneEgress
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneEgress
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneEgressDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /zoneegresses:
+    get:
+      operationId: getZoneEgressList
+      summary: Returns a list of ZoneEgress in the mesh.
+      tags:
+        - ZoneEgress
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressList'
+  /zoneingresses/{name}:
+    get:
+      operationId: getZoneIngress
+      summary: Returns ZoneIngress entity
+      tags:
+        - ZoneIngress
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneIngress
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putZoneIngress
+      summary: Creates or Updates ZoneIngress entity
+      tags:
+        - ZoneIngress
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneIngress
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneIngressItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneIngressCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneIngressCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteZoneIngress
+      summary: Deletes ZoneIngress entity
+      tags:
+        - ZoneIngress
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneIngress
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneIngressDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /zoneingresses:
+    get:
+      operationId: getZoneIngressList
+      summary: Returns a list of ZoneIngress in the mesh.
+      tags:
+        - ZoneIngress
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressList'
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
@@ -3797,6 +4017,51 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrustList'
+  /_kri/{kri}:
+    get:
+      operationId: getByKri
+      summary: Returns a resource by KRI
+      tags:
+        - KRI
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DataplaneItem'
+                  - $ref: '#/components/schemas/MeshItem'
+                  - $ref: '#/components/schemas/MeshAccessLogItem'
+                  - $ref: '#/components/schemas/MeshCircuitBreakerItem'
+                  - $ref: '#/components/schemas/MeshFaultInjectionItem'
+                  - $ref: '#/components/schemas/MeshGatewayItem'
+                  - $ref: '#/components/schemas/MeshHTTPRouteItem'
+                  - $ref: '#/components/schemas/MeshHealthCheckItem'
+                  - $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
+                  - $ref: '#/components/schemas/MeshMetricItem'
+                  - $ref: '#/components/schemas/MeshPassthroughItem'
+                  - $ref: '#/components/schemas/MeshProxyPatchItem'
+                  - $ref: '#/components/schemas/MeshRateLimitItem'
+                  - $ref: '#/components/schemas/MeshRetryItem'
+                  - $ref: '#/components/schemas/MeshTCPRouteItem'
+                  - $ref: '#/components/schemas/MeshTLSItem'
+                  - $ref: '#/components/schemas/MeshTimeoutItem'
+                  - $ref: '#/components/schemas/MeshTraceItem'
+                  - $ref: '#/components/schemas/MeshTrafficPermissionItem'
+                  - $ref: '#/components/schemas/ZoneEgressItem'
+                  - $ref: '#/components/schemas/ZoneIngressItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -5623,6 +5888,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshAccessLogItem'
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7355,6 +7625,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshCircuitBreakerItem'
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8015,6 +8290,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshFaultInjectionItem'
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8522,6 +8802,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshHealthCheckItem'
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -9343,6 +9628,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshHTTPRouteItem'
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10226,6 +10516,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10562,6 +10857,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshMetricItem'
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10761,6 +11061,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshPassthroughItem'
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11484,6 +11789,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshProxyPatchItem'
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -12228,6 +12538,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshRateLimitItem'
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -12892,6 +13207,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshRetryItem'
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -13242,6 +13562,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTCPRouteItem'
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -13824,6 +14149,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTimeoutItem'
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -14178,6 +14508,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTLSItem'
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -14539,6 +14874,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTraceItem'
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -14896,6 +15236,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTrafficPermissionItem'
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -15507,6 +15852,11 @@ components:
         - name
         - mesh
       type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneItem'
     DataplaneCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -16780,6 +17130,11 @@ components:
         - type
         - name
       type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshItem'
     MeshCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -17028,6 +17383,11 @@ components:
         - name
         - mesh
       type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshGatewayItem'
     MeshGatewayCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -17058,6 +17418,166 @@ components:
             balancing traffic on it
           type: boolean
       type: object
+    ZoneEgressItem:
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+        networking:
+          description: Networking defines the address and port of the Egress to listen on.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            port:
+              description: >-
+                Port of the inbound interface that will forward requests to the
+                service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: |-
+            Zone field contains Zone name where egress is serving, field will be
+            automatically set by Global Kuma CP
+          type: string
+      required:
+        - type
+        - name
+      type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneEgressItem'
+    ZoneEgressCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          readOnly: true
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    ZoneEgressDeleteSuccessResponse:
+      type: object
+      properties: {}
+    ZoneIngressItem:
+      properties:
+        availableServices:
+          description: |-
+            AvailableService contains tags that represent unique subset of
+            endpoints
+          items:
+            properties:
+              externalService:
+                description: instance of external service available from the zone
+                type: boolean
+              instances:
+                description: number of instances available for given tags
+                type: integer
+              mesh:
+                description: mesh of the instances available for given tags
+                type: string
+              tags:
+                additionalProperties:
+                  type: string
+                description: tags of the service
+                type: object
+            type: object
+          type: array
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+        networking:
+          description: >-
+            Networking defines the address and port of the Ingress to listen on.
+
+            Additionally publicly advertised address and port could be
+            specified.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            advertisedAddress:
+              description: |-
+                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+                accessible to other Kuma clusters.
+              type: string
+            advertisedPort:
+              description: >-
+                AdvertisedPort defines port on which ZoneIngress is accessible
+                to other
+
+                Kuma clusters.
+              type: integer
+            port:
+              description: >-
+                Port of the inbound interface that will forward requests to the
+                service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: >-
+            Zone field contains Zone name where ingress is serving, field will
+            be
+
+            automatically set by Global Kuma CP
+          type: string
+      required:
+        - type
+        - name
+      type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneIngressItem'
+    ZoneIngressCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          readOnly: true
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    ZoneIngressDeleteSuccessResponse:
+      type: object
+      properties: {}
     HostnameGeneratorItem:
       type: object
       required:
@@ -18948,6 +19468,52 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshGatewayItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    ZoneEgressItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneEgressItem'
+    ZoneEgressList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ZoneEgressItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    ZoneIngressItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneIngressItem'
+    ZoneIngressList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ZoneIngressItem'
               total:
                 type: number
                 description: The total number of entities
