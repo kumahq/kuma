@@ -170,13 +170,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
-<<<<<<< HEAD
-					WorkDir: "/tmp",
-=======
 					WorkDir:     "/tmp",
-					Features:    given.features,
 					IPv6Enabled: true,
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),

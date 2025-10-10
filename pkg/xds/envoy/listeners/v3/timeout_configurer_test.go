@@ -133,13 +133,8 @@ trafficDirection: OUTBOUND`,
 			// given
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-<<<<<<< HEAD
-					Configure(HttpConnectionManager("localhost:8080", false, nil)).
-					Configure(Timeout(given.timeout, core_mesh.ProtocolHTTP)))).
-=======
 					Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
-					Configure(Timeout(given.timeout, core_meta.ProtocolHTTP)))).
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					Configure(Timeout(given.timeout, core_mesh.ProtocolHTTP)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -244,13 +239,8 @@ trafficDirection: OUTBOUND`,
 			// given
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-<<<<<<< HEAD
-					Configure(HttpConnectionManager("localhost:8080", false, nil)).
-					Configure(Timeout(given.timeout, core_mesh.ProtocolGRPC)))).
-=======
 					Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
-					Configure(Timeout(given.timeout, core_meta.ProtocolGRPC)))).
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					Configure(Timeout(given.timeout, core_mesh.ProtocolGRPC)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -388,13 +378,8 @@ trafficDirection: INBOUND
 		// given
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-<<<<<<< HEAD
-				Configure(HttpConnectionManager("localhost:8080", false, nil)).
-				Configure(Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)))).
-=======
 				Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
-				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)))).
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+				Configure(Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 

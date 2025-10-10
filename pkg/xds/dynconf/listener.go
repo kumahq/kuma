@@ -38,11 +38,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 					Configure(
-<<<<<<< HEAD
-						envoy_listeners.DirectResponse(ListenerName, []v3.DirectResponseEndpoints{}, core_xds.LocalHostAddresses),
-=======
-						envoy_listeners.DirectResponse(listenerName, []v3.DirectResponseEndpoints{}, core_xds.LocalHostAddresses, proxy.Metadata.GetIPv6Enabled()),
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+						envoy_listeners.DirectResponse(ListenerName, []v3.DirectResponseEndpoints{}, core_xds.LocalHostAddresses, proxy.Metadata.GetIPv6Enabled()),
 					),
 			)).Build()
 		listener = nr.(*envoy_listener.Listener)

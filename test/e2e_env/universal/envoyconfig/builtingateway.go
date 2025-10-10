@@ -125,14 +125,9 @@ func SetupGatewayCluster() {
 		Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 		Install(GatewayClientAppUniversal("gateway-client")).
 		Install(EchoServerApp(mesh, "echo-server", "echo-service", "universal")).
-<<<<<<< HEAD
-		Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
-=======
 		Install(GatewayProxyUniversal(mesh, "gateway-proxy", WithDpEnvs(map[string]string{
-			"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
 			"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 		}))).
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 		Install(YamlUniversal(meshGateway())).
 		Install(YamlUniversal(meshHTTPRoute()))
 
