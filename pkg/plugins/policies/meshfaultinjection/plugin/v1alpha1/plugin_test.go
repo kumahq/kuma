@@ -87,7 +87,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Origin: metadata.OriginInbound,
 					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
+							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
 								listeners.HttpInboundRoutes(
 									envoy_names.GetInboundRouteName("backend"),
@@ -208,7 +208,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
-					listeners.HttpConnectionManager("external-service-1", false, nil),
+					listeners.HttpConnectionManager("external-service-1", false, nil, true),
 				)),
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
@@ -223,7 +223,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-2").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-2{mesh=mesh-2}"),
-					listeners.HttpConnectionManager("external-service-2", false, nil),
+					listeners.HttpConnectionManager("external-service-2", false, nil, true),
 				)),
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "internal-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),

@@ -70,6 +70,7 @@ node:
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""

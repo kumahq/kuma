@@ -51,5 +51,6 @@
     "port": 3456
    }
   }
- }
+ },
+ "ipv6Enabled": true
 }

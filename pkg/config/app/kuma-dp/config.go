@@ -40,6 +40,7 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
+			IPv6Enabled: true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -249,6 +250,9 @@ type DataplaneRuntime struct {
 	// SpireSupported indicates whether the sidecar has mounted a volume that includes the socket for the Spire agent to retrieve its identity.
 	// Currently supported only on Kubernetes.
 	SpireSupported bool `json:"spireSupported,omitempty" envconfig:"kuma_dataplane_runtime_spire_supported"`
+	// IPv6Enabled indicates if IPv6 support is enabled on the machine. By default, dataplane will check if support is enabled
+	// on machine and adjust this config accordingly
+	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`
 }
 
 type Metrics struct {

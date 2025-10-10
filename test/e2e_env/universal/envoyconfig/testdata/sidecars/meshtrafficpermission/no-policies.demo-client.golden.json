@@ -501,10 +501,6 @@
                       {
                         "addressPrefix": "IP_REDACTED",
                         "prefixLen": 32
-                      },
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 128
                       }
                     ]
                   },
@@ -557,10 +553,6 @@
                       {
                         "addressPrefix": "IP_REDACTED",
                         "prefixLen": 32
-                      },
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 128
                       }
                     ]
                   },
@@ -717,19 +709,7 @@
                       },
                       {
                         "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 7
-                      },
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 8
-                      },
-                      {
-                        "addressPrefix": "IP_REDACTED",
                         "prefixLen": 32
-                      },
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 128
                       }
                     ]
                   },

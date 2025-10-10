@@ -43,6 +43,7 @@ node:
     dataplane.proxyType: dataplane
     features:
     - feature-unified-resource-naming
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""

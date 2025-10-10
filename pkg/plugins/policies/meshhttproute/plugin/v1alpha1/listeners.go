@@ -63,6 +63,7 @@ func GenerateOutboundListener(
 		ForwardClientCertDetails: false,
 		NormalizePath:            true,
 		InternalAddresses:        proxy.InternalAddresses,
+		IPv6Enabled:              proxy.Metadata.GetIPv6Enabled(),
 	}
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).

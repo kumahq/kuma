@@ -61,7 +61,7 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _
 	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP).
 		WithOverwriteName(metadata.ProbeListenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.HttpConnectionManager(metadata.ProbeListenerName, false, nil)).
+			Configure(envoy_listeners.HttpConnectionManager(metadata.ProbeListenerName, false, nil, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, metadata.ProbeRouteConfigName).
 				Configure(envoy_routes.VirtualHost(virtualHostBuilder)))))).
 		Configure(envoy_listeners.TransparentProxying(proxy)).

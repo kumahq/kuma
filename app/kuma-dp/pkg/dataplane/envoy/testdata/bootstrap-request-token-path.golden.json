@@ -34,5 +34,6 @@
   "certPath": "",
   "keyPath": ""
  },
- "systemCaPath": ""
+ "systemCaPath": "",
+ "ipv6Enabled": true
 }

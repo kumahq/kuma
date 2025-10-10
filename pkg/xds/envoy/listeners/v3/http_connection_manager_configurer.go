@@ -14,6 +14,7 @@ type HttpConnectionManagerConfigurer struct {
 	ForwardClientCertDetails bool
 	NormalizePath            bool
 	InternalAddresses        []core_xds.InternalAddress
+	IPv6Enabled              bool
 }
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -40,7 +41,7 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 	}
 	config.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
 		UnixSockets: false,
-		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.InternalAddresses),
+		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.IPv6Enabled, c.InternalAddresses),
 	}
 
 	pbst, err := util_proto.MarshalAnyDeterministic(config)

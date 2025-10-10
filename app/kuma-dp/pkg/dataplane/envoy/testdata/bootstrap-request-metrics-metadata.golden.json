@@ -35,5 +35,6 @@
   "certPath": "/tmp/cert.pem",
   "keyPath": "/tmp/key.pem"
  },
- "systemCaPath": ""
+ "systemCaPath": "",
+ "ipv6Enabled": true
 }
