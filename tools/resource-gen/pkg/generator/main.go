@@ -16,9 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
-	"github.com/kumahq/kuma/pkg/util/slices"
 	"github.com/kumahq/kuma/tools/common/save"
-	"github.com/kumahq/kuma/tools/openapi/gotemplates"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -474,21 +472,13 @@ var ProtoTypeToType = map[string]reflect.Type{
 	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 }
 
-var KriResources = map[string]bool{
-	"Dataplane":   true,
-	"MeshGateway": true,
-}
+
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	reflector := reflector{
 		pkg:     pkg,
 		typeSet: map[reflect.Type]struct{}{},
 	}
-	kriResources := slices.Filter(resources, func(r ResourceInfo) bool {
-		_, ok := KriResources[r.ResourceType]
-		return ok
-	})
-	generateKriEndpoint(kriResources)
 	for _, r := range resources {
 		tpe, exists := ProtoTypeToType[r.ResourceType]
 		if !exists {
@@ -566,29 +556,6 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	}
 
 	return nil
-}
-
-func generateKriEndpoint(resources []ResourceInfo) {
-	// Render the KRI endpoint OpenAPI fragment and write it to api/openapi/specs/common/kri.yaml
-	var outBuf bytes.Buffer
-	if err := template.Must(template.New("resource").Funcs(save.FuncMap).Parse(gotemplates.KriEndpointTemplate)).Execute(&outBuf, struct {
-		Package   string
-		Resources []ResourceInfo
-	}{
-		Package:   "v1alpha1",
-		Resources: resources,
-	}); err != nil {
-		log.Fatalf("failed to execute KRI endpoint template: %v", err)
-	}
-
-	outDir := path.Join(writeDir, "api", "openapi", "specs", "common")
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		log.Fatalf("failed to create directory %s: %v", outDir, err)
-	}
-	outPath := path.Join(outDir, "kri-resources.yaml")
-	if err := os.WriteFile(outPath, outBuf.Bytes(), 0o600); err != nil {
-		log.Fatalf("failed to write %s: %v", outPath, err)
-	}
 }
 
 type reference struct {

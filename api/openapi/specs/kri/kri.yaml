@@ -1,0 +1,49 @@
+
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+
+paths:
+  /_kri/{kri}:
+    get:
+      operationId: getByKri
+      summary: Returns a resource by KRI
+      tags: [ "KRI" ]
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource
+          content:
+            application/json:
+              schema: 
+                oneOf:
+                  - $ref: '/specs/policies/meshaccesslog/rest.yaml#/components/responses/MeshAccessLogItem'
+                  - $ref: '/specs/policies/meshcircuitbreaker/rest.yaml#/components/responses/MeshCircuitBreakerItem'
+                  - $ref: '/specs/policies/meshfaultinjection/rest.yaml#/components/responses/MeshFaultInjectionItem'
+                  - $ref: '/specs/policies/meshhealthcheck/rest.yaml#/components/responses/MeshHealthCheckItem'
+                  - $ref: '/specs/policies/meshhttproute/rest.yaml#/components/responses/MeshHTTPRouteItem'
+                  - $ref: '/specs/policies/meshloadbalancingstrategy/rest.yaml#/components/responses/MeshLoadBalancingStrategyItem'
+                  - $ref: '/specs/policies/meshmetric/rest.yaml#/components/responses/MeshMetricItem'
+                  - $ref: '/specs/policies/meshpassthrough/rest.yaml#/components/responses/MeshPassthroughItem'
+                  - $ref: '/specs/policies/meshproxypatch/rest.yaml#/components/responses/MeshProxyPatchItem'
+                  - $ref: '/specs/policies/meshratelimit/rest.yaml#/components/responses/MeshRateLimitItem'
+                  - $ref: '/specs/policies/meshretry/rest.yaml#/components/responses/MeshRetryItem'
+                  - $ref: '/specs/policies/meshtcproute/rest.yaml#/components/responses/MeshTCPRouteItem'
+                  - $ref: '/specs/policies/meshtimeout/rest.yaml#/components/responses/MeshTimeoutItem'
+                  - $ref: '/specs/policies/meshtls/rest.yaml#/components/responses/MeshTLSItem'
+                  - $ref: '/specs/policies/meshtrace/rest.yaml#/components/responses/MeshTraceItem'
+                  - $ref: '/specs/policies/meshtrafficpermission/rest.yaml#/components/responses/MeshTrafficPermissionItem'
+                  - $ref: '/specs/protoresources/dataplane/rest.yaml#/components/responses/DataplaneItem'
+                  - $ref: '/specs/protoresources/meshgateway/rest.yaml#/components/responses/MeshGatewayItem'
+        '400':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"

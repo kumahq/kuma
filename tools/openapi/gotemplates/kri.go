@@ -28,7 +28,7 @@ paths:
               schema: 
                 oneOf:
 {{- range .Resources }}
-                  - $ref: '#/components/schemas/{{.ResourceType}}Item'
+                  - $ref: '{{.Path}}#/components/responses/{{.ResourceType}}Item'
 {{- end }}
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"

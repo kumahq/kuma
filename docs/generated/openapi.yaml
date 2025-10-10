@@ -3797,6 +3797,48 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrustList'
+  /_kri/{kri}:
+    get:
+      operationId: getByKri
+      summary: Returns a resource by KRI
+      tags:
+        - KRI
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MeshAccessLogItem'
+                  - $ref: '#/components/schemas/MeshCircuitBreakerItem'
+                  - $ref: '#/components/schemas/MeshFaultInjectionItem'
+                  - $ref: '#/components/schemas/MeshHealthCheckItem'
+                  - $ref: '#/components/schemas/MeshHTTPRouteItem'
+                  - $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
+                  - $ref: '#/components/schemas/MeshMetricItem'
+                  - $ref: '#/components/schemas/MeshPassthroughItem'
+                  - $ref: '#/components/schemas/MeshProxyPatchItem'
+                  - $ref: '#/components/schemas/MeshRateLimitItem'
+                  - $ref: '#/components/schemas/MeshRetryItem'
+                  - $ref: '#/components/schemas/MeshTCPRouteItem'
+                  - $ref: '#/components/schemas/MeshTimeoutItem'
+                  - $ref: '#/components/schemas/MeshTLSItem'
+                  - $ref: '#/components/schemas/MeshTraceItem'
+                  - $ref: '#/components/schemas/MeshTrafficPermissionItem'
+                  - $ref: '#/components/schemas/DataplaneItem'
+                  - $ref: '#/components/schemas/MeshGatewayItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -5623,6 +5665,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshAccessLogItem'
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7355,6 +7402,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshCircuitBreakerItem'
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8015,6 +8067,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshFaultInjectionItem'
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8522,6 +8579,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshHealthCheckItem'
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -9343,6 +9405,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshHTTPRouteItem'
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10226,6 +10293,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10562,6 +10634,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshMetricItem'
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10761,6 +10838,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshPassthroughItem'
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11484,6 +11566,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshProxyPatchItem'
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -12228,6 +12315,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshRateLimitItem'
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -12892,6 +12984,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshRetryItem'
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -13242,6 +13339,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTCPRouteItem'
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -13824,6 +13926,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTimeoutItem'
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -14178,6 +14285,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTLSItem'
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -14539,6 +14651,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTraceItem'
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -14896,6 +15013,11 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTrafficPermissionItem'
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -15507,6 +15629,11 @@ components:
         - name
         - mesh
       type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneItem'
     DataplaneCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -17028,6 +17155,11 @@ components:
         - name
         - mesh
       type: object
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshGatewayItem'
     MeshGatewayCreateOrUpdateSuccessResponse:
       type: object
       properties:
