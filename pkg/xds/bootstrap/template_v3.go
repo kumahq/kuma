@@ -117,12 +117,21 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 							StructValue: util_proto.MustToStruct(parameters.Version),
 						},
 					},
+<<<<<<< HEAD
 					core_xds.FieldFeatures:            util_proto.MustNewValueForStruct(features),
 					core_xds.FieldWorkdir:             util_proto.MustNewValueForStruct(parameters.Workdir),
 					core_xds.FieldAccessLogSocketPath: util_proto.MustNewValueForStruct(parameters.AccessLogSocketPath),
 					core_xds.FieldMetricsSocketPath:   util_proto.MustNewValueForStruct(parameters.MetricsSocketPath),
 					core_xds.FieldMetricsCertPath:     util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
 					core_xds.FieldMetricsKeyPath:      util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+=======
+					core_xds.FieldFeatures:        util_proto.MustNewValueForStruct(features),
+					core_xds.FieldWorkdir:         util_proto.MustNewValueForStruct(parameters.Workdir),
+					core_xds.FieldMetricsCertPath: util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
+					core_xds.FieldMetricsKeyPath:  util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+					core_xds.FieldSystemCaPath:    util_proto.MustNewValueForStruct(parameters.SystemCaPath),
+					core_xds.FieldIPv6Enabled:     util_proto.MustNewValueForStruct(parameters.IPv6Enabled),
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 				},
 			},
 		},

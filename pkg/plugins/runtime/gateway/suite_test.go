@@ -141,7 +141,11 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		Mesh:         meshCtx,
 	}
 
+<<<<<<< HEAD
 	proxy, err := b.Build(context.TODO(), key, meshCtx)
+=======
+	proxy, err := b.Build(context.TODO(), key, &core_xds.DataplaneMetadata{IPv6Enabled: true}, meshCtx)
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 	Expect(err).To(Succeed())
 
 	return &ctx, proxy

@@ -38,6 +38,13 @@ var _ = Describe("ProbeGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+<<<<<<< HEAD
+=======
+				Metadata: &core_xds.DataplaneMetadata{
+					AppProbeProxyEnabled: given.appProbeProxyEnabled,
+					IPv6Enabled:          true,
+				},
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 				APIVersion: envoy_common.APIV3,
 				// internal addresses are set to "localhost" addresses to the "probe" listener
 				InternalAddresses: DummyInternalAddresses,

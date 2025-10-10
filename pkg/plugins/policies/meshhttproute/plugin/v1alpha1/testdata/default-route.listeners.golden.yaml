@@ -17,10 +17,15 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           internalAddressConfig:
             cidrRanges:
+<<<<<<< HEAD
             - addressPrefix: 127.0.0.1
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
+=======
+            - addressPrefix: 192.168.0.0
+              prefixLen: 16
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
           normalizePath: true
           routeConfig:
             name: outbound:backend
@@ -65,10 +70,15 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           internalAddressConfig:
             cidrRanges:
+<<<<<<< HEAD
             - addressPrefix: 127.0.0.1
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
+=======
+            - addressPrefix: 192.168.0.0
+              prefixLen: 16
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
           normalizePath: true
           routeConfig:
             name: outbound:external-service

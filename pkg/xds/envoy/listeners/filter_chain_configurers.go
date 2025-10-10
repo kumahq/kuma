@@ -43,18 +43,20 @@ func Tracing(
 	})
 }
 
-func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
+func StaticEndpoints(ipv6Enabled bool, virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.StaticEndpointsConfigurer{
 		VirtualHostName: virtualHostName,
 		Paths:           paths,
+		IPv6Enabled:     ipv6Enabled,
 	})
 }
 
-func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoints, internalAddresses []core_xds.InternalAddress) FilterChainBuilderOpt {
+func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoints, internalAddresses []core_xds.InternalAddress, ipv6Enabled bool) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.DirectResponseConfigurer{
 		VirtualHostName:   virtualHostName,
 		Endpoints:         endpoints,
 		InternalAddresses: internalAddresses,
+		IPv6Enabled:       ipv6Enabled,
 	})
 }
 
@@ -84,11 +86,12 @@ func ServerSideStaticTLS(tlsCerts core_xds.ServerSideTLSCertPaths) FilterChainBu
 	})
 }
 
-func HttpConnectionManager(statsName string, forwardClientCertDetails bool, internalAddresses []core_xds.InternalAddress) FilterChainBuilderOpt {
+func HttpConnectionManager(statsName string, forwardClientCertDetails bool, internalAddresses []core_xds.InternalAddress, ipv6Enabled bool) FilterChainBuilderOpt {
 	hcmConfigurer := &v3.HttpConnectionManagerConfigurer{
 		StatsName:                statsName,
 		ForwardClientCertDetails: forwardClientCertDetails,
 		InternalAddresses:        internalAddresses,
+		IPv6Enabled:              ipv6Enabled,
 	}
 
 	return AddFilterChainConfigurer(hcmConfigurer)

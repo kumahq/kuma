@@ -17,6 +17,7 @@ type PrometheusConfigurer struct {
 	ListenerName    string
 	EndpointAddress string
 	StatsPath       string
+	IPv6Enabled     bool
 }
 
 func (pc *PrometheusConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
@@ -70,7 +71,7 @@ func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envo
 					CertPath: proxy.Metadata.MetricsCertPath,
 					KeyPath:  proxy.Metadata.MetricsKeyPath,
 				}),
-				envoy_listeners.StaticEndpoints(pc.ListenerName, pc.staticEndpoint()),
+				envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint()),
 			),
 		)).
 		Build()
@@ -80,7 +81,7 @@ func (pc *PrometheusConfigurer) unsecuredListener(proxy *core_xds.Proxy) (envoy_
 	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP).
 		WithOverwriteName(pc.ListenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.StaticEndpoints(pc.ListenerName, pc.staticEndpoint())),
+			Configure(envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint())),
 		)).
 		Build()
 }
@@ -92,7 +93,7 @@ func (pc *PrometheusConfigurer) baseSecuredListenerBuilder(proxy *core_xds.Proxy
 		Configure(envoy_listeners.FilterChain(
 			envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 				match,
-				envoy_listeners.StaticEndpoints(pc.ListenerName, pc.staticEndpoint())),
+				envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint())),
 		))
 }
 

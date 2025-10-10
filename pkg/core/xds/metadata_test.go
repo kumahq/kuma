@@ -37,8 +37,12 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		Entry("from empty node", testCase{
 			node: &structpb.Struct{},
 			expected: xds.DataplaneMetadata{
+<<<<<<< HEAD
 				AccessLogSocketPath: "/tmp/kuma-al-dp-1-mesh.sock",
 				MetricsSocketPath:   "/tmp/kuma-mh-dp-1-mesh.sock",
+=======
+				IPv6Enabled: true,
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 			},
 		}),
 		Entry("from non-empty node", testCase{
@@ -77,12 +81,21 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				},
 			},
 			expected: xds.DataplaneMetadata{
+<<<<<<< HEAD
 				AdminPort:           1234,
 				DNSPort:             8000,
 				EmptyDNSPort:        8001,
 				AccessLogSocketPath: "/tmp/logs",
 				MetricsSocketPath:   "/tmp/metrics",
 				ReadinessPort:       9300,
+=======
+				AdminPort:            1234,
+				DNSPort:              8000,
+				SystemCaPath:         "/etc/certs/cert.pem",
+				ReadinessPort:        9300,
+				AppProbeProxyEnabled: true,
+				IPv6Enabled:          true,
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{
@@ -104,9 +117,14 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				},
 			},
 			expected: xds.DataplaneMetadata{
+<<<<<<< HEAD
 				AccessLogSocketPath: "/tmp/kuma-al-dp-1-mesh.sock",
 				MetricsSocketPath:   "/tmp/kuma-mh-dp-1-mesh.sock",
 				DynamicMetadata:     map[string]string{},
+=======
+				DynamicMetadata: map[string]string{},
+				IPv6Enabled:     true,
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 			},
 		}),
 	)

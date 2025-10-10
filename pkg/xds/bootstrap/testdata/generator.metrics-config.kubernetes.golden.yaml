@@ -46,6 +46,7 @@ node:
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock

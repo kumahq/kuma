@@ -119,12 +119,20 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	if g.getAddress(proxy) != adminAddress {
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+<<<<<<< HEAD
 				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
+=======
+				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticEndpointPaths)),
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).
+<<<<<<< HEAD
 			Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticTlsEndpointPaths)).
+=======
+			Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticTlsEndpointPaths)).
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 

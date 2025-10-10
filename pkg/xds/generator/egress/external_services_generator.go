@@ -229,4 +229,115 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
 	}
+<<<<<<< HEAD
+=======
+
+	for _, ref := range destinations.BackendRefs {
+		endpoints := resources.EndpointMap[ref.LegacyServiceName]
+		if _, ok := sniUsed[ref.SNI]; ok || len(endpoints) == 0 || !endpoints[0].IsExternalService() {
+			continue
+		}
+
+		sniUsed[ref.SNI] = struct{}{}
+
+		clusterName := naming.GetNameOrFallback(
+			unifiedNaming,
+			ref.Resource().String(),
+			ref.LegacyServiceName,
+		)
+
+		cluster := xds.NewClusterBuilder().
+			WithName(clusterName).
+			WithService(ref.LegacyServiceName).
+			WithSNI(ref.SNI).
+			WithExternalService(true).
+			Build()
+
+		svcAcc.AddBackendRef(&ref.ResolvedBackendRef, cluster)
+	}
+
+	return svcAcc.Services().Clusters()
+}
+
+func genExternalServicesCDS(
+	proxy *core_xds.Proxy,
+	endpoints []core_xds.Endpoint,
+	cluster envoy_common.Cluster,
+) (*core_xds.Resource, error) {
+	ipv6 := proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6()
+	systemCAPath := proxy.Metadata.GetSystemCaPath()
+
+	protocol := endpoints[0].Protocol()
+	isMES := endpoints[0].IsMeshExternalService()
+
+	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, cluster.Name()).
+		Configure(envoy_clusters.DefaultTimeout()).
+		ConfigureIf(core_meta.IsHTTP(protocol), envoy_clusters.Http()).
+		ConfigureIf(core_meta.IsHTTP2Based(protocol), envoy_clusters.Http2()).
+		ConfigureIf(isMES, envoy_clusters.ProvidedCustomEndpointCluster(ipv6, true, endpoints...)).
+		ConfigureIf(isMES, envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCAPath, true)).
+		ConfigureIf(!isMES, envoy_clusters.ProvidedEndpointCluster(ipv6, endpoints...)).
+		ConfigureIf(!isMES, envoy_clusters.ClientSideTLS(endpoints)).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return &core_xds.Resource{
+		Name:           resource.GetName(),
+		Origin:         metadata.OriginEgress,
+		Resource:       resource,
+		Protocol:       endpoints[0].ExternalService.Protocol,
+		ResourceOrigin: endpoints[0].ExternalService.OwnerResource,
+	}, nil
+}
+
+func buildExternalServiceFilterChain(
+	proxy *core_xds.Proxy,
+	resources *core_xds.MeshResources,
+	secretsTracker core_xds.SecretsTracker,
+	cluster envoy_common.Cluster,
+	unifiedNaming bool,
+) *envoy_listeners.FilterChainBuilder {
+	meshName := resources.Mesh.GetMeta().GetName()
+	endpoints := resources.EndpointMap[cluster.Service()]
+	getName := naming.GetNameOrFallbackFunc(endpoints[0].IsMeshExternalService)
+	esName := naming.GetNameOrFallback(unifiedNaming, cluster.Name(), cluster.Service())
+	filterChainName := getName(esName, envoy_names.GetEgressFilterChainName(esName, meshName))
+	routeConfigName := getName(esName, envoy_names.GetOutboundRouteName(esName))
+	virtualHostName := esName
+
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
+		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming)).
+		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
+		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
+		// Zone Egress will configure these filter chains only for meshes with mTLS enabled, so we can safely pass here true
+		Configure(envoy_listeners.NetworkRBAC(esName, true, resources.ExternalServicePermissionMap[esName]))
+
+	// Protocol is not HTTP based, so we can use TCP proxy instead of HTTP connection manager and return early
+	if !core_meta.IsHTTPBased(endpoints[0].Protocol()) {
+		return filterChain.Configure(envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster))
+	}
+
+	var routes envoy_common.Routes
+	for _, rl := range resources.ExternalServiceRateLimits[esName] {
+		if rl.Spec.GetConf().GetHttp() == nil {
+			continue
+		}
+
+		routes = append(routes, envoy_common.NewRoute(
+			envoy_common.WithCluster(cluster),
+			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
+			envoy_common.WithRateLimit(rl.Spec),
+		))
+	}
+	// Add the default fall-back route
+	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+
+	return filterChain.
+		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
+		Configure(envoy_listeners.FaultInjection(resources.ExternalServiceFaultInjections[esName]...)).
+		Configure(envoy_listeners.RateLimit(resources.ExternalServiceRateLimits[esName])).
+		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 }

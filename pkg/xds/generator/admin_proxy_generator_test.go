@@ -55,6 +55,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminPort:     9901,
 					AdminAddress:  given.adminAddress,
 					ReadinessPort: given.readinessPort,
+<<<<<<< HEAD
+=======
+					Features:      given.features,
+					IPv6Enabled:   true,
+>>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
