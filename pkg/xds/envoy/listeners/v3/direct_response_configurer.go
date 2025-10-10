@@ -18,6 +18,7 @@ type DirectResponseConfigurer struct {
 	VirtualHostName   string
 	Endpoints         []DirectResponseEndpoints
 	InternalAddresses []core_xds.InternalAddress
+	IPv6Enabled       bool
 }
 
 type DirectResponseEndpoints struct {
@@ -79,7 +80,7 @@ func (c *DirectResponseConfigurer) Configure(filterChain *envoy_listener.FilterC
 	}
 	config.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
 		UnixSockets: false,
-		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.InternalAddresses),
+		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.IPv6Enabled, c.InternalAddresses),
 	}
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
 	if err != nil {

@@ -30,5 +30,6 @@
   "socketPath": "/tmp/metric",
   "certPath": "",
   "keyPath": ""
- }
+ },
+ "ipv6Enabled": false
 }

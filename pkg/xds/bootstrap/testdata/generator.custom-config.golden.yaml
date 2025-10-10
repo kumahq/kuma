@@ -83,6 +83,7 @@ node:
     dynamicMetadata:
       test: value
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock

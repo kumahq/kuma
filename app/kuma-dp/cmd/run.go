@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -131,6 +132,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
+
+			// We want to check if IPv6 is enabled on machine, but we want to override config only if support was enabled to
+			// avoid issues with envoy internal addresses. We don't want to override this config if IPv6 support disabled by user explicitly
+			hasLocalIPv6, _ := tproxy_config.HasLocalIPv6()
+			if cfg.DataplaneRuntime.IPv6Enabled && !hasLocalIPv6 {
+				cfg.DataplaneRuntime.IPv6Enabled = false
+			}
+
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
@@ -188,6 +197,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
 				MetricsCertPath:     cfg.DataplaneRuntime.Metrics.CertPath,
 				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
+				IPv6Enabled:         cfg.DataplaneRuntime.IPv6Enabled,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)

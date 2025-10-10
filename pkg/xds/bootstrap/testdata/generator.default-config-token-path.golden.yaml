@@ -78,6 +78,7 @@ node:
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
     features: []
+    ipv6Enabled: false
     metricsCertPath: /path/cert/pem
     metricsKeyPath: /path/key/pem
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock

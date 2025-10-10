@@ -53,4 +53,5 @@ type configParameters struct {
 	Features            []string
 	IsGatewayDataplane  bool
 	Resources           types.ProxyResources
+	IPv6Enabled         bool
 }

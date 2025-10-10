@@ -46,6 +46,7 @@ func (g *ExternalServicesGenerator) Generate(
 		listenerBuilder,
 		services,
 		proxy.SecretsTracker,
+		proxy.Metadata.GetIPv6Enabled(),
 	)
 
 	cds, err := g.generateCDS(
@@ -142,6 +143,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	services map[string]bool,
 	secretsTracker core_xds.SecretsTracker,
+	ipv6Enabled bool,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 	sniUsed := map[string]bool{}
@@ -216,7 +218,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(serviceName, false, internalAddresses)).
+					Configure(envoy_listeners.HttpConnectionManager(serviceName, false, internalAddresses, ipv6Enabled)).
 					Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[serviceName]...)).
 					Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[serviceName])).
 					Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, nil))

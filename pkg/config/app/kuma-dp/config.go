@@ -37,6 +37,7 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
+			IPv6Enabled: true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -212,6 +213,9 @@ type DataplaneRuntime struct {
 	Metrics Metrics `json:"metrics,omitempty"`
 	// DynamicConfiguration defines properties of dataplane dynamic configuration
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
+	// IPv6Enabled indicates if IPv6 support is enabled on the machine. By default, dataplane will check if support is enabled
+	// on machine and adjust this config accordingly
+	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`
 }
 
 type Metrics struct {

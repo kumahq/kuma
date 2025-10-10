@@ -203,8 +203,6 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
           routeConfig:
             name: outbound:externalservice-1
             validateClusters: false
@@ -270,8 +268,6 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
           routeConfig:
             name: outbound:externalservice-2
             validateClusters: false
