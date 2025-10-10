@@ -52,4 +52,5 @@ type configParameters struct {
 	IsGatewayDataplane   bool
 	Resources            types.ProxyResources
 	SystemCaPath         string
+	IPv6Enabled          bool
 }

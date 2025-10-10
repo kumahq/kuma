@@ -87,6 +87,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			proxy := &xds.Proxy{
 				Dataplane:  dataplane,
 				APIVersion: envoy_common.APIV3,
+				Metadata:   &xds.DataplaneMetadata{IPv6Enabled: true},
 			}
 
 			// when

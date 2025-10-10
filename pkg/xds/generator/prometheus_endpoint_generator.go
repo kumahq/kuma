@@ -99,14 +99,13 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 					match,
-					envoy_listeners.StaticEndpoints(prometheusListenerName,
-						[]*envoy_common.StaticEndpointPath{
-							{
-								ClusterName: metricsHijackerClusterName,
-								Path:        prometheusEndpoint.Path,
-								RewritePath: statsPath,
-							},
-						})),
+					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{
+						{
+							ClusterName: metricsHijackerClusterName,
+							Path:        prometheusEndpoint.Path,
+							RewritePath: statsPath,
+						},
+					})),
 			))
 
 		switch prometheusEndpoint.Tls.GetMode() {
@@ -114,7 +113,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil),
-					envoy_listeners.StaticEndpoints(prometheusListenerName,
+					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName,
 						[]*envoy_common.StaticEndpointPath{
 							{
 								ClusterName: metricsHijackerClusterName,
@@ -131,14 +130,13 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 						CertPath: proxy.Metadata.MetricsCertPath,
 						KeyPath:  proxy.Metadata.MetricsKeyPath,
 					}),
-					envoy_listeners.StaticEndpoints(prometheusListenerName,
-						[]*envoy_common.StaticEndpointPath{
-							{
-								ClusterName: metricsHijackerClusterName,
-								Path:        prometheusEndpoint.Path,
-								RewritePath: statsPath,
-							},
-						}),
+					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{
+						{
+							ClusterName: metricsHijackerClusterName,
+							Path:        prometheusEndpoint.Path,
+							RewritePath: statsPath,
+						},
+					}),
 				),
 			))
 		}
@@ -147,7 +145,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.R
 		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName(prometheusListenerName).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
+				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{
 					{
 						ClusterName: metricsHijackerClusterName,
 						Path:        prometheusEndpoint.Path,

@@ -38,10 +38,16 @@ func Sidecars() {
 			).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName,
-				WithTransparentProxy(true)),
+				WithTransparentProxy(true),
+				WithDpEnvs(map[string]string{
+					"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+				})),
 			).
 			Install(TestServerUniversal("test-server", meshName,
-				WithArgs([]string{"echo", "--instance", "universal-1"})),
+				WithArgs([]string{"echo", "--instance", "universal-1"}),
+				WithDpEnvs(map[string]string{
+					"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+				})),
 			).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
