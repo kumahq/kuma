@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"text/template"
-	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -78,7 +78,6 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 	return cmd
 }
 
-
 func gatherProtoResources() []resource {
 	var resources []resource
 	var types []protoreflect.MessageType
@@ -95,7 +94,7 @@ func gatherProtoResources() []resource {
 		}
 		_, exists := commontypes.ProtoTypeToType[resourceInfo.ResourceType]
 		if !exists {
-			log.Printf("Skipping %s because it does not have mapping defined in tools/common/types/proto.go. Please add it there.", resourceInfo.ResourceType)
+			log.Printf("Skipping %s because it does not have mapping defined in tools/common/types/proto.go. If you want to have that generated please add it there.", resourceInfo.ResourceType)
 		}
 		if resourceInfo.ShortName != "" {
 			resources = append(resources, resource{
