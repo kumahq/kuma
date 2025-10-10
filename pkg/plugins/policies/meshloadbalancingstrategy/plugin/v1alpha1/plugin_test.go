@@ -501,7 +501,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mesh-1_external___extsvc_9000").
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames(tls.SNIForResource("external", "mesh-1", meshexternalservice_api.MeshExternalServiceType, 9000, nil))).
-							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
+							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil, true)).
 							Configure(
 								HttpInboundRoutes(
 									"external",

@@ -34,11 +34,7 @@ const (
 	FieldMetricsCertPath               = "metricsCertPath"
 	FieldMetricsKeyPath                = "metricsKeyPath"
 	FieldSystemCaPath                  = "systemCaPath"
-<<<<<<< HEAD
-=======
-	FieldTransparentProxy              = "transparentProxy"
 	FieldIPv6Enabled                   = "ipv6Enabled"
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -70,11 +66,7 @@ type DataplaneMetadata struct {
 	MetricsCertPath      string
 	MetricsKeyPath       string
 	SystemCaPath         string
-<<<<<<< HEAD
-=======
-	TransparentProxy     *tproxy_dp.DataplaneConfig
 	IPv6Enabled          bool
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -176,15 +168,6 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
-<<<<<<< HEAD
-=======
-func (m *DataplaneMetadata) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
-	if m == nil {
-		return nil
-	}
-	return m.TransparentProxy
-}
-
 func (m *DataplaneMetadata) GetIPv6Enabled() bool {
 	if m == nil {
 		return false
@@ -192,14 +175,6 @@ func (m *DataplaneMetadata) GetIPv6Enabled() bool {
 	return m.IPv6Enabled
 }
 
-func (m *DataplaneMetadata) HasFeature(feature string) bool {
-	if m == nil || m.Features == nil {
-		return false
-	}
-	return m.Features.HasFeature(feature)
-}
-
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMetadata {
 	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
 	// Even if we know that something should not be nil since we are generating metadata,
@@ -263,12 +238,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		metadata.Version = version
 	}
 
-<<<<<<< HEAD
-=======
-	if v := xdsMetadata.Fields[FieldTransparentProxy]; v.GetStructValue() != nil {
-		metadata.TransparentProxy = util_proto.MustFromMapOfAny[*tproxy_dp.DataplaneConfig](v.GetStructValue())
-	}
-
 	if xdsMetadata.Fields[FieldIPv6Enabled] != nil {
 		metadata.IPv6Enabled = xdsMetadata.Fields[FieldIPv6Enabled].GetBoolValue()
 	} else {
@@ -276,7 +245,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		metadata.IPv6Enabled = true
 	}
 
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 	if value := xdsMetadata.Fields[FieldDynamicMetadata]; value != nil {
 		dynamicMetadata := map[string]string{}
 		for field, val := range value.GetStructValue().GetFields() {

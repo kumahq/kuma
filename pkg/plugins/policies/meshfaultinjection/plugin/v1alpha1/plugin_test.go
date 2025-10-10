@@ -88,17 +88,10 @@ var _ = Describe("MeshFaultInjection", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:   "inbound:127.0.0.1:17777",
-<<<<<<< HEAD
 					Origin: generator.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
-=======
-					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
-						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
 								HttpInboundRoutes(
 									"backend",
@@ -205,116 +198,6 @@ var _ = Describe("MeshFaultInjection", func() {
 			},
 			expectedListeners: []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
 		}),
-<<<<<<< HEAD
-=======
-		Entry("basic listener: 2 inbounds one http and second tcp, rules api", sidecarTestCase{
-			resources: []*core_xds.Resource{
-				{
-					Name:   "inbound:127.0.0.1:17777",
-					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
-						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-							Configure(
-								listeners.HttpInboundRoutes(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-												envoy_common.WithService("backend"),
-												envoy_common.WithWeight(100),
-											)},
-										},
-									},
-								),
-							),
-						)).MustBuild(),
-				},
-				{
-					Name:   "inbound:127.0.0.1:17778",
-					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
-						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
-						)).MustBuild(),
-				},
-			},
-			fromRules: core_rules.FromRules{
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "127.0.0.1", Port: 17777}: {
-						{
-							Conf: &api.Rule{
-								Matches: &[]common_api.Match{
-									{
-										SpiffeID: &common_api.SpiffeIDMatch{
-											Type:  common_api.PrefixMatchType,
-											Value: "spiffe://trust-domain.mesh/",
-										},
-									},
-								},
-								Default: api.Conf{
-									Http: &[]api.FaultInjectionConf{
-										{
-											Abort: &api.AbortConf{
-												HttpStatus: int32(444),
-												Percentage: intstr.FromString("12"),
-											},
-										},
-										{
-											Delay: &api.DelayConf{
-												Value:      *test.ParseDuration("55s"),
-												Percentage: intstr.FromString("55"),
-											},
-											ResponseBandwidth: &api.ResponseBandwidthConf{
-												Limit:      "111Mbps",
-												Percentage: intstr.FromString("62.9"),
-											},
-										},
-									},
-								},
-							},
-							Origin: policyOrigin("mfi-1"),
-						},
-					},
-					{Address: "127.0.0.1", Port: 17778}: {
-						{
-							Conf: &api.Rule{
-								Matches: &[]common_api.Match{
-									{
-										SpiffeID: &common_api.SpiffeIDMatch{
-											Type:  common_api.PrefixMatchType,
-											Value: "spiffe://trust-domain.mesh/",
-										},
-									},
-								},
-								Default: api.Conf{
-									Http: &[]api.FaultInjectionConf{
-										{
-											Abort: &api.AbortConf{
-												HttpStatus: int32(444),
-												Percentage: intstr.FromString("12"),
-											},
-											Delay: &api.DelayConf{
-												Value:      *test.ParseDuration("55s"),
-												Percentage: intstr.FromString("55"),
-											},
-											ResponseBandwidth: &api.ResponseBandwidthConf{
-												Limit:      "111Mbps",
-												Percentage: intstr.FromString("62.9"),
-											},
-										},
-									},
-								},
-							},
-							Origin: policyOrigin("mfi-1"),
-						},
-					},
-				},
-			},
-			expectedListeners: []string{"basic_listener_1_rules.golden.yaml", "basic_listener_2_rules.golden.yaml"},
-		}),
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
 	)
 
 	It("should generate proper Envoy config for Egress", func() {

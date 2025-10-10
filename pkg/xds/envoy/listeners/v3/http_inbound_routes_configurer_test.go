@@ -58,13 +58,8 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-<<<<<<< HEAD
-					Configure(HttpConnectionManager(given.statsName, true, nil)).
-					Configure(HttpInboundRoutes(given.service, given.routes)))).
-=======
 					Configure(HttpConnectionManager(given.statsName, true, nil, true)).
-					Configure(HttpInboundRoutes(envoy_names.GetInboundRouteName(given.service), given.service, given.routes)))).
->>>>>>> fa3eb620b (fix(kuma-cp): configure Envoy internal addresses based on dp IPv6 support (#14652))
+					Configure(HttpInboundRoutes(given.service, given.routes)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
