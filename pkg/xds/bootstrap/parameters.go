@@ -55,4 +55,5 @@ type configParameters struct {
 	SystemCaPath         string
 	TransparentProxy     *tproxy_config.DataplaneConfig
 	UseDeltaXds          bool
+	IPv6Enabled          bool
 }

@@ -15,6 +15,7 @@ import (
 type StaticEndpointsConfigurer struct {
 	VirtualHostName string
 	Paths           []*envoy_common.StaticEndpointPath
+	IPv6Enabled     bool
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -72,7 +73,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		},
 		InternalAddressConfig: &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
 			UnixSockets: false,
-			CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(core_xds.LocalHostAddresses),
+			CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.IPv6Enabled, core_xds.LocalHostAddresses),
 		},
 	}
 	pbst, err := util_proto.MarshalAnyDeterministic(config)

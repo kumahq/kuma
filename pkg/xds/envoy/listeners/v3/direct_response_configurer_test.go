@@ -19,7 +19,7 @@ var _ = Describe("DirectResponseConfigurer", func() {
 				Path:       "/",
 				StatusCode: 200,
 				Response:   "test",
-			}}, core_xds.LocalHostAddresses)).
+			}}, core_xds.LocalHostAddresses, true)).
 			Build()
 
 		// then

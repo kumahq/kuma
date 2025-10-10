@@ -109,7 +109,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		switch protocol {
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 				Configure(envoy_listeners.Tracing(
 					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
 					sourceService,
@@ -126,7 +126,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.GrpcStats())
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 				Configure(envoy_listeners.Tracing(
 					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
 					sourceService,

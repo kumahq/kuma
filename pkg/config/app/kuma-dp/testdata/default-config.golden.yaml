@@ -13,6 +13,7 @@ dataplane:
   resilientComponentBaseBackoff: 5s
   resilientComponentMaxBackoff: 1m0s
 dataplaneRuntime:
+  IPv6Enabled: true
   binaryPath: envoy
   dynamicConfiguration:
     refreshInterval: 1s

@@ -125,6 +125,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		SystemCaPath:         request.SystemCaPath,
 		TransparentProxy:     request.TransparentProxy,
 		UseDeltaXds:          b.deltaXdsEnabled,
+		IPv6Enabled:          request.IPv6Enabled,
 	}
 
 	if params.Features.HasFeature(xds_types.FeatureDeltaGRPC) {

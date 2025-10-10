@@ -199,6 +199,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		},
 		SystemCaPath:     opts.Config.DataplaneRuntime.SystemCaPath,
 		TransparentProxy: opts.Config.DataplaneRuntime.TransparentProxy,
+		IPv6Enabled:      opts.Config.DataplaneRuntime.IPv6Enabled,
 	}
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {

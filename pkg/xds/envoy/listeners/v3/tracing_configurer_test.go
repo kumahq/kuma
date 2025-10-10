@@ -24,7 +24,7 @@ var _ = Describe("TracingConfigurer", func() {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(HttpConnectionManager("localhost:8080", false, nil)).
+					Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
 					Configure(Tracing(given.backend, "service", given.direction, given.destination, false)))).
 				Build()
 			// then

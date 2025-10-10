@@ -92,6 +92,7 @@ func applyToOutboundPassthrough(
 				APIVersion:        proxy.APIVersion,
 				InternalAddresses: proxy.InternalAddresses,
 				Conf:              conf,
+				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
 			}
 			err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 			if err != nil {

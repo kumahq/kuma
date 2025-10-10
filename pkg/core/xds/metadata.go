@@ -37,6 +37,7 @@ const (
 	FieldMetricsKeyPath                = "metricsKeyPath"
 	FieldSystemCaPath                  = "systemCaPath"
 	FieldTransparentProxy              = "transparentProxy"
+	FieldIPv6Enabled                   = "ipv6Enabled"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -69,6 +70,7 @@ type DataplaneMetadata struct {
 	MetricsKeyPath       string
 	SystemCaPath         string
 	TransparentProxy     *tproxy_dp.DataplaneConfig
+	IPv6Enabled          bool
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -177,6 +179,13 @@ func (m *DataplaneMetadata) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
 	return m.TransparentProxy
 }
 
+func (m *DataplaneMetadata) GetIPv6Enabled() bool {
+	if m == nil {
+		return false
+	}
+	return m.IPv6Enabled
+}
+
 func (m *DataplaneMetadata) HasFeature(feature string) bool {
 	if m == nil || m.Features == nil {
 		return false
@@ -249,6 +258,13 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 
 	if v := xdsMetadata.Fields[FieldTransparentProxy]; v.GetStructValue() != nil {
 		metadata.TransparentProxy = util_proto.MustFromMapOfAny[*tproxy_dp.DataplaneConfig](v.GetStructValue())
+	}
+
+	if xdsMetadata.Fields[FieldIPv6Enabled] != nil {
+		metadata.IPv6Enabled = xdsMetadata.Fields[FieldIPv6Enabled].GetBoolValue()
+	} else {
+		// For backward compatibility as previously this was always enabled
+		metadata.IPv6Enabled = true
 	}
 
 	if value := xdsMetadata.Fields[FieldDynamicMetadata]; value != nil {
