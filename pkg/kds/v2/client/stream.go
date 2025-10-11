@@ -46,6 +46,7 @@ func NewDeltaKDSStream(s KDSSyncServiceStream, clientID string, instanceID strin
 		latestReceived:     make(map[core_model.ResourceType]*latestReceived),
 		clientID:           clientID,
 		cpConfig:           cpConfig,
+		instanceID:         instanceID,
 	}
 }
 
