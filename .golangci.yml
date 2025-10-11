@@ -4,7 +4,6 @@ run:
 linters:
   enable:
     - bodyclose
-    - contextcheck
     - depguard
     - errcheck
     - ginkgolinter

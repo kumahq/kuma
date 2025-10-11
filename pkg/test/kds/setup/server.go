@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -288,6 +289,6 @@ func (b *KdsServerBuilder) WithTypes(types []model.ResourceType) *KdsServerBuild
 	return b
 }
 
-func (b *KdsServerBuilder) Delta() (kds_server_v2.Server, error) {
+func (b *KdsServerBuilder) Delta() (delta.Server, error) {
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, 100*time.Millisecond, b.providedFilter, b.providedMapper, 1*time.Second)
 }

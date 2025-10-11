@@ -11,7 +11,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
@@ -21,8 +20,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -178,7 +177,6 @@ var _ = Describe("Zone Sync", func() {
 
 	Context("GlobalToZone", func() {
 		var zoneSyncer sync_store_v2.ResourceSyncer
-		runtimeInfo := core_runtime.NewRuntimeInfo("global-inst", config_core.Global)
 
 		BeforeEach(func() {
 			globalStore = memory.NewStore()
@@ -199,7 +197,9 @@ var _ = Describe("Zone Sync", func() {
 					wg.Done()
 					GinkgoRecover()
 				}()
-				Expect(srv.GlobalToZoneSync(serverStream)).ToNot(HaveOccurred())
+				errorStream := mux.NewErrorRecorderStream(serverStream)
+				Expect(srv.DeltaStreamHandler(errorStream, "")).To(Succeed())
+				Expect(errorStream.Err()).ToNot(HaveOccurred())
 			}()
 
 			stop := make(chan struct{})
@@ -218,7 +218,7 @@ var _ = Describe("Zone Sync", func() {
 				syncClient := kds_client_v2.NewKDSSyncClient(
 					core.Log.WithName("kds-sink"),
 					kdsCtx.TypesSentByGlobal,
-					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
+					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, "global-inst", ""),
 					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
 					0,
 				)
