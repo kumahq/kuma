@@ -215,11 +215,12 @@ There might be cases where a user wants to migrate from one trust domain to anot
 ## Considered Options
 
 - Introduce a new field `mode`
+- Generate identity only when there is no provider section
 - Use a `kuma.io/effect` label
 
 ## Decision Outcome
 
-- Introduce a new field `mode`
+- Generate identity only when there is no provider section
 
 ## Design
 
@@ -261,6 +262,45 @@ This should have no effect, since `MeshIdentities` are selected based on lexicog
 #### Cons
 
 * Introduces an additional field in the MeshIdentity object.
+
+### Generate identity only when there is no provider section
+
+We could update the validation and reconciler for `MeshIdentity` so that they do not require the provider section.
+
+```yaml
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+```
+
+In this case, we would not create any certificates or issue new identities. The only change would be that the `MeshService` is updated with a new `SpiffeID`.
+
+#### Migration flow
+
+1. The user creates a `MeshIdentity` without a provider configuration.
+2. The corresponding `MeshServices` are updated with the new `SpiffeID`.
+3. The user adds the provider configuration to the `MeshIdentity` resource.
+4. Traffic continues to operate without downtime.
+
+#### Multiple `MeshIdentities` in `Active` mode
+
+This should have no effect, since `MeshIdentities` are selected based on lexicographic order.
+
+#### Pros
+
+* Doesn’t require introducing a new field.
+* Clean and straightforward to implement.
+
+#### Cons
+
+* Slightly unclear behavior.
 
 ### Use a `kuma.io/effect` label
 
