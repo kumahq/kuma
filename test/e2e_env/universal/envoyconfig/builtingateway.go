@@ -88,7 +88,9 @@ spec:
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Install(GatewayClientAppUniversal("gateway-client")).
 			Install(EchoServerApp(mesh, "echo-server", "echo-service", "universal")).
-			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
+			Install(GatewayProxyUniversal(mesh, "gateway-proxy", WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
+			}))).
 			Install(YamlUniversal(meshGateway())).
 			Install(YamlUniversal(meshHTTPRoute()))
 

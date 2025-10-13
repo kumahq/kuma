@@ -82,6 +82,7 @@ node:
     dynamicMetadata:
       test: value
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""
