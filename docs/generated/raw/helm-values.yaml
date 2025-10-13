@@ -343,6 +343,8 @@ controlPlane:
   # -- Security context at the pod level for control plane.
   podSecurityContext:
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- Security context at the container level for control plane.
   containerSecurityContext:

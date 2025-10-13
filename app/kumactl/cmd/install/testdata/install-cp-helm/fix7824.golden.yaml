@@ -569,6 +569,8 @@ spec:
             weight: 100
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: false
       restartPolicy: Always
