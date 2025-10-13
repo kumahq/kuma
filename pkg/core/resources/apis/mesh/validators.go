@@ -363,7 +363,7 @@ func ValidateTargetRef(
 		return err
 	}
 	if !slices.Contains(opts.SupportedKinds, ref.Kind) {
-		errMsg := "value is not supported"
+		errMsg := fmt.Sprintf("value '%s' is not supported", ref.Kind)
 		if optsErr := opts.SupportedKindsError; optsErr != "" {
 			errMsg = optsErr
 		}
@@ -454,10 +454,10 @@ func ValidateTargetRef(
 
 func ValidateMatch(match common_api.Match) validators.ValidationError {
 	var verr validators.ValidationError
-	if match.SpiffeId != nil {
-		_, err := spiffeid.FromString(match.SpiffeId.Value)
+	if match.SpiffeID != nil {
+		_, err := spiffeid.FromString(match.SpiffeID.Value)
 		if err != nil {
-			verr.AddViolation("spiffeId", "must be a valid Spiffe ID")
+			verr.AddViolation("spiffeID", "must be a valid Spiffe ID")
 		}
 	}
 	return verr

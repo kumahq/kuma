@@ -12,8 +12,8 @@ permissions:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.27.16-k3s1
-  K8S_MAX_VERSION: v1.32.2-k3s1
+  K8S_MIN_VERSION: v1.31.12-k3s1
+  K8S_MAX_VERSION: v1.33.4-k3s1
 jobs:
   test_unit:
     timeout-minutes: 25
@@ -23,13 +23,13 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
       - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
+          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - run: |
           make test
   gen_e2e_matrix:

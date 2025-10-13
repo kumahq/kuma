@@ -92,15 +92,15 @@ targetRef:
 rules:
   - default:
       deny: 
-        - spiffeId:
+        - spiffeID:
             type: Exact
             value: spiffe://trust.domain/service
       allow:
-        - spiffeId:
+        - spiffeID:
             type: Prefix
             value: spiffe://trust.domain
       allowWithShadowDeny:
-        - spiffeId:
+        - spiffeID:
             type: Exact
             value: spiffe://trust.domain/service-2
 `),
@@ -180,7 +180,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported
+    message: value 'MeshGatewayRoute' is not supported
 `,
 			}),
 			Entry("default is nil", testCase{
@@ -218,25 +218,25 @@ targetRef:
 rules:
   - default:
       deny: 
-        - spiffeId:
+        - spiffeID:
             type: Exact
             value: some-service
       allow:
-        - spiffeId:
+        - spiffeID:
             type: Prefix
             value: wrong
       allowWithShadowDeny:
-        - spiffeId:
+        - spiffeID:
             type: Exact
             value: test
 `,
 				expected: `
 violations:
-  - field: spec.rules[0].allow[0].spiffeId
+  - field: spec.rules[0].allow[0].spiffeID
     message: must be a valid Spiffe ID
-  - field: spec.rules[0].allowWithShadowDeny[0].spiffeId
+  - field: spec.rules[0].allowWithShadowDeny[0].spiffeID
     message: must be a valid Spiffe ID
-  - field: spec.rules[0].deny[0].spiffeId
+  - field: spec.rules[0].deny[0].spiffeID
     message: must be a valid Spiffe ID
 `,
 			}),

@@ -2,6 +2,7 @@ package inspect_test
 
 import (
 	"fmt"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,6 +22,7 @@ func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface
 		DataplanePort:         dpPort,
 		WorkloadIP:            ip,
 		WorkloadPort:          workloadPort,
+		InboundName:           strconv.Itoa(int(dpPort)),
 	}
 }
 

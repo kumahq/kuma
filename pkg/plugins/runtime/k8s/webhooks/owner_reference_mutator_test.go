@@ -78,8 +78,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               }
             }`,
 			expectedPatch: `
@@ -146,8 +145,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "default",
-                "name": "dp-1",
-                "creationTimestamp": null
+                "name": "dp-1"
               }
             }`,
 			expectedPatch: `
@@ -175,8 +173,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "default",
-                "name": "dp-1",
-                "creationTimestamp": null
+                "name": "dp-1"
               }
             }`,
 			expectedPatch: `

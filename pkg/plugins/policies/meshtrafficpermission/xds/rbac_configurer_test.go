@@ -64,9 +64,9 @@ var _ = Describe("RBACConfigurer", func() {
 						Default: v1alpha1.RuleConf{
 							Allow: &[]common_api.Match{
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.PrefixMatchType,
-										Value: "spiffeId://trust-domain.mesh/",
+										Value: "spiffe://trust-domain.mesh/",
 									},
 								},
 							},
@@ -96,7 +96,7 @@ filters:
                             typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                            prefix: spiffeId://trust-domain.mesh/
+                            prefix: spiffe://trust-domain.mesh/
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -114,9 +114,9 @@ filters:
 						Default: v1alpha1.RuleConf{
 							Deny: &[]common_api.Match{
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.PrefixMatchType,
-										Value: "spiffeId://trust-domain.mesh/",
+										Value: "spiffe://trust-domain.mesh/",
 									},
 								},
 							},
@@ -147,7 +147,7 @@ filters:
                             typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                            prefix: spiffeId://trust-domain.mesh/
+                            prefix: spiffe://trust-domain.mesh/
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -165,15 +165,15 @@ filters:
 						Default: v1alpha1.RuleConf{
 							Allow: &[]common_api.Match{
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.ExactMatchType,
-										Value: "spiffeId://trust-domain.mesh/ns/backend/v1",
+										Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 									},
 								},
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.ExactMatchType,
-										Value: "spiffeId://trust-domain.mesh/ns/backend/v2",
+										Value: "spiffe://trust-domain.mesh/ns/backend/v2",
 									},
 								},
 							},
@@ -205,14 +205,14 @@ filters:
                                     typedConfig:
                                         '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                                 valueMatch:
-                                    exact: spiffeId://trust-domain.mesh/ns/backend/v1
+                                    exact: spiffe://trust-domain.mesh/ns/backend/v1
                             - singlePredicate:
                                 input:
                                     name: envoy.matching.inputs.uri_san
                                     typedConfig:
                                         '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                                 valueMatch:
-                                    exact: spiffeId://trust-domain.mesh/ns/backend/v2
+                                    exact: spiffe://trust-domain.mesh/ns/backend/v2
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -230,9 +230,9 @@ filters:
 						Default: v1alpha1.RuleConf{
 							Deny: &[]common_api.Match{
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.ExactMatchType,
-										Value: "spiffeId://trust-domain.mesh/ns/backend/v1",
+										Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 									},
 								},
 							},
@@ -245,9 +245,9 @@ filters:
 						Default: v1alpha1.RuleConf{
 							Allow: &[]common_api.Match{
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.PrefixMatchType,
-										Value: "spiffeId://trust-domain.mesh/ns/backend",
+										Value: "spiffe://trust-domain.mesh/ns/backend",
 									},
 								},
 							},
@@ -278,7 +278,7 @@ filters:
                             typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                            exact: spiffeId://trust-domain.mesh/ns/backend/v1
+                            exact: spiffe://trust-domain.mesh/ns/backend/v1
                 - onMatch:
                     action:
                         name: envoy.filters.rbac.action
@@ -292,7 +292,7 @@ filters:
                             typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                            prefix: spiffeId://trust-domain.mesh/ns/backend
+                            prefix: spiffe://trust-domain.mesh/ns/backend
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -310,9 +310,9 @@ filters:
 						Default: v1alpha1.RuleConf{
 							AllowWithShadowDeny: &[]common_api.Match{
 								{
-									SpiffeId: &common_api.SpiffeIdMatch{
+									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.PrefixMatchType,
-										Value: "spiffeId://trust-domain.mesh/",
+										Value: "spiffe://trust-domain.mesh/",
 									},
 								},
 							},
@@ -342,7 +342,7 @@ filters:
                             typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                            prefix: spiffeId://trust-domain.mesh/
+                            prefix: spiffe://trust-domain.mesh/
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action
@@ -367,7 +367,7 @@ filters:
                             typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                            prefix: spiffeId://trust-domain.mesh/
+                            prefix: spiffe://trust-domain.mesh/
         onNoMatch:
             action:
                 name: envoy.filters.rbac.action

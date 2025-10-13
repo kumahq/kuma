@@ -7,21 +7,21 @@ spec:
   rules:
     - default:
         deny:
-          - spiffeId:
+          - spiffeID:
               type: Exact
               value: spiffe://trust-domain.mesh/ns/legacy
-          - spiffeId:
+          - spiffeID:
               type: Exact
               value: spiffe://trust-domain.mesh/ns/legacy-2
         allow:
-          - spiffeId:
+          - spiffeID:
               type: Prefix
               value: spiffe://trust-domain.mesh
         allowWithShadowDeny:
-          - spiffeId:
+          - spiffeID:
               type: Exact
               value: spiffe://trust-domain.mesh/ns/new
-          - spiffeId:
+          - spiffeID:
               type: Exact
               value: spiffe://trust-domain.mesh/ns/new-2
-              
+

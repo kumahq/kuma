@@ -56,7 +56,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -106,7 +106,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -220,7 +220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -272,7 +272,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -608,7 +608,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -806,6 +806,118 @@ spec:
                       type: object
                   required:
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: Rules defines inbound fault injection configuration
+                items:
+                  properties:
+                    default:
+                      description: Default defines fault configuration
+                      properties:
+                        http:
+                          description: Http allows to define list of Http faults between
+                            dataplanes.
+                          items:
+                            description: FaultInjection defines the configuration
+                              of faults between dataplanes.
+                            properties:
+                              abort:
+                                description: |-
+                                  Abort defines a configuration of not delivering requests to destination
+                                  service and replacing the responses from destination dataplane by
+                                  predefined status code
+                                properties:
+                                  httpStatus:
+                                    description: HTTP status code which will be returned
+                                      to source side
+                                    format: int32
+                                    type: integer
+                                  percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    description: |-
+                                      Percentage of requests on which abort will be injected, has to be
+                                      either int or decimal represented as string.
+                                    x-kubernetes-int-or-string: true
+                                required:
+                                - httpStatus
+                                - percentage
+                                type: object
+                              delay:
+                                description: Delay defines configuration of delaying
+                                  a response from a destination
+                                properties:
+                                  percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    description: |-
+                                      Percentage of requests on which delay will be injected, has to be
+                                      either int or decimal represented as string.
+                                    x-kubernetes-int-or-string: true
+                                  value:
+                                    description: The duration during which the response
+                                      will be delayed
+                                    type: string
+                                required:
+                                - percentage
+                                - value
+                                type: object
+                              responseBandwidth:
+                                description: |-
+                                  ResponseBandwidth defines a configuration to limit the speed of
+                                  responding to the requests
+                                properties:
+                                  limit:
+                                    description: |-
+                                      Limit is represented by value measure in Gbps, Mbps, kbps, e.g.
+                                      10kbps
+                                    type: string
+                                  percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    description: |-
+                                      Percentage of requests on which response bandwidth limit will be
+                                      either int or decimal represented as string.
+                                    x-kubernetes-int-or-string: true
+                                required:
+                                - limit
+                                - percentage
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                    matches:
+                      description: Matches defines list of matches for which fault
+                        injection will be applied
+                      items:
+                        properties:
+                          spiffeID:
+                            description: SpiffeID defines a matcher configuration
+                              for SpiffeID matching
+                            properties:
+                              type:
+                                description: Type defines how to match incoming traffic
+                                  by SpiffeID. `Exact` or `Prefix` are allowed.
+                                enum:
+                                - Exact
+                                - Prefix
+                                type: string
+                              value:
+                                description: Value is SpiffeId of a client that needs
+                                  to match for the configuration to be applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                        type: object
+                      type: array
+                  required:
+                  - default
                   type: object
                 type: array
               targetRef:
@@ -1036,7 +1148,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -1147,7 +1259,7 @@ spec:
                       Claims lists the names of resources, defined in spec.resourceClaims,
                       that are used by this container.
 
-                      This is an alpha field and requires enabling the
+                      This field depends on the
                       DynamicResourceAllocation feature gate.
 
                       This field is immutable. It can only be set for containers.
@@ -1263,7 +1375,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1369,7 +1481,7 @@ spec:
                       Claims lists the names of resources, defined in spec.resourceClaims,
                       that are used by this container.
 
-                      This is an alpha field and requires enabling the
+                      This field depends on the
                       DynamicResourceAllocation feature gate.
 
                       This field is immutable. It can only be set for containers.
@@ -1619,7 +1731,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -1669,7 +1781,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -1721,7 +1833,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -2113,7 +2225,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2794,7 +2906,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshidentities.kuma.io
 spec:
   group: kuma.io
@@ -3063,7 +3175,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -3113,7 +3225,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -3163,7 +3275,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -3828,7 +3940,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -4119,7 +4231,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -4317,7 +4429,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4491,7 +4603,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -5043,7 +5155,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -5677,7 +5789,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -6190,7 +6302,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -6412,7 +6524,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6700,7 +6812,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -6772,7 +6884,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -7201,7 +7313,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -7503,7 +7615,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -7790,7 +7902,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7935,13 +8047,13 @@ spec:
                             access will be allowed
                           items:
                             properties:
-                              spiffeId:
-                                description: SpiffeId defines a matcher configuration
-                                  for SpiffeId matching
+                              spiffeID:
+                                description: SpiffeID defines a matcher configuration
+                                  for SpiffeID matching
                                 properties:
                                   type:
                                     description: Type defines how to match incoming
-                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      traffic by SpiffeID. `Exact` or `Prefix` are
                                       allowed.
                                     enum:
                                     - Exact
@@ -7963,13 +8075,13 @@ spec:
                             requests are denied
                           items:
                             properties:
-                              spiffeId:
-                                description: SpiffeId defines a matcher configuration
-                                  for SpiffeId matching
+                              spiffeID:
+                                description: SpiffeID defines a matcher configuration
+                                  for SpiffeID matching
                                 properties:
                                   type:
                                     description: Type defines how to match incoming
-                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      traffic by SpiffeID. `Exact` or `Prefix` are
                                       allowed.
                                     enum:
                                     - Exact
@@ -7990,13 +8102,13 @@ spec:
                             will be denied
                           items:
                             properties:
-                              spiffeId:
-                                description: SpiffeId defines a matcher configuration
-                                  for SpiffeId matching
+                              spiffeID:
+                                description: SpiffeID defines a matcher configuration
+                                  for SpiffeID matching
                                 properties:
                                   type:
                                     description: Type defines how to match incoming
-                                      traffic by SpiffeId. `Exact` or `Prefix` are
+                                      traffic by SpiffeID. `Exact` or `Prefix` are
                                       allowed.
                                     enum:
                                     - Exact
@@ -8092,7 +8204,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshtrusts.kuma.io
 spec:
   group: kuma.io
@@ -8184,7 +8296,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -8234,7 +8346,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -8284,7 +8396,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -8334,7 +8446,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -8384,7 +8496,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -8434,7 +8546,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -8484,7 +8596,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -8534,7 +8646,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8584,7 +8696,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -8634,7 +8746,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -8684,7 +8796,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -8734,7 +8846,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -8792,7 +8904,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8842,7 +8954,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -8900,7 +9012,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8951,7 +9063,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -9001,7 +9113,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -9051,7 +9163,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -9101,7 +9213,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -9151,7 +9263,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -9239,7 +9351,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -9991,7 +10103,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -11509,6 +11621,8 @@ spec:
             weight: 100
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       restartPolicy: Always

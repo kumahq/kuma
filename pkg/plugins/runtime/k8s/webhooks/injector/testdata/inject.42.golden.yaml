@@ -14,7 +14,6 @@ metadata:
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
     kuma.io/xds-transport-protocol-variant: DELTA_GRPC
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
     run: busybox

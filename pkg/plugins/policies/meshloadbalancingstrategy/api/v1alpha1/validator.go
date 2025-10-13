@@ -49,7 +49,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 		switch topTargetRef.Kind {
 		case common_api.MeshGateway:
 			if toItem.Default.LoadBalancer != nil {
-				supportedKindsError = fmt.Sprintf("value is not supported, only %s is allowed if loadBalancer is set", common_api.Mesh)
+				supportedKindsError = fmt.Sprintf("value '%s' is not supported, only %s is allowed if loadBalancer is set", topTargetRef.Kind, common_api.Mesh)
 				supportedKinds = []common_api.TargetRefKind{
 					common_api.Mesh,
 				}

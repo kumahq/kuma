@@ -38,7 +38,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		protocol := core_meta.ParseProtocol(iface.GetProtocol())
-		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
+		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
@@ -152,25 +152,26 @@ func FilterChainBuilder(
 ) *envoy_listeners.FilterChainBuilder {
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.WorkloadPort)
+	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 	routeConfigName := getName(contextualName, envoy_names.GetInboundRouteName(service))
 	virtualHostName := getName(contextualName, service)
 
 	cluster := plugins_xds.NewClusterBuilder().WithName(localClusterName).Build()
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
+
 	switch protocol {
 	// configuration for HTTP case
 	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
+			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
 	case core_meta.ProtocolGRPC:
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
+			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).

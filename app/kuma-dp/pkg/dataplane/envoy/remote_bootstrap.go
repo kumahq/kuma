@@ -185,9 +185,33 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 				KumaDpCompatible: envoyVersion.KumaDpCompatible,
 			},
 		},
-		DynamicMetadata:      metadata,
-		DNSPort:              opts.Config.DNS.EnvoyDNSPort,
-		ReadinessPort:        opts.Config.Dataplane.ReadinessPort,
+		DynamicMetadata: metadata,
+		DNSPort:         opts.Config.DNS.EnvoyDNSPort,
+		ReadinessPort:   opts.Config.Dataplane.ReadinessPort,
+		// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
+		//
+		// IMPORTANT: The BootstrapRequest JSON tag for this field is intentionally
+		// "appProbeProxyDisabled".
+		//
+		// This DP request mirrors the CP contract. Since v2.9.0 the JSON wire key for
+		// this setting has been "appProbeProxyDisabled". Both CP and DP rely on this
+		// shape. Renaming the field to AppProbeProxyDisabled or changing the tag to
+		// "appProbeProxyEnabled" will cause behavior inversions with mixed versions.
+		//
+		// Upgrade pitfalls if changed:
+		//   - New DP -> Old CP:
+		//       Old CP reads "appProbeProxyDisabled: true" into
+		//       AppProbeProxyEnabled = true, which treats the proxy as enabled.
+		//   - Old DP -> New CP:
+		//       Old DP still sends the "disabled" wire key. A new CP expecting a
+		//       different field/tag will flip the meaning.
+		//
+		// These flips can break probes and traffic during rolling upgrades. We avoid
+		// that by keeping this exact JSON tag and the current semantics.
+		//
+		// DO NOT rename, DO NOT change the JSON tag, and DO NOT invert the meaning.
+		//
+		// Context: https://github.com/kumahq/kuma/issues/13885
 		AppProbeProxyEnabled: opts.Config.ApplicationProbeProxyServer.Port > 0,
 		OperatingSystem:      b.operatingSystem,
 		Features:             features,
@@ -199,6 +223,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		},
 		SystemCaPath:     opts.Config.DataplaneRuntime.SystemCaPath,
 		TransparentProxy: opts.Config.DataplaneRuntime.TransparentProxy,
+		IPv6Enabled:      opts.Config.DataplaneRuntime.IPv6Enabled,
 	}
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {

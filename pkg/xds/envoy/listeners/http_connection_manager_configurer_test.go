@@ -17,13 +17,14 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 		opts              []Opt
 		internalAddresses []core_xds.InternalAddress
 		expected          string
+		ipv6Enabled       bool
 	}
 
 	Context("V3", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				opts := append([]Opt{
-					HttpConnectionManager("test", false, given.internalAddresses),
+					HttpConnectionManager("test", false, given.internalAddresses, given.ipv6Enabled),
 				}, given.opts...)
 
 				// when
@@ -41,7 +42,8 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("set the server header", testCase{
-				opts: []Opt{ServerHeader("test-server")},
+				opts:        []Opt{ServerHeader("test-server")},
+				ipv6Enabled: true,
 				expected: `
           filters:
           - name: envoy.filters.network.http_connection_manager
@@ -62,7 +64,8 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 			}),
 
 			Entry("set path normalization", testCase{
-				opts: []Opt{EnablePathNormalization()},
+				opts:        []Opt{EnablePathNormalization()},
+				ipv6Enabled: true,
 				expected: `
           filters:
           - name: envoy.filters.network.http_connection_manager
@@ -85,7 +88,8 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 			}),
 
 			Entry("strip host port", testCase{
-				opts: []Opt{StripHostPort()},
+				opts:        []Opt{StripHostPort()},
+				ipv6Enabled: true,
 				expected: `
           filters:
           - name: envoy.filters.network.http_connection_manager
@@ -108,8 +112,34 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 			Entry("internal address config", testCase{
 				internalAddresses: []core_xds.InternalAddress{
 					{PrefixLen: 16, AddressPrefix: "10.17.0.0"},
+					{PrefixLen: 10, AddressPrefix: "fe80"},
 				},
-				opts: []Opt{},
+				ipv6Enabled: true,
+				opts:        []Opt{},
+				expected: `
+          filters:
+          - name: envoy.filters.network.http_connection_manager
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              httpFilters:
+              - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              statPrefix: test
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 10.17.0.0
+                    prefixLen: 16
+                  - addressPrefix: fe80
+                    prefixLen: 10`,
+			}),
+			Entry("internal address config", testCase{
+				internalAddresses: []core_xds.InternalAddress{
+					{PrefixLen: 16, AddressPrefix: "10.17.0.0"},
+					{PrefixLen: 10, AddressPrefix: "fe80::"},
+				},
+				ipv6Enabled: false,
+				opts:        []Opt{},
 				expected: `
           filters:
           - name: envoy.filters.network.http_connection_manager

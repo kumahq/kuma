@@ -14,7 +14,6 @@ metadata:
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/iptables-logs: "true"
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
     run: busybox

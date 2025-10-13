@@ -96,7 +96,7 @@ spec:
 			g.Expect(resp.Instance).To(ContainSubstring("test-server"))
 		}, "30s", "1s").Should(Succeed())
 	},
-		Entry("exact match on spiffeId", fmt.Sprintf(`
+		Entry("exact match on spiffeID", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
@@ -108,11 +108,11 @@ spec:
   rules:
     - default:
         allow:
-          - spiffeId:
+          - spiffeID:
               type: Exact
               value: spiffe://%s.default.mesh.local/ns/%s/sa/default
 `, namespace, mesh, mesh, namespace)),
-		Entry("match on spiffeId prefix", fmt.Sprintf(`
+		Entry("match on spiffeID prefix", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
@@ -124,7 +124,7 @@ spec:
   rules:
     - default:
         allow:
-          - spiffeId:
+          - spiffeID:
               type: Prefix
               value: spiffe://%s.default.mesh.local
 `, namespace, mesh, mesh)),

@@ -3,19 +3,17 @@ components:
     ProvidedCertificateAuthorityConfig:
       properties:
         cert:
-          properties:
-            Type:
-              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-          required:
-          - Type
-          type: object
+          oneOf:
+          - $ref: /specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File
+          - $ref: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline
+          - $ref: /specs/protoresources/datasource_inlinestring/schema.yaml#/components/schemas/DataSource_InlineString
+          - $ref: /specs/protoresources/datasource_secret/schema.yaml#/components/schemas/DataSource_Secret
         key:
-          properties:
-            Type:
-              description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-          required:
-          - Type
-          type: object
+          oneOf:
+          - $ref: /specs/protoresources/datasource_file/schema.yaml#/components/schemas/DataSource_File
+          - $ref: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline
+          - $ref: /specs/protoresources/datasource_inlinestring/schema.yaml#/components/schemas/DataSource_InlineString
+          - $ref: /specs/protoresources/datasource_secret/schema.yaml#/components/schemas/DataSource_Secret
       type: object
 info:
   x-ref-schema-name: ProvidedCertificateAuthorityConfig

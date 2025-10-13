@@ -158,7 +158,7 @@ func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.Liste
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create HTTP client from Manager config")
 	}
-	client, err := apiutil.RESTClientForGVK(gvk, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()), httpClient)
+	client, err := apiutil.RESTClientForGVK(gvk, false, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()), httpClient)
 	if err != nil {
 		return nil, err
 	}

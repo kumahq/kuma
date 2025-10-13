@@ -9,8 +9,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/spf13/cobra"
 
+	commontemplate "github.com/kumahq/kuma/tools/common/template"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 )
 
 func newCoreResource(rootArgs *args) *cobra.Command {
@@ -34,7 +34,7 @@ func newCoreResource(rootArgs *args) *cobra.Command {
 			}
 
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.resource.go")
-			return save.GoTemplate(resourceTemplate, pconfig, outPath)
+			return commontemplate.GoTemplate(resourceTemplate, pconfig, outPath)
 		},
 	}
 

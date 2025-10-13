@@ -15,7 +15,6 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/exclude-inbound-ports: 1234,1235
     traffic.kuma.io/exclude-outbound-ports: "1236"
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
     run: busybox

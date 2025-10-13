@@ -9,24 +9,23 @@ on:
         default: '10 minutes'
 permissions: {}
 jobs:
+  active-branches:
+    uses: ./.github/workflows/_get-active-branches.yaml
+    permissions:
+      contents: read
   find-prs:
+    runs-on: ubuntu-24.04
+    needs: active-branches
     permissions:
       contents: read
       pull-requests: read
     env:
       LOOK_BACK: ${{ github.event.inputs.lookback || '10 minutes' }}
       GH_TOKEN: ${{ github.token }}
-    runs-on: ubuntu-24.04
     outputs:
       recent_prs: ${{ steps.get-recent-prs.outputs.out }}
-      active_branches: ${{ steps.active-branches.outputs.out }}
+      active_branches: ${{ needs.active-branches.outputs.out }}
     steps:
-      - id: active-branches
-        name: Get active branches
-        run: |
-          echo "out<<EOF" >> $GITHUB_OUTPUT
-          gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
       - id: get-recent-prs
         name: Get recent PRs
         run: |
@@ -39,7 +38,7 @@ jobs:
       - name: Show outputs
         env:
           RECENT_PRS: ${{ steps.get-recent-prs.outputs.out }}
-          ACTIVE_BRANCHES: ${{ steps.active-branches.outputs.out }}
+          ACTIVE_BRANCHES: ${{ needs.active-branches.outputs.out }}
         run: |
           echo "::group::recent-prs"
           echo "${RECENT_PRS}"

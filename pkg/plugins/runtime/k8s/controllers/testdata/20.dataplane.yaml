@@ -1,6 +1,5 @@
 mesh: default
 metadata:
-  creationTimestamp: null
   labels:
     app: example
     k8s.kuma.io/namespace: demo

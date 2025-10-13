@@ -94,8 +94,10 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 		return errors.Wrapf(err, "failed to start port-forward to API Server (port %d)", 5681)
 	}
 
-	if c.madsFwd, err = c.cluster.PortForward(k8s.ResourceTypeService, kumaCpSvc.Name, kumaCpSvc.Namespace, 5676); err != nil {
-		return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
+	if c.mode != core.Global {
+		if c.madsFwd, err = c.cluster.PortForward(k8s.ResourceTypeService, kumaCpSvc.Name, kumaCpSvc.Namespace, 5676); err != nil {
+			return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
+		}
 	}
 
 	return nil
@@ -103,7 +105,9 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 func (c *K8sControlPlane) ClosePortForwards() {
 	c.portFwd.Close()
-	c.madsFwd.Close()
+	if c.mode != core.Global {
+		c.madsFwd.Close()
+	}
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {

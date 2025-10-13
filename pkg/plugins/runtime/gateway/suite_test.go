@@ -140,7 +140,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		Mesh:         meshCtx,
 	}
 
-	proxy, err := b.Build(context.TODO(), key, &core_xds.DataplaneMetadata{}, meshCtx)
+	proxy, err := b.Build(context.TODO(), key, &core_xds.DataplaneMetadata{IPv6Enabled: true}, meshCtx)
 	Expect(err).To(Succeed())
 
 	return &ctx, proxy

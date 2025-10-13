@@ -89,6 +89,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 							DataplanePort:         80,
 							WorkloadIP:            "192.168.0.1",
 							WorkloadPort:          8080,
+							InboundName:           "80",
 						}: &core_mesh.TrafficPermissionResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "tp-1",
@@ -121,6 +122,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 							DataplanePort:         80,
 							WorkloadIP:            "192.168.0.1",
 							WorkloadPort:          8080,
+							InboundName:           "80",
 						}: []*core_mesh.FaultInjectionResource{{Spec: &mesh_proto.FaultInjection{
 							Sources: []*mesh_proto.Selector{
 								{
@@ -151,6 +153,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 							DataplanePort:         80,
 							WorkloadIP:            "192.168.0.1",
 							WorkloadPort:          8080,
+							InboundName:           "80",
 						}: []*core_mesh.RateLimitResource{
 							{
 								Spec: &mesh_proto.RateLimit{

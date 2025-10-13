@@ -197,10 +197,13 @@ type ResourceTypeDescription struct {
 	PluralDisplayName string `json:"pluralDisplayName"`
 
 	// Policy information about a policy
-	Policy              *PolicyDescription           `json:"policy,omitempty"`
-	ReadOnly            bool                         `json:"readOnly"`
-	Scope               ResourceTypeDescriptionScope `json:"scope"`
-	SingularDisplayName string                       `json:"singularDisplayName"`
+	Policy   *PolicyDescription           `json:"policy,omitempty"`
+	ReadOnly bool                         `json:"readOnly"`
+	Scope    ResourceTypeDescriptionScope `json:"scope"`
+
+	// ShortName the short name of the resource type used in KRIs and kubectl
+	ShortName           string `json:"shortName"`
+	SingularDisplayName string `json:"singularDisplayName"`
 }
 
 // ResourceTypeDescriptionScope defines model for ResourceTypeDescription.Scope.

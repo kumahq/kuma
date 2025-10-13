@@ -126,7 +126,7 @@ func (c E2eConfig) AutoConfigure() error {
 			Config.CNIConf = CniConf{
 				ConfName: "10-flannel.conflist",
 				NetDir:   "/var/lib/rancher/k3s/agent/etc/cni/net.d",
-				BinDir:   "/bin",
+				BinDir:   "/var/lib/rancher/k3s/data/cni",
 			}
 		case K3dCalicoK8sType:
 			Config.CNIConf = CniConf{

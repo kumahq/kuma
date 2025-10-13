@@ -15,34 +15,16 @@ env:
   WORKFLOW_ID_TO_TRIGGER: build-test-distribute.yaml
 
 jobs:
-  get-active-release-branches:
-    runs-on: ubuntu-24.04
+  active-branches:
+    uses: ./.github/workflows/_get-active-branches.yaml
     permissions:
       contents: read
-    outputs:
-      branches: ${{ steps.get-branches.outputs.branches }}
-    steps:
-      - name: "Get active branches"
-        id: get-branches
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          REPOSITORY: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          branches=$(gh api repos/$REPOSITORY/contents/active-branches.json \
-            --jq '[.content | @base64d | fromjson | .[] | select(. != "'"$DEFAULT_BRANCH"'")]')
-
-          if [[ "$branches" == "[]" || -z "$branches" ]]; then
-            echo "No active branches to process"
-            exit 1
-          fi
-
-          echo -e "Active release branches:\n\`\`\`json\n$branches\n\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-          echo "branches=$branches" >> $GITHUB_OUTPUT
+    with:
+      excludeDefault: true
+      summary: true
 
   trigger-build-test-distribute:
-    needs: get-active-release-branches
+    needs: active-branches
     runs-on: ubuntu-24.04
     permissions:
       actions: write # required to trigger workflows
@@ -50,7 +32,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        branch: ${{ fromJSON(needs.get-active-release-branches.outputs.branches) }}
+        branch: ${{ fromJSON(needs.active-branches.outputs.out) }}
       fail-fast: false
       max-parallel: 1
     env:

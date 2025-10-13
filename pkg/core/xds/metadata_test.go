@@ -26,8 +26,10 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			Expect(*metadata).To(Equal(given.expected))
 		},
 		Entry("from empty node", testCase{
-			node:     &structpb.Struct{},
-			expected: xds.DataplaneMetadata{},
+			node: &structpb.Struct{},
+			expected: xds.DataplaneMetadata{
+				IPv6Enabled: true,
+			},
 		}),
 		Entry("from non-empty node", testCase{
 			node: &structpb.Struct{
@@ -65,6 +67,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				SystemCaPath:         "/etc/certs/cert.pem",
 				ReadinessPort:        9300,
 				AppProbeProxyEnabled: true,
+				IPv6Enabled:          true,
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{
@@ -87,6 +90,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			},
 			expected: xds.DataplaneMetadata{
 				DynamicMetadata: map[string]string{},
+				IPv6Enabled:     true,
 			},
 		}),
 	)

@@ -50,6 +50,7 @@ node:
     dataplane.proxyType: dataplane
     features:
     - feature-delta-grpc
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""
