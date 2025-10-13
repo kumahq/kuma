@@ -4,20 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/emicklei/go-restful/v3"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type kriEndpoint struct {
-	k8sMapper  k8s.ResourceMapperFunc
-	resManager manager.ResourceManager
+	k8sMapper   k8s.ResourceMapperFunc
+	resManager  manager.ResourceManager
+	cpMode      config_core.CpMode
+	environment config_core.EnvironmentType
+	cpZone      string
 }
 
 func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
@@ -31,17 +35,18 @@ func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
 func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		kriParam := request.PathParameter("kri")
+		namespace := request.PathParameter("namespace")
 		identifier, err := kri.FromString(kriParam)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not parse KRI")
 		}
 
-		resource, err := k.findByKri(identifier)
+		resource, err := k.findByKri(request.Request.Context(), identifier, namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 		}
 
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper , request.QueryParameter("namespace"))
+		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
 		}
@@ -52,13 +57,13 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) findByKri(ctx context.Context ,identifier kri.Identifier) (core_model.Resource, error) {
+func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier, namespace string) (core_model.Resource, error) {
 	descriptor, err := getDescriptor(identifier.ResourceType)
 	if err != nil {
 		return nil, err
 	}
 	resource := descriptor.NewObject()
-	name := getCoreName(identifier.Name)
+	name := k.getCoreName(identifier, namespace)
 	meshName := identifier.Mesh
 
 	if err := k.resManager.Get(ctx, resource, store.GetByKey(name, meshName)); err != nil {
@@ -68,8 +73,17 @@ func (k *kriEndpoint) findByKri(ctx context.Context ,identifier kri.Identifier) 
 	return resource, nil
 }
 
-func getCoreName(name string) string {
-
+func (k *kriEndpoint) getCoreName(kri kri.Identifier, namespace string) string {
+	name := kri.Name
+	if kri.IsLocallyOriginated(k.cpMode, k.cpZone) {
+		if k.environment == config_core.UniversalEnvironment {
+			return name
+		} else {
+			return name + "." + namespace
+		}
+	} else {
+		return hash.HashedName(kri.Mesh, name, namespace, kri.Zone)
+	}
 }
 
 func getDescriptor(resourceType core_model.ResourceType) (*core_model.ResourceTypeDescriptor, error) {

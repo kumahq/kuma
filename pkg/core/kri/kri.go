@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 
@@ -40,6 +41,10 @@ func (i Identifier) String() string {
 
 func (i Identifier) IsEmpty() bool {
 	return i == (Identifier{})
+}
+
+func (i Identifier) IsLocallyOriginated(mode config_core.CpMode, zone string) bool {
+	return zone == i.Zone
 }
 
 func From(r core_model.Resource) Identifier {
