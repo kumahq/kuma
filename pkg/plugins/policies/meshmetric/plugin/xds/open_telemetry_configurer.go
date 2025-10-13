@@ -13,6 +13,7 @@ type OpenTelemetryConfigurer struct {
 	ClusterName  string
 	SocketName   string
 	ApiVersion   core_xds.APIVersion
+	IPv6Enabled  bool
 }
 
 func (oc *OpenTelemetryConfigurer) ConfigureCluster(isIPv6 bool) (envoy_common.NamedResource, error) {
@@ -29,7 +30,7 @@ func (oc *OpenTelemetryConfigurer) ConfigureListener() (envoy_common.NamedResour
 		Configure(envoy_listeners.PipeListener(oc.SocketName)).
 		Configure(envoy_listeners.FilterChain(
 			envoy_listeners.NewFilterChainBuilder(oc.ApiVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(oc.ListenerName, []*envoy_common.StaticEndpointPath{
+				Configure(envoy_listeners.StaticEndpoints(oc.IPv6Enabled, oc.ListenerName, []*envoy_common.StaticEndpointPath{
 					{
 						ClusterName: oc.ClusterName,
 						Path:        "/",
