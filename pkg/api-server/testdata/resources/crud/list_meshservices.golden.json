@@ -2,11 +2,11 @@
  "total": 2,
  "items": [
   {
-   "type": "MeshService",
-   "mesh": "default",
-   "name": "redis-1",
    "creationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_msvc_default___redis-1_",
+   "mesh": "default",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "name": "redis-1",
    "spec": {
     "state": "Unavailable",
     "selector": {
@@ -30,14 +30,15 @@
     ],
     "tls": {},
     "dataplaneProxies": {}
-   }
+   },
+   "type": "MeshService"
   },
   {
-   "type": "MeshService",
-   "mesh": "default",
-   "name": "redis-2",
    "creationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_msvc_default___redis-2_",
+   "mesh": "default",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "name": "redis-2",
    "spec": {
     "state": "Unavailable",
     "selector": {
@@ -61,7 +62,8 @@
     ],
     "tls": {},
     "dataplaneProxies": {}
-   }
+   },
+   "type": "MeshService"
   }
  ],
  "next": null

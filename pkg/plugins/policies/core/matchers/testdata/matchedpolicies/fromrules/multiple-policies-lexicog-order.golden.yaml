@@ -6,11 +6,13 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___rule-b_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-b
       type: MeshTrafficPermission
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___rule-a_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-a
@@ -24,6 +26,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___rule-b_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-b
@@ -37,6 +40,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___rule-b_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-b

@@ -32,6 +32,7 @@ kri_m____mesh-1_:
   OriginByMatches: {}
   Resource:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_m____mesh-1_
     modificationTime: "0001-01-01T00:00:00Z"
     name: mesh-1
     type: Mesh

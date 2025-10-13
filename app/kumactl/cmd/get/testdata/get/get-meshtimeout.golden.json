@@ -1,9 +1,6 @@
 {
-  "type": "MeshTimeout",
-  "mesh": "default",
-  "name": "meshtimeout-1",
   "creationTime": "0001-01-01T00:00:00Z",
-  "modificationTime": "0001-01-01T00:00:00Z",
+  "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-2_",
   "labels": {
     "k8s.kuma.io/namespace": "kong-mesh-system",
     "kuma.io/display-name": "timeout-2",
@@ -11,6 +8,9 @@
     "kuma.io/origin": "zone",
     "kuma.io/zone": "my-zone"
   },
+  "mesh": "default",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "name": "meshtimeout-1",
   "spec": {
     "targetRef": {
       "kind": "Mesh",
@@ -31,5 +31,6 @@
         }
       }
     ]
-  }
+  },
+  "type": "MeshTimeout"
 }

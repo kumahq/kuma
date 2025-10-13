@@ -6,6 +6,7 @@
       "name": "egress-zone-1",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_ze____egress-zone-1_",
       "networking": {
         "address": "1.1.1.1",
         "port": 10001
@@ -16,6 +17,7 @@
       "name": "egress-zone-2",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_ze____egress-zone-2_",
       "zone": "us-east",
       "networking": {
         "address": "3.3.3.3",
