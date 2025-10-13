@@ -55,6 +55,7 @@ node:
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""

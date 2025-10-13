@@ -27,14 +27,13 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(StaticEndpoints(given.listenerName,
-						[]*envoy_common.StaticEndpointPath{
-							{
-								ClusterName: given.clusterName,
-								Path:        given.path,
-								RewritePath: "/stats/prometheus",
-							},
-						})))).
+					Configure(StaticEndpoints(true, given.listenerName, []*envoy_common.StaticEndpointPath{
+						{
+							ClusterName: given.clusterName,
+							Path:        given.path,
+							RewritePath: "/stats/prometheus",
+						},
+					})))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

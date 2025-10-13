@@ -41,7 +41,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNami
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 					Configure(
-						envoy_listeners.DirectResponse(listenerName, []v3.DirectResponseEndpoints{}, core_xds.LocalHostAddresses),
+						envoy_listeners.DirectResponse(listenerName, []v3.DirectResponseEndpoints{}, core_xds.LocalHostAddresses, proxy.Metadata.GetIPv6Enabled()),
 					),
 			)).Build()
 		listener = nr.(*envoy_listener.Listener)
