@@ -62,76 +62,14 @@ Use cases:
 
 ### Frontend & OpenAPI
 
-#### Generic endpoint
-
-There are multiple options that we are considering mainly around issues with automatic type generation for frontend clients etc. Whichever one of those we choose we would recommend always having an additional generic endpoint specified in the OpenAPI schema. This allows people to discover and use the API simply by using the form `/_kri/:kri` if they wish, but they get no types. Moreover this approach is necessary in order to retrieve user-defined policies which we cannot statically define at build time.
-
-The type associated with endpoint can just use a very generic type containing fields common to all KRI based resources, such as `name`, `type` and preferably a `kri` field itself.
-
-#### Option A: Single endpoint with multiple statically defined variants
-
-**Idea**: Provide a single endpoint rooted under `/_kri` but provide statically defined "variants" for all resources based on the KRI shortname.
-
-- `/_kri/kri_msvc_{mesh}_{zone}_{namespace}_{name}_{sectionName}`
-- `/_kri/kri_zi_{mesh}_{zone}_{namespace}_{name}_{sectionName}`
-
-Note: this option differs to Option B in that we are statically specifying _each resource type_ in OpenAPI instead of relying on a single generic specification (`/_kri/{kri}`) for very differently shaped responses.
-The key difference here is that we are using `_` separated segments in the KRI instead of `/` separated segments in the URL.
-
-##### Optional parameters
-
-Some of the parameters in the KRI are optional (like `zone` for universal resources, or `mesh` for `ZoneIngress`).
-Usually parameters take out the whole segment, e.g. `/meshes/{mesh}`, but here we have a parameter in the middle of a segment.
-This is a gray area in the OpenAPI spec because path parameters require `required: true` to be set and it is unclear whether a required parameter can accept an empty string.
-OpenAPI currently has a [`allowEmptyValues` parameter](https://spec.openapis.org/oas/v3.2.0.html#common-fixed-fields), but this is only allowed on query parameters and is deprecated, so we should not depend on this.
-We could handle this by defining multiple endpoints for each combination of optional parameters, but that would lead to an explosion of paths.
-We could also not care about this and just let the parameter be empty and handle it on our side, but that could lead to:
-- OpenAPI spec technically being invalid.
-- OpenAPI spec being updated in the future to handle this case some other way.
-- Some generated tools not handling this case well (e.g. Swagger UI doesn't allow this).
-
-
-**Pros**
-
-* Minimal API surface for consumers.
-* Pure KRI-driven design, consistent with intent of KRIs.
-* Stronger typing in generated SDKs.
-* Frontend can leverage OpenAPI type information directly.
-* Uses existing standards and application patterns.
-* Maintains existing engineering boundaries
-* Static escape hatch for dynamic retrieval (in the case of policies), exchanging dynamism for a less narrow type.
-
-**Cons**
-
-* Some of the parameters can be empty which is problematic.
-* More endpoint definitions as new resource types are added (mostly offset by the fact that these specifications are automatically generated)
-
-#### Option B: Single endpoint with multiple statically defined variants with a single required argument
-
-**Idea**: Provide a single endpoint rooted under `/_kri` but provide statically defined "variants" for all resources based on the KRI shortname. Differently to option A we only provide a single required parameter which is the "remaining" part of the KRI after the shortName.
-
-- `/_kri/kri_msvc_{partialKRI}`: partialKRI would equal `my-mesh_my-zone_name_theSectionName`
-- `/_kri/kri_zi_{partialKRI}`: partialKRI would equal `my-mesh_my-zone_name_theSectionName`
-
-Note: This is is essentially the same approach as option A, but avoids the required path parameter problem because you always have to provide the remaining part of the KRI
-
-
-**Pros**
-
-The pros are the same as Option A's but additionally:
-
-* Avoids problems of Option A due to OpenAPI required path parameters. i.e. technically this is valid OpenAPI.
-
-**Cons**
-
-The cons are the same as Option A's but additionally:
-
-* More awkward to use in Typescript, providing "the rest of the KRI" is more awkward and not as safe nor user-friendly as providing individual KRI parameters.
-
-#### Option C: Single endpoint `/_kri/{kri}` only with runtime type guards
+#### Option A: Single endpoint `/_kri/{kri}` only with manual casting and/or runtime type guards (chosen)
 
 **Idea**: Provide a single generic endpoint for all resources.
-Clients rely on `type: <ResourceType>` inside the response and manually specify type at runtime using type guards and/or casting. OpenAPI schema describes the endpoint generically with `oneOf`s.
+
+At runtime, clients can rely on the requested KRI `shortName` or the response `type: <ResourceType>` to understand the shape of the response.
+At build-time/compile-type, clients will receive a very wide type generated via OpenAPIs `oneOf` (i.e. a large union) to understand the shape of the runtime response. Clients _may_ decide to manually implement additional static approaches to provide their own guarantees as to the shape/types of the response via casting and/or type guards.
+
+Following usage we _may_ decide at a future date to add a further set of typed endpoints. If so, a separate MADR will be written to document that decision.
 
 **Pros**
 
@@ -142,87 +80,10 @@ Clients rely on `type: <ResourceType>` inside the response and manually specify 
 **Cons**
 
 * Weaker compile-time safety compared to OpenAPI typing.
-* Requires additional effort of runtime type guard/casting implementation to validate the shape of the requested resource.
+* Requires additional effort in clients of runtime type guard/casting implementation to validate the shape of the requested resource.
 * Moves API specification responsibilities from OpenAPI to Typescript against existing boundaries.
 
-#### Option D: Typed endpoint with `shortName` segment (chosen)
-
-**Idea**: Use a separate endpoint per resource type including `shortName` in the path, e.g., `/_kri/{shortName}/{kri}`.
-This would allow OpenAPI/Typescript SDKs to generate more precise types for each resource.
-This can also be hidden behind `x-internal` so it's not published as a public spec.
-
-**Pros**
-
-* Stronger typing in generated SDKs.
-* Frontend can leverage OpenAPI type information directly.
-
-**Cons**
-
-* Increased API surface.
-* Redundant endpoints for each resource type.
-* More maintenance overhead as new resource types are added.
-
 ## Design
-
-### OpenAPI generation
-
-We introduce new automatically generated endpoints for each new resource (note: gotemplate variables begin with `.`, OpenAPI params don't).
-These endpoints will be next to existing endpoints in [endpoints.yaml](https://github.com/kumahq/kuma/blob/46b6807f56c08c79f34db20cfc452b8f5203bf90/tools/openapi/templates/endpoints.yaml#L9).
-
-```yaml
-openapi: 3.0.0
-info:
-  title: KRI API
-  version: 1.0.0
-paths:
-  /_kri/kri_mtp_{mesh}_{zone}_{namespace}_{name}_{sectionName}:
-    get:
-      operationId: getMtpByKri
-      summary: Returns a MTP resource by KRI
-      tags: [ "KRI" ]
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: mesh of the resource
-        - in: path
-          name: zone
-          schema:
-            type: string
-          required: true
-          description: zone of the resource
-        - in: path
-          name: namespace
-          schema:
-            type: string
-          required: true
-          description: namespace of the resource
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the resource
-        - in: path
-          name: sectionName
-          schema:
-            type: string
-          required: true
-          description: section name of the resource
-      responses:
-        '200':
-          description: The resource
-          content:
-            application/json:
-              schema: 
-                type: string # ... the rest of the schema of the specific resource type
-        '400':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
-        '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-```
 
 For the generic `/_kri/{kri}` endpoint we would have:
 
@@ -278,7 +139,6 @@ We will add the new endpoint next to the existing endpoints in [addFindEndpoint]
 
 * Endpoint is additive.
 * No changes to existing flows.
-* Buildtime static specification approach ensures frontend object mapping is correct.
 
 ## Implications for Kong Mesh
 
@@ -286,11 +146,9 @@ We will add the new endpoint next to the existing endpoints in [addFindEndpoint]
 
 ## Decision
 
-We choose "Option D: Typed endpoint with `shortName` segment", along with a generic `/_kri/:kri` endpoint.
-It provides automatic build-time types for frontend usage.
+We choose "Option A: Single endpoint `/_kri/{kri}` only with manual casting and/or runtime type guards", along with a generic `/_kri/:kri` endpoint.
 Backend parses the KRI and uses existing store lookup routines.
 SectionName is stripped as needed.
 
 This approach ensures KRIs are first-class in the system.
 It avoids adding unnecessary complexity to the API surface.
-It avoids technical gray areas in OpenAPI specifications.
