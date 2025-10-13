@@ -4574,6 +4574,12 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
+        kri:
+          type: string
+          readOnly: true
+          x-go-name: KRI
+          example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
+          description: Kuma Resource Identifier (KRI) of the given resource
         labels:
           type: object
           additionalProperties:
@@ -5062,6 +5068,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mal_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -5928,6 +5942,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mcb_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -7665,6 +7687,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mfi_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -8330,6 +8360,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mhc_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -8842,6 +8880,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mhttpr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -9668,6 +9714,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mlbs_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -10556,6 +10610,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mm_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -10897,6 +10959,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mp_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -11101,6 +11171,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mpp_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -11829,6 +11907,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mrl_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -12578,6 +12664,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -13247,6 +13341,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtcpr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -13602,6 +13704,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mt_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -14189,6 +14299,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtls_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -14548,6 +14666,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -14914,6 +15040,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -17590,6 +17724,14 @@ components:
           type: string
           enum:
             - HostnameGenerator
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_hg___kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -17689,6 +17831,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_extsvc_default_zone-east_kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18054,6 +18204,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mid_default_zone-east_kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18357,6 +18515,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mzsvc_default_zone-east_kuma-demo_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18575,6 +18741,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_msvc_default_zone-east_kuma-demo_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18823,6 +18997,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtrust_default_zone-east_kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
