@@ -123,6 +123,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 					core_xds.FieldMetricsSocketPath:   util_proto.MustNewValueForStruct(parameters.MetricsSocketPath),
 					core_xds.FieldMetricsCertPath:     util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
 					core_xds.FieldMetricsKeyPath:      util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+					core_xds.FieldIPv6Enabled:         util_proto.MustNewValueForStruct(parameters.IPv6Enabled),
 				},
 			},
 		},

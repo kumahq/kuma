@@ -35,6 +35,7 @@ const (
 	FieldMetricsSocketPath          = "metricsSocketPath"
 	FieldMetricsCertPath            = "metricsCertPath"
 	FieldMetricsKeyPath             = "metricsKeyPath"
+	FieldIPv6Enabled                = "ipv6Enabled"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -67,6 +68,7 @@ type DataplaneMetadata struct {
 	MetricsSocketPath   string
 	MetricsCertPath     string
 	MetricsKeyPath      string
+	IPv6Enabled         bool
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -161,6 +163,13 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
+func (m *DataplaneMetadata) GetIPv6Enabled() bool {
+	if m == nil {
+		return false
+	}
+	return m.IPv6Enabled
+}
+
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir string, dpKey model.ResourceKey) *DataplaneMetadata {
 	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
 	// Even if we know that something should not be nil since we are generating metadata,
@@ -227,6 +236,13 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 		}
 		version.KumaDp.KumaCpCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaDp.GetVersion())
 		metadata.Version = version
+	}
+
+	if xdsMetadata.Fields[FieldIPv6Enabled] != nil {
+		metadata.IPv6Enabled = xdsMetadata.Fields[FieldIPv6Enabled].GetBoolValue()
+	} else {
+		// For backward compatibility as previously this was always enabled
+		metadata.IPv6Enabled = true
 	}
 
 	if value := xdsMetadata.Fields[FieldDynamicMetadata]; value != nil {

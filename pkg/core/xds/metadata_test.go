@@ -39,6 +39,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			expected: xds.DataplaneMetadata{
 				AccessLogSocketPath: "/tmp/kuma-al-dp-1-mesh.sock",
 				MetricsSocketPath:   "/tmp/kuma-mh-dp-1-mesh.sock",
+				IPv6Enabled:         true,
 			},
 		}),
 		Entry("from non-empty node", testCase{
@@ -83,6 +84,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				AccessLogSocketPath: "/tmp/logs",
 				MetricsSocketPath:   "/tmp/metrics",
 				ReadinessPort:       9300,
+				IPv6Enabled:         true,
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{
@@ -107,6 +109,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				AccessLogSocketPath: "/tmp/kuma-al-dp-1-mesh.sock",
 				MetricsSocketPath:   "/tmp/kuma-mh-dp-1-mesh.sock",
 				DynamicMetadata:     map[string]string{},
+				IPv6Enabled:         true,
 			},
 		}),
 	)

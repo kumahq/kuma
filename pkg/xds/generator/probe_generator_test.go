@@ -38,6 +38,9 @@ var _ = Describe("ProbeGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+				Metadata: &core_xds.DataplaneMetadata{
+					IPv6Enabled: true,
+				},
 				APIVersion: envoy_common.APIV3,
 				// internal addresses are set to "localhost" addresses to the "probe" listener
 				InternalAddresses: DummyInternalAddresses,
