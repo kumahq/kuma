@@ -25,8 +25,6 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
           routeConfig:
             name: meshpassthrough_http_80
             virtualHosts:
@@ -78,8 +76,6 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
           routeConfig:
             name: meshpassthrough_http_*
             virtualHosts:
@@ -143,8 +139,6 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
           routeConfig:
             name: meshpassthrough_http_80
             virtualHosts:
@@ -196,8 +190,6 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
-            - addressPrefix: ::1
-              prefixLen: 128
           routeConfig:
             name: meshpassthrough_http_*
             virtualHosts:

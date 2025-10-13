@@ -55,6 +55,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminPort:     9901,
 					AdminAddress:  given.adminAddress,
 					ReadinessPort: given.readinessPort,
+					IPv6Enabled:   true,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),

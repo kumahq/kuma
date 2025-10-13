@@ -168,6 +168,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
+
+			// We want to check if IPv6 is enabled on machine, but we want to override config only if support was enabled to
+			// avoid issues with envoy internal addresses. We don't want to override this config if IPv6 support disabled by user explicitly
+			hasLocalIPv6, _ := tproxy_config.HasLocalIPv6()
+			if cfg.DataplaneRuntime.IPv6Enabled && !hasLocalIPv6 {
+				cfg.DataplaneRuntime.IPv6Enabled = false
+			}
+
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {

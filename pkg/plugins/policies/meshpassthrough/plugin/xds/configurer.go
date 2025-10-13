@@ -19,6 +19,7 @@ type Configurer struct {
 	APIVersion        core_xds.APIVersion
 	InternalAddresses []core_xds.InternalAddress
 	Conf              api.Conf
+	IPv6Enabled       bool
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
@@ -29,12 +30,12 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 	}
 
 	if hasIPv4Matches(filterChainMatches) {
-		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false); err != nil {
+		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false, c.IPv6Enabled); err != nil {
 			return err
 		}
 	}
 	if hasIPv6Matches(filterChainMatches) {
-		if err := c.configureListener(filterChainMatches, ipv6, clustersAccumulator, true); err != nil {
+		if err := c.configureListener(filterChainMatches, ipv6, clustersAccumulator, true, c.IPv6Enabled); err != nil {
 			return err
 		}
 	}
@@ -58,6 +59,7 @@ func (c Configurer) configureListener(
 	listener *envoy_listener.Listener,
 	clustersAccumulator map[string]core_mesh.Protocol,
 	isIPv6 bool,
+	ipv6Enabled bool,
 ) error {
 	if listener == nil {
 		return nil
@@ -75,6 +77,7 @@ func (c Configurer) configureListener(
 			MatchValue:        matcher.Value,
 			Routes:            matcher.Routes,
 			IsIPv6:            isIPv6,
+			IPv6Enabled:       ipv6Enabled,
 		}
 		if matcher.Protocol == core_mesh.Protocol(api.MysqlProtocol) {
 			listenerFiltersExcludedOnPorts = append(listenerFiltersExcludedOnPorts, matcher.Port)

@@ -41,6 +41,7 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
+			IPv6Enabled: true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -257,6 +258,9 @@ type DataplaneRuntime struct {
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
 	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
 	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
+	// IPv6Enabled indicates if IPv6 support is enabled on the machine. By default, dataplane will check if support is enabled
+	// on machine and adjust this config accordingly
+	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`
 }
 
 type Metrics struct {
