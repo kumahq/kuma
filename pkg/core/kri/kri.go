@@ -44,7 +44,18 @@ func (i Identifier) IsEmpty() bool {
 }
 
 func (i Identifier) IsLocallyOriginated(mode config_core.CpMode, zone string) bool {
-	return zone == i.Zone
+	switch mode {
+	case config_core.Global:
+		// In Global CP, resources without a zone are considered locally originated.
+		return i.Zone == ""
+	case config_core.Zone:
+		// In Zone CP, resources are treated as locally originated if either
+		// - KRI doesn't specify a zone (unknown/backward compat), or
+		// - KRI zone matches the current CP zone.
+		return i.Zone == "" || i.Zone == zone
+	default:
+		return true
+	}
 }
 
 func From(r core_model.Resource) Identifier {
