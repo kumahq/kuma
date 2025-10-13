@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -22,7 +23,7 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 	type testCase struct {
 		caseName         string
 		workloadIdentity *core_xds.WorkloadIdentity
-		trustDomains     map[string][]string
+		trustDomains     map[string][]xds_context.PEMBytes
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -30,7 +31,7 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build()
-			context.Mesh.TrustsByTrustDomain = given.trustDomains
+			context.Mesh.CAsByTrustDomain = given.trustDomains
 			resourceSet := core_xds.NewResourceSet()
 			proxy := xds_builders.Proxy().
 				WithWorkloadIdentity(given.workloadIdentity).
@@ -53,9 +54,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
 				ManagementMode: core_xds.KumaManagementMode,
 			},
-			trustDomains: map[string][]string{
-				"domain-1": {"123", "456"},
-				"domain-2": {"789"},
+			trustDomains: map[string][]xds_context.PEMBytes{
+				"domain-1": {xds_context.PEMBytes("123"), xds_context.PEMBytes("456")},
+				"domain-2": {xds_context.PEMBytes("789")},
 			},
 		}),
 		Entry("with-multiple-trust-domains-and-default-name", testCase{
@@ -64,9 +65,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
 				ManagementMode: core_xds.KumaManagementMode,
 			},
-			trustDomains: map[string][]string{
-				"domain-1": {"123", "456"},
-				"domain-2": {"789"},
+			trustDomains: map[string][]xds_context.PEMBytes{
+				"domain-1": {xds_context.PEMBytes("123"), xds_context.PEMBytes("456")},
+				"domain-2": {xds_context.PEMBytes("789")},
 			},
 		}),
 		Entry("no workload identity and trusts", testCase{
@@ -78,9 +79,9 @@ var _ = Describe("MeshTrust Secret Generator", func() {
 				KRI:            kri.Identifier{ResourceType: meshtrust_api.MeshTrustType, Mesh: "default", Name: "identity"},
 				ManagementMode: core_xds.ExternalManagementMode,
 			},
-			trustDomains: map[string][]string{
-				"domain-1": {"123", "456"},
-				"domain-2": {"789"},
+			trustDomains: map[string][]xds_context.PEMBytes{
+				"domain-1": {xds_context.PEMBytes("123"), xds_context.PEMBytes("456")},
+				"domain-2": {xds_context.PEMBytes("789")},
 			},
 		}),
 	)

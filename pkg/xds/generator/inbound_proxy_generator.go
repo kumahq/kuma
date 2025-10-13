@@ -187,7 +187,7 @@ func FilterChainBuilder(
 	}
 	if serverSideMTLS {
 		filterChainBuilder.
-			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, unifiedNaming, len(xdsCtx.Mesh.TrustsByTrustDomain) > 0))
+			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, unifiedNaming, len(xdsCtx.Mesh.CAsByTrustDomain) > 0))
 	}
 	return filterChainBuilder.
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))

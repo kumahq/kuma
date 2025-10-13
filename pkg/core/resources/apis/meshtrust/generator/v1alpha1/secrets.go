@@ -27,7 +27,7 @@ func NewPlugin() core_plugins.CoreResourcePlugin {
 
 func (p *plugin) Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	externallyManaged := pointer.Deref(proxy.WorkloadIdentity).ManagementMode == core_xds.ExternalManagementMode
-	hasTrustDomains := len(xdsCtx.Mesh.TrustsByTrustDomain) > 0
+	hasTrustDomains := len(xdsCtx.Mesh.CAsByTrustDomain) > 0
 
 	if externallyManaged || !hasTrustDomains {
 		return nil
@@ -48,7 +48,7 @@ func (p *plugin) Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, 
 
 func validationCtx(xdsCtx xds_context.Context) (*envoy_auth.Secret, error) {
 	validatorsPerTrustDomain := []*envoy_auth.SPIFFECertValidatorConfig_TrustDomain{}
-	for domain, trusts := range xdsCtx.Mesh.TrustsByTrustDomain {
+	for domain, trusts := range xdsCtx.Mesh.CAsByTrustDomain {
 		// concatenate multiple CAs
 		allCAs := [][]byte{}
 		for _, ca := range trusts {

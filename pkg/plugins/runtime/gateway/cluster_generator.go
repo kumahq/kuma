@@ -178,7 +178,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 			true, // TODO we just assume this atm?...
 			sni,
 			meshroute.Identities(backendRef, meshCtx, false),
-			len(meshCtx.TrustsByTrustDomain) > 0,
+			len(meshCtx.CAsByTrustDomain) > 0,
 		))
 	if proxy.WorkloadIdentity != nil {
 		upstreamCtx, err := meshroute.UpstreamTLSContext(backendRef, meshCtx, proxy, sni)

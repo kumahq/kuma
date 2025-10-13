@@ -369,7 +369,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
 	if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
-		for trustDomain := range xdsCtx.Mesh.TrustsByTrustDomain {
+		for trustDomain := range xdsCtx.Mesh.CAsByTrustDomain {
 			id, err := spiffeid.TrustDomainFromString(trustDomain)
 			if err != nil {
 				return nil, err

@@ -142,3 +142,8 @@ func joinNonEmptyWithHyphen(elems ...string) string {
 		"-",
 	)
 }
+
+func Indent(pem string, padding int) string {
+	pad := strings.Repeat(" ", padding)
+	return pad + strings.ReplaceAll(pem, "\n", "\n"+pad)
+}

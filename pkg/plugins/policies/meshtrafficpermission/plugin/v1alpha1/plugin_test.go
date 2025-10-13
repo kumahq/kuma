@@ -188,6 +188,7 @@ var _ = Describe("RBAC", func() {
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener4", false, nil, true)))).
 				Build()
+			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
 				Name:     listener4.GetName(),
 				Origin:   metadata.OriginInbound,

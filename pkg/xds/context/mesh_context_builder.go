@@ -174,15 +174,15 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
-	trustDomainToTrusts := getTrustDomainToTrusts(resources.MeshTrusts().Items)
+	casByTrustDomain := getCAsByTrustDomain(resources.MeshTrusts().Items)
 	// add a mesh mTLS CA
-	if len(trustDomainToTrusts) > 0 && mesh.MTLSEnabled() {
+	if len(casByTrustDomain) > 0 && mesh.MTLSEnabled() {
 		cas, _, err := m.caProvider.Get(ctx, mesh)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not fetch mesh CA")
 		}
 		for _, ca := range cas.PemCerts {
-			trustDomainToTrusts[meshName] = append(trustDomainToTrusts[meshName], string(ca))
+			casByTrustDomain[meshName] = append(casByTrustDomain[meshName], ca)
 		}
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
@@ -246,7 +246,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		ServicesInformation:         m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:            loader,
 		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
-		TrustsByTrustDomain:         trustDomainToTrusts,
+		CAsByTrustDomain:            casByTrustDomain,
 	}, nil
 }
 
@@ -594,12 +594,12 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_meta.Protocol {
 	return serviceProtocol
 }
 
-func getTrustDomainToTrusts(trusts []*meshtrust_api.MeshTrustResource) map[string][]string {
-	trustDomainToMeshTrust := map[string][]string{}
+func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {
+	casByTrustDomain := map[string][]PEMBytes{}
 	for _, trust := range trusts {
 		for _, ca := range trust.Spec.CABundles {
-			trustDomainToMeshTrust[trust.Spec.TrustDomain] = append(trustDomainToMeshTrust[trust.Spec.TrustDomain], ca.PEM.Value)
+			casByTrustDomain[trust.Spec.TrustDomain] = append(casByTrustDomain[trust.Spec.TrustDomain], PEMBytes(ca.PEM.Value))
 		}
 	}
-	return trustDomainToMeshTrust
+	return casByTrustDomain
 }

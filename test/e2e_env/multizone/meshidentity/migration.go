@@ -2,7 +2,6 @@ package meshidentity
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -20,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func Migration() {
@@ -91,11 +91,6 @@ func Migration() {
 			return nil, err
 		}
 		return r.GetSpec().(*meshtrust_api.MeshTrust), nil
-	}
-
-	indent := func(pem string) string {
-		pad := strings.Repeat(" ", 10)
-		return pad + strings.ReplaceAll(pem, "\n", "\n"+pad)
 	}
 
 	It("should migrate from mesh.mTLS to MeshIdentity", func() {
@@ -171,7 +166,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone1.Name(), meshName, multizone.KubeZone2.Name(), indent(trust1.CABundles[0].PEM.Value), trust1.TrustDomain))).
+			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone1.Name(), meshName, multizone.KubeZone2.Name(), utils.Indent(trust1.CABundles[0].PEM.Value, 10), trust1.TrustDomain))).
 			Setup(multizone.KubeZone2)).To(Succeed())
 
 		// and Trust from zone 2 to zone 1
@@ -182,11 +177,11 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), indent(trust2.CABundles[0].PEM.Value), trust2.TrustDomain))).
+			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), utils.Indent(trust2.CABundles[0].PEM.Value, 10), trust2.TrustDomain))).
 			Setup(multizone.KubeZone1)).To(Succeed())
 
 		// and
-		// select dataplane
+		// select all dataplanes
 		yaml = fmt.Sprintf(`
 type: MeshIdentity
 name: identity

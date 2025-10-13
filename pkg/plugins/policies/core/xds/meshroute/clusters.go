@@ -141,7 +141,7 @@ func GenerateClusters(
 								tlsReady,
 								sni,
 								Identities(realResourceRef, meshCtx, false),
-								len(meshCtx.TrustsByTrustDomain) > 0,
+								len(meshCtx.CAsByTrustDomain) > 0,
 							))
 						}
 					} else {
