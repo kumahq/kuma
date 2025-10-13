@@ -115,6 +115,10 @@ paths:
                   - $ref: '#/components/schemas/MeshAccessLog'
                   - $ref: '#/components/schemas/MeshTrafficPermission'
                   - $ref: '#/components/schemas/MeshTrace'
+              discriminator:
+                propertyName: type
+              mapping: # maybe not needed because name of type == name of schema
+                MeshTrafficPermission: '#/components/schemas/MeshTrafficPermission'
                   # ... all other resource types
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
