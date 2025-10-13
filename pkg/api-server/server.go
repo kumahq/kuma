@@ -362,6 +362,7 @@ func addResourcesEndpoints(
 
 	kriEndpoints := kriEndpoint{
 		k8sMapper:                    k8sMapper,
+		resManager: resManager,
 	}
 	kriEndpoints.addFindByKriEndpoint(ws)
 }
