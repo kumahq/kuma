@@ -75,14 +75,15 @@ func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier, 
 
 func (k *kriEndpoint) getCoreName(kri kri.Identifier, namespace string) string {
 	name := kri.Name
-	if kri.IsLocallyOriginated(k.cpMode, k.cpZone) {
+	if kri.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
 		if k.environment == config_core.UniversalEnvironment {
 			return name
 		} else {
 			return name + "." + namespace
 		}
 	} else {
-		return hash.HashedName(kri.Mesh, name, namespace, kri.Zone)
+		// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
+		return hash.HashedName(kri.Mesh, name, kri.Zone, namespace)
 	}
 }
 

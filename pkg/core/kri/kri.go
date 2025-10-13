@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 
@@ -43,12 +42,12 @@ func (i Identifier) IsEmpty() bool {
 	return i == (Identifier{})
 }
 
-func (i Identifier) IsLocallyOriginated(mode config_core.CpMode, zone string) bool {
-	switch mode {
-	case config_core.Global:
+func (i Identifier) IsLocallyOriginated(isGlobal bool, zone string) bool {
+	switch isGlobal {
+	case true:
 		// In Global CP, resources without a zone are considered locally originated.
 		return i.Zone == ""
-	case config_core.Zone:
+	case false:
 		// In Zone CP, resources are treated as locally originated if either
 		// - KRI doesn't specify a zone (unknown/backward compat), or
 		// - KRI zone matches the current CP zone.
