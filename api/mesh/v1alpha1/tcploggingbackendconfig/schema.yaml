@@ -1,6 +1,8 @@
 components:
   schemas:
     TcpLoggingBackendConfig:
+      description: TcpLoggingBackendConfig defines configuration for TCP based access
+        logs
       properties:
         address:
           description: Address to TCP service that will receive logs

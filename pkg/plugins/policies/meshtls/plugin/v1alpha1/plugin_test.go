@@ -314,7 +314,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Origin: metadata.OriginInbound,
 			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
+					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 					Configure(
 						listeners.HttpInboundRoutes(
 							envoy_names.GetInboundRouteName("backend"),
@@ -365,7 +365,7 @@ func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBui
 			Origin: metadata.OriginInbound,
 			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
+					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 					Configure(
 						listeners.HttpInboundRoutes(
 							envoy_names.GetInboundRouteName("backend"),

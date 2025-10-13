@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
@@ -357,9 +358,12 @@ var LocalHostAddresses = []InternalAddress{
 	{AddressPrefix: "::1", PrefixLen: 128},
 }
 
-func InternalAddressToEnvoyCIDRs(internalAddresses []InternalAddress) []*envoy_config_core.CidrRange {
+func InternalAddressToEnvoyCIDRs(ipv6Enabled bool, internalAddresses []InternalAddress) []*envoy_config_core.CidrRange {
 	var cidrRanges []*envoy_config_core.CidrRange
 	for _, internalAddressPool := range internalAddresses {
+		if !ipv6Enabled && govalidator.IsIPv6(internalAddressPool.AddressPrefix) {
+			continue
+		}
 		cidrRanges = append(cidrRanges, &envoy_config_core.CidrRange{
 			AddressPrefix: internalAddressPool.AddressPrefix,
 			PrefixLen:     &wrapperspb.UInt32Value{Value: internalAddressPool.PrefixLen},

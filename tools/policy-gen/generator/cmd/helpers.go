@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	commontemplate "github.com/kumahq/kuma/tools/common/template"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 )
 
 func newHelpers(rootArgs *args) *cobra.Command {
@@ -33,7 +33,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 			}
 
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.helpers.go")
-			return save.GoTemplate(helpersTemplate, map[string]interface{}{
+			return commontemplate.GoTemplate(helpersTemplate, map[string]interface{}{
 				"name":                  pconfig.Name,
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,

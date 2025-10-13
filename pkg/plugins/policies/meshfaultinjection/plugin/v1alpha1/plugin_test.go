@@ -10,11 +10,14 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
@@ -40,6 +43,20 @@ var _ = Describe("MeshFaultInjection", func() {
 		fromRules         core_rules.FromRules
 		expectedListeners []string
 	}
+
+	policyOrigin := func(policyName string) common.Origin {
+		return common.Origin{
+			Resource: &test_model.ResourceMeta{
+				Mesh: "default",
+				Name: policyName,
+				Labels: map[string]string{
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "ns-1",
+				},
+			},
+		}
+	}
+
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
 			// given
@@ -87,7 +104,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Origin: metadata.OriginInbound,
 					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
+							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
 								listeners.HttpInboundRoutes(
 									envoy_names.GetInboundRouteName("backend"),
@@ -195,6 +212,113 @@ var _ = Describe("MeshFaultInjection", func() {
 			},
 			expectedListeners: []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
 		}),
+		Entry("basic listener: 2 inbounds one http and second tcp, rules api", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   "inbound:127.0.0.1:17777",
+					Origin: metadata.OriginInbound,
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								listeners.HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									envoy_common.Routes{
+										{
+											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+												envoy_common.WithService("backend"),
+												envoy_common.WithWeight(100),
+											)},
+										},
+									},
+								),
+							),
+						)).MustBuild(),
+				},
+				{
+					Name:   "inbound:127.0.0.1:17778",
+					Origin: metadata.OriginInbound,
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+						)).MustBuild(),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {
+						{
+							Conf: &api.Rule{
+								Matches: &[]common_api.Match{
+									{
+										SpiffeID: &common_api.SpiffeIDMatch{
+											Type:  common_api.PrefixMatchType,
+											Value: "spiffe://trust-domain.mesh/",
+										},
+									},
+								},
+								Default: api.Conf{
+									Http: &[]api.FaultInjectionConf{
+										{
+											Abort: &api.AbortConf{
+												HttpStatus: int32(444),
+												Percentage: intstr.FromString("12"),
+											},
+										},
+										{
+											Delay: &api.DelayConf{
+												Value:      *test.ParseDuration("55s"),
+												Percentage: intstr.FromString("55"),
+											},
+											ResponseBandwidth: &api.ResponseBandwidthConf{
+												Limit:      "111Mbps",
+												Percentage: intstr.FromString("62.9"),
+											},
+										},
+									},
+								},
+							},
+							Origin: policyOrigin("mfi-1"),
+						},
+					},
+					{Address: "127.0.0.1", Port: 17778}: {
+						{
+							Conf: &api.Rule{
+								Matches: &[]common_api.Match{
+									{
+										SpiffeID: &common_api.SpiffeIDMatch{
+											Type:  common_api.PrefixMatchType,
+											Value: "spiffe://trust-domain.mesh/",
+										},
+									},
+								},
+								Default: api.Conf{
+									Http: &[]api.FaultInjectionConf{
+										{
+											Abort: &api.AbortConf{
+												HttpStatus: int32(444),
+												Percentage: intstr.FromString("12"),
+											},
+											Delay: &api.DelayConf{
+												Value:      *test.ParseDuration("55s"),
+												Percentage: intstr.FromString("55"),
+											},
+											ResponseBandwidth: &api.ResponseBandwidthConf{
+												Limit:      "111Mbps",
+												Percentage: intstr.FromString("62.9"),
+											},
+										},
+									},
+								},
+							},
+							Origin: policyOrigin("mfi-1"),
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_listener_1_rules.golden.yaml", "basic_listener_2_rules.golden.yaml"},
+		}),
 	)
 
 	It("should generate proper Envoy config for Egress", func() {
@@ -208,7 +332,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
-					listeners.HttpConnectionManager("external-service-1", false, nil),
+					listeners.HttpConnectionManager("external-service-1", false, nil, true),
 				)),
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
@@ -223,7 +347,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-2").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-2{mesh=mesh-2}"),
-					listeners.HttpConnectionManager("external-service-2", false, nil),
+					listeners.HttpConnectionManager("external-service-2", false, nil, true),
 				)),
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "internal-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),

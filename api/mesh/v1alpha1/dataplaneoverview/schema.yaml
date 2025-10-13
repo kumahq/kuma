@@ -1,6 +1,7 @@
 components:
   schemas:
     DataplaneOverview:
+      description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
         dataplane:
           properties:

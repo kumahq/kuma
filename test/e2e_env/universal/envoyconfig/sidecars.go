@@ -98,13 +98,15 @@ func SetupSidecarCluster() {
 		Install(DemoClientUniversal("demo-client", meshName,
 			WithTransparentProxy(true),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR": "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 			})),
 		).
 		Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "universal-1"}),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR": "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 			}),
 		),
 		).

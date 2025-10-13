@@ -2,13 +2,12 @@ syntax = "proto3";
 
 package kumactl.config.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/config/v1alpha1";
-
 import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/config/v1alpha1";
 
 // Configuration defines configuration of `kumactl`.
 message Configuration {
-
   // List of known Control Planes.
   repeated ControlPlane control_planes = 1;
 
@@ -21,13 +20,11 @@ message Configuration {
 
 // ControlPlane defines a Control Plane.
 message ControlPlane {
-
   // Name defines a reference name for a given Control Plane.
-  string name = 1 [ (validate.rules).string.min_len = 1 ];
+  string name = 1 [(validate.rules).string.min_len = 1];
 
   // Coordinates defines coordinates of a given Control Plane.
-  ControlPlaneCoordinates coordinates = 2
-      [ (validate.rules).message.required = true ];
+  ControlPlaneCoordinates coordinates = 2 [(validate.rules).message.required = true];
 }
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
@@ -37,9 +34,8 @@ message ControlPlaneCoordinates {
     string value = 2;
   }
   message ApiServer {
-
     // URL defines URL of the Control Plane API Server.
-    string url = 1 [ (validate.rules).string.uri = true ];
+    string url = 1 [(validate.rules).string.uri = true];
 
     // CaCert defines the certificate authority which will be used to verify
     // connection to the control plane API server
@@ -63,21 +59,19 @@ message ControlPlaneCoordinates {
     map<string, string> auth_conf = 7;
   }
 
-  ApiServer api_server = 1 [ (validate.rules).message.required = true ];
+  ApiServer api_server = 1 [(validate.rules).message.required = true];
 }
 
 // Context defines a context in which individual `kumactl` commands run.
 message Context {
-
   // Name defines a reference name for a given context.
-  string name = 1 [ (validate.rules).string.min_len = 1 ];
+  string name = 1 [(validate.rules).string.min_len = 1];
 
   // ControlPlane defines a reference to a known Control Plane.
-  string control_plane = 2 [ (validate.rules).string.min_len = 1 ];
+  string control_plane = 2 [(validate.rules).string.min_len = 1];
 
   // Defaults defines default settings for a context.
   message Defaults {
-
     // Mesh defines a Mesh to use in requests if one is not provided explicitly.
     string mesh = 1;
   }

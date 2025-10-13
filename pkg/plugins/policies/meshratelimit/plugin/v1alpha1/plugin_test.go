@@ -103,7 +103,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Origin: metadata.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
 								HttpInboundRoutes(
 									envoy_names.GetInboundRouteName("backend"),
@@ -235,7 +235,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Origin: metadata.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
 								HttpInboundRoutes(
 									envoy_names.GetInboundRouteName("backend"),
@@ -354,6 +354,7 @@ var _ = Describe("MeshRateLimit", func() {
 					DataplanePort:         17777,
 					WorkloadIP:            "127.0.0.1",
 					WorkloadPort:          17777,
+					InboundName:           "17777",
 				}: []*core_mesh.RateLimitResource{
 					{
 						Spec: &mesh_proto.RateLimit{
@@ -423,7 +424,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
 							HttpInboundRoutes(
 								envoy_names.GetInboundRouteName("backend"),
@@ -517,7 +518,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
 							HttpInboundRoutes(
 								envoy_names.GetInboundRouteName("backend"),
@@ -577,7 +578,7 @@ var _ = Describe("MeshRateLimit", func() {
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(
 					MatchTransportProtocol("tls"),
 					MatchServerNames("external-service-1{mesh=mesh-1}"),
-					HttpConnectionManager("external-service-1", false, nil),
+					HttpConnectionManager("external-service-1", false, nil, true),
 					AddFilterChainConfigurer(httpOutboundRoute("external-service-1")),
 				)),
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-1").Configure(
@@ -597,7 +598,7 @@ var _ = Describe("MeshRateLimit", func() {
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-2").Configure(
 					MatchTransportProtocol("tls"),
 					MatchServerNames("external-service-2{mesh=mesh-2}"),
-					HttpConnectionManager("external-service-2", false, nil),
+					HttpConnectionManager("external-service-2", false, nil, true),
 					AddFilterChainConfigurer(httpOutboundRoute("external-service-2")),
 				)),
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "internal-service-1_mesh-1").Configure(

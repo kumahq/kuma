@@ -16,7 +16,6 @@ for any tools/libraries that you may be missing.
 - [`unzip`](http://infozip.sourceforge.net/UnZip.html)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://golang.org/)
-- [`ninja`](https://github.com/ninja-build/ninja)
 - [`mise`](https://mise.jdx.dev)
 
 ### Helper commands

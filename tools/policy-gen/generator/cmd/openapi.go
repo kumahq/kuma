@@ -6,12 +6,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/tools/common/template"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 )
 
 func newOpenAPI(rootArgs *args) *cobra.Command {
@@ -39,24 +38,12 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return nil
 			}
 			crdPath := filepath.Join(rootArgs.pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
-
-			tmpl, err := template.ParseFiles(localArgs.openAPITemplate)
-			if err != nil {
-				return err
-			}
-
 			openApiOutPath := filepath.Join(filepath.Dir(policyPath), "rest.yaml")
-			err = save.PlainTemplate(tmpl, pconfig, openApiOutPath)
-			if err != nil {
-				return err
-			}
-			schemaTmpl, err := template.ParseFiles(localArgs.jsonSchemaTemplate)
-			if err != nil {
+			if err := template.PlainFileTemplate(localArgs.openAPITemplate, openApiOutPath, pconfig); err != nil {
 				return err
 			}
 			schemaOutPath := filepath.Join(filepath.Dir(policyPath), "schema.yaml")
-			err = save.PlainTemplate(schemaTmpl, pconfig, schemaOutPath)
-			if err != nil {
+			if err := template.PlainFileTemplate(localArgs.jsonSchemaTemplate, schemaOutPath, pconfig); err != nil {
 				return err
 			}
 

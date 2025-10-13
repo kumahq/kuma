@@ -100,6 +100,7 @@ var _ = Describe("Match", func() {
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
 					ServiceAddress: "1.2.3.4",
+					Port:           80,
 					ServicePort:    8080,
 					Tags: map[string]string{
 						"service":          "web",
@@ -129,8 +130,10 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
-					WorkloadIP:   "1.2.3.4",
-					WorkloadPort: 8080,
+					DataplanePort: 80,
+					WorkloadIP:    "1.2.3.4",
+					WorkloadPort:  8080,
+					InboundName:   "80",
 				}: {
 					policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
@@ -147,6 +150,7 @@ var _ = Describe("Match", func() {
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
 					ServiceAddress: "1.2.3.4",
+					Port:           80,
 					ServicePort:    8080,
 					Tags: map[string]string{
 						"service":          "web",
@@ -157,6 +161,7 @@ var _ = Describe("Match", func() {
 				},
 				{
 					ServiceAddress: "1.2.3.4",
+					Port:           81,
 					ServicePort:    8081,
 					Tags: map[string]string{
 						"service":          "web-api",
@@ -178,8 +183,10 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
-					WorkloadIP:   "1.2.3.4",
-					WorkloadPort: 8081,
+					DataplanePort: 81,
+					WorkloadIP:    "1.2.3.4",
+					WorkloadPort:  8081,
+					InboundName:   "81",
 				}: {
 					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
@@ -196,6 +203,7 @@ var _ = Describe("Match", func() {
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
 					ServiceAddress: "1.2.3.4",
+					Port:           80,
 					ServicePort:    8080,
 					Tags: map[string]string{
 						"service":          "web",
@@ -242,8 +250,10 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
-					WorkloadIP:   "1.2.3.4",
-					WorkloadPort: 8080,
+					DataplanePort: 80,
+					WorkloadIP:    "1.2.3.4",
+					WorkloadPort:  8080,
+					InboundName:   "80",
 				}: {
 					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 						{

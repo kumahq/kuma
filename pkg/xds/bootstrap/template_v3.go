@@ -141,6 +141,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 					core_xds.FieldMetricsCertPath: util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
 					core_xds.FieldMetricsKeyPath:  util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
 					core_xds.FieldSystemCaPath:    util_proto.MustNewValueForStruct(parameters.SystemCaPath),
+					core_xds.FieldIPv6Enabled:     util_proto.MustNewValueForStruct(parameters.IPv6Enabled),
 				},
 			},
 		},
@@ -367,7 +368,13 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	if parameters.ReadinessPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneReadinessPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.ReadinessPort)))
 	}
-	// a request from an old DP will not include this field, so defaults to false
+	// NOTE: parameters.AppProbeProxyEnabled originates from BootstrapRequest where
+	// the JSON wire key for this setting is "appProbeProxyDisabled" for backward
+	// compatibility. Do not try to auto-invert or post-process this value here
+	// based on names. Any such logic would diverge CP and DP behavior under
+	// version skew and can break rolling upgrades. If you think this should
+	// change, read https://github.com/kumahq/kuma/issues/13885 first and propose
+	// a versioned endpoint plan with a deprecation window
 	if parameters.AppProbeProxyEnabled {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneAppProbeProxyEnabled] = util_proto.MustNewValueForStruct("true")
 	}

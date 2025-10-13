@@ -37,6 +37,7 @@ node:
   metadata:
     dataplane.proxyType: dataplane
     features: []
+    ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""
