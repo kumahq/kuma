@@ -48,6 +48,7 @@ var _ = Describe("Rest Resource", func() {
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
+  "kri": "kri_mtp_default___one_",
   "spec": {
     "targetRef": {
       "kind": "Mesh"
@@ -92,7 +93,8 @@ var _ = Describe("Rest Resource", func() {
   "mesh": "default",
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",
-  "modificationTime": "2019-07-17T16:05:36.995Z"
+  "modificationTime": "2019-07-17T16:05:36.995Z",
+  "kri": "kri_mtp_default___one_"
 }
 `
 				Expect(string(bytes)).To(MatchJSON(expected))

@@ -47,17 +47,33 @@ func From(r core_model.Resource) Identifier {
 }
 
 func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType) Identifier {
-	if rm == nil {
+	id, err := FromResourceMetaE(rm, resourceType)
+	if err != nil {
 		return Identifier{}
+	}
+	return id
+}
+
+func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T) (Identifier, error) {
+	if rm == nil {
+		return Identifier{}, nil
+	}
+
+	rType := core_model.ResourceType(resourceType)
+
+	if desc, err := registry.Global().DescriptorFor(rType); err != nil {
+		return Identifier{}, err
+	} else if desc.ShortName == "" {
+		return Identifier{}, nil
 	}
 
 	return Identifier{
-		ResourceType: resourceType,
+		ResourceType: rType,
 		Mesh:         rm.GetMesh(),
 		Zone:         rm.GetLabels()[mesh_proto.ZoneTag],
 		Namespace:    rm.GetLabels()[mesh_proto.KubeNamespaceTag],
 		Name:         core_model.GetDisplayName(rm),
-	}
+	}, nil
 }
 
 func FromString(s string) (Identifier, error) {
