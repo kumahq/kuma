@@ -84,7 +84,7 @@ func FromString(s string) (Identifier, error) {
 		return Identifier{}, errors.Errorf("identifier must start with 'kri': %q", s)
 	}
 	ds := registry.Global().ObjectDescriptors(core_model.TypeFilterFn(func(d core_model.ResourceTypeDescriptor) bool {
-		return d.ShortName == parts[1]
+		return d.ShortName == parts[1] && d.ShortName != ""
 	}))
 	if len(ds) == 0 {
 		return Identifier{}, errors.Errorf("unknown short name of resource type: %q", parts[1])

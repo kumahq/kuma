@@ -38,21 +38,25 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 		namespace := request.PathParameter("namespace")
 		identifier, err := kri.FromString(kriParam)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not parse KRI")
+			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
+			return
 		}
 
 		resource, err := k.findByKri(request.Request.Context(), identifier, namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+			return
 		}
 
 		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
+			return
 		}
 
 		if err := response.WriteAsJson(res); err != nil {
 			log.Error(err, "Could not write the find response")
+			return
 		}
 	}
 }
