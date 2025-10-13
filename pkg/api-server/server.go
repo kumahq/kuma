@@ -359,6 +359,11 @@ func addResourcesEndpoints(
 			}
 		}
 	}
+
+	kriEndpoints := kriEndpoint{
+		k8sMapper:                    k8sMapper,
+	}
+	kriEndpoints.addFindByKriEndpoint(ws)
 }
 
 func (a *ApiServer) Ready() bool {
