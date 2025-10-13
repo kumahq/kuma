@@ -120,9 +120,9 @@ paths:
               mapping: # maybe not needed because name of type == name of schema
                 MeshTrafficPermission: '#/components/schemas/MeshTrafficPermission'
                   # ... all other resource types
-        '400':
+        '400': # only invalid KRI triggers a 400
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
-        '404':
+        '404': # this is triggered if the KRI is valid but the resource is not found
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 ```
 
