@@ -493,6 +493,8 @@ spec:
       securityContext:
         runAsNonRoot: false
         runAsUser: 65000
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       restartPolicy: Always
