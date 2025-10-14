@@ -87,7 +87,7 @@ func ProducerPolicyFlow() {
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	FIt("should sync producer policy to other clusters", func() {
+	It("should sync producer policy to other clusters", func() {
 		Expect(YamlK8s(fmt.Sprintf(`
 kind: MeshTimeout
 apiVersion: kuma.io/v1alpha1

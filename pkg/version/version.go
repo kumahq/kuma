@@ -9,7 +9,7 @@ import (
 var (
 	Product     = "Kuma"
 	basedOnKuma = ""
-	version     = "0.0.0-preview.vlocal-build"
+	version     = "unknown"
 	gitTag      = "unknown"
 	gitCommit   = "unknown"
 	buildDate   = "unknown"
