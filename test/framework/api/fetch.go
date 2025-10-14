@@ -14,7 +14,7 @@ import (
 )
 
 // fetchResourceFromPath performs the HTTP GET and unmarshalling for a given API path.
-func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, path string) *http.Response {
+func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, path string) int {
 	r, err := http.Get(cluster.GetKuma().GetAPIServerAddress() + path)
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	defer func() { _ = r.Body.Close() }()
@@ -27,7 +27,7 @@ func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_
 	g.Expect(out.SetSpec(restRes.GetSpec())).ToNot(gomega.HaveOccurred())
 	out.SetMeta(restRes.GetMeta())
 
-	return r
+	return r.StatusCode
 }
 
 func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, mesh string, name string) {
@@ -42,7 +42,7 @@ func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Re
 	fetchResourceFromPath(g, cluster, out, path)
 }
 
-func FetchResourceByKri(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, kri kri.Identifier) *http.Response {
+func FetchResourceByKri(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, kri kri.Identifier) int {
 	path := "/_kri/" + kri.String()
 	return fetchResourceFromPath(g, cluster, out, path)
 }

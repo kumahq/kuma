@@ -120,8 +120,8 @@ spec:
 
 		Eventually(func(g Gomega) {
 			out := meshtimeout_api.NewMeshTimeoutResource()
-			res := api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
-			g.Expect(res.StatusCode).To(Equal(http.StatusOK))
+			statusCode := api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
+			g.Expect(statusCode).To(Equal(http.StatusOK))
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -170,8 +170,8 @@ spec:
 		// should be available via KRI in zone 2
 		Eventually(func(g Gomega) {
 			out := meshtimeout_api.NewMeshTimeoutResource()
-			res := api.FetchResourceByKri(g, multizone.KubeZone2, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
-			g.Expect(res.StatusCode).To(Equal(http.StatusOK))
+			statusCode := api.FetchResourceByKri(g, multizone.KubeZone2, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
+			g.Expect(statusCode).To(Equal(http.StatusOK))
 		}).Should(Succeed())
 	})
 
