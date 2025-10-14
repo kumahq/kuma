@@ -2,7 +2,6 @@ package api_server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
 
