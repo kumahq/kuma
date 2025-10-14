@@ -17,11 +17,12 @@ import (
 )
 
 type kriEndpoint struct {
-	k8sMapper   k8s.ResourceMapperFunc
-	resManager  manager.ResourceManager
-	cpMode      config_core.CpMode
-	environment config_core.EnvironmentType
-	cpZone      string
+	k8sMapper       k8s.ResourceMapperFunc
+	resManager      manager.ResourceManager
+	cpMode          config_core.CpMode
+	environment     config_core.EnvironmentType
+	cpZone          string
+	systemNamespace string
 }
 
 func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
@@ -78,12 +79,15 @@ func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier) 
 }
 
 func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {
-	println("getCoreName", "cpMode", k.cpMode, "cpZone", k.cpZone, "environment", k.environment)
+	namespace := kri.Namespace
+	if kri.Namespace == "" {
+		namespace = k.systemNamespace
+	}
 	if kri.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
 		if k.environment == config_core.UniversalEnvironment {
 			return kri.Name
 		} else {
-			return kri.Name + "." + kri.Namespace
+			return kri.Name + "." + namespace
 		}
 	} else {
 		// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
@@ -91,7 +95,7 @@ func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {
 		if k.environment == config_core.UniversalEnvironment {
 			return hashedName
 		} else {
-			return hashedName + "." + kri.Namespace
+			return hashedName + "." + namespace
 		}
 	}
 }
