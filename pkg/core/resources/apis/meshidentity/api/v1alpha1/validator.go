@@ -40,6 +40,9 @@ func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {
 
 func validateProvider(provider Provider) validators.ValidationError {
 	var verr validators.ValidationError
+	if provider == nil {
+		return verr
+	}
 	switch provider.Type {
 	case BundledType:
 		verr.Add(validateBundled(validators.RootedAt("bundled"), provider.Bundled))

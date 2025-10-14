@@ -1,0 +1,3 @@
+violations:
+- field: spec.provider.type
+  message: '"" must be one of ["Bundled", "Spire"]'

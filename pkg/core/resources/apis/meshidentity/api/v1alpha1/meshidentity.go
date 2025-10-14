@@ -22,7 +22,7 @@ type Selector struct {
 type MeshIdentity struct {
 	Selector *Selector `json:"selector,omitempty"`
 	SpiffeID *SpiffeID `json:"spiffeID,omitempty"`
-	Provider Provider  `json:"provider"`
+	Provider *Provider `json:"provider,omitempty"`
 }
 
 type SpiffeID struct {
