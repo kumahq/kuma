@@ -185,7 +185,6 @@ var _ = Describe("RBAC", func() {
 			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener4").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener4", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
