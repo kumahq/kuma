@@ -118,11 +118,6 @@ If you are asked to update your patch by a reviewer, please do so! Remember:
 you are probably the one in need of it. You must be prepared to apply changes
 to it if necessary.
 
-If your Pull Request was accepted and fixes a bug, adds functionality, or
-makes it significantly easier to use or understand Kuma, congratulations!
-You are now an official contributor to Kuma. Get in touch with us to receive
-your very own [Contributor T-shirt](#contributor-t-shirt)!
-
 Your change will be included in the subsequent release Changelog, and we will
 not forget to include your name if you are an external contributor. :wink:
 
@@ -202,7 +197,7 @@ specification](https://www.conventionalcommits.org/en/v1.0.0/#specification).
 
 Allowed types are enforced via `commitlint`. The list can be found at the
 [`config-conventional` repository](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional#type-enum).
-`fix` and `feat` should only be used for end user visibile contributions. A change to CI, build, a MADR or docs contribution should use the respective `ci`, `build`, `test` types.
+`fix` and `feat` should only be used for end user visible contributions. A change to CI, build, a MADR or docs contribution should use the respective `ci`, `build`, `test` types.
 
 ##### Scope
 
