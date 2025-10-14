@@ -68,7 +68,6 @@ func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier) 
 	}
 	resource := descriptor.NewObject()
 	name := k.getCoreName(identifier)
-	println("**core name**", name)
 	meshName := identifier.Mesh
 
 	if err := k.resManager.Get(ctx, resource, store.GetByKey(name, meshName)); err != nil {
