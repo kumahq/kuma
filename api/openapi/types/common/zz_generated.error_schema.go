@@ -11,6 +11,11 @@ const (
 	Query  InvalidParametersSource = "query"
 )
 
+// Defines values for NotFoundErrorStatus.
+const (
+	N404 NotFoundErrorStatus = 404
+)
+
 // Error Standard error. Follows the [AIP #193 - Errors](https://kong-aip.netlify.app/aip/193/) specification.
 type Error struct {
 	// Detail A human readable explanation specific to this occurrence of the problem.
@@ -63,16 +68,23 @@ type InvalidParametersSource string
 
 // NotFoundError defines model for NotFoundError.
 type NotFoundError struct {
-	Detail   interface{} `json:"detail"`
-	Instance interface{} `json:"instance"`
+	Detail string `json:"detail"`
+
+	// Instance Used to return the correlation ID back to the user, in the format `<app>:trace:<correlation_id>`.
+	Instance string `json:"instance"`
 
 	// InvalidParameters All 400 errors **MUST** return an `invalid_parameters` key in the response.
 	// Used to indicate which fields have invalid values when validated.
 	InvalidParameters *[]InvalidParameters `json:"invalid_parameters,omitempty"`
-	Status            interface{}          `json:"status"`
-	Title             interface{}          `json:"title"`
-	Type              interface{}          `json:"type"`
+
+	// Status The HTTP status code for NotFoundError MUST be 404.
+	Status NotFoundErrorStatus `json:"status"`
+	Title  string              `json:"title"`
+	Type   string              `json:"type"`
 }
+
+// NotFoundErrorStatus The HTTP status code for NotFoundError MUST be 404.
+type NotFoundErrorStatus int
 
 // BadRequest Standard error. Follows the [AIP #193 - Errors](https://kong-aip.netlify.app/aip/193/) specification.
 type BadRequest = Error

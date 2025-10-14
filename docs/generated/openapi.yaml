@@ -5089,15 +5089,21 @@ components:
         - type: object
           properties:
             status:
+              type: integer
+              enum:
+                - 404
               example: 404
+              description: |
+                The HTTP status code for NotFoundError MUST be 404.
             title:
+              type: string
               example: Not Found
             type:
+              type: string
               example: https://httpstatuses.com/404
-            instance:
-              example: kong:trace:1234567890
             detail:
-              example: Not found
+              type: string
+              example: The requested resource was not found
     MeshAccessLogItem:
       type: object
       required:
