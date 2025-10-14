@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -119,8 +120,8 @@ spec:
 
 		Eventually(func(g Gomega) {
 			out := meshtimeout_api.NewMeshTimeoutResource()
-			api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow__producer-policy-flow-ns_to-test-server_"))
-			g.Expect(out.Meta.GetName()).To(Equal(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
+			res := api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
+			g.Expect(res.StatusCode).To(Equal(http.StatusOK))
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -156,6 +157,7 @@ spec:
           requestTimeout: 2s
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 
+		// should not get synced to zone 1
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
 				multizone.KubeZone1.GetTesting(),
@@ -165,10 +167,11 @@ spec:
 			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
 		}).Should(Succeed())
 
+		// should be available via KRI in zone 2
 		Eventually(func(g Gomega) {
 			out := meshtimeout_api.NewMeshTimeoutResource()
-			api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow-ns"))
-			g.Expect(out.Meta.GetName()).To(Equal("to-test-server"))
+			res := api.FetchResourceByKri(g, multizone.KubeZone2, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
+			g.Expect(res.StatusCode).To(Equal(http.StatusOK))
 		}).Should(Succeed())
 	})
 
