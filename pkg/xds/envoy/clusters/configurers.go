@@ -32,6 +32,7 @@ func ClientSideMTLS(
 	upstreamService string,
 	upstreamTLSReady bool,
 	tags []envoy_tags.Tags,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -42,6 +43,7 @@ func ClientSideMTLS(
 			LocalMesh:             mesh,
 			Tags:                  tags,
 			UpstreamTLSReady:      upstreamTLSReady,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }
@@ -53,6 +55,7 @@ func ClientSideMTLSCustomSNI(
 	upstreamService string,
 	upstreamTLSReady bool,
 	sni string,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -64,6 +67,7 @@ func ClientSideMTLSCustomSNI(
 			Tags:                  nil,
 			UpstreamTLSReady:      upstreamTLSReady,
 			SNI:                   sni,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }
@@ -75,6 +79,7 @@ func ClientSideMultiIdentitiesMTLS(
 	upstreamTLSReady bool,
 	sni string,
 	identities []string,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -87,6 +92,7 @@ func ClientSideMultiIdentitiesMTLS(
 			Tags:                  nil,
 			UpstreamTLSReady:      upstreamTLSReady,
 			VerifyIdentities:      identities,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }

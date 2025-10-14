@@ -2,6 +2,7 @@ package meshidentity
 
 import (
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/util/channels"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -96,14 +98,7 @@ func Migration() {
 
 	It("should migrate from mesh.mTLS to MeshIdentity", func() {
 		// given
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		// cross zone traffic works
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", "test-server.meshidentity-migration.svc.kuma-2.mesh.local",
@@ -112,10 +107,38 @@ func Migration() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
-		// when
-		// create only identity
 
-		time.Sleep(1 * time.Hour)
+		// and
+		// start constant requests
+		reqError := atomic.Value{}
+		stopCh := make(chan struct{})
+		defer close(stopCh)
+		go func() {
+			for {
+				if channels.IsClosed(stopCh) {
+					return
+				}
+				// cross zone request
+				_, err := client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client", "test-server.meshidentity-migration.svc.kuma-2.mesh.local",
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)
+				if err != nil {
+					reqError.Store(err)
+				}
+				// the same zone request
+				_, err = client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client", "test-server",
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)
+				if err != nil {
+					reqError.Store(err)
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+		}()
+		// when
+		// create only identity to propagate SpiffeID to all MeshServices
 		onlyIdentity := fmt.Sprintf(`
 type: MeshIdentity
 name: only-identity
@@ -203,6 +226,7 @@ spec:
 			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), utils.Indent(trust2.CABundles[0].PEM.Value, 10), trust2.TrustDomain))).
 			Setup(multizone.KubeZone1)).To(Succeed())
 
+			time.Sleep(1*time.Hour)
 		// and
 		// select all dataplanes
 		yaml = fmt.Sprintf(`
@@ -242,26 +266,7 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 
 		// then
-		// Traffic may sometimes fail when switching to the new identity.
-		// This happens because changes to MeshService are propagated
-		// with the delay while some applications might already use a new identity.
-		// TODO: add constant requests once issue resolved
-		// https://github.com/kumahq/kuma/issues/14340
-		// Consistently(func(g Gomega) {
-		// 	resp, err := client.CollectEchoResponse(
-		// 		multizone.KubeZone1, "demo-client", "test-server",
-		// 		client.FromKubernetesPod(namespace, "demo-client"),
-		// 	)
-		// 	g.Expect(err).ToNot(HaveOccurred())
-		// 	g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		// }, "30s", "1s").Should(Succeed())
-		Consistently(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server.meshidentity-migration.svc.kuma-2.mesh.local",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").Should(Succeed())
+		time.Sleep(5 * time.Second) // let the goroutine execute more requests
+		Expect(reqError.Load()).To(BeNil())
 	})
 }

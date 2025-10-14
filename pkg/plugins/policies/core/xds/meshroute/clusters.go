@@ -8,7 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -230,7 +230,7 @@ func Identities(
 	serviceTagTransformer := func(serviceTag string) string {
 		return serviceTag
 	}
-	// we don't use function which transform service tag to the spiffe id on cluster configuratio
+	// we don't use function which transform service tag to the spiffe id on cluster configuration
 	// instead we want to set it here. It's not required for SpiffeID type, only ServiceTag
 	if includeSpiffeID {
 		serviceTagTransformer = func(serviceTag string) string {
@@ -247,7 +247,7 @@ func Identities(
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, serviceTagTransformer(identity.Value))
 			}
-			if includeSpiffeID && identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
 				result = append(result, identity.Value)
 			}
 		}
@@ -270,12 +270,7 @@ func Identities(
 				continue
 			}
 			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-				if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-					identities[identity.Value] = struct{}{}
-				}
-				if includeSpiffeID && identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
-					identities[identity.Value] = struct{}{}
-				}
+				identities[identity.Value] = struct{}{}
 			}
 		}
 		result = util_maps.SortedKeys(identities)

@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
 	"github.com/kumahq/kuma/pkg/core/naming"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -299,6 +299,7 @@ func configureListener(
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
 
+		// modify validation context only?
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {
 		return nil, err
