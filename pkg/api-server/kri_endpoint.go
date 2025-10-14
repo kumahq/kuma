@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
+
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -26,8 +27,8 @@ type kriEndpoint struct {
 }
 
 func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
-	ws.Route(ws.GET("/_kri/{kri}").To(k.findByKriRoute()).Doc(fmt.Sprintf("Returns a resource by KRI")).
-		Param(ws.PathParameter("kri", fmt.Sprintf("KRI of the resource")).DataType("string")).
+	ws.Route(ws.GET("/_kri/{kri}").To(k.findByKriRoute()).Doc("Returns a resource by KRI").
+		Param(ws.PathParameter("kri", "KRI of the resource").DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(400, "Bad request", nil).
 		Returns(404, "Not found", nil))

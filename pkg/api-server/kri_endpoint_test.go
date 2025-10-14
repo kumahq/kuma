@@ -1,18 +1,19 @@
 package api_server
 
 import (
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 var _ = Describe("KRI endpoint", func() {
 	It("should properly generate CoreName", func() {
 		endpoint := kriEndpoint{
-			cpMode: core.Zone,
-			cpZone: "kuma-1",
-			environment:    core.KubernetesEnvironment,
+			cpMode:          core.Zone,
+			cpZone:          "kuma-1",
+			environment:     core.KubernetesEnvironment,
 			systemNamespace: "kuma-system",
 		}
 

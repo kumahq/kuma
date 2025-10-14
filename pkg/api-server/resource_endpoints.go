@@ -243,7 +243,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 		}
 		var res interface{}
 
-		res, err = formatResource(resource, request.QueryParameter("format") , r.k8sMapper, request.QueryParameter("namespace"))
+		res, err = formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"))
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return

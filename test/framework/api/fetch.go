@@ -5,9 +5,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/test/framework"
