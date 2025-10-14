@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/test/framework/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -84,7 +86,7 @@ func ProducerPolicyFlow() {
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	It("should sync producer policy to other clusters", func() {
+	FIt("should sync producer policy to other clusters", func() {
 		Expect(YamlK8s(fmt.Sprintf(`
 kind: MeshTimeout
 apiVersion: kuma.io/v1alpha1
@@ -155,6 +157,14 @@ spec:
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
+		}).Should(Succeed())
+
+		println("sleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\n")
+
+		Eventually(func(g Gomega) {
+			out := meshtimeout_api.NewMeshTimeoutResource()
+			api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow-ns"))
+			g.Expect(out.Meta.GetName()).To(Equal("to-test-server"))
 		}).Should(Succeed())
 	})
 

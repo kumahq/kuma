@@ -5,12 +5,28 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/test/framework"
 )
+
+// fetchResourceFromPath performs the HTTP GET and unmarshalling for a given API path.
+func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, path string) {
+	r, err := http.Get(cluster.GetKuma().GetAPIServerAddress() + path)
+	g.Expect(err).ToNot(gomega.HaveOccurred())
+	defer func() { _ = r.Body.Close() }()
+	g.Expect(r).To(gomega.HaveHTTPStatus(200))
+
+	body, err := io.ReadAll(r.Body)
+	g.Expect(err).ToNot(gomega.HaveOccurred())
+	restRes, err := rest.JSON.Unmarshal(body, out.Descriptor())
+	g.Expect(err).ToNot(gomega.HaveOccurred())
+	g.Expect(out.SetSpec(restRes.GetSpec())).ToNot(gomega.HaveOccurred())
+	out.SetMeta(restRes.GetMeta())
+}
 
 func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, mesh string, name string) {
 	desc := out.Descriptor()
@@ -21,15 +37,10 @@ func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Re
 	case core_model.ScopeGlobal:
 		path += fmt.Sprintf("/%s/%s", desc.WsPath, name)
 	}
-	r, err := http.Get(cluster.GetKuma().GetAPIServerAddress() + path)
-	g.Expect(err).ToNot(gomega.HaveOccurred())
-	defer r.Body.Close()
-	g.Expect(r).To(gomega.HaveHTTPStatus(200))
+	fetchResourceFromPath(g, cluster, out, path)
+}
 
-	body, err := io.ReadAll(r.Body)
-	g.Expect(err).ToNot(gomega.HaveOccurred())
-	restRes, err := rest.JSON.Unmarshal(body, desc)
-	g.Expect(err).ToNot(gomega.HaveOccurred())
-	_ = out.SetSpec(restRes.GetSpec())
-	out.SetMeta(restRes.GetMeta())
+func FetchResourceByKri(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, kri kri.Identifier) {
+	path := "/_kri/" + kri.String()
+	fetchResourceFromPath(g, cluster, out, path)
 }

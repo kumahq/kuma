@@ -35,20 +35,19 @@ func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
 func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		kriParam := request.PathParameter("kri")
-		namespace := request.PathParameter("namespace")
 		identifier, err := kri.FromString(kriParam)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
 			return
 		}
 
-		resource, err := k.findByKri(request.Request.Context(), identifier, namespace)
+		resource, err := k.findByKri(request.Request.Context(), identifier)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return
 		}
 
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, namespace)
+		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
 			return
@@ -61,13 +60,14 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier, namespace string) (core_model.Resource, error) {
+func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier) (core_model.Resource, error) {
 	descriptor, err := getDescriptor(identifier.ResourceType)
 	if err != nil {
 		return nil, err
 	}
 	resource := descriptor.NewObject()
-	name := k.getCoreName(identifier, namespace)
+	name := k.getCoreName(identifier)
+	println("**core name**", name)
 	meshName := identifier.Mesh
 
 	if err := k.resManager.Get(ctx, resource, store.GetByKey(name, meshName)); err != nil {
@@ -77,17 +77,22 @@ func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier, 
 	return resource, nil
 }
 
-func (k *kriEndpoint) getCoreName(kri kri.Identifier, namespace string) string {
-	name := kri.Name
+func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {
+	println("getCoreName", "cpMode", k.cpMode, "cpZone", k.cpZone, "environment", k.environment)
 	if kri.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
 		if k.environment == config_core.UniversalEnvironment {
-			return name
+			return kri.Name
 		} else {
-			return name + "." + namespace
+			return kri.Name + "." + kri.Namespace
 		}
 	} else {
 		// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
-		return hash.HashedName(kri.Mesh, name, kri.Zone, namespace)
+		hashedName := hash.HashedName(kri.Mesh, kri.Name, kri.Zone, kri.Namespace)
+		if k.environment == config_core.UniversalEnvironment {
+			return hashedName
+		} else {
+			return hashedName + "." + kri.Namespace
+		}
 	}
 }
 
