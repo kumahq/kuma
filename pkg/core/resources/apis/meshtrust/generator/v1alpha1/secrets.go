@@ -26,6 +26,10 @@ func NewPlugin() core_plugins.CoreResourcePlugin {
 }
 
 func (p *plugin) Generate(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
+	// When using SPIRE, we skip ValidationContext generation for the dataplane,
+	// since SPIRE is responsible for delivering the validation context.
+	// We should investigate whether it's possible to support both mechanisms simultaneously.
+	// TODO: https://github.com/kumahq/kuma/issues/14685
 	externallyManaged := pointer.Deref(proxy.WorkloadIdentity).ManagementMode == core_xds.ExternalManagementMode
 	hasTrustDomains := len(xdsCtx.Mesh.CAsByTrustDomain) > 0
 

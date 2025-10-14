@@ -86,7 +86,7 @@ var _ = Describe("Spire Providers Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identitySource).To(Equal(expectedIdentity))
 
-			validatorSource, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(identity.ValidationSourceConfigurer()).Build()
+			validatorSource, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(identity.ExternalValidationSourceConfigurer()).Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(validatorSource).To(Equal(expectedValidation))
 

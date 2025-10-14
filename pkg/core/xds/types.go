@@ -229,9 +229,9 @@ type WorkloadIdentity struct {
 	// IdentitySourceConfigurer returns a function that configures the identity secret,
 	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
 	IdentitySourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
-	// ValidationSourceConfigurer returns a function that configures the validation secret,
-	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
-	ValidationSourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
+	// ExternalValidationSourceConfigurer returns a function that configures the validation secret,
+	// including the secret name and the location of SDS server.
+	ExternalValidationSourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
 	// AdditionalResources contains Envoy resources that can be added to the resource set.
 	// It provides a simple way to create provider-specific Envoy resources and propagate them to Envoy.
 	AdditionalResources *ResourceSet

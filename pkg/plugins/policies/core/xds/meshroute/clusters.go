@@ -175,10 +175,10 @@ func UpstreamTLSContext(realResourceRef *resolve.RealResourceBackendRef, meshCtx
 		sanMatchers = append(sanMatchers, conf)
 	}
 	var validationSds bldrs_common.Configurer[envoy_tls.CommonTlsContext_CombinedCertificateValidationContext]
-	if proxy.WorkloadIdentity.ValidationSourceConfigurer != nil {
+	if proxy.WorkloadIdentity.ExternalValidationSourceConfigurer != nil {
 		validationSds = bldrs_tls.ValidationContextSdsSecretConfig(
 			bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
-				proxy.WorkloadIdentity.ValidationSourceConfigurer(),
+				proxy.WorkloadIdentity.ExternalValidationSourceConfigurer(),
 			),
 		)
 	} else {
