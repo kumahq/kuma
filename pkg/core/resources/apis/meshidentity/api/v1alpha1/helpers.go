@@ -140,3 +140,12 @@ func (s *MeshIdentityStatus) IsInitialized() bool {
 	}
 	return false
 }
+
+func (s *MeshIdentityStatus) IsSANOnlyMode() bool {
+	for _, condition := range s.Conditions {
+		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionFalse && condition.Reason == "PartiallyReady" {
+			return true
+		}
+	}
+	return false
+}

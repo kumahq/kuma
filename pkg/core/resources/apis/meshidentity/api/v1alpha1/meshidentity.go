@@ -99,10 +99,11 @@ type Spire struct {
 }
 
 const (
-	ReadyConditionType     string = "Ready"
-	ProviderConditionType  string = "Provider"
-	MeshTrustConditionType string = "MeshTrustCreated"
-	DependenciesReadyType  string = "DependenciesReady"
+	ReadyConditionType       string = "Ready"
+	ProviderConditionType    string = "Provider"
+	SANProviderConditionType string = "SANProvider"
+	MeshTrustConditionType   string = "MeshTrustCreated"
+	DependenciesReadyType    string = "DependenciesReady"
 )
 
 type MeshIdentityStatus struct {
