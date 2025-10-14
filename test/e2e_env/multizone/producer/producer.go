@@ -118,6 +118,12 @@ spec:
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
+			out := meshtimeout_api.NewMeshTimeoutResource()
+			api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow__producer-policy-flow-ns_to-test-server_"))
+			g.Expect(out.Meta.GetName()).To(Equal(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
+		}).Should(Succeed())
+
+		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
@@ -158,8 +164,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
 		}).Should(Succeed())
-
-		println("sleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\nsleep\n")
 
 		Eventually(func(g Gomega) {
 			out := meshtimeout_api.NewMeshTimeoutResource()

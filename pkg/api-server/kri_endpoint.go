@@ -95,7 +95,7 @@ func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {
 		if k.environment == config_core.UniversalEnvironment {
 			return hashedName
 		} else {
-			return hashedName + "." + namespace
+			return hashedName + "." + k.systemNamespace
 		}
 	}
 }
