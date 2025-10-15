@@ -56,17 +56,9 @@ paths:
               $ref: '#/components/schemas/MeshRetryItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMeshRetry
@@ -87,11 +79,7 @@ paths:
           description: name of the MeshRetry
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRetryDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshRetryDeleteSuccessResponse'
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
@@ -144,20 +132,6 @@ components:
   schemas:
     MeshRetryItem:
       $ref: 'schema.yaml'
-    MeshRetryCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: |
-            warnings is a list of warning messages to return to the requesting Kuma API clients.
-            Warning messages describe a problem the client making the API request should correct or be aware of.
-          items:
-            type: string
-    MeshRetryDeleteSuccessResponse:
-      type: object
-      properties: {}
 
   responses:
     MeshRetryItem:
@@ -183,3 +157,24 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshRetryCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    MeshRetryDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object

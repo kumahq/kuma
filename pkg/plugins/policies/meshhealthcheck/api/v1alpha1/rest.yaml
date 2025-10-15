@@ -56,17 +56,9 @@ paths:
               $ref: '#/components/schemas/MeshHealthCheckItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMeshHealthCheck
@@ -87,11 +79,7 @@ paths:
           description: name of the MeshHealthCheck
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshHealthCheckDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshHealthCheckDeleteSuccessResponse'
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
@@ -144,20 +132,6 @@ components:
   schemas:
     MeshHealthCheckItem:
       $ref: 'schema.yaml'
-    MeshHealthCheckCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: |
-            warnings is a list of warning messages to return to the requesting Kuma API clients.
-            Warning messages describe a problem the client making the API request should correct or be aware of.
-          items:
-            type: string
-    MeshHealthCheckDeleteSuccessResponse:
-      type: object
-      properties: {}
 
   responses:
     MeshHealthCheckItem:
@@ -183,3 +157,24 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshHealthCheckCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    MeshHealthCheckDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object

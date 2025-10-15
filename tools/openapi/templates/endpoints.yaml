@@ -60,17 +60,9 @@ paths:
               $ref: '#/components/schemas/{{.Name}}Item'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/{{.Name}}CreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/{{.Name}}CreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/{{.Name}}CreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/{{.Name}}CreateOrUpdateSuccessResponse'
 
     delete:
       operationId: delete{{ .Name }}
@@ -93,11 +85,7 @@ paths:
           description: name of the {{ .Name }}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/{{.Name}}DeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/{{.Name}}DeleteSuccessResponse'
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
@@ -152,20 +140,6 @@ components:
   schemas:
     {{.Name}}Item:
       $ref: 'schema.yaml'
-    {{.Name}}CreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: |
-            warnings is a list of warning messages to return to the requesting Kuma API clients.
-            Warning messages describe a problem the client making the API request should correct or be aware of.
-          items:
-            type: string
-    {{.Name}}DeleteSuccessResponse:
-      type: object
-      properties: {}
 
   responses:
     {{.Name}}Item:
@@ -191,3 +165,24 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    {{.Name}}CreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    {{.Name}}DeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
