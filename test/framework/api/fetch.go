@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
@@ -15,6 +16,7 @@ import (
 
 // fetchResourceFromPath performs the HTTP GET and unmarshalling for a given API path.
 func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, path string) int {
+	ginkgo.GinkgoHelper()
 	r, err := http.Get(cluster.GetKuma().GetAPIServerAddress() + path)
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	defer func() { _ = r.Body.Close() }()
@@ -31,6 +33,7 @@ func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_
 }
 
 func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, mesh string, name string) {
+	ginkgo.GinkgoHelper()
 	desc := out.Descriptor()
 	path := ""
 	switch desc.Scope {
@@ -43,6 +46,7 @@ func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Re
 }
 
 func FetchResourceByKri(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, kri kri.Identifier) int {
+	ginkgo.GinkgoHelper()
 	path := "/_kri/" + kri.String()
 	return fetchResourceFromPath(g, cluster, out, path)
 }
