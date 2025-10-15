@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -88,7 +87,6 @@ func Setup(rt runtime.Runtime) error {
 			rt,
 			deltaServer,
 			resourceSyncer,
-			rt.Config().Store.Type == store_config.KubernetesStore,
 		),
 	),
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,

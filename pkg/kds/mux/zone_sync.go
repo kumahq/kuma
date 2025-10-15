@@ -59,7 +59,6 @@ func NewKDSSyncServiceServer(
 	rt runtime.Runtime,
 	deltaServer delta.Server,
 	resourceSyncer kds_sync_store_v2.ResourceSyncer,
-	k8sStore bool,
 ) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
 		context:                  rt.AppContext(),
@@ -73,7 +72,7 @@ func NewKDSSyncServiceServer(
 		createZoneOnFirstConnect: rt.KDSContext().CreateZoneOnFirstConnect,
 		typesSentByZone:          rt.KDSContext().TypesSentByZone,
 		resourceSyncer:           resourceSyncer,
-		k8sStore:                 k8sStore,
+		k8sStore:                 rt.Config().Store.Type == config_store.KubernetesStore,
 		systemNamespace:          rt.Config().Store.Kubernetes.SystemNamespace,
 		responseBackoff:          rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 	}
