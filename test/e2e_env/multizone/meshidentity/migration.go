@@ -226,7 +226,6 @@ spec:
 			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), utils.Indent(trust2.CABundles[0].PEM.Value, 10), trust2.TrustDomain))).
 			Setup(multizone.KubeZone1)).To(Succeed())
 
-			time.Sleep(1*time.Hour)
 		// and
 		// select all dataplanes
 		yaml = fmt.Sprintf(`

@@ -95,9 +95,7 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 		),
 	)
 	if useMeshTrust {
-		meshCaSecret = NewSecretConfigSource(
-			system_names.SystemResourceNameCABundle,
-		)
+		meshCaSecret = NewSecretConfigSource(system_names.SystemResourceNameCABundle)
 	}
 	identitySecret := NewSecretConfigSource(
 		getNameOrDefault(

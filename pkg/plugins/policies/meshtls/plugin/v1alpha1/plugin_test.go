@@ -158,12 +158,6 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"ca-bundle",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
 			},
 		}),
 		Entry("permissive based on workload identity and custom functions", testCase{
@@ -178,7 +172,7 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 					return bldrs_tls.SdsSecretConfigSource(
 						"ca-bundle",
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
@@ -343,7 +337,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Name:   "outbound",
 			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
-				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil)).
+				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil, false)).
 				MustBuild(),
 			Protocol: core_meta.ProtocolHTTP,
 			ResourceOrigin: kri.Identifier{
@@ -394,7 +388,7 @@ func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBui
 			Name:   "outgoing",
 			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
-				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil)).
+				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil, false)).
 				MustBuild(),
 		},
 	}

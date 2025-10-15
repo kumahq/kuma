@@ -178,6 +178,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 			true, // TODO we just assume this atm?...
 			sni,
 			meshroute.Identities(backendRef, meshCtx, false),
+			len(meshCtx.CAsByTrustDomain) > 0,
 		))
 	if proxy.WorkloadIdentity != nil {
 		upstreamCtx, err := meshroute.UpstreamTLSContext(backendRef, meshCtx, proxy, sni)
@@ -221,7 +222,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}, len(meshCtx.CAsByTrustDomain) > 0),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 

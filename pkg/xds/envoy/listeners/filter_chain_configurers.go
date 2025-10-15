@@ -83,7 +83,7 @@ func ServerSideMTLS(
 		TlsVersion:            tlsVersion,
 		TlsCiphers:            tlsCiphers,
 		UnifiedResourceNaming: unifiedResourceNaming,
-		UseMeshTrust: 		useMeshTrust,
+		UseMeshTrust:          useMeshTrust,
 	})
 }
 

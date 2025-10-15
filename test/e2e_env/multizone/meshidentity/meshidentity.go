@@ -79,9 +79,7 @@ func Identity() {
 
 	getMeshTrust := func(zone string) *meshtrust_api.MeshTrust {
 		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), zone, Config.KumaNamespace), "-ojson")
-		println(fmt.Sprintf("ALL IDEN: %v", trust))
 		Expect(err).ToNot(HaveOccurred())
-		println(fmt.Sprintf("MATCHED IDEN: %v", trust))
 		r, err := rest.JSON.Unmarshal([]byte(trust), meshtrust_api.MeshTrustResourceTypeDescriptor)
 		Expect(err).ToNot(HaveOccurred())
 		return r.GetSpec().(*meshtrust_api.MeshTrust)

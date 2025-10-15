@@ -11,7 +11,6 @@ import (
 	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
-	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -72,6 +71,8 @@ func (g BaseMeshContext) Resources() Resources {
 	}
 }
 
+type PEMBytes []byte
+
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
 // This data is the same for all data plane proxies within one mesh.
 // If there is an information that can be precomputed and shared between all data plane proxies
@@ -91,7 +92,7 @@ type MeshContext struct {
 	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
 	ReachableServicesGraph      ReachableServicesGraph
-	TrustsByTrustDomain         map[string][]*meshtrust_api.MeshTrust
+	CAsByTrustDomain            map[string][]PEMBytes
 }
 
 type ServiceInformation struct {

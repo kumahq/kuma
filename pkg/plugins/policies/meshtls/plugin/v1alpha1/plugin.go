@@ -21,6 +21,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
 	bldrs_matcher "github.com/kumahq/kuma/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -38,6 +39,7 @@ import (
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
 )
 
 var logger = core.Log.WithName("MeshTLS")
@@ -368,13 +370,25 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
 	if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
-		for trustDomain := range xdsCtx.Mesh.TrustsByTrustDomain {
+		for trustDomain := range xdsCtx.Mesh.CAsByTrustDomain {
 			id, err := spiffeid.TrustDomainFromString(trustDomain)
 			if err != nil {
 				return nil, err
 			}
 			conf := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.PrefixMatcher(id.IDString()))))
 			sanMatchers = append(sanMatchers, conf)
+		}
+	}
+
+	validationCtx := func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+		return bldrs_tls.SdsSecretConfigSource(
+			system_names.SystemResourceNameCABundle,
+			bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+		)
+	}
+	if proxy.WorkloadIdentity.ExternalValidationSourceConfigurer != nil {
+		validationCtx = func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+			return proxy.WorkloadIdentity.ExternalValidationSourceConfigurer()
 		}
 	}
 
@@ -385,26 +399,38 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 					Configure(bldrs_common.IfNotNil(conf.TlsCiphers, bldrs_tls.CipherSuites)).
 					Configure(bldrs_common.IfNotNil(conf.TlsVersion, func(version common_tls.Version) bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
 						if version.Max != nil {
-							bldrs_tls.TlsMaxVersion(version.Max)
+							return bldrs_tls.TlsMaxVersion(version.Max)
 						}
 						if version.Min != nil {
-							bldrs_tls.TlsMinVersion(version.Min)
+							return bldrs_tls.TlsMinVersion(version.Min)
 						}
 						return nil
 					})).
-					Configure(bldrs_tls.CombinedCertificateValidationContext(
-						bldrs_tls.NewCombinedCertificateValidationContext().Configure(
-							bldrs_tls.DefaultValidationContext(bldrs_tls.NewDefaultValidationContext().Configure(
-								bldrs_tls.SANs(sanMatchers),
-							)),
-						).Configure(bldrs_tls.ValidationContextSdsSecretConfig(
+					Configure(
+						bldrs_tls.CombinedCertificateValidationContext(
+							bldrs_tls.NewCombinedCertificateValidationContext().
+								Configure(
+									bldrs_tls.DefaultValidationContext(
+										bldrs_tls.NewDefaultValidationContext().
+											Configure(bldrs_tls.SANs(sanMatchers)),
+									),
+								).
+								Configure(
+									bldrs_tls.ValidationContextSdsSecretConfig(
+										bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(validationCtx()),
+									),
+								),
+						),
+					).
+					Configure(
+						bldrs_tls.TlsCertificateSdsSecretConfigs([]*bldrs_common.Builder[envoy_tls.SdsSecretConfig]{
 							bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
-								proxy.WorkloadIdentity.ValidationSourceConfigurer())),
-						))).
-					Configure(bldrs_tls.TlsCertificateSdsSecretConfigs([]*bldrs_common.Builder[envoy_tls.SdsSecretConfig]{
-						bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
-							proxy.WorkloadIdentity.IdentitySourceConfigurer()),
-					})))).
+								proxy.WorkloadIdentity.IdentitySourceConfigurer(),
+							),
+						}),
+					),
+			),
+		).
 		Configure(bldrs_tls.RequireClientCertificate(true)).
 		Build()
 }

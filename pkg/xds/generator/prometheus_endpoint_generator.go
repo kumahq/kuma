@@ -112,7 +112,7 @@ func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.Res
 		case mesh_proto.PrometheusTlsConfig_activeMTLSBackend:
 			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil, unifiedNaming, len(xdsCtx.Mesh.TrustsByTrustDomain)> 0)),
+					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil, unifiedNaming, len(xdsCtx.Mesh.CAsByTrustDomain) > 0),
 					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{
 						{
 							ClusterName: metricsHijackerClusterName,
