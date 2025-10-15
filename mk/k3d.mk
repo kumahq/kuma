@@ -1,6 +1,17 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
-METALLB_VERSION ?= v0.13.9
-K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
+
+# renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
+METALLB_VERSION ?= v0.15.2
+METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
+METALLB_NAMESPACE ?= metallb-system
+
+# renovate: datasource=helm depName=calico packageName=projectcalico/tigera-operator registryUrl=https://docs.tigera.io/calico/charts
+CALICO_VERSION ?= v3.30.3
+CALICO_NAMESPACE ?= tigera-operator
+CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
+CALICO_HELM_REPO_NAME ?= projectcalico
+CALICO_HELM_RELEASE ?= calico
+CALICO_HELM_CHART ?= $(CALICO_HELM_REPO_NAME)/tigera-operator
 
 PROJECT_NAME ?= kuma
 KUMA_MODE ?= zone
@@ -42,7 +53,6 @@ KUMA_SETTINGS_PREFIX ?=
 #  [...etc]
 PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
-K3D_NETWORK_CNI ?= flannel
 K3D_REGISTRY_FILE ?=
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
@@ -56,7 +66,8 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
+	K3D_CLUSTER_CREATE_OPTS += --k3s-arg '--flannel-backend=none@server:*'
+	K3D_CLUSTER_CREATE_OPTS += --k3s-arg '--disable-network-policy@server:*'
 endif
 
 ifdef CI
@@ -145,7 +156,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
-	$(MAKE) k3d/configure/calico
+	$(MAKE) k3d/configure/cni
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -157,12 +168,40 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	$(MAKE) k3d/configure/ebpf
 	$(MAKE) k3d/configure/metallb
 
-.PHONY: k3d/configure/calico
-k3d/configure/calico:
-ifeq ($(K3D_NETWORK_CNI),calico)
-    # https://docs.tigera.io/calico/latest/getting-started/kubernetes/k3s/quickstart
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/calico.yaml
-endif
+K3D_NETWORK_CNI_SUPPORTED := flannel calico
+K3D_NETWORK_CNI_DEFAULT   := flannel
+K3D_NETWORK_CNI           ?= $(K3D_NETWORK_CNI_DEFAULT)
+K3D_NETWORK_CNI_REQ       := $(strip $(K3D_NETWORK_CNI))
+K3D_NETWORK_CNI_EFFECTIVE := $(if $(K3D_NETWORK_CNI_REQ),$(if $(filter $(K3D_NETWORK_CNI_REQ),$(K3D_NETWORK_CNI_SUPPORTED)),$(K3D_NETWORK_CNI_REQ),$(K3D_NETWORK_CNI_DEFAULT)),$(K3D_NETWORK_CNI_DEFAULT))
+
+# Entry point: runs the CNI-specific target based on K3D_CNI
+.PHONY: k3d/configure/cni
+k3d/configure/cni: k3d/configure/cni/$(K3D_NETWORK_CNI_EFFECTIVE)
+	@if [ -z "$(K3D_NETWORK_CNI_REQ)" ]; then \
+	  echo "[WARNING]: Missing K3D CNI, falling back to '$(K3D_NETWORK_CNI_DEFAULT)'" >&2; \
+	elif [ "$(K3D_NETWORK_CNI_REQ)" != "$(K3D_NETWORK_CNI_EFFECTIVE)" ]; then \
+	  echo "[WARNING]: Unsupported K3D CNI '$(K3D_NETWORK_CNI_REQ)', falling back to '$(K3D_NETWORK_CNI_DEFAULT)'" >&2; \
+	fi
+
+# Default: flannel (no action required)
+.PHONY: k3d/configure/cni/flannel
+k3d/configure/cni/flannel:
+	@true
+
+# Calico (runs when K3D_NETWORK_CNI=calico)
+.PHONY: k3d/configure/cni/calico
+k3d/configure/cni/calico:
+	@helm repo add $(CALICO_HELM_REPO_NAME) $(CALICO_HELM_REPO_ADDR) >/dev/null
+	@helm repo update $(CALICO_HELM_REPO_NAME) >/dev/null
+	@helm upgrade $(CALICO_HELM_RELEASE) $(CALICO_HELM_CHART) \
+		--install --create-namespace --wait \
+		--kubeconfig $(KIND_KUBECONFIG) \
+		--namespace $(CALICO_NAMESPACE) \
+		--version $(CALICO_VERSION) \
+		--set apiServer.enabled=false \
+		--set goldmane.enabled=false \
+		--set whisker.enabled=false \
+		--set defaultFelixConfiguration.enabled=false
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:
@@ -173,8 +212,8 @@ endif
 
 .PHONY: k3d/configure/metallb
 k3d/configure/metallb:
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n metallb-system --all pods
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f $(METALLB_MANIFESTS)
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n $(METALLB_NAMESPACE) --all pods
 	@# Construct a valid address space from the docker network and the template IPAddressPool
 	@# Make sure we only take an IPv4 network
 	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format json | jq -r '.[0].IPAM.Config[].Subnet | select(. | contains(":") | not)')"; \
