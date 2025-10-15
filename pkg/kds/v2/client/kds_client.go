@@ -3,12 +3,12 @@ package client
 import (
 	"context"
 	std_errors "errors"
+	"fmt"
 	"io"
 	"time"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -104,6 +104,7 @@ func (s *kdsSyncClient) Receive() error {
 
 			select {
 			case <-ctx.Done():
+				s.log.V(1).Info("stopping sending initial DeltaDiscoveryRequest signals")
 				return
 			case wrappedReqCh <- wrappedReq{
 				deltaReq: subScribeRequest,
@@ -120,16 +121,13 @@ func (s *kdsSyncClient) Receive() error {
 		for {
 			select {
 			case <-ctx.Done():
+				s.log.V(1).Info("stopping sending messages")
 				return
 
 			case req := <-wrappedReqCh:
 				err := s.kdsStream.SendMsg(req.deltaReq)
 				if err != nil {
-					if err == io.EOF {
-						s.log.V(1).Info("stream ended")
-					} else {
-						sendErrChannelFn(errors.Wrap(err, "failed to send request"))
-					}
+					sendErrChannelFn(fmt.Errorf("failed to send request: %w", err))
 					return
 				}
 				if req.cbFunc != nil {
@@ -147,16 +145,13 @@ func (s *kdsSyncClient) Receive() error {
 		for {
 			select {
 			case <-ctx.Done():
+				s.log.V(1).Info("stopping receiving messages")
 				return
 
 			default:
 				received, err := s.kdsStream.Receive()
 				if err != nil {
-					if err == io.EOF {
-						s.log.V(1).Info("stream ended")
-					} else {
-						sendErrChannelFn(errors.Wrap(err, "failed to receive a discovery response"))
-					}
+					sendErrChannelFn(fmt.Errorf("failed to receive a response: %w", err))
 					return
 				}
 
@@ -220,5 +215,9 @@ func (s *kdsSyncClient) Receive() error {
 	}()
 
 	err := <-errCh
+	if std_errors.Is(err, io.EOF) {
+		s.log.V(1).Info("stream ended")
+		return nil
+	}
 	return err
 }

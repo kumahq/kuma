@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -27,6 +28,7 @@ type latestReceived struct {
 }
 
 type stream struct {
+	sync.Mutex
 	streamClient       KDSSyncServiceStream
 	initialRequestDone map[core_model.ResourceType]bool
 	latestReceived     map[core_model.ResourceType]*latestReceived
@@ -102,7 +104,9 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		return UpstreamResponse{}, err
 	}
 	// when there isn't nonce it means it's the first request
+	s.Lock()
 	isInitialRequest := !s.initialRequestDone[rs.GetItemType()]
+	s.Unlock()
 	s.latestReceived[rs.GetItemType()] = &latestReceived{
 		nonce:         resp.Nonce,
 		nameToVersion: nameToVersion,
@@ -153,7 +157,9 @@ func (s *stream) BuildNACKRequest(resourceType core_model.ResourceType, err erro
 }
 
 func (s *stream) MarkInitialRequestDone(resourceType core_model.ResourceType) {
+	s.Lock()
 	s.initialRequestDone[resourceType] = true
+	s.Unlock()
 }
 
 // go-contro-plane cache keeps them as a <resource_name>.<mesh_name>
