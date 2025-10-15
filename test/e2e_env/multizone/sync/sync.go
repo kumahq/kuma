@@ -2,9 +2,12 @@ package sync
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -108,6 +111,20 @@ spec:
 				// be run simultaneously
 				g.Expect(strings.Count(out, "Online")).To(BeNumerically(">=", 4))
 			}, "30s", "1s").Should(Succeed())
+
+			// should be able to retrieve Zone Ingress from Universal zone by KRI
+			Eventually(func(g Gomega) {
+				out := mesh.NewZoneIngressResource()
+				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-5__ingress_"))
+				g.Expect(statusCode).To(Equal(http.StatusOK))
+			}).Should(Succeed())
+
+			// should be able to retrieve Zone Ingress from Kubernetes zone by KRI
+			Eventually(func(g Gomega) {
+				out := mesh.NewZoneIngressResource()
+				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-2_kuma-system_kuma-ingress-58c55d9466-d2gcs_"))
+				g.Expect(statusCode).To(Equal(http.StatusOK))
+			}).Should(Succeed())
 		})
 
 		It("should sync Zone Egresses", func() {
@@ -124,6 +141,13 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(strings.Count(out, "Online")).To(Equal(2))
 			}, "30s", "1s").Should(Succeed())
+
+			// should be able to retrieve Dataplane from Universal zone by KRI
+			Eventually(func(g Gomega) {
+				out := mesh.NewZoneIngressResource()
+				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_dp_sync_kuma-4__test-server_"))
+				g.Expect(statusCode).To(Equal(http.StatusOK))
+			}).Should(Succeed())
 		})
 
 		It("should drop unwanted labels", func() {
@@ -213,7 +237,7 @@ spec:
 			}, "30s", "1s").Should(ContainSubstring(name))
 		}
 
-		It("should not sync secret from zone to global", func() {
+		It("should sync secret from zone to global", func() {
 			secretName := "global-and-zone-secret"
 			zoneSecret := fmt.Sprintf(`
 apiVersion: v1
