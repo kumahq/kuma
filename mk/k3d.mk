@@ -1,11 +1,7 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
-<<<<<<< HEAD
-METALLB_VERSION ?= v0.13.9
-K3D_VERSION ?= $(shell $(K3D_BIN) version | grep '^k3d version' | cut -d' ' -f3 | sed 's/^v//')
-=======
 
 # renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.15.2
+METALLB_VERSION ?= v0.13.9
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
@@ -16,7 +12,6 @@ CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
 CALICO_HELM_REPO_NAME ?= projectcalico
 CALICO_HELM_RELEASE ?= calico
 CALICO_HELM_CHART ?= $(CALICO_HELM_REPO_NAME)/tigera-operator
->>>>>>> fc065bab5 (ci(k3d): add CNI selector, switch Calico to Helm, bump MetalLB (#14694))
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
