@@ -60,3 +60,4 @@ ifdef BASE_API
 else
 	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION) generate '/specs/**/*.yaml' > $@
 endif
+	$(MAKE) --no-print-directory validate/openapi-generated-docs

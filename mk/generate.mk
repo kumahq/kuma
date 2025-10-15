@@ -116,6 +116,21 @@ generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN)
 	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
 	$(OAPI_GEN) kri
 
+.PHONY: validate/openapi-generated-docs
+validate/openapi-generated-docs:
+	@schema=docs/generated/openapi.yaml; \
+	if [ ! -f $$schema ]; then \
+		echo "Error: $$schema not found. Run 'make docs/generated/openapi.yaml' first."; \
+		exit 1; \
+	fi; \
+	mkdir -p $(BUILD_DIR); \
+	tmp_file=$$(mktemp $(BUILD_DIR)/openapi-validate.XXXXXX.go); \
+	if ! $(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o $$tmp_file $$schema; then \
+		rm -f $$tmp_file; \
+		exit 1; \
+	fi; \
+	rm -f $$tmp_file
+
 .PHONY: generate/oas-for-ts
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
 
