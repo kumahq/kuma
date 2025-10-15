@@ -282,12 +282,35 @@ spec:
 
 In this case, we would not create any certificates or issue new identities. The only change would be that the `MeshService` is updated with a new `SpiffeID`.
 
+### Status field
+
+When a user creates a `MeshIdentity`, a controller sets its status to indicate whether the resource is ready and initializes all related resources.
+In this case, since there is no provider, we don’t have an initialization phase. However, we still want to set a status on the resource for better debuggability.
+
+Proposed status:
+
+```golang
+        common_api.Condition{
+					Type:    meshidentity_api.SANProviderConditionType,
+					Status:  kube_meta.ConditionTrue,
+					Reason:  "SANProvider",
+					Message: "Providing only SANs for services.",
+				},
+				common_api.Condition{
+					Type:    meshidentity_api.ReadyConditionType,
+					Status:  kube_meta.ConditionFalse,
+					Reason:  "PartiallyReady",
+					Message: "Running in SAN providing only mode",
+				},
+```
+
 #### Migration flow
 
 1. The user creates a `MeshIdentity` without a provider configuration.
 2. The corresponding `MeshServices` are updated with the new `SpiffeID`.
-3. The user adds the provider configuration to the `MeshIdentity` resource.
+3. The user creates a new `MeshIdentity` resource with a selector.
 4. Traffic continues to operate without downtime.
+5. The user can remove the initial `MeshIdentity` (the one without a provider).
 
 #### Multiple `MeshIdentities` in `Active` mode
 
