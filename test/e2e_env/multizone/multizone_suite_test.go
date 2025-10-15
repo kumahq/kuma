@@ -63,7 +63,7 @@ var (
 	_ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)
 	_ = Describe("Connectivity", connectivity.Connectivity, Ordered)
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
-	_ = FDescribe("Sync", multizone_sync.Sync, Ordered)
+	_ = Describe("Sync", multizone_sync.Sync, Ordered)
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
