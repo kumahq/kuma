@@ -132,15 +132,6 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	$(MAKE) k3d/configure/ebpf
 	$(MAKE) k3d/configure/metallb
 
-<<<<<<< HEAD
-.PHONY: k3d/configure/calico
-k3d/configure/calico:
-ifeq ($(K3D_NETWORK_CNI),calico)
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/tigera-operator.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/custom-resources.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) patch installation default --type=merge --patch='{"spec":{"calicoNetwork":{"containerIPForwarding":"Enabled"}}}'
-endif
-=======
 K3D_NETWORK_CNI_SUPPORTED := flannel calico
 K3D_NETWORK_CNI_DEFAULT   := flannel
 K3D_NETWORK_CNI           ?= $(K3D_NETWORK_CNI_DEFAULT)
@@ -175,7 +166,6 @@ k3d/configure/cni/calico:
 		--set goldmane.enabled=false \
 		--set whisker.enabled=false \
 		--set defaultFelixConfiguration.enabled=false
->>>>>>> fc065bab5 (ci(k3d): add CNI selector, switch Calico to Helm, bump MetalLB (#14694))
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:
