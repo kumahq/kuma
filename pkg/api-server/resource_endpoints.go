@@ -254,7 +254,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 	}
 }
 
-func formatResource(resource core_model.Resource, format string, k8sMapper k8s.ResourceMapperFunc, namespace string) (interface{}, error) {
+func formatResource(resource core_model.Resource, format string, k8sMapper k8s.ResourceMapperFunc, namespace string) (any, error) {
 	switch format {
 	case "k8s", "kubernetes":
 		res, err := k8sMapper(resource, namespace)
