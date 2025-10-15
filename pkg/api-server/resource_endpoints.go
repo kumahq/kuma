@@ -266,7 +266,7 @@ func formatResource(resource core_model.Resource, format string, k8sMapper k8s.R
 		return rest.From.Resource(resource), nil
 	default:
 		err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
-		return nil, &err
+		return nil, err.OrNil()
 	}
 }
 

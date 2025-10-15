@@ -50,8 +50,6 @@ func (i Identifier) IsLocallyOriginated(isGlobal bool, zone string) bool {
 	case false:
 		// In Zone CP, resources are treated as locally originated if KRI zone matches the current CP zone.
 		return i.Zone == zone
-	default:
-		return true
 	}
 }
 
