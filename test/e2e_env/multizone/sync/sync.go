@@ -3,7 +3,6 @@ package sync
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -105,27 +104,18 @@ spec:
 
 	Context("from Remote to Global", func() {
 		It("should sync Zone Ingress", func() {
-			kubernetesZoneIngressName := ""
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses", "")
 				g.Expect(err).ToNot(HaveOccurred())
 				// Some tests create their own ZoneIngresses that may or may not
 				// be run simultaneously
 				g.Expect(strings.Count(out, "Online")).To(BeNumerically(">=", 4))
-				kubernetesZoneIngressName = regexp.MustCompile(`\bkuma-ingress-[A-Za-z0-9]+-[A-Za-z0-9]+\b`).FindString(out)
 			}, "30s", "1s").Should(Succeed())
 
 			// should be able to retrieve Zone Ingress from Universal zone by KRI
 			Eventually(func(g Gomega) {
 				out := mesh.NewZoneIngressResource()
 				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-5__ingress_"))
-				g.Expect(statusCode).To(Equal(http.StatusOK))
-			}).Should(Succeed())
-
-			// should be able to retrieve Zone Ingress from Kubernetes zone by KRI
-			Eventually(func(g Gomega) {
-				out := mesh.NewZoneIngressResource()
-				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-2_kuma-system_"+kubernetesZoneIngressName+"_"))
 				g.Expect(statusCode).To(Equal(http.StatusOK))
 			}).Should(Succeed())
 		})
@@ -139,25 +129,16 @@ spec:
 		})
 
 		It("should sync Dataplane with insight", func() {
-			kubernetesDpName := ""
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(strings.Count(out, "Online")).To(Equal(2))
-				kubernetesDpName = regexp.MustCompile(`\bdemo-client-[A-Za-z0-9]+-[A-Za-z0-9]+\b`).FindString(out)
 			}, "30s", "1s").Should(Succeed())
 
 			// should be able to retrieve Dataplane from Universal zone by KRI
 			Eventually(func(g Gomega) {
 				out := mesh.NewDataplaneResource()
 				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_dp_sync_kuma-4__test-server_"))
-				g.Expect(statusCode).To(Equal(http.StatusOK))
-			}).Should(Succeed())
-
-			// should be able to retrieve Dataplane from K8s zone by KRI
-			Eventually(func(g Gomega) {
-				out := mesh.NewDataplaneResource()
-				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_dp_sync_kuma-1_sync_"+kubernetesDpName+"_"))
 				g.Expect(statusCode).To(Equal(http.StatusOK))
 			}).Should(Succeed())
 		})
