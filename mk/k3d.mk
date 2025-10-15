@@ -188,7 +188,7 @@ k3d/configure/cni: k3d/configure/cni/$(K3D_NETWORK_CNI_EFFECTIVE)
 k3d/configure/cni/flannel:
 	@true
 
-# Calico (runs when K3D_CNI=calico)
+# Calico (runs when K3D_NETWORK_CNI=calico)
 .PHONY: k3d/configure/cni/calico
 k3d/configure/cni/calico:
 	@helm repo add $(CALICO_HELM_REPO_NAME) $(CALICO_HELM_REPO_ADDR) >/dev/null
