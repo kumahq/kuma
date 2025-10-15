@@ -134,7 +134,6 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 		return conditions
 	}
 	if mid.Spec.Provider == nil {
-		//validate trust domain
 		conditions = append(conditions, common_api.Condition{
 			Type:    meshidentity_api.SANProviderConditionType,
 			Status:  kube_meta.ConditionTrue,

@@ -56,6 +56,7 @@ var _ = Describe("MeshTLS", func() {
 		meshBuilder      *builders.MeshBuilder
 		meshService      bool
 		workloadIdentity *core_xds.WorkloadIdentity
+		casByTrustDomain map[string][]xds_context.PEMBytes
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -63,6 +64,7 @@ var _ = Describe("MeshTLS", func() {
 			mesh := given.meshBuilder
 			context := *xds_builders.Context().
 				WithMeshBuilder(mesh).
+				WithCAsByTrustDomain(given.casByTrustDomain).
 				Build()
 			resourceSet := core_xds.NewResourceSet()
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
@@ -177,6 +179,41 @@ var _ = Describe("MeshTLS", func() {
 						"ca-bundle",
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
+				},
+			},
+		}),
+		Entry("strict with MeshTrust", testCase{
+			caseName:    "strict-with-mesh-trust",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshService: true,
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"domain-1": {
+					xds_context.PEMBytes("123"),
+				},
+			},
+		}),
+		Entry("strict using external validator", testCase{
+			caseName:    "strict-with-external-validator",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshService: true,
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"ca-bundle",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"domain-1": {
+					xds_context.PEMBytes("123"),
 				},
 			},
 		}),

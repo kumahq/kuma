@@ -301,7 +301,6 @@ func configureListener(
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
 
-		// modify validation context only?
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {
 		return nil, err

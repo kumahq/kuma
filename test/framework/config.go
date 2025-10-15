@@ -263,6 +263,7 @@ var defaultConf = E2eConfig{
 	KumaExperimentalSidecarContainers: false,
 	DumpDir:                           path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
 	DumpOnSuccess:                     false,
+	Debug: true,
 }
 
 func Init(configModificationFunctions ...func(*E2eConfig)) {
