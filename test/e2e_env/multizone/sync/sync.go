@@ -6,12 +6,12 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
