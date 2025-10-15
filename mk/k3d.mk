@@ -53,7 +53,8 @@ KUMA_SETTINGS_PREFIX ?=
 #  [...etc]
 PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
-K3D_NETWORK_CNI ?= flannel
+K3D_NETWORK_DEFAULT_CNI = flannel
+K3D_NETWORK_CNI ?= $(K3D_NETWORK_DEFAULT_CNI)
 K3D_REGISTRY_FILE ?=
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
@@ -173,10 +174,10 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 .PHONY: k3d/configure/cni
 k3d/configure/cni: k3d/configure/cni/$(K3D_NETWORK_CNI)
 
-# Guard for unsupported/empty values
+# Guard for unsupported or missing CNI values
 .PHONY: k3d/configure/cni/%
 k3d/configure/cni/%:
-	@echo "Unsupported CNI '$(K3D_NETWORK_CNI)'"; exit 1
+	@echo "[WARNING]: unsupported or missing CNI '$(K3D_NETWORK_CNI)', falling back to '$(K3D_NETWORK_DEFAULT_CNI)'" >&2
 
 # Default: flannel (no action required)
 .PHONY: k3d/configure/cni/flannel
