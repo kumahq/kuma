@@ -53,8 +53,6 @@ KUMA_SETTINGS_PREFIX ?=
 #  [...etc]
 PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
-K3D_NETWORK_DEFAULT_CNI = flannel
-K3D_NETWORK_CNI ?= $(K3D_NETWORK_DEFAULT_CNI)
 K3D_REGISTRY_FILE ?=
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
@@ -170,25 +168,31 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	$(MAKE) k3d/configure/ebpf
 	$(MAKE) k3d/configure/metallb
 
-# Entry point: runs the CNI-specific target based on K3D_NETWORK_CNI
-.PHONY: k3d/configure/cni
-k3d/configure/cni: k3d/configure/cni/$(K3D_NETWORK_CNI)
+K3D_NETWORK_CNI_SUPPORTED := flannel calico
+K3D_NETWORK_CNI_DEFAULT   := flannel
+K3D_NETWORK_CNI           ?= $(K3D_NETWORK_CNI_DEFAULT)
+K3D_NETWORK_CNI_REQ       := $(strip $(K3D_NETWORK_CNI))
+K3D_NETWORK_CNI_EFFECTIVE := $(if $(K3D_NETWORK_CNI_REQ),$(if $(filter $(K3D_NETWORK_CNI_REQ),$(K3D_NETWORK_CNI_SUPPORTED)),$(K3D_NETWORK_CNI_REQ),$(K3D_NETWORK_CNI_DEFAULT)),$(K3D_NETWORK_CNI_DEFAULT))
 
-# Guard for unsupported or missing CNI values
-.PHONY: k3d/configure/cni/%
-k3d/configure/cni/%:
-	@echo "[WARNING]: unsupported or missing CNI '$(K3D_NETWORK_CNI)', falling back to '$(K3D_NETWORK_DEFAULT_CNI)'" >&2
+# Entry point: runs the CNI-specific target based on K3D_CNI
+.PHONY: k3d/configure/cni
+k3d/configure/cni: k3d/configure/cni/$(K3D_NETWORK_CNI_EFFECTIVE)
+	@if [ -z "$(K3D_NETWORK_CNI_REQ)" ]; then \
+	  echo "[WARNING]: Missing K3D CNI, falling back to '$(K3D_NETWORK_CNI_DEFAULT)'" >&2; \
+	elif [ "$(K3D_NETWORK_CNI_REQ)" != "$(K3D_NETWORK_CNI_EFFECTIVE)" ]; then \
+	  echo "[WARNING]: Unsupported K3D CNI '$(K3D_NETWORK_CNI_REQ)', falling back to '$(K3D_NETWORK_CNI_DEFAULT)'" >&2; \
+	fi
 
 # Default: flannel (no action required)
 .PHONY: k3d/configure/cni/flannel
 k3d/configure/cni/flannel:
-	@echo "Using default K3D CNI: flannel (no configuration needed)"
+	@true
 
-# Calico implementation (runs only when K3D_NETWORK_CNI=calico)
+# Calico (runs when K3D_CNI=calico)
 .PHONY: k3d/configure/cni/calico
 k3d/configure/cni/calico:
-	@helm repo add $(CALICO_HELM_REPO_NAME) $(CALICO_HELM_REPO_ADDR)
-	@helm repo update $(CALICO_HELM_REPO_NAME)
+	@helm repo add $(CALICO_HELM_REPO_NAME) $(CALICO_HELM_REPO_ADDR) >/dev/null
+	@helm repo update $(CALICO_HELM_REPO_NAME) >/dev/null
 	@helm upgrade $(CALICO_HELM_RELEASE) $(CALICO_HELM_CHART) \
 		--install --create-namespace --wait \
 		--kubeconfig $(KIND_KUBECONFIG) \
