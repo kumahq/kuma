@@ -1,0 +1,15 @@
+#/_kri/kri___default_default__mtp-3_ 400
+type: Mesh
+name: default
+---
+type: MeshTrafficPermission
+name: mtp-3
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
