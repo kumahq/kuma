@@ -67,6 +67,9 @@ func New(
 		syncTracker,
 		status.DefaultStatusTracker(rt, log),
 	}
+	// Default resource types are length of XDS types. With KDS we have much more types.
+	// If we don't adjust this value, we can hit KDS deadlock.
+	// We could count exactly how many types we have, but overhead of larger map size is negligible for potential mistake here.
 	return delta.NewServer(context.Background(), cache, callbacks, delta.WithDistinctResourceTypes(1000)), nil
 }
 
