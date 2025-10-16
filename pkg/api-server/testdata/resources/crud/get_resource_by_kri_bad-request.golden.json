@@ -1,0 +1,7 @@
+{
+  "type": "/std-errors",
+  "status": 400,
+  "title": "Bad Request",
+  "detail": "bad request: unknown short name of resource type: \"\"",
+  "details": "bad request: unknown short name of resource type: \"\""
+}
