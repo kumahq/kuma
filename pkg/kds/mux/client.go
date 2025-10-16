@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -20,41 +21,65 @@ import (
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/config"
+	config_kumacp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/service"
+	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
+	kds_sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/pkg/metrics"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/version"
 )
 
 var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
-	globalToZoneCb      OnGlobalToZoneSyncStartedFunc
-	zoneToGlobalCb      OnZoneToGlobalSyncStartedFunc
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
-	experimantalConfig  config.ExperimentalConfig
+	experimantalConfig  config_kumacp.ExperimentalConfig
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
+	deltaServer         delta.Server
+	typesSentByGlobal   []core_model.ResourceType
+	rt                  core_runtime.Runtime
+	resourceSyncer      kds_sync_store.ResourceSyncer
 }
 
-func NewClient(ctx context.Context, globalURL string, clientID string, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
+func NewClient(
+	ctx context.Context,
+	globalURL string,
+	clientID string,
+	config multizone.KdsClientConfig,
+	experimantalConfig config_kumacp.ExperimentalConfig,
+	metrics metrics.Metrics,
+	envoyAdminProcessor service.EnvoyAdminProcessor,
+	resourceSyncer kds_sync_store.ResourceSyncer,
+	rt core_runtime.Runtime,
+	deltaServer delta.Server,
+) component.Component {
 	return &client{
 		ctx:                 ctx,
-		globalToZoneCb:      globalToZoneCb,
-		zoneToGlobalCb:      zoneToGlobalCb,
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
 		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
+		resourceSyncer:      resourceSyncer,
+		rt:                  rt,
+		deltaServer:         deltaServer,
+		typesSentByGlobal:   rt.KDSContext().TypesSentByGlobal,
 	}
 }
 
@@ -135,7 +160,38 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		return
 	}
 	processingErrorsCh := make(chan error)
-	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
+	go func() {
+		cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
+		if err != nil {
+			processingErrorsCh <- errors.Wrap(err, "could not marshall config to json")
+			return
+		}
+		syncClient := kds_client_v2.NewKDSSyncClient(
+			log,
+			c.typesSentByGlobal,
+			kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson),
+			kds_sync_store.ZoneSyncCallback(
+				stream.Context(),
+				c.resourceSyncer,
+				c.rt.Config().Store.Type == store.KubernetesStore,
+				resources_k8s.NewSimpleKubeFactory(),
+				c.rt.Config().Store.Kubernetes.SystemNamespace,
+			),
+			c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+		)
+		err = syncClient.Receive()
+		if err != nil && !errors.Is(err, context.Canceled) {
+			err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+			select {
+			case processingErrorsCh <- err:
+			default:
+				log.Error(err, "failed to write error to closed channel")
+			}
+		} else {
+			log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
+		}
+	}()
+
 	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
@@ -149,7 +205,24 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		return
 	}
 	processingErrorsCh := make(chan error)
-	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
+	go func() {
+		log.Info("ZoneToGlobalSync new session created")
+		errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
+		err := c.deltaServer.DeltaStreamHandler(errorStream, "")
+		if err == nil {
+			err = errorStream.Err()
+		}
+		if err != nil && !errors.Is(err, context.Canceled) {
+			err = errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+			select {
+			case processingErrorsCh <- err:
+			default:
+				log.Error(err, "failed to write error to closed channel")
+			}
+		} else {
+			log.V(1).Info("ZoneToGlobalSync finished gracefully")
+		}
+	}()
 	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
