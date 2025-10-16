@@ -61,15 +61,6 @@ The cluster expects the server’s identity:
                 sanType: URI
 ```
 
-**Envoy Cluster for Client**
-The cluster expects the client’s identity:
-```yaml
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/client_default_kuma-demo_svc_80
-                sanType: URI
-```
-
 4. We enable `MeshIdentity` with an empty selector.
 As a result, Kuma initializes a `MeshIdentity` by creating all required resources: a `Certificate` and a `MeshTrust`.
 ```yaml
@@ -119,13 +110,6 @@ spec:
 * Client presents itself as: `spiffe://default.zone.mesh.local/ns/kuma-demo/sa/client`
 * Server presents itself as: `spiffe://default.zone.mesh.local/ns/kuma-demo/sa/server`
 9. At this point, the `MeshService` **has not yet** been updated and still contains the following configuration:
-MeshService of Client
-```yaml
-spec:
-  identities:
-  - type: ServiceTag
-    value: client_default_kuma-demo_svc_80
-```
 
 MeshService of Server
 ```yaml
@@ -135,37 +119,20 @@ spec:
     value: server_default_kuma-demo_svc_80
 ```
 These translate into Envoy configuration as follows:
-Envoy Cluster for Server (expects the Server’s identity):
+Envoy Cluster of Server (client expects):
 ```yaml
               matchTypedSubjectAltNames:
               - matcher:
                   exact: spiffe://default/server_default_kuma-demo_svc_80
                 sanType: URI
 ```
-
-Envoy Cluster for Client (expects the Client’s identity):
-```yaml
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/client_default_kuma-demo_svc_80
-                sanType: URI
-```
-10. Traffic breaks because the Server presents itself as:
+10.  Traffic breaks because the Server presents itself as:
 
 `spiffe://default.zone.mesh.local/ns/kuma-demo/sa/server` 
 but the Client still expects:
 `spiffe://default/server_default_kuma-demo_svc_80`
 
 11. After the reconciliation loop (default 5s), the `MeshService` resources are updated:
-MeshService of Client
-```yaml
-spec:
-  identities:
-  - type: ServiceTag
-    value: client_default_kuma-demo_svc_80
-  - type: SpiffeID
-    value: spiffe://default.zone.mesh.local/ns/kuma-demo/sa/client
-```
 
 MeshService of Server
 ```yaml
@@ -176,18 +143,7 @@ spec:
   - type: SpiffeID
     value: spiffe://default.zone.mesh.local/ns/kuma-demo/sa/server
 ```
-12. Envoy configuration is recalculated to accept both ServiceTag and SpiffeID identities:
-Envoy Cluster for Server (accepts Client identities):
-```yaml
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/server_default_kuma-demo_svc_80
-                sanType: URI
-              - matcher:
-                  exact: spiffe://default.zone.mesh.local/ns/kuma-demo/sa/client
-                sanType: URI
-```
-
+12.  Envoy configuration is recalculated to accept both ServiceTag and SpiffeID identities:
 Envoy Cluster for Client (accepts Server identities):
 ```yaml
               matchTypedSubjectAltNames:
@@ -198,7 +154,7 @@ Envoy Cluster for Client (accepts Server identities):
                   exact: spiffe://default.zone.mesh.local/ns/kuma-demo/sa/server
                 sanType: URI
 ```
-13. Traffic resumes successfully
+13.  Traffic resumes successfully
 
 As we can see from this flow diagram, there is a period during which traffic from the new identity is not accepted.
 
@@ -282,7 +238,7 @@ spec:
 
 In this case, we would not create any certificates or issue new identities. The only change would be that the `MeshService` is updated with a new `SpiffeID`.
 
-### Status field
+#### Status field
 
 When a user creates a `MeshIdentity`, a controller sets its status to indicate whether the resource is ready and initializes all related resources.
 In this case, since there is no provider, we don’t have an initialization phase. However, we still want to set a status on the resource for better debuggability.
@@ -291,26 +247,135 @@ Proposed status:
 
 ```golang
         common_api.Condition{
-					Type:    meshidentity_api.SANProviderConditionType,
-					Status:  kube_meta.ConditionTrue,
-					Reason:  "SANProvider",
-					Message: "Providing only SANs for services.",
-				},
-				common_api.Condition{
-					Type:    meshidentity_api.ReadyConditionType,
-					Status:  kube_meta.ConditionFalse,
-					Reason:  "PartiallyReady",
-					Message: "Running in SAN providing only mode",
-				},
+        	Type:    meshidentity_api.SpiffeIDProviderConditionType,
+        	Status:  kube_meta.ConditionTrue,
+        	Reason:  "SpiffeIDProvided",
+        	Message: "Providing only SpiffeIDs for services.",
+        },
+        common_api.Condition{
+        	Type:    meshidentity_api.ReadyConditionType,
+        	Status:  kube_meta.ConditionFalse,
+        	Reason:  "PartiallyReady",
+        	Message: "Running in SpiffeID providing only mode.",
+        },
 ```
 
 #### Migration flow
 
+##### Bundled - autogenerated
+
 1. The user creates a `MeshIdentity` without a provider configuration.
+```yaml
+type: MeshIdentity
+name: identity-spiffe-only
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+```
 2. The corresponding `MeshServices` are updated with the new `SpiffeID`.
-3. The user creates a new `MeshIdentity` resource with a selector.
+3. The user creates a new `MeshIdentity` resource with a selector. This automatically generates a corresponding `MeshTrust`, which is then propagated to all services and can accept both legacy mTLS and the new `MeshIdentity` traffic
+```yaml
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Enabled
+      insecureAllowSelfSigned: true
+      certificateParameters:
+        expiry: 24h
+      autogenerate:
+        enabled: true
+```
 4. Traffic continues to operate without downtime.
-5. The user can remove the initial `MeshIdentity` (the one without a provider).
+5. The user enabled `MeshIdentity` to select all dataplanes, which caused every dataplane to receive a new identity.
+```yaml
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Enabled
+      insecureAllowSelfSigned: true
+      certificateParameters:
+        expiry: 24h
+      autogenerate:
+        enabled: true
+```
+6. The user can remove the initial `MeshIdentity` (the one without a provider `identity-spiffe-only`), as all dataplanes use a new identity.
+
+##### Bundled - certificate provided by the user
+
+1. The user creates a `MeshIdentity` without a provider configuration.
+```yaml
+type: MeshIdentity
+name: identity-spiffe-only
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+```
+2. The corresponding `MeshServices` are updated with the new `SpiffeID`.
+3. The user created a `MeshTrust` with the CA of the new identity to allow services to accept new traffic.
+```yaml
+type: MeshTrust
+name: new-trust
+mesh: default
+spec:
+  caBundles:
+    - type: Pem
+      pem:
+        value: |-
+          ...
+  trustDomain: domain
+```
+4. The user enabled `MeshIdentity` to select all dataplanes, which caused every dataplane to receive a new identity.
+```yaml
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Disabled
+      insecureAllowSelfSigned: false
+      certificateParameters:
+        expiry: 24h
+      ca:
+        ...
+```
+1. Traffic continues to operate without downtime.
+1. The user can remove the initial `MeshIdentity` (the one without a provider `identity-spiffe-only`), as all dataplanes use a new identity.
 
 #### Multiple `MeshIdentities` in `Active` mode
 
