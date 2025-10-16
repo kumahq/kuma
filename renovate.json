@@ -44,6 +44,31 @@
     ],
     "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": [
+        " Parse docker image tags pinned in Makefiles and .mk files via inline renovate hints.",
+        " Looks for a directive on the preceding line of a version variable, e.g.:",
+        "  '# renovate[custom/docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io'",
+        " followed by a variable assignment like 'OAPI_TOOLS_VERSION ?= v1.1.7@sha256:…'.",
+        " The regex extracts:",
+        "  - depName (required), with optional packageName, extractVersion, registryUrl",
+        "  - currentValue (the tag), and optional currentDigest (sha256) appended after '@'",
+        " and treats them with the docker datasource and versioning templates so Renovate can",
+        " propose tag and digest updates. See mk/docs.mk for a working example"
+      ],
+      "managerFilePatterns": [
+        "/(^|/)[Mm]akefile$/",
+        "/\\.mk$/"
+      ],
+      "matchStrings": [
+        "# renovate\\[custom/docker.*?\\]: depName=(?<depName>\\S+?)(?: packageName=(?<packageName>\\S+?))?(?: extractVersion=(?<extractVersion>\\S+?))?(?: registryUrl=(?<registryUrl>\\S+?))?\\s+(?:export )?[A-Za-z0-9_]+?_VERSION\\s*:*\\??=\\s*[\"']?(?<currentValue>[^@\\s\"']+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?[\"']?"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "description": [
@@ -70,7 +95,7 @@
         " manually"
       ],
       "matchManagers": ["kubernetes"],
-      "matchPackageNames": ["/^gcr.io/octo/", "/^docker.io/kumahq/", "/^kuma-ci/"],
+      "matchPackageNames": ["gcr.io/octo/**", "docker.io/{kumahq,[Kk]ong}/**", "kuma-ci/**"],
       "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
       "enabled": false
     },
@@ -135,17 +160,6 @@
       ],
       "matchPackageNames": ["{github.com/,}kumahq/*"],
       "minimumReleaseAge": "24h"
-    },
-    {
-      "description": [
-        " Disable pinning for 'kumahq/openapi-tool'. Pinning this tool to a specific commit or",
-        " version is not supported in our current setup and consistently fails, so we skip 'pin'",
-        " and 'pinDigest' updates for it. Managed by the Makefile regex manager"
-      ],
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["kumahq/openapi-tool"],
-      "matchUpdateTypes": ["pin", "pinDigest"],
-      "enabled": false
     },
     {
       "description": [

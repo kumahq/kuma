@@ -5,7 +5,7 @@ METALLB_VERSION ?= v0.15.2
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
-# renovate: datasource=helm depName=calico packageName=projectcalico/tigera-operator registryUrl=https://docs.tigera.io/calico/charts
+# renovate: datasource=github-releases depName=projectcalico/tigera-operator packageName=projectcalico/calico versioning=semver
 CALICO_VERSION ?= v3.30.3
 CALICO_NAMESPACE ?= tigera-operator
 CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
