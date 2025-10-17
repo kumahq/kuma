@@ -44,6 +44,42 @@
     ],
     "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": [
+        " Parse version pins in Makefiles and .mk files using an inline Renovate hint placed above",
+        " a VERSION-like variable assignment. The following line must assign a version variable,",
+        " e.g.: 'OAPI_TOOLS_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",
+        "",
+        " The regex extracts:",
+        " - depName (required)",
+        " - packageName (optional)",
+        " - extractVersion (optional)",
+        " - registryUrl (optional)",
+        " - currentValue (version or tag, quotes optional)",
+        " - currentDigest (sha256) if present after '@' (Docker-specific)",
+        "",
+        " The defined datasource determines update behavior. Versioning is inferred automatically,",
+        " but can be overridden via '/<versioning>' after the datasource name. This enables",
+        " Renovate to suggest accurate updates - bumping tags, versions, and for Docker, updating",
+        " both the tag and digest",
+        "",
+        " See mk/docs.mk for an example in use.",
+        "",
+        " Hint syntax:",
+        " # renovate[<datasource>[/<versioning>]]: depName=<name> [packageName=<name>] [extractVersion=<expr>] [registryUrl=<url>]"
+      ],
+      "managerFilePatterns": [
+        "/(^|/)[Mm]akefile$/",
+        "/\\.mk$/"
+      ],
+      "matchStrings": [
+        "# renovate\\[(?<datasource>[0-9a-z-]+)(?:/(?<versioning>[0-9a-z-]+))?\\]: depName=(?<depName>\\S+?)(?: packageName=(?<packageName>\\S+?))?(?: extractVersion=(?<extractVersion>\\S+?))?(?: registryUrl=(?<registryUrl>\\S+?))?\\s+(?:export )?[A-Za-z0-9_]+?_VERSION\\s*:*\\??=\\s*[\"']?(?<currentValue>[^@\\s\"']+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?[\"']?"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else if (or (includes (toArray 'docker' 'helm' 'npm' 'kubernetes-api') datasource))}}{{datasource}}{{else if (equals datasource 'node-version')}}node{{else if (equals datasource 'crate')}}cargo{{else if (or (includes (toArray 'go' 'golang-version') datasource))}}semver{{else}}semver-coerced{{/if}}"
+    }
+  ],
   "packageRules": [
     {
       "description": [
@@ -70,7 +106,7 @@
         " manually"
       ],
       "matchManagers": ["kubernetes"],
-      "matchPackageNames": ["/^gcr.io/octo/", "/^docker.io/kumahq/", "/^kuma-ci/"],
+      "matchPackageNames": ["gcr.io/octo/**", "docker.io/{kumahq,[Kk]ong}/**", "kuma-ci/**"],
       "matchFileNames": ["/app/kumactl/cmd/install/testdata/.+\\.ya?ml$/"],
       "enabled": false
     },
@@ -135,17 +171,6 @@
       ],
       "matchPackageNames": ["{github.com/,}kumahq/*"],
       "minimumReleaseAge": "24h"
-    },
-    {
-      "description": [
-        " Disable pinning for 'kumahq/openapi-tool'. Pinning this tool to a specific commit or",
-        " version is not supported in our current setup and consistently fails, so we skip 'pin'",
-        " and 'pinDigest' updates for it. Managed by the Makefile regex manager"
-      ],
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["kumahq/openapi-tool"],
-      "matchUpdateTypes": ["pin", "pinDigest"],
-      "enabled": false
     },
     {
       "description": [

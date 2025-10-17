@@ -8,6 +8,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -37,7 +38,7 @@ func New(
 	filter reconcile_v2.ResourceFilter,
 	mapper reconcile_v2.ResourceMapper,
 	nackBackoff time.Duration,
-) (Server, error) {
+) (delta.Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta", kdsVersionExtractor)
@@ -66,7 +67,10 @@ func New(
 		syncTracker,
 		status.DefaultStatusTracker(rt, log),
 	}
-	return NewServer(cache, callbacks, log), nil
+	// Default resource types are length of XDS types. With KDS we have much more types.
+	// If we don't adjust this value, we can hit KDS deadlock.
+	// We could count exactly how many types we have, but overhead of larger map size is negligible for potential mistake here.
+	return delta.NewServer(context.Background(), cache, callbacks, delta.WithDistinctResourceTypes(1000)), nil
 }
 
 func newSyncTracker(
