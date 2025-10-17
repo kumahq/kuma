@@ -48,25 +48,36 @@
     {
       "customType": "regex",
       "description": [
-        " Parse docker image tags pinned in Makefiles and .mk files via inline renovate hints.",
-        " Looks for a directive on the preceding line of a version variable, e.g.:",
-        "  '# renovate[custom/docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io'",
-        " followed by a variable assignment like 'OAPI_TOOLS_VERSION ?= v1.1.7@sha256:…'.",
+        " Parse version pins in Makefiles and .mk files using an inline Renovate hint placed above",
+        " a VERSION-like variable assignment. The following line must assign a version variable,",
+        " e.g.: 'OAPI_TOOLS_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",
+        "",
         " The regex extracts:",
-        "  - depName (required), with optional packageName, extractVersion, registryUrl",
-        "  - currentValue (the tag), and optional currentDigest (sha256) appended after '@'",
-        " and treats them with the docker datasource and versioning templates so Renovate can",
-        " propose tag and digest updates. See mk/docs.mk for a working example"
+        " - depName (required)",
+        " - packageName (optional)",
+        " - extractVersion (optional)",
+        " - registryUrl (optional)",
+        " - currentValue (version or tag, quotes optional)",
+        " - currentDigest (sha256) if present after '@' (Docker-specific)",
+        "",
+        " The defined datasource determines update behavior. Versioning is inferred automatically,",
+        " but can be overridden via '/<versioning>' after the datasource name. This enables",
+        " Renovate to suggest accurate updates - bumping tags, versions, and for Docker, updating",
+        " both the tag and digest",
+        "",
+        " See mk/docs.mk for an example in use.",
+        "",
+        " Hint syntax:",
+        " # renovate[<datasource>[/<versioning>]]: depName=<name> [packageName=<name>] [extractVersion=<expr>] [registryUrl=<url>]"
       ],
       "managerFilePatterns": [
         "/(^|/)[Mm]akefile$/",
         "/\\.mk$/"
       ],
       "matchStrings": [
-        "# renovate\\[custom/docker.*?\\]: depName=(?<depName>\\S+?)(?: packageName=(?<packageName>\\S+?))?(?: extractVersion=(?<extractVersion>\\S+?))?(?: registryUrl=(?<registryUrl>\\S+?))?\\s+(?:export )?[A-Za-z0-9_]+?_VERSION\\s*:*\\??=\\s*[\"']?(?<currentValue>[^@\\s\"']+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?[\"']?"
+        "# renovate\\[(?<datasource>[0-9a-z-]+)(?:/(?<versioning>[0-9a-z-]+))?\\]: depName=(?<depName>\\S+?)(?: packageName=(?<packageName>\\S+?))?(?: extractVersion=(?<extractVersion>\\S+?))?(?: registryUrl=(?<registryUrl>\\S+?))?\\s+(?:export )?[A-Za-z0-9_]+?_VERSION\\s*:*\\??=\\s*[\"']?(?<currentValue>[^@\\s\"']+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?[\"']?"
       ],
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "docker"
+      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else if (or (includes (toArray 'docker' 'helm' 'npm' 'kubernetes-api') datasource))}}{{datasource}}{{else if (equals datasource 'node-version')}}node{{else if (equals datasource 'crate')}}cargo{{else if (or (includes (toArray 'go' 'golang-version') datasource))}}semver{{else}}semver-coerced{{/if}}"
     }
   ],
   "packageRules": [
