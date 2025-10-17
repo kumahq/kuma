@@ -96,6 +96,15 @@ func (mi *MeshIdentityBuilder) NotSelfSigned() *MeshIdentityBuilder {
 	return mi
 }
 
+func (mi *MeshIdentityBuilder) WithSpiffeID(td, path string) *MeshIdentityBuilder {
+	if mi.res.Spec.SpiffeID == nil {
+		mi.res.Spec.SpiffeID = &meshidentity_api.SpiffeID{}
+	}
+	mi.res.Spec.SpiffeID.TrustDomain = pointer.To(td)
+	mi.res.Spec.SpiffeID.Path = pointer.To(path)
+	return mi
+}
+
 func (mi *MeshIdentityBuilder) WithBundled() *MeshIdentityBuilder {
 	mi.res.Spec.Provider = &meshidentity_api.Provider{
 		Type: meshidentity_api.BundledType,
@@ -137,6 +146,20 @@ func (mi *MeshIdentityBuilder) WithInitializedStatus() *MeshIdentityBuilder {
 				Status:  v1.ConditionTrue,
 				Reason:  "Ready",
 				Message: "Successfully initialized",
+			},
+		},
+	}
+	return mi
+}
+
+func (mi *MeshIdentityBuilder) WithPartiallyReadyStatus() *MeshIdentityBuilder {
+	mi.res.Status = &meshidentity_api.MeshIdentityStatus{
+		Conditions: []common_api.Condition{
+			{
+				Type:    meshidentity_api.ReadyConditionType,
+				Status:  v1.ConditionFalse,
+				Reason:  "PartiallyReady",
+				Message: "Running in SpiffeID providing only mode.",
 			},
 		},
 	}

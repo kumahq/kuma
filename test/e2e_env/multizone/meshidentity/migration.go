@@ -96,7 +96,7 @@ func Migration() {
 		return r.GetSpec().(*meshtrust_api.MeshTrust), nil
 	}
 
-	It("should migrate from mesh.mTLS to MeshIdentity", FlakeAttempts(3), func() {
+	It("should migrate from mesh.mTLS to MeshIdentity", func() {
 		// given
 		// cross zone traffic works
 		Eventually(func(g Gomega) {
