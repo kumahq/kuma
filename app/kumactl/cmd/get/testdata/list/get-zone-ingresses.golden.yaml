@@ -10,6 +10,7 @@ items:
     tags:
       kuma.io/service: svc-3
   creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_zi____ingress-zone-1_
   modificationTime: "0001-01-01T00:00:00Z"
   name: ingress-zone-1
   networking:
@@ -29,6 +30,7 @@ items:
     tags:
       kuma.io/service: svc-4
   creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_zi____ingress-zone-2_
   modificationTime: "0001-01-01T00:00:00Z"
   name: ingress-zone-2
   networking:

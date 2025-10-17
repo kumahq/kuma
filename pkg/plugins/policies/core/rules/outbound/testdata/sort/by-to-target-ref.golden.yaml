@@ -6,6 +6,7 @@
       kind: Mesh
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-aaaaaa_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-aaaaaa
@@ -23,6 +24,7 @@
       name: backend
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-bbbbbb_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-bbbbbb

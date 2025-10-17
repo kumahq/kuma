@@ -10,6 +10,11 @@ properties:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
     type: string
     default: default
+  kri:
+    description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+    type: string
+    readOnly: true
+    example: 'kri_mhc_default_zone-east_kuma-demo_mypolicy1_'
   name:
     description: 'Name of the Kuma resource'
     type: string

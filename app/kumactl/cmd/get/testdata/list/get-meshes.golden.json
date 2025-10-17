@@ -6,6 +6,7 @@
       "name": "mesh1",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_m____mesh1_",
       "mtls": {
         "enabledBackend": "builtin-1",
         "backends": [
@@ -82,6 +83,7 @@
       "name": "mesh2",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_m____mesh2_",
       "tracing": {},
       "logging": {},
       "metrics": {}

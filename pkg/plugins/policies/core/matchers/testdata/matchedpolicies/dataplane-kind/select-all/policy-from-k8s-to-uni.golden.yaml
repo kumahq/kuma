@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1_zone-k8s_ns-k8s_mtp-2_
   labels:
     k8s.kuma.io/namespace: ns-k8s
     kuma.io/display-name: mtp-2
@@ -20,6 +21,7 @@ items:
       kind: Dataplane
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1_zone-k8s_ns-k8s_mtp-1_
   labels:
     k8s.kuma.io/namespace: ns-k8s
     kuma.io/display-name: mtp-1

@@ -1,6 +1,7 @@
 # Mesh
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_m____default_
 modificationTime: "0001-01-01T00:00:00Z"
 name: default
 type: Mesh
@@ -8,6 +9,7 @@ type: Mesh
 # MeshTimeout
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_mt_default___default-timeout-global_
 labels:
   kuma.io/kds-sync: disabled
 mesh: default

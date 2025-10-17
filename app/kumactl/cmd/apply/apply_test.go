@@ -311,6 +311,7 @@ var _ = Describe("kumactl apply", func() {
 		// then
 		Expect(buf.String()).To(MatchYAML(
 			`creationTime: "0001-01-01T00:00:00Z"
+kri: kri_dp_default___sample_
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: sample

@@ -7,6 +7,7 @@ FromRules:
         type: File
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mal_mesh-1___gateway_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: gateway
@@ -21,6 +22,7 @@ FromRules:
         type: File
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mal_mesh-1___gateway_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: gateway
@@ -35,6 +37,7 @@ FromRules:
         type: File
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mal_mesh-1___gateway_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: gateway
@@ -55,6 +58,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mal_mesh-1___gateway_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
         name: gateway
@@ -73,6 +77,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mal_mesh-1___gateway_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
         name: gateway
@@ -91,6 +96,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mal_mesh-1___gateway_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
         name: gateway
@@ -108,16 +114,19 @@ ToRules:
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gateway_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gatewaylistener_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gatewaylistener
@@ -134,16 +143,19 @@ ToRules:
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gateway_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___servicesubset_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: servicesubset
@@ -160,11 +172,13 @@ ToRules:
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gateway_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
@@ -182,16 +196,19 @@ ToRules:
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gateway_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gatewaylistener_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gatewaylistener
@@ -208,16 +225,19 @@ ToRules:
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___servicesubset_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: servicesubset
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gateway_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
@@ -234,11 +254,13 @@ ToRules:
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___gateway_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway

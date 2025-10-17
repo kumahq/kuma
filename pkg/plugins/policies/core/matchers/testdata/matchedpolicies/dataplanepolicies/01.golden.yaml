@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___mtp-2_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-2
@@ -13,6 +14,7 @@ items:
       kind: Mesh
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___mtp-4_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-4
@@ -28,6 +30,7 @@ items:
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___mtp-3_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-3
@@ -42,6 +45,7 @@ items:
       name: web
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___mtp-1_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-1

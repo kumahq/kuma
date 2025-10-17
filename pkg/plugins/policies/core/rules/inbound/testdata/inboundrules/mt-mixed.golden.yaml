@@ -7,6 +7,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-mt-cccccc_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-mt-cccccc
@@ -22,6 +23,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-mt-bbbbbb_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-mt-bbbbbb
@@ -33,6 +35,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-mt-aaaaaa_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-mt-aaaaaa

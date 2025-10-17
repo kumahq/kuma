@@ -11,6 +11,7 @@
   "kuma.io/proxy-type": "sidecar",
   "kuma.io/zone": "default"
  },
+ "kri": "kri_dp_default_default__dp-1_",
  "networking": {
   "address": "10.1.2.1",
   "inbound": [

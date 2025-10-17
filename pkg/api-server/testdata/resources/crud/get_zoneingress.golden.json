@@ -3,6 +3,7 @@
  "name": "zone-ingress-1",
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
+ "kri": "kri_zi____zone-ingress-1_",
  "networking": {
   "address": "10.2.3.4",
   "advertisedAddress": "10.3.4.5",

@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mt_mesh-1___default-demo-app-b_
   labels:
     kuma.io/display-name: default-demo-app-b
   mesh: mesh-1
@@ -16,6 +17,7 @@ items:
         kind: Mesh
   type: MeshTimeout
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mt_mesh-1___default-demo-app_
   labels:
     kuma.io/display-name: default-demo-app
   mesh: mesh-1

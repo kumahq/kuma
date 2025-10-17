@@ -102,6 +102,9 @@ type InspectRule struct {
 
 // Meta defines model for Meta.
 type Meta struct {
+	// KRI Kuma Resource Identifier (KRI) of the given resource
+	KRI *string `json:"kri,omitempty"`
+
 	// Labels the label of the resource
 	Labels map[string]string `json:"labels"`
 

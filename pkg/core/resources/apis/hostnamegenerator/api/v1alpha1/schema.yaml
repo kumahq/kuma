@@ -6,6 +6,11 @@ properties:
     type: string
     enum:
       - HostnameGenerator
+  kri:
+    description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+    type: string
+    readOnly: true
+    example: 'kri_hg___kuma-system_myresource1_'
   name:
     description: 'Name of the Kuma resource'
     type: string

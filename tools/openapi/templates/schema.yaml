@@ -4,13 +4,27 @@ properties:
   type:
     description: 'the type of the resource'
     type: string
-  {{- if eq .Scope "Mesh"}}
+  {{- if eq .Scope "Mesh" }}
   mesh:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to.
       It may be omitted for cluster-scoped resources.'
     type: string
     default: default
-  {{- end}}
+  {{- end }}
+  {{- if ne .ShortName "" }}
+  {{- $kind := ternary .IsPolicy "policy" "resource" }}
+  {{- $ns := printf "kuma-%s" (ternary .AllowedOnSystemNamespaceOnly "system" "demo") }}
+  {{- $mesh := ternary (eq .Scope "Mesh") "default" "" }}
+  {{- $zone := ternary (eq .Scope "Mesh") "zone-east" "" }}
+  {{- $name := printf "my%s1" $kind }}
+  kri:
+    description: 'A unique identifier for this resource instance used by
+      internal tooling and integrations. Typically derived from resource
+      attributes and may be used for cross-references or indexing'
+    type: string
+    readOnly: true
+    example: 'kri_{{ .ShortName }}_{{ $mesh }}_{{ $zone }}_{{ $ns }}_{{ $name }}_'
+  {{- end }}
   name:
     description: 'Name of the Kuma resource'
     type: string

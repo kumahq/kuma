@@ -224,7 +224,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z","kri": "kri_m____someMesh_"}`))
 			})
 
 			// when
@@ -320,7 +320,22 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"name":"someMesh","mtls":{"enabledBackend":"builtin","backends":[{"name":"builtin","type":"builtin"}]},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{
+  "type": "Mesh",
+  "name": "someMesh",
+  "kri": "kri_m____someMesh_",
+  "mtls": {
+    "enabledBackend": "builtin",
+    "backends": [
+      {
+        "name": "builtin",
+        "type": "builtin"
+      }
+    ]
+  },
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z"
+}`))
 			})
 
 			// when

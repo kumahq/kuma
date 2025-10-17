@@ -6,6 +6,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -25,6 +26,7 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -44,6 +46,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -63,6 +66,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -82,6 +86,7 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -101,6 +106,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -120,6 +126,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1

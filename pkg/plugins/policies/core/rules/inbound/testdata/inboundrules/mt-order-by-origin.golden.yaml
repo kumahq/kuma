@@ -7,6 +7,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-aaa_
       labels:
         kuma.io/origin: global
       mesh: mesh-1
@@ -22,6 +23,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-bbb_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-bbb
@@ -34,6 +36,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-ccc_
       labels:
         kuma.io/origin: zone
       mesh: mesh-1

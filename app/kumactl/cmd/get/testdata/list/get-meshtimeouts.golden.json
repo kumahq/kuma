@@ -2,11 +2,8 @@
   "total": 4,
   "items": [
     {
-      "type": "MeshTimeout",
-      "mesh": "default",
-      "name": "aatimeout-1-82vzd567626w9bcf",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_mt_default_my-zone_kong-mesh-system_aatimeout-1_",
       "labels": {
         "k8s.kuma.io/namespace": "kong-mesh-system",
         "kuma.io/display-name": "aatimeout-1",
@@ -14,6 +11,9 @@
         "kuma.io/origin": "zone",
         "kuma.io/zone": "my-zone"
       },
+      "mesh": "default",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "name": "aatimeout-1-82vzd567626w9bcf",
       "spec": {
         "targetRef": {
           "kind": "Mesh"
@@ -30,14 +30,12 @@
             }
           }
         ]
-      }
+      },
+      "type": "MeshTimeout"
     },
     {
-      "type": "MeshTimeout",
-      "mesh": "default",
-      "name": "timeout-2-dz449dwd8fw4486x",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-2_",
       "labels": {
         "k8s.kuma.io/namespace": "kong-mesh-system",
         "kuma.io/display-name": "timeout-2",
@@ -45,6 +43,9 @@
         "kuma.io/origin": "zone",
         "kuma.io/zone": "my-zone"
       },
+      "mesh": "default",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "name": "timeout-2-dz449dwd8fw4486x",
       "spec": {
         "targetRef": {
           "kind": "Mesh",
@@ -65,14 +66,12 @@
             }
           }
         ]
-      }
+      },
+      "type": "MeshTimeout"
     },
     {
-      "type": "MeshTimeout",
-      "mesh": "default",
-      "name": "timeout-3-bbzw9cc54z4bv4v5",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-3_",
       "labels": {
         "k8s.kuma.io/namespace": "kong-mesh-system",
         "kuma.io/display-name": "timeout-3",
@@ -80,6 +79,9 @@
         "kuma.io/origin": "zone",
         "kuma.io/zone": "my-zone"
       },
+      "mesh": "default",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "name": "timeout-3-bbzw9cc54z4bv4v5",
       "spec": {
         "targetRef": {
           "kind": "MeshService",
@@ -98,14 +100,12 @@
             }
           }
         ]
-      }
+      },
+      "type": "MeshTimeout"
     },
     {
-      "type": "MeshTimeout",
-      "mesh": "default",
-      "name": "timeout-4-dv4792fw8fwvww42",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-4_",
       "labels": {
         "k8s.kuma.io/namespace": "kong-mesh-system",
         "kuma.io/display-name": "timeout-4",
@@ -113,6 +113,9 @@
         "kuma.io/origin": "zone",
         "kuma.io/zone": "my-zone"
       },
+      "mesh": "default",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "name": "timeout-4-dv4792fw8fwvww42",
       "spec": {
         "targetRef": {
           "kind": "MeshService",
@@ -131,7 +134,8 @@
             }
           }
         ]
-      }
+      },
+      "type": "MeshTimeout"
     }
   ],
   "next": null

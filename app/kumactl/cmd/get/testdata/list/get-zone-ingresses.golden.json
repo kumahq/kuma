@@ -6,6 +6,7 @@
       "name": "ingress-zone-1",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_zi____ingress-zone-1_",
       "networking": {
         "address": "1.1.1.1",
         "advertisedAddress": "2.2.2.2",
@@ -38,6 +39,7 @@
       "name": "ingress-zone-2",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_zi____ingress-zone-2_",
       "zone": "us-east",
       "networking": {
         "address": "3.3.3.3",

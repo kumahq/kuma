@@ -1,6 +1,7 @@
 # Mesh
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_m____default_
 labels:
   kuma.io/origin: global
 modificationTime: "0001-01-01T00:00:00Z"
@@ -10,6 +11,7 @@ type: Mesh
 # MeshService
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_msvc_default_zone-1__redis-zone-1_
 labels:
   kuma.io/display-name: redis-zone-1
   kuma.io/origin: global
@@ -39,6 +41,7 @@ type: MeshService
 
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_msvc_default___redis-zone-2_
 labels:
   team: db-operators
 mesh: default

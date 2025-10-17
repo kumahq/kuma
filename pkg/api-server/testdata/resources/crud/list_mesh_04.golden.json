@@ -5,13 +5,15 @@
    "type": "Mesh",
    "name": "m1",
    "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z"
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_m____m1_"
   },
   {
    "type": "Mesh",
    "name": "m2",
    "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z"
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_m____m2_"
   }
  ],
  "next": "http://{{address}}/meshes?offset=2&size=2"

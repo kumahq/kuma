@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___2-my-policy_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: 2-my-policy
@@ -13,6 +14,7 @@ items:
       kind: Mesh
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___1-my-policy_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: 1-my-policy
@@ -26,6 +28,7 @@ items:
       kind: Mesh
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___222_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: "222"
@@ -41,6 +44,7 @@ items:
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___111_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: "111"
@@ -56,6 +60,7 @@ items:
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___my-policy-2_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: my-policy-2
@@ -70,6 +75,7 @@ items:
       name: web
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___my-policy-1_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: my-policy-1
@@ -84,6 +90,7 @@ items:
       name: web
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___bbb_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: bbb
@@ -100,6 +107,7 @@ items:
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___aaa_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
   name: aaa

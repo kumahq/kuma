@@ -8,6 +8,7 @@ ResourceRules:
     Origin:
     - Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mr_mesh-1___mr-3_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
         name: mr-3
@@ -16,6 +17,7 @@ ResourceRules:
     OriginByMatches: {}
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_extsvc_mesh-1___mes_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mes
@@ -27,6 +29,7 @@ Rules:
       numRetries: 3
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mr_mesh-1___mr-1_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: mr-1

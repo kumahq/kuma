@@ -8,6 +8,7 @@ Rules:
       maxConnectAttempt: 5
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mr_mesh-1___retry-1_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: retry-1
@@ -24,6 +25,7 @@ Rules:
       maxConnectAttempt: 5
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mr_mesh-1___retry-1_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: retry-1

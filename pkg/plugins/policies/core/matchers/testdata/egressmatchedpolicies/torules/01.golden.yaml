@@ -6,11 +6,13 @@ Rules:
         disabled: false
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mlbs_mesh-1___mlbs-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mlbs-1
       type: MeshLoadBalancingStrategy
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mlbs_mesh-1___mlbs-2_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mlbs-2
@@ -28,6 +30,7 @@ Rules:
         disabled: true
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mlbs_mesh-1___mlbs-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mlbs-1

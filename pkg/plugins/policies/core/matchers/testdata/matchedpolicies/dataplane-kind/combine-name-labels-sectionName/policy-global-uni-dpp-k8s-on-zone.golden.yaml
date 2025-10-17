@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1__kuma-system_mtp-1_
   labels:
     k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: mtp-1
@@ -20,6 +21,7 @@ items:
         app: demo
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1__kuma-system_mtp-2_
   labels:
     k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: mtp-2

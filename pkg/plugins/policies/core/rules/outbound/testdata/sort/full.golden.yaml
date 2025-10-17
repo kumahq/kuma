@@ -7,6 +7,7 @@
       kind: Mesh
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-aaa_
     labels:
       kuma.io/origin: global
       kuma.io/policy-role: system
@@ -26,6 +27,7 @@
       kind: Mesh
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-bbb_
     labels:
       kuma.io/origin: zone
       kuma.io/policy-role: system
@@ -46,6 +48,7 @@
       name: backend
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1_another-zone__matched-for-rules-ccc_
     labels:
       kuma.io/origin: zone
       kuma.io/policy-role: producer
@@ -65,6 +68,7 @@
       kind: Mesh
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-ddd_
     labels:
       kuma.io/policy-role: consumer
     mesh: mesh-1
