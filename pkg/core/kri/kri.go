@@ -42,6 +42,15 @@ func (i Identifier) IsEmpty() bool {
 	return i == (Identifier{})
 }
 
+func (i Identifier) IsLocallyOriginated(isGlobal bool, zone string) bool {
+	if isGlobal {
+		// In Global CP, resources without a zone are considered locally originated.
+		return i.Zone == ""
+	}
+	// In Zone CP, resources are treated as locally originated if KRI zone matches the current CP zone.
+	return i.Zone == zone
+}
+
 func From(r core_model.Resource) Identifier {
 	return FromResourceMeta(r.GetMeta(), r.Descriptor().Name)
 }
@@ -69,7 +78,7 @@ func FromString(s string) (Identifier, error) {
 		return Identifier{}, errors.Errorf("identifier must start with 'kri': %q", s)
 	}
 	ds := registry.Global().ObjectDescriptors(core_model.TypeFilterFn(func(d core_model.ResourceTypeDescriptor) bool {
-		return d.ShortName == parts[1]
+		return d.ShortName == parts[1] && d.ShortName != ""
 	}))
 	if len(ds) == 0 {
 		return Identifier{}, errors.Errorf("unknown short name of resource type: %q", parts[1])

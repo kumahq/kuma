@@ -1,0 +1,15 @@
+#/_kri/kri_mtp_default_default__mtp-2_ 404
+type: Mesh
+name: default
+---
+type: MeshTrafficPermission
+name: mtp-1
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow

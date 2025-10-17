@@ -29,22 +29,8 @@ const (
 
 var muxServerLog = core.Log.WithName("kds-mux-server")
 
-type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error)
-
-func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error) {
-	f(session, errorCh)
-}
-
-type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error)
-
-func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error) {
-	f(session, errorCh)
-}
-
 type server struct {
 	config               multizone.KdsServerConfig
-	CallbacksGlobal      OnGlobalToZoneSyncConnectFunc
-	CallbacksZone        OnZoneToGlobalSyncConnectFunc
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer
