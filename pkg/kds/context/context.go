@@ -30,7 +30,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/hash"
-	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
@@ -49,7 +48,7 @@ type Context struct {
 	TypesSentByGlobal     []core_model.ResourceType
 	GlobalProvidedFilter  reconcile_v2.ResourceFilter
 	ZoneProvidedFilter    reconcile_v2.ResourceFilter
-	GlobalServerFiltersV2 []mux.FilterV2
+	GlobalServerFiltersV2 []FilterV2
 
 	GlobalResourceMapper reconcile_v2.ResourceMapper
 	ZoneResourceMapper   reconcile_v2.ResourceMapper
@@ -58,6 +57,11 @@ type Context struct {
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
 	CreateZoneOnFirstConnect bool
+}
+
+type FilterV2 interface {
+	InterceptServerStream(stream grpc.ServerStream) error
+	InterceptClientStream(stream grpc.ClientStream) error
 }
 
 // KDSSyncedConfigs A select set of keys that are synced from global to zones
