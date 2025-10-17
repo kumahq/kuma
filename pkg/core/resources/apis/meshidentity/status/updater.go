@@ -86,8 +86,8 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 						generationConditionStatus = kube_meta.ConditionFalse
 						reason = "Failure"
 					}
-					if condition.Type == meshidentity_api.SANProviderConditionType {
-						message = "Running in SAN providing only mode"
+					if condition.Type == meshidentity_api.SpiffeIDProviderConditionType {
+						message = "Running in SpiffeID providing only mode."
 						generationConditionStatus = kube_meta.ConditionFalse
 						reason = "PartiallyReady"
 					}
@@ -135,10 +135,10 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 	}
 	if mid.Spec.Provider == nil {
 		conditions = append(conditions, common_api.Condition{
-			Type:    meshidentity_api.SANProviderConditionType,
+			Type:    meshidentity_api.SpiffeIDProviderConditionType,
 			Status:  kube_meta.ConditionTrue,
-			Reason:  "SANProvider",
-			Message: "Providing only SANs for services.",
+			Reason:  "SpiffeIDProvided",
+			Message: "Providing only SpiffeIDs for services.",
 		})
 		return conditions
 	}
