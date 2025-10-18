@@ -84,6 +84,11 @@ func (mc *ContextBuilder) WithMeshContext(mesh *xds_context.MeshContext) *Contex
 	return mc
 }
 
+func (mc *ContextBuilder) WithCAsByTrustDomain(casByTrustDomain map[string][]xds_context.PEMBytes) *ContextBuilder {
+	mc.res.Mesh.CAsByTrustDomain = casByTrustDomain
+	return mc
+}
+
 func (mc *ContextBuilder) WithMeshLocalResources(rs []model.Resource) *ContextBuilder {
 	mc.res.Mesh.Resources = xds_context.Resources{MeshLocalResources: map[model.ResourceType]model.ResourceList{}}
 	for _, p := range rs {

@@ -75,6 +75,7 @@ func ServerSideMTLS(
 	tlsVersion *common_tls.Version,
 	tlsCiphers []common_tls.TlsCipher,
 	unifiedResourceNaming bool,
+	useMeshTrust bool,
 ) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
 		Mesh:                  mesh,
@@ -82,6 +83,7 @@ func ServerSideMTLS(
 		TlsVersion:            tlsVersion,
 		TlsCiphers:            tlsCiphers,
 		UnifiedResourceNaming: unifiedResourceNaming,
+		UseMeshTrust:          useMeshTrust,
 	})
 }
 

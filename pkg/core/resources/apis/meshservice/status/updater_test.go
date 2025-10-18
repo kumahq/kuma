@@ -107,17 +107,21 @@ var _ = Describe("Updater", func() {
 
 	It("should add identity to status of service based on MeshIdentity and old mTLS", func() {
 		// when
-		mid := builders.MeshIdentity().WithBundled().WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
+		mid := builders.MeshIdentity().WithName("identity-1").WithBundled().WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
 			MatchLabels: &map[string]string{
 				"app": "test",
 			},
 		}).WithInitializedStatus().Build()
+		mid2 := builders.MeshIdentity().WithName("identity-2").WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
+			MatchLabels: &map[string]string{},
+		}).WithSpiffeID("another-mesh-domain.east.mesh.local", "/my/domain/test").WithPartiallyReadyStatus().Build()
 		trustDomain := "tls-mesh.east.mesh.local"
 
 		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(samples.MeshServiceBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(builders.MeshTrust().WithMesh("tls-mesh").WithTrustDomain(trustDomain).Create(resManager)).To(Succeed())
 		Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "tls-mesh"))).To(Succeed())
+		Expect(resManager.Create(context.TODO(), mid2, store.CreateByKey(mid2.Meta.GetName(), "tls-mesh"))).To(Succeed())
 		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("tls-mesh").Build(), store.CreateByKey("dp-1", "tls-mesh"), store.CreateWithLabels(map[string]string{
 			metadata.KumaServiceAccount: "default",
 			mesh_proto.KubeNamespaceTag: "my-ns",
@@ -129,13 +133,18 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(pointer.Deref(ms.Spec.Identities)).To(ContainElements(meshservice_api.MeshServiceIdentity{
-				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-				Value: "backend",
-			},
+			g.Expect(pointer.Deref(ms.Spec.Identities)).To(ContainElements(
+				meshservice_api.MeshServiceIdentity{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: "backend",
+				},
 				meshservice_api.MeshServiceIdentity{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://tls-mesh.east.mesh.local/ns/my-ns/sa/default",
+				},
+				meshservice_api.MeshServiceIdentity{
+					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+					Value: "spiffe://another-mesh-domain.east.mesh.local/my/domain/test",
 				},
 			))
 		}, "10s", "100ms").Should(Succeed())

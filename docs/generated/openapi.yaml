@@ -18248,8 +18248,6 @@ components:
                 trustDomain:
                   type: string
               type: object
-          required:
-            - provider
           type: object
         creationTime:
           readOnly: true

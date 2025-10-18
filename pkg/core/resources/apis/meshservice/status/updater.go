@@ -294,20 +294,18 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 		for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
 			serviceTagIdentities[service] = struct{}{}
 		}
-		if identity, matched := meshidentity_api.Matched(dpp.Meta.GetLabels(), meshIdentities); matched {
-			if identity.Status.IsInitialized() {
-				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
-				if err != nil {
-					s.logger.Error(err, "cannot resolve trust domain")
-					continue
-				}
-				spiffeID, err := identity.Spec.GetSpiffeID(td, dpp.GetMeta())
-				if err != nil {
-					s.logger.Error(err, "cannot resolve spiffeID, skip", "dataplane", dpp)
-					continue
-				}
-				spiffeIDs[spiffeID] = struct{}{}
+		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
+			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+			if err != nil {
+				s.logger.Error(err, "cannot resolve trust domain")
+				continue
 			}
+			spiffeID, err := identity.Spec.GetSpiffeID(td, dpp.GetMeta())
+			if err != nil {
+				s.logger.Error(err, "cannot resolve spiffeID, skip", "dataplane", dpp)
+				continue
+			}
+			spiffeIDs[spiffeID] = struct{}{}
 		}
 	}
 	var identites []meshservice_api.MeshServiceIdentity
