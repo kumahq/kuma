@@ -6,6 +6,7 @@ linters:
     - bodyclose
     - depguard
     - errcheck
+    - exptostd
     - ginkgolinter
     - gocritic
     - gomodguard
