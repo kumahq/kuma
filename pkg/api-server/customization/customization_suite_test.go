@@ -87,6 +87,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
 		),
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,

@@ -158,12 +158,6 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"ca-bundle",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
 			},
 		}),
 		Entry("permissive based on workload identity and custom functions", testCase{
@@ -178,7 +172,7 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 					return bldrs_tls.SdsSecretConfigSource(
 						"ca-bundle",
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
