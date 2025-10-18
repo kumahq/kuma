@@ -5,76 +5,99 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-type FilterV2 interface {
-	InterceptServerStream(stream grpc.ServerStream) error
-	InterceptClientStream(stream grpc.ClientStream) error
-}
-
-type OnGlobalToZoneSyncConnectFunc func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error
-
-func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
-	return f(stream)
-}
-
-type OnZoneToGlobalSyncConnectFunc func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error
-
-func (f OnZoneToGlobalSyncConnectFunc) OnZoneToGlobalSyncConnect(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
-	return f(stream)
-}
 
 var clientLog = core.Log.WithName("kds-delta-client")
 
 type KDSSyncServiceServer struct {
-	globalToZoneCb OnGlobalToZoneSyncConnectFunc
-	zoneToGlobalCb OnZoneToGlobalSyncConnectFunc
-	filters        []FilterV2
-	extensions     context.Context
-	eventBus       events.EventBus
+	filters    []kds_context.FilterV2
+	extensions context.Context
+	eventBus   events.EventBus
 	mesh_proto.UnimplementedKDSSyncServiceServer
-	context    context.Context
-	resManager manager.ResourceManager
-	upsertCfg  config_store.UpsertConfig
-	instanceID string
+	context                  context.Context
+	resManager               core_manager.ResourceManager
+	upsertCfg                config_store.UpsertConfig
+	instanceID               string
+	createZoneOnFirstConnect bool
+	deltaServer              delta.Server
+	typesSentByZone          []core_model.ResourceType
+	resourceSyncer           kds_sync_store_v2.ResourceSyncer
+	k8sStore                 bool
+	systemNamespace          string
+	responseBackoff          time.Duration
 }
 
-func NewKDSSyncServiceServer(ctx context.Context, globalToZoneCb OnGlobalToZoneSyncConnectFunc, zoneToGlobalCb OnZoneToGlobalSyncConnectFunc, filters []FilterV2, extensions context.Context, eventBus events.EventBus, resManager manager.ResourceManager, upsertCfg config_store.UpsertConfig, instanceID string) *KDSSyncServiceServer {
+func NewKDSSyncServiceServer(
+	rt runtime.Runtime,
+	deltaServer delta.Server,
+	resourceSyncer kds_sync_store_v2.ResourceSyncer,
+) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
-		context:        ctx,
-		globalToZoneCb: globalToZoneCb,
-		zoneToGlobalCb: zoneToGlobalCb,
-		filters:        filters,
-		extensions:     extensions,
-		eventBus:       eventBus,
-		resManager:     resManager,
-		upsertCfg:      upsertCfg,
-		instanceID:     instanceID,
+		context:                  rt.AppContext(),
+		filters:                  rt.KDSContext().GlobalServerFiltersV2,
+		extensions:               rt.Extensions(),
+		eventBus:                 rt.EventBus(),
+		resManager:               rt.ResourceManager(),
+		upsertCfg:                rt.Config().Store.Upsert,
+		instanceID:               rt.GetInstanceId(),
+		deltaServer:              deltaServer,
+		createZoneOnFirstConnect: rt.KDSContext().CreateZoneOnFirstConnect,
+		typesSentByZone:          rt.KDSContext().TypesSentByZone,
+		resourceSyncer:           resourceSyncer,
+		k8sStore:                 rt.Config().Store.Type == config_store.KubernetesStore,
+		systemNamespace:          rt.Config().Store.Kubernetes.SystemNamespace,
+		responseBackoff:          rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 	}
 }
 
 var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
+
+func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
+	ctx = user.Ctx(ctx, user.ControlPlane)
+	if err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh)); err != nil {
+		if !core_store.IsNotFound(err) || !createZoneOnConnect {
+			return err
+		}
+		log.Info("creating Zone", "name", name)
+		zone := &system.ZoneResource{
+			Spec: &system_proto.Zone{
+				Enabled: util_proto.Bool(true),
+			},
+		}
+		if err := resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
 	logger := log.AddFieldsFromCtx(clientLog, stream.Context(), g.extensions)
@@ -95,9 +118,27 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
-		if err := g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream); err != nil {
-			processingErrorsCh <- err
+		logger.Info("Global To Zone new session created")
+		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager, g.createZoneOnFirstConnect); err != nil {
+			if errors.Is(err, context.Canceled) {
+				processingErrorsCh <- nil
+				return
+			}
+			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
+			return
 		}
+		errorStream := NewErrorRecorderStream(stream)
+		err := g.deltaServer.DeltaStreamHandler(errorStream, "")
+		if err == nil {
+			err = errorStream.Err()
+		}
+
+		if err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			processingErrorsCh <- err
+			return
+		}
+
+		logger.V(1).Info("GlobalToZoneSync finished gracefully")
 	}()
 	if err := g.storeStreamConnection(stream.Context(), zone, service.GlobalToZone, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
@@ -145,9 +186,27 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
-		if err := g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream); err != nil {
-			processingErrorsCh <- err
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "")
+		sink := kds_client_v2.NewKDSSyncClient(
+			logger,
+			g.typesSentByZone,
+			kdsStream,
+			kds_sync_store_v2.GlobalSyncCallback(
+				stream.Context(),
+				g.resourceSyncer,
+				g.k8sStore,
+				k8s.NewSimpleKubeFactory(),
+				g.systemNamespace,
+			),
+			g.responseBackoff,
+		)
+		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			processingErrorsCh <- errors.Wrap(err, "KDSSyncClient finished with an error")
+			return
 		}
+
+		logger.V(1).Info("KDSSyncClient finished gracefully")
+		processingErrorsCh <- nil
 	}()
 
 	if err := g.storeStreamConnection(stream.Context(), zone, service.ZoneToGlobal, connectTime); err != nil {
@@ -200,7 +259,7 @@ func (g *KDSSyncServiceServer) watchZoneHealthCheck(streamContext context.Contex
 }
 
 func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone string, typ service.StreamType, connectTime time.Time) error {
-	key := model.ResourceKey{Name: zone}
+	key := core_model.ResourceKey{Name: zone}
 
 	// wait for Zone to be created, only then we can create Zone Insight
 	err := retry.Do(
@@ -222,17 +281,17 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
 
 	zoneInsight := system.NewZoneInsightResource()
-	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
+	return core_manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		if zoneInsight.Spec.KdsStreams == nil {
-			zoneInsight.Spec.KdsStreams = &v1alpha1.KDSStreams{}
+			zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{}
 		}
 		stream := zoneInsight.Spec.GetKDSStream(string(typ))
 		if stream == nil {
-			stream = &v1alpha1.KDSStream{}
+			stream = &system_proto.KDSStream{}
 		}
-		if stream.GetConnectTime() == nil || proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
+		if stream.GetConnectTime() == nil || util_proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
 			stream.GlobalInstanceId = g.instanceID
-			stream.ConnectTime = proto.MustTimestampProto(connectTime)
+			stream.ConnectTime = util_proto.MustTimestampProto(connectTime)
 		}
 		switch typ {
 		case service.GlobalToZone:
@@ -241,5 +300,5 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 			zoneInsight.Spec.KdsStreams.ZoneToGlobal = stream
 		}
 		return nil
-	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
+	}, core_manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
 }

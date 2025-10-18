@@ -12,7 +12,6 @@ import (
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
@@ -32,9 +31,9 @@ type stream struct {
 	streamClient       KDSSyncServiceStream
 	initialRequestDone map[core_model.ResourceType]bool
 	latestReceived     map[core_model.ResourceType]*latestReceived
-	clientId           string
+	clientID           string
 	cpConfig           string
-	runtimeInfo        core_runtime.RuntimeInfo
+	instanceID         string
 }
 
 type KDSSyncServiceStream interface {
@@ -42,14 +41,14 @@ type KDSSyncServiceStream interface {
 	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
 }
 
-func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core_runtime.RuntimeInfo, cpConfig string) DeltaKDSStream {
+func NewDeltaKDSStream(s KDSSyncServiceStream, clientID string, instanceID string, cpConfig string) DeltaKDSStream {
 	return &stream{
 		streamClient:       s,
-		runtimeInfo:        runtimeInfo,
 		initialRequestDone: make(map[core_model.ResourceType]bool),
 		latestReceived:     make(map[core_model.ResourceType]*latestReceived),
-		clientId:           clientId,
+		clientID:           clientID,
 		cpConfig:           cpConfig,
+		instanceID:         instanceID,
 	}
 }
 
@@ -70,12 +69,12 @@ func (s *stream) BuildDeltaSubScribeRequest(resourceType core_model.ResourceType
 	req := &envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
-			Id: s.clientId,
+			Id: s.clientID,
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
 					kds.MetadataFieldVersion:   {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
 					kds.MetadataFieldConfig:    {Kind: &structpb.Value_StringValue{StringValue: s.cpConfig}},
-					kds.MetadataControlPlaneId: {Kind: &structpb.Value_StringValue{StringValue: s.runtimeInfo.GetInstanceId()}},
+					kds.MetadataControlPlaneId: {Kind: &structpb.Value_StringValue{StringValue: s.instanceID}},
 					kds.MetadataFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
 						Values: []*structpb.Value{
 							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureZoneToken}},
@@ -130,7 +129,7 @@ func (s *stream) BuildACKRequest(resourceType core_model.ResourceType) *envoy_sd
 	req := &envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce: latestReceived.nonce,
 		Node: &envoy_core.Node{
-			Id: s.clientId,
+			Id: s.clientID,
 		},
 		TypeUrl: string(resourceType),
 	}
@@ -147,7 +146,7 @@ func (s *stream) BuildNACKRequest(resourceType core_model.ResourceType, err erro
 		ResourceNamesSubscribe: []string{"*"},
 		TypeUrl:                string(resourceType),
 		Node: &envoy_core.Node{
-			Id: s.clientId,
+			Id: s.clientID,
 		},
 		ErrorDetail: &status.Status{
 			Message: fmt.Sprintf("%s", err),

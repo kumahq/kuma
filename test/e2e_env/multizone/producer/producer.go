@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -10,11 +11,13 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/api"
 	framework_client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -116,6 +119,12 @@ spec:
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
+			out := meshtimeout_api.NewMeshTimeoutResource()
+			statusCode := api.FetchResourceByKri(g, multizone.KubeZone1, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
+			g.Expect(statusCode).To(Equal(http.StatusOK))
+		}).Should(Succeed())
+
+		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
@@ -148,6 +157,7 @@ spec:
           requestTimeout: 2s
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 
+		// should not get synced to zone 1
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
 				multizone.KubeZone1.GetTesting(),
@@ -155,6 +165,13 @@ spec:
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
+		}).Should(Succeed())
+
+		// should be available via KRI in zone 2
+		Eventually(func(g Gomega) {
+			out := meshtimeout_api.NewMeshTimeoutResource()
+			statusCode := api.FetchResourceByKri(g, multizone.KubeZone2, out, kri.MustFromString("kri_mt_producer-policy-flow_kuma-2_producer-policy-flow-ns_to-test-server_"))
+			g.Expect(statusCode).To(Equal(http.StatusOK))
 		}).Should(Succeed())
 	})
 

@@ -359,6 +359,16 @@ func addResourcesEndpoints(
 			}
 		}
 	}
+
+	kriEndpoints := kriEndpoint{
+		k8sMapper:       k8sMapper,
+		resManager:      resManager,
+		cpMode:          cfg.Mode,
+		environment:     cfg.Environment,
+		cpZone:          cfg.Multizone.Zone.Name,
+		systemNamespace: cfg.Store.Kubernetes.SystemNamespace,
+	}
+	kriEndpoints.addFindByKriEndpoint(ws)
 }
 
 func (a *ApiServer) Ready() bool {

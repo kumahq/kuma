@@ -3,8 +3,8 @@ DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
-# renovate: datasource=docker depName=kumahq/openapi-tool versioning=semver-coerced registryUrl=https://ghcr.io
-OAPI_TOOLS_VERSION ?= v1.2.0
+# renovate[docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io
+OAPI_TOOLS_VERSION ?= v1.2.1@sha256:8f81e7ce2fd57916c87db172534c28786a418cf90fff3fc624a553e51359b16f
 
 .PHONY: clean/docs
 clean/docs:
@@ -60,3 +60,4 @@ ifdef BASE_API
 else
 	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION) generate '/specs/**/*.yaml' > $@
 endif
+	$(MAKE) --no-print-directory validate/openapi-generated-docs

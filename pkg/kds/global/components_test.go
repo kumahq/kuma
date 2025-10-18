@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/mux"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -170,7 +171,9 @@ var _ = Describe("Global Sync", func() {
 						wg.Done()
 						GinkgoRecover()
 					}()
-					Expect(srv.ZoneToGlobal(serverStream)).To(Succeed())
+					errorStream := mux.NewErrorRecorderStream(serverStream)
+					Expect(srv.DeltaStreamHandler(errorStream, "")).To(Succeed())
+					Expect(errorStream.Err()).ToNot(HaveOccurred())
 				}()
 
 				serverStreams = append(serverStreams, serverStream)
