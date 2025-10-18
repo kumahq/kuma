@@ -56,17 +56,9 @@ paths:
               $ref: '#/components/schemas/MeshExternalServiceItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMeshExternalService
@@ -87,11 +79,7 @@ paths:
           description: name of the MeshExternalService
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshExternalServiceDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshExternalServiceDeleteSuccessResponse'
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
@@ -144,20 +132,6 @@ components:
   schemas:
     MeshExternalServiceItem:
       $ref: 'schema.yaml'
-    MeshExternalServiceCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: |
-            warnings is a list of warning messages to return to the requesting Kuma API clients.
-            Warning messages describe a problem the client making the API request should correct or be aware of.
-          items:
-            type: string
-    MeshExternalServiceDeleteSuccessResponse:
-      type: object
-      properties: {}
 
   responses:
     MeshExternalServiceItem:
@@ -183,3 +157,24 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshExternalServiceCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    MeshExternalServiceDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object

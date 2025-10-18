@@ -44,17 +44,9 @@ paths:
               $ref: '#/components/schemas/ZoneIngressItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneIngressCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneIngressCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteZoneIngress
@@ -69,11 +61,7 @@ paths:
           description: name of the ZoneIngress
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneIngressDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
@@ -120,20 +108,6 @@ components:
   schemas:
     ZoneIngressItem:
       $ref: 'schema.yaml'
-    ZoneIngressCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: |
-            warnings is a list of warning messages to return to the requesting Kuma API clients.
-            Warning messages describe a problem the client making the API request should correct or be aware of.
-          items:
-            type: string
-    ZoneIngressDeleteSuccessResponse:
-      type: object
-      properties: {}
 
   responses:
     ZoneIngressItem:
@@ -159,3 +133,24 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    ZoneIngressCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    ZoneIngressDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
