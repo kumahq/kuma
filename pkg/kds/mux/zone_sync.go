@@ -2,6 +2,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -53,6 +55,7 @@ type KDSSyncServiceServer struct {
 	k8sStore                 bool
 	systemNamespace          string
 	responseBackoff          time.Duration
+	grpcStop                 func()
 }
 
 func NewKDSSyncServiceServer(
@@ -185,6 +188,16 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error, 1)
+	group, ctx := errgroup.WithContext(stream.Context())
+	go func() {
+		select {
+		case <-ctx.Done():
+			if g.grpcStop != nil {
+				logger.Info("received context done, stopping grpc server")
+				g.grpcStop()
+			}
+		}
+	}()
 	go func() {
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "")
 		sink := kds_client_v2.NewKDSSyncClient(
@@ -200,7 +213,8 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			),
 			g.responseBackoff,
 		)
-		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+
+		if err := sink.Receive(ctx, group); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
 			processingErrorsCh <- errors.Wrap(err, "KDSSyncClient finished with an error")
 			return
 		}
@@ -301,4 +315,16 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 		}
 		return nil
 	}, core_manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
+}
+
+func (g *KDSSyncServiceServer) SetGrpcStop(stop func()) error {
+	if stop == nil {
+		return fmt.Errorf("stop func cannot be nil")
+	}
+	if g.grpcStop != nil {
+		return fmt.Errorf("grpc stop func is already set")
+	}
+
+	g.grpcStop = stop
+	return nil
 }

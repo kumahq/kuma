@@ -15,11 +15,22 @@ import (
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
+	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ DeltaKDSStream = &stream{}
+
+// All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
+type DeltaKDSStream interface {
+	SendMsg(*envoy_sd.DeltaDiscoveryRequest) error
+	BuildDeltaSubScribeRequest(resourceType core_model.ResourceType) *envoy_sd.DeltaDiscoveryRequest
+	Receive() (kds_util.UpstreamResponse, error)
+	BuildACKRequest(resourceType core_model.ResourceType) *envoy_sd.DeltaDiscoveryRequest
+	BuildNACKRequest(resourceType core_model.ResourceType, err error) *envoy_sd.DeltaDiscoveryRequest
+	MarkInitialRequestDone(resourceType core_model.ResourceType)
+}
 
 type latestReceived struct {
 	nonce         string
@@ -93,14 +104,14 @@ func (s *stream) BuildDeltaSubScribeRequest(resourceType core_model.ResourceType
 	return req
 }
 
-func (s *stream) Receive() (UpstreamResponse, error) {
+func (s *stream) Receive() (kds_util.UpstreamResponse, error) {
 	resp, err := s.streamClient.Recv()
 	if err != nil {
-		return UpstreamResponse{}, err
+		return kds_util.UpstreamResponse{}, err
 	}
 	rs, nameToVersion, err := util.ToDeltaCoreResourceList(resp)
 	if err != nil {
-		return UpstreamResponse{}, err
+		return kds_util.UpstreamResponse{}, err
 	}
 	// when there isn't nonce it means it's the first request
 	s.Lock()
@@ -110,7 +121,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		nonce:         resp.Nonce,
 		nameToVersion: nameToVersion,
 	}
-	return UpstreamResponse{
+	return kds_util.UpstreamResponse{
 		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
 		Type:                rs.GetItemType(),
 		AddedResources:      rs,
