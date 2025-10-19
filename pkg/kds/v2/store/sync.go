@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"

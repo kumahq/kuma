@@ -190,12 +190,10 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	processingErrorsCh := make(chan error, 1)
 	group, ctx := errgroup.WithContext(stream.Context())
 	go func() {
-		select {
-		case <-ctx.Done():
-			if g.grpcStop != nil {
-				logger.Info("received context done, stopping grpc server")
-				g.grpcStop()
-			}
+		<-ctx.Done()
+		if g.grpcStop != nil {
+			logger.Info("received context done, stopping grpc server")
+			g.grpcStop()
 		}
 	}()
 	go func() {
