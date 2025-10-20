@@ -1,4 +1,5 @@
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_dp_default___sample_
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: sample
@@ -11,6 +12,7 @@ networking:
       kuma.io/service: web
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_dp_default___sample-2_
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: sample-2
@@ -23,6 +25,7 @@ networking:
       kuma.io/service: web
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_dp_default___sample-3_
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: sample-3

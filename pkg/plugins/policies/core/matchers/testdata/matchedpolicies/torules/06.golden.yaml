@@ -6,6 +6,7 @@ Rules:
       streamIdleTimeout: 3s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1__test-ns_bbb_
     labels:
       k8s.kuma.io/namespace: test-ns
       kuma.io/policy-role: consumer
@@ -14,6 +15,7 @@ Rules:
     name: bbb
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1__test-ns_aaa_
     labels:
       k8s.kuma.io/namespace: test-ns
       kuma.io/policy-role: consumer

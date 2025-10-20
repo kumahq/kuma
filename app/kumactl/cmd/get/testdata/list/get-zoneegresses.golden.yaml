@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_ze____egress-zone-1_
   modificationTime: "0001-01-01T00:00:00Z"
   name: egress-zone-1
   networking:
@@ -7,6 +8,7 @@ items:
     port: 10001
   type: ZoneEgress
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_ze____egress-zone-2_
   modificationTime: "0001-01-01T00:00:00Z"
   name: egress-zone-2
   networking:
