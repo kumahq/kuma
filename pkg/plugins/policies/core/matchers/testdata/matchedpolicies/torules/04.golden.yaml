@@ -6,11 +6,13 @@ Rules:
       streamIdleTimeout: 5s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___aaa_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: aaa
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1_zone-1__bbb_
     labels:
       kuma.io/origin: zone
       kuma.io/zone: zone-1
@@ -19,6 +21,7 @@ Rules:
     name: bbb
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___ccc_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: ccc

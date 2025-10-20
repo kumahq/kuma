@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1_zone-uni_kuma-system_mtp-1_
   labels:
     k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: mtp-1
