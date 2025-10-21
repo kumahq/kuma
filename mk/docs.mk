@@ -4,7 +4,8 @@ DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
 # renovate[docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io
-OAPI_TOOLS_VERSION ?= v1.2.1@sha256:8f81e7ce2fd57916c87db172534c28786a418cf90fff3fc624a553e51359b16f
+OAPI_TOOL_VERSION ?= v1.2.1@sha256:8f81e7ce2fd57916c87db172534c28786a418cf90fff3fc624a553e51359b16f
+OAPI_TOOL_IMAGE   := ghcr.io/kumahq/openapi-tool:$(OAPI_TOOL_VERSION)
 
 .PHONY: clean/docs
 clean/docs:
@@ -41,7 +42,7 @@ docs/generated/raw/rbac.yaml:
 	sed 's/[[:space:]]*#.*$$//' > $@
 
 OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
-API_DIRS     ?= "$(TOP)/api/openapi/specs:base"
+API_DIRS     ?= $(TOP)/api/openapi/specs:base
 
 # Generate a consolidated OpenAPI spec consumed by docs
 # Keep prep and generation separate for clarity and easier maintenance
@@ -56,15 +57,14 @@ docs/generated:
 docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
 # Target-scoped settings for readability
 docs/generated/openapi.yaml: DOCKER      ?= docker
-docs/generated/openapi.yaml: IMAGE       ?= ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION)
+docs/generated/openapi.yaml: IMAGE       := $(OAPI_TOOL_IMAGE)
 docs/generated/openapi.yaml: SPECS_MOUNT := -v $(OAPI_TMP_DIR):/specs
-docs/generated/openapi.yaml: BASE_MOUNT  := $(if $(BASE_API), -v $(CURDIR)/$(dir $(BASE_API)):/base,)
+docs/generated/openapi.yaml: BASE_MOUNT  := $(if $(BASE_API),-v $(CURDIR)/$(dir $(BASE_API)):/base,)
 docs/generated/openapi.yaml: BASE_ARG    := $(if $(BASE_API),/base/$(notdir $(BASE_API)),)
-docs/generated/openapi.yaml: EXCLUDES    := $(if $(BASE_API),' !/specs/kuma/**',)
+docs/generated/openapi.yaml: EXCLUDES    := $(if $(BASE_API),'!/specs/kuma/**',)
 docs/generated/openapi.yaml: INCLUDES    := '/specs/**/*.yaml'
 docs/generated/openapi.yaml:
-	$(DOCKER) run --rm $(SPECS_MOUNT)$(BASE_MOUNT) $(IMAGE) generate $(BASE_ARG) $(INCLUDES)$(EXCLUDES) > "$@.tmp"
-	@mv "$@.tmp" "$@"
+	@$(DOCKER) run --rm $(BASE_MOUNT) $(SPECS_MOUNT) $(IMAGE) generate $(BASE_ARG) $(INCLUDES) $(EXCLUDES) > $@
 	@$(MAKE) --no-print-directory validate/openapi-generated-docs
 
 # Prepare $(OAPI_TMP_DIR) with a normalized directory layout for the generator
