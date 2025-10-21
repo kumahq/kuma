@@ -50,7 +50,7 @@
       "description": [
         " Parse version pins in Makefiles and .mk files using an inline Renovate hint placed above",
         " a VERSION-like variable assignment. The following line must assign a version variable,",
-        " e.g.: 'OAPI_TOOLS_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",
+        " e.g.: 'OAPI_TOOL_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",
         "",
         " The regex extracts:",
         " - depName (required)",
