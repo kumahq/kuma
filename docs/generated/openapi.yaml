@@ -14817,6 +14817,9 @@ components:
 
             `backend_OUTBOUND_db2` in Datadog. Default: false
           type: boolean
+      required:
+        - address
+        - port
       type: object
     DataplaneItem:
       properties:
@@ -16309,6 +16312,8 @@ components:
         path:
           description: Path to a file that logs will be written to
           type: string
+      required:
+        - path
       type: object
     MeshItem:
       properties:
@@ -16649,6 +16654,8 @@ components:
         address:
           description: Address to TCP service that will receive logs
           type: string
+      required:
+        - address
       type: object
     ProvidedCertificateAuthorityConfig:
       properties:
@@ -16664,6 +16671,9 @@ components:
             - $ref: '#/components/schemas/DataSource_Inline'
             - $ref: '#/components/schemas/DataSource_InlineString'
             - $ref: '#/components/schemas/DataSource_Secret'
+      required:
+        - cert
+        - key
       type: object
     ZipkinTracingBackendConfig:
       properties:
@@ -16690,6 +16700,8 @@ components:
         url:
           description: Address of Zipkin collector.
           type: string
+      required:
+        - url
       type: object
     MeshGatewayItem:
       properties:

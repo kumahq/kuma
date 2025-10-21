@@ -14,6 +14,9 @@ components:
           - $ref: /specs/protoresources/datasource_inline/schema.yaml#/components/schemas/DataSource_Inline
           - $ref: /specs/protoresources/datasource_inlinestring/schema.yaml#/components/schemas/DataSource_InlineString
           - $ref: /specs/protoresources/datasource_secret/schema.yaml#/components/schemas/DataSource_Secret
+      required:
+      - cert
+      - key
       type: object
 info:
   x-ref-schema-name: ProvidedCertificateAuthorityConfig

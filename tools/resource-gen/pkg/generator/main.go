@@ -454,16 +454,21 @@ func Run() {
 	}
 }
 
-var AdditionalProtoTypes = []reflect.Type{
-	reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.TcpLoggingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
-	reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}),
-	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
-	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
-	reflect.TypeOf(system_proto.Zone{}),
+// AdditionalProtoTypes is a map of a type to a list of required fields that should be added to the schema.
+// Required fields need to be there so that speakeasy generator can correctly match them up.
+// Required fields are based on https://github.com/kumahq/kuma/blob/81b8e4c24cea5c112615188ebaa6a5d671d3d4b5/pkg/core/resources/apis/mesh/mesh_validator.go
+// and https://github.com/kumahq/kuma/blob/0f0b24d209de0e5203101afc48cb65c3fc1f8939/pkg/plugins/ca/provided/manager.go
+// We can't add "required" on the proto property because it's a breaking change from a proto perspective.
+var AdditionalProtoTypes = map[reflect.Type][]string{
+	reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}):                  {"path"},
+	reflect.TypeOf(v1alpha1.TcpLoggingBackendConfig{}):                   {"address"},
+	reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}):                {"url"},
+	reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}):               {"address", "port"},
+	reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}):            {},
+	reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}): {"cert", "key"},
+	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}):   {},
+	reflect.TypeOf(v1alpha1.DataplaneOverview{}):                         {},
+	reflect.TypeOf(system_proto.Zone{}):                                  {},
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
@@ -537,10 +542,16 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 	}
 
-	for _, tpe := range AdditionalProtoTypes {
+	for tpe, requiredFields := range AdditionalProtoTypes {
 		s, err := reflector.reflectFromType(tpe, true)
 		if err != nil {
 			return err
+		}
+		for _, field := range requiredFields {
+			_, ok := s.Properties.Get(field)
+			if ok {
+				s.Required = append(s.Required, field)
+			}
 		}
 		if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
 			return err

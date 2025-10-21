@@ -7,6 +7,8 @@ components:
         address:
           description: Address to TCP service that will receive logs
           type: string
+      required:
+      - address
       type: object
 info:
   x-ref-schema-name: TcpLoggingBackendConfig
