@@ -7,6 +7,8 @@ components:
         path:
           description: Path to a file that logs will be written to
           type: string
+      required:
+      - path
       type: object
 info:
   x-ref-schema-name: FileLoggingBackendConfig

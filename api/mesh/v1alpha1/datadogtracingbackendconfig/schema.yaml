@@ -16,6 +16,9 @@ components:
             get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
             `backend_OUTBOUND_db2` in Datadog. Default: false
           type: boolean
+      required:
+      - address
+      - port
       type: object
 info:
   x-ref-schema-name: DatadogTracingBackendConfig

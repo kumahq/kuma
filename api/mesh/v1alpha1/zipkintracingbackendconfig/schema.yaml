@@ -20,6 +20,8 @@ components:
         url:
           description: Address of Zipkin collector.
           type: string
+      required:
+      - url
       type: object
 info:
   x-ref-schema-name: ZipkinTracingBackendConfig
