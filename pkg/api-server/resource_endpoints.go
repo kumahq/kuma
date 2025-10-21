@@ -242,23 +242,31 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			resource = overview.(core_model.Resource)
 		}
 		var res interface{}
-		switch request.QueryParameter("format") {
-		case "k8s", "kubernetes":
-			var err error
-			res, err = r.k8sMapper(resource, request.QueryParameter("namespace"))
-			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "k8s mapping failed")
-				return
-			}
-		case "universal", "":
-			res = rest.From.Resource(resource)
-		default:
-			err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
-			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
+
+		res, err = formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"))
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+			return
 		}
 		if err := response.WriteAsJson(res); err != nil {
 			log.Error(err, "Could not write the find response")
 		}
+	}
+}
+
+func formatResource(resource core_model.Resource, format string, k8sMapper k8s.ResourceMapperFunc, namespace string) (any, error) {
+	switch format {
+	case "k8s", "kubernetes":
+		res, err := k8sMapper(resource, namespace)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	case "universal", "":
+		return rest.From.Resource(resource), nil
+	default:
+		err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
+		return nil, err.OrNil()
 	}
 }
 

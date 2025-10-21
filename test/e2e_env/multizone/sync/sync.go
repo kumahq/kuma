@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -9,6 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
@@ -102,12 +105,19 @@ spec:
 	Context("from Remote to Global", func() {
 		It("should sync Zone Ingress", func() {
 			Eventually(func(g Gomega) {
-				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses", "")
 				g.Expect(err).ToNot(HaveOccurred())
 				// Some tests create their own ZoneIngresses that may or may not
 				// be run simultaneously
 				g.Expect(strings.Count(out, "Online")).To(BeNumerically(">=", 4))
 			}, "30s", "1s").Should(Succeed())
+
+			// should be able to retrieve Zone Ingress from Universal zone by KRI
+			Eventually(func(g Gomega) {
+				out := mesh.NewZoneIngressResource()
+				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-5__ingress_"))
+				g.Expect(statusCode).To(Equal(http.StatusOK))
+			}).Should(Succeed())
 		})
 
 		It("should sync Zone Egresses", func() {
@@ -124,6 +134,13 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(strings.Count(out, "Online")).To(Equal(2))
 			}, "30s", "1s").Should(Succeed())
+
+			// should be able to retrieve Dataplane from Universal zone by KRI
+			Eventually(func(g Gomega) {
+				out := mesh.NewDataplaneResource()
+				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_dp_sync_kuma-4__test-server_"))
+				g.Expect(statusCode).To(Equal(http.StatusOK))
+			}).Should(Succeed())
 		})
 
 		It("should drop unwanted labels", func() {
@@ -213,7 +230,7 @@ spec:
 			}, "30s", "1s").Should(ContainSubstring(name))
 		}
 
-		It("should not sync secret from zone to global", func() {
+		It("should sync secret from zone to global", func() {
 			secretName := "global-and-zone-secret"
 			zoneSecret := fmt.Sprintf(`
 apiVersion: v1
