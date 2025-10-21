@@ -2770,6 +2770,128 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshGatewayList'
+  /meshes/{mesh}/secrets/{name}:
+    get:
+      operationId: getSecret
+      summary: Returns Secret entity
+      tags:
+        - Secret
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Secret
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putSecret
+      summary: Creates or Updates Secret entity
+      tags:
+        - Secret
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Secret
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteSecret
+      summary: Deletes Secret entity
+      tags:
+        - Secret
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Secret
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/secrets:
+    get:
+      operationId: getSecretList
+      summary: Returns a list of Secret in the mesh.
+      tags:
+        - Secret
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretList'
   /zoneegresses/{name}:
     get:
       operationId: getZoneEgress
@@ -16879,6 +17001,27 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshGatewayItem'
+    SecretItem:
+      properties:
+        data:
+          description: Value of the secret
+          format: byte
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mesh:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - mesh
+      type: object
     Zone:
       description: >-
         Zone defines the Zone configuration used at the Global Control Plane
@@ -19311,6 +19454,53 @@ components:
                 items:
                   type: string
     MeshGatewayDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+    SecretItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SecretItem'
+    SecretList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SecretItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    SecretCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    SecretDeleteSuccessResponse:
       description: Successful response
       content:
         application/json:

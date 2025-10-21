@@ -3,13 +3,16 @@ package types
 import (
 	"reflect"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 )
 
 var ProtoTypeToType = map[string]reflect.Type{
-	"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
-	"Dataplane":   reflect.TypeOf(v1alpha1.Dataplane{}),
-	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
-	"ZoneIngress": reflect.TypeOf(v1alpha1.ZoneIngress{}),
-	"ZoneEgress":  reflect.TypeOf(v1alpha1.ZoneEgress{}),
+	"Mesh":         reflect.TypeOf(mesh_proto.Mesh{}),
+	"Secret":       reflect.TypeOf(system_proto.Secret{}),
+	"GlobalSecret": reflect.TypeOf(system_proto.Secret{}),
+	"Dataplane":    reflect.TypeOf(mesh_proto.Dataplane{}),
+	"MeshGateway":  reflect.TypeOf(mesh_proto.MeshGateway{}),
+	"ZoneIngress":  reflect.TypeOf(mesh_proto.ZoneIngress{}),
+	"ZoneEgress":   reflect.TypeOf(mesh_proto.ZoneEgress{}),
 }

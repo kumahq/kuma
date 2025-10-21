@@ -53,6 +53,7 @@ clean/legacy-resources:
 POLICIES_DIR ?= pkg/plugins/policies
 RESOURCES_DIR ?= pkg/core/resources/apis
 MESH_API_DIR ?= api/mesh/v1alpha1
+SYSTEM_API_DIR ?= api/system/v1alpha1
 COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find $(POLICIES_DIR) -maxdepth 1 -mindepth 1 -type d | grep -v -e '/core$$' | grep -v -e '/system$$' | grep -v -e '/mesh$$' | sort),$(notdir $(dir)))
@@ -114,6 +115,7 @@ generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN)
 		$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml  || { echo "Failed to generate $$endpoint"; exit 1; }; \
 	done
 	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
 	$(OAPI_GEN) kri
 
 .PHONY: validate/openapi-generated-docs

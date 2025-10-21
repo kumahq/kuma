@@ -133,3 +133,4 @@ docs/generated/openapi/prepare/resources: docs/generated/openapi/prepare/layout/
 .PHONY: docs/generated/openapi/prepare/protoresources
 docs/generated/openapi/prepare/protoresources: docs/generated/openapi/prepare/layout/protoresources
 	$(call OAPI_COLLECT,find $(MESH_API_DIR) -name '*.yaml',basename $${i%/*},protoresources)
+	$(call OAPI_COLLECT,find $(SYSTEM_API_DIR) -name '*.yaml',basename $${i%/*},protoresources)
