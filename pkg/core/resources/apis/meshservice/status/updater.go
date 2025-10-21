@@ -137,7 +137,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			continue
 		}
 		mids := identityByMesh[mesh.Meta.GetName()]
-		identities := s.buildIdentities(dpps, mids, mesh)
+		identities := s.buildIdentities(dpps, mids)
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
 			ms.Spec.Identities = &identities
@@ -287,7 +287,7 @@ func (s *StatusUpdater) buildTLS(
 	}
 }
 
-func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource, mesh *core_mesh.MeshResource) []meshservice_api.MeshServiceIdentity {
+func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource) []meshservice_api.MeshServiceIdentity {
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
@@ -310,13 +310,11 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	}
 	var identites []meshservice_api.MeshServiceIdentity
 
-	if len(spiffeIDs) == 0 || mesh.MTLSEnabled() {
-		for _, identity := range maps.SortedKeys(serviceTagIdentities) {
-			identites = append(identites, meshservice_api.MeshServiceIdentity{
-				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-				Value: identity,
-			})
-		}
+	for _, identity := range maps.SortedKeys(serviceTagIdentities) {
+		identites = append(identites, meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+			Value: identity,
+		})
 	}
 	for _, identity := range maps.SortedKeys(spiffeIDs) {
 		identites = append(identites, meshservice_api.MeshServiceIdentity{

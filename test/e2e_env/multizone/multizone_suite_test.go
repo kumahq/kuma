@@ -90,5 +90,5 @@ var (
 	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", meshidentity.Identity, Ordered)
 	_ = Describe("Unified Resource Naming", unifiednaming.UnifiedNaming, Ordered)
-	_ = Describe("MeshIdentity Migration", meshidentity.Migration, FlakeAttempts(3), Ordered)
+	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
 )

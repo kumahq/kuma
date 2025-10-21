@@ -1,6 +1,8 @@
 package meshidentity
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -84,8 +86,42 @@ func Migration() {
 	// identity-c2v4v6874cx8x6c8-cww8457w48b482c7
 	// identity-c2v4v6874cx8x6c8-w54dw4d47449z9z8
 
+	trustForLegacyMTLS := func() string {
+		trustTmplGlobal := `
+type: MeshTrust
+mesh: %s
+name: identity-trust-global
+spec:
+  caBundles:
+    - type: Pem
+      pem:
+        value: |-
+%s
+  trustDomain: %s
+`
+		type secret struct {
+			Data string `json:"data"`
+		}
+
+		var oldMeshCA string
+		Eventually(func(g Gomega) {
+			out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secret", "-m", meshName, fmt.Sprintf("%s.ca-builtin-cert-ca-1", meshName), "-o", "json")
+			g.Expect(err).ToNot(HaveOccurred())
+			oldMeshCA = out
+		}, "30s", "1s").Should(Succeed())
+
+		var sec secret
+		Expect(json.Unmarshal([]byte(oldMeshCA), &sec)).To(Succeed())
+
+		// Decode from Base64
+		decoded, err := base64.StdEncoding.DecodeString(sec.Data)
+		Expect(err).ToNot(HaveOccurred())
+
+		return fmt.Sprintf(trustTmplGlobal, meshName, utils.Indent(string(decoded), 10), meshName)
+	}
+
 	getMeshTrust := func(zone string) (*meshtrust_api.MeshTrust, error) {
-		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), zone, Config.KumaNamespace), "-ojson")
+		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity-migration"), zone, Config.KumaNamespace), "-ojson")
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +177,7 @@ func Migration() {
 		// create only identity to propagate SpiffeID to all MeshServices
 		onlyIdentity := fmt.Sprintf(`
 type: MeshIdentity
-name: only-identity
+name: only-identity-migration
 mesh: %s
 spec:
   selector:
@@ -155,13 +191,16 @@ spec:
 			Install(YamlUniversal(onlyIdentity)).
 			Setup(multizone.Global)).To(Succeed())
 
-		hashedName := hash.HashedName(meshName, "only-identity")
+		hashedName := hash.HashedName(meshName, "only-identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
+
+		// wait 5 seconds for MeshIdentity to be reconcile
+		time.Sleep(5 * time.Second)
 
 		// create identity without selecting any Dataplane to create builtin certificates
 		yaml := fmt.Sprintf(`
 type: MeshIdentity
-name: identity
+name: identity-migration
 mesh: %s
 spec:
   selector: {}
@@ -182,8 +221,11 @@ spec:
 			Install(YamlUniversal(yaml)).
 			Setup(multizone.Global)).To(Succeed())
 
-		hashedName = hash.HashedName(meshName, "identity")
+		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
+
+		// wait 5 seconds for MeshIdentity to be reconcile
+		time.Sleep(5 * time.Second)
 
 		// when
 		// added Trust from zone 1 to zone 2
@@ -191,7 +233,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrust
 metadata:
-  name: identity-trust-%s
+  name: identity-migration-trust-%s
   namespace: kuma-system
   labels:
     kuma.io/mesh: %s
@@ -230,7 +272,7 @@ spec:
 		// select all dataplanes
 		yaml = fmt.Sprintf(`
 type: MeshIdentity
-name: identity
+name: identity-migration
 mesh: %s
 spec:
   selector:
@@ -252,8 +294,15 @@ spec:
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(yaml)).
 			Setup(multizone.Global)).To(Succeed())
-		hashedName = hash.HashedName(meshName, "identity")
+		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
+
+		// wait 5 seconds for MeshIdentity to be reconcile
+		time.Sleep(5 * time.Second)
+
+		Expect(NewClusterSetup().
+			Install(YamlUniversal(trustForLegacyMTLS())).
+			Setup(multizone.Global)).To(Succeed())
 
 		// and disable tls on Mesh
 		Expect(NewClusterSetup().

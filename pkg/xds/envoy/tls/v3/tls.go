@@ -95,6 +95,8 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 		),
 	)
 	if useMeshTrust {
+		// spiffe validator has trust domain validation
+		matchers = []*envoy_tls.SubjectAltNameMatcher{}
 		meshCaSecret = NewSecretConfigSource(system_names.SystemResourceNameCABundle)
 	}
 	identitySecret := NewSecretConfigSource(

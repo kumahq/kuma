@@ -2,7 +2,6 @@ package meshidentity
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func Identity() {
@@ -83,11 +83,6 @@ func Identity() {
 		r, err := rest.JSON.Unmarshal([]byte(trust), meshtrust_api.MeshTrustResourceTypeDescriptor)
 		Expect(err).ToNot(HaveOccurred())
 		return r.GetSpec().(*meshtrust_api.MeshTrust)
-	}
-
-	indent := func(pem string, spaces int) string {
-		pad := strings.Repeat(" ", spaces)
-		return pad + strings.ReplaceAll(pem, "\n", "\n"+pad)
 	}
 
 	It("should access the service in the same zone using mTLS", func() {
@@ -181,12 +176,12 @@ spec:
 `
 		trustZone1 := getMeshTrust(multizone.KubeZone1.Name())
 		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone1.Name(), meshName, multizone.KubeZone2.Name(), indent(trustZone1.CABundles[0].PEM.Value, 10), trustZone1.TrustDomain))).
+			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone1.Name(), meshName, multizone.KubeZone2.Name(), utils.Indent(trustZone1.CABundles[0].PEM.Value, 10), trustZone1.TrustDomain))).
 			Setup(multizone.KubeZone2)).To(Succeed())
 
 		trustZone2 := getMeshTrust(multizone.KubeZone2.Name())
 		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), indent(trustZone2.CABundles[0].PEM.Value, 10), trustZone2.TrustDomain))).
+			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), utils.Indent(trustZone2.CABundles[0].PEM.Value, 10), trustZone2.TrustDomain))).
 			Setup(multizone.KubeZone1)).To(Succeed())
 
 		// and Trust from zone 2 to zone 1
