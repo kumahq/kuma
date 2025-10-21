@@ -10,7 +10,6 @@ import (
 var ProtoTypeToType = map[string]reflect.Type{
 	"Mesh":         reflect.TypeOf(mesh_proto.Mesh{}),
 	"Secret":       reflect.TypeOf(system_proto.Secret{}),
-	"GlobalSecret": reflect.TypeOf(system_proto.Secret{}),
 	"Dataplane":    reflect.TypeOf(mesh_proto.Dataplane{}),
 	"MeshGateway":  reflect.TypeOf(mesh_proto.MeshGateway{}),
 	"ZoneIngress":  reflect.TypeOf(mesh_proto.ZoneIngress{}),
