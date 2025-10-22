@@ -97,6 +97,7 @@ var _ = Describe("Updater", func() {
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
+				{Type: "ServiceTag", Value: "backend"},
 				{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://default.east.mesh.local/ns/my-ns/sa/default",
