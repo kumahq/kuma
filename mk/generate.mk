@@ -107,16 +107,72 @@ generate/policy-defaults:
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
-endpoints?=$(foreach dir,$(shell find api/openapi/specs -type f -name '*.yaml' ! -iname '*kri*' | sort),$(basename $(dir)))
+# Discover OpenAPI specification files
+# - Searches api/openapi/specs/ and immediate subdirectories for *.yaml files
+# - Excludes kri/ subdirectory (handled separately by oapi-gen tool)
+# - Sorts results for deterministic ordering
+OAS_SPECS := $(sort $(filter-out api/openapi/specs/kri/%, \
+	$(wildcard api/openapi/specs/*.yaml) \
+	$(wildcard api/openapi/specs/*/*.yaml)))
 
-generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN)
-	for endpoint in $(endpoints); do \
-		DEST=$${endpoint#"api/openapi/specs"}; \
-		$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml  || { echo "Failed to generate $$endpoint"; exit 1; }; \
-	done
-	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	$(OAPI_GEN) kri
+# Function: Map OpenAPI spec path to generated Go types file path
+# Transforms: api/openapi/specs/common/error.yaml
+#         →  api/openapi/types/common/zz_generated.error.go
+#
+# Transformation steps:
+#   1. $(dir $(1))                    → api/openapi/specs/common/
+#   2. patsubst specs/% → %           → api/openapi/common/
+#   3. basename $(notdir $(1))        → error (removes path and extension)
+#   4. Construct final path with zz_generated. prefix
+define OAS_OUT
+api/openapi/types/$(patsubst api/openapi/specs/%,%,$(dir $(1)))zz_generated.$(basename $(notdir $(1))).go
+endef
+
+# Compute all generated Go type files corresponding to discovered specs
+# This list becomes a prerequisite for generate/oas, ensuring all files are built
+OAS_TYPES := $(foreach s,$(OAS_SPECS),$(call OAS_OUT,$(s)))
+
+# Pattern rule: Create output directories on demand
+# This is used as an order-only prerequisite (see OAS_RULE below)
+api/openapi/types%/: ; @mkdir -p $@
+
+# Template: Define a rule pattern for generating Go types from one OpenAPI spec
+#
+# Parameters:
+#   $(1) - The OpenAPI spec file path (e.g., api/openapi/specs/common/error.yaml)
+#
+# Generated rule structure:
+#   <output-file>: <spec-file> <config-file> | <output-dir>
+#       @$(OAPI_CODEGEN) -config <config> -o <output> <spec>
+#
+# Make syntax details:
+#   $$(...)           - Double-$ escapes variable expansion until rule instantiation
+#   $$(@D)            - Automatic variable: directory part of target (output file)
+#   $$@               - Automatic variable: full target name (output file)
+#   $$<               - Automatic variable: first prerequisite (spec file)
+#   | $$(@D)          - Order-only prerequisite: ensure directory exists, but don't
+#                       rebuild if directory timestamp changes (avoids spurious rebuilds)
+define OAS_RULE
+$(call OAS_OUT,$(1)): $(1) api/openapi/openapi.cfg.yaml | $$(@D)
+	@$$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o $$@ $$<
+endef
+
+# Instantiate one concrete rule per OpenAPI spec
+# How it works:
+#   1. foreach iterates over each spec in OAS_SPECS
+#   2. OAS_RULE template is expanded with the spec path as $(1)
+#   3. eval processes the expanded text as Make syntax, creating actual rules
+#
+# Example: if OAS_SPECS contains "api/openapi/specs/common/resource.yaml", this creates:
+#   api/openapi/types/common/zz_generated.resource.go: api/openapi/specs/common/resource.yaml api/openapi/openapi.cfg.yaml | api/openapi/types/common/
+#       @$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/common/zz_generated.resource.go api/openapi/specs/common/resource.yaml
+$(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
+
+.PHONY: generate/oas
+generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
+	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	@$(OAPI_GEN) kri
 
 .PHONY: validate/openapi-generated-docs
 validate/openapi-generated-docs:
@@ -135,7 +191,6 @@ validate/openapi-generated-docs:
 
 .PHONY: generate/oas-for-ts
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
-
 
 .PHONY: generate/builtin-crds
 generate/builtin-crds: $(RESOURCE_GEN)
