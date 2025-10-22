@@ -34,3 +34,22 @@ We need to ensure that communication to ZoneEgress from different meshes functio
 
 It should be just as easy to enable traffic through ZoneEgress as it is today.
 The process should not require any additional configuration or manual setup beyond what is already needed in the current implementation.
+
+## Options Considered
+
+1. Use `MeshIdentity` of a default Mesh to provide identity for ZoneEgress
+2. Use Control-plane CA to provide identity for the ZoneEgress 
+
+### Use `MeshIdentity` of a default Mesh to provide identity for ZoneEgress
+- what if you dont have default mesh
+- what if your default mesh is not used and there is no meshidentity
+- Should we choose the first MeshIdentity in lexographical order that matches or spire?
+- What if you have 2 different spires - shouldn't be the case but we need some check
+- There needs to be configuration to overide default mesh
+- If spire is not a default mesh but there is spire how to ensure communication since when using SPIRE - spire is resposible for trust delivery
+- MeshTrust could help if we implement sds proxy in kuma-dp
+
+### Use Control-plane CA to provide identity for the ZoneEgress 
+- what about spire?
+- MeshTrust could help if we implement sds proxy in kuma-dp
+- 
