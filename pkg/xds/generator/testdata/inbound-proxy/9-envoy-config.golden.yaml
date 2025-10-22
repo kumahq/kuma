@@ -63,11 +63,7 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://default/
-                  sanType: URI
+              defaultValidationContext: {}
               validationContextSdsSecretConfig:
                 name: system_trust_bundle
                 sdsConfig:
@@ -144,11 +140,7 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://default/
-                  sanType: URI
+              defaultValidationContext: {}
               validationContextSdsSecretConfig:
                 name: system_trust_bundle
                 sdsConfig:

@@ -12,11 +12,7 @@ transportSocket:
       alpnProtocols:
       - kuma
       combinedValidationContext:
-        defaultValidationContext:
-          matchTypedSubjectAltNames:
-          - matcher:
-              exact: spiffe://default/backend
-            sanType: URI
+        defaultValidationContext: {}
         validationContextSdsSecretConfig:
           name: system_trust_bundle
           sdsConfig:
