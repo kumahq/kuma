@@ -104,11 +104,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				expected: `
                 commonTlsContext:
                   combinedValidationContext:
-                    defaultValidationContext:
-                      matchTypedSubjectAltNames:
-                      - matcher:
-                          prefix: spiffe://default/
-                        sanType: URI
+                    defaultValidationContext: {}
                     validationContextSdsSecretConfig:
                       name: system_trust_bundle
                       sdsConfig:
@@ -180,11 +176,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                   alpnProtocols:
                   - kuma
                   combinedValidationContext:
-                    defaultValidationContext:
-                      matchTypedSubjectAltNames:
-                      - matcher:
-                          exact: spiffe://default/backend
-                        sanType: URI
+                    defaultValidationContext: {}
                     validationContextSdsSecretConfig:
                       name: system_trust_bundle
                       sdsConfig:
