@@ -537,13 +537,15 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 	}
 
-	for _, tpe := range AdditionalProtoTypes {
-		s, err := reflector.reflectFromType(tpe, true)
-		if err != nil {
-			return err
-		}
-		if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
-			return err
+	if pkg == "mesh" {
+		for _, tpe := range AdditionalProtoTypes {
+			s, err := reflector.reflectFromType(tpe, true)
+			if err != nil {
+				return err
+			}
+			if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
+				return err
+			}
 		}
 	}
 

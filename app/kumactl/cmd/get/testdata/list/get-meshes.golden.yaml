@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_m____mesh1_
   logging:
     backends:
     - conf:
@@ -45,6 +46,7 @@ items:
       type: zipkin
   type: Mesh
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_m____mesh2_
   logging: {}
   metrics: {}
   modificationTime: "0001-01-01T00:00:00Z"

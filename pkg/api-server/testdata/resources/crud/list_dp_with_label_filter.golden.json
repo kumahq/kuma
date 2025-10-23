@@ -10,6 +10,7 @@
    "labels": {
     "k8s.kuma.io/namespace": "ns1"
    },
+   "kri": "kri_dp_default__ns1_dp-1_",
    "networking": {
     "address": "10.1.2.1",
     "inbound": [

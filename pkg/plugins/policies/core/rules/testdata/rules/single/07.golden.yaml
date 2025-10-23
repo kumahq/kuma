@@ -10,11 +10,13 @@ Rules:
       name: team
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mtr_mesh-1___mt-1_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: mt-1
     type: MeshTrace
   - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mtr_mesh-1___mt-2_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: mt-2

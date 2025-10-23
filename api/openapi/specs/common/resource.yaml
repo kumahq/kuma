@@ -61,6 +61,12 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
+        kri:
+          type: string
+          readOnly: true
+          x-go-name: KRI
+          example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
+          description: Kuma Resource Identifier (KRI) of the given resource
         labels:
           type: object
           additionalProperties:

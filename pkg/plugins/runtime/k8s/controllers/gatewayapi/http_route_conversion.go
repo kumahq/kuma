@@ -81,7 +81,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	var ports []int32
 	if parentPort != nil {
-		ports = []int32{int32(*parentPort)}
+		ports = []int32{*parentPort}
 	} else {
 		for _, port := range parent.Spec.Ports {
 			ports = append(ports, port.Port)
@@ -408,7 +408,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	switch {
 	case gk.Kind == "Service" && gk.Group == "":
 		// References to Services are required by GAPI to include a port
-		port := int32(*ref.Port)
+		port := *ref.Port
 
 		svc := &kube_core.Service{}
 		if err := r.Get(ctx, namespacedName, svc); err != nil {
