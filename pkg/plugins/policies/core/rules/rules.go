@@ -208,7 +208,7 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceRe
 	}
 
 	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
-	// see docs/madr/decisions/060-policy-matching-with-real-resources.md
+	// see docs/madr/decisions/066-policy-matching-with-real-resources.md
 	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
 	if err != nil {
 		return ToRules{}, err

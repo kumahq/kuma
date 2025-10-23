@@ -436,8 +436,8 @@ and translating things over to new version.
 
 The design is grounded in multiple recent MADRs around improvements to policies: 
 
-- [MeshService policy matching](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/046-meshservice-policy-matching.md)
-- [Policy on Namespace](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/052-policy-on-namespace.md) - which introduced consumer/producer policies
+- [MeshService policy matching](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/048-meshservice-policy-matching.md)
+- [Policy on Namespace](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/054-policy-on-namespace.md) - which introduced consumer/producer policies
 - [Policy matching with real resources](https://github.com/kumahq/kuma/pull/10726/files)
 
 ### API
