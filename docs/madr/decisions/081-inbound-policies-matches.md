@@ -82,7 +82,7 @@ The chosen option is "Option 1: MeshTrafficPermission is an inbound policy witho
 
 ## Design
 
-According to [MADR-078](078-special-mtp-algo.md), the MeshTrafficPermission algorithm and API are different from other inbound policies.
+According to [MADR-080](080-special-mtp-algo.md), the MeshTrafficPermission algorithm and API are different from other inbound policies.
 This MADR presents three options for implementing the design.
 
 ### Option 1: MeshTrafficPermission is an inbound policy without 'matches'

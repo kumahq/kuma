@@ -4,7 +4,7 @@
 
 ## Context and Problem Statement
 
-In the [Inbound Policies MADR](066-inbound-policies.md) we said all inbound policies are going to have similar structure:
+In the [Inbound Policies MADR](069-inbound-policies.md) we said all inbound policies are going to have similar structure:
 
 ```yaml
 spec:

@@ -73,7 +73,7 @@ Need to avoid:
 - IPs / non constant bits
 - Dataplane name or its KRI.
 
-There is existing solution for `Dataplane` covered by [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+There is existing solution for `Dataplane` covered by [MADR-078](./078-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
 #### 5. Rename existing system resources in well-defined patterns
 
@@ -137,11 +137,11 @@ but we don't want to include it in the name because could lead to high cardinali
 
 #### 3. User resources
 
-Names for these resources are defined in [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+Names for these resources are defined in [MADR-078](./078-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
 ### Useful references for naming
 
-- Resource contextual to the Dataplane are defined in [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+- Resource contextual to the Dataplane are defined in [MADR-078](./078-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 - Secrets adhere to the same rules (1-3).
 
 ### Regex to match system names
@@ -239,7 +239,7 @@ Other Kong Mesh-specific features or policies do not rely on or modify Envoy res
 
 ## Implications for GUI
 
-GUI will need to reflect these new rules because we will ship them at the same time as [MADR-077](./077-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
+GUI will need to reflect these new rules because we will ship them at the same time as [MADR-078](./078-migrating-to-consistent-and-well-defined-naming-for-non-system-envoy-resources-and-stats.md).
 
 ## Additional context
 
@@ -305,4 +305,3 @@ Istio doesn't seem to be following any naming convention:
 Istio related issues:
 - https://github.com/istio/istio/issues/5311
 - https://github.com/istio/istio/issues/31112#issuecomment-1124049572
-
