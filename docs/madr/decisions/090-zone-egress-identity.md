@@ -66,6 +66,10 @@ KUMA_DEFAULTS_MESH: "my-mesh" # used for MeshIdentity; any dataplane started wit
 Based on this configuration, the `ZoneEgress` Envoy will present itself using the selected identity when communicating with dataplanes across different `Meshes`.
 Using `MeshTrust`, we will configure the `ZoneEgress` to trust all `Meshes`, while dataplanes will be configured to trust the `ZoneEgress` identity.
 
+##### How do we choose which MeshIdentity configures the ZoneEgress?
+
+We choose the policy in lexicographical order among those that select all dataplanes, from the default `Mesh`.
+
 ##### SPIRE
 
 When SPIRE is involved, the setup becomes more complex. There are two possible scenarios:
@@ -88,3 +92,14 @@ This approach would allow SPIRE to interoperate with other `MeshIdentity` provid
 #### What if There Is No default Mesh?
 
 In this case, `kuma-cp` fails to start and displays an error message indicating that the user must configure `KUMA_DEFAULTS_MESH` to specify which Mesh is responsible for providing the `ZoneEgress` identity. It would work when the user has set `KUMA_DEFAULT_SKIP_MESH_CREATION`, as it doesn’t require any storage operations.
+
+#### Pros
+
+* No need to add support for targeting ZoneEgress
+* In most cases, it doesn’t require any additional configuration
+
+#### Cons
+
+* Not intuitive and difficult to understand
+* Requires some manual user configuration
+* It’s not obvious which identity provider to use when multiple meshes and MeshIdentity resources exist
