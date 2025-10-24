@@ -37,19 +37,54 @@ The process should not require any additional configuration or manual setup beyo
 
 ## Options Considered
 
-1. Use `MeshIdentity` of a default Mesh to provide identity for ZoneEgress
-2. Use Control-plane CA to provide identity for the ZoneEgress 
+1. Use the `MeshIdentity` of the default `Mesh` to provide identity for the `ZoneEgress`.
 
-### Use `MeshIdentity` of a default Mesh to provide identity for ZoneEgress
-- what if you dont have default mesh
-- what if your default mesh is not used and there is no meshidentity
-- Should we choose the first MeshIdentity in lexographical order that matches or spire?
-- What if you have 2 different spires - shouldn't be the case but we need some check
-- There needs to be configuration to overide default mesh
-- If spire is not a default mesh but there is spire how to ensure communication since when using SPIRE - spire is resposible for trust delivery
-- MeshTrust could help if we implement sds proxy in kuma-dp
+### Use the `MeshIdentity` of the default `Mesh` to provide identity for the `ZoneEgress`.
 
-### Use Control-plane CA to provide identity for the ZoneEgress 
-- what about spire?
-- MeshTrust could help if we implement sds proxy in kuma-dp
-- 
+In most cases, users deploy a single `Mesh`. Therefore, we can use the `MeshIdentity` resource from that Mesh to generate the `ZoneEgress` identity.
+This approach would cover the majority of deployments.
+
+For environments with multiple Meshes, we would by default select the default Mesh (if it exists). Otherwise, we would introduce a configuration option that allows the user to explicitly specify which Mesh’s `MeshIdentity` should be used to provide the `ZoneEgress` identity.
+
+#### SPIRE
+
+> [!WARNING] 
+> Currently, it’s not possible to use MeshTrust when SPIRE is enabled, since SPIRE itself is responsible for providing the validation context.
+
+If any of the `MeshIdentity` resources use SPIRE, we should select that one to provide the identity for the `ZoneEgress`.
+Because SPIRE manages the validation context, it is currently the only viable option for enabling secure communication with `ZoneEgress`.
+
+#### Multiple Meshes, Each with a Different Identity Provider
+
+If there is a default `Mesh` with a `MeshIdentity`, we will use it to provide the `ZoneEgress` identity.
+If there is no default `Mesh`, the user must manually specify which `Mesh` should be used for ZoneEgress identity provisioning using one of the following configuration options:
+
+```yaml
+KUMA_DEFAULTS_MESH: "my-mesh" # used for MeshIdentity; any dataplane started without kuma.io/mesh joins this mesh
+```
+
+Based on this configuration, the `ZoneEgress` Envoy will present itself using the selected identity when communicating with dataplanes across different `Meshes`.
+Using `MeshTrust`, we will configure the `ZoneEgress` to trust all `Meshes`, while dataplanes will be configured to trust the `ZoneEgress` identity.
+
+##### SPIRE
+
+When SPIRE is involved, the setup becomes more complex. There are two possible scenarios:
+
+1. All `Meshes` use SPIRE
+
+This case is simpler since all `Meshes` share a common identity provider. We don’t need to handle mixed configurations or custom trust setups, as SPIRE already manages the validation context consistently.
+
+2. Some `Meshes` use SPIRE and others use a different `MeshIdentity` provider
+
+This scenario is more complicated, as MeshTrust cannot be used together with a SPIRE-provided validation context.
+To address this, we could first resolve [issue](https://github.com/kumahq/kuma/issues/14685).
+
+There are two potential solutions:
+* Implement an SDS server proxy in `kuma-dp` that merges SDS responses from SPIRE and Kuma.
+* Provide an option for users to create a `MeshTrust` for the SPIRE CA, disable SPIRE’s trust configuration, and delegate trust management to Kuma.
+
+This approach would allow SPIRE to interoperate with other `MeshIdentity` providers and enable `MeshTrust` support while SPIRE is in use.
+
+#### What if There Is No default Mesh?
+
+In this case, `kuma-cp` fails to start and displays an error message indicating that the user must configure `KUMA_DEFAULTS_MESH` to specify which Mesh is responsible for providing the `ZoneEgress` identity. It would work when the user has set `KUMA_DEFAULT_SKIP_MESH_CREATION`, as it doesn’t require any storage operations.
