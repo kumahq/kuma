@@ -15,8 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
+	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -58,7 +58,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should create new resources in empty store", func() {
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstream := &mesh.MeshResourceList{}
 		idxs := []int{1, 2, 3, 4}
 		for _, i := range idxs {
@@ -80,7 +80,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should delete all resources", func() {
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		removedResources := []model.ResourceKey{}
 		for i := 0; i < 10; i++ {
 			m := meshBuilder(i)
@@ -117,7 +117,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = []model.ResourceKey{
@@ -158,7 +158,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
@@ -180,7 +180,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		// given
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
@@ -219,7 +219,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
@@ -250,7 +250,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.InvalidResourcesKey = []model.ResourceKey{model.MetaToResourceKey(mesh2.GetMeta())}
@@ -280,7 +280,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
 
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
@@ -306,7 +306,7 @@ var _ = Describe("SyncResourceStoreDelta errors", func() {
 	})
 
 	It("should correctly recognize user errors", func() {
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_util.UpstreamResponse{}
 		upstream := &mesh.MeshResourceList{}
 		m := meshBuilder(1)
 		err := upstream.AddItem(m)

@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
@@ -222,7 +223,8 @@ var _ = Describe("Zone Sync", func() {
 					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
 					0,
 				)
-				_ = syncClient.Receive()
+				group, ctx := errgroup.WithContext(context.TODO())
+				_ = syncClient.Receive(ctx, group)
 			}()
 			closeFunc = func() {
 				defer GinkgoRecover()

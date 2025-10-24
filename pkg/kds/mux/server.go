@@ -111,6 +111,9 @@ func (s *server) Start(stop <-chan struct{}) error {
 
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
+	if err := s.kdsSyncServiceServer.SetGrpcStop(grpcServer.Stop); err != nil {
+		return err
+	}
 	s.metrics.RegisterGRPC(grpcServer)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
