@@ -42,7 +42,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -56,7 +56,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -70,7 +70,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -144,7 +144,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -158,7 +158,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -172,7 +172,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -182,11 +182,10 @@ var _ = Describe("RBAC", func() {
 				Resource: listener3,
 			})
 
-			// listener that matches but it does not have mTLS
 			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener4").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
+					Configure(listeners.HttpConnectionManager("test_listener4", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{

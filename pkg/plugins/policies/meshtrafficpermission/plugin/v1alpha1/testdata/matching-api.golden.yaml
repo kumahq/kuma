@@ -246,6 +246,6 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: test_listener
+          statPrefix: test_listener4
     name: test_listener4
     trafficDirection: INBOUND
