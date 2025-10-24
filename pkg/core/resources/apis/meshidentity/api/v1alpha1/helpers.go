@@ -20,6 +20,24 @@ const (
 	defaultPathTemplate        = "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
 )
 
+// we want all matching MeshIdentities that are Ready or in SpiffeIDProvider mode
+func AllMatched(
+	labels map[string]string,
+	meshIdentities []*MeshIdentityResource,
+) []*MeshIdentityResource {
+	var matches []*MeshIdentityResource
+	for _, mi := range meshIdentities {
+		if mi.Spec.Selector == nil || mi.Spec.Selector.Dataplane == nil || !mi.Spec.Selector.Dataplane.Matches(labels) {
+			continue
+		}
+		if mi.Status.IsInitialized() || mi.Status.IsSpiffeIDProviderMode() {
+			matches = append(matches, mi)
+		}
+	}
+
+	return matches
+}
+
 func Matched(
 	labels map[string]string,
 	meshIdentities []*MeshIdentityResource,
@@ -135,6 +153,15 @@ func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, 
 func (s *MeshIdentityStatus) IsInitialized() bool {
 	for _, condition := range s.Conditions {
 		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *MeshIdentityStatus) IsSpiffeIDProviderMode() bool {
+	for _, condition := range s.Conditions {
+		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionFalse && condition.Reason == "PartiallyReady" {
 			return true
 		}
 	}

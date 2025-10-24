@@ -1,7 +1,11 @@
 package meshidentity
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/util/channels"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -81,8 +86,42 @@ func Migration() {
 	// identity-c2v4v6874cx8x6c8-cww8457w48b482c7
 	// identity-c2v4v6874cx8x6c8-w54dw4d47449z9z8
 
+	trustForLegacyMTLS := func() string {
+		trustTmplGlobal := `
+type: MeshTrust
+mesh: %s
+name: identity-trust-global
+spec:
+  caBundles:
+    - type: Pem
+      pem:
+        value: |-
+%s
+  trustDomain: %s
+`
+		type secret struct {
+			Data string `json:"data"`
+		}
+
+		var oldMeshCA string
+		Eventually(func(g Gomega) {
+			out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secret", "-m", meshName, fmt.Sprintf("%s.ca-builtin-cert-ca-1", meshName), "-o", "json")
+			g.Expect(err).ToNot(HaveOccurred())
+			oldMeshCA = out
+		}, "30s", "1s").Should(Succeed())
+
+		var sec secret
+		Expect(json.Unmarshal([]byte(oldMeshCA), &sec)).To(Succeed())
+
+		// Decode from Base64
+		decoded, err := base64.StdEncoding.DecodeString(sec.Data)
+		Expect(err).ToNot(HaveOccurred())
+
+		return fmt.Sprintf(trustTmplGlobal, meshName, utils.Indent(string(decoded), 10), meshName)
+	}
+
 	getMeshTrust := func(zone string) (*meshtrust_api.MeshTrust, error) {
-		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), zone, Config.KumaNamespace), "-ojson")
+		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity-migration"), zone, Config.KumaNamespace), "-ojson")
 		if err != nil {
 			return nil, err
 		}
@@ -95,14 +134,7 @@ func Migration() {
 
 	It("should migrate from mesh.mTLS to MeshIdentity", func() {
 		// given
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		// cross zone traffic works
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", "test-server.meshidentity-migration.svc.kuma-2.mesh.local",
@@ -111,11 +143,64 @@ func Migration() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// and
+		// start constant requests
+		reqError := atomic.Value{}
+		stopCh := make(chan struct{})
+		defer close(stopCh)
+		go func() {
+			for {
+				if channels.IsClosed(stopCh) {
+					return
+				}
+				// cross zone request
+				_, err := client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client", "test-server.meshidentity-migration.svc.kuma-2.mesh.local",
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)
+				if err != nil {
+					reqError.Store(err)
+				}
+				// the same zone request
+				_, err = client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client", "test-server",
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)
+				if err != nil {
+					reqError.Store(err)
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+		}()
 		// when
+		// create only identity to propagate SpiffeID to all MeshServices
+		onlyIdentity := fmt.Sprintf(`
+type: MeshIdentity
+name: only-identity-migration
+mesh: %s
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+`, meshName)
+		Expect(NewClusterSetup().
+			Install(YamlUniversal(onlyIdentity)).
+			Setup(multizone.Global)).To(Succeed())
+
+		hashedName := hash.HashedName(meshName, "only-identity-migration")
+		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
+
+		// wait 5 seconds for MeshIdentity to be reconcile
+		time.Sleep(5 * time.Second)
+
 		// create identity without selecting any Dataplane to create builtin certificates
 		yaml := fmt.Sprintf(`
 type: MeshIdentity
-name: identity
+name: identity-migration
 mesh: %s
 spec:
   selector: {}
@@ -136,8 +221,11 @@ spec:
 			Install(YamlUniversal(yaml)).
 			Setup(multizone.Global)).To(Succeed())
 
-		hashedName := hash.HashedName(meshName, "identity")
+		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
+
+		// wait 5 seconds for MeshIdentity to be reconcile
+		time.Sleep(5 * time.Second)
 
 		// when
 		// added Trust from zone 1 to zone 2
@@ -145,7 +233,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrust
 metadata:
-  name: identity-trust-%s
+  name: identity-migration-trust-%s
   namespace: kuma-system
   labels:
     kuma.io/mesh: %s
@@ -184,7 +272,7 @@ spec:
 		// select all dataplanes
 		yaml = fmt.Sprintf(`
 type: MeshIdentity
-name: identity
+name: identity-migration
 mesh: %s
 spec:
   selector:
@@ -206,8 +294,15 @@ spec:
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(yaml)).
 			Setup(multizone.Global)).To(Succeed())
-		hashedName = hash.HashedName(meshName, "identity")
+		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
+
+		// wait 5 seconds for MeshIdentity to be reconcile
+		time.Sleep(5 * time.Second)
+
+		Expect(NewClusterSetup().
+			Install(YamlUniversal(trustForLegacyMTLS())).
+			Setup(multizone.Global)).To(Succeed())
 
 		// and disable tls on Mesh
 		Expect(NewClusterSetup().
@@ -219,26 +314,7 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 
 		// then
-		// Traffic may sometimes fail when switching to the new identity.
-		// This happens because changes to MeshService are propagated
-		// with the delay while some applications might already use a new identity.
-		// TODO: add constant requests once issue resolved
-		// https://github.com/kumahq/kuma/issues/14340
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server.meshidentity-migration.svc.kuma-2.mesh.local",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		time.Sleep(5 * time.Second) // let the goroutine execute more requests
+		Expect(reqError.Load()).To(BeNil())
 	})
 }
