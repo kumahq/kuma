@@ -154,45 +154,44 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
 	log = log.WithValues("rpc", "global-to-zone")
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
+
+	cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
+	if err != nil {
+		errorCh <- errors.Wrap(err, "could not marshall config to json")
+		return
+	}
+
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
 		errorCh <- err
 		return
 	}
-	processingErrorsCh := make(chan error)
-	go func() {
-		cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
-		if err != nil {
-			processingErrorsCh <- errors.Wrap(err, "could not marshall config to json")
-			return
-		}
-		syncClient := kds_client_v2.NewKDSSyncClient(
-			log,
-			c.typesSentByGlobal,
-			kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson),
-			kds_sync_store.ZoneSyncCallback(
-				stream.Context(),
-				c.resourceSyncer,
-				c.rt.Config().Store.Type == store.KubernetesStore,
-				resources_k8s.NewSimpleKubeFactory(),
-				c.rt.Config().Store.Kubernetes.SystemNamespace,
-			),
-			c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
-		)
-		err = syncClient.Receive()
-		if err != nil && !errors.Is(err, context.Canceled) {
-			err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
-			select {
-			case processingErrorsCh <- err:
-			default:
-				log.Error(err, "failed to write error to closed channel")
-			}
-		} else {
-			log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
+	defer func() {
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
 		}
 	}()
 
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	syncClient := kds_client_v2.NewKDSSyncClient(
+		log,
+		c.typesSentByGlobal,
+		kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson),
+		kds_sync_store.ZoneSyncCallback(
+			stream.Context(),
+			c.resourceSyncer,
+			c.rt.Config().Store.Type == store.KubernetesStore,
+			resources_k8s.NewSimpleKubeFactory(),
+			c.rt.Config().Store.Kubernetes.SystemNamespace,
+		),
+		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+	)
+
+	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
+		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+		return
+	}
+
+	log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -204,26 +203,25 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	processingErrorsCh := make(chan error)
-	go func() {
-		log.Info("ZoneToGlobalSync new session created")
-		errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
-		err := c.deltaServer.DeltaStreamHandler(errorStream, "")
-		if err == nil {
-			err = errorStream.Err()
-		}
-		if err != nil && !errors.Is(err, context.Canceled) {
-			err = errors.Wrap(err, "ZoneToGlobalSync finished with an error")
-			select {
-			case processingErrorsCh <- err:
-			default:
-				log.Error(err, "failed to write error to closed channel")
-			}
-		} else {
-			log.V(1).Info("ZoneToGlobalSync finished gracefully")
+	defer func() {
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
 		}
 	}()
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+
+	log.Info("ZoneToGlobalSync new session created")
+	errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
+	err = c.deltaServer.DeltaStreamHandler(errorStream, "")
+	if err == nil {
+		err = errorStream.Err()
+	}
+
+	if err != nil && !errors.Is(err, context.Canceled) {
+		errorCh <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+		return
+	}
+
+	log.V(1).Info("ZoneToGlobalSync finished gracefully")
 }
 
 func (c *client) startXDSConfigs(

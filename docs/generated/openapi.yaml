@@ -478,19 +478,9 @@ paths:
               $ref: '#/components/schemas/MeshAccessLogItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshAccessLog
       summary: Deletes MeshAccessLog entity
@@ -511,11 +501,7 @@ paths:
           description: name of the MeshAccessLog
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshAccessLogDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshAccessLogDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshaccesslogs:
@@ -614,19 +600,11 @@ paths:
               $ref: '#/components/schemas/MeshCircuitBreakerItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshCircuitBreakerCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshCircuitBreakerCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteMeshCircuitBreaker
       summary: Deletes MeshCircuitBreaker entity
@@ -647,11 +625,7 @@ paths:
           description: name of the MeshCircuitBreaker
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshCircuitBreakerDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshCircuitBreakerDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshcircuitbreakers:
@@ -750,19 +724,11 @@ paths:
               $ref: '#/components/schemas/MeshFaultInjectionItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshFaultInjectionCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshFaultInjectionCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteMeshFaultInjection
       summary: Deletes MeshFaultInjection entity
@@ -783,11 +749,7 @@ paths:
           description: name of the MeshFaultInjection
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshFaultInjectionDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshFaultInjectionDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshfaultinjections:
@@ -886,19 +848,9 @@ paths:
               $ref: '#/components/schemas/MeshHealthCheckItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshHealthCheck
       summary: Deletes MeshHealthCheck entity
@@ -919,11 +871,7 @@ paths:
           description: name of the MeshHealthCheck
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshHealthCheckDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshHealthCheckDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshhealthchecks:
@@ -1022,19 +970,9 @@ paths:
               $ref: '#/components/schemas/MeshHTTPRouteItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshHTTPRouteCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshHTTPRouteCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshHTTPRoute
       summary: Deletes MeshHTTPRoute entity
@@ -1055,11 +993,7 @@ paths:
           description: name of the MeshHTTPRoute
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshHTTPRouteDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshHTTPRouteDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshhttproutes:
@@ -1158,19 +1092,11 @@ paths:
               $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteMeshLoadBalancingStrategy
       summary: Deletes MeshLoadBalancingStrategy entity
@@ -1191,12 +1117,8 @@ paths:
           description: name of the MeshLoadBalancingStrategy
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshLoadBalancingStrategyDeleteSuccessResponse
-          description: Successful response
+          $ref: >-
+            #/components/responses/MeshLoadBalancingStrategyDeleteSuccessResponse
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshloadbalancingstrategies:
@@ -1295,17 +1217,9 @@ paths:
               $ref: '#/components/schemas/MeshMetricItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshMetricCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshMetricCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshMetric
       summary: Deletes MeshMetric entity
@@ -1326,11 +1240,7 @@ paths:
           description: name of the MeshMetric
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshMetricDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshMetricDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshmetrics:
@@ -1429,19 +1339,9 @@ paths:
               $ref: '#/components/schemas/MeshPassthroughItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshPassthrough
       summary: Deletes MeshPassthrough entity
@@ -1462,11 +1362,7 @@ paths:
           description: name of the MeshPassthrough
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshPassthroughDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshPassthroughDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshpassthroughs:
@@ -1565,19 +1461,9 @@ paths:
               $ref: '#/components/schemas/MeshProxyPatchItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshProxyPatchCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshProxyPatchCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshProxyPatch
       summary: Deletes MeshProxyPatch entity
@@ -1598,11 +1484,7 @@ paths:
           description: name of the MeshProxyPatch
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshProxyPatchDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshProxyPatchDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshproxypatches:
@@ -1701,19 +1583,9 @@ paths:
               $ref: '#/components/schemas/MeshRateLimitItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshRateLimitCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse
+          $ref: '#/components/responses/MeshRateLimitCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshRateLimit
       summary: Deletes MeshRateLimit entity
@@ -1734,11 +1606,7 @@ paths:
           description: name of the MeshRateLimit
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRateLimitDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshRateLimitDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshratelimits:
@@ -1837,17 +1705,9 @@ paths:
               $ref: '#/components/schemas/MeshRetryItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshRetry
       summary: Deletes MeshRetry entity
@@ -1868,11 +1728,7 @@ paths:
           description: name of the MeshRetry
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshRetryDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshRetryDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshretries:
@@ -1971,17 +1827,9 @@ paths:
               $ref: '#/components/schemas/MeshTCPRouteItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshTCPRoute
       summary: Deletes MeshTCPRoute entity
@@ -2002,11 +1850,7 @@ paths:
           description: name of the MeshTCPRoute
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTCPRouteDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshTCPRouteDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtcproutes:
@@ -2105,17 +1949,9 @@ paths:
               $ref: '#/components/schemas/MeshTimeoutItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTimeoutCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTimeoutCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshTimeout
       summary: Deletes MeshTimeout entity
@@ -2136,11 +1972,7 @@ paths:
           description: name of the MeshTimeout
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTimeoutDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshTimeoutDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtimeouts:
@@ -2239,17 +2071,9 @@ paths:
               $ref: '#/components/schemas/MeshTLSItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshTLS
       summary: Deletes MeshTLS entity
@@ -2270,11 +2094,7 @@ paths:
           description: name of the MeshTLS
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTLSDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshTLSDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtlses:
@@ -2373,17 +2193,9 @@ paths:
               $ref: '#/components/schemas/MeshTraceItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTraceCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTraceCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshTrace
       summary: Deletes MeshTrace entity
@@ -2404,11 +2216,7 @@ paths:
           description: name of the MeshTrace
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTraceDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshTraceDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtraces:
@@ -2507,19 +2315,11 @@ paths:
               $ref: '#/components/schemas/MeshTrafficPermissionItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteMeshTrafficPermission
       summary: Deletes MeshTrafficPermission entity
@@ -2540,12 +2340,7 @@ paths:
           description: name of the MeshTrafficPermission
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshTrafficPermissionDeleteSuccessResponse
-          description: Successful response
+          $ref: '#/components/responses/MeshTrafficPermissionDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtrafficpermissions:
@@ -2644,17 +2439,9 @@ paths:
               $ref: '#/components/schemas/DataplaneItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataplaneCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataplaneCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteDataplane
       summary: Deletes Dataplane entity
@@ -2675,11 +2462,7 @@ paths:
           description: name of the Dataplane
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataplaneDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/DataplaneDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/dataplanes:
@@ -2806,17 +2589,9 @@ paths:
               $ref: '#/components/schemas/MeshItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMesh
       summary: Deletes Mesh entity
@@ -2831,11 +2606,7 @@ paths:
           description: name of the Mesh
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes:
@@ -2928,17 +2699,9 @@ paths:
               $ref: '#/components/schemas/MeshGatewayItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshGateway
       summary: Deletes MeshGateway entity
@@ -2959,11 +2722,7 @@ paths:
           description: name of the MeshGateway
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshGatewayDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshGatewayDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshgateways:
@@ -3011,6 +2770,128 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshGatewayList'
+  /meshes/{mesh}/secrets/{name}:
+    get:
+      operationId: getSecret
+      summary: Returns Secret entity
+      tags:
+        - Secret
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Secret
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putSecret
+      summary: Creates or Updates Secret entity
+      tags:
+        - Secret
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Secret
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteSecret
+      summary: Deletes Secret entity
+      tags:
+        - Secret
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Secret
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/secrets:
+    get:
+      operationId: getSecretList
+      summary: Returns a list of Secret in the mesh.
+      tags:
+        - Secret
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretList'
   /zoneegresses/{name}:
     get:
       operationId: getZoneEgress
@@ -3050,17 +2931,9 @@ paths:
               $ref: '#/components/schemas/ZoneEgressItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneEgressCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneEgressCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteZoneEgress
       summary: Deletes ZoneEgress entity
@@ -3075,11 +2948,7 @@ paths:
           description: name of the ZoneEgress
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneEgressDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/ZoneEgressDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /zoneegresses:
@@ -3160,17 +3029,9 @@ paths:
               $ref: '#/components/schemas/ZoneIngressItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneIngressCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneIngressCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteZoneIngress
       summary: Deletes ZoneIngress entity
@@ -3185,11 +3046,7 @@ paths:
           description: name of the ZoneIngress
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ZoneIngressDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /zoneingresses:
@@ -3270,19 +3127,11 @@ paths:
               $ref: '#/components/schemas/HostnameGeneratorItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteHostnameGenerator
       summary: Deletes HostnameGenerator entity
@@ -3297,11 +3146,7 @@ paths:
           description: name of the HostnameGenerator
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HostnameGeneratorDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/HostnameGeneratorDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /hostnamegenerators:
@@ -3394,19 +3239,11 @@ paths:
               $ref: '#/components/schemas/MeshExternalServiceItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteMeshExternalService
       summary: Deletes MeshExternalService entity
@@ -3427,11 +3264,7 @@ paths:
           description: name of the MeshExternalService
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshExternalServiceDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshExternalServiceDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshexternalservices:
@@ -3530,17 +3363,9 @@ paths:
               $ref: '#/components/schemas/MeshIdentityItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshIdentityCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshIdentityCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshIdentityCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshIdentityCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshIdentity
       summary: Deletes MeshIdentity entity
@@ -3561,11 +3386,7 @@ paths:
           description: name of the MeshIdentity
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshIdentityDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshIdentityDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshidentities:
@@ -3664,19 +3485,11 @@ paths:
               $ref: '#/components/schemas/MeshMultiZoneServiceItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: >-
-                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+          $ref: >-
+            #/components/responses/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
     delete:
       operationId: deleteMeshMultiZoneService
       summary: Deletes MeshMultiZoneService entity
@@ -3697,11 +3510,7 @@ paths:
           description: name of the MeshMultiZoneService
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshMultiZoneServiceDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshMultiZoneServiceDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshmultizoneservices:
@@ -3800,17 +3609,9 @@ paths:
               $ref: '#/components/schemas/MeshServiceItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshServiceCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshServiceCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshService
       summary: Deletes MeshService entity
@@ -3831,11 +3632,7 @@ paths:
           description: name of the MeshService
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshServiceDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshServiceDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshservices:
@@ -3934,17 +3731,9 @@ paths:
               $ref: '#/components/schemas/MeshTrustItem'
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTrustCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshTrust
       summary: Deletes MeshTrust entity
@@ -3965,11 +3754,7 @@ paths:
           description: name of the MeshTrust
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshTrustDeleteSuccessResponse'
-          description: Successful response
+          $ref: '#/components/responses/MeshTrustDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtrusts:
@@ -4432,21 +4217,49 @@ components:
     InvalidParameters:
       type: object
       title: Invalid Parameters
+      required:
+        - field
+        - reason
+        - source
       properties:
         field:
           type: string
+          description: The name of the field that caused the error.
         reason:
           type: string
+          description: |
+            A short, human-readable description of the problem.
+            _Should_ be provided as "Sentence case" for direct use in a UI.
         rule:
           type: string
+          description: >
+            May be provided as a hint to the user to help understand the type of
+            failure.
+
+            Additional guidance may be provided in additional fields, i.e.
+            `choices`.
         choices:
           type: array
+          description: >
+            Optional field to provide a list of valid choices for the field that
+            caused the error.
           items:
             type: string
+        source:
+          type: string
+          description: |
+            The location of the field that caused the error.
+          enum:
+            - body
+            - query
+            - header
+            - path
     Error:
       type: object
       title: Error
-      description: standard error
+      description: >
+        Standard error. Follows the [AIP #193 -
+        Errors](https://kong-aip.netlify.app/aip/193/) specification.
       x-examples:
         Example 1:
           status: 404
@@ -4458,6 +4271,8 @@ components:
         - status
         - title
         - instance
+        - type
+        - detail
       properties:
         status:
           type: integer
@@ -4465,23 +4280,47 @@ components:
           example: 404
         title:
           type: string
-          description: The error response code.
+          description: >
+            A short, human-readable summary of the problem.
+
+            It **should not** change between occurrences of a problem, except
+            for localization.
+
+            Should be provided as "Sentence case" for potential direct use in a
+            UI
           example: Not Found
         type:
           type: string
-          description: The error type.
+          description: >
+            A unique identifier for this error. When dereferenced it must
+            provide human-readable documentation for the problem.
           example: Not Found
         instance:
           type: string
           example: portal:trace:2287285207635123011
-          description: The portal traceback code
+          description: >
+            Used to return the correlation ID back to the user, in the format
+            `<app>:trace:<correlation_id>`.
         detail:
           type: string
           example: The requested team was not found
-          description: Details about the error.
+          description: >
+            A human readable explanation specific to this occurrence of the
+            problem.
+
+            This field may contain request/entity data to help the user
+            understand what went wrong.
+
+            Enclose variable values in square brackets.
+
+            _Should_ be provided as "Sentence case" for direct use in a UI
         invalid_parameters:
           type: array
-          description: TODO
+          description: >
+            All 400 errors **MUST** return an `invalid_parameters` key in the
+            response.
+
+            Used to indicate which fields have invalid values when validated.
           items:
             $ref: '#/components/schemas/InvalidParameters'
     PolicyDescription:
@@ -4574,6 +4413,12 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
+        kri:
+          type: string
+          readOnly: true
+          x-go-name: KRI
+          example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
+          description: Kuma Resource Identifier (KRI) of the given resource
         labels:
           type: object
           additionalProperties:
@@ -5035,15 +4880,21 @@ components:
         - type: object
           properties:
             status:
+              type: integer
+              enum:
+                - 404
               example: 404
+              description: |
+                The HTTP status code for NotFoundError MUST be 404.
             title:
+              type: string
               example: Not Found
             type:
+              type: string
               example: https://httpstatuses.com/404
-            instance:
-              example: kong:trace:1234567890
             detail:
-              example: Not found
+              type: string
+              example: The requested resource was not found
     MeshAccessLogItem:
       type: object
       required:
@@ -5062,6 +4913,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mal_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -5893,23 +5752,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshAccessLogItem'
-    MeshAccessLogCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshAccessLogDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshCircuitBreakerItem:
       type: object
       required:
@@ -5928,6 +5770,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mcb_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -7630,23 +7480,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshCircuitBreakerItem'
-    MeshCircuitBreakerCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshCircuitBreakerDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshFaultInjectionItem:
       type: object
       required:
@@ -7665,6 +7498,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mfi_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -8295,23 +8136,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshFaultInjectionItem'
-    MeshFaultInjectionCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshFaultInjectionDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshHealthCheckItem:
       type: object
       required:
@@ -8330,6 +8154,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mhc_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -8807,23 +8639,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshHealthCheckItem'
-    MeshHealthCheckCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshHealthCheckDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshHTTPRouteItem:
       type: object
       required:
@@ -8842,6 +8657,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mhttpr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -9633,23 +9456,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshHTTPRouteItem'
-    MeshHTTPRouteCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshHTTPRouteDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshLoadBalancingStrategyItem:
       type: object
       required:
@@ -9668,6 +9474,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mlbs_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -10521,23 +10335,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
-    MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshLoadBalancingStrategyDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshMetricItem:
       type: object
       required:
@@ -10556,6 +10353,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mm_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -10862,23 +10667,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshMetricItem'
-    MeshMetricCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshMetricDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshPassthroughItem:
       type: object
       required:
@@ -10897,6 +10685,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mp_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -11066,23 +10862,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshPassthroughItem'
-    MeshPassthroughCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshPassthroughDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshProxyPatchItem:
       type: object
       required:
@@ -11101,6 +10880,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mpp_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -11794,23 +11581,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshProxyPatchItem'
-    MeshProxyPatchCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshProxyPatchDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshRateLimitItem:
       type: object
       required:
@@ -11829,6 +11599,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mrl_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -12543,23 +12321,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshRateLimitItem'
-    MeshRateLimitCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshRateLimitDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshRetryItem:
       type: object
       required:
@@ -12578,6 +12339,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -13212,23 +12981,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshRetryItem'
-    MeshRetryCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshRetryDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshTCPRouteItem:
       type: object
       required:
@@ -13247,6 +12999,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtcpr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -13567,23 +13327,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTCPRouteItem'
-    MeshTCPRouteCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshTCPRouteDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshTimeoutItem:
       type: object
       required:
@@ -13602,6 +13345,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mt_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -14154,23 +13905,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTimeoutItem'
-    MeshTimeoutCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshTimeoutDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshTLSItem:
       type: object
       required:
@@ -14189,6 +13923,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtls_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -14513,23 +14255,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTLSItem'
-    MeshTLSCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshTLSDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshTraceItem:
       type: object
       required:
@@ -14548,6 +14273,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtr_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -14879,23 +14612,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTraceItem'
-    MeshTraceCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshTraceDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshTrafficPermissionItem:
       type: object
       required:
@@ -14914,6 +14630,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -15241,23 +14965,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTrafficPermissionItem'
-    MeshTrafficPermissionCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshTrafficPermissionDeleteSuccessResponse:
-      type: object
-      properties: {}
     BuiltinCertificateAuthorityConfig:
       properties:
         caCert:
@@ -15857,23 +15564,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneItem'
-    DataplaneCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    DataplaneDeleteSuccessResponse:
-      type: object
-      properties: {}
     PrometheusMetricsBackendConfig:
       description: >-
         PrometheusMetricsBackendConfig defines configuration of Prometheus
@@ -17135,23 +16825,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshItem'
-    MeshCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshDeleteSuccessResponse:
-      type: object
-      properties: {}
     TcpLoggingBackendConfig:
       description: TcpLoggingBackendConfig defines configuration for TCP based access logs
       properties:
@@ -17388,23 +17061,27 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshGatewayItem'
-    MeshGatewayCreateOrUpdateSuccessResponse:
-      type: object
+    SecretItem:
       properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
+        data:
+          description: Value of the secret
+          format: byte
+          type: string
+        labels:
+          additionalProperties:
             type: string
-    MeshGatewayDeleteSuccessResponse:
+          type: object
+        mesh:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - mesh
       type: object
-      properties: {}
     Zone:
       description: >-
         Zone defines the Zone configuration used at the Global Control Plane
@@ -17461,23 +17138,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ZoneEgressItem'
-    ZoneEgressCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    ZoneEgressDeleteSuccessResponse:
-      type: object
-      properties: {}
     ZoneIngressItem:
       properties:
         availableServices:
@@ -17561,23 +17221,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ZoneIngressItem'
-    ZoneIngressCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    ZoneIngressDeleteSuccessResponse:
-      type: object
-      properties: {}
     HostnameGeneratorItem:
       type: object
       required:
@@ -17590,6 +17233,14 @@ components:
           type: string
           enum:
             - HostnameGenerator
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_hg___kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -17654,23 +17305,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-    HostnameGeneratorCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    HostnameGeneratorDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshExternalServiceItem:
       type: object
       required:
@@ -17689,6 +17323,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_extsvc_default_zone-east_kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18019,23 +17661,6 @@ components:
               type: object
           type: object
           readOnly: true
-    MeshExternalServiceCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshExternalServiceDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshIdentityItem:
       type: object
       required:
@@ -18054,6 +17679,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mid_default_zone-east_kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18320,23 +17953,6 @@ components:
               x-kubernetes-list-type: map
           type: object
           readOnly: true
-    MeshIdentityCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshIdentityDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshMultiZoneServiceItem:
       type: object
       required:
@@ -18355,6 +17971,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mzsvc_default_zone-east_kuma-demo_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18538,23 +18162,6 @@ components:
               type: array
           type: object
           readOnly: true
-    MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshMultiZoneServiceDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshServiceItem:
       type: object
       required:
@@ -18573,6 +18180,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_msvc_default_zone-east_kuma-demo_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18786,23 +18401,6 @@ components:
               type: array
           type: object
           readOnly: true
-    MeshServiceCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshServiceDeleteSuccessResponse:
-      type: object
-      properties: {}
     MeshTrustItem:
       type: object
       required:
@@ -18821,6 +18419,14 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mtrust_default_zone-east_kuma-system_myresource1_
         name:
           description: Name of the Kuma resource
           type: string
@@ -18890,23 +18496,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-    MeshTrustCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          readOnly: true
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshTrustDeleteSuccessResponse:
-      type: object
-      properties: {}
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -19036,6 +18625,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshAccessLogCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshAccessLogDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshCircuitBreakerItem:
       description: Successful response
       content:
@@ -19059,6 +18672,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshCircuitBreakerCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshCircuitBreakerDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshFaultInjectionItem:
       description: Successful response
       content:
@@ -19082,6 +18719,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshFaultInjectionCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshFaultInjectionDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshHealthCheckItem:
       description: Successful response
       content:
@@ -19105,6 +18766,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshHealthCheckCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshHealthCheckDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshHTTPRouteItem:
       description: Successful response
       content:
@@ -19128,6 +18813,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshHTTPRouteCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshHTTPRouteDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshLoadBalancingStrategyItem:
       description: Successful response
       content:
@@ -19151,6 +18860,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshLoadBalancingStrategyDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshMetricItem:
       description: Successful response
       content:
@@ -19174,6 +18907,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshMetricCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshMetricDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshPassthroughItem:
       description: Successful response
       content:
@@ -19197,6 +18954,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshPassthroughCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshPassthroughDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshProxyPatchItem:
       description: Successful response
       content:
@@ -19220,6 +19001,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshProxyPatchCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshProxyPatchDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshRateLimitItem:
       description: Successful response
       content:
@@ -19243,6 +19048,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshRateLimitCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshRateLimitDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshRetryItem:
       description: Successful response
       content:
@@ -19266,6 +19095,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshRetryCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshRetryDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshTCPRouteItem:
       description: Successful response
       content:
@@ -19289,6 +19142,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTCPRouteCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshTCPRouteDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshTimeoutItem:
       description: Successful response
       content:
@@ -19312,6 +19189,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTimeoutCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshTimeoutDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshTLSItem:
       description: Successful response
       content:
@@ -19335,6 +19236,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTLSCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshTLSDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshTraceItem:
       description: Successful response
       content:
@@ -19358,6 +19283,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTraceCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshTraceDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshTrafficPermissionItem:
       description: Successful response
       content:
@@ -19381,6 +19330,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTrafficPermissionCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshTrafficPermissionDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     DataplaneItem:
       description: Successful response
       content:
@@ -19404,6 +19377,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    DataplaneCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    DataplaneDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     GetDataplaneOverviewResponse:
       description: A response containing the overview of a dataplane.
       content:
@@ -19449,6 +19446,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshGatewayItem:
       description: Successful response
       content:
@@ -19472,6 +19493,77 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshGatewayCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshGatewayDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+    SecretItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SecretItem'
+    SecretList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SecretItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    SecretCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    SecretDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     ZoneEgressItem:
       description: Successful response
       content:
@@ -19495,6 +19587,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    ZoneEgressCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    ZoneEgressDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     ZoneIngressItem:
       description: Successful response
       content:
@@ -19518,6 +19634,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    ZoneIngressCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    ZoneIngressDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     HostnameGeneratorItem:
       description: Successful response
       content:
@@ -19541,6 +19681,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    HostnameGeneratorCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    HostnameGeneratorDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshExternalServiceItem:
       description: Successful response
       content:
@@ -19564,6 +19728,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshExternalServiceCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshExternalServiceDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshIdentityItem:
       description: Successful response
       content:
@@ -19587,6 +19775,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshIdentityCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshIdentityDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshMultiZoneServiceItem:
       description: Successful response
       content:
@@ -19610,6 +19822,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshMultiZoneServiceDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshServiceItem:
       description: Successful response
       content:
@@ -19633,6 +19869,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshServiceCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshServiceDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshTrustItem:
       description: Successful response
       content:
@@ -19656,6 +19916,30 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTrustCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshTrustDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
   examples:
     GlobalInsightExample:
       value:

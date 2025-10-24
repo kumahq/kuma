@@ -15,6 +15,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mal_mesh-1___mal-1_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
         name: mal-1
@@ -29,6 +30,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mal_mesh-1___mal-1_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
         name: mal-1
@@ -40,6 +42,7 @@ Rules:
       backends: []
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mal_mesh-1___mal-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mal-1

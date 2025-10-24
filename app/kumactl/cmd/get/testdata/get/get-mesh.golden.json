@@ -3,6 +3,7 @@
   "name": "mesh-1",
   "creationTime": "0001-01-01T00:00:00Z",
   "modificationTime": "0001-01-01T00:00:00Z",
+  "kri": "kri_m____mesh-1_",
   "mtls": {
     "enabledBackend": "builtin-1",
     "backends": [

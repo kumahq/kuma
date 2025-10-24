@@ -636,7 +636,7 @@ level for HTTP services we're getting a lot of noise in the diff:
 
 ## TrafficRoute -> MeshHTTPRoute(MeshTCPRoute)
 
-Covered by [036-route-transition.md](036-route-transition.md)
+Covered by [046-route-transition.md](046-route-transition.md)
 
 ## ProxyTemplate -> MeshProxyPatch
 
