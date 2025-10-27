@@ -68,7 +68,6 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v2.1.6
-
       - run: |
           make clean
       - run: |
