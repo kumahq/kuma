@@ -59,11 +59,8 @@ jobs:
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
-      - name: Run clang-format style check for Protobuf
-        uses: jidicula/clang-format-action@4726374d1aa3c6aecf132e5197e498979588ebc8 # v4.15.0
-        with:
-          clang-format-version: '13'
+          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+
       - run: |
           make clean
       - run: |
