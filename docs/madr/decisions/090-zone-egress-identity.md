@@ -34,3 +34,9 @@ We need to ensure that communication to ZoneEgress from different meshes functio
 
 It should be just as easy to enable traffic through ZoneEgress as it is today.
 The process should not require any additional configuration or manual setup beyond what is already needed in the current implementation.
+
+## Out of scope
+
+### As a user, I want to support SPIRE and other identity providers simultaneously when using ZoneEgress
+
+Since integrating Kuma with SPIRE requires a federation API, we might need to postpone this feature for now.
