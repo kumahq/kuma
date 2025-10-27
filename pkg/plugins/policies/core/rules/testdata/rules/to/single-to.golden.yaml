@@ -1,7 +1,6 @@
 ResourceRules: {}
 Rules:
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     http:
       numRetries: 10
       perTryTimeout: 20s
@@ -13,12 +12,12 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: retry-1
     type: MeshRetry
+  OriginByMatches: {}
   Subset:
   - Key: kuma.io/service
     Not: false
     Value: backend
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     http:
       perTryTimeout: 20s
     tcp:
@@ -29,4 +28,5 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: retry-1
     type: MeshRetry
+  OriginByMatches: {}
   Subset: []

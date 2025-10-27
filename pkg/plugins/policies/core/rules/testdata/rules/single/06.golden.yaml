@@ -1,6 +1,5 @@
 Rules:
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     backends:
     - type: Zipkin
       zipkin:
@@ -17,4 +16,5 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mt-1
     type: MeshTrace
+  OriginByMatches: {}
   Subset: []
