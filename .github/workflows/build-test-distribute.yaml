@@ -60,7 +60,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
-
       - run: |
           make clean
       - run: |
