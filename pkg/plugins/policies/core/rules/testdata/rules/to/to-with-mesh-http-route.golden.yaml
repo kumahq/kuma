@@ -1,6 +1,7 @@
 ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 15s
   Origin:
@@ -9,7 +10,6 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: override
     type: MeshTimeout
-  OriginByMatches: {}
   Subset:
   - Key: __rule-matches-hash__
     Not: false

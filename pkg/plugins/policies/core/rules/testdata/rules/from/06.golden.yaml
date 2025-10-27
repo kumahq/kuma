@@ -2,7 +2,8 @@ InboundRules:
   127.0.0.1:80: []
 Rules:
   127.0.0.1:80:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -10,7 +11,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-other-ns-and-tag
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: abcd
       Not: false
@@ -18,7 +18,8 @@ Rules:
     - Key: k8s.kuma.io/namespace
       Not: false
       Value: kuma-other
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -26,7 +27,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: k8s.kuma.io/namespace
       Not: false

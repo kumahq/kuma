@@ -1,5 +1,6 @@
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     backends:
     - datadog:
         splitService: false
@@ -19,5 +20,4 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mt-2
     type: MeshTrace
-  OriginByMatches: {}
   Subset: []

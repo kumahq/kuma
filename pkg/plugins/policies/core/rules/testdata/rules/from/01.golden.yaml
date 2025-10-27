@@ -2,7 +2,8 @@ InboundRules:
   127.0.0.1:80: []
 Rules:
   127.0.0.1:80:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -10,7 +11,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: env
       Not: false
@@ -18,7 +18,8 @@ Rules:
     - Key: zone
       Not: false
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -26,7 +27,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: env
       Not: false
@@ -34,7 +34,8 @@ Rules:
     - Key: zone
       Not: false
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -42,7 +43,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: env
       Not: true
@@ -53,7 +53,8 @@ Rules:
     - Key: zone
       Not: false
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -61,7 +62,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: env
       Not: false
@@ -69,7 +69,8 @@ Rules:
     - Key: zone
       Not: true
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -77,7 +78,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: env
       Not: false
@@ -85,7 +85,8 @@ Rules:
     - Key: zone
       Not: true
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -93,7 +94,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: env
       Not: true
