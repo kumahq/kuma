@@ -2,13 +2,12 @@ syntax = "proto3";
 
 package kuma.system.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
-
 import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
 // DataSource defines the source of bytes to use.
 message DataSource {
-
   oneof type {
     // Data source is a secret with given Secret key.
     string secret = 1;

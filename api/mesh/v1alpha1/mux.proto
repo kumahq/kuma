@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "envoy/api/v2/discovery.proto";
 import "envoy/service/discovery/v3/discovery.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 service MultiplexService {
   rpc StreamMessage(stream Message) returns (stream Message);
