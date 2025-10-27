@@ -2,17 +2,16 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // Mesh defines configuration of a single mesh.
 message Mesh {
-
   option (kuma.mesh.resource).name = "MeshResource";
   option (kuma.mesh.resource).type = "Mesh";
   option (kuma.mesh.resource).global = true;
@@ -24,7 +23,6 @@ message Mesh {
 
   // mTLS settings of a Mesh.
   message Mtls {
-
     // Name of the enabled backend
     string enabledBackend = 1;
 
@@ -63,7 +61,6 @@ message Mesh {
 
   // Constraints to apply to the mesh and its entities
   message Constraints {
-
     // DataplaneProxyMembership defines a set of requirements for data plane
     // proxies to be a member of the mesh.
     DataplaneProxyConstraints dataplaneProxy = 1;
@@ -80,7 +77,6 @@ message Mesh {
   MeshServices meshServices = 9;
 
   message DataplaneProxyConstraints {
-
     // Rules defines a set of rules for data plane proxies to be member of the
     // mesh.
     message Rules {
@@ -99,7 +95,7 @@ message Mesh {
     // requirement in order to join the mesh.
     // Restrictions takes precedence over requirements.
     repeated Rules restrictions = 2;
-  };
+  }
 
   message MeshServices {
     Mode mode = 1;
@@ -121,7 +117,6 @@ message Mesh {
 
 // CertificateAuthorityBackend defines Certificate Authority backend
 message CertificateAuthorityBackend {
-
   // Name of the backend
   string name = 1;
 
@@ -176,7 +171,6 @@ message CertificateAuthorityBackend {
 
 // Networking defines the networking configuration of the mesh
 message Networking {
-
   // Outbound describes the common mesh outbound settings
   message Outbound {
     // Control the passthrough cluster
@@ -189,7 +183,6 @@ message Networking {
 
 // Tracing defines tracing configuration of the mesh.
 message Tracing {
-
   // Name of the default backend
   string defaultBackend = 1;
 
@@ -249,7 +242,6 @@ message ZipkinTracingBackendConfig {
 }
 
 message Logging {
-
   // Name of the default backend
   string defaultBackend = 1;
 

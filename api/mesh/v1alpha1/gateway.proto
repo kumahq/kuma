@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
 import "api/system/v1alpha1/datasource.proto";
 import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // MeshGateway is a virtual proxy.
 //
@@ -18,7 +18,6 @@ import "validate/validate.proto";
 // Gateway aligns with the Kubernetes Gateway API. See that
 // spec for detailed documentation.
 message MeshGateway {
-
   option (kuma.mesh.resource).name = "MeshGatewayResource";
   option (kuma.mesh.resource).type = "MeshGateway";
   option (kuma.mesh.resource).package = "mesh";
@@ -26,8 +25,7 @@ message MeshGateway {
   // Meshgateway is a little special as we want to sync gateways from global but
   // we also want to be able to define a gateway locally.
   // however, we don't want gateway synced between zones.
-  option (kuma.mesh.resource).kds =
-      "model.GlobalToZonesFlag | model.ZoneToGlobalFlag";
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag | model.ZoneToGlobalFlag";
   option (kuma.mesh.resource).ws.name = "meshgateway";
   option (kuma.mesh.resource).short_name = "mgw";
 
@@ -69,8 +67,10 @@ message MeshGateway {
       // different key types. In practice, this means that one datasource
       // should contain an RSA key and certificate, and the other an
       // ECDSA key and certificate.
-      repeated kuma.system.v1alpha1.DataSource certificates = 2
-          [ (validate.rules).repeated = {min_items : 1, max_items : 2} ];
+      repeated kuma.system.v1alpha1.DataSource certificates = 2 [(validate.rules).repeated = {
+        min_items: 1
+        max_items: 2
+      }];
 
       // Options should eventually configure how TLS is configured. This
       // is where cipher suite and version configuration can be specified,
@@ -80,7 +80,9 @@ message MeshGateway {
   }
 
   message Listener {
-    message Resources { uint32 connection_limit = 1; }
+    message Resources {
+      uint32 connection_limit = 1;
+    }
 
     enum Protocol {
       NONE = 0;
@@ -132,8 +134,7 @@ message MeshGateway {
   message Conf {
     // Listeners define logical endpoints that are bound on this MeshGateway's
     // address(es).
-    repeated Listener listeners = 2
-        [ (validate.rules).repeated = {min_items : 1} ];
+    repeated Listener listeners = 2 [(validate.rules).repeated = {min_items: 1}];
 
     // Note that the Kubernetes API Gateway resource defines a  list of
     // gateway addresses here. In Kuma, however, the Dataplane resources
@@ -143,14 +144,13 @@ message MeshGateway {
 
   // Selectors is a list of selectors that are used to match builtin
   // gateway dataplanes that will receive this MeshGateway configuration.
-  repeated Selector selectors = 1
-      [ (validate.rules).repeated = {min_items : 1} ];
+  repeated Selector selectors = 1 [(validate.rules).repeated = {min_items: 1}];
 
   // Tags is the set of tags common to all of the gateway's listeners.
   //
   // This field must not include a `kuma.io/service` tag (the service is always
   // defined on the dataplanes).
-  map<string, string> tags = 2 [ (validate.rules).repeated = {min_items : 1} ];
+  map<string, string> tags = 2 [(validate.rules).repeated = {min_items: 1}];
 
   // The desired configuration of the MeshGateway.
   Conf conf = 3;
