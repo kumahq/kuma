@@ -2,16 +2,15 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
-import "google/protobuf/wrappers.proto";
 import "api/mesh/v1alpha1/selector.proto";
+import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // TrafficRoute defines routing rules for the traffic in the mesh.
 message TrafficRoute {
-
   option (kuma.mesh.resource).name = "TrafficRouteResource";
   option (kuma.mesh.resource).type = "TrafficRoute";
   option (kuma.mesh.resource).package = "mesh";
@@ -20,7 +19,7 @@ message TrafficRoute {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match data plane proxies that are sources of traffic.
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1 [(validate.rules).repeated.min_items = 1];
 
   // List of selectors to match services that are destinations of traffic.
   //
@@ -28,12 +27,10 @@ message TrafficRoute {
   // While the source of traffic is always a data plane proxy within a mesh,
   // the destination is a service that could be either within or outside
   // of a mesh.
-  repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector destinations = 2 [(validate.rules).repeated.min_items = 1];
 
   // Split defines a destination with a weight assigned to it.
   message Split {
-
     // Weight assigned to that destination.
     // Weights are not percentages. For example two destinations with
     // weights the same weight "1" will receive both same amount of the traffic.
@@ -45,16 +42,19 @@ message TrafficRoute {
     // Notice that an endpoint can be either inside or outside the mesh.
     // In the former case an endpoint corresponds to a data plane proxy,
     // in the latter case an endpoint is an External Service.
-    map<string, string> destination = 2 [ (validate.rules).map = {
-      min_pairs : 1,
-      keys : {string : {min_len : 1}},
-      values : {string : {min_len : 1}}
-    } ];
-  };
+    map<string, string> destination = 2 [(validate.rules).map = {
+      min_pairs: 1
+      keys: {
+        string: {min_len: 1}
+      }
+      values: {
+        string: {min_len: 1}
+      }
+    }];
+  }
 
   // LoadBalancer defines the load balancing policy and configuration.
   message LoadBalancer {
-
     // RoundRobin is a simple policy in which each available upstream host is
     // selected in round robin order.
     message RoundRobin {}
@@ -94,13 +94,13 @@ message TrafficRoute {
       Random random = 4;
       Maglev maglev = 5;
     }
-  };
+  }
 
   // Conf defines the destination configuration.
   message Conf {
     // List of destinations with weights assigned to them.
     // When used, "destination" is not allowed.
-    repeated Split split = 1 [ (validate.rules).repeated .min_items = 1 ];
+    repeated Split split = 1 [(validate.rules).repeated.min_items = 1];
     // Load balancer configuration for given "split" or "destination"
     LoadBalancer load_balancer = 2;
     // One destination that the traffic will be redirected to.
@@ -110,7 +110,7 @@ message TrafficRoute {
     // order defined in the list. If the request does not match any criteria
     // then "split" or "destination" outside of "http" section is executed.
     repeated Http http = 4;
-  };
+  }
 
   // Http defines configuration for HTTP traffic.
   message Http {
@@ -140,7 +140,6 @@ message TrafficRoute {
 
     // Modify defines modifications of matched HTTP messages.
     message Modify {
-
       // RegexReplace defines a way to match string using regex and build a new
       // one using substitution section.
       message RegexReplace {
@@ -219,5 +218,5 @@ message TrafficRoute {
   }
 
   // Configuration for the route.
-  Conf conf = 3 [ (validate.rules).message.required = true ];
+  Conf conf = 3 [(validate.rules).message.required = true];
 }

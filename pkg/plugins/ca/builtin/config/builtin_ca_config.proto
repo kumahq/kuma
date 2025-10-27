@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package kuma.plugins.ca;
 
-option go_package = "github.com/kumahq/kuma/plugins/ca/config";
-
 import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/plugins/ca/config";
 
 // BuiltinCertificateAuthorityConfig defines configuration for Builtin CA
 // plugin
