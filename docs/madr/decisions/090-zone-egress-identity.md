@@ -50,7 +50,7 @@ Since integrating Kuma with SPIRE requires a federation API, we might need to po
 In most cases, users deploy a single `Mesh`. Therefore, we can use the `MeshIdentity` resource from that Mesh to generate the `ZoneEgress` identity.
 This approach would cover the majority of deployments.
 
-For environments with multiple Meshes, we would by default select the default Mesh (if it exists). Otherwise, we would introduce a configuration option that allows the user to explicitly specify which Mesh’s `MeshIdentity` should be used to provide the `ZoneEgress` identity.
+For environments with multiple Meshes, we would introduce a configuration option that allows the user to explicitly specify which Mesh’s `MeshIdentity` should be used to provide the `ZoneEgress` identity.
 
 #### SPIRE
 
@@ -62,15 +62,14 @@ Because SPIRE manages the validation context, it is currently the only viable op
 
 #### Multiple Meshes, Each with a Different Identity Provider
 
-If there is a default `Mesh` with a `MeshIdentity`, we will use it to provide the `ZoneEgress` identity.
-If there is no default `Mesh`, the user must manually specify which `Mesh` should be used for ZoneEgress identity provisioning using one of the following configuration options:
+If there is a default `Mesh` specified with a `MeshIdentity`, we will use it to provide the `ZoneEgress` identity.
+If there is no default `Mesh`, the user must manually specify which `Mesh` should be used for `ZoneEgress` identity provisioning using the following configuration option:
 
 ```yaml
 KUMA_DEFAULTS_MESH: "my-mesh" # used for MeshIdentity; any dataplane started without kuma.io/mesh joins this mesh
 ```
 
-Based on this configuration, the `ZoneEgress` Envoy will present itself using the selected identity when communicating with dataplanes across different `Meshes`.
-Using `MeshTrust`, we will configure the `ZoneEgress` to trust all `Meshes`, while dataplanes will be configured to trust the `ZoneEgress` identity.
+Based on this configuration, the `ZoneEgress` Envoy will receive an identity issued for its specific `Mesh`. Using `MeshTrust`, we configure the `ZoneEgress` to trust identities from all `Meshes`, while dataplanes are configured to trust the `ZoneEgress` identity.
 
 ##### How do we choose which MeshIdentity configures the ZoneEgress?
 
@@ -87,17 +86,22 @@ This case is simpler since all `Meshes` share a common identity provider. We don
 2. Some `Meshes` use SPIRE and others use a different `MeshIdentity` provider
 
 This scenario is more complicated, as MeshTrust cannot be used together with a SPIRE-provided validation context.
-To address this, we could first resolve [issue](https://github.com/kumahq/kuma/issues/14685).
-
-There are two potential solutions:
-* Implement an SDS server proxy in `kuma-dp` that merges SDS responses from SPIRE and Kuma.
-* Provide an option for users to create a `MeshTrust` for the SPIRE CA, disable SPIRE’s trust configuration, and delegate trust management to Kuma.
+To address this, we could first resolve [issue](https://github.com/kumahq/kuma/issues/14786).
 
 This approach would allow SPIRE to interoperate with other `MeshIdentity` providers and enable `MeshTrust` support while SPIRE is in use.
 
-#### What if There Is No default Mesh?
+#### What if there is no default Mesh?
 
-In this case, `kuma-cp` fails to start and displays an error message indicating that the user must configure `KUMA_DEFAULTS_MESH` to specify which Mesh is responsible for providing the `ZoneEgress` identity. It would work when the user has set `KUMA_DEFAULT_SKIP_MESH_CREATION`, as it doesn’t require any storage operations.
+In this case, the `kuma-cp` logs will contain a message indicating that the default Mesh is not defined, and since the system has multiple Meshes, the user must explicitly configure which one to use.
+An alternative option would be to retrieve the list of all Meshes and select the first one in lexicographical order that has a `MeshIdentity` policy defined.
+
+#### What if there is one Mesh using legacy mutual TLS and another using MeshIdentity?
+
+If the default `Mesh` is not explicitly defined by the user to point to the `Mesh` with `MeshIdentity`, the control plane will use the `Mesh` that relies on mutual TLS.
+
+#### What if a single Mesh is configured with both mutual TLS and MeshIdentity?
+
+If the default `Mesh` is not explicitly defined by the user to point to the `Mesh` with `MeshIdentity`, the control plane will use the `Mesh` that relies on mutual TLS.
 
 #### Pros
 
