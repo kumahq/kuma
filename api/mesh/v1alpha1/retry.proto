@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
-import "api/mesh/v1alpha1/selector.proto";
 import "api/mesh/v1alpha1/http_method.proto";
-
+import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // These options correspond with the retry_on options in Envoy's documentation:
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on
@@ -28,7 +27,6 @@ enum HttpRetryOn {
 }
 
 message Retry {
-
   option (kuma.mesh.resource).name = "RetryResource";
   option (kuma.mesh.resource).type = "Retry";
   option (kuma.mesh.resource).package = "mesh";
@@ -39,11 +37,10 @@ message Retry {
 
   // List of selectors to match dataplanes that retry policy should be
   // configured for
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1 [(validate.rules).repeated.min_items = 1];
 
   // List of selectors to match services that need to be health checked.
-  repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector destinations = 2 [(validate.rules).repeated.min_items = 1];
 
   message Conf {
     message BackOff {

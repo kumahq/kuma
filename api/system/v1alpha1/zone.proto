@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package kuma.system.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
-
 import "api/mesh/options.proto";
 import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
 // Zone defines the Zone configuration used at the Global Control Plane
 // within a distributed deployment
 message Zone {
-
   option (kuma.mesh.resource).name = "ZoneResource";
   option (kuma.mesh.resource).type = "Zone";
   option (kuma.mesh.resource).package = "system";

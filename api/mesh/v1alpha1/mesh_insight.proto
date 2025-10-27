@@ -2,13 +2,12 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // MeshInsight defines the observed state of a Mesh.
 message MeshInsight {
-
   option (kuma.mesh.resource).name = "MeshInsightResource";
   option (kuma.mesh.resource).type = "MeshInsight";
   option (kuma.mesh.resource).global = true;
@@ -28,12 +27,13 @@ message MeshInsight {
   DataplaneStat dataplanes = 2;
 
   // PolicyStat defines statistic for all policies in general
-  message PolicyStat { uint32 total = 1; }
+  message PolicyStat {
+    uint32 total = 1;
+  }
   map<string, PolicyStat> policies = 3;
 
   // DpVersions defines statistics grouped by dataplane versions
   message DpVersions {
-
     // Dataplane stats grouped by KumaDP version
     map<string, DataplaneStat> kumaDp = 1;
 

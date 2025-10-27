@@ -4,7 +4,9 @@ package grpc.health.v1;
 
 option go_package = "github.com/kumahq/kuma/test/server/grpc/api";
 
-message HealthCheckRequest { string service = 1; }
+message HealthCheckRequest {
+  string service = 1;
+}
 
 message HealthCheckResponse {
   enum ServingStatus {

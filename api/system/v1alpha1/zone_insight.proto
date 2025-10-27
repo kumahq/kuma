@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package kuma.system.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
-
 import "api/mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
+option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
+
 // ZoneInsight defines the observed state of a Zone Kuma CP.
 message ZoneInsight {
-
   option (kuma.mesh.resource).name = "ZoneInsightResource";
   option (kuma.mesh.resource).type = "ZoneInsight";
   option (kuma.mesh.resource).package = "system";
@@ -47,22 +46,20 @@ message EnvoyAdminStreams {
 // - Global Kuma CP restarts (i.e. rolling update or crash)
 // - etc
 message KDSSubscription {
-
   // Unique id per KDS subscription.
-  string id = 1 [ (validate.rules).string.min_len = 1 ];
+  string id = 1 [(validate.rules).string.min_len = 1];
 
   // Global CP instance that handled given subscription.
-  string global_instance_id = 2 [ (validate.rules).string.min_len = 1 ];
+  string global_instance_id = 2 [(validate.rules).string.min_len = 1];
 
   // Time when a given Zone connected to the Global.
-  google.protobuf.Timestamp connect_time = 3
-      [ (validate.rules).timestamp.required = true ];
+  google.protobuf.Timestamp connect_time = 3 [(validate.rules).timestamp.required = true];
 
   // Time when a given Zone disconnected from the Global.
   google.protobuf.Timestamp disconnect_time = 4;
 
   // Status of the KDS subscription.
-  KDSSubscriptionStatus status = 5 [ (validate.rules).message.required = true ];
+  KDSSubscriptionStatus status = 5 [(validate.rules).message.required = true];
 
   // Version of Zone Kuma CP.
   Version version = 6;
@@ -84,7 +81,6 @@ message KDSSubscription {
 
 // KDSSubscriptionStatus defines status of an KDS subscription.
 message KDSSubscriptionStatus {
-
   // Time when status of a given KDS subscription was most recently updated.
   google.protobuf.Timestamp last_update_time = 1;
 
@@ -96,7 +92,6 @@ message KDSSubscriptionStatus {
 
 // DiscoveryServiceStats defines all stats over a single xDS service.
 message KDSServiceStats {
-
   // Number of xDS responses sent to the Dataplane.
   uint64 responses_sent = 1;
 
@@ -109,14 +104,12 @@ message KDSServiceStats {
 
 // Version defines version of Kuma ControlPlane
 message Version {
-
   // Version of Zone Kuma CP
   KumaCpVersion kumaCp = 1;
 }
 
 // KumaCpVersion describes details of Kuma ControlPlane version
 message KumaCpVersion {
-
   // Version number of Kuma ControlPlane
   string version = 1;
 

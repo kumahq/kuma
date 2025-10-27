@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // Metrics defines configuration for metrics that should be collected and
 // exposed by dataplanes.
 message Metrics {
-
   // Name of the enabled backend
   string enabledBackend = 1;
 

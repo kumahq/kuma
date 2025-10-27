@@ -3,13 +3,12 @@ syntax = "proto3";
 package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/v1alpha1/selector.proto";
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 // TrafficPermission defines permission for traffic between dataplanes.
 message TrafficPermission {
-
   option (kuma.mesh.resource).name = "TrafficPermissionResource";
   option (kuma.mesh.resource).type = "TrafficPermission";
   option (kuma.mesh.resource).package = "mesh";
