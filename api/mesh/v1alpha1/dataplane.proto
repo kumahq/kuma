@@ -2,18 +2,17 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
-import "api/mesh/v1alpha1/metrics.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
+import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
 // Dataplane defines a configuration of a side-car proxy.
 message Dataplane {
-
   option (kuma.mesh.resource).name = "DataplaneResource";
   option (kuma.mesh.resource).type = "Dataplane";
   option (kuma.mesh.resource).package = "mesh";
@@ -22,25 +21,24 @@ message Dataplane {
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
   option (kuma.mesh.resource).additional_printer_columns =
-      "description=\"Service tag of the first "
-      "inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/"
-      "service\']`,name=\"kuma.io/service\",type=string";
+    "description=\"Service tag of the first "
+    "inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/"
+    "service\']`,name=\"kuma.io/service\",type=string";
   option (kuma.mesh.resource).additional_printer_columns =
-      "description=\"Service tag of the second "
-      "inbound\",JSONPath=`.spec.networking.inbound[1].tags[\'kuma\\.io/"
-      "service\']`,name=\"kuma.io/service\",type=string";
+    "description=\"Service tag of the second "
+    "inbound\",JSONPath=`.spec.networking.inbound[1].tags[\'kuma\\.io/"
+    "service\']`,name=\"kuma.io/service\",type=string";
   option (kuma.mesh.resource).additional_printer_columns =
-      "description=\"Service tag of the third "
-      "inbound\",JSONPath=`.spec.networking.inbound[2].tags[\'kuma\\.io/"
-      "service\']`,name=\"kuma.io/service\",type=string,priority=1";
+    "description=\"Service tag of the third "
+    "inbound\",JSONPath=`.spec.networking.inbound[2].tags[\'kuma\\.io/"
+    "service\']`,name=\"kuma.io/service\",type=string,priority=1";
   option (kuma.mesh.resource).additional_printer_columns =
-      "description=\"Service tag of the fourth "
-      "inbound\",JSONPath=`.spec.networking.inbound[3].tags[\'kuma\\.io/"
-      "service\']`,name=\"kuma.io/service\",type=string,priority=1";
+    "description=\"Service tag of the fourth "
+    "inbound\",JSONPath=`.spec.networking.inbound[3].tags[\'kuma\\.io/"
+    "service\']`,name=\"kuma.io/service\",type=string,priority=1";
 
   // Networking describes inbound and outbound interfaces of a data plane proxy.
   message Networking {
-
     // IP on which the data plane proxy is accessible to the control plane and
     // other data plane proxies in the same network. This can also be a
     // hostname, in which case the control plane will periodically resolve it.
@@ -87,7 +85,7 @@ message Dataplane {
       // next to, e.g. `kuma.io/service=web`, `version=1.0`. You can then
       // reference these tags in policies like MeshTrafficPermission.
       // `kuma.io/service` tag is mandatory.
-      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 2 [(validate.rules).map.min_pairs = 1];
 
       // Health describes the status of an inbound
       message Health {
@@ -205,7 +203,7 @@ message Dataplane {
       // Tags associated with a gateway of this data plane to, e.g.
       // `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
       // mandatory.
-      map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 1 [(validate.rules).map.min_pairs = 1];
 
       // Type of gateway this data plane proxy manages.
       // There are two types: `DELEGATED` and `BUILTIN`. Defaults to
@@ -239,12 +237,10 @@ message Dataplane {
       }
 
       // Port on which all inbound traffic is being transparently redirected.
-      uint32 redirect_port_inbound = 1
-          [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_inbound = 1 [(validate.rules).uint32 = {lte: 65535}];
 
       // Port on which all outbound traffic is being transparently redirected.
-      uint32 redirect_port_outbound = 2
-          [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_outbound = 2 [(validate.rules).uint32 = {lte: 65535}];
 
       // List of services that will be accessed directly via IP:PORT
       // Use `*` to indicate direct access to every service in the Mesh.
@@ -254,8 +250,7 @@ message Dataplane {
 
       // Port on which all IPv6 inbound traffic is being transparently
       // redirected.
-      uint32 redirect_port_inbound_v6 = 4
-          [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_inbound_v6 = 4 [(validate.rules).uint32 = {lte: 65535}];
 
       // List of reachable services (represented by the value of
       // `kuma.io/service`) via transparent proxying. Setting an explicit list

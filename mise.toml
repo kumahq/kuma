@@ -2,7 +2,7 @@
 experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
-clang-format = "13.0.0"
+buf = "1.57.2"
 container-structure-test = "1.15.0"
 ginkgo = "2.17.1"
 golangci-lint = "1.60.3"
@@ -14,7 +14,7 @@ k3d = "5.8.1"
 kind = "0.24.0"
 kubectl = "1.32.6"
 kube-linter = "0.6.8"
-protoc = "3.20.0"
+protoc = "32.1"
 protoc-gen-go = "1.28.1"
 protoc-gen-go-grpc = "1.1.0"
 protoc-gen-validate = "1.2.1"

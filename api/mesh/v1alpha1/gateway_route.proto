@@ -2,16 +2,15 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/http_method.proto";
+import "api/mesh/v1alpha1/selector.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "google/protobuf/wrappers.proto";
-import "api/mesh/options.proto";
-import "api/mesh/v1alpha1/selector.proto";
-import "validate/validate.proto";
-import "api/mesh/v1alpha1/http_method.proto";
-
 message MeshGatewayRoute {
-
   option (kuma.mesh.resource).name = "MeshGatewayRouteResource";
   option (kuma.mesh.resource).type = "MeshGatewayRoute";
   option (kuma.mesh.resource).package = "mesh";
@@ -26,28 +25,31 @@ message MeshGatewayRoute {
     // weight is computed as "weight/sum(all weights)".
     //
     // A weight of 0 means that the destination will be ignored.
-    uint32 weight = 1 [ (validate.rules).message = {required : true} ];
+    uint32 weight = 1 [(validate.rules).message = {required: true}];
 
     // Destination is a selector to match the individual endpoints to
     // which the gateway will forward.
-    map<string, string> destination = 2 [ (validate.rules).map = {
-      min_pairs : 1,
-      keys : {string : {min_len : 1}},
-      values : {string : {min_len : 1}}
-    } ];
-  };
+    map<string, string> destination = 2 [(validate.rules).map = {
+      min_pairs: 1
+      keys: {
+        string: {min_len: 1}
+      }
+      values: {
+        string: {min_len: 1}
+      }
+    }];
+  }
 
   // TCP routes are valid for listeners that accept connections over TCP.
   message TcpRoute {
     message Rule {
       // repeated Match matches = 1;
 
-      repeated Backend backends = 2
-          [ (validate.rules).repeated .min_items = 1 ];
-    };
+      repeated Backend backends = 2 [(validate.rules).repeated.min_items = 1];
+    }
 
-    repeated Rule rules = 1 [ (validate.rules).repeated .min_items = 1 ];
-  };
+    repeated Rule rules = 1 [(validate.rules).repeated.min_items = 1];
+  }
 
   // HTTP routes are valid for listeners that accept HTTP/1.1 and HTTP/2 over
   // both TCP and TLS.
@@ -75,10 +77,10 @@ message MeshGatewayRoute {
         // the entire path or is followed by a /. I.e. a prefix of the
         // path in terms of path elements.
         string value = 2 [
-          (validate.rules).message = {required : true},
+          (validate.rules).message = {required: true},
           (validate.rules).string.min_len = 1
         ];
-      };
+      }
 
       // Header matches a value in a HTTP request header. Not that if
       // the header is defined to have multiple values, a REGEX match
@@ -94,11 +96,11 @@ message MeshGatewayRoute {
         MatchType match = 1;
 
         // Name of the HTTP header containing the value to match.
-        string name = 2 [ (validate.rules).message = {required : true} ];
+        string name = 2 [(validate.rules).message = {required: true}];
 
         // Value that the HTTP header value should be matched against.
-        string value = 3 [ (validate.rules).message = {required : true} ];
-      };
+        string value = 3 [(validate.rules).message = {required: true}];
+      }
 
       // Query matches against HTTP request query parameters.
       message Query {
@@ -110,42 +112,41 @@ message MeshGatewayRoute {
         MatchType match = 1;
 
         // Name of the query parameter containing the value to match.
-        string name = 2 [ (validate.rules).message = {required : true} ];
+        string name = 2 [(validate.rules).message = {required: true}];
 
         // Value that the query parameter value should be matched against.
-        string value = 3 [ (validate.rules).message = {required : true} ];
-      };
+        string value = 3 [(validate.rules).message = {required: true}];
+      }
 
       Path path = 1;
       HttpMethod method = 2;
       repeated Header headers = 3;
       repeated Query query_parameters = 4;
-    };
+    }
 
     message Filter {
       message HeaderFilter {
         message Header {
-          string name = 1 [ (validate.rules).message = {required : true} ];
-          string value = 2 [ (validate.rules).message = {required : true} ];
+          string name = 1 [(validate.rules).message = {required: true}];
+          string value = 2 [(validate.rules).message = {required: true}];
         }
 
         repeated Header set = 1;
         repeated Header add = 2;
         repeated string remove = 3;
-      };
+      }
 
       // The mirror filter sends a percentage of HTTP requests to the
       // given backend. The gateway ignores any responses to these requests.
       message Mirror {
         // Backend denotes the service to which requests will be mirrored. The
         // "weight" field must not be given.
-        Backend backend = 1 [ (validate.rules).message = {required : true} ];
+        Backend backend = 1 [(validate.rules).message = {required: true}];
 
         // Percentage specifies the percentage of requests to mirror to
         // the backend (in the range 0.0 - 100.0, inclusive).
-        google.protobuf.DoubleValue percentage = 2
-            [ (validate.rules).double.lte = 100.0 ];
-      };
+        google.protobuf.DoubleValue percentage = 2 [(validate.rules).double.lte = 100.0];
+      }
 
       message Rewrite {
         oneof path {
@@ -169,23 +170,23 @@ message MeshGatewayRoute {
       // redirect message.
       message Redirect {
         // The scheme for the redirect URL. Usually "http" or "https".
-        string scheme = 1 [ (validate.rules).message = {required : true} ];
+        string scheme = 1 [(validate.rules).message = {required: true}];
 
         // The hostname to redirect to.
-        string hostname = 2 [ (validate.rules).message = {required : true} ];
+        string hostname = 2 [(validate.rules).message = {required: true}];
 
         // The port to redirect to.
-        uint32 port = 3 [ (validate.rules).uint32.lt = 65535 ];
+        uint32 port = 3 [(validate.rules).uint32.lt = 65535];
 
         // The HTTP response status code. This must be in the range 300 - 308.
         uint32 status_code = 4 [
-          (validate.rules).message = {required : true},
+          (validate.rules).message = {required: true},
           (validate.rules).uint32.gte = 300,
           (validate.rules).uint32.lte = 308
         ];
 
         Rewrite path = 5;
-      };
+      }
 
       oneof filter {
         HeaderFilter request_header = 1;
@@ -194,12 +195,12 @@ message MeshGatewayRoute {
         Rewrite rewrite = 4;
         HeaderFilter response_header = 5;
       }
-    };
+    }
 
     message Rule {
       // Matches are checked in order. If any match is successful, the
       // rule is selected (OR semantics).
-      repeated Match matches = 1 [ (validate.rules).repeated .min_items = 1 ];
+      repeated Match matches = 1 [(validate.rules).repeated.min_items = 1];
 
       // Filters are request processing steps that are applied to
       // matched requests.
@@ -213,7 +214,7 @@ message MeshGatewayRoute {
       // backends are allowed. Otherwise, at least one backend
       // must be given.
       repeated Backend backends = 3;
-    };
+    }
 
     // Hostnames lists the server names for which this route is valid. The
     // hostnames are matched against the TLS Server Name Indication extension
@@ -222,8 +223,8 @@ message MeshGatewayRoute {
     repeated string hostnames = 1;
 
     // Rules specifies how the gateway should match and process HTTP requests.
-    repeated Rule rules = 2 [ (validate.rules).repeated .min_items = 1 ];
-  };
+    repeated Rule rules = 2 [(validate.rules).repeated.min_items = 1];
+  }
 
   message Conf {
     // Each route resource may contain routing table entries for exactly one
@@ -236,12 +237,12 @@ message MeshGatewayRoute {
       // TlsRoute tls = 3;
 
       HttpRoute http = 4;
-    };
-  };
+    }
+  }
 
   // Selectors is used to match this resource to MeshGateway listener.
-  repeated Selector selectors = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector selectors = 1 [(validate.rules).repeated.min_items = 1];
 
   // Conf specifies the route configuration.
-  Conf conf = 2 [ (validate.rules).message.required = true ];
+  Conf conf = 2 [(validate.rules).message.required = true];
 }
