@@ -4,9 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -132,6 +134,14 @@ spec:
 		return r.GetSpec().(*meshtrust_api.MeshTrust), nil
 	}
 
+	isMeshIdentityReady := func(cluster *K8sCluster, name string) (bool, error) {
+		output, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
+		if err != nil {
+			return false, err
+		}
+		return strings.Contains(output, "PartiallyReady") || strings.Contains(output, "Successfully initialized"), nil
+	}
+
 	It("should migrate from mesh.mTLS to MeshIdentity", func() {
 		// given
 		// cross zone traffic works
@@ -194,8 +204,16 @@ spec:
 		hashedName := hash.HashedName(meshName, "only-identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
 
-		// wait 5 seconds for MeshIdentity to be reconcile
-		time.Sleep(5 * time.Second)
+		// wait for MeshIdentity to be reconcile
+		Eventually(func(g Gomega) {
+			isReady, err := isMeshIdentityReady(multizone.KubeZone1, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
+
+			isReady, err = isMeshIdentityReady(multizone.KubeZone2, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
+		}, "30s", "1s").Should(Succeed())
 
 		// create identity without selecting any Dataplane to create builtin certificates
 		yaml := fmt.Sprintf(`
@@ -224,8 +242,16 @@ spec:
 		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
 
-		// wait 5 seconds for MeshIdentity to be reconcile
-		time.Sleep(5 * time.Second)
+		// wait for MeshIdentity to be reconcile
+		Eventually(func(g Gomega) {
+			isReady, err := isMeshIdentityReady(multizone.KubeZone1, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
+
+			isReady, err = isMeshIdentityReady(multizone.KubeZone2, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// when
 		// added Trust from zone 1 to zone 2
@@ -263,10 +289,14 @@ spec:
 			var err error
 			trust2, err = getMeshTrust(multizone.KubeZone2.Name())
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		Expect(NewClusterSetup().
 			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), utils.Indent(trust2.CABundles[0].PEM.Value, 10), trust2.TrustDomain))).
 			Setup(multizone.KubeZone1)).To(Succeed())
+
+		Expect(NewClusterSetup().
+			Install(YamlUniversal(trustForLegacyMTLS())).
+			Setup(multizone.Global)).To(Succeed())
 
 		// and
 		// select all dataplanes
@@ -297,12 +327,16 @@ spec:
 		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
 
-		// wait 5 seconds for MeshIdentity to be reconcile
-		time.Sleep(5 * time.Second)
+		// wait for MeshIdentity to be reconcile
+		Eventually(func(g Gomega) {
+			isReady, err := isMeshIdentityReady(multizone.KubeZone1, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
 
-		Expect(NewClusterSetup().
-			Install(YamlUniversal(trustForLegacyMTLS())).
-			Setup(multizone.Global)).To(Succeed())
+			isReady, err = isMeshIdentityReady(multizone.KubeZone2, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// and disable tls on Mesh
 		Expect(NewClusterSetup().

@@ -18,7 +18,7 @@ var _ = Describe("MeshIdentity Helper", func() {
 	DescribeTable("Matched",
 		func(given testCase) {
 			// when
-			identity, found := meshidentity_api.Matched(given.labels, given.meshIdentities)
+			identity, found := meshidentity_api.BestMatched(given.labels, given.meshIdentities)
 
 			// then
 			if found {

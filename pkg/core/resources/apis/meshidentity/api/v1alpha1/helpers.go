@@ -20,7 +20,7 @@ const (
 	defaultPathTemplate        = "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
 )
 
-// we want all matching MeshIdentities that are Ready or in SpiffeIDProvider mode
+// AllMatched returns a list of MeshIdentity policies that match the given labels and are initialized or in SpiffeIDProviderMode.
 func AllMatched(
 	labels map[string]string,
 	meshIdentities []*MeshIdentityResource,
@@ -30,7 +30,8 @@ func AllMatched(
 		if mi.Spec.Selector == nil || mi.Spec.Selector.Dataplane == nil || !mi.Spec.Selector.Dataplane.Matches(labels) {
 			continue
 		}
-		if mi.Status.IsInitialized() || mi.Status.IsSpiffeIDProviderMode() {
+
+		if mi.Status != nil && (mi.Status.IsInitialized() || mi.Status.IsPartiallyReady()) {
 			matches = append(matches, mi)
 		}
 	}
@@ -38,7 +39,10 @@ func AllMatched(
 	return matches
 }
 
-func Matched(
+// BestMatched returns the most specific MeshIdentity policy that matches the given labels.
+// If multiple policies have the same specificity, the one with the greatest number of matching labels is selected first,
+// and if still tied, the policy with the lexicographically smallest name is chosen.
+func BestMatched(
 	labels map[string]string,
 	meshIdentities []*MeshIdentityResource,
 ) (*MeshIdentityResource, bool) {
@@ -50,11 +54,7 @@ func Matched(
 
 	var matches []scoredMatch
 
-	for _, mi := range meshIdentities {
-		if mi.Spec.Selector == nil || mi.Spec.Selector.Dataplane == nil || !mi.Spec.Selector.Dataplane.Matches(labels) {
-			continue
-		}
-
+	for _, mi := range AllMatched(labels, meshIdentities) {
 		matchCount := len(pointer.Deref(mi.Spec.Selector.Dataplane.MatchLabels))
 		matches = append(matches, scoredMatch{
 			matchCount: matchCount,
@@ -159,7 +159,7 @@ func (s *MeshIdentityStatus) IsInitialized() bool {
 	return false
 }
 
-func (s *MeshIdentityStatus) IsSpiffeIDProviderMode() bool {
+func (s *MeshIdentityStatus) IsPartiallyReady() bool {
 	for _, condition := range s.Conditions {
 		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionFalse && condition.Reason == "PartiallyReady" {
 			return true

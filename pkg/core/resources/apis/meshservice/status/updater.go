@@ -248,7 +248,7 @@ func (s *StatusUpdater) buildTLS(
 				issuedBackends++
 			}
 		}
-		if identity, matches := meshidentity_api.Matched(dpp.Meta.GetLabels(), meshIdentities); matches {
+		if identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities); matches {
 			if identity.Status.IsInitialized() {
 				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
 				if err != nil {
