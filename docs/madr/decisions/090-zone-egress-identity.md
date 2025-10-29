@@ -103,6 +103,19 @@ If the default `Mesh` is not explicitly defined by the user to point to the `Mes
 
 If the default `Mesh` is not explicitly defined by the user to point to the `Mesh` with `MeshIdentity`, the control plane will use the `Mesh` that relies on mutual TLS.
 
+#### Validation Context
+
+Dataplanes that communicate with `ZoneEgress` need to set a validation context referencing a secret that contains the CA used to validate the `Egress` identity.
+Since we already have a secret named `system_trust_bundle` for validating traffic between services, we need to introduce a new secret specifically for Egress identity validation.
+
+Proposed name
+`system_trust_bundle_egress`
+
+In the case of Egress, we need to provide one of the following:
+
+* Aggregated MeshTrust from all Meshes: `system_trust_bundle`
+* Aggregated MeshTrust from a specific Mesh: `system_trust_bundle_<mesh>`
+
 #### Pros
 
 * No need to add support for targeting ZoneEgress
@@ -113,3 +126,17 @@ If the default `Mesh` is not explicitly defined by the user to point to the `Mes
 * Not intuitive and difficult to understand
 * Requires some manual user configuration
 * It’s not obvious which identity provider to use when multiple meshes and MeshIdentity resources exist
+* Might be tricky from the validation context configuration as it requires specific MeshTrust which might be independent from MeshIdentity
+
+
+Example:
+
+ZoneEgress Identity of Mesh default from MeshIdentity
+
+ZoneEgress 
+- validationContext - has either all MeshTrust from all Meshes, or all MeshTrust from only specific Mesh (other option to get only specific MeshTrust)
+- getting only specific is a bit more complicated and requires using separate secret for each mesh, as we use now `system_trust_bundle` we would need something more that distinguish it for each mesh
+
+Application that communicate with ZoneEgress:
+- validationContext - has either all MeshTrust from all Meshes, or all MeshTrust from only specific Mesh (other option to get only specific MeshTrust)
+- also, validation context is based on MeshTrust, and I don't want to do some special implementation where I take a CA from MeshIdentity used for Egress identity and publish it as a validation context of Egress for each cluster
