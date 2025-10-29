@@ -31,7 +31,7 @@ on:
       IMAGE_DIGESTS:
         value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
-  contents: read
+  contents: write # needed to upload SBOM assets to GitHub releases
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
     permissions:
       id-token: write # Required for image signing
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
     timeout-minutes: 30
     strategy:
       fail-fast: false
