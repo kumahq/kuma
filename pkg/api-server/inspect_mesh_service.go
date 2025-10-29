@@ -2,11 +2,11 @@ package api_server
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/openapi/types"
