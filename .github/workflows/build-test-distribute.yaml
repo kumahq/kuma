@@ -10,14 +10,14 @@ concurrency:
   group: ${{github.workflow}}-${{ github.ref_name }} # group all runs by branch or tag
   cancel-in-progress: ${{ github.event_name == 'pull_request' }} # only cancel previous runs on PRs, we want each commit to build on branches
 permissions:
-  contents: read
+  contents: write # needed to upload SBOM assets to GitHub releases
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
 jobs:
   check:
     permissions:
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
     timeout-minutes: 25
     runs-on: ubuntu-24.04
@@ -82,7 +82,7 @@ jobs:
     secrets: inherit
   build_publish:
     permissions:
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
       id-token: write # Required for image signing
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
