@@ -44,6 +44,7 @@ Since integrating Kuma with SPIRE requires a federation API, we might need to po
 ## Options Considered
 
 1. Use the `MeshIdentity` of the default `Mesh` to provide identity for the `ZoneEgress`.
+2. `ZoneEgress` as a `Mesh`-scoped resource
 
 ### Use the `MeshIdentity` of the default `Mesh` to provide identity for the `ZoneEgress`.
 
@@ -128,15 +129,10 @@ In the case of Egress, we need to provide one of the following:
 * It’s not obvious which identity provider to use when multiple meshes and MeshIdentity resources exist
 * Might be tricky from the validation context configuration as it requires specific MeshTrust which might be independent from MeshIdentity
 
+### ZoneEgress as a Mesh-scoped resource
 
-Example:
+Another option is to make the `ZoneEgress` resource Mesh-scoped. In this case, users could deploy a `ZoneEgress` for a specific `Mesh` by labeling it with the `kuma.io/mesh` label. This would be a completely new feature, as it would require a dedicated design and should be covered separately.
 
-ZoneEgress Identity of Mesh default from MeshIdentity
-
-ZoneEgress 
-- validationContext - has either all MeshTrust from all Meshes, or all MeshTrust from only specific Mesh (other option to get only specific MeshTrust)
-- getting only specific is a bit more complicated and requires using separate secret for each mesh, as we use now `system_trust_bundle` we would need something more that distinguish it for each mesh
-
-Application that communicate with ZoneEgress:
-- validationContext - has either all MeshTrust from all Meshes, or all MeshTrust from only specific Mesh (other option to get only specific MeshTrust)
-- also, validation context is based on MeshTrust, and I don't want to do some special implementation where I take a CA from MeshIdentity used for Egress identity and publish it as a validation context of Egress for each cluster
+Making ZoneEgress Mesh-scoped could simplify several use cases, such as:
+* Targeting `ZoneEgress` instances with policies
+* Determining which identity should be applied to a `ZoneEgress`
