@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       id-token: write # Required for image signing
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
     timeout-minutes: 30
     strategy:
       fail-fast: false
