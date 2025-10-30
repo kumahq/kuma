@@ -1,59 +1,28 @@
 package client
 
 import (
+	"context"
 	std_errors "errors"
+	"fmt"
 	"io"
 	"time"
 
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
 )
 
-type UpstreamResponse struct {
-	ControlPlaneId      string
-	Type                core_model.ResourceType
-	AddedResources      core_model.ResourceList
-	InvalidResourcesKey []core_model.ResourceKey
-	RemovedResourcesKey []core_model.ResourceKey
-	IsInitialRequest    bool
-}
-
-func (u *UpstreamResponse) Validate() error {
-	if u.AddedResources == nil {
-		return nil
-	}
-	var err error
-	for _, res := range u.AddedResources.GetItems() {
-		if validationErr := core_model.Validate(res); validationErr != nil {
-			err = std_errors.Join(err, validationErr)
-			u.InvalidResourcesKey = append(u.InvalidResourcesKey, core_model.MetaToResourceKey(res.GetMeta()))
-		}
-	}
-	return err
-}
-
-type Callbacks struct {
-	OnResourcesReceived func(upstream UpstreamResponse) (error, error)
-}
-
-// All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
-type DeltaKDSStream interface {
-	DeltaDiscoveryRequest(resourceType core_model.ResourceType) error
-	Receive() (UpstreamResponse, error)
-	ACK(resourceType core_model.ResourceType) error
-	NACK(resourceType core_model.ResourceType, err error) error
-}
-
 type KDSSyncClient interface {
-	Receive() error
+	Receive(ctx context.Context, group *errgroup.Group) error
 }
 
 type kdsSyncClient struct {
 	log             logr.Logger
 	resourceTypes   []core_model.ResourceType
-	callbacks       *Callbacks
+	callbacks       *kds_util.Callbacks
 	kdsStream       DeltaKDSStream
 	responseBackoff time.Duration
 }
@@ -62,7 +31,7 @@ func NewKDSSyncClient(
 	log logr.Logger,
 	rt []core_model.ResourceType,
 	kdsStream DeltaKDSStream,
-	cb *Callbacks,
+	cb *kds_util.Callbacks,
 	responseBackoff time.Duration,
 ) KDSSyncClient {
 	return &kdsSyncClient{
@@ -74,71 +43,134 @@ func NewKDSSyncClient(
 	}
 }
 
-func (s *kdsSyncClient) Receive() error {
-	for _, typ := range s.resourceTypes {
-		s.log.V(1).Info("sending DeltaDiscoveryRequest", "type", typ)
-		if err := s.kdsStream.DeltaDiscoveryRequest(typ); err != nil {
-			return errors.Wrap(err, "discovering failed")
-		}
+func (s *kdsSyncClient) Receive(ctx context.Context, group *errgroup.Group) error {
+	type wrappedReq struct {
+		deltaReq *envoy_sd.DeltaDiscoveryRequest
+		cbFunc   func()
 	}
 
-	for {
-		received, err := s.kdsStream.Receive()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return errors.Wrap(err, "failed to receive a discovery response")
-		}
-		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
-		validationErrors := received.Validate()
+	// the buffer size 2 is to avoid channel blocking.
+	// there's a case where receiver goroutine is finished but senders are still trying to send requests to the channel
+	wrappedReqCh := make(chan wrappedReq, 2)
 
-		if s.callbacks == nil {
-			if validationErrors != nil {
-				s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
-				if err := s.kdsStream.NACK(received.Type, validationErrors); err != nil {
-					if err == io.EOF {
+	group.Go(func() error {
+		for _, typ := range s.resourceTypes {
+			req := wrappedReq{
+				deltaReq: s.kdsStream.BuildDeltaSubScribeRequest(typ),
+				cbFunc:   nil,
+			}
+
+			select {
+			case <-ctx.Done():
+				s.log.V(1).Info("stopping sending initial DeltaDiscoveryRequest signals")
+				return nil
+			case wrappedReqCh <- req:
+				s.log.V(1).Info("sending DeltaDiscoveryRequest signal", "type", typ)
+			}
+		}
+		return nil
+	})
+
+	group.Go(func() error {
+		s.log.V(1).Info("start to send messages through grpc stream")
+		for {
+			select {
+			case <-ctx.Done():
+				s.log.V(1).Info("stopping sending grpc messages")
+				return nil
+			case req := <-wrappedReqCh:
+				err := s.kdsStream.SendMsg(req.deltaReq)
+				if err != nil {
+					if std_errors.Is(err, io.EOF) {
+						s.log.V(1).Info("stream ended")
 						return nil
 					}
-					return errors.Wrap(err, "failed to NACK a discovery response")
+					return fmt.Errorf("failed to send request: %w", err)
 				}
-				continue
-			}
-			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
-			if err := s.kdsStream.ACK(received.Type); err != nil {
-				if err == io.EOF {
-					return nil
+
+				if req.cbFunc != nil {
+					req.cbFunc()
 				}
-				return errors.Wrap(err, "failed to ACK a discovery response")
 			}
-			continue
 		}
-		err, nackError := s.callbacks.OnResourcesReceived(received)
-		if err != nil {
-			return errors.Wrapf(err, "failed to store %s resources", received.Type)
-		}
-		if nackError != nil || validationErrors != nil {
-			combinedErrors := std_errors.Join(nackError, validationErrors)
-			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors)
-			if err := s.kdsStream.NACK(received.Type, combinedErrors); err != nil {
-				if err == io.EOF {
-					return nil
+	})
+
+	group.Go(func() error {
+		s.log.V(1).Info("start to receive messages from grpc stream")
+		for {
+			select {
+			case <-ctx.Done():
+				s.log.V(1).Info("stopping receiving grpc messages")
+			default:
+				received, err := s.kdsStream.Receive()
+				if err != nil {
+					return fmt.Errorf("failed to receive a response: %w", err)
 				}
-				return errors.Wrap(err, "failed to NACK a discovery response")
+
+				s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
+				validationErrors := received.Validate()
+				if validationErrors != nil {
+					s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
+					nackRequest := s.kdsStream.BuildNACKRequest(received.Type, validationErrors)
+					if nackRequest == nil {
+						continue
+					}
+					wrappedReqCh <- wrappedReq{
+						deltaReq: nackRequest,
+						cbFunc: func() {
+							s.kdsStream.MarkInitialRequestDone(received.Type)
+						},
+					}
+					continue
+				}
+
+				if s.callbacks != nil {
+					err, nackError := s.callbacks.OnResourcesReceived(received)
+					if err != nil {
+						return err
+					}
+					if nackError != nil {
+						nackRequest := s.kdsStream.BuildNACKRequest(received.Type, nackError)
+						if nackRequest == nil {
+							continue
+						}
+						wrappedReqCh <- wrappedReq{
+							deltaReq: nackRequest,
+							cbFunc: func() {
+								s.kdsStream.MarkInitialRequestDone(received.Type)
+							},
+						}
+						continue
+					}
+				}
+
+				if !received.IsInitialRequest {
+					// Execute backoff only on subsequent request.
+					// When client first connects, the server sends empty DeltaDiscoveryResponse for every resource type.
+					time.Sleep(s.responseBackoff)
+				}
+
+				s.log.V(1).Info("sending ACK", "type", received.Type)
+				ackRequest := s.kdsStream.BuildACKRequest(received.Type)
+				if ackRequest == nil {
+					continue
+				}
+				wrappedReqCh <- wrappedReq{
+					deltaReq: ackRequest,
+					cbFunc: func() {
+						s.kdsStream.MarkInitialRequestDone(received.Type)
+					},
+				}
 			}
-			continue
 		}
-		if !received.IsInitialRequest {
-			// Execute backoff only on subsequent request.
-			// When client first connects, the server sends empty DeltaDiscoveryResponse for every resource type.
-			time.Sleep(s.responseBackoff)
-		}
-		s.log.V(1).Info("sending ACK", "type", received.Type)
-		if err := s.kdsStream.ACK(received.Type); err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return errors.Wrap(err, "failed to ACK a discovery response")
-		}
+	})
+
+	// group.Wait will call cancel function once all goroutines return,
+	// then the grpc stream would be closed.
+	err := group.Wait()
+	if err != nil && !std_errors.Is(err, io.EOF) {
+		return err
 	}
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	std_errors "errors"
 	"net/url"
 	"os"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -161,7 +163,8 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		return
 	}
 
-	stream, err := kdsClient.GlobalToZoneSync(ctx)
+	group, innerCtx := errgroup.WithContext(ctx)
+	stream, err := kdsClient.GlobalToZoneSync(innerCtx)
 	if err != nil {
 		errorCh <- err
 		return
@@ -186,7 +189,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 	)
 
-	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := syncClient.Receive(innerCtx, group); err != nil && !std_errors.Is(err, context.Canceled) {
 		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
 		return
 	}
