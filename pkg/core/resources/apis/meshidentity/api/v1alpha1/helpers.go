@@ -30,10 +30,7 @@ func AllMatched(
 		if mi.Spec.Selector == nil || mi.Spec.Selector.Dataplane == nil || !mi.Spec.Selector.Dataplane.Matches(labels) {
 			continue
 		}
-
-		if mi.Status != nil && (mi.Status.IsInitialized() || mi.Status.IsPartiallyReady()) {
-			matches = append(matches, mi)
-		}
+		matches = append(matches, mi)
 	}
 
 	return matches

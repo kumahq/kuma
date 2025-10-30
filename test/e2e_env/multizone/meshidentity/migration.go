@@ -348,7 +348,8 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 
 		// then
-		time.Sleep(5 * time.Second) // let the goroutine execute more requests
-		Expect(reqError.Load()).To(BeNil())
+		Consistently(func(g Gomega) {
+			g.Expect(reqError.Load()).To(BeNil())
+		}, "5s", "1s").Should(Succeed())
 	})
 }

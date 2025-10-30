@@ -295,6 +295,9 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 			serviceTagIdentities[service] = struct{}{}
 		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
+			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
+				continue
+			}
 			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
 			if err != nil {
 				s.logger.Error(err, "cannot resolve trust domain")
