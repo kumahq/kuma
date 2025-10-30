@@ -82,7 +82,7 @@ func Migration() {
 	// identity-c2v4v6874cx8x6c8-w54dw4d47449z9z8
 
 	getMeshTrust := func(zone string) (*meshtrust_api.MeshTrust, error) {
-		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), zone, Config.KumaNamespace), "-ojson")
+		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity-migration"), zone, Config.KumaNamespace), "-ojson")
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func Migration() {
 		// create identity without selecting any Dataplane to create builtin certificates
 		yaml := fmt.Sprintf(`
 type: MeshIdentity
-name: identity
+name: identity-migration
 mesh: %s
 spec:
   selector: {}
@@ -136,7 +136,7 @@ spec:
 			Install(YamlUniversal(yaml)).
 			Setup(multizone.Global)).To(Succeed())
 
-		hashedName := hash.HashedName(meshName, "identity")
+		hashedName := hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
 
 		// when
@@ -145,7 +145,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrust
 metadata:
-  name: identity-trust-%s
+  name: identity-migration-trust-%s
   namespace: kuma-system
   labels:
     kuma.io/mesh: %s
@@ -184,7 +184,7 @@ spec:
 		// select all dataplanes
 		yaml = fmt.Sprintf(`
 type: MeshIdentity
-name: identity
+name: identity-migration
 mesh: %s
 spec:
   selector:
@@ -206,7 +206,7 @@ spec:
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(yaml)).
 			Setup(multizone.Global)).To(Succeed())
-		hashedName = hash.HashedName(meshName, "identity")
+		hashedName = hash.HashedName(meshName, "identity-migration")
 		Expect(WaitForResource(meshidentity_api.MeshIdentityResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace)}, multizone.KubeZone1, multizone.KubeZone2)).To(Succeed())
 
 		// and disable tls on Mesh
