@@ -31,7 +31,6 @@
 - edition: kuma
   version: 2.7.19
   release: 2.7.x
-  latest: true
   releaseDate: "2024-04-19"
   endOfLifeDate: "2026-04-19"
   branch: release-2.7
@@ -63,6 +62,7 @@
 - edition: kuma
   version: 2.12.3
   release: 2.12.x
+  latest: true
   releaseDate: "2025-09-09"
   endOfLifeDate: "2026-09-09"
   branch: release-2.12
