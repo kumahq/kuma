@@ -1,0 +1,27 @@
+connectTimeout: 5s
+edsClusterConfig:
+  edsConfig:
+    ads: {}
+    resourceApiVersion: V3
+name: testCluster
+transportSocket:
+  name: envoy.transport_sockets.tls
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+    commonTlsContext:
+      alpnProtocols:
+      - kuma
+      combinedValidationContext:
+        defaultValidationContext: {}
+        validationContextSdsSecretConfig:
+          name: system_trust_bundle
+          sdsConfig:
+            ads: {}
+            resourceApiVersion: V3
+      tlsCertificateSdsSecretConfigs:
+      - name: identity_cert:secret:default
+        sdsConfig:
+          ads: {}
+          resourceApiVersion: V3
+    sni: backend{mesh=default,version=v1}
+type: EDS

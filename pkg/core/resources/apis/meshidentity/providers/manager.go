@@ -30,7 +30,7 @@ func NewIdentityProviderManager(providers IdentityProviders, eventWriter events.
 }
 
 func (i *IdentityProviderManager) SelectedIdentity(dataplane *core_mesh.DataplaneResource, identities []*meshidentity_api.MeshIdentityResource) *meshidentity_api.MeshIdentityResource {
-	identity, _ := meshidentity_api.Matched(dataplane.Meta.GetLabels(), identities)
+	identity, _ := meshidentity_api.BestMatched(dataplane.Meta.GetLabels(), identities)
 	return identity
 }
 

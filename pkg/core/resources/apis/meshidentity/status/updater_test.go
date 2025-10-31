@@ -291,4 +291,37 @@ var _ = Describe("Updater", func() {
 		Expect(resManager.Get(context.Background(), trust, store.GetByKey("identity", "default"))).To(Succeed())
 		Expect(trust.Spec.CABundles).To(HaveLen(2))
 	})
+
+	It("should successfully reconcile mesh identity when no provider defined", func() {
+		// when
+		Expect(
+			samples.MeshDefaultBuilder().
+				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+				Create(resManager),
+		).To(Succeed())
+
+		identity := builders.MeshIdentity().Build()
+		Expect(resManager.Create(context.Background(), identity, store.CreateBy(model.MetaToResourceKey(identity.GetMeta())))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			mid := meshidentity_api.NewMeshIdentityResource()
+			err := resManager.Get(context.Background(), mid, store.GetBy(model.MetaToResourceKey(identity.GetMeta())))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(mid.Status.Conditions).To(ContainElements(
+				common_api.Condition{
+					Type:    meshidentity_api.SpiffeIDProviderConditionType,
+					Status:  kube_meta.ConditionTrue,
+					Reason:  "SpiffeIDProvided",
+					Message: "Providing only SpiffeIDs for services.",
+				},
+				common_api.Condition{
+					Type:    meshidentity_api.ReadyConditionType,
+					Status:  kube_meta.ConditionFalse,
+					Reason:  "PartiallyReady",
+					Message: "Running in SpiffeID providing only mode.",
+				},
+			))
+		}, "10s", "100ms").Should(Succeed())
+	})
 })
