@@ -26,10 +26,12 @@ var _ = E2EBeforeSuite(func() {
 	// Adding the same repo multiple times is idempotent. The
 	// `--force-update` flag prevents helm emitting an error
 	// in this case.
-	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts,
-		"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().To(BeNil())
+	_, err := helm.RunHelmCommandAndGetOutputE(t, &opts,
+		"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)
+	Expect(err).ToNot(HaveOccurred())
 
-	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().To(BeNil())
+	_, err = helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")
+	Expect(err).ToNot(HaveOccurred())
 })
 
 func CpCompatibilityMultizoneKubernetes() {
