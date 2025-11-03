@@ -21,6 +21,8 @@ for i in "${OSV_SCANNER_ADDITIONAL_OPTS[@]}"; do
    OSV_FLAGS+=("${i}")
 done
 
+GO_VERSION_UPDATED=false
+
 for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
   name: $vulnerablePackage,
   current: .package.version,
@@ -36,10 +38,17 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
 
     if [[ "$package" == "stdlib" ]]; then
       go mod edit -go="$fixVersion"
+      GO_VERSION_UPDATED=true
     else
       go get "$package"@v"$fixVersion"
     fi
   fi
 done
 
-go mod tidy
+# Use GOTOOLCHAIN=auto when running `go mod tidy` to allow downloading
+# newer Go versions if `go.mod` was updated to require a newer version
+if [ "$GO_VERSION_UPDATED" = true ]; then
+  GOTOOLCHAIN=auto go mod tidy
+else
+  go mod tidy
+fi
