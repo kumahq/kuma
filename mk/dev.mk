@@ -32,7 +32,7 @@ K8S_MAX_VERSION = v1.31.1-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.31
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-export GOLANGCI_LINT_VERSION=v1.60.3
+export GOLANGCI_LINT_VERSION=v$(shell grep 'golangci-lint' mise.toml | sed 's/.*= *"\(.*\)".*/\1/')
 
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
