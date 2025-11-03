@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -Eeuo pipefail
 
 command -v osv-scanner >/dev/null 2>&1 || { echo >&2 "osv-scanner not installed!"; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo >&2 "jq not installed!"; exit 1; }
@@ -21,8 +21,6 @@ for i in "${OSV_SCANNER_ADDITIONAL_OPTS[@]}"; do
    OSV_FLAGS+=("${i}")
 done
 
-GO_VERSION_UPDATED=false
-
 for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
   name: $vulnerablePackage,
   current: .package.version,
@@ -38,7 +36,6 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
 
     if [[ "$package" == "stdlib" ]]; then
       go mod edit -go="$fixVersion"
-      GO_VERSION_UPDATED=true
     else
       # Always use GOTOOLCHAIN=auto to allow downloading newer Go toolchain
       # when updating dependencies that require it (e.g., helm requiring Go 1.24+)
@@ -47,10 +44,7 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
   fi
 done
 
-# Use GOTOOLCHAIN=auto when running `go mod tidy` to allow downloading
+# Always use GOTOOLCHAIN=auto when running `go mod tidy` to allow downloading
 # newer Go versions if `go.mod` was updated to require a newer version
-if [ "$GO_VERSION_UPDATED" = true ]; then
-  GOTOOLCHAIN=auto go mod tidy
-else
-  go mod tidy
-fi
+# (either explicitly via go mod edit or implicitly via go get)
+GOTOOLCHAIN=auto go mod tidy
