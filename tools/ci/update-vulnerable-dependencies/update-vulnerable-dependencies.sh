@@ -40,7 +40,13 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
       go mod edit -go="$fixVersion"
       GO_VERSION_UPDATED=true
     else
-      go get "$package"@v"$fixVersion"
+      # Use GOTOOLCHAIN=auto if Go version was updated to allow downloading
+      # newer Go toolchain when updating dependencies that require it
+      if [ "$GO_VERSION_UPDATED" = true ]; then
+        GOTOOLCHAIN=auto go get "$package"@v"$fixVersion"
+      else
+        go get "$package"@v"$fixVersion"
+      fi
     fi
   fi
 done
