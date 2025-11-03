@@ -197,6 +197,16 @@
   Port: 9091
   Protocol: tcp
   Routes: []
+  Value: 192.168.2.1/30
+- MatchType: 3
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.1.1/30
+- MatchType: 3
+  Port: 9091
+  Protocol: tcp
+  Routes: []
   Value: 192.168.0.1/30
 - MatchType: 3
   Port: 9091
@@ -207,6 +217,16 @@
   Port: 9001
   Protocol: tcp
   Routes: []
+  Value: 192.168.2.1/30
+- MatchType: 3
+  Port: 9001
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.1.1/30
+- MatchType: 3
+  Port: 9001
+  Protocol: tcp
+  Routes: []
   Value: 192.168.0.1/30
 - MatchType: 3
   Port: 9001
@@ -217,6 +237,16 @@
   Port: 9000
   Protocol: tcp
   Routes: []
+  Value: 192.168.2.1/30
+- MatchType: 3
+  Port: 9000
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.1.1/30
+- MatchType: 3
+  Port: 9000
+  Protocol: tcp
+  Routes: []
   Value: 192.168.0.1/30
 - MatchType: 3
   Port: 9000
@@ -227,6 +257,16 @@
   Port: 8080
   Protocol: tcp
   Routes: []
+  Value: 192.168.2.1/30
+- MatchType: 3
+  Port: 8080
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.1.1/30
+- MatchType: 3
+  Port: 8080
+  Protocol: tcp
+  Routes: []
   Value: 192.168.0.1/30
 - MatchType: 3
   Port: 8080
@@ -237,12 +277,32 @@
   Port: 443
   Protocol: tcp
   Routes: []
+  Value: 192.168.2.1/30
+- MatchType: 3
+  Port: 443
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.1.1/30
+- MatchType: 3
+  Port: 443
+  Protocol: tcp
+  Routes: []
   Value: 192.168.0.1/30
 - MatchType: 3
   Port: 443
   Protocol: tcp
   Routes: []
   Value: 192.168.0.1/24
+- MatchType: 3
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.2.1/30
+- MatchType: 3
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.1.1/30
 - MatchType: 3
   Port: 0
   Protocol: tcp

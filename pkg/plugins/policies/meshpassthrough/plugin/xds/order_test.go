@@ -123,6 +123,16 @@ var _ = Describe("Match order", func() {
 					},
 					{
 						Type:     api.MatchType("CIDR"),
+						Value:    "192.168.1.1/30",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "192.168.2.1/30",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
 						Value:    "192.168.0.1/30",
 						Protocol: api.ProtocolType("tcp"),
 					},
