@@ -42,7 +42,8 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
     else
       # Always use GOTOOLCHAIN=auto to allow downloading newer Go toolchain
       # when updating dependencies that require it (e.g., helm requiring Go 1.24+)
-      GOTOOLCHAIN=auto go get "$package"@v"$fixVersion"    fi
+      GOTOOLCHAIN=auto go get "$package"@v"$fixVersion"
+    fi
   fi
 done
 
