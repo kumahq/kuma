@@ -19,6 +19,7 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
+<<<<<<< HEAD
       Value: ui
   - BackendRefOriginIndex: {}
     Conf:
@@ -37,6 +38,8 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
+=======
+>>>>>>> 5b46cdfd9 (perf(rules): optimize SubsetIter to enumerate only correct subsets (#14862))
       Value: service-payment
   - BackendRefOriginIndex: {}
     Conf:
@@ -61,6 +64,30 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+<<<<<<< HEAD
+=======
+      kri: kri_mtp_default___default-demo-app-a_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app-a
+      type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___default-demo-app_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: app.kubernetes.io/name
+      Not: false
+      Value: ui
+  - Conf:
+      action: Deny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___default-demo-app_
+>>>>>>> 5b46cdfd9 (perf(rules): optimize SubsetIter to enumerate only correct subsets (#14862))
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: default-demo-app
