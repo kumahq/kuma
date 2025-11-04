@@ -136,3 +136,18 @@ Another option is to make the `ZoneEgress` resource Mesh-scoped. In this case, u
 Making ZoneEgress Mesh-scoped could simplify several use cases, such as:
 * Targeting `ZoneEgress` instances with policies
 * Determining which identity should be applied to a `ZoneEgress`
+
+#### Deployment of ZoneEgress
+
+In this case we couldn't deploy a ZoneEgress as a separate resource since it's per mesh. On the kubernetes we could have a controller which based on the mesh configuration `zoneEgress` could deploy automatically mesh specific zone egress. On universal it would have to be handled by the user as it's now.
+
+#### Pros
+
+* Easy to understand which identity is used for `ZoneEgress`
+* Policy targeting for `ZoneEgress` would be easier to implement and reason about
+
+#### Cons
+
+* More maintenance for the user, as it requires multiple `ZoneEgress` instances in a multi-mesh environment
+* Requires a new design
+* In a multi-mesh environment with access to `MeshExternalService`, resource utilization increases since we need as many `ZoneEgress` instances as there are `Meshes`
