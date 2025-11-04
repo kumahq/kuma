@@ -6,7 +6,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -23,7 +22,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -40,7 +38,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -57,7 +54,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -74,7 +70,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -91,7 +86,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -108,7 +102,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -125,7 +118,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -142,7 +134,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -159,7 +150,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -176,7 +166,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -193,7 +182,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -210,7 +198,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -227,7 +214,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -244,7 +230,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -261,7 +246,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -278,7 +262,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -295,7 +278,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -312,7 +294,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -329,7 +310,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -346,7 +326,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -363,7 +342,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -380,7 +358,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -397,7 +374,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -414,7 +390,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -431,7 +406,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -448,7 +422,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -465,7 +438,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -482,7 +454,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -499,7 +470,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -516,7 +486,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -533,7 +502,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -550,7 +518,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -567,7 +534,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -584,7 +550,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -601,7 +566,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -618,7 +582,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -635,7 +598,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -652,7 +614,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -669,7 +630,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -686,7 +646,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -703,7 +662,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -720,7 +678,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -737,7 +694,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -754,7 +710,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -771,7 +726,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -788,7 +742,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -805,7 +758,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -822,7 +774,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -839,7 +790,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -856,7 +806,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -873,7 +822,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -890,7 +838,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -907,7 +854,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -924,7 +870,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -941,7 +886,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -958,7 +902,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -975,7 +918,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -992,7 +934,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1009,7 +950,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1026,7 +966,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1043,7 +982,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1060,7 +998,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1077,7 +1014,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1094,7 +1030,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1111,7 +1046,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1128,7 +1062,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1145,7 +1078,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1162,7 +1094,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1179,7 +1110,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1196,7 +1126,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1213,7 +1142,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1230,7 +1158,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1247,7 +1174,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1264,7 +1190,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1281,7 +1206,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1298,7 +1222,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1315,7 +1238,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1332,7 +1254,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1349,7 +1270,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1366,7 +1286,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1383,7 +1302,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1400,7 +1318,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1417,7 +1334,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1434,7 +1350,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1451,7 +1366,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1468,7 +1382,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1485,7 +1398,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1502,7 +1414,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1519,7 +1430,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1536,7 +1446,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1553,7 +1462,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1570,7 +1478,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1587,7 +1494,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1604,7 +1510,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1621,7 +1526,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1638,7 +1542,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1655,7 +1558,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1672,7 +1574,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1689,7 +1590,6 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1706,7 +1606,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1750,7 +1649,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1794,7 +1692,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1838,7 +1735,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1882,7 +1778,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1926,7 +1821,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -1970,7 +1864,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2014,7 +1907,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2058,7 +1950,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2102,7 +1993,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2146,7 +2036,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2190,7 +2079,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2234,7 +2122,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2278,7 +2165,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2322,7 +2208,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2366,7 +2251,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2410,7 +2294,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2454,7 +2337,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2498,7 +2380,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2542,7 +2423,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
@@ -2586,7 +2466,6 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
