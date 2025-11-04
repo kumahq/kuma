@@ -21,26 +21,6 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
-      Value: ui
-  - Conf:
-      action: Deny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___default-demo-app-a_
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app-a
-      type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___default-demo-app_
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: app.kubernetes.io/name
-      Not: false
       Value: service-payment
   - Conf:
       action: Deny
@@ -62,6 +42,26 @@ Rules:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-order
+  - Conf:
+      action: Deny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___default-demo-app-a_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app-a
+      type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___default-demo-app_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: app.kubernetes.io/name
+      Not: false
+      Value: ui
   - Conf:
       action: Deny
     Origin:
