@@ -766,81 +766,79 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 }
 
 type SubsetIter struct {
-	current  []Tag
+	dims     []chooser
+	idx      []int
 	finished bool
 }
 
+type chooser struct {
+	key  string
+	vals []string // unique values for this key in stable order
+}
+
 func NewSubsetIter(tags []Tag) *SubsetIter {
+	seenKey := make(map[string]int)
+	seenVal := make(map[string]map[string]bool)
+	var dims []chooser
+
+	for _, t := range tags {
+		i, ok := seenKey[t.Key]
+		if !ok {
+			i = len(dims)
+			seenKey[t.Key] = i
+			seenVal[t.Key] = make(map[string]bool)
+			dims = append(dims, chooser{key: t.Key})
+		}
+		if !seenVal[t.Key][t.Value] {
+			dims[i].vals = append(dims[i].vals, t.Value)
+			seenVal[t.Key][t.Value] = true
+		}
+	}
+
 	return &SubsetIter{
-		current: tags,
+		dims: dims,
+		idx:  make([]int, len(dims)),
 	}
 }
 
 // Next returns the next subset of the partition. When reaches the end Next returns 'nil'
-func (c *SubsetIter) Next() Subset {
-	if c.finished {
+func (it *SubsetIter) Next() Subset {
+	if it.finished {
 		return nil
 	}
-	for {
-		hasNext := c.next()
-		if !hasNext {
-			c.finished = true
-			return c.simplified()
+
+	for i := 0; i < len(it.idx); i++ {
+		radix := len(it.dims[i].vals) + 1
+		it.idx[i]++
+		if it.idx[i] < radix {
+			return it.currentSubset()
 		}
-		if result := c.simplified(); result != nil {
-			return result
-		}
+		it.idx[i] = 0
 	}
+
+	it.finished = true
+	return it.currentSubset()
 }
 
-func (c *SubsetIter) next() bool {
-	for idx := 0; idx < len(c.current); idx++ {
-		if c.current[idx].Not {
-			c.current[idx].Not = false
+// Build the subset for the current counter state.
+// Rule per key:
+//
+//	idx == len(vals)  -> include all negatives for that key
+//	else              -> include exactly one positive for that key
+func (it *SubsetIter) currentSubset() Subset {
+	out := Subset{}
+	for i, d := range it.dims {
+		ch := it.idx[i]
+		if ch == len(d.vals) {
+			for _, v := range d.vals {
+				out = append(out, Tag{Key: d.key, Value: v, Not: true})
+			}
 		} else {
-			c.current[idx].Not = true
-			return true
+			backIdx := len(d.vals) - ch - 1
+			out = append(out, Tag{Key: d.key, Value: d.vals[backIdx], Not: false})
 		}
 	}
-	return false
-}
-
-// simplified returns copy of c.current and deletes redundant tags, for example:
-//   - env: dev
-//   - env: !prod
-//
-// could be simplified to:
-//   - env: dev
-//
-// If tags are contradicted (same keys have different positive value) then the function
-// returns nil.
-func (c *SubsetIter) simplified() Subset {
-	result := Subset{}
-
-	ssByKey := map[string]Subset{}
-	keyOrder := []string{}
-	for _, t := range c.current {
-		if _, ok := ssByKey[t.Key]; !ok {
-			keyOrder = append(keyOrder, t.Key)
-		}
-		ssByKey[t.Key] = append(ssByKey[t.Key], Tag{Key: t.Key, Value: t.Value, Not: t.Not})
-	}
-
-	for _, key := range keyOrder {
-		ss := ssByKey[key]
-		positive := ss.NumPositive()
-		switch {
-		case positive == 0:
-			result = append(result, ss...)
-		case positive == 1:
-			result = append(result, ss[ss.IndexOfPositive()])
-		case positive >= 2:
-			// contradicted, at least 2 positive values for the same key, i.e 'key1: value1' and 'key1: value2'
-			return nil
-		}
-	}
-
-	return result
+	return out
 }
 
 // Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.

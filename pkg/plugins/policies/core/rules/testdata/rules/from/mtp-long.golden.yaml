@@ -1,17 +1,13 @@
-InboundRules:
-  127.0.0.1:80: []
 Rules:
   127.0.0.1:80:
   - Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -23,12 +19,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -40,12 +34,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -57,12 +49,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -74,12 +64,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -91,12 +79,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -108,12 +94,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -125,12 +109,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -142,12 +124,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -159,12 +139,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -176,12 +154,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -193,12 +169,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -210,12 +184,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -227,12 +199,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -244,12 +214,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -261,12 +229,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -278,12 +244,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -295,12 +259,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -312,12 +274,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -329,12 +289,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -346,12 +304,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -363,12 +319,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -380,12 +334,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -397,12 +349,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -414,12 +364,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -431,12 +379,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -448,12 +394,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -465,12 +409,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -482,12 +424,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -499,12 +439,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -516,12 +454,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -533,12 +469,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -550,12 +484,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -567,12 +499,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -584,12 +514,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -601,12 +529,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -618,12 +544,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -635,12 +559,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -652,12 +574,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -669,12 +589,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -686,12 +604,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -703,12 +619,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -720,12 +634,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -737,12 +649,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -754,12 +664,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -771,12 +679,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -788,12 +694,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -805,12 +709,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -822,12 +724,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -839,12 +739,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -856,12 +754,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -873,12 +769,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -890,12 +784,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -907,12 +799,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -924,12 +814,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -941,12 +829,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -958,12 +844,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -975,12 +859,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -992,12 +874,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1009,12 +889,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1026,12 +904,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1043,12 +919,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1060,12 +934,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1077,12 +949,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1094,12 +964,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1111,12 +979,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1128,12 +994,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1145,12 +1009,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1162,12 +1024,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1179,12 +1039,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1196,12 +1054,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1213,12 +1069,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1230,12 +1084,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1247,12 +1099,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1264,12 +1114,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1281,12 +1129,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1298,12 +1144,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1315,12 +1159,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1332,12 +1174,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1349,12 +1189,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1366,12 +1204,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1383,12 +1219,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1400,12 +1234,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1417,12 +1249,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1434,12 +1264,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1451,12 +1279,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1468,12 +1294,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1485,12 +1309,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1502,12 +1324,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1519,12 +1339,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1536,12 +1354,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1553,12 +1369,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1570,12 +1384,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1587,12 +1399,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1604,12 +1414,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1621,12 +1429,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1638,12 +1444,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1655,12 +1459,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1672,12 +1474,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1689,12 +1489,10 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -1706,12 +1504,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1750,12 +1546,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1794,12 +1588,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1838,12 +1630,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1882,12 +1672,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1926,12 +1714,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1970,12 +1756,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2014,12 +1798,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2058,12 +1840,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2102,12 +1882,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2146,12 +1924,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2190,12 +1966,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2234,12 +2008,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2278,12 +2050,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2322,12 +2092,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2366,12 +2134,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2410,12 +2176,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2454,12 +2218,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2498,12 +2260,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2542,12 +2302,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: false
@@ -2586,12 +2344,10 @@ Rules:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
