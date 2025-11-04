@@ -109,10 +109,6 @@ var _ = Describe("Rules", func() {
 			// then
 			expected := []subsetutils.Subset{
 				{
-					{Key: "zone", Value: "us-east"},
-					{Key: "env", Value: "prod"},
-				},
-				{
 					{Key: "zone", Value: "us-east", Not: true},
 					{Key: "env", Value: "prod"},
 				},
@@ -133,6 +129,10 @@ var _ = Describe("Rules", func() {
 					{Key: "zone", Value: "us-east", Not: true},
 					{Key: "env", Value: "dev", Not: true},
 					{Key: "env", Value: "prod", Not: true},
+				},
+				{
+					{Key: "zone", Value: "us-east"},
+					{Key: "env", Value: "prod"},
 				},
 			}
 			for _, expectedTags := range expected {

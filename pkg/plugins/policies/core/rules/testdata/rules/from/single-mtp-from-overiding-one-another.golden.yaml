@@ -14,6 +14,7 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
+<<<<<<< HEAD
       Value: ui
   - Conf:
       action: Allow
@@ -27,6 +28,8 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
+=======
+>>>>>>> 5b46cdfd9 (perf(rules): optimize SubsetIter to enumerate only correct subsets (#14862))
       Value: service-payment
   - Conf:
       action: Allow
@@ -41,6 +44,20 @@ Rules:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-order
+  - Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___default-demo-app_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: app.kubernetes.io/name
+      Not: false
+      Value: ui
   - Conf:
       action: Deny
     Origin:
