@@ -331,8 +331,9 @@ func (it *SubsetIter) Next() Subset {
 
 // Build the subset for the current counter state.
 // Rule per key:
-//   idx == len(vals)  -> include all negatives for that key
-//   else              -> include exactly one positive for that key
+//
+//	idx == len(vals)  -> include all negatives for that key
+//	else              -> include exactly one positive for that key
 func (it *SubsetIter) currentSubset() Subset {
 	out := Subset{}
 	for i, d := range it.dims {
