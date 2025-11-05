@@ -17,9 +17,6 @@ run-name: >-
 
 on:
   pull_request:
-  push:
-    branches:
-      - 'master'
   workflow_dispatch:
     inputs:
       run_actionlint:
@@ -128,7 +125,7 @@ jobs:
           github_token: ${{ github.token }}
           reporter: github-pr-review
           fail_level: error
-          filter_mode: nofilter
+          filter_mode: diff_context
           yamllint_flags: "-d relaxed .github/workflows"
 
       - uses: reviewdog/action-actionlint@f00ad0691526c10be4021a91b2510f0a769b14d0 # v1.68.0
@@ -137,7 +134,7 @@ jobs:
           github_token: ${{ github.token }}
           reporter: github-pr-review
           fail_level: error
-          filter_mode: nofilter
+          filter_mode: diff_context
 
   shellcheck:
     name: "Validate Shell Scripts"
@@ -155,7 +152,7 @@ jobs:
           github_token: ${{ github.token }}
           reporter: github-pr-review
           fail_level: error
-          filter_mode: nofilter
+          filter_mode: diff_context
           shellcheck_flags: "-P SCRIPTDIR -x"
           pattern: "*.sh"
 
