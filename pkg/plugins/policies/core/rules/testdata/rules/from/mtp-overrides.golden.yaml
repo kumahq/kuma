@@ -19,24 +19,6 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
-      Value: ui
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app
-      type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app-a
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app.kubernetes.io/name
-      Not: false
       Value: service-payment
   - BackendRefOriginIndex: {}
     Conf:
@@ -56,6 +38,24 @@ Rules:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-order
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app
+      type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app-a
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app.kubernetes.io/name
+      Not: false
+      Value: ui
   - BackendRefOriginIndex: {}
     Conf:
       action: Deny
