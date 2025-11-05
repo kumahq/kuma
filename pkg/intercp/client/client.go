@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
 )
 
 type TLSConfig struct {

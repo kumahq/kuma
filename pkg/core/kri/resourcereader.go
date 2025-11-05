@@ -1,6 +1,6 @@
 package kri
 
-import core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+import core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 
 type ResourceReader interface {
 	Get(Identifier) core_model.Resource

@@ -10,12 +10,12 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
 // createorUpdateBuiltinGatewayDataplane manages the dataplane for a pod

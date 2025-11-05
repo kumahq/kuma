@@ -6,15 +6,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	defaults_mesh "github.com/kumahq/kuma/v2/pkg/defaults/mesh"
 )
 
 func NewMeshManager(

@@ -10,9 +10,9 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
+	"github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
 )
 
 var k8sScheme *kube_runtime.Scheme

@@ -1,12 +1,12 @@
 package sync
 
 import (
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/core"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 var xdsServerLog = core.Log.WithName("xds").WithName("server")

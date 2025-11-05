@@ -5,7 +5,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type DownstreamTlsContextConfigurer struct {

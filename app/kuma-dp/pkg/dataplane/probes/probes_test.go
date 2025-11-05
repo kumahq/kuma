@@ -18,10 +18,10 @@ import (
 	"google.golang.org/grpc"
 	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
-	kuma_probes "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	kuma_tls "github.com/kumahq/kuma/pkg/tls"
-	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
+	kuma_probes "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
+	kuma_tls "github.com/kumahq/kuma/v2/pkg/tls"
+	kuma_srv "github.com/kumahq/kuma/v2/pkg/util/http/server"
 )
 
 const podIP = "127.0.0.1"

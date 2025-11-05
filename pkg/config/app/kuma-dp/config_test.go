@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("Config", func() {

@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	common_postgres "github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres"
 )
 
 var _ = Describe("Migrate", func() {

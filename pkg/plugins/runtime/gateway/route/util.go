@@ -3,10 +3,10 @@ package route
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 func InferServiceProtocol(serviceProtocol core_meta.Protocol, routeProtocol core_meta.Protocol) core_meta.Protocol {

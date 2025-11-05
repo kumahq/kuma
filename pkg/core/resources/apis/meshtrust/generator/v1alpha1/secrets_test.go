@@ -7,16 +7,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	generator "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/generator/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	generator "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/generator/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
 
 var _ = Describe("MeshTrust Secret Generator", func() {

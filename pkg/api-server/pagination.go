@@ -6,7 +6,7 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/v2/pkg/api-server/types"
 )
 
 const (

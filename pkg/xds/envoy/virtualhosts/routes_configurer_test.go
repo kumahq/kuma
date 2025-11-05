@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
 )
 
 var _ = Describe("RoutesConfigurer", func() {

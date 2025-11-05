@@ -5,15 +5,15 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/kds/hash"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/kds/hash"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 )
 
 type kriEndpoint struct {

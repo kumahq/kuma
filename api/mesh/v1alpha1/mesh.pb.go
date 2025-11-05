@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
@@ -1522,7 +1522,7 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
 	"zoneEgress\x18\x02 \x01(\bR\n" +
 	"zoneEgress\x12V\n" +
-	"&defaultForbidMeshExternalServiceAccess\x18\x03 \x01(\bR&defaultForbidMeshExternalServiceAccessB*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"&defaultForbidMeshExternalServiceAccess\x18\x03 \x01(\bR&defaultForbidMeshExternalServiceAccessB-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_mesh_proto_rawDescOnce sync.Once

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/net"
+	"github.com/kumahq/kuma/v2/pkg/util/net"
 )
 
 var _ = DescribeTable("ToV6",

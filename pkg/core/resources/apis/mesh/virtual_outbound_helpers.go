@@ -8,7 +8,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 )
 
 func tagKeyOrName(parameter *mesh_proto.VirtualOutbound_Conf_TemplateParameter) string {

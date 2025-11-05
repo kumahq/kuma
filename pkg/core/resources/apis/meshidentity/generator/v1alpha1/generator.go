@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 var _ core_plugins.CoreResourcePlugin = &plugin{}

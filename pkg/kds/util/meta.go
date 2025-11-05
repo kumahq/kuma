@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 // KDS ResourceMeta only contains name and mesh.

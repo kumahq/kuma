@@ -6,12 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
 )
 
 var _ = Describe("Match Destination Policy", func() {

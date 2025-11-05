@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("MeshResource", func() {

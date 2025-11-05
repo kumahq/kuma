@@ -11,7 +11,7 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 	"golang.org/x/tools/go/packages"
 
-	"github.com/kumahq/kuma/tools/ci/api-linter/linter"
+	"github.com/kumahq/kuma/v2/tools/ci/api-linter/linter"
 )
 
 func main() {
@@ -25,10 +25,10 @@ func main() {
 	if err != nil {
 		entries = []os.DirEntry{}
 	}
-	commonPackages := []string{"github.com/kumahq/kuma/api/common/v1alpha1"}
+	commonPackages := []string{"github.com/kumahq/kuma/v2/api/common/v1alpha1"}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			commonPackages = append(commonPackages, "github.com/kumahq/kuma/api/common/v1alpha1/"+entry.Name())
+			commonPackages = append(commonPackages, "github.com/kumahq/kuma/v2/api/common/v1alpha1/"+entry.Name())
 		}
 	}
 

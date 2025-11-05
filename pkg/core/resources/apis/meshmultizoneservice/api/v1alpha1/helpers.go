@@ -3,13 +3,13 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	core_vip "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/vip"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ core_vip.ResourceHoldingVIPs = &MeshMultiZoneServiceResource{}

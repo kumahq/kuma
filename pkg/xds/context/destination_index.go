@@ -3,14 +3,14 @@ package context
 import (
 	"time"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 // DestinationIndex indexes destinations by KRI and labels. It provides optimized access to Kuma destinations. It should

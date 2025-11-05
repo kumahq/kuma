@@ -1,6 +1,6 @@
 package builders
 
-import "github.com/kumahq/kuma/pkg/core/xds"
+import "github.com/kumahq/kuma/v2/pkg/core/xds"
 
 type RoutingBuilder struct {
 	res *xds.Routing

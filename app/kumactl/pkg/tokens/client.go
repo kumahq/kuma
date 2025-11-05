@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/pkg/tokens"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/server/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 func NewDataplaneTokenClient(client util_http.Client) DataplaneTokenClient {

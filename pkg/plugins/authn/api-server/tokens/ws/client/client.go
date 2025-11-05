@@ -3,9 +3,9 @@ package client
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
-	"github.com/kumahq/kuma/pkg/tokens"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws"
+	"github.com/kumahq/kuma/v2/pkg/tokens"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type UserTokenClient interface {

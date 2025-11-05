@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
 type MockServerStream struct {

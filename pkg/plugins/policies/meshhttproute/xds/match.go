@@ -4,7 +4,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
 func regexMatcher(regex string) *envoy_type_matcher.RegexMatcher {

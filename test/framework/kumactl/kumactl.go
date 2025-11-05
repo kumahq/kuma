@@ -13,8 +13,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 )
 
 type KumactlOptions struct {

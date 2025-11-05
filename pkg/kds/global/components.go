@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	"github.com/kumahq/kuma/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/pkg/kds/v2/server"
-	kds_sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/kds/mux"
+	"github.com/kumahq/kuma/v2/pkg/kds/service"
+	kds_server "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
+	kds_sync_store "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 type cacheRecord struct {

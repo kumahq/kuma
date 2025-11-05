@@ -3,7 +3,7 @@ package mesh
 import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (d *HealthCheckResource) Validate() error {

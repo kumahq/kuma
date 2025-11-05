@@ -11,7 +11,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 var log = core.Log.WithName("metrics-custom-producer")

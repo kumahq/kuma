@@ -3,19 +3,19 @@ package context
 import (
 	"encoding/base64"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_resources "github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/secrets"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/datasource"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")

@@ -5,7 +5,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func (r *ZoneIngressResource) UsesInboundInterface(address net.IP, port uint32) bool {

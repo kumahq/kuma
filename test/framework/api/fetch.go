@@ -8,10 +8,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 // fetchResourceFromPath performs the HTTP GET and unmarshalling for a given API path.

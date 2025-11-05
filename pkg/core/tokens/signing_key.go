@@ -10,11 +10,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	util_rsa "github.com/kumahq/kuma/v2/pkg/util/rsa"
 )
 
 func NewSigningKey() ([]byte, error) {

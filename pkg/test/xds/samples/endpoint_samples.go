@@ -1,9 +1,9 @@
 package samples
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 )
 
 func HttpEndpointBuilder() *xds_builders.EndpointBuilder {

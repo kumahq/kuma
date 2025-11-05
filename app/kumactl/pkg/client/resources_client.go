@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	api_types "github.com/kumahq/kuma/api/openapi/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type ResourcesListClient interface {

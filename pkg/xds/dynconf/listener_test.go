@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	util_slices "github.com/kumahq/kuma/pkg/util/slices"
-	"github.com/kumahq/kuma/pkg/xds/dynconf"
-	"github.com/kumahq/kuma/pkg/xds/dynconf/metadata"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf/metadata"
 )
 
 var _ = Describe("AddConfigRoute", func() {

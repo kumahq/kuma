@@ -5,13 +5,13 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 func hasSubCommand(cmd *cobra.Command, sub string) bool {

@@ -3,7 +3,7 @@ package dpapi
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
 const PATH = "/meshmetric"

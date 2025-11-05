@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"encoding/pem"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (r *MeshTrustResource) validate() error {

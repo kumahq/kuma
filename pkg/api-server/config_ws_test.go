@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 )
 
 var _ = Describe("Config WS", func() {

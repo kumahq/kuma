@@ -5,9 +5,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints/v3"
 )
 
 type DummyCLACache struct {

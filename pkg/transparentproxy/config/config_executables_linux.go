@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 )
 
 func (c InitializedExecutable) setupSandbox(netns ns.NetNS) error {
