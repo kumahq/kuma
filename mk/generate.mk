@@ -37,12 +37,6 @@ $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
-<<<<<<< HEAD
-=======
-$(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
-	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
-
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
@@ -141,17 +135,3 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	$(GO) list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
-<<<<<<< HEAD
-=======
-
-.PHONY: api-lint/policies
-api-lint/policies:
-	$(GO) run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
-
-.PHONY: api-lint/resources
-api-lint/resources:
-	$(GO) run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(RESOURCES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
-
-.PHONY: api-lint
-api-lint: api-lint/policies api-lint/resources
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))

@@ -27,15 +27,9 @@ jobs:
           fetch-depth: 0
           ref: master
           path: repo
-<<<<<<< HEAD
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
-        with:
-          go-version-file: repo/go.mod
-=======
-      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
         env:
           GITHUB_TOKEN: ${{ github.token }}
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
       - name: "sync docs" # loop over all the branches and generate the docs
         run: |
           cd repo
