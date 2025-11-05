@@ -124,6 +124,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
 
       - uses: reviewdog/action-yamllint@f01d8a48fd8d89f89895499fca2cff09f9e9e8c0 # v1.21.0
         if: needs.setup.outputs.should_run_yamllint == 'true'
@@ -160,6 +161,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
 
       - uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1.32.0
         if: needs.setup.outputs.should_run_shellcheck == 'true'
@@ -185,12 +187,41 @@ jobs:
       - run: |
           if [[ "$WORKFLOWS_JOB_RAN" != "true" && "$SHELLCHECK_JOB_RAN" != "true" ]]; then
             echo "No workflows or scripts to validate - skipping"
+            {
+              echo "## Validation Summary"
+              echo "No workflows or scripts changed - validation skipped"
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
+          {
+            echo "## Validation Summary"
+            echo ""
+            echo "| Job | Status |"
+            echo "|-----|--------|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$WORKFLOWS_JOB_RAN" == "true" ]]; then
+            if [[ "$WORKFLOWS_RESULT" == "success" ]]; then
+              echo "| Workflows | :white_check_mark: Passed |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| Workflows | :x: Failed |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+          if [[ "$SHELLCHECK_JOB_RAN" == "true" ]]; then
+            if [[ "$SHELLCHECK_RESULT" == "success" ]]; then
+              echo "| Shell Scripts | :white_check_mark: Passed |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| Shell Scripts | :x: Failed |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
           if [[ "$WORKFLOWS_RESULT" == "failure" || "$SHELLCHECK_RESULT" == "failure" ]]; then
-            echo "Validation failed"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Validation failed** - please check the job logs for details" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
 
-          echo "Validation passed"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**All validations passed** :tada:" >> "$GITHUB_STEP_SUMMARY"
