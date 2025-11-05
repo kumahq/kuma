@@ -1,10 +1,10 @@
 define LD_FLAGS
 -ldflags="$(if $(filter true,$(DEBUG)),, -s -w) \
--X github.com/kumahq/kuma/pkg/version.version=$(BUILD_INFO_VERSION) \
--X github.com/kumahq/kuma/pkg/version.gitTag=$(GIT_TAG) \
--X github.com/kumahq/kuma/pkg/version.gitCommit=$(GIT_COMMIT) \
--X github.com/kumahq/kuma/pkg/version.buildDate=$(BUILD_DATE) \
--X github.com/kumahq/kuma/pkg/version.Envoy=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION)) \
+-X github.com/kumahq/kuma/v2/pkg/version.version=$(BUILD_INFO_VERSION) \
+-X github.com/kumahq/kuma/v2/pkg/version.gitTag=$(GIT_TAG) \
+-X github.com/kumahq/kuma/v2/pkg/version.gitCommit=$(GIT_COMMIT) \
+-X github.com/kumahq/kuma/v2/pkg/version.buildDate=$(BUILD_DATE) \
+-X github.com/kumahq/kuma/v2/pkg/version.Envoy=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION)) \
 $(EXTRA_LD_FLAGS)"
 endef
 
