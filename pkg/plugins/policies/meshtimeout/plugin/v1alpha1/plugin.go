@@ -111,7 +111,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			return err
 		}
 
-		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
+		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
 			continue
 		}
@@ -262,14 +262,6 @@ func getConf(
 		return computed.Conf.(api.Conf), true
 	}
 	return api.Conf{}, false
-}
-
-func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
-	if servicePort != 0 {
-		return envoy_names.GetLocalClusterName(servicePort)
-	} else {
-		return envoy_names.GetLocalClusterName(listenerPort)
-	}
 }
 
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
