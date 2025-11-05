@@ -275,7 +275,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -304,7 +304,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetLocalClusterName(builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -331,7 +331,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -362,7 +362,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -395,7 +395,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
