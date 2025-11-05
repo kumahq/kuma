@@ -255,28 +255,11 @@ func getConf(
 	return api.Conf{}, false
 }
 
-<<<<<<< HEAD
-func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
-	if servicePort != 0 {
-		return envoy_names.GetLocalClusterName(servicePort)
-	} else {
-		return envoy_names.GetLocalClusterName(listenerPort)
-	}
-}
-
 func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext) error {
 	for uri, resType := range rs.IndexByOrigin() {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
 			conf = &outbound.ResourceRule{Conf: []interface{}{api.Conf{}}}
-=======
-func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
-	switch envoyResource := r.Resource.(type) {
-	case *envoy_listener.Listener:
-		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf(), Protocol: r.Protocol}
-		if err := configurer.ConfigureListener(envoyResource); err != nil {
-			return err
->>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 		}
 
 		for typ, resources := range resType {

@@ -292,13 +292,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-<<<<<<< HEAD
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
-=======
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
->>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -326,13 +321,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-<<<<<<< HEAD
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetLocalClusterName(builders.FirstInboundPort)),
-=======
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
->>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -358,13 +348,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-<<<<<<< HEAD
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
-=======
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
->>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -394,13 +379,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-<<<<<<< HEAD
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
-=======
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
->>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -432,13 +412,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
-<<<<<<< HEAD
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
-=======
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
->>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 				},
 			},
 			fromRules: core_rules.FromRules{
