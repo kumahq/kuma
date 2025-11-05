@@ -328,34 +328,3 @@ done
 ```
 
 **After tagging**: Cannot revert (breaks early adopters). Fix forward with patch release.
-
-## Implementation Checklist
-
-### Preparation
-
-- [ ] Approve MADR
-- [ ] Announce migration plan
-- [ ] Kong Mesh Phase 1 merged
-
-### Migration (Per Branch: release-2.12, 2.11, 2.10, 2.7, master)
-
-- [ ] Run migration script
-- [ ] Verify: `make check && make test && make build`
-- [ ] PR with `ci/run-full-matrix`
-- [ ] Merge (coordinate timing)
-
-### Release (Staged)
-
-- [ ] Merge all PRs (same day)
-- [ ] Monitor CI/CD
-- [ ] Tag `release-2.12` first
-- [ ] Tag remaining branches (`release-2.11`, `release-2.10`, `release-2.7`, `master`)
-- [ ] Smoke tests
-- [ ] Update docs, publish migration guide
-- [ ] Create and pin GitHub issue with migration instructions
-- [ ] Announce in release notes and channels
-
-### Post-Release (Both Repositories)
-
-- [ ] Monitor issues
-- [ ] Update downstream projects if needed
