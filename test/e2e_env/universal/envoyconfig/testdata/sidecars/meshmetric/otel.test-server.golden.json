@@ -40,12 +40,12 @@
     {
       "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 170
+      "value": 0
     },
     {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 792
+      "value": 0
     },
     {
       "op": "add",
