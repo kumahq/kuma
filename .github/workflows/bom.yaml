@@ -9,10 +9,17 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
+<<<<<<< HEAD
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
+=======
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+>>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
       - uses: CycloneDX/gh-gomod-generate-sbom@efc74245d6802c8cefd925620515442756c70d8f # v2.0.0
         with:
           version: v1

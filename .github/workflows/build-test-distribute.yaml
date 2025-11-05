@@ -44,11 +44,25 @@ jobs:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0
+<<<<<<< HEAD
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
           cache: false
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+=======
+      - name: Set GOMEMLIMIT dynamically based on available memory
+        id: set-gomemlimit
+        run: |
+          # Get total memory in bytes
+          set -e
+          mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+          mem_total_bytes=$((mem_total_kb * 1024))
+          gomemlimit=$((mem_total_bytes * 8 / 10))
+          echo "GOMEMLIMIT=${gomemlimit}" >> $GITHUB_ENV
+          echo "Setting GOMEMLIMIT to $(numfmt --to=iec $gomemlimit)"
+      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+>>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"

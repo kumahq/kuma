@@ -70,7 +70,7 @@ run/kuma-dp: $(DISTRIBUTION_FOLDER) ## Dev: Run `kuma-dp` locally
 
 .PHONY: run/xds-client
 run/xds-client:
-	go run ./tools/xds-client/... run --dps "${NUM_OF_DATAPLANES}" --services "${NUM_OF_SERVICES}" --xds-server-address "${KUMA_CP_ADDRESS}"
+	$(GO) run ./tools/xds-client/... run --dps "${NUM_OF_DATAPLANES}" --services "${NUM_OF_SERVICES}" --xds-server-address "${KUMA_CP_ADDRESS}"
 
 .PHONY: run/echo-server
 run/echo-server: build/test-server
