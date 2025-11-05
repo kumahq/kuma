@@ -22,7 +22,7 @@ type Selector struct {
 type MeshIdentity struct {
 	Selector *Selector `json:"selector,omitempty"`
 	SpiffeID *SpiffeID `json:"spiffeID,omitempty"`
-	Provider Provider  `json:"provider"`
+	Provider *Provider `json:"provider,omitempty"`
 }
 
 type SpiffeID struct {
@@ -99,10 +99,11 @@ type Spire struct {
 }
 
 const (
-	ReadyConditionType     string = "Ready"
-	ProviderConditionType  string = "Provider"
-	MeshTrustConditionType string = "MeshTrustCreated"
-	DependenciesReadyType  string = "DependenciesReady"
+	ReadyConditionType            string = "Ready"
+	ProviderConditionType         string = "Provider"
+	SpiffeIDProviderConditionType string = "SpiffeIDProvider"
+	MeshTrustConditionType        string = "MeshTrustCreated"
+	DependenciesReadyType         string = "DependenciesReady"
 )
 
 type MeshIdentityStatus struct {

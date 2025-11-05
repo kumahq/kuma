@@ -137,7 +137,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			continue
 		}
 		mids := identityByMesh[mesh.Meta.GetName()]
-		identities := s.buildIdentities(dpps, mids, mesh)
+		identities := s.buildIdentities(dpps, mids)
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
 			ms.Spec.Identities = &identities
@@ -248,7 +248,7 @@ func (s *StatusUpdater) buildTLS(
 				issuedBackends++
 			}
 		}
-		if identity, matches := meshidentity_api.Matched(dpp.Meta.GetLabels(), meshIdentities); matches {
+		if identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities); matches {
 			if identity.Status.IsInitialized() {
 				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
 				if err != nil {
@@ -287,38 +287,37 @@ func (s *StatusUpdater) buildTLS(
 	}
 }
 
-func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource, mesh *core_mesh.MeshResource) []meshservice_api.MeshServiceIdentity {
+func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource) []meshservice_api.MeshServiceIdentity {
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
 		for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
 			serviceTagIdentities[service] = struct{}{}
 		}
-		if identity, matched := meshidentity_api.Matched(dpp.Meta.GetLabels(), meshIdentities); matched {
-			if identity.Status.IsInitialized() {
-				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
-				if err != nil {
-					s.logger.Error(err, "cannot resolve trust domain")
-					continue
-				}
-				spiffeID, err := identity.Spec.GetSpiffeID(td, dpp.GetMeta())
-				if err != nil {
-					s.logger.Error(err, "cannot resolve spiffeID, skip", "dataplane", dpp)
-					continue
-				}
-				spiffeIDs[spiffeID] = struct{}{}
+		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
+			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
+				continue
 			}
+			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+			if err != nil {
+				s.logger.Error(err, "cannot resolve trust domain")
+				continue
+			}
+			spiffeID, err := identity.Spec.GetSpiffeID(td, dpp.GetMeta())
+			if err != nil {
+				s.logger.Error(err, "cannot resolve spiffeID, skip", "dataplane", dpp)
+				continue
+			}
+			spiffeIDs[spiffeID] = struct{}{}
 		}
 	}
 	var identites []meshservice_api.MeshServiceIdentity
 
-	if len(spiffeIDs) == 0 || mesh.MTLSEnabled() {
-		for _, identity := range maps.SortedKeys(serviceTagIdentities) {
-			identites = append(identites, meshservice_api.MeshServiceIdentity{
-				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-				Value: identity,
-			})
-		}
+	for _, identity := range maps.SortedKeys(serviceTagIdentities) {
+		identites = append(identites, meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+			Value: identity,
+		})
 	}
 	for _, identity := range maps.SortedKeys(spiffeIDs) {
 		identites = append(identites, meshservice_api.MeshServiceIdentity{

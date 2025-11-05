@@ -214,8 +214,6 @@ spec:
                   trustDomain:
                     type: string
                 type: object
-            required:
-            - provider
             type: object
           status:
             description: Status is the current status of the Kuma MeshIdentity resource.

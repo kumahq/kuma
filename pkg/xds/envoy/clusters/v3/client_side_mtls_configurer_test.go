@@ -23,6 +23,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		mesh          *core_mesh.MeshResource
 		goldenFile    string
 		unifiedNaming bool
+		useMeshTrust  bool
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -31,7 +32,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			tracker := envoy.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.ClientSideMTLS(tracker, given.unifiedNaming, given.mesh, given.clientService, true, given.tags)).
+				Configure(clusters.ClientSideMTLS(tracker, given.unifiedNaming, given.mesh, given.clientService, true, given.tags, given.useMeshTrust)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 				Build()
 
@@ -145,6 +146,34 @@ var _ = Describe("EdsClusterConfigurer", func() {
 				},
 			},
 			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-mtls-and-credentials.golden.yaml",
+		}),
+		Entry("cluster with meshtrust validation ctx", testCase{
+			clusterName:   "testCluster",
+			clientService: "backend",
+			mesh: &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
+							},
+						},
+					},
+				},
+			},
+			tags: []tags.Tags{
+				{
+					"kuma.io/service": "backend",
+					"version":         "v1",
+				},
+			},
+			goldenFile:   "testdata/client_side_mtls_configurer/cluster-with-meshtrust-validation-ctx.golden.yaml",
+			useMeshTrust: true,
 		}),
 	)
 })

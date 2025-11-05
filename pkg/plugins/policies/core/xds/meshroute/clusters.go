@@ -64,6 +64,7 @@ func GenerateClusters(
 							mesh_proto.ZoneEgressServiceName,
 							true,
 							SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace),
+							false,
 						))
 				case meshCtx.Resource.ZoneEgressEnabled():
 					// path for old ExternalService
@@ -76,6 +77,7 @@ func GenerateClusters(
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
 							clusterTags,
+							false,
 						))
 				default:
 					// path for old ExternalService
@@ -145,7 +147,7 @@ func GenerateClusters(
 							))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 					}
 				}
 			}
@@ -266,7 +268,7 @@ func Identities(
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, serviceTagTransformer(identity.Value))
 			}
-			if includeSpiffeID && identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
 				result = append(result, identity.Value)
 			}
 		}
@@ -289,12 +291,7 @@ func Identities(
 				continue
 			}
 			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-				if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-					identities[identity.Value] = struct{}{}
-				}
-				if includeSpiffeID && identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
-					identities[identity.Value] = struct{}{}
-				}
+				identities[identity.Value] = struct{}{}
 			}
 		}
 		result = util_maps.SortedKeys(identities)

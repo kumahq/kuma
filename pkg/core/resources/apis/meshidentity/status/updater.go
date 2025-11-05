@@ -86,6 +86,11 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 						generationConditionStatus = kube_meta.ConditionFalse
 						reason = "Failure"
 					}
+					if condition.Type == meshidentity_api.SpiffeIDProviderConditionType {
+						message = "Running in SpiffeID providing only mode."
+						generationConditionStatus = kube_meta.ConditionFalse
+						reason = "PartiallyReady"
+					}
 				}
 
 				conditions = append(conditions, common_api.Condition{
@@ -125,6 +130,15 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 			Status:  kube_meta.ConditionFalse,
 			Reason:  "MeshServicesDisabled",
 			Message: "MeshIdentity requires MeshServices to be enabled on the mesh. To enable, set `spec.meshServices.mode: Exclusive` on the mesh.",
+		})
+		return conditions
+	}
+	if mid.Spec.Provider == nil {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.SpiffeIDProviderConditionType,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  "SpiffeIDProvided",
+			Message: "Providing only SpiffeIDs for services.",
 		})
 		return conditions
 	}

@@ -9,7 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -216,7 +216,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, mesh_proto.ZoneEgressServiceName, tlsReady, clusterTags))
+						Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, mesh_proto.ZoneEgressServiceName, tlsReady, clusterTags, len(ctx.Mesh.CAsByTrustDomain) > 0))
 				} else {
 					endpoints := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
@@ -251,7 +251,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 						}
 					}
 				} else {
-					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
+					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, ctx.Mesh.Resource, serviceName, tlsReady, clusterTags, len(ctx.Mesh.CAsByTrustDomain) > 0))
 				}
 			}
 
