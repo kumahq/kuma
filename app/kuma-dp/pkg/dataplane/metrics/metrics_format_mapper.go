@@ -21,8 +21,8 @@ const (
 	kumaOtelScope      = "kuma"
 )
 
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, kumaVersion string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
-	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, kumaVersion string, extraLabels map[string]string, unifiedResourceNamingEnabled bool, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
+	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels, unifiedResourceNamingEnabled)
 
 	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
 	for _, prometheusMetric := range appMetrics {
@@ -183,18 +183,20 @@ func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantil
 	return otelQuantiles
 }
 
-func extraAttributesFrom(mesh string, dataplane string, service string, extraLabels map[string]string) []attribute.KeyValue {
+func extraAttributesFrom(mesh string, dataplane string, service string, attributes map[string]string, unifiedResourceNamingEnabled bool) []attribute.KeyValue {
 	var extraAttributes []attribute.KeyValue
-	if mesh != "" {
-		extraAttributes = append(extraAttributes, attribute.String("mesh", mesh))
+	if !unifiedResourceNamingEnabled {
+		if mesh != "" {
+			extraAttributes = append(extraAttributes, attribute.String("mesh", mesh))
+		}
+		if dataplane != "" {
+			extraAttributes = append(extraAttributes, attribute.String("dataplane", dataplane))
+		}
+		if service != "" {
+			extraAttributes = append(extraAttributes, attribute.String("service", service))
+		}
 	}
-	if dataplane != "" {
-		extraAttributes = append(extraAttributes, attribute.String("dataplane", dataplane))
-	}
-	if service != "" {
-		extraAttributes = append(extraAttributes, attribute.String("service", service))
-	}
-	for k, v := range extraLabels {
+	for k, v := range attributes {
 		extraAttributes = append(extraAttributes, attribute.String(k, v))
 	}
 	return extraAttributes

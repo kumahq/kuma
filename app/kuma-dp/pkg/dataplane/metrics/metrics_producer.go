@@ -26,11 +26,12 @@ type AggregatedProducer struct {
 	AppToScrape               ApplicationToScrape
 	applicationsToScrape      []ApplicationToScrape
 	applicationsToScrapeMutex *sync.Mutex
+	unifiedNamingEnabled      bool
 }
 
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
-func NewAggregatedMetricsProducer(mesh string, dataplane string, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string) *AggregatedProducer {
+func NewAggregatedMetricsProducer(mesh string, dataplane string, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string, unifiedNamingEnabled bool) *AggregatedProducer {
 	return &AggregatedProducer{
 		mesh:                      mesh,
 		dataplane:                 dataplane,
@@ -40,6 +41,7 @@ func NewAggregatedMetricsProducer(mesh string, dataplane string, service string,
 		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape:      applicationsToScrape,
 		applicationsToScrapeMutex: &sync.Mutex{},
+		unifiedNamingEnabled:      unifiedNamingEnabled,
 	}
 }
 
@@ -122,7 +124,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		log.Error(err, "failed to mutate metrics")
 		return nil
 	}
-	return FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, ap.kumaVersion, app.ExtraLabels, requestTime)
+	return FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, ap.kumaVersion, app.ExtraLabels, ap.unifiedNamingEnabled, requestTime)
 }
 
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {

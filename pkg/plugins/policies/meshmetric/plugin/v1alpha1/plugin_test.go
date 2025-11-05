@@ -245,6 +245,65 @@ var _ = Describe("MeshMetric", func() {
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{
+										Mesh: "default",
+										Name: "meshmetric1",
+									},
+								},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: "/metrics",
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("otel_and_prometheus_unified_naming", testCase{
+			context: xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh.MeshResource{
+						Spec: &mesh_proto.Mesh{
+							MeshServices: &mesh_proto.Mesh_MeshServices{
+								Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+							},
+						},
+					},
+				},
+			},
+			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
+				WithDataplane(samples.DataplaneBackendBuilder()).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir: "/tmp",
 					Features: map[string]bool{
