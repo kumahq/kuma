@@ -50,6 +50,12 @@ func getConfig(mesh, dpp string) string {
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
 		return item.Op == api_common.Test
 	}))
+	// Redact value for maxDirectResponseBodySizeBytes in diff items
+	for i := range *response.Diff {
+		if strings.HasSuffix((*response.Diff)[i].Path, "maxDirectResponseBodySizeBytes") {
+			(*response.Diff)[i].Value = 0
+		}
+	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
 		return strings.Compare(a.Path, b.Path)
 	})

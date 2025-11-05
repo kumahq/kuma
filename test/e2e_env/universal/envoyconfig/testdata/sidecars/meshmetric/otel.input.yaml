@@ -1,0 +1,23 @@
+type: MeshMetric
+name: mm-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  default:
+    sidecar:
+      includeUnused: true
+      profiles:
+        appendProfiles:
+          - name: Basic
+        exclude:
+          - type: Regex
+            match: envoy_cluster_external_upstream_rq_.*
+        include:
+          - type: Exact
+            match: envoy_cluster_default_total_match_count
+    backends:
+      - type: OpenTelemetry
+        openTelemetry:
+          endpoint: otel-collector.observability.svc:4317
+          refreshInterval: 60s
