@@ -27,6 +27,13 @@ func GetLocalClusterName(port uint32) string {
 	return Join("localhost", formatPort(port))
 }
 
+func GetInboundClusterName(servicePort uint32, listenerPort uint32) string {
+	if servicePort != 0 {
+		return GetLocalClusterName(servicePort)
+	}
+	return GetLocalClusterName(listenerPort)
+}
+
 func GetPortForLocalClusterName(cluster string) (uint32, error) {
 	parts := strings.Split(cluster, Separator)
 	if len(parts) != 2 {
