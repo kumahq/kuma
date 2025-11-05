@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"strings"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -51,7 +53,16 @@ func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh co
 				validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
 			}
 			for _, identity := range verifyIdentities {
-				stringMatcher := ServiceSpiffeIDMatcher(meshName, identity)
+				var stringMatcher *envoy_type_matcher.StringMatcher
+				if strings.HasPrefix(identity, "spiffe://") {
+					stringMatcher = &envoy_type_matcher.StringMatcher{
+						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+							Exact: identity,
+						},
+					}
+				} else {
+					stringMatcher = ServiceSpiffeIDMatcher(meshName, identity)
+				}
 				matcher := &envoy_tls.SubjectAltNameMatcher{
 					SanType: envoy_tls.SubjectAltNameMatcher_URI,
 					Matcher: stringMatcher,
@@ -84,6 +95,8 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 		),
 	)
 	if useMeshTrust {
+		// spiffe validator has trust domain validation
+		matchers = []*envoy_tls.SubjectAltNameMatcher{}
 		meshCaSecret = NewSecretConfigSource(system_names.SystemResourceNameCABundle)
 	}
 	identitySecret := NewSecretConfigSource(

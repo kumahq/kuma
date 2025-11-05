@@ -78,7 +78,7 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 
 	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, meta.DirectAccessClusterName).
 		Configure(envoy_clusters.PassThroughCluster()).
-		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource)).
+		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource, len(xdsCtx.Mesh.CAsByTrustDomain) > 0)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {

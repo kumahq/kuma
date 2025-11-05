@@ -38,7 +38,8 @@ func (r *identityRequest) MeshName() string {
 var _ = Describe("CreateDownstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 		type testCase struct {
-			expected string
+			useMeshTrust bool
+			expected     string
 		}
 
 		DescribeTable("should generate proper Envoy config",
@@ -66,7 +67,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 					&caRequest{mesh: mesh.GetMeta().GetName()},
 					&identityRequest{mesh: mesh.GetMeta().GetName()},
 					false,
-					false,
+					given.useMeshTrust,
 				)
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -98,6 +99,24 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                       resourceApiVersion: V3
                 requireClientCertificate: true`,
 			}),
+			Entry("use meshtrust`", testCase{
+				useMeshTrust: true,
+				expected: `
+                commonTlsContext:
+                  combinedValidationContext:
+                    defaultValidationContext: {}
+                    validationContextSdsSecretConfig:
+                      name: system_trust_bundle
+                      sdsConfig:
+                        ads: {}
+                        resourceApiVersion: V3
+                  tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert:secret:default
+                    sdsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+                requireClientCertificate: true`,
+			}),
 		)
 	})
 })
@@ -106,6 +125,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 		type testCase struct {
 			upstreamService string
+			useMeshTrust    bool
 			expected        string
 		}
 
@@ -115,7 +135,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, false, false)
+				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, false, given.useMeshTrust)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -139,6 +159,26 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                         sanType: URI
                     validationContextSdsSecretConfig:
                       name: mesh_ca:secret:default
+                      sdsConfig:
+                        ads: {}
+                        resourceApiVersion: V3
+                  tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert:secret:default
+                    sdsConfig:
+                      ads: {}
+                      resourceApiVersion: V3`,
+			}),
+			Entry("use meshtrust`", testCase{
+				upstreamService: "backend",
+				useMeshTrust:    true,
+				expected: `
+                commonTlsContext:
+                  alpnProtocols:
+                  - kuma
+                  combinedValidationContext:
+                    defaultValidationContext: {}
+                    validationContextSdsSecretConfig:
+                      name: system_trust_bundle
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
