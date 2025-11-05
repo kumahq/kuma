@@ -1,4 +1,4 @@
-name: "Validate Workflows & Scripts"
+name: "Workflows & Scripts"
 
 # Customize run name to show selected linters in manual runs (e.g., "Validate: actionlint + yamllint")
 run-name: >-
@@ -122,7 +122,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: reviewdog/action-yamllint@e09f07780388032a624da9eb1d651d35dc84183f # v1.21.0
+      - uses: reviewdog/action-yamllint@f01d8a48fd8d89f89895499fca2cff09f9e9e8c0 # v1.21.0
         if: needs.setup.outputs.should_run_yamllint == 'true'
         with:
           github_token: ${{ github.token }}
@@ -131,7 +131,7 @@ jobs:
           filter_mode: nofilter
           yamllint_flags: "-d relaxed .github/workflows"
 
-      - uses: reviewdog/action-actionlint@4035e04c2b8070329a33d75aa276e5e00277d972 # v1.68.0
+      - uses: reviewdog/action-actionlint@f00ad0691526c10be4021a91b2510f0a769b14d0 # v1.68.0
         if: always() && needs.setup.outputs.should_run_actionlint == 'true'
         with:
           github_token: ${{ github.token }}
@@ -149,7 +149,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: reviewdog/action-shellcheck@853366d6a4afe65985b8f9ba43924a4afc0a45c9 # v1.32.0
+      - uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1.32.0
         if: needs.setup.outputs.should_run_shellcheck == 'true'
         with:
           github_token: ${{ github.token }}
