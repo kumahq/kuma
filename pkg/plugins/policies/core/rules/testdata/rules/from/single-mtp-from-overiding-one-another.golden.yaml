@@ -11,18 +11,6 @@ Rules:
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
-      Value: ui
-  - Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app.kubernetes.io/name
-      Not: false
       Value: service-payment
   - Conf:
       action: Allow
@@ -36,6 +24,18 @@ Rules:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-order
+  - Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default-demo-app
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app.kubernetes.io/name
+      Not: false
+      Value: ui
   - Conf:
       action: Deny
     Origin:

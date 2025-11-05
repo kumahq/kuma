@@ -11,7 +11,7 @@ Rules:
     Subset:
     - Key: env
       Not: false
-      Value: prod
+      Value: dev
     - Key: zone
       Not: false
       Value: us-east
@@ -26,7 +26,7 @@ Rules:
     Subset:
     - Key: env
       Not: false
-      Value: dev
+      Value: prod
     - Key: zone
       Not: false
       Value: us-east
