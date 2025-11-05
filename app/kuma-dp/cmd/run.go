@@ -502,13 +502,9 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 	tpEnabled := cfg.DataplaneRuntime.TransparentProxy.Enabled()
 
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
-		cfg.Dataplane.Mesh,
-		cfg.Dataplane.Name,
-		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
 		tpEnabled,
 		kuma_version.Build.Version,
-		cfg.DataplaneRuntime.UnifiedResourceNamingEnabled,
 	)
 	metricsServer := metrics.New(
 		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),

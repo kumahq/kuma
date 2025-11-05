@@ -17,31 +17,23 @@ import (
 var log = core.Log.WithName("metrics-custom-producer")
 
 type AggregatedProducer struct {
-	mesh                      string
-	dataplane                 string
-	service                   string
 	kumaVersion               string
 	httpClientIPv4            http.Client
 	httpClientIPv6            http.Client
 	AppToScrape               ApplicationToScrape
 	applicationsToScrape      []ApplicationToScrape
 	applicationsToScrapeMutex *sync.Mutex
-	unifiedNamingEnabled      bool
 }
 
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
-func NewAggregatedMetricsProducer(mesh string, dataplane string, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string, unifiedNamingEnabled bool) *AggregatedProducer {
+func NewAggregatedMetricsProducer(applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string) *AggregatedProducer {
 	return &AggregatedProducer{
-		mesh:                      mesh,
-		dataplane:                 dataplane,
-		service:                   service,
 		kumaVersion:               kumaVersion,
 		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape:      applicationsToScrape,
 		applicationsToScrapeMutex: &sync.Mutex{},
-		unifiedNamingEnabled:      unifiedNamingEnabled,
 	}
 }
 
