@@ -73,12 +73,16 @@ func applyToInbounds(
 			Port:    iface.DataplanePort,
 		}
 
+<<<<<<< HEAD
 		rules, ok := fromRules.Rules[listenerKey]
 		if !ok {
 			continue
 		}
 
 		cluster, ok := inboundClusters[envoy_names.GetLocalClusterName(iface.DataplanePort)]
+=======
+		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, iface.DataplanePort)]
+>>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 		if !ok {
 			continue
 		}

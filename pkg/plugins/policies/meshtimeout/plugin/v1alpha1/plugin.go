@@ -93,7 +93,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			return err
 		}
 
-		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
+		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
 			continue
 		}
@@ -265,10 +265,58 @@ func getConf(
 	}
 }
 
+<<<<<<< HEAD
 func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
 	if servicePort != 0 {
 		return envoy_names.GetLocalClusterName(servicePort)
 	} else {
 		return envoy_names.GetLocalClusterName(listenerPort)
 	}
+=======
+func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
+	switch envoyResource := r.Resource.(type) {
+	case *envoy_listener.Listener:
+		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf(), Protocol: r.Protocol}
+		if err := configurer.ConfigureListener(envoyResource); err != nil {
+			return err
+		}
+
+		for _, fc := range envoyResource.FilterChains {
+			if err := listeners_v3.UpdateHTTPConnectionManager(fc, func(hcm *envoy_hcm.HttpConnectionManager) error {
+				for _, vh := range hcm.GetRouteConfig().VirtualHosts {
+					for _, route := range vh.Routes {
+						if !kri.IsValid(route.Name) {
+							continue
+						}
+
+						id, err := kri.FromString(route.Name)
+						if err != nil {
+							return err
+						}
+
+						routeCtx := rctx.
+							WithID(kri.NoSectionName(id)).
+							WithID(id)
+
+						plugin_xds.ConfigureRouteAction(
+							route.GetRoute(),
+							pointer.Deref(routeCtx.Conf().Http).RequestTimeout,
+							pointer.Deref(routeCtx.Conf().Http).StreamIdleTimeout,
+						)
+					}
+				}
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+
+	case *envoy_cluster.Cluster:
+		configurer := plugin_xds.ClusterConfigurerFromConf(rctx.Conf(), r.Protocol)
+		if err := configurer.Configure(envoyResource); err != nil {
+			return err
+		}
+	}
+	return nil
+>>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 }

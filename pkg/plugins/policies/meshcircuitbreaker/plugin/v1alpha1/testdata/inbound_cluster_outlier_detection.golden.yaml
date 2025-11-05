@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 name: localhost:80
+=======
+commonLbConfig:
+  healthyPanicThreshold:
+    value: 30.2
+name: localhost:8080
+>>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
 outlierDetection:
   baseEjectionTime: 8s
   consecutive5xx: 12

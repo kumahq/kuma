@@ -5,4 +5,9 @@ circuitBreakers:
     maxPendingRequests: 3333
     maxRequests: 4444
     maxRetries: 5555
+<<<<<<< HEAD
 name: localhost:80
+=======
+    trackRemaining: true
+name: localhost:8080
+>>>>>>> 943c73f5b (fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (#14875))
