@@ -32,18 +32,12 @@ K8S_MAX_VERSION=v1.32.2-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.32
 
-<<<<<<< HEAD
-export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-# renovate: datasource=github-releases depName=golangci/golangci-lint versioning=semver-coerced
-export GOLANGCI_LINT_VERSION=v2.4.0
-GOOS := $(shell go env GOOS)
-GOARCH := $(shell go env GOARCH)
-=======
 GO=$(shell $(MISE) which go)
 export GO_VERSION=$(shell $(GO) mod edit -json | jq -r .Go)
+# renovate: datasource=github-releases depName=golangci/golangci-lint versioning=semver-coerced
+export GOLANGCI_LINT_VERSION=v2.4.0
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution

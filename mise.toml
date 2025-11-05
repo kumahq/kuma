@@ -2,20 +2,11 @@
 experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
-<<<<<<< HEAD
 container-structure-test = "1.19.3"
+go = "1.25.3"
 ginkgo = "2.25.2"
 hadolint = "2.12.1-beta"
 helm = "3.18.6"
-=======
-actionlint = "1.7.6"
-buf = "1.59.0"
-container-structure-test = "1.21.1"
-ginkgo = "2.27.1"
-go = "1.25.3"
-hadolint = "2.14.0"
-helm = "3.19.0"
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
 helm-docs = "1.14.2"
 kind = "0.29.0"
 kubectl = "1.33.4"
