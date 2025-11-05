@@ -22,13 +22,13 @@ GINKGO_TEST=$(GINKGO) $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) --keep-going
 test: build/ebpf | $(REPORTS_DIR) ## Dev: Run tests for all modules. to include reports set `make TEST_REPORTS=1` and `make TEST_REPORTS=coverage` to include coverage. To run only some tests by set `TEST_PKG_LIST=./pkg/...` for example
 ifdef TEST_REPORTS
 	$(UNIT_TEST_ENV) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(if $(findstring coverage,$(TEST_REPORTS)),--cover --covermode atomic --coverpkg ./... --coverprofile coverage.out) $(TEST_PKG_LIST)
-	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' go tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
+	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' $(GO) tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
 endif
 ifndef TEST_REPORTS
 ifdef CI
-	go clean -testcache
+	$(GO) clean -testcache
 endif
-	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
+	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
 endif
 
 $(REPORTS_DIR):
