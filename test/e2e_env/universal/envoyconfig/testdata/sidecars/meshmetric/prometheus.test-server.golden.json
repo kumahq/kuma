@@ -44,7 +44,7 @@
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"instance\":\"1\",\"instances\":\",1,\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"test-server\",\"kuma_io_services\":\",test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"test-server\",\"instance\":\"1\",\"instances\":\",1,\",\"kuma.workload\":\"TODO\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"test-server\",\"kuma_io_services\":\",test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"test-server\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\"}}}}"
           },
           "status": 200
         },
@@ -56,7 +56,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "221f598dbf880957bcf1459dfb7359851df638f18dedb73e80f30235caa66b04"
+              "value": "719ad511384de299167739696c859beac277d4a1896fc4f43fe694306deda344"
             }
           }
         ]
@@ -74,7 +74,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "221f598dbf880957bcf1459dfb7359851df638f18dedb73e80f30235caa66b04"
+                "exact": "719ad511384de299167739696c859beac277d4a1896fc4f43fe694306deda344"
               }
             }
           ],
