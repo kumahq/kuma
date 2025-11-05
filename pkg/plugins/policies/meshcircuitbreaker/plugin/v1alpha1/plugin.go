@@ -92,7 +92,7 @@ func applyToInbounds(
 			Port:    iface.DataplanePort,
 		}
 
-		cluster, ok := inboundClusters[envoy_names.GetLocalClusterName(iface.DataplanePort)]
+		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, iface.DataplanePort)]
 		if !ok {
 			continue
 		}
