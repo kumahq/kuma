@@ -27,9 +27,9 @@ jobs:
           fetch-depth: 0
           ref: master
           path: repo
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version-file: repo/go.mod
+      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: "sync docs" # loop over all the branches and generate the docs
         run: |
           cd repo
