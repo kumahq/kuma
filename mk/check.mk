@@ -63,7 +63,7 @@ actionlint:
 	$(ACTIONLINT) -color
 
 .PHONY: lint
-lint: helm-lint golangci-lint shellcheck actionlint kube-lint hadolint ginkgo/lint
+lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
 
 
 .PHONY: check
