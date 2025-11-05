@@ -252,37 +252,51 @@ find mk -name '*.mk' -type f -exec sed -i.bak 's|github.com/kumahq/kuma|github.c
 find tools -name '*.sh' -type f -exec sed -i.bak 's|github.com/kumahq/kuma|github.com/kumahq/kuma/v2|g' {} +
 ```
 
-**Step 6: Update vulnerable dependencies script (exclude kuma from filtering)**
+**Step 6: Update vulnerable dependencies script (use prefix check instead of exact match)**
 
 ```sh
-sed -i.bak 's|select(.name != "github.com/kumahq/kuma")|select(.name | startswith("github.com/kumahq/kuma") | not)|g' tools/ci/update-vulnerable-dependencies/update-vulnerable-dependencies.sh
+sed -i.bak 's#select(.name != "github.com/kumahq/kuma")#select(.name | startswith("github.com/kumahq/kuma") | not)#g' tools/ci/update-vulnerable-dependencies/update-vulnerable-dependencies.sh
 ```
 
-**Step 7: Clean up backup files**
+**Step 7: Update .proto files go_package option**
+
+```sh
+find api pkg/config pkg/plugins test/server/grpc/api -name '*.proto' -type f | xargs sed -i.bak 's|go_package = "github.com/kumahq/kuma/|go_package = "github.com/kumahq/kuma/v2/|g'
+```
+
+**Step 8: Clean up backup files**
 
 ```sh
 find . -name '*.bak' -type f -delete
 ```
 
-**Step 8: Tidy dependencies**
+**Step 9: Tidy dependencies**
 
 ```sh
 go mod tidy
 ```
 
-**Step 9: Verify module path**
+**Step 10: Clean tools and regenerate all files**
+
+**IMPORTANT:** Use `make clean/tools generate` to ensure Go tools are rebuilt with new imports. The `clean/tools` target removes cached tool binaries, then `generate` rebuilds them fresh and regenerates all files (including `.pb.go` from `.proto` files with updated `go_package` paths).
+
+```sh
+make clean/tools generate
+```
+
+**Step 11: Verify module path**
 
 ```sh
 grep '^module github.com/kumahq/kuma/v2$' go.mod
 ```
 
-**Step 10: Verify no old imports remain**
+**Step 12: Verify no old imports remain**
 
 ```sh
 grep -r '"github.com/kumahq/kuma/' --include="*.go" --exclude-dir=vendor | grep -v '"/v2/' || echo "✓ All imports updated"
 ```
 
-**Step 11: Run checks**
+**Step 13: Run checks**
 
 ```sh
 make check && make test && make build
