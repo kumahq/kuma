@@ -124,7 +124,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		log.Error(err, "failed to mutate metrics")
 		return nil
 	}
-	return FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, ap.kumaVersion, app.ExtraLabels, ap.unifiedNamingEnabled, requestTime)
+	return FromPrometheusMetrics(metricsFromApplication, ap.kumaVersion, app.ExtraAttributes, requestTime)
 }
 
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {

@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
@@ -21,7 +22,7 @@ type Scoped struct {
 }
 
 var _ = Describe("Metrics format mapper", func() {
-	DescribeTable("should convert from Prometheus metrics to OpenTelemetry backend", func(unifiedNaming bool) {
+	DescribeTable("should convert from Prometheus metrics to OpenTelemetry backend", func() {
 		// given
 		name := CurrentSpecReport().LeafNodeText
 		input, err := os.Open(path.Join("testdata", "otel", name+".in"))
@@ -32,12 +33,8 @@ var _ = Describe("Metrics format mapper", func() {
 		Expect(err).ToNot(HaveOccurred())
 		openTelemetryMetrics := FromPrometheusMetrics(
 			metrics,
-			"default",
-			"dpp-1",
-			"test-service",
 			"0.0.0",
-			map[string]string{"extraLabel": "test"},
-			unifiedNaming,
+			[]attribute.KeyValue{attribute.String("extraLabel", "test-label")},
 			time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC),
 		)
 
@@ -46,14 +43,10 @@ var _ = Describe("Metrics format mapper", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(marshal).To(matchers.MatchGoldenJSON(path.Join("testdata", "otel", name+".golden.json")))
 	},
-		Entry("counter", false),
-		Entry("gauge", false),
-		Entry("histogram", false),
-		Entry("summary", false),
-		Entry("counter_unified_naming", true),
-		Entry("gauge_unified_naming", true),
-		Entry("histogram_unified_naming", true),
-		Entry("summary_unified_naming", true),
+		Entry("counter"),
+		Entry("gauge"),
+		Entry("histogram"),
+		Entry("summary"),
 	)
 })
 

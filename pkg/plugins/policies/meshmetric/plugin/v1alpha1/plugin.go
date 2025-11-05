@@ -272,6 +272,10 @@ func createDynamicConfig(
 		extraLabels[WorkloadAttributeKey] = "TODO"
 	} else {
 		extraLabels = mads.DataplaneLabels(proxy.Dataplane, gateways)
+		extraLabels["mesh"] = mesh.GetMeta().GetName()
+		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
+		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
+		extraLabels[WorkloadAttributeKey] = "TODO"
 	}
 
 	return dpapi.MeshMetricDpConfig{

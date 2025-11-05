@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
@@ -207,6 +208,7 @@ func getPrometheusBackends(allBackends []dpapi.Backend) []dpapi.Backend {
 
 func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Application, sidecar *v1alpha1.Sidecar, extraLabels map[string]string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
+	extraAttributes := mapToAttributes(extraLabels)
 
 	for _, application := range applications {
 		address := m.defaultAddress
@@ -219,7 +221,7 @@ func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Appli
 			Path:              application.Path,
 			Port:              application.Port,
 			IsIPv6:            utilnet.IsAddressIPv6(address),
-			ExtraLabels:       extraLabels,
+			ExtraAttributes:   extraAttributes,
 			QueryModifier:     metrics.RemoveQueryParameters,
 			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
@@ -231,7 +233,7 @@ func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Appli
 		Address:           m.envoyAdminAddress,
 		Port:              m.envoyAdminPort,
 		IsIPv6:            false,
-		ExtraLabels:       extraLabels,
+		ExtraAttributes:   extraAttributes,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar)),
 	})
@@ -274,6 +276,14 @@ func (m *Manager) Shutdown() error {
 		return errors.New("failed to shutdown some backend")
 	}
 	return nil
+}
+
+func mapToAttributes(extraLabels map[string]string) []attribute.KeyValue {
+	var extraAttributes []attribute.KeyValue
+	for k, v := range extraLabels {
+		extraAttributes = append(extraAttributes, attribute.String(k, v))
+	}
+	return extraAttributes
 }
 
 type runningBackend struct {
