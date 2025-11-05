@@ -9,7 +9,7 @@ circuitBreakers:
 commonLbConfig:
   healthyPanicThreshold:
     value: 30.2
-name: localhost:80
+name: localhost:8080
 outlierDetection:
   baseEjectionTime: 8s
   consecutive5xx: 12
