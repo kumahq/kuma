@@ -32,9 +32,10 @@ K8S_MAX_VERSION=v1.34.1-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.33
 
-export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-GOOS := $(shell go env GOOS)
-GOARCH := $(shell go env GOARCH)
+GO=$(shell $(MISE) which go)
+export GO_VERSION=$(shell $(GO) mod edit -json | jq -r .Go)
+GOOS := $(shell $(GO) env GOOS)
+GOARCH := $(shell $(GO) env GOARCH)
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
@@ -48,12 +49,12 @@ KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
 # TODO find better way of managing proto deps: https://github.com/kumahq/kuma/issues/13880
-XDS_VERSION=$(shell go list -f '{{ .Version }}' -m github.com/cncf/xds/go)
-PROTO_XDS=$(shell go mod download github.com/cncf/xds@$(XDS_VERSION) && go list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
-PGV_VERSION=$(shell go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
-PROTO_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && go list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
-PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
-PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
+XDS_VERSION=$(shell $(GO) list -f '{{ .Version }}' -m github.com/cncf/xds/go)
+PROTO_XDS=$(shell $(GO) mod download github.com/cncf/xds@$(XDS_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
+PGV_VERSION=$(shell $(GO) list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
+PROTO_PGV=$(shell $(GO) mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
+PROTO_GOOGLE_APIS=$(shell $(GO) mod download github.com/googleapis/googleapis@master && $(GO) list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
+PROTO_ENVOY=$(shell $(GO) mod download github.com/envoyproxy/data-plane-api@main && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
 BUF=$(shell $(MISE) which buf)
 YQ=$(shell $(MISE) which yq)
