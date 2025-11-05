@@ -84,7 +84,7 @@ endef
 $(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call LOCAL_BUILD_TARGET,$(target))))
 
 # Build_Go_Application is a build command for the Kuma Go applications.
-Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $(call LD_FLAGS,$(1),$(2)) -o $$@/$$(notdir $$@)
+Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) $(GO) build -v $$(GOFLAGS) $(call LD_FLAGS,$(1),$(2)) -o $$@/$$(notdir $$@)
 
 # create targets to build binaries for each OS/ARCH combination
 # $(1) - GOOS to build for
