@@ -49,7 +49,7 @@ jobs:
           run_id=""
           url=""
 
-          while [[ $retry_count -lt $max_retries && -z $run_id ]]; do
+          while [[ "$retry_count" -lt "$max_retries" && -z "$run_id" ]]; do
             runs=$(gh run list \
               --repo "$REPOSITORY" \
               --workflow "$WORKFLOW_ID_TO_TRIGGER" \
