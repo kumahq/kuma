@@ -108,7 +108,7 @@ const file_api_mesh_v1alpha1_http_method_proto_rawDesc = "" +
 	"\x05PATCH\x10\x06\x12\b\n" +
 	"\x04POST\x10\a\x12\a\n" +
 	"\x03PUT\x10\b\x12\t\n" +
-	"\x05TRACE\x10\tB*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x05TRACE\x10\tB-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_http_method_proto_rawDescOnce sync.Once

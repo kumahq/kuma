@@ -1,11 +1,8 @@
 components:
   schemas:
     FileLoggingBackendConfig:
-      description: FileLoggingBackendConfig defines configuration for file based access
-        logs
       properties:
         path:
-          description: Path to a file that logs will be written to
           type: string
       type: object
 info:

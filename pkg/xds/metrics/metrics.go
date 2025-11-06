@@ -3,8 +3,8 @@ package metrics
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	util_cache "github.com/kumahq/kuma/pkg/util/cache"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	util_cache "github.com/kumahq/kuma/v2/pkg/util/cache"
 )
 
 type Metrics struct {

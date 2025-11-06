@@ -10,15 +10,15 @@ import (
 	network_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
 )
 
 type LegacyRBACConfigurer struct {

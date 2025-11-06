@@ -10,16 +10,16 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	network_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	bldrs_matchers "github.com/kumahq/kuma/pkg/envoy/builders/xds/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 type RBACConfigurer struct {

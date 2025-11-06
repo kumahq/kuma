@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
 type sectionName interface {

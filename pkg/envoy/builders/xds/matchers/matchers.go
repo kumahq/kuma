@@ -10,10 +10,10 @@ import (
 	sslv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/ssl/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_slices "github.com/kumahq/kuma/pkg/util/slices"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 )
 
 func NewMatcherBuilder() *Builder[matcher_config.Matcher] {

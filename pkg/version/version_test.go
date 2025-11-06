@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var _ = Describe("Verify build flags are set", func() {

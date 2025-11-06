@@ -3,7 +3,7 @@ package api_server
 import (
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 type WhoamiResponse struct {

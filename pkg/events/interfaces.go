@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 type Event interface{}

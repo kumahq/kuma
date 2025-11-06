@@ -17,11 +17,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
 type remoteBootstrapClient struct {

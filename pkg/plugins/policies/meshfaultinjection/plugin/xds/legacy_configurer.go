@@ -10,14 +10,14 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 type LegacyConfigurer struct {

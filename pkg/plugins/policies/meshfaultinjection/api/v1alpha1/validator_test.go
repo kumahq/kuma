@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
-	meshfaultinjection_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	meshfaultinjection_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
 )
 
 var _ = Describe("MeshFaultInjection", func() {

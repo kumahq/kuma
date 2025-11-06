@@ -7,10 +7,10 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/validators"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (es *ExternalServiceResource) Validate() error {

@@ -13,15 +13,15 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/v2/pkg/util/k8s"
 )
 
 func typeIsUnregistered(err error) bool {

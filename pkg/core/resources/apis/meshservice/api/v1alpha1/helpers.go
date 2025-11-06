@@ -3,13 +3,13 @@ package v1alpha1
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
-	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	core_vip "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/vip"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 // FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value

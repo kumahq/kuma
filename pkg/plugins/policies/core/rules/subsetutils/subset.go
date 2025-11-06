@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 // Tag is a key-value pair. If Not is true then Key != Value

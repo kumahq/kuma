@@ -2,8 +2,8 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 )
 
 // MeshTLS

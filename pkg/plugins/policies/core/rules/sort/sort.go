@@ -3,8 +3,8 @@ package sort
 import (
 	"cmp"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
 )
 
 func CompareByPolicyAttributes[T common.PolicyAttributes](a, b T) int {

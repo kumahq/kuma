@@ -10,17 +10,17 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/kds/hash"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/api"
-	framework_client "github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/kds/hash"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/api"
+	framework_client "github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func ProducerPolicyFlow() {

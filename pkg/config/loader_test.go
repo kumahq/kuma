@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/test/testenvconfig"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/test/testenvconfig"
 )
 
 var _ = Describe("Config loader", func() {

@@ -12,8 +12,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
 func newKubeClient(logger logr.Logger, conf PluginConf) (*kubernetes.Clientset, error) {

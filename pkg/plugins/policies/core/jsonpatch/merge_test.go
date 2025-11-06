@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("Json Patch merge", func() {

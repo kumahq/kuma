@@ -1,9 +1,9 @@
 package match
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/policy"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 // Routes finds all the route resources of the given type that

@@ -7,10 +7,10 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	dns_metadata "github.com/kumahq/kuma/pkg/dns/metadata"
-	k8s_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/metadata"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	dns_metadata "github.com/kumahq/kuma/v2/pkg/dns/metadata"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 // TagFirstVirtualOutboundView was designed to compress VirtualOutbound configuration.

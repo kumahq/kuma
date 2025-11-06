@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func NewBuilder() *Builder[envoy_accesslog.AccessLog] {

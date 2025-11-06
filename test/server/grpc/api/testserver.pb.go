@@ -123,7 +123,7 @@ const file_test_server_grpc_api_testserver_proto_rawDesc = "" +
 	"\amessage\x18\x01 \x01(\tR\amessage2\xb6\x01\n" +
 	"\aGreeter\x12R\n" +
 	"\bSayHello\x12\".test.server.grpc.apo.HelloRequest\x1a .test.server.grpc.apo.HelloReply\"\x00\x12W\n" +
-	"\tSayHellos\x12\".test.server.grpc.apo.HelloRequest\x1a .test.server.grpc.apo.HelloReply\"\x00(\x010\x01B-Z+github.com/kumahq/kuma/test/server/grpc/apib\x06proto3"
+	"\tSayHellos\x12\".test.server.grpc.apo.HelloRequest\x1a .test.server.grpc.apo.HelloReply\"\x00(\x010\x01B0Z.github.com/kumahq/kuma/v2/test/server/grpc/apib\x06proto3"
 
 var (
 	file_test_server_grpc_api_testserver_proto_rawDescOnce sync.Once

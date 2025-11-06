@@ -1,8 +1,8 @@
 package k8s
 
 import (
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 type ConverterPredicate = func(core_model.Resource) bool

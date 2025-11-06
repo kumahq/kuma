@@ -3,11 +3,11 @@ package topology
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/policy"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 // GetHealthChecks resolves all HealthChecks applicable to a given Dataplane.

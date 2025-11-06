@@ -19,12 +19,12 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
-	meshservice_k8s "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	yaml2 "github.com/kumahq/kuma/pkg/util/yaml"
+	meshservice_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	yaml2 "github.com/kumahq/kuma/v2/pkg/util/yaml"
 )
 
 var _ = Describe("MeshServiceController", func() {

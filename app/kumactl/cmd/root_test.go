@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/config"
+	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
 )
 
 var _ = Describe("kumactl root cmd", func() {

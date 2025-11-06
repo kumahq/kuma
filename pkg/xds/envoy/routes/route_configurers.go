@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
 )
 
 // RouteMatchExactPath updates the route to match the exact path. This

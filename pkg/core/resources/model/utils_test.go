@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	meshaccesslog_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	meshtrafficpermissions_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	meshaccesslog_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshtrafficpermissions_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("Resource Utils", func() {
@@ -78,7 +78,7 @@ var _ = Describe("Resource Utils", func() {
 			// when
 			name := core_model.FullName(spec)
 			// then
-			Expect(name).To(Equal("github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/MeshTrafficPermission"))
+			Expect(name).To(Equal("github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/MeshTrafficPermission"))
 		})
 	})
 

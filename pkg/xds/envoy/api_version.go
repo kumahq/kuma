@@ -1,7 +1,7 @@
 package envoy
 
 import (
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 const (

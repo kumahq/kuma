@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
 )
 
 var _ = Describe("Hostname matching", func() {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/once"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 // Cache is needed to share and cache Hashes among goroutines which

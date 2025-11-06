@@ -18,12 +18,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/app/cni/pkg/install"
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	k8s_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	tproxy_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/app/cni/pkg/install"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	tproxy_k8s "github.com/kumahq/kuma/v2/pkg/transparentproxy/kubernetes"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 const (

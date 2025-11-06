@@ -6,7 +6,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 
-	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 type k8SDeployment struct {

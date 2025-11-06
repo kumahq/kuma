@@ -3,8 +3,8 @@ package dataplane
 import (
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 func AdditionalInbounds(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {

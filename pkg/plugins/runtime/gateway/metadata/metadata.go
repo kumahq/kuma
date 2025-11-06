@@ -1,6 +1,6 @@
 package metadata
 
-import . "github.com/kumahq/kuma/pkg/core/xds/origin"
+import . "github.com/kumahq/kuma/v2/pkg/core/xds/origin"
 
 const (
 	// OriginGateway is the origin for resources produced by the gateway generator

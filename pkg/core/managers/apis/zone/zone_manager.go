@@ -3,9 +3,9 @@ package zone
 import (
 	"context"
 
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 )
 
 func NewZoneManager(store core_store.ResourceStore, validator Validator, unsafeDelete bool) core_manager.ResourceManager {

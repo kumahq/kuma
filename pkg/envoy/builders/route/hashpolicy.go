@@ -6,7 +6,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/kumahq/kuma/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 )
 
 func HashPolicy() *common.Builder[envoy_route.RouteAction_HashPolicy] {

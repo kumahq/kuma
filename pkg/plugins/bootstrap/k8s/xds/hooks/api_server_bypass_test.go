@@ -7,15 +7,15 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s/xds/hooks"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
 
 var _ = Describe("ApiServerBypass", func() {

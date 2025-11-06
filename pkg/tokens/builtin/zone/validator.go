@@ -3,7 +3,7 @@ package zone
 import (
 	"context"
 
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
+	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
 )
 
 type Validator interface {

@@ -5,7 +5,7 @@ import (
 
 	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func Sanitize(configDump []byte) ([]byte, error) {

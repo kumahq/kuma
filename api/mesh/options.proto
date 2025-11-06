@@ -4,7 +4,7 @@ package kuma.mesh;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh";
 
 message KumaResourceOptions {
   // Name of the Kuma resource struct.

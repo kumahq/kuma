@@ -9,7 +9,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
 
 // These options correspond with the retry_on options in Envoy's documentation:
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on

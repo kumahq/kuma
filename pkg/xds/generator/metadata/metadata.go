@@ -4,7 +4,7 @@
 // heavy transitive dependencies across the build graph and keeps ownership clear
 package metadata
 
-import . "github.com/kumahq/kuma/pkg/core/xds/origin"
+import . "github.com/kumahq/kuma/v2/pkg/core/xds/origin"
 
 const (
 	// OriginAdmin is the origin for resources produced by the admin proxy/generator

@@ -1,8 +1,8 @@
 package topology
 
 import (
-	core_policy "github.com/kumahq/kuma/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_policy "github.com/kumahq/kuma/v2/pkg/core/policy"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 func SelectGateway(gateways []*core_mesh.MeshGatewayResource, tagMatcher core_policy.TagMatcher) *core_mesh.MeshGatewayResource {

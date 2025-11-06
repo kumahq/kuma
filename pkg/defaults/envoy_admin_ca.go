@@ -6,11 +6,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
 )
 
 func EnsureEnvoyAdminCaExists(

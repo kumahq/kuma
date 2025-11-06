@@ -7,13 +7,13 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/once"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_endpoints "github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints"
 )
 
 // CachedRetriever is needed to share and cache ClusterLoadAssignments among goroutines

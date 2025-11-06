@@ -4,7 +4,7 @@ import (
 	"github.com/onsi/gomega"
 	prometheus_client "github.com/prometheus/client_model/go"
 
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 func FindMetric(metrics core_metrics.Metrics, name string, labelsValues ...string) *prometheus_client.Metric {

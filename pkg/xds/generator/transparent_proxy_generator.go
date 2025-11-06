@@ -5,16 +5,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/naming"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	model "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	model "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 type TransparentProxyGenerator struct{}

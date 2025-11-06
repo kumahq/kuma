@@ -6,9 +6,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 
-	"github.com/kumahq/kuma/pkg/core/runtime"
-	metrics "github.com/kumahq/kuma/pkg/metrics/store"
-	"github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	metrics "github.com/kumahq/kuma/v2/pkg/metrics/store"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 func Setup(rt runtime.Runtime) error {

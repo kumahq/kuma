@@ -15,17 +15,17 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
-	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
+	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
 )
 
 type staticAuthenticator struct {

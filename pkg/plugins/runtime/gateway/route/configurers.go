@@ -6,14 +6,14 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 // RouteMirror enables traffic mirroring on the route. It is an error to enable
