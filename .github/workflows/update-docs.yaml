@@ -45,6 +45,7 @@ jobs:
           cd repo
 
           # Use active branches from reusable workflow output
+          # shellcheck disable=SC2153
           branches="${BRANCHES}"
           
           # Loop over branches and generate docs

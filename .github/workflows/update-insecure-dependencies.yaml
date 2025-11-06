@@ -35,10 +35,12 @@ jobs:
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |
-          SCAN_OUTPUT_BEFORE=$(osv-scanner $OSV_SCANNER_ADDITIONAL_OPTS --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
-          echo "SCAN_OUTPUT_BEFORE<<EOF" >> $GITHUB_ENV
-          echo "$SCAN_OUTPUT_BEFORE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          SCAN_OUTPUT_BEFORE=$(osv-scanner "$OSV_SCANNER_ADDITIONAL_OPTS" --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          {
+            echo "SCAN_OUTPUT_BEFORE<<EOF"
+            echo "$SCAN_OUTPUT_BEFORE"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
       - name: "Update dependencies"
         id: update
         run: |
@@ -46,10 +48,12 @@ jobs:
       - name: "Prepare commit body - after"
         id: prepare_commit_body_after
         run: |
-          SCAN_OUTPUT_AFTER=$(osv-scanner $OSV_SCANNER_ADDITIONAL_OPTS --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
-          echo "SCAN_OUTPUT_AFTER<<EOF" >> $GITHUB_ENV
-          echo "$SCAN_OUTPUT_AFTER" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          SCAN_OUTPUT_AFTER=$(osv-scanner "$OSV_SCANNER_ADDITIONAL_OPTS" --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          {
+            echo "SCAN_OUTPUT_AFTER<<EOF"
+            echo "$SCAN_OUTPUT_AFTER"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
       - name: Generate GitHub app token
         id: github-app-token
         uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4

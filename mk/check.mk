@@ -59,11 +59,15 @@ hadolint:
 	find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile*" ! -iname "*dockerignore*" -exec $(HADOLINT) {} \;
 
 .PHONY: actionlint
-actionlint:
+actionlint: ## Lint GitHub Actions workflows (skipped in CI, runs in separate actionlint workflow)
+ifeq ($(CI),true)
+	@echo "Skipping actionlint in CI environment"
+else
 	$(ACTIONLINT) -color
+endif
 
 .PHONY: lint
-lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
+lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint actionlint
 
 
 .PHONY: check

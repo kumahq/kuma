@@ -69,13 +69,15 @@ jobs:
           BASE_REF=$(echo -n "$PR_INFO_JSON" | jq -r '.baseRefName //empty')
           COMMIT=$(echo -n "$PR_INFO_JSON" | jq -r '.mergeCommit.oid //empty')
           
-          echo "pr_title=${TITLE}" >> $GITHUB_OUTPUT
-          echo "pr_state=${STATE}" >> $GITHUB_OUTPUT
-          echo "pr_base_ref=${BASE_REF}" >> $GITHUB_OUTPUT
-          echo "pr_merge_commit_sha=${COMMIT}" >> $GITHUB_OUTPUT
-          echo "pr_change_log<<EOF" >> $GITHUB_OUTPUT
-          echo "${CHANGE_LOG}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "pr_title=${TITLE}"
+            echo "pr_state=${STATE}"
+            echo "pr_base_ref=${BASE_REF}"
+            echo "pr_merge_commit_sha=${COMMIT}"
+            echo "pr_change_log<<EOF"
+            echo "${CHANGE_LOG}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: ensure-pr-merged
         run: |
           if [[ "${{ steps.get-pr-info.outputs.pr_state }}" != "MERGED" ]]; then
@@ -127,17 +129,19 @@ jobs:
             set -x
           fi
           
-          echo LABELS=${{ matrix.branch }} >> $GITHUB_ENV
-          if git cherry-pick ${{ env.SHA }}; then
+          echo "LABELS=${{ matrix.branch }}" >> "$GITHUB_ENV"
+          if git cherry-pick "${{ env.SHA }}"; then
             echo "Cherry-picked without conflicts!"
           else
-            echo LABELS=${{ matrix.branch }},conflict >> $GITHUB_ENV
-            echo "DIFF<<EOF" >> $GITHUB_ENV
-            echo ":warning: :warning: :warning: Conflicts happened when cherry-picking! :warning: :warning: :warning:" >> $GITHUB_ENV
-            echo '```' >> $GITHUB_ENV
-            git status >> $GITHUB_ENV
-            echo '```' >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "LABELS=${{ matrix.branch }},conflict" >> "$GITHUB_ENV"
+            {
+              echo "DIFF<<EOF"
+              echo ":warning: :warning: :warning: Conflicts happened when cherry-picking! :warning: :warning: :warning:"
+              echo '```'
+              git status
+              echo '```'
+              echo "EOF"
+            } >> "$GITHUB_ENV"
             git add .
             git cherry-pick --continue
           fi
