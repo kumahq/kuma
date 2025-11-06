@@ -35,9 +35,9 @@ jobs:
       - name: "Trigger the workflow"
         id: trigger-workflow
         run: |
-          echo "started=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "started=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
           gh workflow run "$WORKFLOW_ID_TO_TRIGGER" --repo "$REPOSITORY" --ref "$BRANCH"
-          echo "finished=$(date -u -d '10 seconds' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "finished=$(date -u -d '10 seconds' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
       - name: "Retrieve workflow run ID"
         id: get-run-id
         env:
@@ -77,6 +77,6 @@ jobs:
           fi
 
           echo "Attempt $((retry_count + 1)): Retrieved run ID: $run_id ($url)"
-          echo "run_id=$run_id" >>$GITHUB_OUTPUT
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
           echo "Run [$run_id]($url)" >> $GITHUB_STEP_SUMMARY
