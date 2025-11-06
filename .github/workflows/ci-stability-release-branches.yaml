@@ -73,14 +73,14 @@ jobs:
               url=$(echo "$runs" | jq -r '.url')
             fi
 
-            if [[ -z $run_id ]]; then
+            if [[ -z "$run_id" ]]; then
               retry_count=$((retry_count + 1))
               echo "Attempt $retry_count: Run not found, retrying in 5 seconds..."
               sleep 5
             fi
           done
 
-          if [[ -z $run_id ]]; then
+          if [[ -z "$run_id" ]]; then
             echo "Unable to retrieve run ID after $max_retries retries"
             exit 1
           fi
