@@ -79,4 +79,4 @@ jobs:
           echo "Attempt $((retry_count + 1)): Retrieved run ID: $run_id ($url)"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-          echo "Run [$run_id]($url)" >> $GITHUB_STEP_SUMMARY
+          echo "Run [$run_id]($url)" >> "$GITHUB_STEP_SUMMARY"
