@@ -29,6 +29,16 @@ type PostgresContainer struct {
 }
 
 func findProjectRoot(cwd, callerFile string) string {
+	// When -trimpath is used, runtime.Caller returns relative paths like:
+	// "github.com/kumahq/kuma/v2@v2.0.0-20251106183812-a52a8779dbb5/pkg/test/store/postgres/test_container.go"
+	// We need to prepend GOPATH/pkg/mod/ to construct the full path
+	if !strings.HasPrefix(callerFile, "/") {
+		file := path.Join(util_files.GetGopath(), "pkg", "mod", callerFile)
+		if util_files.FileExists(file) {
+			return util_files.GetProjectRoot(file)
+		}
+	}
+
 	projectRootParent := util_files.GetProjectRootParent(cwd)
 	fileRelativeToProjectRootParent := util_files.RelativeToProjectRootParent(callerFile)
 	projectRoot := util_files.GetProjectRoot(cwd)
