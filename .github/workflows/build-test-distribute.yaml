@@ -57,8 +57,8 @@ jobs:
           mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
           mem_total_bytes=$((mem_total_kb * 1024))
           gomemlimit=$((mem_total_bytes * 8 / 10))
-          echo "GOMEMLIMIT=${gomemlimit}" >> $GITHUB_ENV
-          echo "Setting GOMEMLIMIT to $(numfmt --to=iec $gomemlimit)"
+          echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
+          echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -77,10 +77,12 @@ jobs:
       - name: "Set metadata for downstream jobs"
         id: metadata
         run: |
-          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
-          echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
-          echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
-          echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+          {
+            echo "images=$(make images/info/release/json)"
+            echo "registry=$(make docker/info/registry)"
+            echo "version=$(make build/info/version)"
+            echo "distribution_repository=$(make build/info/cloudsmith_repository)"
+          } >> "$GITHUB_OUTPUT"
       # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
       # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
       # Running the SCA step before "make check" might seem like a solution, but it
