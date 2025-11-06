@@ -6,11 +6,13 @@ package v1alpha1
 // +kuma:policy:has_status=true
 // +kuma:policy:kds_flags=model.ZoneToGlobalFlag
 // +kuma:policy:short_name=wl
-type Workload struct{}
-type WorkloadStatus struct {
-	// DataplaneProxies defines statistics of data plane proxies that are part of this workload
-	DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
-}
+type (
+	Workload       struct{}
+	WorkloadStatus struct {
+		// DataplaneProxies defines statistics of data plane proxies that are part of this workload
+		DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
+	}
+)
 
 type DataplaneProxies struct {
 	// Connected defines number of connected data plane proxies
