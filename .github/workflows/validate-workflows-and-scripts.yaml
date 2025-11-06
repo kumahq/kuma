@@ -7,7 +7,7 @@ run-name: >-
     format('Validate: {0}{1}{2}',
       inputs.run_actionlint && 'actionlint' || '',
       inputs.run_actionlint && inputs.run_shellcheck && ' + ' || '',
-      inputs.run_shellcheck && 'shellcheck' || 'none'
+      inputs.run_shellcheck && 'shellcheck' || ''
     ) ||
     github.event_name
   }}
@@ -68,9 +68,9 @@ jobs:
           steps.changes.outputs.workflows == 'true'
         with:
           github_token: ${{ github.token }}
-          reporter: github-pr-review
+          reporter: ${{ github.event_name == 'workflow_dispatch' && 'local' || 'github-pr-review' }}
           fail_level: error
-          filter_mode: diff_context
+          filter_mode: ${{ github.event_name == 'workflow_dispatch' && 'nofilter' || 'diff_context' }}
 
   shellcheck:
     name: "Validate Shell Scripts"
@@ -99,9 +99,9 @@ jobs:
           steps.changes.outputs.scripts == 'true'
         with:
           github_token: ${{ github.token }}
-          reporter: github-pr-review
+          reporter: ${{ github.event_name == 'workflow_dispatch' && 'local' || 'github-pr-review' }}
           fail_level: error
-          filter_mode: diff_context
+          filter_mode: ${{ github.event_name == 'workflow_dispatch' && 'nofilter' || 'diff_context' }}
           shellcheck_flags: "-P SCRIPTDIR -x"
           pattern: "*.sh"
 
