@@ -66,6 +66,8 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
 		// and
 		Expect(cfg.MarshalingCacheExpirationTime.Duration).To(Equal(1 * time.Second))
+		// and
+		Expect(cfg.WorkloadLabels).To(Equal([]string{"app.kubernetes.io/name", "app"}))
 	})
 
 	It("should have consistent defaults", func() {

@@ -126,6 +126,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			LeaseDuration: config_types.Duration{Duration: 15 * time.Second},
 			RenewDeadline: config_types.Duration{Duration: 10 * time.Second},
 		},
+		WorkloadLabels: []string{},
 	}
 }
 
@@ -164,6 +165,10 @@ type KubernetesRuntimeConfig struct {
 	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
 	// The downside is that control plane requires permission to read Secrets in all namespaces.
 	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
+	// WorkloadLabels is a prioritized list of pod labels to use for generating the kuma.io/workload label on DataplaneProxy.
+	// The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
+	// Default is empty list (uses ServiceAccount as workload identifier).
+	WorkloadLabels []string `json:"workloadLabels" envconfig:"kuma_runtime_kubernetes_workload_labels"`
 }
 
 type ControllersConcurrency struct {

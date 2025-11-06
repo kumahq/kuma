@@ -91,3 +91,4 @@ nodeTaintController:
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
 skipMeshOwnerReference: false
 supportGatewaySecretsInAllNamespaces: false
+workloadLabels: []
