@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -160,7 +160,7 @@ const file_api_mesh_v1alpha1_zoneegress_proto_rawDesc = "" +
 	"\x12ZoneEgressResource\x12\n" +
 	"ZoneEgress\x18\x01\"\x04mesh:\x1a\n" +
 	"\n" +
-	"zoneegress\x12\fzoneegressesR\x16model.ZoneToGlobalFlagX\x01\x8a\x01Edescription=\"Zone name\",JSONPath=`.spec.zone`,name=\"zone\",type=string\x90\x01\x01\x9a\x01\x02ze\xa0\x01\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"zoneegress\x12\fzoneegressesR\x16model.ZoneToGlobalFlagX\x01\x8a\x01Edescription=\"Zone name\",JSONPath=`.spec.zone`,name=\"zone\",type=string\x90\x01\x01\x9a\x01\x02ze\xa0\x01\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_zoneegress_proto_rawDescOnce sync.Once

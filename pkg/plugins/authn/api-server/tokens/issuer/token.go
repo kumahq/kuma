@@ -3,8 +3,8 @@ package issuer
 import (
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 type UserClaims struct {

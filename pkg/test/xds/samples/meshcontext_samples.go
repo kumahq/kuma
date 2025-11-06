@@ -1,10 +1,10 @@
 package samples
 
 import (
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/test/xds/builders"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 func SampleContext() xds_context.Context {

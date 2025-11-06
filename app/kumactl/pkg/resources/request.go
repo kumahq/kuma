@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	error_types "github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 func doRequest(client util_http.Client, ctx context.Context, req *http.Request) (int, []byte, error) {

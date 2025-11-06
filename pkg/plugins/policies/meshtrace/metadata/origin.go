@@ -6,7 +6,7 @@
 // subpackages to keep ownership clear while keeping dependencies minimal
 package metadata
 
-import . "github.com/kumahq/kuma/pkg/core/xds/origin"
+import . "github.com/kumahq/kuma/v2/pkg/core/xds/origin"
 
 // OriginMeshTrace is the origin for resources produced by MeshTrace policy
 const OriginMeshTrace Origin = "mesh-trace"

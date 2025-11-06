@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
 )
 
 type LoggingCallbacks struct {

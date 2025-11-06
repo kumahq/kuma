@@ -5,8 +5,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 var log = core.Log.WithName("eventbus")

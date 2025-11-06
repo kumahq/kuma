@@ -7,14 +7,14 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/metadata"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	bldrs_auth "github.com/kumahq/kuma/pkg/envoy/builders/auth"
-	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/metadata"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	bldrs_auth "github.com/kumahq/kuma/v2/pkg/envoy/builders/auth"
+	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 )
 
 var _ core_plugins.CoreResourcePlugin = &plugin{}

@@ -5,14 +5,14 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	bldrs_matchers "github.com/kumahq/kuma/pkg/envoy/builders/xds/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 type Configurer struct {

@@ -1,7 +1,7 @@
 package store
 
 import (
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 )
 
 // todo consider unifing SecretStore with ResourceStore

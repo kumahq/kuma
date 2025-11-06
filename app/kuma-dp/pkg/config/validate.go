@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
-	util_files "github.com/kumahq/kuma/pkg/util/files"
+	util_files "github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 func ValidateTokenPath(path string) error {

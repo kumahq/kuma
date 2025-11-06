@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 type ResourceMeta struct {

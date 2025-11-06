@@ -8,7 +8,7 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -699,7 +699,7 @@ const file_api_mesh_v1alpha1_dataplane_insight_proto_rawDesc = "" +
 	"\fEnvoyVersion\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x14\n" +
 	"\x05build\x18\x02 \x01(\tR\x05build\x12*\n" +
-	"\x10kumaDpCompatible\x18\x03 \x01(\bR\x10kumaDpCompatibleB*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x10kumaDpCompatible\x18\x03 \x01(\bR\x10kumaDpCompatibleB-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_dataplane_insight_proto_rawDescOnce sync.Once

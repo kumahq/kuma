@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
@@ -364,7 +364,7 @@ const file_api_mesh_v1alpha1_timeout_proto_rawDesc = "" +
 	"\x13stream_idle_timeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x11streamIdleTimeout\x12I\n" +
 	"\x13max_stream_duration\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11maxStreamDuration:L\xaa\x8c\x89\xa6\x01F\n" +
 	"\x0fTimeoutResource\x12\aTimeout\"\x04mesh:\t\n" +
-	"\atimeoutR\x17model.GlobalToZonesFlagh\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\atimeoutR\x17model.GlobalToZonesFlagh\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_timeout_proto_rawDescOnce sync.Once

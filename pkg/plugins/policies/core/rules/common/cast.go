@@ -1,6 +1,6 @@
 package common
 
-import core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+import core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 
 // Cast attempts to cast a slice of core_model.Resource to a slice of a specific type T.
 // It returns the casted slice and a boolean indicating whether the cast was successful.

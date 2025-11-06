@@ -5,10 +5,10 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
 
 func NewUpstreamTLSContext() *Builder[envoy_tls.UpstreamTlsContext] {

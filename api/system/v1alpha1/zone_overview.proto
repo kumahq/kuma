@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "api/system/v1alpha1/zone.proto";
 import "api/system/v1alpha1/zone_insight.proto";
 
-option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/system/v1alpha1";
 
 // ZoneOverview defines the projected state of a Zone.
 message ZoneOverview {

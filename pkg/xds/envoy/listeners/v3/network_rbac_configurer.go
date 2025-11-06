@@ -7,11 +7,11 @@ import (
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
 )
 
 type NetworkRBACConfigurer struct {

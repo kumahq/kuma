@@ -14,11 +14,11 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	core_apis "github.com/kumahq/kuma/pkg/core/resources/apis"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
-	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_apis "github.com/kumahq/kuma/v2/pkg/core/resources/apis"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.

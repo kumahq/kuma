@@ -4,7 +4,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
-	v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
+	v1 "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 )
 
 var (

@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd/install"
-	"github.com/kumahq/kuma/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd/install"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 var _ = Context("kumactl install transparent proxy", func() {

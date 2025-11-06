@@ -1,7 +1,7 @@
 package samples
 
 import (
-	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	meshtrace_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 )
 
 func ZipkinBackend() *meshtrace_proto.ZipkinBackend {

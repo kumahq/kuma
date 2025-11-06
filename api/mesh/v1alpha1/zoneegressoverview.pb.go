@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -85,7 +85,7 @@ const file_api_mesh_v1alpha1_zoneegressoverview_proto_rawDesc = "" +
 	"zoneEgress\x18\x01 \x01(\v2\x1e.kuma.mesh.v1alpha1.ZoneEgressR\n" +
 	"zoneEgress\x12S\n" +
 	"\x11zoneEgressInsight\x18\x02 \x01(\v2%.kuma.mesh.v1alpha1.ZoneEgressInsightR\x11zoneEgressInsight:B\xaa\x8c\x89\xa6\x01<\n" +
-	"\x1aZoneEgressOverviewResource\x12\x12ZoneEgressOverview\x18\x01\"\x04mesh0\x01`\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x1aZoneEgressOverviewResource\x12\x12ZoneEgressOverview\x18\x01\"\x04mesh0\x01`\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_zoneegressoverview_proto_rawDescOnce sync.Once

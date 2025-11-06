@@ -3,11 +3,11 @@ package get
 import (
 	"github.com/spf13/cobra"
 
-	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	get_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/get/context"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

@@ -74,15 +74,17 @@ jobs:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
           KUMA_DEBUG: ${{ runner.debug == '1' }}
         run: |
+          # shellcheck disable=SC2193
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
             export K8S_CLUSTER_TOOL=kind
             export KUMA_DEFAULT_RETRIES=60
             export KUMA_DEFAULT_TIMEOUT="6s"
           fi
+          # shellcheck disable=SC2193
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" != "kind"* ]]; then
-            export CI_K3S_VERSION=$E2E_PARAM_K8S_VERSION
-            export K3D_NETWORK_CNI=${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}
+            export CI_K3S_VERSION="$E2E_PARAM_K8S_VERSION"
+            export K3D_NETWORK_CNI="$E2E_PARAM_CNI_NETWORK_PLUGIN"
           fi
           if [[ "${{ env.E2E_PARAM_ARCH }}" == "arm64" ]]; then
             export MAKE_PARAMETERS="-j1"

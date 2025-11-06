@@ -9,12 +9,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/events"
-	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/events"
+	reconcile_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 )
 
 type staticReconciler struct {

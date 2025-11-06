@@ -28,7 +28,7 @@ const file_api_mesh_v1alpha1_envoy_admin_inter_cp_forward_proto_rawDesc = "" +
 	"\x1fInterCPEnvoyAdminForwardService\x12X\n" +
 	"\tXDSConfig\x12$.kuma.mesh.v1alpha1.XDSConfigRequest\x1a%.kuma.mesh.v1alpha1.XDSConfigResponse\x12L\n" +
 	"\x05Stats\x12 .kuma.mesh.v1alpha1.StatsRequest\x1a!.kuma.mesh.v1alpha1.StatsResponse\x12U\n" +
-	"\bClusters\x12#.kuma.mesh.v1alpha1.ClustersRequest\x1a$.kuma.mesh.v1alpha1.ClustersResponseB*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\bClusters\x12#.kuma.mesh.v1alpha1.ClustersRequest\x1a$.kuma.mesh.v1alpha1.ClustersResponseB-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var file_api_mesh_v1alpha1_envoy_admin_inter_cp_forward_proto_goTypes = []any{
 	(*XDSConfigRequest)(nil),  // 0: kuma.mesh.v1alpha1.XDSConfigRequest

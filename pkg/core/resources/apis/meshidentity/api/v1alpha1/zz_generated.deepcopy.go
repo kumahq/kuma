@@ -5,8 +5,8 @@
 package v1alpha1
 
 import (
-	commonv1alpha1 "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/api/common/v1alpha1/datasource"
+	commonv1alpha1 "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

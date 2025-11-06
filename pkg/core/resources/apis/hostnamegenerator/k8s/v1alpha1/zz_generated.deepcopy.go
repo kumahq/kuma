@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	apiv1alpha1 "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	apiv1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 

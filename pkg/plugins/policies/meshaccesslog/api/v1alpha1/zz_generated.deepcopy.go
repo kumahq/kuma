@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	commonv1alpha1 "github.com/kumahq/kuma/api/common/v1alpha1"
+	commonv1alpha1 "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 

@@ -15,13 +15,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/server"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone/access"
 )
 
 type staticTokenIssuer struct {

@@ -1,7 +1,7 @@
 package types
 
 import (
-	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
+	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 )
 
 type BootstrapRequest struct {

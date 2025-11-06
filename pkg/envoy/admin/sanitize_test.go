@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	_ "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	_ "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
 
 var _ = Describe("Sanitize ConfigDump", func() {

@@ -6,15 +6,15 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")

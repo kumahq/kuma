@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/naming"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 )
 
 var _ = Describe("GetNameOrFallback", func() {

@@ -5,8 +5,8 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 )
 
 func ValidateCaCert(signingPair util_tls.KeyPair) error {

@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
-	server_types "github.com/kumahq/kuma/test/server/types"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	server_types "github.com/kumahq/kuma/v2/test/server/types"
 )
 
 func TrafficRoute() {

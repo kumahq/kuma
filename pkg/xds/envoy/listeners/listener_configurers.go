@@ -4,9 +4,9 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 func TLSInspector() ListenerBuilderOpt {

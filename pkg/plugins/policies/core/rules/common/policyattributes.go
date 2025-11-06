@@ -1,8 +1,8 @@
 package common
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 type PolicyAttributes interface {

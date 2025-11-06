@@ -5,15 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	"github.com/kumahq/kuma/pkg/xds/auth"
-	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
-	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
-	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	k8s_extensions "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
+	"github.com/kumahq/kuma/v2/pkg/xds/auth"
+	k8s_auth "github.com/kumahq/kuma/v2/pkg/xds/auth/k8s"
+	universal_auth "github.com/kumahq/kuma/v2/pkg/xds/auth/universal"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 type Deps struct {

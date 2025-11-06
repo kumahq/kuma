@@ -1,14 +1,14 @@
 package policies
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 func newTestResourceMeta() *test_model.ResourceMeta {

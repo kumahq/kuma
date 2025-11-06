@@ -4,7 +4,7 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 )
 
 // NonLocalPriority sets priority for all non-local locality endpoints

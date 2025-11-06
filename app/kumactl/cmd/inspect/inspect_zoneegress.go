@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 const inspectZoneEgressError = "Policies are not applied on ZoneEgress, please use '--config-dump' flag to get " +

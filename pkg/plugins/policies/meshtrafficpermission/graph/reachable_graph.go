@@ -1,17 +1,17 @@
 package graph
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	graph_backends "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/backends"
-	graph_services "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/services"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	ms_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	mtp_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	graph_backends "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/graph/backends"
+	graph_services "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/graph/services"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 type Graph struct {

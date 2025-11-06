@@ -3,7 +3,7 @@ package apis
 import (
 	"time"
 
-	config_types "github.com/kumahq/kuma/pkg/config/types"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
 )
 
 type Config struct {

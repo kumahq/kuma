@@ -6,9 +6,9 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
 )
 
 func NewPrinter() output.Printer {

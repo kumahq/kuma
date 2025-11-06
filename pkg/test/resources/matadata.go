@@ -3,12 +3,12 @@ package resources
 import (
 	"maps"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds/hash"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/util/k8s"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/kds/hash"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/util/k8s"
 )
 
 type BuildMeta func(name, mesh string, labels map[string]string) core_model.ResourceMeta

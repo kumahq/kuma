@@ -5,9 +5,9 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/core"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 var log = core.Log.WithName("api-server").WithName("authn")

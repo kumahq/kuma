@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 )
 
 var _ = Describe("GetCommoncore_meta.Protocol()", func() {

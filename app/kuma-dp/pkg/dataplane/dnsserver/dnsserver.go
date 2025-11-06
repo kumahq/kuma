@@ -11,11 +11,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/util/files"
+	command_utils "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/command"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
