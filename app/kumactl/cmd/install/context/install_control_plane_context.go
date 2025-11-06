@@ -1,10 +1,10 @@
 package context
 
 import (
-	"github.com/kumahq/kuma/deployments"
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/util/data"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/deployments"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/util/data"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 type InstallControlPlaneArgs struct {

@@ -2,9 +2,11 @@
 experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
+actionlint = "1.7.6"
 buf = "1.59.0"
 container-structure-test = "1.21.1"
 ginkgo = "2.27.1"
+go = "1.25.3"
 hadolint = "2.14.0"
 helm = "3.19.0"
 helm-docs = "1.14.2"

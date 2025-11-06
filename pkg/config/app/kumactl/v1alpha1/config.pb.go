@@ -485,7 +485,7 @@ const file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDesc = "" +
 	"\rcontrol_plane\x18\x02 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\fcontrolPlane\x12E\n" +
 	"\bdefaults\x18\x03 \x01(\v2).kumactl.config.v1alpha1.Context.DefaultsR\bdefaults\x1a\x1e\n" +
 	"\bDefaults\x12\x12\n" +
-	"\x04mesh\x18\x01 \x01(\tR\x04meshB(Z&github.com/kumahq/kuma/config/v1alpha1b\x06proto3"
+	"\x04mesh\x18\x01 \x01(\tR\x04meshB+Z)github.com/kumahq/kuma/v2/config/v1alpha1b\x06proto3"
 
 var (
 	file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDescOnce sync.Once

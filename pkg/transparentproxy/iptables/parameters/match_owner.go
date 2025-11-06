@@ -16,7 +16,7 @@ package parameters
 // ref. iptables-extensions(8) > owner
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 var _ ParameterBuilder = &OwnerParameter{}

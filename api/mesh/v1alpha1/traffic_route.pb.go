@@ -8,7 +8,7 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
@@ -1390,7 +1390,7 @@ const file_api_mesh_v1alpha1_traffic_route_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\\\xaa\x8c\x89\xa6\x01V\n" +
 	"\x14TrafficRouteResource\x12\fTrafficRoute\"\x04mesh:\x0f\n" +
-	"\rtraffic-routeR\x17model.GlobalToZonesFlagh\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\rtraffic-routeR\x17model.GlobalToZonesFlagh\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_traffic_route_proto_rawDescOnce sync.Once

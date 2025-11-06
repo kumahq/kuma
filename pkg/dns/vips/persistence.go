@@ -8,12 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
+	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	config_model "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 )
 
 type Persistence struct {

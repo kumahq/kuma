@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/test/framework/report"
+	"github.com/kumahq/kuma/v2/test/framework/report"
 )
 
 type Session struct {

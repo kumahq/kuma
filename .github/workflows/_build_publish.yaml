@@ -52,9 +52,6 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
       - run: |
           make build
@@ -66,10 +63,10 @@ jobs:
           make -j build/distributions
       - id: inspect-binary-output
         run: |
-          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+          for i in build/distributions/out/*.tar.gz; do echo "$i"; tar -tvf "$i"; done
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
-          echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
+          echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         id: binary-artifacts
         with:
@@ -104,14 +101,11 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
-          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
+          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> "$GITHUB_OUTPUT"
       - run: |
           make images/${{ matrix.image }}
       - run: |
@@ -159,9 +153,9 @@ jobs:
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         run: |
           echo "Fetching image digest for ${{ matrix.image }}"
-          digest=$(regctl image digest ${{ steps.image_meta.outputs.image }})
+          digest=$(regctl image digest "${{ steps.image_meta.outputs.image }}")
           echo "Got digest: $digest"
-          echo "digest=${digest}" >> $GITHUB_OUTPUT
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         id: image-artifacts
@@ -202,9 +196,11 @@ jobs:
       - id: compute-digests
         run: |
           # Create an object of digests indexed by image (.e.g: {"kuma-cp": "sha256:1234", "kuma-dp": "sha256:5678" ...})
-          echo "digests<<EOF" >> $GITHUB_OUTPUT
-          jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "digests<<EOF"
+            jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
@@ -217,11 +213,6 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
       - name: package-helm-chart
         id: package-helm
@@ -240,7 +231,7 @@ jobs:
 
           make helm/package
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
-          echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
+          echo "filename=${PKG_FILENAME}" >> "$GITHUB_OUTPUT"
       - name: Upload packaged chart
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

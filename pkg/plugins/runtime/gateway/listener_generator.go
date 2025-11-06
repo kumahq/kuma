@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
 
 // TODO(jpeach) It's a lot to ask operators to tune these defaults,

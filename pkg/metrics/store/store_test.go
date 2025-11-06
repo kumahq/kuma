@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/v2/pkg/metrics/store"
+	store_memory "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 )
 
 var _ = Describe("Metered Store", func() {

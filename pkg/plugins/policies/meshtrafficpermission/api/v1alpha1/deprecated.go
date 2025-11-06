@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func (t *MeshTrafficPermissionResource) Deprecations() []string {

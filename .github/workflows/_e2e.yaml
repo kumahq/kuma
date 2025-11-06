@@ -31,9 +31,6 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -77,15 +74,17 @@ jobs:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
           KUMA_DEBUG: ${{ runner.debug == '1' }}
         run: |
+          # shellcheck disable=SC2193
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
             export K8S_CLUSTER_TOOL=kind
             export KUMA_DEFAULT_RETRIES=60
             export KUMA_DEFAULT_TIMEOUT="6s"
           fi
+          # shellcheck disable=SC2193
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" != "kind"* ]]; then
-            export CI_K3S_VERSION=$E2E_PARAM_K8S_VERSION
-            export K3D_NETWORK_CNI=${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}
+            export CI_K3S_VERSION="$E2E_PARAM_K8S_VERSION"
+            export K3D_NETWORK_CNI="$E2E_PARAM_CNI_NETWORK_PLUGIN"
           fi
           if [[ "${{ env.E2E_PARAM_ARCH }}" == "arm64" ]]; then
             export MAKE_PARAMETERS="-j1"

@@ -6,10 +6,10 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 var _ k8s_common.Converter = &cachingConverter{}

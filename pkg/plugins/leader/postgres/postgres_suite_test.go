@@ -5,7 +5,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 
-	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 func TestPostgresLeader(t *testing.T) {

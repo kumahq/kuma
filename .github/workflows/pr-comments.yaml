@@ -22,7 +22,7 @@ jobs:
       - name: check-maintainer
         run: |
           # Ensure the commenter is a maintainer
-          if [[ `gh api  '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep ${{ github.event.comment.user.login }}` ]]; then
+          if gh api '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep -q ${{ github.event.comment.user.login }}; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
           else
             gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
@@ -33,8 +33,8 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - id: get-branch
         run: |
-          echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_ENV
-          echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> "$GITHUB_ENV"
+          echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> "$GITHUB_ENV"
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -43,9 +43,6 @@ jobs:
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
           token: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         env:
           GITHUB_TOKEN: ${{ github.token }}

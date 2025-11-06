@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	_ "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	_ "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
 
 var _ = Describe("ProxyTemplate", func() {

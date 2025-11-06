@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	meshtls_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
-	. "github.com/kumahq/kuma/test/framework"
-	framework_client "github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	meshtls_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	framework_client "github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func MeshTLS() {

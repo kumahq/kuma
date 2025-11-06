@@ -19,16 +19,16 @@ import (
 	kube_metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s/xds/hooks"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	k8s_extensions "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}

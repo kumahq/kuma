@@ -135,7 +135,7 @@ const file_pkg_plugins_ca_builtin_config_builtin_ca_config_proto_rawDesc = "" +
 	"\aRSAbits\x18\x01 \x01(\v2\x1c.google.protobuf.UInt32ValueR\aRSAbits\x12\x1e\n" +
 	"\n" +
 	"expiration\x18\x02 \x01(\tR\n" +
-	"expirationB*Z(github.com/kumahq/kuma/plugins/ca/configb\x06proto3"
+	"expirationB-Z+github.com/kumahq/kuma/v2/plugins/ca/configb\x06proto3"
 
 var (
 	file_pkg_plugins_ca_builtin_config_builtin_ca_config_proto_rawDescOnce sync.Once

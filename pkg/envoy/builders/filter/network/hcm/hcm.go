@@ -6,8 +6,8 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func LuaFilterAddFirst(code string) Configurer[envoy_hcm.HttpConnectionManager] {

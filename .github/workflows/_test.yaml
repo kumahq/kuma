@@ -23,9 +23,6 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -77,11 +74,11 @@ jobs:
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
             | .test_e2e_env.include = []
-            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ inputs.K8S_MIN_VERSION}}"}]
+            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
         run: |-
           BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'
           if [[ "${{ inputs.FULL_MATRIX }}" != "true" ]]; then
-            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
+            BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
           fi
           # Skip e2e tests if the PR has the label "ci/skip-e2e-test" or "ci/skip-test"
           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}" == "true" ]]; then
@@ -89,9 +86,11 @@ jobs:
           fi
 
           echo "final matrix: $BASE_MATRIX_ALL"
-          echo "matrix<<EOF" >> $GITHUB_OUTPUT
-          echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "matrix<<EOF"
+            echo "$BASE_MATRIX_ALL"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
   test_e2e:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e

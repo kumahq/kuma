@@ -3,8 +3,8 @@ package k8s
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 type ResourceMapperFunc func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error)

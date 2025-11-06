@@ -16,12 +16,12 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/data"
+	install_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/install/context"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/k8s"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/data"
 )
 
 type componentVersion struct {

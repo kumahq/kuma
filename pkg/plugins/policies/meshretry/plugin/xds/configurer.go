@@ -15,16 +15,16 @@ import (
 	envoy_prev_priority "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/priority/previous_priorities/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/defaults/mesh"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_meta "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/defaults/mesh"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	envoy_meta "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	envoy_upstream_http "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func UpdateCommonHttpProtocolOptions(cluster *envoy_cluster.Cluster, fn func(*envoy_upstream_http.HttpProtocolOptions)) error {

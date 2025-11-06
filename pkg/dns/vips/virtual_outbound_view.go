@@ -5,7 +5,7 @@ import (
 	"net"
 	"sort"
 
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 var logger = core.Log.WithName("vips-outbound-view")

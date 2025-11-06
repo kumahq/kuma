@@ -1,13 +1,13 @@
 package samples
 
 import (
-	"github.com/kumahq/kuma/pkg/core/kri"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
 
 func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {

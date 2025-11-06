@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 var _ = Describe("Maps", func() {

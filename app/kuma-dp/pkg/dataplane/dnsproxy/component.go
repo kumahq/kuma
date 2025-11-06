@@ -12,9 +12,9 @@ import (
 
 	"github.com/miekg/dns"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/dns/dpapi"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/dns/dpapi"
 )
 
 var log = core.Log.WithName("dnsproxy")

@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/kds/v2/server"
-	"github.com/kumahq/kuma/pkg/kds/v2/util"
-	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/v2/pkg/kds/v2/server"
+	"github.com/kumahq/kuma/v2/pkg/kds/v2/util"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 var _ = Describe("Tenant callbacks", func() {

@@ -3,9 +3,6 @@ components:
     DataSource_File:
       properties:
         file:
-          description: |-
-            Data source is a path to a file.
-            Deprecated, use other sources of a data.
           type: string
       type: object
 info:

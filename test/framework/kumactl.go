@@ -6,7 +6,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	"github.com/kumahq/kuma/test/framework/kumactl"
+	"github.com/kumahq/kuma/v2/test/framework/kumactl"
 )
 
 func NewKumactlOptionsE2E(t testing.TestingT, cpname string, verbose bool) *kumactl.KumactlOptions {

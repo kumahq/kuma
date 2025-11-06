@@ -6,7 +6,7 @@ fmt/proto: ## Dev: Run buf format on .proto files
 tidy:
 	@TOP=$(shell pwd) && \
 	for m in $$(find . -name go.mod) ; do \
-		( cd $$(dirname $$m) && go mod tidy ) ; \
+		( cd $$(dirname $$m) && $(GO) mod tidy ) ; \
 	done
 
 .PHONY: shellcheck
@@ -35,7 +35,7 @@ ginkgo/unfocus:
 
 .PHONY: ginkgo/lint
 ginkgo/lint:
-	go run $(TOOLS_DIR)/ci/check_test_files.go
+	$(GO) run $(TOOLS_DIR)/ci/check_test_files.go
 
 .PHONY: format
 format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
@@ -58,8 +58,16 @@ hadolint:
 	fi; \
 	find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile*" ! -iname "*dockerignore*" -exec $(HADOLINT) {} \;
 
+.PHONY: actionlint
+actionlint: ## Lint GitHub Actions workflows (skipped in CI, runs in separate actionlint workflow)
+ifeq ($(CI),true)
+	@echo "Skipping actionlint in CI environment"
+else
+	$(ACTIONLINT) -color
+endif
+
 .PHONY: lint
-lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
+lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint actionlint
 
 
 .PHONY: check

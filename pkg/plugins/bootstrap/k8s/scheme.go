@@ -7,9 +7,9 @@ import (
 	kube_client_scheme "k8s.io/client-go/kubernetes/scheme"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8scnicncfio "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 )
 
 // NewScheme creates a new scheme with all the necessary schemas added already (kuma CRD, builtin resources, cni CRDs...).

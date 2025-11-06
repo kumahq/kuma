@@ -45,23 +45,23 @@ jobs:
           pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json | tr '\n' ' ')
           echo "PRs with 'ci/verify-stability' label: $pr_numbers_with_verify_stability"
           echo "PRs with 'ci/verify-stability-merge-master' label: $pr_numbers_with_verify_stability_merge_master"
-          echo "pr_numbers_with_verify_stability=$pr_numbers_with_verify_stability" >> $GITHUB_OUTPUT
-          echo "pr_numbers_with_verify_stability_merge_master=$pr_numbers_with_verify_stability_merge_master" >> $GITHUB_OUTPUT
+          echo "pr_numbers_with_verify_stability=$pr_numbers_with_verify_stability" >> "$GITHUB_OUTPUT"
+          echo "pr_numbers_with_verify_stability_merge_master=$pr_numbers_with_verify_stability_merge_master" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - name: Merge master branch (if applicable) and push a single commit
         if: steps.process_prs.outputs.pr_numbers_with_verify_stability != ''
         run: |
           eval "pr_numbers=(${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }})"
-          for pr_number in $pr_numbers; do
+          for pr_number in "${pr_numbers[@]}"; do
             current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
             echo "Processing PR #$pr_number"
 
             # Fetch PR details to get the base branch (original branch name)
-            pr_branch=$(gh pr view $pr_number --json headRefName --jq '.headRefName')
+            pr_branch=$(gh pr view "$pr_number" --json headRefName --jq '.headRefName')
             echo "The original branch for PR #$pr_number is $pr_branch"
-            git fetch origin pull/$pr_number/head:$pr_branch
-            git checkout $pr_branch
+            git fetch origin "pull/$pr_number/head:$pr_branch"
+            git checkout "$pr_branch"
 
             git config user.name "${GH_USER}"
             git config user.email "${GH_EMAIL}"
@@ -77,7 +77,7 @@ jobs:
             # Commit an empty commit to trigger the CI
             echo "Pushing empty commit to trigger CI for PR #$pr_number on $current_datetime"
             git commit --allow-empty -m "Trigger CI for PR #$pr_number on $current_datetime"
-            git push origin $pr_branch
+            git push origin "$pr_branch"
           done
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

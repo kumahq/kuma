@@ -1,8 +1,8 @@
 package framework
 
 import (
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 )
 
 func GetMeshServiceStatus(cluster Cluster, meshServiceName, meshName string) (*meshservice_api.MeshService, *meshservice_api.MeshServiceStatus, error) {

@@ -6,12 +6,12 @@ import (
 	"cirello.io/pglock"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
-	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
-	leader_postgres "github.com/kumahq/kuma/pkg/plugins/leader/postgres"
+	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	common_postgres "github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
+	leader_memory "github.com/kumahq/kuma/v2/pkg/plugins/leader/memory"
+	leader_postgres "github.com/kumahq/kuma/v2/pkg/plugins/leader/postgres"
 )
 
 func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) {

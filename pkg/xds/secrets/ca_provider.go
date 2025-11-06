@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 type CaProvider interface {

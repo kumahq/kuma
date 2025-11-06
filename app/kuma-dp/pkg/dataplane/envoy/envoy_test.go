@@ -13,10 +13,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 var _ = Describe("Envoy", func() {

@@ -5,7 +5,7 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
 )
 
 type TagsMetadataConfigurer struct {

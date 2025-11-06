@@ -1,8 +1,8 @@
 package samples
 
 import (
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
 //nolint:gosec

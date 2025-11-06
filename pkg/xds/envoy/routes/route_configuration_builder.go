@@ -4,9 +4,9 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
 )
 
 // RouteConfigurationBuilderOpt is a configuration option for RouteConfigurationBuilder.
