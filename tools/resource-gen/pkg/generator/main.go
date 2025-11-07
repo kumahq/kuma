@@ -398,7 +398,9 @@ func init() {
 
 // moduleVersion is the module path suffix for Kuma's Go module.
 // Used by AddGoComments() to construct the full import path:
-//   github.com/kumahq/kuma/v2
+//
+//	github.com/kumahq/kuma/v2
+//
 // IMPORTANT: When releasing Kuma v3, update this to "/v3" and search for
 // "github.com/kumahq/kuma/v2" across the codebase to find all occurrences.
 const moduleVersion = "/v2"
@@ -677,7 +679,9 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 	if err := os.Chdir(absReadDir); err != nil {
 		return nil, fmt.Errorf("failed to change directory to %s: %w", absReadDir, err)
 	}
-	defer os.Chdir(originalDir)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
 
 	err = rflctr.AddGoComments(modulePath, "api/")
 	if err != nil {
