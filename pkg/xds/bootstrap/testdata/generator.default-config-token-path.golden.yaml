@@ -24,6 +24,14 @@ dynamicResources:
               '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
               secretData:
                 filename: /path/to/file
+        channelArgs:
+          args:
+            grpc.http2.max_pings_without_data:
+              intValue: "0"
+            grpc.keepalive_time_ms:
+              intValue: "10000"
+            grpc.keepalive_timeout_ms:
+              intValue: "30000"
         channelCredentials:
           sslCredentials:
             rootCerts:
@@ -52,6 +60,14 @@ hdsConfig:
             '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
             secretData:
               filename: /path/to/file
+      channelArgs:
+        args:
+          grpc.http2.max_pings_without_data:
+            intValue: "0"
+          grpc.keepalive_time_ms:
+            intValue: "10000"
+          grpc.keepalive_timeout_ms:
+            intValue: "30000"
       channelCredentials:
         sslCredentials:
           rootCerts:
