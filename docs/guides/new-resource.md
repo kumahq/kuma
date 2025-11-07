@@ -17,7 +17,7 @@ go run ./tools/policy-gen/bootstrap \
 
 2. Edit Generated Files
 
-Add markers above your struct in `api/v1alpha1/<resource>.proto`:
+Add markers above your struct in `api/v1alpha1/<resource>.go`:
 
 ```go
 // YourResource
