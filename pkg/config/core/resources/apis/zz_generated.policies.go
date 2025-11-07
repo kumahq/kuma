@@ -10,4 +10,5 @@ var DefaultEnabled = []string{
 	"meshmultizoneservices",
 	"meshservices",
 	"meshtrusts",
+	"workloads",
 }

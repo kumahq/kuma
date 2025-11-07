@@ -16,6 +16,7 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
@@ -246,6 +247,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceOverviewType:   true,
 			mesh.DataplaneType:         true,
+			workload_api.WorkloadType:  true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
