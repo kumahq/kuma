@@ -396,15 +396,6 @@ func init() {
 {{end}}
 `))
 
-// moduleVersion is the module path suffix for Kuma's Go module.
-// Used by AddGoComments() to construct the full import path:
-//
-//	github.com/kumahq/kuma/v2
-//
-// IMPORTANT: When releasing Kuma v3, update this to "/v3" and search for
-// "github.com/kumahq/kuma/v2" across the codebase to find all occurrences.
-const moduleVersion = "/v2"
-
 var (
 	readDir  = "."
 	writeDir = "."
@@ -645,15 +636,11 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 			return s
 		},
 	}
-	base := "kuma"
-	if readDir == "kuma" {
-		base = ""
-	}
 
 	// Workaround: AddGoComments requires the correct module path to load Go source
 	// comments for OpenAPI schema descriptions. Without this, field descriptions
 	// are lost during schema generation.
-	modulePath := "github.com/kumahq/" + base + moduleVersion
+	modulePath := "github.com/kumahq/kuma/v2"
 
 	// AddGoComments uses Go's package loading which requires the path to be relative
 	// to the current working directory. For downstream projects using symlinks,
