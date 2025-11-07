@@ -652,20 +652,34 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 	// comments for OpenAPI schema descriptions. Without this, field descriptions
 	// are lost during schema generation.
 	modulePath := "github.com/kumahq/" + base + moduleVersion
-	apiPath := path.Join(readDir, "api/")
 
-	// Convert to absolute path and resolve symlinks to handle cases where
-	// downstream projects use symlinks
-	absPath, err := filepath.Abs(apiPath)
+	// AddGoComments uses Go's package loading which requires the path to be relative
+	// to the current working directory. For downstream projects using symlinks,
+	// we need to temporarily change to the resolved directory.
+	originalDir, err := os.Getwd()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for %s: %w", apiPath, err)
-	}
-	absPath, err = filepath.EvalSymlinks(absPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve symlinks for %s: %w", absPath, err)
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	err = rflctr.AddGoComments(modulePath, absPath)
+	// Resolve symlinks in readDir to get actual module path
+	resolvedReadDir, err := filepath.EvalSymlinks(readDir)
+	if err != nil {
+		resolvedReadDir = readDir
+	}
+
+	// Convert to absolute path
+	absReadDir, err := filepath.Abs(resolvedReadDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Change to module root directory
+	if err := os.Chdir(absReadDir); err != nil {
+		return nil, fmt.Errorf("failed to change directory to %s: %w", absReadDir, err)
+	}
+	defer os.Chdir(originalDir)
+
+	err = rflctr.AddGoComments(modulePath, "api/")
 	if err != nil {
 		return nil, err
 	}
