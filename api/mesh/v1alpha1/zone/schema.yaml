@@ -1,8 +1,13 @@
 components:
   schemas:
     Zone:
+      description: Zone defines the Zone configuration used at the Global Control
+        Plane within a distributed deployment
       properties:
         enabled:
+          description: |-
+            enable allows to turn the zone on/off and exclude the whole zone from
+            balancing traffic on it
           type: boolean
       type: object
 info:

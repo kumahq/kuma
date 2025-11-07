@@ -3,6 +3,7 @@ components:
     DataSource_Inline:
       properties:
         inline:
+          description: Data source is inline bytes.
           format: byte
           type: string
       type: object

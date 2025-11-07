@@ -3,6 +3,7 @@ components:
     DataSource_Secret:
       properties:
         secret:
+          description: Data source is a secret with given Secret key.
           type: string
       type: object
 info:
