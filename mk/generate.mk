@@ -110,8 +110,10 @@ generate/policy-helm:
 # Discover OpenAPI specification files
 # - Searches api/openapi/specs/ and immediate subdirectories for *.yaml files
 # - Excludes kri/ subdirectory (handled separately by oapi-gen tool)
+# - Allows additional exclusions via OAS_SPECS_EXTRA_FILTER (for downstream projects)
 # - Sorts results for deterministic ordering
-OAS_SPECS := $(sort $(filter-out api/openapi/specs/kri/%, \
+OAS_SPECS_EXTRA_FILTER ?=
+OAS_SPECS := $(sort $(filter-out api/openapi/specs/kri/% $(OAS_SPECS_EXTRA_FILTER), \
 	$(wildcard api/openapi/specs/*.yaml) \
 	$(wildcard api/openapi/specs/*/*.yaml)))
 
