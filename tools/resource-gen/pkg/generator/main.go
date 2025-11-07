@@ -12,13 +12,11 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
-	"github.com/pkg/errors"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -398,77 +396,19 @@ func init() {
 {{end}}
 `))
 
+// moduleVersion is the module path suffix for Kuma's Go module.
+// Used by AddGoComments() to construct the full import path:
+//
+//	github.com/kumahq/kuma/v2
+//
+// IMPORTANT: When releasing Kuma v3, update this to "/v3" and search for
+// "github.com/kumahq/kuma/v2" across the codebase to find all occurrences.
+const moduleVersion = "/v2"
+
 var (
 	readDir  = "."
 	writeDir = "."
-
-	moduleVersionCache string
-	moduleVersionOnce  sync.Once
-	moduleVersionError error
 )
-
-// GetModuleVersion reads go.mod and extracts the module version suffix.
-// Returns empty string for v0/v1, or "/vN" for v2+.
-// Caches the result after first call (thread-safe via sync.Once).
-func GetModuleVersion() (string, error) {
-	moduleVersionOnce.Do(func() {
-		moduleVersionCache, moduleVersionError = parseModuleVersion()
-	})
-
-	return moduleVersionCache, moduleVersionError
-}
-
-func parseModuleVersion() (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get working directory")
-	}
-
-	for {
-		goModPath := filepath.Join(dir, "go.mod")
-		if _, err := os.Stat(goModPath); err == nil {
-			content, err := os.ReadFile(goModPath)
-			if err != nil {
-				return "", errors.Wrap(err, "failed to read go.mod")
-			}
-
-			lines := strings.Split(string(content), "\n")
-			if len(lines) == 0 {
-				return "", errors.New("go.mod is empty")
-			}
-
-			moduleLine := strings.TrimSpace(lines[0])
-			modulePath, found := strings.CutPrefix(moduleLine, "module ")
-			if !found {
-				return "", errors.Errorf("go.mod first line doesn't start with 'module': %s", moduleLine)
-			}
-
-			modulePath = strings.TrimSpace(modulePath)
-
-			// Extract version suffix from module path
-			// Expected format: github.com/kumahq/kuma/v2 -> /v2
-			parts := strings.Split(modulePath, "/")
-			if len(parts) == 0 {
-				return "", errors.Errorf("invalid module path: %s", modulePath)
-			}
-
-			lastPart := parts[len(parts)-1]
-			if strings.HasPrefix(lastPart, "v") {
-				return "/" + lastPart, nil
-			}
-
-			// No version suffix (v0 or v1)
-			return "", nil
-		}
-
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", errors.New("could not find go.mod in any parent directory")
-		}
-
-		dir = parent
-	}
-}
 
 func Run() {
 	var gen string
@@ -710,16 +650,40 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 		base = ""
 	}
 
-	// Get module version from go.mod
-	moduleVersion, err := GetModuleVersion()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get module version")
-	}
-
 	// Workaround: AddGoComments requires the correct module path to load Go source
 	// comments for OpenAPI schema descriptions. Without this, field descriptions
 	// are lost during schema generation.
-	err = rflctr.AddGoComments("github.com/kumahq/"+base+moduleVersion, path.Join(readDir, "api/"))
+	modulePath := "github.com/kumahq/" + base + moduleVersion
+
+	// AddGoComments uses Go's package loading which requires the path to be relative
+	// to the current working directory. For downstream projects using symlinks,
+	// we need to temporarily change to the resolved directory.
+	originalDir, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	// Resolve symlinks in readDir to get actual module path
+	resolvedReadDir, err := filepath.EvalSymlinks(readDir)
+	if err != nil {
+		resolvedReadDir = readDir
+	}
+
+	// Convert to absolute path
+	absReadDir, err := filepath.Abs(resolvedReadDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Change to module root directory
+	if err := os.Chdir(absReadDir); err != nil {
+		return nil, fmt.Errorf("failed to change directory to %s: %w", absReadDir, err)
+	}
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	err = rflctr.AddGoComments(modulePath, "api/")
 	if err != nil {
 		return nil, err
 	}
