@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"strconv"
 	"strings"
@@ -266,16 +267,14 @@ func createDynamicConfig(
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
 
-	var extraLabels map[string]string
-	if unified_naming.Enabled(proxy.Metadata, mesh) {
-		extraLabels = map[string]string{}
-		extraLabels[WorkloadAttributeKey] = "TODO"
-	} else {
-		extraLabels = mads.DataplaneLabels(proxy.Dataplane, gateways)
+	extraLabels := map[string]string{
+		WorkloadAttributeKey: "TODO",
+	}
+	if !unified_naming.Enabled(proxy.Metadata, mesh) {
+		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["mesh"] = mesh.GetMeta().GetName()
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
-		extraLabels[WorkloadAttributeKey] = "TODO"
 	}
 
 	return dpapi.MeshMetricDpConfig{
