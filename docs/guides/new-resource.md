@@ -41,13 +41,12 @@ Edit implementation:
 make generate
 ```
 
-4. Update tests 
+4. Update tests.
 
 ```shell
 make test UPDATE_GOLDEN_FILES=true
 ```
 
-###
 
 ## Common Markers
 
