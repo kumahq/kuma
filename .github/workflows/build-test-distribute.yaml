@@ -59,6 +59,7 @@ jobs:
   check:
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
+      pull-requests: read # needed by paths-filter to access PR file list
     timeout-minutes: 40
     runs-on: ubuntu-24.04
     env:
