@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
@@ -401,27 +402,20 @@ var (
 	readDir  = "."
 	writeDir = "."
 
-	moduleVersionCache     string
-	moduleVersionCacheOnce bool
+	moduleVersionCache string
+	moduleVersionOnce  sync.Once
+	moduleVersionError error
 )
 
 // GetModuleVersion reads go.mod and extracts the module version suffix.
 // Returns empty string for v0/v1, or "/vN" for v2+.
-// Caches the result after first call.
+// Caches the result after first call (thread-safe via sync.Once).
 func GetModuleVersion() (string, error) {
-	if moduleVersionCacheOnce {
-		return moduleVersionCache, nil
-	}
+	moduleVersionOnce.Do(func() {
+		moduleVersionCache, moduleVersionError = parseModuleVersion()
+	})
 
-	version, err := parseModuleVersion()
-	if err != nil {
-		return "", err
-	}
-
-	moduleVersionCache = version
-	moduleVersionCacheOnce = true
-
-	return version, nil
+	return moduleVersionCache, moduleVersionError
 }
 
 func parseModuleVersion() (string, error) {
