@@ -2,7 +2,6 @@ package generator
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"go/format"
@@ -18,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
+	"github.com/pkg/errors"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -427,7 +427,7 @@ func GetModuleVersion() (string, error) {
 func parseModuleVersion() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("failed to get working directory: %w", err)
+		return "", errors.Wrap(err, "failed to get working directory")
 	}
 
 	for {
@@ -435,7 +435,7 @@ func parseModuleVersion() (string, error) {
 		if _, err := os.Stat(goModPath); err == nil {
 			content, err := os.ReadFile(goModPath)
 			if err != nil {
-				return "", fmt.Errorf("failed to read go.mod: %w", err)
+				return "", errors.Wrap(err, "failed to read go.mod")
 			}
 
 			lines := strings.Split(string(content), "\n")
@@ -446,7 +446,7 @@ func parseModuleVersion() (string, error) {
 			moduleLine := strings.TrimSpace(lines[0])
 			modulePath, found := strings.CutPrefix(moduleLine, "module ")
 			if !found {
-				return "", fmt.Errorf("go.mod first line doesn't start with 'module': %s", moduleLine)
+				return "", errors.Errorf("go.mod first line doesn't start with 'module': %s", moduleLine)
 			}
 
 			modulePath = strings.TrimSpace(modulePath)
@@ -455,7 +455,7 @@ func parseModuleVersion() (string, error) {
 			// Expected format: github.com/kumahq/kuma/v2 -> /v2
 			parts := strings.Split(modulePath, "/")
 			if len(parts) == 0 {
-				return "", fmt.Errorf("invalid module path: %s", modulePath)
+				return "", errors.Errorf("invalid module path: %s", modulePath)
 			}
 
 			lastPart := parts[len(parts)-1]
@@ -719,7 +719,7 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 	// Get module version from go.mod
 	moduleVersion, err := GetModuleVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get module version: %w", err)
+		return nil, errors.Wrap(err, "failed to get module version")
 	}
 
 	// Workaround: AddGoComments requires the correct module path to load Go source
