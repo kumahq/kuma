@@ -14,6 +14,7 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -129,6 +130,7 @@ var _ = Describe("Global Sync", func() {
 			mesh.DataplaneType:         true,
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceOverviewType:   true,
+			workload_api.WorkloadType:  true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced

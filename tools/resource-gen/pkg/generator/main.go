@@ -8,14 +8,17 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
+	"github.com/pkg/errors"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -398,7 +401,74 @@ func init() {
 var (
 	readDir  = "."
 	writeDir = "."
+
+	moduleVersionCache string
+	moduleVersionOnce  sync.Once
+	moduleVersionError error
 )
+
+// GetModuleVersion reads go.mod and extracts the module version suffix.
+// Returns empty string for v0/v1, or "/vN" for v2+.
+// Caches the result after first call (thread-safe via sync.Once).
+func GetModuleVersion() (string, error) {
+	moduleVersionOnce.Do(func() {
+		moduleVersionCache, moduleVersionError = parseModuleVersion()
+	})
+
+	return moduleVersionCache, moduleVersionError
+}
+
+func parseModuleVersion() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get working directory")
+	}
+
+	for {
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			content, err := os.ReadFile(goModPath)
+			if err != nil {
+				return "", errors.Wrap(err, "failed to read go.mod")
+			}
+
+			lines := strings.Split(string(content), "\n")
+			if len(lines) == 0 {
+				return "", errors.New("go.mod is empty")
+			}
+
+			moduleLine := strings.TrimSpace(lines[0])
+			modulePath, found := strings.CutPrefix(moduleLine, "module ")
+			if !found {
+				return "", errors.Errorf("go.mod first line doesn't start with 'module': %s", moduleLine)
+			}
+
+			modulePath = strings.TrimSpace(modulePath)
+
+			// Extract version suffix from module path
+			// Expected format: github.com/kumahq/kuma/v2 -> /v2
+			parts := strings.Split(modulePath, "/")
+			if len(parts) == 0 {
+				return "", errors.Errorf("invalid module path: %s", modulePath)
+			}
+
+			lastPart := parts[len(parts)-1]
+			if strings.HasPrefix(lastPart, "v") {
+				return "/" + lastPart, nil
+			}
+
+			// No version suffix (v0 or v1)
+			return "", nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errors.New("could not find go.mod in any parent directory")
+		}
+
+		dir = parent
+	}
+}
 
 func Run() {
 	var gen string
@@ -639,8 +709,17 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 	if readDir == "kuma" {
 		base = ""
 	}
-	// workaround for https://github.com/Kong/kong-mesh/issues/7376
-	err := rflctr.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
+
+	// Get module version from go.mod
+	moduleVersion, err := GetModuleVersion()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get module version")
+	}
+
+	// Workaround: AddGoComments requires the correct module path to load Go source
+	// comments for OpenAPI schema descriptions. Without this, field descriptions
+	// are lost during schema generation.
+	err = rflctr.AddGoComments("github.com/kumahq/"+base+moduleVersion, path.Join(readDir, "api/"))
 	if err != nil {
 		return nil, err
 	}
