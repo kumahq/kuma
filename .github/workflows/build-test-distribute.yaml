@@ -25,7 +25,7 @@ jobs:
       contents: read
       pull-requests: read # needed to fetch PR metadata for only-new-issues
       checks: write # needed to create check runs with annotations
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -53,7 +53,7 @@ jobs:
           GOGC: "80"
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: --timeout=10m --verbose
+          args: --timeout=25m --verbose
           only-new-issues: ${{ github.event_name == 'pull_request' }}
           github-token: ${{ github.token }}
   check:
