@@ -31,6 +31,10 @@ func Workload() {
 		DebugKube(kubernetes.Cluster, mesh, namespace)
 	})
 
+	E2EAfterEach(func() {
+		Expect(kubernetes.Cluster.DeleteNamespace(namespace)).To(Succeed())
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
@@ -103,7 +107,7 @@ func Workload() {
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 
-		// and verify dataplane has workload annotation set to "redis" (from app label)
+		// and verify dataplane has workload annotation set to "test-server" (from app.kubernetes.io/name label)
 		Eventually(func(g Gomega) {
 			dpName := fmt.Sprintf("%s.%s", podName, namespace)
 			dpYAML, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
