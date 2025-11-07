@@ -675,15 +675,13 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Change to module root directory
+	// Change to module root directory only for AddGoComments
+	// Must restore before ReflectFromType to avoid path issues in recursive calls
 	if err := os.Chdir(absReadDir); err != nil {
 		return nil, fmt.Errorf("failed to change directory to %s: %w", absReadDir, err)
 	}
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-
 	err = rflctr.AddGoComments(modulePath, "api/")
+	_ = os.Chdir(originalDir)
 	if err != nil {
 		return nil, err
 	}
