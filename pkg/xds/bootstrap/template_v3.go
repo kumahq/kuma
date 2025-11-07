@@ -467,6 +467,25 @@ func buildGrpcService(params configParameters, useTokenPath bool, clusterName st
 							},
 						},
 					},
+					ChannelArgs: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs{
+						Args: map[string]*envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value{
+							"grpc.keepalive_time_ms": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: 10000, // 10 seconds
+								},
+							},
+							"grpc.keepalive_timeout_ms": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: 30000, // 30 seconds
+								},
+							},
+							"grpc.http2.max_pings_without_data": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: 0,
+								},
+							},
+						},
+					},
 				},
 			},
 		}
