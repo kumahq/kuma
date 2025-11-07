@@ -555,6 +555,7 @@ type LabelsOptions struct {
 	ZoneName       string
 	Namespace      Namespace
 	ServiceAccount string
+	Workload       string
 }
 
 type LabelsOptionsFunc func(*LabelsOptions)
@@ -582,6 +583,12 @@ func WithNamespace(namespace Namespace) LabelsOptionsFunc {
 func WithServiceAccount(name string) LabelsOptionsFunc {
 	return func(opts *LabelsOptions) {
 		opts.ServiceAccount = name
+	}
+}
+
+func WithWorkload(name string) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.Workload = name
 	}
 }
 
@@ -675,6 +682,10 @@ func ComputeLabels(
 		if labelsOpts.ServiceAccount != "" {
 			set(metadata.KumaServiceAccount, labelsOpts.ServiceAccount)
 		}
+	}
+
+	if labelsOpts.Workload != "" {
+		set(metadata.KumaWorkload, labelsOpts.Workload)
 	}
 
 	return labels, nil

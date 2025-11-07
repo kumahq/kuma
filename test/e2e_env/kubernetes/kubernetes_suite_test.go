@@ -38,6 +38,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/trafficlog"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/virtualoutbound"
+	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/workload"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
@@ -98,4 +99,5 @@ var (
 	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
 	_ = Describe("ApplicationProbeProxy", appprobeproxy.ApplicationProbeProxy, Ordered)
 	_ = Describe("MeshIdentity Spire", meshidentity.Spire, Ordered)
+	_ = Describe("Workload", workload.Workload, Ordered)
 )

@@ -142,6 +142,9 @@ const (
 	// KumaServiceAccount specifies the ServiceAccount associated with the Pod.
 	KumaServiceAccount = "k8s.kuma.io/service-account"
 
+	// KumaWorkload specifies the workload identifier associated with the Pod.
+	KumaWorkload = "kuma.io/workload"
+
 	// KumaSpireSupport allows injecting Spire-related volumes into a single Pod.
 	KumaSpireSupport = "k8s.kuma.io/spire-support"
 )
