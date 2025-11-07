@@ -23,7 +23,7 @@ jobs:
   golangci-lint:
     permissions:
       contents: read
-      pull-requests: read # needed to fetch PR metadata for only-new-issues
+      pull-requests: read # needed by golangci-lint-action
       checks: write # needed to create check runs with annotations
     timeout-minutes: 20
     runs-on: ubuntu-24.04
