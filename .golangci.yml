@@ -81,6 +81,12 @@ linters:
           - github.com/hashicorp/multierror:
               recommendations:
                 - errors
+          - golang.org/x/exp/maps:
+              recommendations:
+                - maps
+          - golang.org/x/exp/slices:
+              recommendations:
+                - slices
           - gopkg.in/yaml.v2:
               recommendations:
                 - sigs.k8s.io/yaml
