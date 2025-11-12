@@ -198,6 +198,7 @@ type DataplaneRuntime struct {
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// ConfigDir was used to store Envoy bootstrap config.
+	//
 	// Deprecated: use WorkDir instead.
 	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir" deprecated:"use WorkDir instead"`
 	// WorkDir is the directory to store auto-generated Envoy bootstrap config.
@@ -225,6 +226,7 @@ type DataplaneRuntime struct {
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process
+	//
 	// Deprecated: use WorkDir instead
 	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
