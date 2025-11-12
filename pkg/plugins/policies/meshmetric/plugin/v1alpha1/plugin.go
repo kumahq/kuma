@@ -12,6 +12,7 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -268,7 +269,7 @@ func createDynamicConfig(
 	}
 
 	extraLabels := map[string]string{
-		WorkloadAttributeKey: "TODO",
+		WorkloadAttributeKey: proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload],
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
