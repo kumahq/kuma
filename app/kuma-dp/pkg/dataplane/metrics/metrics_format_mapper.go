@@ -21,9 +21,7 @@ const (
 	kumaOtelScope      = "kuma"
 )
 
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, kumaVersion string, extraLabels map[string]string, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
-	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
-
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
 	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
 	for _, prometheusMetric := range appMetrics {
 		var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
@@ -181,23 +179,6 @@ func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantil
 		})
 	}
 	return otelQuantiles
-}
-
-func extraAttributesFrom(mesh string, dataplane string, service string, extraLabels map[string]string) []attribute.KeyValue {
-	var extraAttributes []attribute.KeyValue
-	if mesh != "" {
-		extraAttributes = append(extraAttributes, attribute.String("mesh", mesh))
-	}
-	if dataplane != "" {
-		extraAttributes = append(extraAttributes, attribute.String("dataplane", dataplane))
-	}
-	if service != "" {
-		extraAttributes = append(extraAttributes, attribute.String("service", service))
-	}
-	for k, v := range extraLabels {
-		extraAttributes = append(extraAttributes, attribute.String(k, v))
-	}
-	return extraAttributes
 }
 
 func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (instrumentation.Scope, []attribute.KeyValue) {

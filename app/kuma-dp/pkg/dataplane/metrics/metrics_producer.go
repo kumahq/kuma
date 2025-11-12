@@ -17,9 +17,6 @@ import (
 var log = core.Log.WithName("metrics-custom-producer")
 
 type AggregatedProducer struct {
-	mesh                      string
-	dataplane                 string
-	service                   string
 	kumaVersion               string
 	httpClientIPv4            http.Client
 	httpClientIPv6            http.Client
@@ -30,11 +27,8 @@ type AggregatedProducer struct {
 
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
-func NewAggregatedMetricsProducer(mesh string, dataplane string, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string) *AggregatedProducer {
+func NewAggregatedMetricsProducer(applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string) *AggregatedProducer {
 	return &AggregatedProducer{
-		mesh:                      mesh,
-		dataplane:                 dataplane,
-		service:                   service,
 		kumaVersion:               kumaVersion,
 		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
@@ -122,7 +116,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		log.Error(err, "failed to mutate metrics")
 		return nil
 	}
-	return FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, ap.kumaVersion, app.ExtraLabels, requestTime)
+	return FromPrometheusMetrics(metricsFromApplication, ap.kumaVersion, app.ExtraAttributes, requestTime)
 }
 
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {

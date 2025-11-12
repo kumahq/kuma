@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -49,6 +48,7 @@ var _ = Describe("MeshMetric", func() {
 		Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
 	},
 		Entry("default", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
@@ -83,6 +83,7 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("basic", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
@@ -119,6 +120,7 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("multiple_prometheus", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
@@ -164,6 +166,7 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("openTelemetry", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
@@ -231,17 +234,62 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("otel_and_prometheus", testCase{
-			context: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &mesh.MeshResource{
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+			context: *xds_builders.Context().WithMeshBuilder(
+				samples.MeshDefaultBuilder().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			).Build(),
+			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{
+										Mesh: "default",
+										Name: "meshmetric1",
+									},
+								},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: "/metrics",
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+									},
+								},
 							},
 						},
-					},
-				},
-			},
+					}),
+				).
+				Build(),
+		}),
+		Entry("otel_and_prometheus_unified_naming", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(
+				samples.MeshDefaultBuilder().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
@@ -295,6 +343,7 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("multiple_otel", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).

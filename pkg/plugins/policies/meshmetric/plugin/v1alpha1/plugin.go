@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"strconv"
 	"strings"
@@ -43,6 +44,7 @@ const (
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	OpenTelemetryGrpcPort        = 4317
+	WorkloadAttributeKey         = "kuma.workload"
 )
 
 var DefaultRefreshInterval = k8s.Duration{Duration: time.Minute}
@@ -202,7 +204,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 }
 
 func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -224,7 +226,14 @@ func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
 	return values
 }
 
-func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_context.ResourceMap, prometheusBackends []*api.PrometheusBackend, openTelemetryBackends []*api.OpenTelemetryBackend) dpapi.MeshMetricDpConfig {
+func createDynamicConfig(
+	conf api.Conf,
+	proxy *core_xds.Proxy,
+	mesh *core_mesh.MeshResource,
+	resources xds_context.ResourceMap,
+	prometheusBackends []*api.PrometheusBackend,
+	openTelemetryBackends []*api.OpenTelemetryBackend,
+) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
 	for _, app := range pointer.Deref(conf.Applications) {
 		applications = append(applications, dpapi.Application{
@@ -257,7 +266,16 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_con
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
-	extraLabels := mads.DataplaneLabels(proxy.Dataplane, gateways)
+
+	extraLabels := map[string]string{
+		WorkloadAttributeKey: "TODO",
+	}
+	if !unified_naming.Enabled(proxy.Metadata, mesh) {
+		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
+		extraLabels["mesh"] = mesh.GetMeta().GetName()
+		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
+		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
+	}
 
 	return dpapi.MeshMetricDpConfig{
 		Observability: dpapi.Observability{

@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
@@ -30,7 +31,12 @@ var _ = Describe("Metrics format mapper", func() {
 		// when
 		metrics, err := AggregatedOtelMutator()(input)
 		Expect(err).ToNot(HaveOccurred())
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", "0.0.0", map[string]string{"extraLabel": "test"}, time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
+		openTelemetryMetrics := FromPrometheusMetrics(
+			metrics,
+			"0.0.0",
+			[]attribute.KeyValue{attribute.String("extraLabel", "test-label")},
+			time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC),
+		)
 
 		// then
 		marshal, err := json.MarshalIndent(flatten(openTelemetryMetrics), "", "  ")

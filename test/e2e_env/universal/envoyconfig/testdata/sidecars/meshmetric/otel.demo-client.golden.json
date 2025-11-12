@@ -53,7 +53,7 @@
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"OpenTelemetry\",\"name\":\"otel-collector.observability.svc-4317\",\"openTelemetry\":{\"endpoint\":\"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock\",\"refreshInterval\":\"1m0s\"}}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma_io_service\":\"demo-client\",\"kuma_io_services\":\",demo-client,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"team\":\"client-owners\",\"teams\":\",client-owners,\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"OpenTelemetry\",\"name\":\"otel-collector.observability.svc-4317\",\"openTelemetry\":{\"endpoint\":\"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock\",\"refreshInterval\":\"1m0s\"}}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"demo-client\",\"kuma.workload\":\"TODO\",\"kuma_io_service\":\"demo-client\",\"kuma_io_services\":\",demo-client,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"demo-client\",\"team\":\"client-owners\",\"teams\":\",client-owners,\"}}}}"
           },
           "status": 200
         },
@@ -65,7 +65,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "b2ef154b0dddbdf2922cd6630f649dec23924857926c73fae67689f8b59ca0ec"
+              "value": "4300d60d4a05b95be55a605b79e7a77c172426d03f20d8bba0201076039da1a7"
             }
           }
         ]
@@ -83,7 +83,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "b2ef154b0dddbdf2922cd6630f649dec23924857926c73fae67689f8b59ca0ec"
+                "exact": "4300d60d4a05b95be55a605b79e7a77c172426d03f20d8bba0201076039da1a7"
               }
             }
           ],

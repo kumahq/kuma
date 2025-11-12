@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/otlptranslator"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
@@ -96,7 +97,7 @@ type ApplicationToScrape struct {
 	Path              string
 	Port              uint32
 	IsIPv6            bool
-	ExtraLabels       map[string]string
+	ExtraAttributes   []attribute.KeyValue
 	QueryModifier     QueryParametersModifier
 	Mutator           MetricsMutator
 	MeshMetricMutator MeshMetricMutator

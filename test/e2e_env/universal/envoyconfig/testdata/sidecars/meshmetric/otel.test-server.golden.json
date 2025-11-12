@@ -53,7 +53,7 @@
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"OpenTelemetry\",\"name\":\"otel-collector.observability.svc-4317\",\"openTelemetry\":{\"endpoint\":\"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock\",\"refreshInterval\":\"1m0s\"}}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"instance\":\"1\",\"instances\":\",1,\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"test-server\",\"kuma_io_services\":\",test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"OpenTelemetry\",\"name\":\"otel-collector.observability.svc-4317\",\"openTelemetry\":{\"endpoint\":\"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock\",\"refreshInterval\":\"1m0s\"}}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"test-server\",\"instance\":\"1\",\"instances\":\",1,\",\"kuma.workload\":\"TODO\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"test-server\",\"kuma_io_services\":\",test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"test-server\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\"}}}}"
           },
           "status": 200
         },
@@ -65,7 +65,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "5e658c3c506a76e63f39722feb6d5dedb627016f24f469fc60195f4769d60084"
+              "value": "282adcd20fa9123da2530416ee0ceb36e4ee5d082b1c3921b072c64847cb54f3"
             }
           }
         ]
@@ -83,7 +83,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "5e658c3c506a76e63f39722feb6d5dedb627016f24f469fc60195f4769d60084"
+                "exact": "282adcd20fa9123da2530416ee0ceb36e4ee5d082b1c3921b072c64847cb54f3"
               }
             }
           ],
