@@ -8456,6 +8456,7 @@ components:
 
                           Either int or decimal represented as string.
 
+
                           Deprecated: the setting has been moved to
                           MeshCircuitBreaker policy,
 

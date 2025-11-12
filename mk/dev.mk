@@ -32,8 +32,8 @@ K8S_MAX_VERSION=v1.34.1-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.33
 
-GO=$(shell $(MISE) which go)
-export GO_VERSION=$(shell $(GO) mod edit -json | jq -r .Go)
+GO := $(shell $(MISE) which go)
+export GO_VERSION := $(shell $(GO) mod edit -json | jq -r .Go)
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
 
