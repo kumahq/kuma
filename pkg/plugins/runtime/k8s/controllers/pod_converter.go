@@ -104,7 +104,6 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return err
 	}
 	// we need to validate if the labels have changed
-	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
@@ -115,7 +114,6 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		model.WithK8s(true),
 		model.WithZone(p.Zone),
 		model.WithServiceAccount(pod.Spec.ServiceAccountName),
-		model.WithWorkload(workloadName),
 	)
 	if err != nil {
 		return err

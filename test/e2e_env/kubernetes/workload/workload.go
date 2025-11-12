@@ -31,10 +31,6 @@ func Workload() {
 		DebugKube(kubernetes.Cluster, mesh, namespace)
 	})
 
-	E2EAfterEach(func() {
-		Expect(kubernetes.Cluster.DeleteNamespace(namespace)).To(Succeed())
-	})
-
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
@@ -42,12 +38,13 @@ func Workload() {
 
 	It("should use service account as workload when no workload labels configured", func() {
 		// given
-		const appName = "test-server"
+		const appName = "test-server-a"
 		const serviceAccount = "test-server-sa"
 
 		// when
 		err := NewClusterSetup().
 			Install(testserver.Install(
+				testserver.WithName(appName),
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithServiceAccount(serviceAccount),
@@ -85,12 +82,13 @@ func Workload() {
 
 	It("should use pod label as workload when workload labels configured", func() {
 		// given
-		const appName = "test-server"
+		const appName = "test-server-b"
 		const appLabel = "test-server-app"
 
 		// when deploy with pod labels
 		err := NewClusterSetup().
 			Install(testserver.Install(
+				testserver.WithName(appName),
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithPodLabels(map[string]string{
