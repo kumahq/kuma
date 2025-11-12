@@ -1,0 +1,9 @@
+items:
+- metadata:
+    labels:
+      kuma.io/mesh: default
+    name: orphaned-workload
+    namespace: demo
+    resourceVersion: "999"
+  spec: {}
+metadata: {}

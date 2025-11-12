@@ -97,6 +97,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addPodStatusReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addWorkloadReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
 	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
@@ -226,6 +229,20 @@ func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conv
 		Log:               core.Log.WithName("controllers").WithName("Pod"),
 		ResourceConverter: converter,
 		EnvoyAdminClient:  rt.EnvoyAdminClient(),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
+	reconciler := &k8s_controllers.WorkloadReconciler{
+		Client:            mgr.GetClient(),
+		Log:               core.Log.WithName("controllers").WithName("Workload"),
+		Scheme:            mgr.GetScheme(),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/workload-generator"),
+		ResourceConverter: converter,
 	}
 	return reconciler.SetupWithManager(mgr)
 }

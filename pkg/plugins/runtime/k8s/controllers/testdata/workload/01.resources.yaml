@@ -1,0 +1,8 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: example
+  namespace: demo
+  labels:
+    kuma.io/workload: test-workload
+mesh: default

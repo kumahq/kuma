@@ -1,0 +1,17 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: example
+  namespace: demo
+  labels:
+    kuma.io/workload: shared-workload
+mesh: default
+---
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: example-2
+  namespace: demo
+  labels:
+    kuma.io/workload: shared-workload
+mesh: default

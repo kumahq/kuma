@@ -157,4 +157,53 @@ spec:
 		Expect(err).To(HaveOccurred(), "pod with manual kuma.io/workload label should be rejected")
 		Expect(err.Error()).To(ContainSubstring("cannot manually set kuma.io/workload label"))
 	})
+
+	It("should automatically create and delete Workload resource", func() {
+		// given
+		const appName = "workload-resource-test"
+		const workloadName = "test-workload-resource"
+
+		// when deploy test server with workload label
+		err := NewClusterSetup().
+			Install(testserver.Install(
+				testserver.WithName(appName),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
+				testserver.WithPodLabels(map[string]string{
+					"app.kubernetes.io/name": workloadName,
+				}),
+			)).
+			Setup(kubernetes.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify pod is created
+		Eventually(func(g Gomega) {
+			_, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// and verify Workload resource is created
+		Eventually(func(g Gomega) {
+			_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
+				"get", "workload", workloadName, "--mesh", mesh, "-oyaml",
+			)
+			g.Expect(err).ToNot(HaveOccurred(), "Workload resource should be created")
+		}, "30s", "1s").Should(Succeed())
+
+		// when delete the deployment
+		err = k8s.RunKubectlE(
+			kubernetes.Cluster.GetTesting(),
+			kubernetes.Cluster.GetKubectlOptions(namespace),
+			"delete", "deployment", appName,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify Workload resource is deleted
+		Eventually(func(g Gomega) {
+			_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
+				"get", "workload", workloadName, "--mesh", mesh, "-oyaml",
+			)
+			g.Expect(err).To(HaveOccurred(), "Workload resource should be deleted")
+		}, "30s", "1s").Should(Succeed())
+	})
 }

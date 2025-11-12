@@ -1,0 +1,18 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: other-dp
+  namespace: demo
+  labels:
+    kuma.io/workload: persistent-workload
+mesh: default
+---
+apiVersion: kuma.io/v1alpha1
+kind: Workload
+metadata:
+  name: persistent-workload
+  namespace: demo
+  labels:
+    kuma.io/mesh: default
+    kuma.io/managed-by: k8s-controller
+spec: {}
