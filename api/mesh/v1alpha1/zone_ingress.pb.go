@@ -273,7 +273,7 @@ const file_api_mesh_v1alpha1_zone_ingress_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xf8\x01\xaa\x8c\x89\xa6\x01\xf1\x01\n" +
 	"\x13ZoneIngressResource\x12\vZoneIngress\x18\x01\"\x04mesh::\n" +
-	"\vzoneingress\x12\rzoneingresses*\fzone-ingress2\x0ezone-ingressesR4model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlagX\x01\x8a\x01Edescription=\"Zone name\",JSONPath=`.spec.zone`,name=\"zone\",type=string\x90\x01\x01\x9a\x01\x02zi\xa0\x01\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\vzoneingress\x12\rzoneingresses*\fzone-ingress2\x0ezone-ingressesR4model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlagX\x01\x8a\x01Edescription=\"Zone name\",JSONPath=`.spec.zone`,name=\"zone\",type=string\x90\x01\x01\x9a\x01\x02zi\xa0\x01\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_zone_ingress_proto_rawDescOnce sync.Once

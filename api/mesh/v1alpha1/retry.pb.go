@@ -587,7 +587,7 @@ const file_api_mesh_v1alpha1_retry_proto_rawDesc = "" +
 	"\x0erefused_stream\x10\x06\x12\x1a\n" +
 	"\x16retriable_status_codes\x10\a\x12\x15\n" +
 	"\x11retriable_headers\x10\b\x12\x1e\n" +
-	"\x1ahttp3_post_connect_failure\x10\tB*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x1ahttp3_post_connect_failure\x10\tB-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_retry_proto_rawDescOnce sync.Once

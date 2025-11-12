@@ -796,7 +796,7 @@ const file_api_system_v1alpha1_zone_insight_proto_rawDesc = "" +
 	"\tbuildDate\x18\x04 \x01(\tR\tbuildDate\x126\n" +
 	"\x16kumaCpGlobalCompatible\x18\x05 \x01(\bR\x16kumaCpGlobalCompatible\"=\n" +
 	"\vHealthCheck\x12.\n" +
-	"\x04time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04timeB,Z*github.com/kumahq/kuma/api/system/v1alpha1b\x06proto3"
+	"\x04time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04timeB/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_zone_insight_proto_rawDescOnce sync.Once

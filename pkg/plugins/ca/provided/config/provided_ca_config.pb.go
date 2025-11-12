@@ -85,7 +85,7 @@ const file_pkg_plugins_ca_provided_config_provided_ca_config_proto_rawDesc = "" 
 	"7pkg/plugins/ca/provided/config/provided_ca_config.proto\x12\x0fkuma.plugins.ca\x1a$api/system/v1alpha1/datasource.proto\"\x8e\x01\n" +
 	"\"ProvidedCertificateAuthorityConfig\x124\n" +
 	"\x04cert\x18\x01 \x01(\v2 .kuma.system.v1alpha1.DataSourceR\x04cert\x122\n" +
-	"\x03key\x18\x02 \x01(\v2 .kuma.system.v1alpha1.DataSourceR\x03keyB*Z(github.com/kumahq/kuma/plugins/ca/configb\x06proto3"
+	"\x03key\x18\x02 \x01(\v2 .kuma.system.v1alpha1.DataSourceR\x03keyB-Z+github.com/kumahq/kuma/v2/plugins/ca/configb\x06proto3"
 
 var (
 	file_pkg_plugins_ca_provided_config_provided_ca_config_proto_rawDescOnce sync.Once

@@ -357,7 +357,7 @@ const file_api_mesh_v1alpha1_fault_injection_proto_rawDesc = "" +
 	"percentage\x122\n" +
 	"\x05limit\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x05limit:b\xaa\x8c\x89\xa6\x01\\\n" +
 	"\x16FaultInjectionResource\x12\x0eFaultInjection\"\x04mesh:\x11\n" +
-	"\x0ffault-injectionR\x17model.GlobalToZonesFlagh\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x0ffault-injectionR\x17model.GlobalToZonesFlagh\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_fault_injection_proto_rawDescOnce sync.Once

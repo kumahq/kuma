@@ -134,7 +134,7 @@ const file_api_mesh_v1alpha1_traffic_trace_proto_rawDesc = "" +
 	"\x04Conf\x12\x18\n" +
 	"\abackend\x18\x01 \x01(\tR\abackend:\\\xaa\x8c\x89\xa6\x01V\n" +
 	"\x14TrafficTraceResource\x12\fTrafficTrace\"\x04mesh:\x0f\n" +
-	"\rtraffic-traceR\x17model.GlobalToZonesFlagh\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\rtraffic-traceR\x17model.GlobalToZonesFlagh\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_traffic_trace_proto_rawDescOnce sync.Once

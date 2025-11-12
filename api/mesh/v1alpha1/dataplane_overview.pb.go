@@ -84,7 +84,7 @@ const file_api_mesh_v1alpha1_dataplane_overview_proto_rawDesc = "" +
 	"\x11DataplaneOverview\x12E\n" +
 	"\tdataplane\x18\x01 \x01(\v2\x1d.kuma.mesh.v1alpha1.DataplaneB\b\xfaB\x05\x8a\x01\x02\x10\x01R\tdataplane\x12Q\n" +
 	"\x11dataplane_insight\x18\x02 \x01(\v2$.kuma.mesh.v1alpha1.DataplaneInsightR\x10dataplaneInsight:>\xaa\x8c\x89\xa6\x018\n" +
-	"\x19DataplaneOverviewResource\x12\x11DataplaneOverview\"\x04mesh0\x01`\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x19DataplaneOverviewResource\x12\x11DataplaneOverview\"\x04mesh0\x01`\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_dataplane_overview_proto_rawDescOnce sync.Once

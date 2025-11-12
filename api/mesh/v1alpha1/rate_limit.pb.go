@@ -347,7 +347,7 @@ const file_api_mesh_v1alpha1_rate_limit_proto_rawDesc = "" +
 	"\x06append\x18\x03 \x01(\v2\x1a.google.protobuf.BoolValueR\x06append:S\xaa\x8c\x89\xa6\x01M\n" +
 	"\x11RateLimitResource\x12\tRateLimit\"\x04mesh:\f\n" +
 	"\n" +
-	"rate-limitR\x17model.GlobalToZonesFlagh\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"rate-limitR\x17model.GlobalToZonesFlagh\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_rate_limit_proto_rawDescOnce sync.Once

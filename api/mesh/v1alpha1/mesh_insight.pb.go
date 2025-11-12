@@ -577,7 +577,7 @@ const file_api_mesh_v1alpha1_mesh_insight_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12B\n" +
 	"\x05value\x18\x02 \x01(\v2,.kuma.mesh.v1alpha1.MeshInsight.ResourceStatR\x05value:\x028\x01:^\xaa\x8c\x89\xa6\x01X\n" +
 	"\x13MeshInsightResource\x12\vMeshInsight\x18\x01\"\x04mesh:\x10\n" +
-	"\fmesh-insight\x18\x01R\x1amodel.ProvidedByGlobalFlagJ\x04\b\x01\x10\x02B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\fmesh-insight\x18\x01R\x1amodel.ProvidedByGlobalFlagJ\x04\b\x01\x10\x02B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_mesh_insight_proto_rawDescOnce sync.Once

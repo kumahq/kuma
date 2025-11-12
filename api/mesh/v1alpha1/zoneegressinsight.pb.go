@@ -90,7 +90,7 @@ const file_api_mesh_v1alpha1_zoneegressinsight_proto_rawDesc = "" +
 	"\rsubscriptions\x18\x01 \x03(\v2).kuma.mesh.v1alpha1.DiscoverySubscriptionR\rsubscriptions\x123\n" +
 	"\bmetadata\x18\x02 \x01(\v2\x17.google.protobuf.StructR\bmetadata:m\xaa\x8c\x89\xa6\x01g\n" +
 	"\x19ZoneEgressInsightResource\x12\x11ZoneEgressInsight\x18\x01\"\x04mesh:\x15\n" +
-	"\x11zoneegressinsight\x18\x01R\x16model.ZoneToGlobalFlagX\x01B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\x11zoneegressinsight\x18\x01R\x16model.ZoneToGlobalFlagX\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_zoneegressinsight_proto_rawDescOnce sync.Once

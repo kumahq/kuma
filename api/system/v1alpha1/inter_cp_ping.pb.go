@@ -147,7 +147,7 @@ const file_api_system_v1alpha1_inter_cp_ping_proto_rawDesc = "" +
 	"\fPingResponse\x12\x16\n" +
 	"\x06leader\x18\x01 \x01(\bR\x06leader2c\n" +
 	"\x12InterCpPingService\x12M\n" +
-	"\x04Ping\x12!.kuma.system.v1alpha1.PingRequest\x1a\".kuma.system.v1alpha1.PingResponseB,Z*github.com/kumahq/kuma/api/system/v1alpha1b\x06proto3"
+	"\x04Ping\x12!.kuma.system.v1alpha1.PingRequest\x1a\".kuma.system.v1alpha1.PingResponseB/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_inter_cp_ping_proto_rawDescOnce sync.Once
