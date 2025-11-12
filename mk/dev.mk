@@ -32,8 +32,8 @@ K8S_MAX_VERSION=v1.32.2-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.32
 
-GO=$(shell $(MISE) which go)
-export GO_VERSION=$(shell $(GO) mod edit -json | jq -r .Go)
+GO:=$(shell $(MISE) which go)
+export GO_VERSION:=$(shell $(GO) mod edit -json | jq -r .Go)
 # renovate: datasource=github-releases depName=golangci/golangci-lint versioning=semver-coerced
 export GOLANGCI_LINT_VERSION=v2.4.0
 GOOS := $(shell $(GO) env GOOS)
