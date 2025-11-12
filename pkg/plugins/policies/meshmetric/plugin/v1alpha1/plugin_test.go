@@ -5,7 +5,6 @@ import (
 	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"

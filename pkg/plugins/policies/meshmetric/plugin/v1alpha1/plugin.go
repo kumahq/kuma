@@ -12,7 +12,6 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -28,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/metadata"
 	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
