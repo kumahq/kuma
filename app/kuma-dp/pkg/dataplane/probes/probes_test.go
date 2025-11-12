@@ -467,7 +467,7 @@ func (m *mockApplication) startHTTPServer(ctx context.Context) error {
 	//nolint:contextcheck
 	return startServer(ctx, func() error {
 		GinkgoLogr.Info("starting mock HTTP Server", "address", listener.Addr().String())
-		errCh := make(chan error)
+		errCh := make(chan error, 1)
 		httpReady.Store(true)
 		go func() {
 			var srvErr error
@@ -479,13 +479,12 @@ func (m *mockApplication) startHTTPServer(ctx context.Context) error {
 			if srvErr != nil && srvErr != http.ErrServerClosed {
 				errCh <- srvErr
 			}
+			close(errCh)
 		}()
-		select {
-		case err := <-errCh:
-			return err
-		case <-ctx.Done():
-			return nil
-		}
+
+		// Wait for either startup error or server completion
+		err := <-errCh
+		return err
 	}, func() {
 		GinkgoLogr.Info("stopping the mock HTTP Server")
 		httpReady.Store(false)
@@ -551,7 +550,7 @@ func (m *mockApplication) startTCPServer(ctx context.Context) error {
 		go m.checkReadiness(ctx, actualPort)
 
 		listenerCh <- l
-		errCh := make(chan error)
+		errCh := make(chan error, 1)
 		go m.handleTcpConnections(l, ctx, errCh)
 		return <-errCh
 	}, func() {
