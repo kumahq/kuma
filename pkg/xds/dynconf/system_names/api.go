@@ -1,6 +1,6 @@
 package system_names
 
-import "github.com/kumahq/kuma/pkg/core/system_names"
+import "github.com/kumahq/kuma/v2/pkg/core/system_names"
 
 var SystemResourceNameDynamicConfigListener = system_names.MustBeSystemName("dynamicconfig")
 

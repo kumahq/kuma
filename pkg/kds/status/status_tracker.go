@@ -14,16 +14,16 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 type StatusTracker interface {

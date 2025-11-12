@@ -5,15 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_secrets "github.com/kumahq/kuma/v2/pkg/xds/envoy/secrets/v3"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 var generatorLogger = core.Log.WithName("secrets-generator")

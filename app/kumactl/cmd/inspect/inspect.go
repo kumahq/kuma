@@ -3,11 +3,11 @@ package inspect
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
 func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

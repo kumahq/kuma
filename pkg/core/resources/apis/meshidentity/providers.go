@@ -1,9 +1,9 @@
 package meshidentity
 
 import (
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers/bundled"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers/spire"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers/bundled"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers/spire"
 )
 
 // Map of all providers supported by the MeshIdentity resource.

@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	util_slices "github.com/kumahq/kuma/pkg/util/slices"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 )
 
 // Protocol identifies a protocol supported by a service.

@@ -16,11 +16,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
-	kssh "github.com/kumahq/kuma/test/framework/ssh"
-	"github.com/kumahq/kuma/test/framework/universal"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
+	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
+	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v2/test/framework/utils"
 )
 
 type AppMode string

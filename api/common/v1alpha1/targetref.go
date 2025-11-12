@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type TargetRefKind string

@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/util/files"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 const (

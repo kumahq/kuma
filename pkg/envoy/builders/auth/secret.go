@@ -5,7 +5,7 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 )
 
 func NewSecret() *Builder[envoy_auth.Secret] {

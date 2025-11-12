@@ -1,6 +1,6 @@
 package config
 
-import config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+import config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
 
 func DefaultConfiguration() config_proto.Configuration {
 	return config_proto.Configuration{

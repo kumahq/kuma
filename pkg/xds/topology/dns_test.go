@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	"github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
 var _ = Describe("VIPOutbounds", func() {

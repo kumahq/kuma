@@ -10,10 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/test/framework/report"
-	"github.com/kumahq/kuma/test/framework/versions"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v2/test/framework/versions"
 )
 
 var _ config.Config = E2eConfig{}

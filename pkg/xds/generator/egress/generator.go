@@ -6,17 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/core/naming"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
-	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	generator_core "github.com/kumahq/kuma/v2/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	generator_secrets "github.com/kumahq/kuma/v2/pkg/xds/generator/secrets"
 )
 
 // Generator generates xDS resources for an entire ZoneEgress.

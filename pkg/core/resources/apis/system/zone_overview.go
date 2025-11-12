@@ -1,8 +1,8 @@
 package system
 
 import (
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func NewZoneOverviews(zones ZoneResourceList, insights ZoneInsightResourceList) ZoneOverviewResourceList {

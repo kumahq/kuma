@@ -3,8 +3,8 @@ package callbacks
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 var nackLog = core.Log.WithName("xds").WithName("nack-backoff")

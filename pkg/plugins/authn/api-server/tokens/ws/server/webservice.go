@@ -6,13 +6,13 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/access"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws"
 )
 
 var log = core.Log.WithName("user-token-ws")

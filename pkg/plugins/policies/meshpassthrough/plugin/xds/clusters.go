@@ -1,10 +1,10 @@
 package xds
 
 import (
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	xds_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	xds_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 )
 
 func CreateCluster(apiVersion core_xds.APIVersion, name string, protocol core_meta.Protocol) (envoy.NamedResource, error) {

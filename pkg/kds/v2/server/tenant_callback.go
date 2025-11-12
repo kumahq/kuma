@@ -9,9 +9,9 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
-	"github.com/kumahq/kuma/pkg/kds/v2/util"
-	"github.com/kumahq/kuma/pkg/multitenant"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v2/pkg/kds/v2/util"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 type tenancyCallbacks struct {

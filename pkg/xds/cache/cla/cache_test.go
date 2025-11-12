@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/xds"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/xds/cache/cla"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/cla"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_endpoints "github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints/v3"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {

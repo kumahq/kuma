@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
-	"github.com/kumahq/kuma/test/server/types"
+	"github.com/kumahq/kuma/v2/test/server/types"
 )
 
 const secondaryInboundPort = 9090

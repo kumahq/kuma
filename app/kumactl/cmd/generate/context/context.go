@@ -1,7 +1,7 @@
 package context
 
 import (
-	"github.com/kumahq/kuma/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
 )
 
 type GenerateContext struct {

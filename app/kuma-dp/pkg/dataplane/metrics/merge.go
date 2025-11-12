@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
-	"github.com/kumahq/kuma/pkg/xds/bootstrap"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap"
 )
 
 const (

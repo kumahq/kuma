@@ -11,9 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type MatchType int

@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
 )
 
 var FilterChainGenerators = map[mesh_proto.MeshGateway_Listener_Protocol]plugin_gateway.FilterChainGenerator{

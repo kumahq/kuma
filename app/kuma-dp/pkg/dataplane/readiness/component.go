@@ -11,9 +11,9 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/bakito/go-log-logr-adapter/adapter"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 const (

@@ -11,13 +11,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
-	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
+	kumactl_client "github.com/kumahq/kuma/v2/app/kumactl/pkg/client"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/tokens"
+	config_kumactl "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
+	tokens_server "github.com/kumahq/kuma/v2/pkg/tokens/builtin/server"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone/access"
 )
 
 type zoneStaticTokenIssuer struct{}

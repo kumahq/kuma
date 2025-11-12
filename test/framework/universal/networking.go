@@ -17,7 +17,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"golang.org/x/crypto/ssh"
 
-	kssh "github.com/kumahq/kuma/test/framework/ssh"
+	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
 )
 
 type NetworkingState struct {

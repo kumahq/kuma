@@ -18,9 +18,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/portforward"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	"github.com/kumahq/kuma/v2/test/framework/portforward"
 )
 
 var _ ControlPlane = &K8sControlPlane{}

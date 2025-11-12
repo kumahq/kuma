@@ -6,7 +6,7 @@ import (
 
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 func NewReconciler(cache envoy_cache.SnapshotCache, generator *SnapshotGenerator) Reconciler {

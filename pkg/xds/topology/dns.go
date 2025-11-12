@@ -5,9 +5,9 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/dns/vips"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 )
 
 func VIPOutbounds(

@@ -2,7 +2,7 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
 // MeshTrafficPermission defines permission for traffic between data planes

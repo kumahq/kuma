@@ -6,7 +6,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 )
 
 type managerKey struct{}

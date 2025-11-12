@@ -3,9 +3,9 @@ package v1alpha1
 import (
 	"math"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type LocalLbGroup struct {

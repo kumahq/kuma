@@ -9,13 +9,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	generator "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/generator/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	generator "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/generator/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
 
 var _ = Describe("MeshIdentity Generator", func() {

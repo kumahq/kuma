@@ -8,8 +8,8 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/kumahq/kuma/api/mesh"
-	v1alpha1 "github.com/kumahq/kuma/api/system/v1alpha1"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
+	v1alpha1 "github.com/kumahq/kuma/v2/api/system/v1alpha1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"

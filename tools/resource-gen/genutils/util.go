@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/kumahq/kuma/api/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/api/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 // ProtoMessageFunc ...

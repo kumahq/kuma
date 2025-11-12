@@ -8,10 +8,10 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
 )
 
 type RoutesConfigurer struct {

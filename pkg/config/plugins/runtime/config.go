@@ -4,9 +4,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/config/plugins/runtime/universal"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/universal"
 )
 
 func DefaultRuntimeConfig() *RuntimeConfig {
