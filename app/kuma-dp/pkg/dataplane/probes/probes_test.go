@@ -467,6 +467,8 @@ func (m *mockApplication) startHTTPServer(ctx context.Context) error {
 	//nolint:contextcheck
 	return startServer(ctx, func() error {
 		GinkgoLogr.Info("starting mock HTTP Server", "address", listener.Addr().String())
+		// Use buffered channel to prevent goroutine leak if server fails
+		// and sends an error after we've stopped reading from the channel
 		errCh := make(chan error, 1)
 		httpReady.Store(true)
 		go func() {
@@ -550,6 +552,8 @@ func (m *mockApplication) startTCPServer(ctx context.Context) error {
 		go m.checkReadiness(ctx, actualPort)
 
 		listenerCh <- l
+		// Use buffered channel to prevent goroutine leak if handleTcpConnections
+		// sends an error after we've already returned from this function
 		errCh := make(chan error, 1)
 		go m.handleTcpConnections(l, ctx, errCh)
 		return <-errCh
