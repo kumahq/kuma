@@ -15,7 +15,11 @@ else
 endif
 
 # -race requires CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
-UNIT_TEST_ENV=$(GOENV) CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),TESTCONTAINERS_RYUK_DISABLED=true,GINKGO_EDITOR_INTEGRATION=true)
+# On macOS, set TMPDIR to /tmp to avoid issues with the default /var/folders path
+ifeq ($(shell uname),Darwin)
+	TMPDIR_OVERRIDE := TMPDIR=/tmp
+endif
+UNIT_TEST_ENV=$(GOENV) CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(TMPDIR_OVERRIDE) UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),TESTCONTAINERS_RYUK_DISABLED=true,GINKGO_EDITOR_INTEGRATION=true)
 GINKGO_TEST=$(GINKGO) $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) --keep-going --keep-separate-reports --junit-report results.xml --json-report report.json --output-dir $(REPORTS_DIR) $(GINKGO_OPTS)
 
 .PHONY: test

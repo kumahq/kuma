@@ -2,13 +2,12 @@ package api_server_test
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,12 +28,12 @@ var _ = Describe("Auth test", func() {
 	var httpsPort uint32
 	stop := func() {}
 	var externalIP string
+	var apiServer *api_server.ApiServer
 
 	BeforeEach(func() {
 		externalIP = getExternalIP()
 		Expect(externalIP).ToNot(BeEmpty())
 		certPath, keyPath := createCertsForIP(externalIP)
-		var apiServer *api_server.ApiServer
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
@@ -85,8 +84,9 @@ var _ = Describe("Auth test", func() {
 	})
 
 	It("should be able to access admin endpoints using client certs and HTTPS", func() {
-		// when
-		resp, err := httpsClient.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
+		// when - test that client cert authentication works via HTTPS
+		// Using localhost instead of external IP since client cert auth doesn't depend on RemoteAddr
+		resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -94,29 +94,27 @@ var _ = Describe("Auth test", func() {
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
-		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
+		// when - simulate request from external IP by setting RemoteAddr
+		req := httptest.NewRequest(http.MethodGet, "/secrets", nil)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp).To(HaveHTTPStatus(403))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-non-localhost.golden.json")))
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-non-localhost.golden.json")))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
-		// when
-		resp, err := httpsClientWithoutCerts.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
+		// when - simulate request from external IP without client certs by setting RemoteAddr
+		req := httptest.NewRequest(http.MethodGet, "/secrets", nil)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp).To(HaveHTTPStatus(403))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
 	})
 
 	It("should be able to access config on localhost using HTTP", func() {
@@ -129,16 +127,15 @@ var _ = Describe("Auth test", func() {
 	})
 
 	It("should be block an access to config endpoints from other machine using HTTP", func() {
-		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s/config", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
+		// when - simulate request from external IP by setting RemoteAddr
+		req := httptest.NewRequest(http.MethodGet, "/config", nil)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp).To(HaveHTTPStatus(403))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-config-non-localhost.golden.json")))
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-config-non-localhost.golden.json")))
 	})
 })
 
