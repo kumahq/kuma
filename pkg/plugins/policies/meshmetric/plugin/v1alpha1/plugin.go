@@ -268,8 +268,9 @@ func createDynamicConfig(
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
 
-	extraLabels := map[string]string{
-		WorkloadAttributeKey: proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload],
+	extraLabels := map[string]string{}
+	if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+		extraLabels[WorkloadAttributeKey] = workload
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
