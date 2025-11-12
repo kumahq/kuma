@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -36,8 +35,9 @@ func (i IngressGenerator) Generate(
 	address := zoneIngress.Spec.GetNetworking().GetAddress()
 	port := zoneIngress.Spec.GetNetworking().GetPort()
 
-	listenerName := getName(kri.From(zoneIngress).String(), envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(naming.MustContextualInboundName(zoneIngress, port), "")
+	inboundContextualID := naming.MustContextualInboundName(zoneIngress, port)
+	listenerName := getName(inboundContextualID, envoy_names.GetInboundListenerName(address, port))
+	statPrefix := getName(inboundContextualID, "")
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
