@@ -1,0 +1,17 @@
+metadata:
+  namespace: demo
+  name: postgres-example
+  labels:
+    app: postgres
+    tier: database
+    kuma.io/sidecar-injection: enabled
+spec:
+  serviceAccountName: postgres-account
+  containers:
+    - ports:
+        - containerPort: 5432
+status:
+  podIP: 192.168.0.30
+  containerStatuses:
+    - ready: true
+      started: true

@@ -484,7 +484,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: c17831afe7dba7ebea94ecfbba140f89167a2bbe7ea238d850875867b09680f8
+        checksum/tls-secrets: 8d1157ba547b214d4fd9579c0dc9f8cb27ff2da9c36988ec997d27565dd9edad
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -976,4 +976,37 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
+  - name: pod.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-demo
+          - kuma-test
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-pod
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
     sideEffects: None

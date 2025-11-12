@@ -1,0 +1,27 @@
+mesh: default
+metadata:
+  labels:
+    app: redis
+    k8s.kuma.io/namespace: demo
+    k8s.kuma.io/service-account: redis-sa
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    kuma.io/sidecar-injection: enabled
+    kuma.io/workload: redis
+    version: "6.0"
+spec:
+  networking:
+    address: 192.168.0.10
+    inbound:
+    - health:
+        ready: true
+      port: 6379
+      tags:
+        app: redis
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: redis
+        k8s.kuma.io/service-port: "6379"
+        kuma.io/protocol: tcp
+        kuma.io/service: redis_demo_svc_6379
+        kuma.io/zone: zone-1
+        version: "6.0"

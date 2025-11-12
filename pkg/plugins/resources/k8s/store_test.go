@@ -563,6 +563,34 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal("dn"))
 			Expect(actual.Meta.GetLabels()[metadata.KumaServiceAccount]).To(Equal("default"))
 		})
+
+		It("should return workload from annotation", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
+            mesh: default
+            metadata:
+              annotations:
+                kuma.io/workload: my-workload
+              name: %s
+            spec:
+              conf:
+                destination:
+                  path: /example
+`, name))
+			backend.Create(expected)
+
+			// given
+			actual := core_mesh.NewTrafficRouteResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual.Meta.GetLabels()[metadata.KumaWorkload]).To(Equal("my-workload"))
+		})
 	})
 
 	Describe("Delete()", func() {

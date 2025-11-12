@@ -38,6 +38,7 @@ type PodConverter struct {
 	SystemNamespace     string
 	Mode                config_core.CpMode
 	KubeOutboundsAsVIPs bool
+	WorkloadLabels      []string
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -60,6 +61,7 @@ func (p *PodConverter) PodToDataplane(
 		return err
 	}
 	// we need to validate if the labels have changed
+	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
 	labels, err := model.ComputeLabels(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
@@ -70,6 +72,7 @@ func (p *PodConverter) PodToDataplane(
 		model.WithK8s(true),
 		model.WithZone(p.Zone),
 		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+		model.WithWorkload(workloadName),
 	)
 	if err != nil {
 		return err
@@ -458,6 +461,18 @@ func mergeLabels(existingLabels map[string]string, podLabels map[string]string) 
 		mergedLabels[k] = v
 	}
 	return mergedLabels
+}
+
+// computeWorkloadName determines the workload identifier based on a prioritized list of pod labels.
+// It iterates through the configured workloadLabels and returns the first non-empty value found.
+// If no matching labels exist or the list is empty, it falls back to the ServiceAccount name.
+func computeWorkloadName(podLabels map[string]string, workloadLabels []string, serviceAccount string) string {
+	for _, labelKey := range workloadLabels {
+		if value, ok := podLabels[labelKey]; ok && value != "" {
+			return value
+		}
+	}
+	return serviceAccount
 }
 
 type ReachableBackendRefs struct {

@@ -36,6 +36,7 @@ func SetupAndGetState() []byte {
 			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
 			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
 			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
+			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS", "app.kubernetes.io/name"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)

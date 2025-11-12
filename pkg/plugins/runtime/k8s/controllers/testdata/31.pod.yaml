@@ -1,0 +1,17 @@
+metadata:
+  namespace: demo
+  name: redis-example
+  labels:
+    app: redis
+    version: "6.0"
+    kuma.io/sidecar-injection: enabled
+spec:
+  serviceAccountName: redis-sa
+  containers:
+    - ports:
+        - containerPort: 6379
+status:
+  podIP: 192.168.0.10
+  containerStatuses:
+    - ready: true
+      started: true

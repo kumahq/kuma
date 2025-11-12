@@ -206,6 +206,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			Mode:                rt.Config().Mode,
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
+			WorkloadLabels:      rt.Config().Runtime.Kubernetes.WorkloadLabels,
 		},
 		ResourceConverter:            converter,
 		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
@@ -318,18 +319,23 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return kube_admission.Allowed("")
 	})})
 
+	admissionDecoder := kube_admission.NewDecoder(mgr.GetScheme())
+
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
+		Decoder:      admissionDecoder,
 		Client:       client,
 		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 		UnsafeDelete: rt.Config().Store.UnsafeDelete,
 		CpMode:       rt.Config().Mode,
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
+
+	podValidator := k8s_webhooks.NewPodValidatorWebhook(admissionDecoder)
+	mgr.GetWebhookServer().Register("/validate-v1-pod", &kube_webhook.Admission{Handler: podValidator})
 
 	return nil
 }
