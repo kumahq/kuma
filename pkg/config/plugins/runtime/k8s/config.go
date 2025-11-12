@@ -143,6 +143,7 @@ type KubernetesRuntimeConfig struct {
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// Name of Service Account that is used to run the Control Plane
+	//
 	// Deprecated: Use AllowedUsers instead.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// List of names of Service Accounts that admission requests are allowed.
