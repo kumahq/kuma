@@ -105,7 +105,6 @@ func (r *WorkloadReconciler) createOrUpdateWorkload(ctx context.Context, workloa
 		// Don't set status - leave it nil
 		return nil
 	})
-
 	if err != nil {
 		return errors.Wrapf(err, "failed to create/update Workload %s in namespace %s", workloadName, namespace)
 	}
