@@ -93,6 +93,21 @@
       "datasourceTemplate": "docker",
       "packageNameTemplate": "registry.k8s.io/kubectl",
       "depNameTemplate": "kubectl"
+    },
+    {
+      "customType": "regex",
+      "description": [
+        " Update kubectl image tag in generated helm-values.yaml documentation.",
+        " Keeps generated docs in sync with values.yaml when Renovate updates kubectl.",
+        " Uses RE2-compatible pattern matching YAML tag field with optional digest"
+      ],
+      "managerFilePatterns": ["/docs/generated/raw/helm-values\\.yaml$/"],
+      "matchStrings": [
+        "tag: (?<currentValue>[^@\\s]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
+      ],
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "registry.k8s.io/kubectl",
+      "depNameTemplate": "kubectl"
     }
   ],
   "packageRules": [
