@@ -84,7 +84,7 @@
       "description": [
         " Update kubectl image tag in Helm chart README.md.",
         " Keeps documentation in sync with values.yaml when Renovate updates kubectl.",
-        " Uses simple single-line pattern (RE2 compatible) with explicit package name"
+        " Uses Markdown table pattern (RE2 compatible)"
       ],
       "managerFilePatterns": ["/deployments/charts/.+/README\\.md$/"],
       "matchStrings": [
@@ -97,13 +97,17 @@
     {
       "customType": "regex",
       "description": [
-        " Update kubectl image tag in generated helm-values.yaml documentation.",
-        " Keeps generated docs in sync with values.yaml when Renovate updates kubectl.",
-        " Uses RE2-compatible pattern matching YAML tag field with optional digest"
+        " Update kubectl image tag in YAML files (generated helm-values.yaml and install testdata).",
+        " Keeps documentation and test data in sync with values.yaml when Renovate updates kubectl.",
+        " Uses RE2-compatible pattern matching YAML tag field with optional digest.",
+        " Pattern includes 'repository: kubectl' context to avoid false positives"
       ],
-      "managerFilePatterns": ["/docs/generated/raw/helm-values\\.yaml$/"],
+      "managerFilePatterns": [
+        "/docs/generated/raw/helm-values\\.yaml$/",
+        "/app/kumactl/cmd/install/testdata/install-control-plane\\.dump-values\\.yaml$/"
+      ],
       "matchStrings": [
-        "tag: (?<currentValue>[^@\\s]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
+        "repository: kubectl\\s+[^\\n]*\\n\\s+tag: (?<currentValue>[^@\\s]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
       ],
       "datasourceTemplate": "docker",
       "packageNameTemplate": "registry.k8s.io/kubectl",

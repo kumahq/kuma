@@ -216,7 +216,8 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		OperatingSystem:      b.operatingSystem,
 		Features:             features,
 		Resources:            resources,
-		Workdir:              opts.Config.DataplaneRuntime.SocketDir,
+		//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
+		Workdir: opts.Config.DataplaneRuntime.SocketDir,
 		MetricsResources: types.MetricsResources{
 			CertPath: opts.Config.DataplaneRuntime.Metrics.CertPath,
 			KeyPath:  opts.Config.DataplaneRuntime.Metrics.KeyPath,

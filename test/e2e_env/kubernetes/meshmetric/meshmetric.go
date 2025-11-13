@@ -418,6 +418,8 @@ func MeshMetric() {
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
+			// check if workload attribute was added
+			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"default\""))
 		}).Should(Succeed())
 	})
 

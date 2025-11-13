@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -40,8 +39,9 @@ func (g Generator) Generate(
 	address := zoneEgress.Spec.GetNetworking().GetAddress()
 	port := zoneEgress.Spec.GetNetworking().GetPort()
 
-	listenerName := getName(kri.From(zoneEgress).String(), envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(naming.MustContextualInboundName(zoneEgress, port), "")
+	inboundContextualID := naming.MustContextualInboundName(zoneEgress, port)
+	listenerName := getName(inboundContextualID, envoy_names.GetInboundListenerName(address, port))
+	statPrefix := getName(inboundContextualID, "")
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
