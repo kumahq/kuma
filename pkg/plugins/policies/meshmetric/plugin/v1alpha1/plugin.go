@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/metadata"
 	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
@@ -267,8 +268,9 @@ func createDynamicConfig(
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
 
-	extraLabels := map[string]string{
-		WorkloadAttributeKey: "TODO",
+	extraLabels := map[string]string{}
+	if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+		extraLabels[WorkloadAttributeKey] = workload
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
