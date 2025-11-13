@@ -939,6 +939,7 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
+          - kuma-system
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
