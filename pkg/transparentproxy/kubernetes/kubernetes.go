@@ -21,9 +21,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
-	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 )
 
 // Deprecated

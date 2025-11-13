@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/tls"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/tls"
 )
 
 // overridable by unit tests

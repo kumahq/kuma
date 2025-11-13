@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func (r *MeshMultiZoneServiceResource) validate() error {

@@ -1,8 +1,8 @@
 package outbound
 
 import (
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 // ResourceContext represents a hierarchical resource structure and

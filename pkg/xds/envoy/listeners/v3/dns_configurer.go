@@ -8,7 +8,7 @@ import (
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type DNSConfigurer struct {

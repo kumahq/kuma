@@ -3,7 +3,7 @@ package core
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 )
 
 func NewDataSource() *Builder[envoy_core.DataSource] {

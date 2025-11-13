@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func LocalityAwarenessWithMeshLoadBalancingStrategy() {

@@ -1,7 +1,7 @@
 // +kubebuilder:object:generate=true
 package v1alpha1
 
-import "github.com/kumahq/kuma/pkg/util/pointer"
+import "github.com/kumahq/kuma/v2/pkg/util/pointer"
 
 type LabelSelector struct {
 	MatchLabels *map[string]string `json:"matchLabels,omitempty"`

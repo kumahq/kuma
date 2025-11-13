@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 
-	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
+	config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	pgx_config "github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
 )
 
 func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {

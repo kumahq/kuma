@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	server "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/test"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	server "github.com/kumahq/kuma/v2/pkg/config/api-server"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var _ = Describe("Index Endpoints", func() {

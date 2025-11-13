@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/kds/hash"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/kds/hash"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func Sync() {

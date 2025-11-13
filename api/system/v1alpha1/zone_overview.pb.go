@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -83,7 +83,7 @@ const file_api_system_v1alpha1_zone_overview_proto_rawDesc = "" +
 	"\fZoneOverview\x12.\n" +
 	"\x04zone\x18\x01 \x01(\v2\x1a.kuma.system.v1alpha1.ZoneR\x04zone\x12D\n" +
 	"\fzone_insight\x18\x02 \x01(\v2!.kuma.system.v1alpha1.ZoneInsightR\vzoneInsight:8\xaa\x8c\x89\xa6\x012\n" +
-	"\x14ZoneOverviewResource\x12\fZoneOverview\x18\x01\"\x06system0\x01`\x01B,Z*github.com/kumahq/kuma/api/system/v1alpha1b\x06proto3"
+	"\x14ZoneOverviewResource\x12\fZoneOverview\x18\x01\"\x06system0\x01`\x01B/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_zone_overview_proto_rawDescOnce sync.Once

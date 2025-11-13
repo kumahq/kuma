@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/channels"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v2/pkg/util/channels"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
 func MeshService() {

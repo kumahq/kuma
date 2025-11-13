@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("PipeListenerConfigurer", func() {

@@ -8,16 +8,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
-	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	mzms_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/hostname"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/hostname"
+	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	mzms_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/hostname"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 )
 
 var _ = Describe("MeshMultiZoneService Hostname Generator", func() {

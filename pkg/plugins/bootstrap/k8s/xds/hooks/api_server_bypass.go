@@ -3,15 +3,15 @@ package hooks
 import (
 	"github.com/pkg/errors"
 
-	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks/metadata"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	"github.com/kumahq/kuma/v2/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s/xds/hooks/metadata"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 )
 
 const apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass" // #nosec G101 -- no idea why gosec things this is a secret

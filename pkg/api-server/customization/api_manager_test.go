@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/api-server/customization"
+	api_server_config "github.com/kumahq/kuma/v2/pkg/config/api-server"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("API Manager", func() {

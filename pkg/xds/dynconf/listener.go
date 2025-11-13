@@ -12,13 +12,13 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/dynconf/metadata"
-	"github.com/kumahq/kuma/pkg/xds/dynconf/system_names"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf/metadata"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf/system_names"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 const ListenerName = "_kuma:dynamicconfig"

@@ -5,16 +5,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/api-server/authn"
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/events"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
+	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/events"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 type Plugin interface{}

@@ -11,14 +11,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
-	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
+	kumactl_client "github.com/kumahq/kuma/v2/app/kumactl/pkg/client"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/tokens"
+	config_kumactl "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
+	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
+	tokens_server "github.com/kumahq/kuma/v2/pkg/tokens/builtin/server"
+	zone_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone/access"
 )
 
 type staticTokenIssuer struct{}

@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/pkg/xds/template"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v2/pkg/xds/template"
 )
 
 // DefaultProxyTemplate captures the gateway proxy profile as a

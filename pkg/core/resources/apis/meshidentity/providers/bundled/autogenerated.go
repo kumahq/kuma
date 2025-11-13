@@ -14,9 +14,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 )
 
 const (

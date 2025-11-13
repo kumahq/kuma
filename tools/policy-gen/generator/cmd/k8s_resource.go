@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/save"
 )
 
 func newK8sResource(rootArgs *args) *cobra.Command {
@@ -104,13 +104,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	policy "{{.GoModule}}/{{.ResourceDir}}/api/{{.Package}}"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
 	{{- if not .SkipRegistration }}
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 	{{- end }}
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 // +kubebuilder:object:root=true

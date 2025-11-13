@@ -3,8 +3,8 @@ package api_server
 import (
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/insights/globalinsight"
+	"github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
 )
 
 const GlobalInsightPath = "/global-insight"

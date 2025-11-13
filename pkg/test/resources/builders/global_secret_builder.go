@@ -5,11 +5,11 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 type GlobalSecretBuilder struct {

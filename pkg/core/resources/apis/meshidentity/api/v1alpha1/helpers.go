@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const (

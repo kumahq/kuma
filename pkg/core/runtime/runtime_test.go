@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	test_api_server "github.com/kumahq/kuma/pkg/test/api_server"
-	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	test_api_server "github.com/kumahq/kuma/v2/pkg/test/api_server"
+	test_runtime "github.com/kumahq/kuma/v2/pkg/test/runtime"
 )
 
 func return200ForPath(path string) func(ws *restful.WebService) error {

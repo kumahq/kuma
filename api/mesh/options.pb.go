@@ -428,7 +428,7 @@ const file_api_mesh_options_proto_rawDesc = "" +
 	"\x11skip_registration\x18\x01 \x01(\bR\x10skipRegistration\x12\x16\n" +
 	"\x06plural\x18\x02 \x01(\tR\x06plural:^\n" +
 	"\bresource\x12\x1f.google.protobuf.MessageOptions\x18ő\xe1\x14 \x01(\v2\x1e.kuma.mesh.KumaResourceOptionsR\bresource:X\n" +
-	"\x06policy\x12\x1f.google.protobuf.MessageOptions\x18Ƒ\xe1\x14 \x01(\v2\x1c.kuma.mesh.KumaPolicyOptionsR\x06policyB!Z\x1fgithub.com/kumahq/kuma/api/meshb\x06proto3"
+	"\x06policy\x12\x1f.google.protobuf.MessageOptions\x18Ƒ\xe1\x14 \x01(\v2\x1c.kuma.mesh.KumaPolicyOptionsR\x06policyB$Z\"github.com/kumahq/kuma/v2/api/meshb\x06proto3"
 
 var (
 	file_api_mesh_options_proto_rawDescOnce sync.Once

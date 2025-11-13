@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 )
 
 type RegistererGatherer interface {

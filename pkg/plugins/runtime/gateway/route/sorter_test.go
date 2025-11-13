@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
 )
 
 var _ = Describe("sorting", func() {

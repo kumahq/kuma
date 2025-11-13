@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/cmd/version"
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/cmd/version"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 )
 
 var dataplaneLog = core.Log.WithName("kuma-dp")

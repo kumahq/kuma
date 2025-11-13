@@ -153,7 +153,7 @@ const file_api_system_v1alpha1_datasource_proto_rawDesc = "" +
 	"\x04file\x18\x02 \x01(\tH\x00R\x04file\x125\n" +
 	"\x06inline\x18\x03 \x01(\v2\x1b.google.protobuf.BytesValueH\x00R\x06inline\x12$\n" +
 	"\finlineString\x18\x04 \x01(\tH\x00R\finlineStringB\x06\n" +
-	"\x04typeB,Z*github.com/kumahq/kuma/api/system/v1alpha1b\x06proto3"
+	"\x04typeB/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_datasource_proto_rawDescOnce sync.Once

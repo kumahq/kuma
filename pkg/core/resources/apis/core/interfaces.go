@@ -1,8 +1,8 @@
 package core
 
 import (
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 // Port is a common abstraction for a destination port. It provides us basic information about port

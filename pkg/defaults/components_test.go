@@ -6,15 +6,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_component "github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/defaults"
-	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_component "github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/defaults"
+	resources_memory "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Defaults Component", func() {

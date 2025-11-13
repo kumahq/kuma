@@ -16,13 +16,13 @@ import (
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 
-	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/util/files"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	command_utils "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/command"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")

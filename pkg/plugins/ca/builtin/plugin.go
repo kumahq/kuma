@@ -1,8 +1,8 @@
 package builtin
 
 import (
-	"github.com/kumahq/kuma/pkg/core/ca"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/ca"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 )
 
 var _ core_plugins.CaPlugin = &plugin{}

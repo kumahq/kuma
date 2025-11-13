@@ -20,6 +20,11 @@ func GetProjectRootParent(file string) string {
 }
 
 func RelativeToPkgMod(file string) string {
+	pkgModPath := "/pkg/mod/"
+	if idx := strings.Index(file, pkgModPath); idx != -1 {
+		return "/" + file[idx+len(pkgModPath):]
+	}
+
 	root := path.Dir(path.Dir(path.Dir(GetProjectRoot(file))))
 	return strings.TrimPrefix(file, root)
 }

@@ -5,18 +5,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	"github.com/kumahq/kuma/pkg/kds/service"
-	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
-	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/kds/mux"
+	"github.com/kumahq/kuma/v2/pkg/kds/service"
+	kds_client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
+	kds_server_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
+	kds_sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	resources_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 )
 
 var (

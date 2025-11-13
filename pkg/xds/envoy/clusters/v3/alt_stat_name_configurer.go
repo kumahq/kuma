@@ -3,7 +3,7 @@ package clusters
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 type AltStatNameConfigurer struct{}

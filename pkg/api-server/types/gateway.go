@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 type Destination struct {

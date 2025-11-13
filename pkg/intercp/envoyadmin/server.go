@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
+	kds_envoyadmin "github.com/kumahq/kuma/v2/pkg/kds/envoyadmin"
 )
 
 var serverLog = core.Log.WithName("intercp").WithName("catalog").WithName("server")

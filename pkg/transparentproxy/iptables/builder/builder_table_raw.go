@@ -1,11 +1,11 @@
 package builder
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/rules"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/tables"
 )
 
 // buildRawTable constructs the raw table for iptables with the necessary rules

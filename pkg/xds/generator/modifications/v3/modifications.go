@@ -3,8 +3,8 @@ package v3
 import (
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 type modificator interface {

@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func GatewayIPV6CNIV2() {

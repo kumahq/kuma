@@ -5,8 +5,8 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	meshtimeout_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	meshtimeout_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
 func MeshTimeoutInCustomNamespace() *meshtimeout_proto.MeshTimeoutResource {

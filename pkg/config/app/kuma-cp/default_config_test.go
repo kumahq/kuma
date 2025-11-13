@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 )
 
 var _ = Describe("Default config", func() {

@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/tools/go/analysis/analysistest"
 
-	"github.com/kumahq/kuma/tools/ci/api-linter/linter"
+	"github.com/kumahq/kuma/v2/tools/ci/api-linter/linter"
 )
 
 func TestAnalyzer(t *testing.T) {

@@ -3,18 +3,18 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
+	meshhttproute "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.Rule, common.Origin) {

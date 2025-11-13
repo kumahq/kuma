@@ -6,15 +6,15 @@ import (
 
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/origin"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/origin"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints/v3"
+	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
+	generator_metadata "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 const defaultOverprovisioningFactor uint32 = 200

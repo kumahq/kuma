@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	_ "github.com/kumahq/kuma/api/mesh"
+	_ "github.com/kumahq/kuma/v2/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -76,7 +76,7 @@ const file_api_system_v1alpha1_config_proto_rawDesc = "" +
 	" api/system/v1alpha1/config.proto\x12\x14kuma.system.v1alpha1\x1a\x16api/mesh/options.proto\"\x80\x01\n" +
 	"\x06Config\x12\x16\n" +
 	"\x06config\x18\x01 \x01(\tR\x06config:^\xaa\x8c\x89\xa6\x01X\n" +
-	"\x0eConfigResource\x12\x06Config\x18\x01\"\x06systemR2model.GlobalToZonesFlag | model.ProvidedByZoneFlag`\x01B,Z*github.com/kumahq/kuma/api/system/v1alpha1b\x06proto3"
+	"\x0eConfigResource\x12\x06Config\x18\x01\"\x06systemR2model.GlobalToZonesFlag | model.ProvidedByZoneFlag`\x01B/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_config_proto_rawDescOnce sync.Once

@@ -1,7 +1,7 @@
 package service
 
 import (
-	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
+	util_grpc "github.com/kumahq/kuma/v2/pkg/util/grpc"
 )
 
 const (

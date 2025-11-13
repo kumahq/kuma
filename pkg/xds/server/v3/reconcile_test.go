@@ -17,14 +17,14 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	xds_model "github.com/kumahq/kuma/pkg/core/xds"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	xds_model "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 func hcmForRoute(routeName string) *anypb.Any {

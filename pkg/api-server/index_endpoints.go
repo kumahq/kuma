@@ -5,9 +5,9 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/api/openapi/types"
-	"github.com/kumahq/kuma/pkg/api-server/authn"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/api/openapi/types"
+	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string, guiURL string) error {

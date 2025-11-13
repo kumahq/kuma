@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/policy"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 // Current limitations:

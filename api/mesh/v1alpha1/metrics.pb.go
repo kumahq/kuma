@@ -535,7 +535,7 @@ const file_api_mesh_v1alpha1_metrics_proto_rawDesc = "" +
 	"\x04Mode\x12\x15\n" +
 	"\x11activeMTLSBackend\x10\x00\x12\x0f\n" +
 	"\vprovidedTLS\x10\x01\x12\f\n" +
-	"\bdisabled\x10\x02B*Z(github.com/kumahq/kuma/api/mesh/v1alpha1b\x06proto3"
+	"\bdisabled\x10\x02B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_metrics_proto_rawDescOnce sync.Once

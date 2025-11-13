@@ -11,15 +11,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane Overview Endpoints", func() {

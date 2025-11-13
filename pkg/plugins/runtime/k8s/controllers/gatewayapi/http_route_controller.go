@@ -23,16 +23,16 @@ import (
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 // HTTPRouteReconciler reconciles a GatewayAPI object into Kuma-native objects

@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/test/framework/network/socket"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/test/framework/network/socket"
 )
 
 var _ = Describe("GenerateRandomPorts", func() {

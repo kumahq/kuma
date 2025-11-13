@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/tables"
 )
 
 func BuildIPTablesForRestore(cfg config.InitializedConfigIPvX) string {
