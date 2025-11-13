@@ -77,6 +77,11 @@ func (a *ApiServer) Config() api_server.ApiServerConfig {
 	return a.config
 }
 
+// Handler returns the underlying HTTP handler for testing purposes
+func (a *ApiServer) Handler() http.Handler {
+	return a.mux
+}
+
 func init() {
 	// turn off escape & character so the link in "next" fields for resources is user friendly
 	restful.NewEncoder = func(w io.Writer) *json.Encoder {
