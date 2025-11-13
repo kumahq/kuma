@@ -95,7 +95,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
 		// when - simulate request from external IP by setting RemoteAddr
-		req := httptest.NewRequest(http.MethodGet, "/secrets", nil)
+		req := httptest.NewRequest(http.MethodGet, "/secrets", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
@@ -107,7 +107,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
 		// when - simulate request from external IP without client certs by setting RemoteAddr
-		req := httptest.NewRequest(http.MethodGet, "/secrets", nil)
+		req := httptest.NewRequest(http.MethodGet, "/secrets", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
@@ -128,7 +128,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to config endpoints from other machine using HTTP", func() {
 		// when - simulate request from external IP by setting RemoteAddr
-		req := httptest.NewRequest(http.MethodGet, "/config", nil)
+		req := httptest.NewRequest(http.MethodGet, "/config", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
