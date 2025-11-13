@@ -49,7 +49,6 @@ const (
 	DefaultAllowedClockSkew = 10 * time.Second
 
 	cacheExpirationTime = 5 * time.Second
-	caCacheEntryKey     = "ca_pair"
 )
 
 var DefaultWorkloadCertValidityPeriod = k8s.Duration{Duration: 24 * time.Hour}
@@ -166,7 +165,8 @@ func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshi
 // we can cache it and refresh the cache periodically (e.g., every few seconds).
 // This reduces the load on the underlying store (e.g., OS, DB), as the CA pair doesn't change frequently.
 func (b *bundledIdentityProvider) getCAKeyPair(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, mesh string) (*util_tls.KeyPair, error) {
-	ca, err := b.cache.GetOrRetrieve(ctx, caCacheEntryKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (interface{}, error) {
+	cacheKey := fmt.Sprintf("ca_pair:%s:%s", mesh, model.GetDisplayName(identity.GetMeta()))
+	ca, err := b.cache.GetOrRetrieve(ctx, cacheKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (interface{}, error) {
 		bundled := pointer.Deref(identity.Spec.Provider.Bundled)
 		var err error
 		var cert, key []byte
