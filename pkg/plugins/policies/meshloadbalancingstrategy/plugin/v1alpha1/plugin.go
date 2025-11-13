@@ -538,6 +538,8 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 
 // Zone egress is a single point for multiple clients. At this moment we don't support different
 // configurations based on the client. That's why we are computing rules for MeshSubset
+//
+//nolint:staticcheck // SA1019 Zone egress uses old Rule format, per function comment
 func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 	rules := util_maps.AllValues(fr.Rules)
 	if len(rules) == 0 {
