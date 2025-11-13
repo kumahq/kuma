@@ -3,7 +3,7 @@ kind: Dataplane
 metadata:
   name: example
   namespace: demo
-  labels:
+  annotations:
     kuma.io/workload: shared-workload
 mesh: default
 ---
@@ -12,6 +12,6 @@ kind: Dataplane
 metadata:
   name: example-2
   namespace: demo
-  labels:
+  annotations:
     kuma.io/workload: shared-workload
 mesh: default

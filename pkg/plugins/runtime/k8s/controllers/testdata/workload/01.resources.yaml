@@ -3,6 +3,6 @@ kind: Dataplane
 metadata:
   name: example
   namespace: demo
-  labels:
+  annotations:
     kuma.io/workload: test-workload
 mesh: default

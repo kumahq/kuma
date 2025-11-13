@@ -3,7 +3,7 @@ kind: Dataplane
 metadata:
   name: other-dp
   namespace: demo
-  labels:
+  annotations:
     kuma.io/workload: persistent-workload
 mesh: default
 ---
