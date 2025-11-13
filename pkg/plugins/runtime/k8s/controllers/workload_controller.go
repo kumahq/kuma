@@ -63,7 +63,7 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 	}
 
 	// Extract workload label from Dataplane
-	workloadName, ok := dp.GetLabels()[metadata.KumaWorkload]
+	workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]
 	if !ok || workloadName == "" {
 		log.V(1).Info("dataplane has no kuma.io/workload label, skipping")
 		return kube_ctrl.Result{}, nil
@@ -137,7 +137,7 @@ func (r *WorkloadReconciler) cleanupOrphanedWorkloads(ctx context.Context, names
 	// Build a map of workload names that are still referenced
 	referencedWorkloads := make(map[string]map[string]bool) // mesh -> workload name -> true
 	for _, dp := range dataplanes.Items {
-		if workloadName, ok := dp.GetLabels()[metadata.KumaWorkload]; ok && workloadName != "" {
+		if workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]; ok && workloadName != "" {
 			if referencedWorkloads[dp.Mesh] == nil {
 				referencedWorkloads[dp.Mesh] = make(map[string]bool)
 			}
