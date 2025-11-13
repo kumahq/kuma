@@ -12,7 +12,6 @@ import (
 	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
@@ -285,13 +284,12 @@ func configureListener(
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
-	inboundID := kri.WithSectionName(kri.From(proxy.Dataplane), iface.WorkloadPort).String()
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
 	legacyClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
 	legacyListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
 
-	listenerName := getName(inboundID, legacyListenerName)
+	listenerName := getName(inboundContextualID, legacyListenerName)
 	statPrefix := getName(inboundContextualID, "")
 	clusterName := getName(inboundContextualID, legacyClusterName)
 
