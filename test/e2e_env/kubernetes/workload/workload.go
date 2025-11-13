@@ -185,7 +185,7 @@ spec:
 		// and verify Workload resource is created
 		Eventually(func(g Gomega) {
 			_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
-				"get", "workload", workloadName, "--mesh", mesh, "-oyaml",
+				"get", "workload", fmt.Sprintf("%s.%s", workloadName, namespace), "--mesh", mesh, "-oyaml",
 			)
 			g.Expect(err).ToNot(HaveOccurred(), "Workload resource should be created")
 		}, "30s", "1s").Should(Succeed())
@@ -201,7 +201,7 @@ spec:
 		// then verify Workload resource is deleted
 		Eventually(func(g Gomega) {
 			_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
-				"get", "workload", workloadName, "--mesh", mesh, "-oyaml",
+				"get", "workload", fmt.Sprintf("%s.%s", workloadName, namespace), "--mesh", mesh, "-oyaml",
 			)
 			g.Expect(err).To(HaveOccurred(), "Workload resource should be deleted")
 		}, "30s", "1s").Should(Succeed())
