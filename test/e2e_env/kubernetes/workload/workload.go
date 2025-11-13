@@ -184,11 +184,13 @@ spec:
 
 		// and verify Workload resource is created
 		Eventually(func(g Gomega) {
-			_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
-				"get", "workload", fmt.Sprintf("%s.%s", workloadName, namespace), "--mesh", mesh, "-oyaml",
-			)
-			g.Expect(err).ToNot(HaveOccurred(), "Workload resource should be created")
-		}, "30s", "1s").Should(Succeed())
+			// verify Workload resource exists and has correct content
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get workload '%s'", workloadK8sName)
+			g.Expect(workload.GetMeta().GetName()).To(Equal(workloadK8sName))
+			g.Expect(workload.GetMeta().GetMesh()).To(Equal(mesh))
+		}, "2m", "1s").Should(Succeed())
 
 		// when delete the deployment
 		err = k8s.RunKubectlE(
@@ -200,10 +202,11 @@ spec:
 
 		// then verify Workload resource is deleted
 		Eventually(func(g Gomega) {
-			_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
-				"get", "workload", fmt.Sprintf("%s.%s", workloadName, namespace), "--mesh", mesh, "-oyaml",
-			)
-			g.Expect(err).To(HaveOccurred(), "Workload resource should be deleted")
+			// verify Workload resource exists and has correct content
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			_, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			g.Expect(err).To(HaveOccurred(), "workload should be deleted")
+			g.Expect(err.Error()).To(ContainSubstring("No resources found in workloads mesh"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
