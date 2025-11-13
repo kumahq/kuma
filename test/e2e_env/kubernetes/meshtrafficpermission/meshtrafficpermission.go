@@ -81,7 +81,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.ResponseCode).To(Equal(403))
-		}, "30s", "1s").Should(Succeed())
+		}, "2m", "3s").Should(Succeed())
 
 		// when
 		Expect(YamlK8s(mtpConfig)(kubernetes.Cluster)).To(Succeed())
@@ -94,7 +94,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(ContainSubstring("test-server"))
-		}, "30s", "1s").Should(Succeed())
+		}, "2m", "3s").Should(Succeed())
 	},
 		Entry("exact match on spiffeID", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1

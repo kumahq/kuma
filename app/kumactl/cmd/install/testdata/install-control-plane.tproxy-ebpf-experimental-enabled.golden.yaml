@@ -465,7 +465,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 918064f7760c87a8894c896d525d6bcea451d88831ea98c82c8c21b5bd9f671a
+        checksum/tls-secrets: 2c0ab72d70a85dc951f5547748e9708715259a4d372172e37dc45c8c0bfd4051
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -950,6 +950,7 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
+          - kuma-system
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
