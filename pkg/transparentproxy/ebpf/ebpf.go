@@ -10,8 +10,8 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	ebpf_programs "github.com/kumahq/kuma/pkg/transparentproxy/ebpf/programs"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	ebpf_programs "github.com/kumahq/kuma/v2/pkg/transparentproxy/ebpf/programs"
 )
 
 const (

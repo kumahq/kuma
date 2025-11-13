@@ -3,8 +3,8 @@ package issuer
 import (
 	"github.com/golang-jwt/jwt/v5"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/tokens"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
 )
 
 type DataplaneIdentity struct {

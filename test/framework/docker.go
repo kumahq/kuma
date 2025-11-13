@@ -17,7 +17,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/test/framework/universal"
+	"github.com/kumahq/kuma/v2/test/framework/universal"
 )
 
 const DockerNetworkName = "kind"

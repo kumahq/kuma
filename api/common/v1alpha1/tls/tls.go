@@ -6,7 +6,7 @@ import (
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 // +kubebuilder:validation:Enum=TLSAuto;TLS10;TLS11;TLS12;TLS13

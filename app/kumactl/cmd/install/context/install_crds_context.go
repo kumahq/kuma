@@ -3,8 +3,8 @@ package context
 import (
 	"strings"
 
-	"github.com/kumahq/kuma/deployments"
-	"github.com/kumahq/kuma/pkg/util/data"
+	"github.com/kumahq/kuma/v2/deployments"
+	"github.com/kumahq/kuma/v2/pkg/util/data"
 )
 
 type InstallCrdsArgs struct {

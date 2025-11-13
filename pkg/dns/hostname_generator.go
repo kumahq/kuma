@@ -3,14 +3,14 @@ package dns
 import (
 	"slices"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
-	mes_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/hostname"
-	mzms_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/hostname"
-	ms_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/hostname"
-	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/hostname"
+	mes_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/hostname"
+	mzms_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/hostname"
+	ms_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/hostname"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 )
 
 func SetupHostnameGenerator(rt runtime.Runtime) error {

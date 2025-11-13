@@ -3,7 +3,7 @@ package destinationname
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 )
 
 // LegacyName is a current way of naming envoy resources until https://github.com/kumahq/kuma/pull/12756

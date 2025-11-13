@@ -1,10 +1,10 @@
 package route
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 // Table stores a collection of routing Entries, aka. a routing table.

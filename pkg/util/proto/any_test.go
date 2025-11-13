@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
 )
 
 var _ = Describe("MarshalAnyDeterministic", func() {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/kumahq/kuma/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
 )
 
 // DataplaneTokenIssuer issues Dataplane Tokens used then for proving identity of the dataplanes.

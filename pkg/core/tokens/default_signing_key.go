@@ -6,7 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 )
 
 func EnsureDefaultSigningKeyExist(signingKeyPrefix string, ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger) error {

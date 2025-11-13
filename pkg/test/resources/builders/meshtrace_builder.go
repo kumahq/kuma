@@ -1,10 +1,10 @@
 package builders
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	meshtrace_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 type MeshTraceBuilder struct {

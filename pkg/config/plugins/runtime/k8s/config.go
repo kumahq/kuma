@@ -7,9 +7,9 @@ import (
 	"go.uber.org/multierr"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/kumahq/kuma/pkg/config"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 const defaultServiceAccountName = "system:serviceaccount:kuma-system:kuma-control-plane"

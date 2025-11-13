@@ -16,8 +16,8 @@ import (
 	"github.com/pkg/errors"
 	k8s_version "k8s.io/apimachinery/pkg/util/version"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 const (

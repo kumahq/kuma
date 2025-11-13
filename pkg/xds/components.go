@@ -3,10 +3,10 @@ package xds
 import (
 	"github.com/pkg/errors"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap"
-	"github.com/kumahq/kuma/pkg/xds/server"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap"
+	"github.com/kumahq/kuma/v2/pkg/xds/server"
 )
 
 func Setup(rt core_runtime.Runtime) error {

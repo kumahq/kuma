@@ -5,10 +5,10 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 type RequestMirrorConfigurer struct {

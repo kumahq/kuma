@@ -14,16 +14,16 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
-	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	clusters_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
+	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 // DeprecatedListenerConfigurer should be only used for configuring old MeshService outbounds.

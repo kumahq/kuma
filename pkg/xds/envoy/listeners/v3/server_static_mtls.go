@@ -6,10 +6,10 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	envoy_admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
 )
 
 type ServerSideStaticMTLSConfigurer struct {

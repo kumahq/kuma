@@ -3,10 +3,10 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
+	k8s_extensions "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
 )
 
 var _ core_plugins.SecretStorePlugin = &plugin{}

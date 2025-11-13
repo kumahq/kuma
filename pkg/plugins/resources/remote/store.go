@@ -11,14 +11,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 var log = core.Log.WithName("store-remote")

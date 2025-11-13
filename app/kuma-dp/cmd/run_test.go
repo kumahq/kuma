@@ -18,10 +18,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("run", func() {

@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 var global = NewTypeRegistry()

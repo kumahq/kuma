@@ -12,12 +12,12 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
-	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type testMeshGatewayInspectClient struct {
