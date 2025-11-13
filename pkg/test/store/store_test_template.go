@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	resources_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 func ExecuteStoreTests(

@@ -1,6 +1,6 @@
 package xds
 
-import "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+import "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 
 type Split struct {
 	clusterName string

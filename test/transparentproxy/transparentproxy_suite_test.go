@@ -3,8 +3,8 @@ package transparentproxy_test
 import (
 	"testing"
 
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/test/transparentproxy"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/test/transparentproxy"
 )
 
 func TestTransparentProxy(t *testing.T) {

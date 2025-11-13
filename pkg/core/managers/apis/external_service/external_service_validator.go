@@ -3,10 +3,10 @@ package externalservice
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/validators"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 type ExternalServiceValidator struct {

@@ -1,6 +1,6 @@
 package v1alpha1
 
-import util_proto "github.com/kumahq/kuma/pkg/util/proto"
+import util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 
 func (ds *DataSource) MaskInlineDatasource() *DataSource {
 	if ds == nil {

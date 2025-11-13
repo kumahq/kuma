@@ -10,12 +10,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-	"github.com/kumahq/kuma/pkg/multitenant"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/xds"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	cache_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/cache"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, tenants multitenant.Tenants, types []core_model.ResourceType) Reconciler {

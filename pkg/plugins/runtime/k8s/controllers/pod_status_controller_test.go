@@ -13,12 +13,12 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
+	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v2/pkg/test/runtime"
 )
 
 var _ = Describe("PodStatusReconciler", func() {

@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
 )
 
 type generateDataplaneTokenContext struct {

@@ -5,10 +5,10 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
 )
 
 type listenerModificator mesh_proto.ProxyTemplate_Modifications_Listener

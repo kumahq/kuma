@@ -3,10 +3,10 @@ package builders
 import (
 	"context"
 
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 type HostnameGeneratorBuilder struct {

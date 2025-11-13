@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	generator_core "github.com/kumahq/kuma/v2/pkg/xds/generator/core"
 )
 
 func NewGenerator() generator_core.ResourceGenerator {

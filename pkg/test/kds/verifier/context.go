@@ -5,8 +5,8 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	test_grpc "github.com/kumahq/kuma/v2/pkg/test/grpc"
 )
 
 type TestContext interface {

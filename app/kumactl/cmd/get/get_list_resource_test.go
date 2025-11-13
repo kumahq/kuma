@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("kumactl get [resource]", func() {

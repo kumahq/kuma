@@ -6,7 +6,7 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 )
 
 func Metadata(key, value string) common.Configurer[routev3.Route] {

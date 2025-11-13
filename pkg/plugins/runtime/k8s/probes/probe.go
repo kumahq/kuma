@@ -9,7 +9,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 // KumaProbe is a type which allows to manipulate Kubernetes HttpGet probes.

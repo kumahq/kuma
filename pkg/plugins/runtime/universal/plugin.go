@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/dns"
 )
 
 var _ core_plugins.RuntimePlugin = &plugin{}

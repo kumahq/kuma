@@ -8,8 +8,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/deployments"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	. "github.com/kumahq/kuma/v2/test/framework/deployments"
 )
 
 type universalDeployment struct {

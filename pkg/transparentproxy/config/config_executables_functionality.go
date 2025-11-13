@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 )
 
 type FunctionalityTables struct {

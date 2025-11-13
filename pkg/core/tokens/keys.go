@@ -3,7 +3,7 @@ package tokens
 import (
 	"os"
 
-	config_types "github.com/kumahq/kuma/pkg/config/types"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
 )
 
 type PublicKey struct {

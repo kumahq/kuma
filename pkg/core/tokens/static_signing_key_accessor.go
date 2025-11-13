@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
+	util_rsa "github.com/kumahq/kuma/v2/pkg/util/rsa"
 )
 
 type staticSigningKeyAccessor struct {

@@ -9,10 +9,10 @@ import (
 	"github.com/shopspring/decimal"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/api/common/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type Configurer struct {

@@ -1,8 +1,8 @@
 package mesh
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/validators"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (r *ZoneIngressResource) Validate() error {

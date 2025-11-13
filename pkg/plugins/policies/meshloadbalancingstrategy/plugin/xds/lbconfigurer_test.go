@@ -5,12 +5,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 )
 
 var _ = Describe("LBConfigurer", func() {

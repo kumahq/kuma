@@ -6,13 +6,13 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/test"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 func TestMatchers(t *testing.T) {

@@ -9,15 +9,15 @@ import (
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
-	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
+	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 // Protocol identifies a protocol supported by a service.

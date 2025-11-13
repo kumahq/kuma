@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("Mesh", func() {

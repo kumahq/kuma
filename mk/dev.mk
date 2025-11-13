@@ -32,8 +32,8 @@ K8S_MAX_VERSION=v1.32.2-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.32
 
-GO=$(shell $(MISE) which go)
-export GO_VERSION=$(shell $(GO) mod edit -json | jq -r .Go)
+GO:=$(shell $(MISE) which go)
+export GO_VERSION:=$(shell $(GO) mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v2.1.6
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
@@ -49,7 +49,7 @@ endef
 KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
-# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/issues/13880
+# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/v2/issues/13880
 XDS_VERSION=$(shell $(GO) list -f '{{ .Version }}' -m github.com/cncf/xds/go)
 PROTO_XDS=$(shell $(GO) mod download github.com/cncf/xds@$(XDS_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
 PGV_VERSION=$(shell $(GO) list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)

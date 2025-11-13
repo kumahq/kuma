@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 )
 
 var _ = Describe("Listener modifications", func() {

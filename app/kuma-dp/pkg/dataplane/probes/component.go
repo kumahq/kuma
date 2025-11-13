@@ -14,9 +14,9 @@ import (
 	err_pkg "github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
 )
 
 var (

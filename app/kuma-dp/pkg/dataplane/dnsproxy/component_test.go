@@ -13,8 +13,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsproxy"
-	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsproxy"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 var _ = Describe("components", func() {

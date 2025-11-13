@@ -3,8 +3,8 @@ package inbound
 import (
 	"slices"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/sort"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/sort"
 )
 
 func Sort[T common.PolicyAttributes](list []T) {

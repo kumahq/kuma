@@ -6,15 +6,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/config/core"
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/util/k8s"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/k8s"
 )
 
 func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {

@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
 var _ = Describe("Profiles", func() {

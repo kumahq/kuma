@@ -1,9 +1,9 @@
 package samples
 
 import (
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	meshaccesslog_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	meshaccesslog_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
 func MeshAccessLogFileConf() *builders.MeshAccessLogConfBuilder {

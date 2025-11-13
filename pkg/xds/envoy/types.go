@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 type Cluster interface {

@@ -1,8 +1,8 @@
 package universal
 
 import (
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
 )
 
 var _ core_plugins.SecretStorePlugin = &plugin{}

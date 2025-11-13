@@ -25,12 +25,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/pkg/config/xds"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/v2/pkg/config/xds"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	clusters_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
 
 var BootstrapClusters = map[string]struct{}{}

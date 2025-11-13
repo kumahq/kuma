@@ -1,15 +1,15 @@
 package builtin
 
 import (
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	store_config "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
 )
 
 var log = core.Log.WithName("tokens-validator")

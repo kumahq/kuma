@@ -5,15 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
 type IngressProxyBuilder struct {

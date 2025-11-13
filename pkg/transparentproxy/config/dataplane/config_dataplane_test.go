@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds/types"
-	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 )
 
 type dummyMeta struct {

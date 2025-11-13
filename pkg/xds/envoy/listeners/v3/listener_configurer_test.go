@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("Miscellaneous Listener configurers", func() {

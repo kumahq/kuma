@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 )
 
 func parseFileToHashMap(file string) (map[string]interface{}, error) {

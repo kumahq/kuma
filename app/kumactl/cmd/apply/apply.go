@@ -12,16 +12,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	yaml_output "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-	"github.com/kumahq/kuma/pkg/util/template"
-	"github.com/kumahq/kuma/pkg/util/yaml"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	yaml_output "github.com/kumahq/kuma/v2/app/kumactl/pkg/output/yaml"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	rest_types "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/remote"
+	"github.com/kumahq/kuma/v2/pkg/util/template"
+	"github.com/kumahq/kuma/v2/pkg/util/yaml"
 )
 
 const (

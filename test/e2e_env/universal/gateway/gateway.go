@@ -12,13 +12,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshfaultinjection_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshratelimit_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
 func Gateway() {

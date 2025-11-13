@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 )
 
 func GenerateBootstrapFile(cfg kuma_dp.DataplaneRuntime, config []byte) (string, error) {

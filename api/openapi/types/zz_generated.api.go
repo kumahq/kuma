@@ -6,7 +6,7 @@ package types
 import (
 	"time"
 
-	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
+	externalRef0 "github.com/kumahq/kuma/v2/api/openapi/types/common"
 )
 
 const (

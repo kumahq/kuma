@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
 )
 
 func newConfigControlPlanesSwitchCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

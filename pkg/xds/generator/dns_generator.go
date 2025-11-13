@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"slices"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	"github.com/kumahq/kuma/pkg/dns/dpapi"
-	util_net "github.com/kumahq/kuma/pkg/util/net"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/dynconf"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/dns/dpapi"
+	util_net "github.com/kumahq/kuma/v2/pkg/util/net"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
 
 // OriginDNS is a marker to indicate by which ProxyGenerator resources were generated.

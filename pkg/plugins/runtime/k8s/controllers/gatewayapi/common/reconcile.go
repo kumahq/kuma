@@ -12,9 +12,9 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"

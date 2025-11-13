@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Corefile", func() {

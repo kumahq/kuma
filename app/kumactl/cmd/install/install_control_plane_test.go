@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Context("kumactl install control-plane", func() {

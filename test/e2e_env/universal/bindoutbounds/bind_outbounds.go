@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
 )
 
 var msIPRegex = regexp.MustCompile(`ip: (.*)`)

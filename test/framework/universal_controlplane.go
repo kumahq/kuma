@@ -9,10 +9,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/universal"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	"github.com/kumahq/kuma/v2/test/framework/universal"
 )
 
 var _ ControlPlane = &UniversalControlPlane{}

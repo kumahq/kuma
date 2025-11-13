@@ -5,10 +5,10 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type testCase struct {

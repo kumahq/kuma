@@ -13,9 +13,9 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) func(Gomega) {

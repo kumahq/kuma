@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 // protocolStack is a mapping between a protocol and its full protocol stack, e.g.
