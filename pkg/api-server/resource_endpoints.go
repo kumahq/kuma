@@ -1214,6 +1214,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
 			}
 
+			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
 			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
@@ -1245,6 +1246,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 
 			fromRules := []api_common.FromRule{}
+			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
 					if len(rulesForInbound) == 0 {

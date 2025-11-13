@@ -1,3 +1,4 @@
+//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (

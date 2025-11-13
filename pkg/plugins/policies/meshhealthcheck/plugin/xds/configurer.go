@@ -49,6 +49,7 @@ const (
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 	activeChecks := e.Conf
 
+	//nolint:staticcheck // SA1019 Backward compatibility: process deprecated HealthyPanicThreshold moved to MeshCircuitBreaker
 	err := healthPanicThreshold(cluster, activeChecks.HealthyPanicThreshold)
 	if err != nil {
 		return err

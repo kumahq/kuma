@@ -97,6 +97,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 }
 
 func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
+	//nolint:staticcheck // SA1019 configureLegacyRules explicitly uses old Rules format for legacy RBAC
 	rules, ok := mtp.FromRules.Rules[key]
 	if !ok {
 		if len(proxy.Policies.TrafficPermissions) == 0 {
@@ -125,7 +126,7 @@ func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key cor
 
 func (p plugin) denyRules() core_rules.Rules {
 	return core_rules.Rules{
-		&core_rules.Rule{
+		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
 			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
 				Action: &api.Deny,
@@ -136,7 +137,7 @@ func (p plugin) denyRules() core_rules.Rules {
 
 func (p plugin) allowRules() core_rules.Rules {
 	return core_rules.Rules{
-		&core_rules.Rule{
+		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
 			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
 				Action: &api.Allow,
@@ -182,6 +183,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 					rules = mtp.FromRules
 				}
 			}
+			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
 			if len(rules.Rules) == 0 {
 				if resource.ExternalServicePermissionMap[esName] == nil {
 					rules = core_rules.FromRules{
@@ -194,6 +196,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 				}
 			}
 
+			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
 			for _, rule := range rules.Rules {
 				configurer := &v3.LegacyRBACConfigurer{
 					StatsName: listeners.Egress.Name,
@@ -221,6 +224,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 				},
 			}
 
+			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for MeshExternalService
 			for _, rule := range rules.Rules {
 				configurer := &v3.LegacyRBACConfigurer{
 					StatsName: listeners.Egress.Name,
