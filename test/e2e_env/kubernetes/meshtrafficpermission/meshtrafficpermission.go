@@ -25,7 +25,7 @@ func MeshTrafficPermissionRules() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshIdentity
 metadata:
-  name: identity
+  name: identity-mtp
   namespace: %s  
   labels:
     kuma.io/mesh: %s
@@ -100,7 +100,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
-  name: mtp-1
+  name: mtp-identity
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -116,7 +116,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
-  name: mtp-1
+  name: mtp-identity
   namespace: %s
   labels:
     kuma.io/mesh: %s
