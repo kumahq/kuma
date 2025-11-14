@@ -31,6 +31,8 @@ env:
   EDITION: kuma
   MIN_VERSION: "1.2.0"
   USE_LABEL_IN_VERSION: "false"
+  # renovate: datasource=go depName=ci-tools/release-tool packageName=github.com/kumahq/ci-tools versioning=semver
+  RELEASE_TOOL_VERSION: "v1.2.4"
 permissions:
   contents: read
 jobs:
@@ -44,8 +46,8 @@ jobs:
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
       - name: install-kuma-ci-tools
         run: |
-          echo $(go env GOPATH)/bin >> $GITHUB_PATH
-          go install github.com/kumahq/ci-tools/cmd/release-tool@v1.2.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          go install github.com/kumahq/ci-tools/cmd/release-tool@${{ env.RELEASE_TOOL_VERSION }}
       - name: Generate GitHub app token
         id: github-app-token
         uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
