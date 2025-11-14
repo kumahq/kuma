@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -463,12 +464,43 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
 	}
-	// workaround for https://github.com/Kong/kong-mesh/issues/7376
-	base := "kuma"
-	if readDir == "kuma" {
-		base = ""
+
+	// Module path for AddGoComments to load Go source code comments
+	// for OpenAPI schema field descriptions.
+	modulePath := "github.com/kumahq/kuma/v2"
+
+	// AddGoComments from invopop/jsonschema uses Go's package loading which
+	// requires the current working directory to be at the module root.
+	// When downstream projects (e.g., Kong Mesh) call this generator via
+	// symlinks, the working directory needs to be adjusted.
+	originalDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
 	}
-	err := reflector.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
+
+	// Resolve any symlinks in readDir to get the actual Kuma module path.
+	// This is necessary for cross-project calls where readDir might be a symlink.
+	resolvedReadDir, err := filepath.EvalSymlinks(readDir)
+	if err != nil {
+		// If symlink resolution fails, fall back to original path
+		resolvedReadDir = readDir
+	}
+
+	// Convert to absolute path to ensure correct directory reference
+	absReadDir, err := filepath.Abs(resolvedReadDir)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Temporarily change to module root directory so AddGoComments can find
+	// Go source files and extract doc comments for schema descriptions
+	if err := os.Chdir(absReadDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", absReadDir, err)
+	}
+	err = reflector.AddGoComments(modulePath, "api/")
+	// Restore working directory immediately (not deferred) to ensure
+	// subsequent ReflectFromType calls work correctly
+	_ = os.Chdir(originalDir)
 	if err != nil {
 		return err
 	}
