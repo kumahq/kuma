@@ -110,6 +110,15 @@ function release {
   local CHART_VERSION
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
+  # Determine release name template based on git tag
+  # If current commit has a tag starting with 'v', use v-prefixed template
+  local RELEASE_NAME_TEMPLATE="{{ .Name }}-{{ .Version }}"
+  local exactTag
+  exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "")
+  if [[ ${exactTag} =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+    RELEASE_NAME_TEMPLATE="{{ .Name }}-v{{ .Version }}"
+  fi
+
   pushd "${GH_REPO}"
 
   # First upload the packaged charts to the release
@@ -117,6 +126,7 @@ function release {
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
+    --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}"
 
   # Then build and upload the index file to github pages
