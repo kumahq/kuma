@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/system/v1alpha1";
 
 // ZoneInsight defines the observed state of a Zone Kuma CP.
 message ZoneInsight {
