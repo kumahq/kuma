@@ -100,11 +100,21 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+  # Determine release name template based on git tag
+  # If current commit has a tag starting with 'v', use v-prefixed template
+  local RELEASE_NAME_TEMPLATE="{{ .Name }}-{{ .Version }}"
+  local exactTag
+  exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "")
+  if [[ ${exactTag} =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+    RELEASE_NAME_TEMPLATE="{{ .Name }}-v{{ .Version }}"
+  fi
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
+    --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "${CHARTS_PACKAGE_PATH}"
 
   # Then build and upload the index file to github pages
@@ -115,7 +125,7 @@ function release {
     --package-path "${CHARTS_PACKAGE_PATH}" \
     --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
 
-  pushd ${GH_REPO}
+  pushd "${GH_REPO}"
 
   git config user.name "${GH_USER}"
   git config user.email "${GH_EMAIL}"
@@ -125,7 +135,7 @@ function release {
   git push
 
   popd
-  rm -rf ${GH_REPO}
+  rm -rf "${GH_REPO}"
 }
 
 
