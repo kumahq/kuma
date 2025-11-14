@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"slices"
 
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type PolicyDefault struct {

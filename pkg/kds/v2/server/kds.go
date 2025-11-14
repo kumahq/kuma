@@ -9,7 +9,7 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 )
 
 // Server is common for global and zone

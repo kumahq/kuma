@@ -4,10 +4,10 @@ package v1alpha1
 import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/kumahq/kuma/api/common/v1alpha1"
-	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
+	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 // MeshExternalService

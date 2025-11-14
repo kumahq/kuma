@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/expfmt"
 
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
 func MeshWithMetricsEnabeld(mesh string) InstallFunc {

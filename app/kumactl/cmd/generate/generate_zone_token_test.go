@@ -12,12 +12,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/tokens"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type staticZoneTokenGenerator struct {

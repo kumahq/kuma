@@ -1,8 +1,8 @@
 package builtin
 
 import (
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
 )
 
 type TokenIssuers struct {

@@ -9,12 +9,12 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
 )
 
 var _ = Describe("Gateway Listener", func() {

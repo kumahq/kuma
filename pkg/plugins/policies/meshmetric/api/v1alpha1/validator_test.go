@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
-	. "github.com/kumahq/kuma/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {

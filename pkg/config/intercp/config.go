@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	config_types "github.com/kumahq/kuma/pkg/config/types"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
 )
 
 func DefaultInterCpConfig() InterCpConfig {

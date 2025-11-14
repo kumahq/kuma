@@ -2,8 +2,8 @@
 package accesslogs
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 )
 
 var logger = core.Log.WithName("access-log-streamer")

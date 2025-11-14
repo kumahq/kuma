@@ -8,16 +8,16 @@ import (
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/hds/authn"
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
-	hds_server "github.com/kumahq/kuma/pkg/hds/server"
-	"github.com/kumahq/kuma/pkg/hds/tracker"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/hds/authn"
+	hds_callbacks "github.com/kumahq/kuma/v2/pkg/hds/callbacks"
+	hds_metrics "github.com/kumahq/kuma/v2/pkg/hds/metrics"
+	hds_server "github.com/kumahq/kuma/v2/pkg/hds/server"
+	"github.com/kumahq/kuma/v2/pkg/hds/tracker"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 var hdsServerLog = core.Log.WithName("hds-server")

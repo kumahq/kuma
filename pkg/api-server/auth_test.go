@@ -13,13 +13,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/config/access"
-	config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/tls"
-	http2 "github.com/kumahq/kuma/pkg/util/http"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	"github.com/kumahq/kuma/v2/pkg/config/access"
+	config "github.com/kumahq/kuma/v2/pkg/config/api-server"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/tls"
+	http2 "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 var _ = Describe("Auth test", func() {

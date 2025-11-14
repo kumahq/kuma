@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 func EnsureCAs(ctx context.Context, caManagers core_ca.Managers, mesh *core_mesh.MeshResource, meshName string) error {

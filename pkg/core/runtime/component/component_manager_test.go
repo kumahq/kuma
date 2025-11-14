@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	leader_memory "github.com/kumahq/kuma/v2/pkg/plugins/leader/memory"
 )
 
 var _ = Describe("Component Manager", func() {

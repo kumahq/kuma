@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/user"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 type dataplaneWatchdogFactory struct {

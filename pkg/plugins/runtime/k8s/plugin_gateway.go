@@ -10,17 +10,17 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
-	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
+	gatewayapi_controllers "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi"
+	k8s_webhooks "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 var requiredGatewayCRDs = map[string]string{

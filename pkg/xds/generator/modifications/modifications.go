@@ -3,10 +3,10 @@ package modifications
 import (
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	modifications_v3 "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	modifications_v3 "github.com/kumahq/kuma/v2/pkg/xds/generator/modifications/v3"
 )
 
 func Apply(resources *core_xds.ResourceSet, modifications []*mesh_proto.ProxyTemplate_Modifications, apiVersion core_xds.APIVersion) error {

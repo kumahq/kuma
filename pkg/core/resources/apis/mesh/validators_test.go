@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/validators"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 var _ = Describe("AllowedValuesHint()", func() {

@@ -6,7 +6,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
 )
 
 var _ = Describe("ProxiedApplicationProbe", func() {

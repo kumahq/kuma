@@ -3,7 +3,7 @@ package access
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/v2/pkg/config"
 )
 
 const StaticType = "static"

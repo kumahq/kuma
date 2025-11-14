@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-	"github.com/kumahq/kuma/pkg/util/data"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd/install/context"
+	kumactl_data "github.com/kumahq/kuma/v2/app/kumactl/data"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/k8s"
+	"github.com/kumahq/kuma/v2/pkg/util/data"
 )
 
 var components = []string{"prometheus", "grafana", "loki", "jaeger"}

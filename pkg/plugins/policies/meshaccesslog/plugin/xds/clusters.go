@@ -1,8 +1,8 @@
 package xds
 
 import (
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 )
 
 const OriginMeshAccessLog = "meshaccesslog"

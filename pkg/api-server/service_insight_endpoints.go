@@ -9,14 +9,14 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	rest_unversioned "github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/insights"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	rest_unversioned "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/insights"
 )
 
 type serviceInsightEndpoints struct {

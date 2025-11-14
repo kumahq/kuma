@@ -9,13 +9,13 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	k8s_gateway "github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
-	universal_gateway "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	k8s_gateway "github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway"
+	universal_gateway "github.com/kumahq/kuma/v2/test/e2e_env/universal/gateway"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func MTLSMeshUniversalEgress(name string) InstallFunc {

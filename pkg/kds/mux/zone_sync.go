@@ -8,14 +8,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/events"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/service"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	"github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/multitenant"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/events"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/service"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
+	"github.com/kumahq/kuma/v2/pkg/log"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 type FilterV2 interface {

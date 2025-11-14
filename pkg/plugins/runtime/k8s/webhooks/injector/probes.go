@@ -6,10 +6,10 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
 func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {

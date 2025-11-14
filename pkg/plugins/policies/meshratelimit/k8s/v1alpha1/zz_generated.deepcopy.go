@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	apiv1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	apiv1alpha1 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 

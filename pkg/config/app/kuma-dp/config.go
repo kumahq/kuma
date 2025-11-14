@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
 )
 
 var DefaultConfig = func() Config {

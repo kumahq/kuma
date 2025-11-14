@@ -7,12 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/cmd/version"
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/cmd/version"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
-	_ "github.com/kumahq/kuma/pkg/xds/envoy"
+	_ "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
 
 var controlPlaneLog = core.Log.WithName("kuma-cp")

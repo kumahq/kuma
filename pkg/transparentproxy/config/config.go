@@ -15,9 +15,9 @@ import (
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 
-	core_config "github.com/kumahq/kuma/pkg/config"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	core_config "github.com/kumahq/kuma/v2/pkg/config"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 )
 
 // ValueOrRangeList is a format acceptable by iptables in which

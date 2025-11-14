@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/grpc/connectivity"
 
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 var poolLog = core.Log.WithName("intercp").WithName("client").WithName("pool")

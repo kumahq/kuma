@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	"slices"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (r *MeshMultiZoneServiceResource) validate() error {

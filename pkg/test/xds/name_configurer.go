@@ -1,8 +1,8 @@
 package xds
 
 import (
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	clusters_builder "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 )
 
 func ClusterWithName(name string) envoy_common.NamedResource {

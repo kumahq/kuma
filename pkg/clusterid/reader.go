@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	config_model "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 var log = core.Log.WithName("clusterID")

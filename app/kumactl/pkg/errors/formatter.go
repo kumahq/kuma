@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
 )
 
 func FormatErrorWrapper(fn func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
