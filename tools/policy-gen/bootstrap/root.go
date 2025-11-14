@@ -158,7 +158,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&cfg.name, "name", "", "The name of the policy (UpperCamlCase)")
 	rootCmd.Flags().StringVar(&cfg.basePath, "path", "pkg/plugins/policies", "Where to put the generated code")
-	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma", "Where to put the generated code")
+	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma/v2", "Where to put the generated code")
 	rootCmd.Flags().StringVar(&cfg.version, "version", "v1alpha1", "The version to use")
 	rootCmd.Flags().BoolVar(&cfg.skipValidator, "skip-validator", false, "don't generator a validator empty file")
 	rootCmd.Flags().BoolVar(&cfg.force, "force", false, "Overwrite any existing code")
