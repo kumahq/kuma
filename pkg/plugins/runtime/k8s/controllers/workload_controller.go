@@ -62,6 +62,12 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Dataplane %s", req.Name)
 	}
 
+	// If Dataplane is being deleted, trigger cleanup instead of create/update
+	if !dp.GetDeletionTimestamp().IsZero() {
+		log.V(1).Info("dataplane is being deleted, checking for orphaned workloads")
+		return kube_ctrl.Result{}, r.cleanupOrphanedWorkloads(ctx, req.Namespace)
+	}
+
 	// Extract workload label from Dataplane
 	workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]
 	if !ok || workloadName == "" {
