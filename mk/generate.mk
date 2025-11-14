@@ -102,7 +102,7 @@ generate/policy-defaults:
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
-endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basename $(dir)))
+endpoints?=$(foreach dir,$(shell find api/openapi/specs -type f -name "*.yaml" | sort),$(basename $(dir)))
 
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN)
 	for endpoint in $(endpoints); do \
