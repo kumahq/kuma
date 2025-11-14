@@ -5019,6 +5019,7 @@ components:
               example: The requested resource was not found
     MeshAccessLogItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -5869,13 +5870,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshAccessLogItem'
     MeshCircuitBreakerItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -7597,13 +7598,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshCircuitBreakerItem'
     MeshFaultInjectionItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -8253,13 +8254,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshFaultInjectionItem'
     MeshHealthCheckItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -8757,13 +8758,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshHealthCheckItem'
     MeshHTTPRouteItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -9574,13 +9575,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshHTTPRouteItem'
     MeshLoadBalancingStrategyItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -10453,13 +10454,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
     MeshMetricItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -10785,13 +10786,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshMetricItem'
     MeshPassthroughItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -10980,13 +10981,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshPassthroughItem'
     MeshProxyPatchItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -11699,13 +11700,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshProxyPatchItem'
     MeshRateLimitItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -12439,13 +12440,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshRateLimitItem'
     MeshRetryItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -13099,13 +13100,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshRetryItem'
     MeshTCPRouteItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -13445,13 +13446,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTCPRouteItem'
     MeshTimeoutItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -14023,13 +14024,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTimeoutItem'
     MeshTLSItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -14373,13 +14374,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTLSItem'
     MeshTraceItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -14730,13 +14731,13 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshTraceItem'
     MeshTrafficPermissionItem:
       type: object
+      description: Successful response
       required:
         - type
         - name
@@ -15083,7 +15084,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-      description: Successful response
       content:
         application/json:
           schema:
@@ -17346,6 +17346,14 @@ components:
             $ref: '#/components/schemas/ZoneIngressItem'
     HostnameGeneratorItem:
       type: object
+      description: >-
+        HostnameGenerator automatically generates DNS hostnames for services in
+        the mesh based on customizable templates. It provides a consistent
+        naming scheme for service discovery by creating predictable hostnames
+        from service labels and metadata, supporting both MeshService,
+        MeshExternalService, and MeshMultiZoneService resources.
+
+        hostname generators to not get synced across zones
       required:
         - type
         - name
@@ -17430,6 +17438,12 @@ components:
           example: '0001-01-01T00:00:00Z'
     MeshExternalServiceItem:
       type: object
+      description: >-
+        MeshExternalService represents external services (outside the mesh) that
+        mesh services can communicate with securely. It enables mesh services to
+        reach external APIs, databases, or third-party services by defining
+        endpoints, ports, protocols, and optional TLS configuration for secure
+        outbound connections with hostname-based routing support.
       required:
         - type
         - name
@@ -17786,6 +17800,13 @@ components:
           readOnly: true
     MeshIdentityItem:
       type: object
+      description: >-
+        MeshIdentity manages service identity and certificate provisioning for
+        workloads in the mesh. It configures how services obtain their identity
+        certificates, supporting multiple providers including bundled
+        certificates (self-signed or user-provided CA), SPIRE integration, and
+        custom SPIFFE ID configuration for secure service-to-service
+        authentication.
       required:
         - type
         - name
@@ -18078,6 +18099,16 @@ components:
           readOnly: true
     MeshMultiZoneServiceItem:
       type: object
+      description: >-
+        MeshMultiZoneService provides global load balancing and service
+        discovery across multiple zones in a multi-zone mesh deployment. It
+        aggregates MeshServices from different zones by label selectors,
+        creating a unified service endpoint with automatic VIP assignment and
+        hostname generation for cross-zone communication and failover.
+
+        It aggregates existing MeshServices by labels.
+
+        MeshMultizoneServices are only created on global
       required:
         - type
         - name
@@ -18287,6 +18318,13 @@ components:
           readOnly: true
     MeshServiceItem:
       type: object
+      description: >-
+        MeshService represents a service in the mesh with its connectivity and
+        health information. It defines service endpoints by selecting data plane
+        proxies through labels or direct references, configures service ports
+        and protocols, tracks service availability and health status, and
+        provides automatic VIP assignment and hostname generation for service
+        discovery.
       required:
         - type
         - name
@@ -18526,6 +18564,13 @@ components:
           readOnly: true
     MeshTrustItem:
       type: object
+      description: >-
+        MeshTrust defines trusted Certificate Authority (CA) bundles for a trust
+        domain in the mesh. It establishes trust relationships for
+        service-to-service mTLS authentication by specifying which CA
+        certificates are trusted to verify service identities, supporting
+        PEM-encoded CA bundles and enabling secure cross-service communication
+        within the trust domain.
       required:
         - type
         - name
@@ -18621,6 +18666,14 @@ components:
           example: '0001-01-01T00:00:00Z'
     WorkloadItem:
       type: object
+      description: >-
+        Workload represents a logical grouping of data plane proxies in the
+        mesh, providing visibility into their operational status. It tracks
+        statistics about the data plane proxies that belong to a workload,
+        including the number of connected, healthy, and total proxies, enabling
+        monitoring and health assessment of your workload deployments. Workloads
+        is also the primary way data-planes are grouped together in metrics and
+        traces.
       required:
         - type
         - name

@@ -1,4 +1,5 @@
 type: object
+description: "MeshCircuitBreaker protects services from cascading failures by limiting connections and detecting unhealthy instances. It provides connection limits to prevent overload and outlier detection to temporarily remove failing endpoints from the load balancing pool."
 required: [type, name, spec]
 properties:
   type:

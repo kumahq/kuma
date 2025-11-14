@@ -29,7 +29,7 @@ type Port struct {
 
 const maxNameLength = 63
 
-// MeshService
+// MeshService represents a service in the mesh with its connectivity and health information. It defines service endpoints by selecting data plane proxies through labels or direct references, configures service ports and protocols, tracks service availability and health status, and provides automatic VIP assignment and hostname generation for service discovery.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
 // +kuma:policy:kds_flags=model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag

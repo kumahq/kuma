@@ -16,6 +16,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints.
+//
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mhttpr
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"

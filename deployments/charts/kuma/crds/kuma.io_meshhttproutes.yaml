@@ -28,6 +28,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshHTTPRoute configures how HTTP requests are routed between
+          services in the mesh. It enables advanced traffic management including path-based
+          routing, header matching, request/response modification, redirects, URL
+          rewrites, traffic mirroring, and weighted load balancing across service
+          endpoints.
         properties:
           apiVersion:
             description: |-

@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshTrace enables distributed tracing to track requests as they flow through multiple services in the mesh. It supports exporting trace data to backends like Zipkin, Datadog, and OpenTelemetry, with configurable sampling rates and custom tags for detailed observability and debugging of service interactions.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mtr
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"

@@ -8,8 +8,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
-// MeshLoadBalancingStrategy is a policy that defines load balancing configuration for
-// between data planes proxies.
+// MeshLoadBalancingStrategy configures how traffic is distributed across service instances. It supports multiple load balancing algorithms (round-robin, least request, ring hash, random, maglev), locality-aware routing to prefer nearby instances, and cross-zone failover strategies for high availability.
 type MeshLoadBalancingStrategy struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

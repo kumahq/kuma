@@ -10,13 +10,14 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
 )
 
-// MeshHTTPRoute
-// +kuma:policy:singular_display_name=Mesh HTTP Route
-//
-// This policy defines its own `GetDefault` method so that it can have the given
+// NOTICE: This policy defines its own `GetDefault` method so that it can have the given
 // structure for deserialization but still use the generic policy merging
 // machinery.
 //
+
+// MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints.
+//
+// +kuma:policy:singular_display_name=Mesh HTTP Route
 // +kuma:policy:skip_get_default=true
 type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.

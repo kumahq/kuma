@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshMetric enables collection and export of service mesh metrics. It configures sidecar and application metrics scraping, allows customization of which metrics are published, and supports exporting to Prometheus or OpenTelemetry backends for monitoring and observability.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mm
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"

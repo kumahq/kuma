@@ -10,8 +10,7 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
-// MeshExternalService
-// MeshExternalService are only synced from a global to zones and from zones to global, they are never synced between zones.
+// MeshExternalService represents external services (outside the mesh) that mesh services can communicate with securely. It enables mesh services to reach external APIs, databases, or third-party services by defining endpoints, ports, protocols, and optional TLS configuration for secure outbound connections with hostname-based routing support.
 // +kuma:policy:is_policy=false
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:has_status=true

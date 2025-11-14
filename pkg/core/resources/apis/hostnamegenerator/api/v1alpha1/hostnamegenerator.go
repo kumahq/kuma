@@ -13,7 +13,7 @@ type Selector struct {
 	MeshMultiZoneService *common_api.LabelSelector `json:"meshMultiZoneService,omitempty"`
 }
 
-// HostnameGenerator
+// HostnameGenerator automatically generates DNS hostnames for services in the mesh based on customizable templates. It provides a consistent naming scheme for service discovery by creating predictable hostnames from service labels and metadata, supporting both MeshService, MeshExternalService, and MeshMultiZoneService resources.
 // +kuma:policy:is_policy=false
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:scope=Global
