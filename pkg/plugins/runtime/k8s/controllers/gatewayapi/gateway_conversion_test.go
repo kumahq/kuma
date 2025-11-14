@@ -8,7 +8,7 @@ import (
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	k8s_gatewayapi "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
+	k8s_gatewayapi "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 )
 
 var _ = Describe("ValidateListeners", func() {

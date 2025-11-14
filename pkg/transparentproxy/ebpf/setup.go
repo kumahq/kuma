@@ -11,7 +11,7 @@ import (
 	ciliumebpf "github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/rlimit"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 func GetNonLoopbackRunningInterface() (string, error) {

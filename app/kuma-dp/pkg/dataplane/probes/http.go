@@ -13,8 +13,8 @@ import (
 
 	kube_core "k8s.io/api/core/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {

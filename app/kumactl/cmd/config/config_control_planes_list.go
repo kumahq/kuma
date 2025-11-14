@@ -3,10 +3,10 @@ package config
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
 )
 
 func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

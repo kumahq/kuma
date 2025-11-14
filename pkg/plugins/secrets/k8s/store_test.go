@@ -13,14 +13,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/secrets/k8s"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("KubernetesStore", func() {

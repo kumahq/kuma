@@ -15,9 +15,9 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	k8s_strings "k8s.io/utils/strings"
 
-	"github.com/kumahq/kuma/pkg/util/files"
-	"github.com/kumahq/kuma/test/framework/report"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
+	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v2/test/framework/utils"
 )
 
 // logf logs a test progress message.

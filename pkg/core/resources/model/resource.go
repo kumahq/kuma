@@ -12,12 +12,12 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	model_labels "github.com/kumahq/kuma/pkg/core/resources/model/labels"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	model_labels "github.com/kumahq/kuma/v2/pkg/core/resources/model/labels"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const (

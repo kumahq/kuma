@@ -7,9 +7,9 @@ import (
 
 	"github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/test/framework"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 func FetchResource(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, mesh string, name string) {

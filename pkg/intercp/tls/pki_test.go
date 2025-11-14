@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
+	intercp_tls "github.com/kumahq/kuma/v2/pkg/intercp/tls"
 )
 
 var _ = Describe("PKI", func() {

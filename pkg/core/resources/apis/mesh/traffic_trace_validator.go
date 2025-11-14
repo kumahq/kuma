@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (d *TrafficTraceResource) Validate() error {

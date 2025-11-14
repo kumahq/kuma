@@ -8,13 +8,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/api/openapi/types"
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
-	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/api/openapi/types"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
+	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 var policyInspectTemplate = `Affected data plane proxies:

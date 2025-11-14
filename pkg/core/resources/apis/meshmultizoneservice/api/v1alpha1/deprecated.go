@@ -6,7 +6,7 @@ import (
 
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func (t *MeshMultiZoneServiceResource) Deprecations() []string {

@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 const (

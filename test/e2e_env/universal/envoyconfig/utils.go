@@ -8,12 +8,12 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/openapi/types"
-	api_common "github.com/kumahq/kuma/api/openapi/types/common"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v2/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
 func waitMeshServiceReady(mesh, name string) {

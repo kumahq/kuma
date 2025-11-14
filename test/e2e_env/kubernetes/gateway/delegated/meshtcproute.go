@@ -6,12 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
-	"github.com/kumahq/kuma/test/server/types"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v2/test/server/types"
 )
 
 func MeshTCPRoute(config *Config) func() {

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
 )
 
 var _ = Describe("root", func() {

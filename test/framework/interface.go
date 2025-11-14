@@ -6,10 +6,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/test/framework/kumactl"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v2/test/framework/kumactl"
 )
 
 type InstallationMode string

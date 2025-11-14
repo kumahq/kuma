@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	config_access "github.com/kumahq/kuma/pkg/config/access"
-	"github.com/kumahq/kuma/pkg/core/access"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/user"
+	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
+	"github.com/kumahq/kuma/v2/pkg/core/access"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 type adminResourceAccess struct {

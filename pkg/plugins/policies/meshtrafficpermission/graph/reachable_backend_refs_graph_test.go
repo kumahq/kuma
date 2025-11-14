@@ -4,15 +4,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/backends"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/graph"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/graph/backends"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
 var _ = Describe("Reachable Backends Graph", func() {

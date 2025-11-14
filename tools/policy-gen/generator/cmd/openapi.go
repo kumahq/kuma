@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/save"
 )
 
 func newOpenAPI(rootArgs *args) *cobra.Command {

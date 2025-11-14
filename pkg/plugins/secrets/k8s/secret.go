@@ -9,10 +9,10 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 // Secret is a KubernetesObject for Kuma's Secret and GlobalSecret.

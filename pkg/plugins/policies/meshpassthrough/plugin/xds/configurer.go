@@ -5,10 +5,10 @@ import (
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	xds_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	xds_listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 const (

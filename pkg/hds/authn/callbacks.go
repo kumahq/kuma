@@ -10,13 +10,13 @@ import (
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc/metadata"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/user"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	hds_callbacks "github.com/kumahq/kuma/v2/pkg/hds/callbacks"
+	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
 )
 
 const authorization = "authorization"

@@ -9,10 +9,10 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.

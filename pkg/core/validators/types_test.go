@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 var _ = Describe("Validation Error", func() {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	util_rsa "github.com/kumahq/kuma/v2/pkg/util/rsa"
 )
 
 var DefaultValidityPeriod = 10 * 365 * 24 * time.Hour

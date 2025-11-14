@@ -25,7 +25,7 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
   name: $vulnerablePackage,
   current: .package.version,
   fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events |
-  map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name != "github.com/kumahq/kuma")'); do
+  map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name | startswith("github.com/kumahq/kuma") | not)'); do
 
   fixVersion=$(go run "$SCRIPT_DIR"/main.go <<< "$dep")
 

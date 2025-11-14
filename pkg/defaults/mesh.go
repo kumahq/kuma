@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-logr/logr"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 )
 
 var defaultMeshKey = core_model.ResourceKey{

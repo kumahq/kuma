@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
 )
 
 var _ = Describe("Server", func() {

@@ -12,12 +12,12 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 )
 
 type APIVersion string

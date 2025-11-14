@@ -11,12 +11,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
-	"github.com/kumahq/kuma/pkg/xds/auth"
-	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	util_k8s "github.com/kumahq/kuma/v2/pkg/util/k8s"
+	"github.com/kumahq/kuma/v2/pkg/xds/auth"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 var log = core.Log.WithName("kube-token-validator")

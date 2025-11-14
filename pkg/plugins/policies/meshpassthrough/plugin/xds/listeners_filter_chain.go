@@ -6,12 +6,12 @@ import (
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	xds_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	xds_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	xds_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	xds_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	xds_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	xds_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
 )
 
 const NoMatchMsg = "This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.\n"

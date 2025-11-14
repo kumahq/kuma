@@ -8,10 +8,10 @@ import (
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/kds/hash"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v2/pkg/kds/hash"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func Migration() {

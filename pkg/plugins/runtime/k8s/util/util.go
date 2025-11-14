@@ -12,8 +12,8 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 type ServicePredicate func(*kube_core.Service) bool

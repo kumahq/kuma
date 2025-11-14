@@ -4,7 +4,7 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 type ResourceBuilder interface{}

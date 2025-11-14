@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	error_types "github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type TokenClient struct {

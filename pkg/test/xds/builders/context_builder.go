@@ -3,17 +3,17 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/test/xds"
-	"github.com/kumahq/kuma/pkg/xds/context"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/test/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 type ContextBuilder struct {

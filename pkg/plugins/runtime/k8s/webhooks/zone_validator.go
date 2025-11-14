@@ -7,9 +7,9 @@ import (
 	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/zone"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func NewZoneValidatorWebhook(validator zone.Validator, unsafeDelete bool) k8s_common.AdmissionValidator {

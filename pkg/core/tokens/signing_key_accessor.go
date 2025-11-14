@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 )
 
 // SigningKeyAccessor access public part of signing key

@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshpassthrough_api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	meshproxypatch_api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	meshpassthrough_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	meshproxypatch_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func MeshPassthrough(config *Config) func() {

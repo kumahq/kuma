@@ -6,7 +6,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 func CreateIdentitySecret(secret *core_xds.IdentitySecret, name string) *envoy_auth.Secret {

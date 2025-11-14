@@ -8,13 +8,13 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
 
 // OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.

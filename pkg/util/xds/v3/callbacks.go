@@ -8,7 +8,7 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 // stream callbacks

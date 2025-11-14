@@ -5,7 +5,7 @@ import (
 	envoy_extensions_filters_http_inspector_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/http_inspector/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 const HttpInspectorName = "envoy.filters.listener.http_inspector"

@@ -6,9 +6,9 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
 )
 
 func ReadInputFile(inputFile string) []core_model.Resource {

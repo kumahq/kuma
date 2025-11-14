@@ -1,8 +1,8 @@
 package labels
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var AllComputedLabels = map[string]struct{}{

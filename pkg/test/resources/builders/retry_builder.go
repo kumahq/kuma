@@ -3,10 +3,10 @@ package builders
 import (
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type RetryBuilder struct {

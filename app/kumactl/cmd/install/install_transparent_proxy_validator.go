@@ -12,11 +12,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
-	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
-	tproxy_validate "github.com/kumahq/kuma/pkg/transparentproxy/validate"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	tproxy_validate "github.com/kumahq/kuma/v2/pkg/transparentproxy/validate"
 )
 
 const defaultLogName = "transparentproxy.validator"

@@ -6,13 +6,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	model "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	model "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
 )
 
 const (

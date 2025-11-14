@@ -5,10 +5,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 )
 
 var _ = Describe("WeightedLBConfigurer", func() {

@@ -17,9 +17,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/api/openapi/types"
-	"github.com/kumahq/kuma/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/api/openapi/types"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var _ = Describe("kumactl config control-planes add", func() {

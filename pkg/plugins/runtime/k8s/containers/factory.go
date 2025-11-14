@@ -12,10 +12,10 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 var _ = Describe("CallbacksChain", func() {

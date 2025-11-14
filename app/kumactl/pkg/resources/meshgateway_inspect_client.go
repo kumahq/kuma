@@ -9,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type MeshGatewayInspectClient interface {

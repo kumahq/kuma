@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	intercp_tls "github.com/kumahq/kuma/v2/pkg/intercp/tls"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("TLS", func() {

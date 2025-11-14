@@ -7,7 +7,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
 
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
 )
 
 // HttpStaticRouteConfigurer configures a static set of routes into the

@@ -13,12 +13,12 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/tools/xds-client/stream"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	"github.com/kumahq/kuma/v2/tools/xds-client/stream"
 )
 
 func newRootCmd() *cobra.Command {

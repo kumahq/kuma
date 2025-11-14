@@ -3,10 +3,10 @@ package v3
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
 )
 
 type HttpInboundRouteConfigurer struct {

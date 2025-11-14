@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
 )
 
 var _ = Context("kumactl install demo", func() {

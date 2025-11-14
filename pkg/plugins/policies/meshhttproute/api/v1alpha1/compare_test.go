@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func makeSingleMatchRules(matches []api.Match) []api.Rule {
