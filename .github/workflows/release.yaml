@@ -32,7 +32,7 @@ env:
   MIN_VERSION: "1.2.0"
   USE_LABEL_IN_VERSION: "false"
   # renovate: datasource=go depName=ci-tools/release-tool packageName=github.com/kumahq/ci-tools versioning=semver
-  RELEASE_TOOL_VERSION: "v1.2.4"
+  RELEASE_TOOL_VERSION: "v1.2.5"
 permissions:
   contents: read
 jobs:
