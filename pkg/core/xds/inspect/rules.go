@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"sort"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 const (
@@ -25,7 +25,7 @@ type RuleAttachment struct {
 	Service    string
 	Tags       map[string]string
 	PolicyType core_model.ResourceType
-	Rule       core_rules.Rule
+	Rule       core_rules.Rule //nolint:staticcheck // SA1019 Inspection API: return old Rule format for debugging
 }
 
 func (r *RuleAttachment) AddAddress(address string) {
@@ -45,6 +45,7 @@ func BuildRulesAttachments(matchedPoliciesByType map[core_model.ResourceType]cor
 	var attachments []RuleAttachment
 
 	for typ, matched := range matchedPoliciesByType {
+		//nolint:staticcheck // SA1019 Inspection API: show old Rules format for debugging
 		attachments = append(attachments, getInboundRuleAttachments(matched.FromRules.Rules, networking, typ)...)
 		attachments = append(attachments, getOutboundRuleAttachments(matched.ToRules.Rules, networking, typ, domainsByAddress)...)
 		if len(matched.SingleItemRules.Rules) > 0 {

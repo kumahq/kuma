@@ -5,15 +5,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func (r *MeshIdentityResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("spiffeID"), validateSPIFFEID(pointer.Deref(r.Spec.SpiffeID)))
-	verr.AddErrorAt(path.Field("provider"), validateProvider(r.Spec.Provider))
+	if r.Spec.Provider != nil {
+		verr.AddErrorAt(path.Field("provider"), validateProvider(pointer.Deref(r.Spec.Provider)))
+	}
 	return verr.OrNil()
 }
 

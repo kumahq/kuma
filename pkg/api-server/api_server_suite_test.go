@@ -19,32 +19,32 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-	config_access "github.com/kumahq/kuma/pkg/config/access"
-	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/access"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
-	"github.com/kumahq/kuma/pkg/insights/globalinsight"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
-	test_store "github.com/kumahq/kuma/pkg/test/store"
-	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/server"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	"github.com/kumahq/kuma/v2/pkg/api-server/customization"
+	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
+	config_api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/access"
+	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	resources_access "github.com/kumahq/kuma/v2/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	envoyadmin_access "github.com/kumahq/kuma/v2/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_runtime "github.com/kumahq/kuma/v2/pkg/test/runtime"
+	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
+	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/server"
 )
 
 func TestWs(t *testing.T) {
@@ -198,6 +198,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			cfg.DNSServer.Domain,
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

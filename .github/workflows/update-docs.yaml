@@ -30,9 +30,9 @@ jobs:
           fetch-depth: 0
           ref: master
           path: repo
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: repo/go.mod
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: "sync docs" # loop over all the branches and generate the docs
         shell: bash
         env:
@@ -45,6 +45,7 @@ jobs:
           cd repo
 
           # Use active branches from reusable workflow output
+          # shellcheck disable=SC2153
           branches="${BRANCHES}"
           
           # Loop over branches and generate docs

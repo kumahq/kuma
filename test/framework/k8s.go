@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
 )
 
 func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error) {
@@ -70,7 +70,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml")
 }
 
 func UpdateKubeObject(

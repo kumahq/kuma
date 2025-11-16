@@ -52,10 +52,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-      - uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
       - run: |
           make build
       - id: annotate-image-tag
@@ -66,11 +63,11 @@ jobs:
           make -j build/distributions
       - id: inspect-binary-output
         run: |
-          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+          for i in build/distributions/out/*.tar.gz; do echo "$i"; tar -tvf "$i"; done
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
-          echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+          echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -90,7 +87,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       id-token: write # Required for image signing
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -104,14 +101,11 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-      - uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
-          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
+          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> "$GITHUB_OUTPUT"
       - run: |
           make images/${{ matrix.image }}
       - run: |
@@ -153,24 +147,24 @@ jobs:
           make docker/push/${{ matrix.image }}
           make docker/manifest/${{ matrix.image }}
       - name: Install regctl
-        uses: regclient/actions/regctl-installer@e90c98f47ac2fead0ab3cf8d7a59c5e6fc3b87d2
+        uses: regclient/actions/regctl-installer@f61d18f46c86af724a9c804cb9ff2a6fec741c7c
       - name: image digest
         id: image_digest
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         run: |
           echo "Fetching image digest for ${{ matrix.image }}"
-          digest=$(regctl image digest ${{ steps.image_meta.outputs.image }})
+          digest=$(regctl image digest "${{ steps.image_meta.outputs.image }}")
           echo "Got digest: $digest"
-          echo "digest=${digest}" >> $GITHUB_OUTPUT
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         id: image-artifacts
         with:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
@@ -194,7 +188,7 @@ jobs:
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           pattern: "image_*.digest.json"
           path: ./digests
@@ -202,9 +196,11 @@ jobs:
       - id: compute-digests
         run: |
           # Create an object of digests indexed by image (.e.g: {"kuma-cp": "sha256:1234", "kuma-dp": "sha256:5678" ...})
-          echo "digests<<EOF" >> $GITHUB_OUTPUT
-          jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "digests<<EOF"
+            jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
@@ -217,12 +213,7 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-      - uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
       - name: package-helm-chart
         id: package-helm
         env:
@@ -240,9 +231,9 @@ jobs:
 
           make helm/package
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
-          echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
+          echo "filename=${PKG_FILENAME}" >> "$GITHUB_OUTPUT"
       - name: Upload packaged chart
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}

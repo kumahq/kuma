@@ -3,20 +3,20 @@ package egress
 import (
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/naming"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
 )
 
 func genExternalResources(
@@ -171,7 +171,7 @@ func buildExternalServiceFilterChain(
 	virtualHostName := esName
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
-		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming)).
+		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming, false)).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
 		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
 		// Zone Egress will configure these filter chains only for meshes with mTLS enabled, so we can safely pass here true

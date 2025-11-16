@@ -9,26 +9,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/test/xds"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 )
 
 var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
-		dataplaneFile   string
-		dataplaneMeta   *model.DataplaneMetadata
-		expected        string
-		mode            mesh_proto.CertificateAuthorityBackend_Mode
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		dataplaneFile    string
+		dataplaneMeta    *model.DataplaneMetadata
+		expected         string
+		mode             mesh_proto.CertificateAuthorityBackend_Mode
+		meshServiceMode  mesh_proto.Mesh_MeshServices_Mode
+		casByTrustDomain map[string][]xds_context.PEMBytes
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -61,7 +62,8 @@ var _ = Describe("InboundProxyGenerator", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: mesh,
+					Resource:         mesh,
+					CAsByTrustDomain: given.casByTrustDomain,
 				},
 			}
 
@@ -276,6 +278,15 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
 			expected:        "8-envoy-config.golden.yaml",
 			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+		}),
+		Entry("09. transparent_proxying=false, ip_addresses=2, ports=2, trust with old mesh mtls", testCase{
+			dataplaneFile:   "9-dataplane.input.yaml",
+			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:        "9-envoy-config.golden.yaml",
+			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"my-test.domain.com": {xds_context.PEMBytes("123")},
+			},
 		}),
 	)
 })

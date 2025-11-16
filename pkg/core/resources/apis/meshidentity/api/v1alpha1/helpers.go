@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const (
@@ -20,7 +20,26 @@ const (
 	defaultPathTemplate        = "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
 )
 
-func Matched(
+// AllMatched returns a list of MeshIdentity policies that match the given labels and are initialized or in SpiffeIDProviderMode.
+func AllMatched(
+	labels map[string]string,
+	meshIdentities []*MeshIdentityResource,
+) []*MeshIdentityResource {
+	var matches []*MeshIdentityResource
+	for _, mi := range meshIdentities {
+		if mi.Spec.Selector == nil || mi.Spec.Selector.Dataplane == nil || !mi.Spec.Selector.Dataplane.Matches(labels) {
+			continue
+		}
+		matches = append(matches, mi)
+	}
+
+	return matches
+}
+
+// BestMatched returns the most specific MeshIdentity policy that matches the given labels.
+// If multiple policies have the same specificity, the one with the greatest number of matching labels is selected first,
+// and if still tied, the policy with the lexicographically smallest name is chosen.
+func BestMatched(
 	labels map[string]string,
 	meshIdentities []*MeshIdentityResource,
 ) (*MeshIdentityResource, bool) {
@@ -32,11 +51,7 @@ func Matched(
 
 	var matches []scoredMatch
 
-	for _, mi := range meshIdentities {
-		if mi.Spec.Selector == nil || mi.Spec.Selector.Dataplane == nil || !mi.Spec.Selector.Dataplane.Matches(labels) {
-			continue
-		}
-
+	for _, mi := range AllMatched(labels, meshIdentities) {
 		matchCount := len(pointer.Deref(mi.Spec.Selector.Dataplane.MatchLabels))
 		matches = append(matches, scoredMatch{
 			matchCount: matchCount,
@@ -135,6 +150,15 @@ func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, 
 func (s *MeshIdentityStatus) IsInitialized() bool {
 	for _, condition := range s.Conditions {
 		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *MeshIdentityStatus) IsPartiallyReady() bool {
+	for _, condition := range s.Conditions {
+		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionFalse && condition.Reason == "PartiallyReady" {
 			return true
 		}
 	}

@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 var _ = Describe("VirtualOutbound_Helpers", func() {

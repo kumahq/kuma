@@ -13,18 +13,18 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
-	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
+	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type APIVersion string
@@ -229,9 +229,9 @@ type WorkloadIdentity struct {
 	// IdentitySourceConfigurer returns a function that configures the identity secret,
 	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
 	IdentitySourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
-	// ValidationSourceConfigurer returns a function that configures the validation secret,
-	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
-	ValidationSourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
+	// ExternalValidationSourceConfigurer returns a function that configures the validation secret,
+	// including the secret name and the location of SDS server.
+	ExternalValidationSourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
 	// AdditionalResources contains Envoy resources that can be added to the resource set.
 	// It provides a simple way to create provider-specific Envoy resources and propagate them to Envoy.
 	AdditionalResources *ResourceSet

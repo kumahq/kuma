@@ -756,7 +756,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250
+    tag: v1.34.2@sha256:86316dd78d4887f9dce1e35ce22f3fce12dc6927e45d896656d9b93a1bb2638b
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -947,6 +947,7 @@ plugins:
     meshmultizoneservices: true
     meshservices: true
     meshtrusts: true
+    workloads: true
   policies:
     meshaccesslogs: true
     meshcircuitbreakers: true

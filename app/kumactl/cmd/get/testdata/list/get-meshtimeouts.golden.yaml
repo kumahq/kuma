@@ -1,5 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mt_default_my-zone_kong-mesh-system_aatimeout-1_
   labels:
     k8s.kuma.io/namespace: kong-mesh-system
     kuma.io/display-name: aatimeout-1
@@ -20,6 +21,7 @@ items:
         kind: Mesh
   type: MeshTimeout
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mt_default_my-zone_kong-mesh-system_timeout-2_
   labels:
     k8s.kuma.io/namespace: kong-mesh-system
     kuma.io/display-name: timeout-2
@@ -43,6 +45,7 @@ items:
         name: api-play-000_microservice-mesh_svc_8080
   type: MeshTimeout
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mt_default_my-zone_kong-mesh-system_timeout-3_
   labels:
     k8s.kuma.io/namespace: kong-mesh-system
     kuma.io/display-name: timeout-3
@@ -65,6 +68,7 @@ items:
         name: api-play-003_microservice-mesh_svc_8080
   type: MeshTimeout
 - creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mt_default_my-zone_kong-mesh-system_timeout-4_
   labels:
     k8s.kuma.io/namespace: kong-mesh-system
     kuma.io/display-name: timeout-4

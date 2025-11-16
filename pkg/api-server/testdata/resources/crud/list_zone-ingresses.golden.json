@@ -6,6 +6,7 @@
    "name": "zone-ingress-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_zi____zone-ingress-1_",
    "networking": {
     "address": "10.0.0.0",
     "advertisedAddress": "10.0.0.0",
@@ -18,6 +19,7 @@
    "name": "zone-ingress-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_zi____zone-ingress-2_",
    "networking": {
     "address": "11.0.0.0",
     "advertisedAddress": "11.0.0.0",
@@ -30,6 +32,7 @@
    "name": "zone-ingress-3",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_zi____zone-ingress-3_",
    "networking": {
     "address": "12.0.0.0",
     "advertisedAddress": "12.0.0.0",

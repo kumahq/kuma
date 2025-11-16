@@ -17,10 +17,7 @@ jobs:
         with:
           ref: "master"
           fetch-depth: 0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-      - uses: jdx/mise-action@156251fcc627ac4e26cb0f93dd47d1d4979abf24 # v3.3.0
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
@@ -29,7 +26,7 @@ jobs:
           git config --global user.name "kumahq[bot]"
       - id: latest-branch
         run: |
-          echo "branch=$(make dev/print-latest-release-branch)" >> $GITHUB_OUTPUT
+          echo "branch=$(make dev/print-latest-release-branch)" >> "$GITHUB_OUTPUT"
       - run: |
           if [[ "refs/heads/${{ steps.latest-branch.outputs.branch }}" == "${{ github.ref }}" ]]; then
             make dev/merge-release
@@ -40,11 +37,11 @@ jobs:
           # "git merge HEAD" is the way to check if merge is in progress
           if git merge HEAD &> /dev/null; then
             echo "skipping commit"
-            echo "changes=skipped" >> $GITHUB_OUTPUT
+            echo "changes=skipped" >> "$GITHUB_OUTPUT"
           else
             echo "commit changes"
             git commit -s -m "chore(merge): ${{ steps.latest-branch.outputs.branch }} branch to master"
-            echo "changes=committed" >> $GITHUB_OUTPUT
+            echo "changes=committed" >> "$GITHUB_OUTPUT"
           fi
       - name: Generate GitHub app token
         id: github-app-token

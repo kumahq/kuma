@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
-	tproxy_test "github.com/kumahq/kuma/pkg/transparentproxy/test"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/tables"
+	tproxy_test "github.com/kumahq/kuma/v2/pkg/transparentproxy/test"
 )
 
 var _ = Describe("Builder nat", func() {

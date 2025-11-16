@@ -3,13 +3,14 @@
 package apis
 
 import (
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{
@@ -19,4 +20,5 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshmultizoneservices": {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
 	"meshservices":          {InitFn: meshservice.InitPlugin, Initialized: false},
 	"meshtrusts":            {InitFn: meshtrust.InitPlugin, Initialized: false},
+	"workloads":             {InitFn: workload.InitPlugin, Initialized: false},
 }

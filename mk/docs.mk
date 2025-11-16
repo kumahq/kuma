@@ -4,7 +4,8 @@ DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
 # renovate[docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io
-OAPI_TOOLS_VERSION ?= v1.2.1@sha256:8f81e7ce2fd57916c87db172534c28786a418cf90fff3fc624a553e51359b16f
+OAPI_TOOL_VERSION ?= v1.2.5@sha256:e421dcfc065dc9618c63dd1242821b7335df00cab545aa58c1fd77f3b224fb87
+OAPI_TOOL_IMAGE   := ghcr.io/kumahq/openapi-tool:$(OAPI_TOOL_VERSION)
 
 .PHONY: clean/docs
 clean/docs:
@@ -41,23 +42,95 @@ docs/generated/raw/rbac.yaml:
 	sed 's/[[:space:]]*#.*$$//' > $@
 
 OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
-API_DIRS="$(TOP)/api/openapi/specs:base"
+API_DIRS     ?= $(TOP)/api/openapi/specs:base
+
+# Generate a consolidated OpenAPI spec consumed by docs
+# Keep prep and generation separate for clarity and easier maintenance
+# Prep step normalizes input specs into a predictable temp layout
+# Generation step runs the OpenAPI tool container against that layout
+
+# Ensure the output directory for generated docs artifacts exists
+docs/generated:
+	mkdir -p $@
 
 .PHONY: docs/generated/openapi.yaml
-docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES)
-	rm -rf $(OAPI_TMP_DIR)
-	mkdir -p $(dir $@)
-	mkdir -p $(OAPI_TMP_DIR)/policies
-	mkdir -p $(OAPI_TMP_DIR)/resources
-	mkdir -p $(OAPI_TMP_DIR)/protoresources
-	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -R $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
-	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
-	for i in $$( find $(RESOURCES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/resources/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
-	for i in $$( find $(MESH_API_DIR) -name '*.yaml'); do DIR=$(OAPI_TMP_DIR)/protoresources/$$(echo $${i} | awk -F/ '{print $$(NF-1)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
+docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
+# Target-scoped settings for readability
+docs/generated/openapi.yaml: DOCKER      ?= docker
+docs/generated/openapi.yaml: IMAGE       := $(OAPI_TOOL_IMAGE)
+docs/generated/openapi.yaml: SPECS_MOUNT := -v $(OAPI_TMP_DIR):/specs
+docs/generated/openapi.yaml: BASE_MOUNT  := $(if $(BASE_API),-v $(CURDIR)/$(dir $(BASE_API)):/base,)
+docs/generated/openapi.yaml: BASE_ARG    := $(if $(BASE_API),/base/$(notdir $(BASE_API)),)
+docs/generated/openapi.yaml: EXCLUDES    := $(if $(BASE_API),'!/specs/kuma/**',)
+docs/generated/openapi.yaml: INCLUDES    := '/specs/**/*.yaml'
+docs/generated/openapi.yaml:
+	@$(DOCKER) run --rm $(BASE_MOUNT) $(SPECS_MOUNT) $(IMAGE) generate $(BASE_ARG) $(INCLUDES) $(EXCLUDES) > $@
+	@$(MAKE) --no-print-directory validate/openapi-generated-docs
 
-ifdef BASE_API
-	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION) generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
-else
-	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:$(OAPI_TOOLS_VERSION) generate '/specs/**/*.yaml' > $@
-endif
-	$(MAKE) --no-print-directory validate/openapi-generated-docs
+# Prepare $(OAPI_TMP_DIR) with a normalized directory layout for the generator
+# Layout
+#   $(OAPI_TMP_DIR)/
+#     base/            <- contents of $(TOP)/api/openapi/specs listed in API_DIRS
+#     policies/<name>/ <- policy REST or OpenAPI fragments from $(POLICIES_DIR)
+#     resources/<name>/
+#     protoresources/<name>/
+# Split into sub-targets to keep steps clear and maintainable
+
+# Aggregate prep target that ensures all parts are ready
+.PHONY: docs/generated/openapi/prepare/specs
+docs/generated/openapi/prepare/specs: \
+	docs/generated/openapi/prepare/base \
+	docs/generated/openapi/prepare/policies \
+	docs/generated/openapi/prepare/resources \
+	docs/generated/openapi/prepare/protoresources
+
+# Create or reset the top-level temp layout under $(OAPI_TMP_DIR)
+.PHONY: docs/generated/openapi/prepare/layout
+docs/generated/openapi/prepare/layout:
+	@rm -rf $(OAPI_TMP_DIR)
+	@mkdir -p $(OAPI_TMP_DIR)
+
+# Create or reset a named subdirectory under $(OAPI_TMP_DIR)
+.PHONY: docs/generated/openapi/prepare/layout/%
+docs/generated/openapi/prepare/layout/%:
+	@rm -rf $(OAPI_TMP_DIR)/$*
+	@mkdir -p $(OAPI_TMP_DIR)/$*
+
+# Copy base API specs into well-known subdirs
+# The dst path is the part after the colon in API_DIRS entries
+.PHONY: docs/generated/openapi/prepare/base
+docs/generated/openapi/prepare/base: docs/generated/openapi/prepare/layout
+	@for i in $(API_DIRS); do \
+		src=$$(echo "$$i" | cut -d: -f1); dst=$$(echo "$$i" | cut -d: -f2); \
+		mkdir -p "$(OAPI_TMP_DIR)/$${dst}"; \
+		cp -R "$$src" "$(OAPI_TMP_DIR)/$${dst}"; \
+	done
+
+# Helper macro to collect YAML specs into $(OAPI_TMP_DIR)/<subdir>/<name>/
+# $(1) shell command that prints file paths, for example a find invocation
+# $(2) shell snippet that echoes the name component for $$i
+# $(3) destination subdir under $(OAPI_TMP_DIR) such as policies or resources
+define OAPI_COLLECT
+	@for i in $$($(1)); do \
+		name=$$($(2)); \
+		dst="$(OAPI_TMP_DIR)/$(3)/$$name"; \
+		mkdir -p "$$dst"; \
+		cp "$$i" "$$dst/$$(basename "$$i")"; \
+	done
+endef
+
+# Gather policy API YAMLs into policies/<policyName>/
+.PHONY: docs/generated/openapi/prepare/policies
+docs/generated/openapi/prepare/policies: docs/generated/openapi/prepare/layout/policies
+	$(call OAPI_COLLECT,find $(POLICIES_DIR) -path '*/api/*.yaml' -not -path '*/testdata/*',basename $${i%/api/*},policies)
+
+# Gather resource API YAMLs into resources/<resourceName>/
+.PHONY: docs/generated/openapi/prepare/resources
+docs/generated/openapi/prepare/resources: docs/generated/openapi/prepare/layout/resources
+	$(call OAPI_COLLECT,find $(RESOURCES_DIR) -path '*/api/*.yaml' -not -path '*/testdata/*',basename $${i%/api/*},resources)
+
+# Gather proto-backed mesh API YAMLs into protoresources/<name>/
+.PHONY: docs/generated/openapi/prepare/protoresources
+docs/generated/openapi/prepare/protoresources: docs/generated/openapi/prepare/layout/protoresources
+	$(call OAPI_COLLECT,find $(MESH_API_DIR) -name '*.yaml',basename $${i%/*},protoresources)
+	$(call OAPI_COLLECT,find $(SYSTEM_API_DIR) -name '*.yaml',basename $${i%/*},protoresources)

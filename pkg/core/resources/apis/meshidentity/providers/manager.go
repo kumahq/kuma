@@ -6,12 +6,12 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/events"
 )
 
 type IdentityProviderManager struct {
@@ -30,7 +30,7 @@ func NewIdentityProviderManager(providers IdentityProviders, eventWriter events.
 }
 
 func (i *IdentityProviderManager) SelectedIdentity(dataplane *core_mesh.DataplaneResource, identities []*meshidentity_api.MeshIdentityResource) *meshidentity_api.MeshIdentityResource {
-	identity, _ := meshidentity_api.Matched(dataplane.Meta.GetLabels(), identities)
+	identity, _ := meshidentity_api.BestMatched(dataplane.Meta.GetLabels(), identities)
 	return identity
 }
 

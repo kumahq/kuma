@@ -8,11 +8,11 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
-	core_config "github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	k8s_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_probes "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	core_config "github.com/kumahq/kuma/v2/pkg/config"
+	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	k8s_probes "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
+	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 const (

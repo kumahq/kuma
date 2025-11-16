@@ -7,9 +7,9 @@ import (
 	"go.uber.org/multierr"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/kumahq/kuma/pkg/config"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 const defaultServiceAccountName = "system:serviceaccount:kuma-system:kuma-control-plane"
@@ -126,6 +126,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			LeaseDuration: config_types.Duration{Duration: 15 * time.Second},
 			RenewDeadline: config_types.Duration{Duration: 10 * time.Second},
 		},
+		WorkloadLabels: []string{},
 	}
 }
 
@@ -142,6 +143,7 @@ type KubernetesRuntimeConfig struct {
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// Name of Service Account that is used to run the Control Plane
+	//
 	// Deprecated: Use AllowedUsers instead.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// List of names of Service Accounts that admission requests are allowed.
@@ -164,6 +166,10 @@ type KubernetesRuntimeConfig struct {
 	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
 	// The downside is that control plane requires permission to read Secrets in all namespaces.
 	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
+	// WorkloadLabels is a prioritized list of pod labels to use for generating the kuma.io/workload label on DataplaneProxy.
+	// The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
+	// Default is empty list (uses ServiceAccount as workload identifier).
+	WorkloadLabels []string `json:"workloadLabels" envconfig:"kuma_runtime_kubernetes_workload_labels"`
 }
 
 type ControllersConcurrency struct {

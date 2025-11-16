@@ -6,18 +6,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	meta "github.com/kumahq/kuma/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/pkg/xds/generator/model"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	manager_dataplane "github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplane"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	meta "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/model"
 )
 
 // Transparent Proxy is based on having 1 IP for cluster (ex. ClusterIP of Service on K8S), so consuming apps by their IP
@@ -78,7 +78,7 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 
 	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, meta.DirectAccessClusterName).
 		Configure(envoy_clusters.PassThroughCluster()).
-		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource)).
+		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource, len(xdsCtx.Mesh.CAsByTrustDomain) > 0)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {

@@ -9,16 +9,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	"github.com/kumahq/kuma/app/kumactl/pkg/test"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 var _ = Describe("kumactl delete ", func() {

@@ -9,8 +9,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/spf13/cobra"
 
-	commontemplate "github.com/kumahq/kuma/tools/common/template"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
+	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
 )
 
 func newCoreResource(rootArgs *args) *cobra.Command {
@@ -62,9 +62,9 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 {{- if .IsDestination }}
-    "github.com/kumahq/kuma/pkg/core/resources/apis/core"
+    "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 {{- end }}
 )
 

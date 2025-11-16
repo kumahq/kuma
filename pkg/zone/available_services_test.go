@@ -10,23 +10,23 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	cache_mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/server"
-	"github.com/kumahq/kuma/pkg/zone"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	cache_mesh "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	"github.com/kumahq/kuma/v2/pkg/zone"
 )
 
 var _ = Describe("AvailableServices Tracker", func() {
@@ -53,6 +53,7 @@ var _ = Describe("AvailableServices Tracker", func() {
 				".mesh",
 				80,
 				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
 			)
 			var err error
 			metrics, err = core_metrics.NewMetrics("Zone")
@@ -167,6 +168,7 @@ var _ = Describe("AvailableServices Tracker", func() {
 				".mesh",
 				80,
 				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
 				1*time.Second,

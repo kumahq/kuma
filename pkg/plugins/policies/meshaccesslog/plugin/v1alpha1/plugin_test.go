@@ -11,41 +11,41 @@ import (
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
-	meshtcproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
+	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -153,7 +153,7 @@ var _ = Describe("MeshAccessLog", func() {
 				otherServiceHTTPListener(),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -350,7 +350,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -370,7 +370,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -393,7 +393,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -419,7 +419,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -455,7 +455,7 @@ var _ = Describe("MeshAccessLog", func() {
 					WithPort(37779).Build()},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
@@ -536,7 +536,7 @@ var _ = Describe("MeshAccessLog", func() {
 					WithPort(37779).Build()},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
@@ -605,7 +605,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -628,7 +628,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -654,7 +654,7 @@ var _ = Describe("MeshAccessLog", func() {
 				otherServiceHTTPListener(),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,

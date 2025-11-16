@@ -29,7 +29,7 @@ resources:
             combinedValidationContext:
               defaultValidationContext: {}
               validationContextSdsSecretConfig:
-                name: ca-bundle
+                name: system_trust_bundle
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
@@ -75,7 +75,7 @@ resources:
             combinedValidationContext:
               defaultValidationContext: {}
               validationContextSdsSecretConfig:
-                name: ca-bundle
+                name: system_trust_bundle
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3

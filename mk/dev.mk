@@ -8,7 +8,7 @@ GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
 # renovate: datasource=github-tags depName=envoy packageName=kumahq/envoy-builds versioning=semver
-ENVOY_VERSION ?= 1.36.0
+ENVOY_VERSION ?= 1.36.2
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -28,13 +28,14 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION=v1.31.12-k3s1
-K8S_MAX_VERSION=v1.33.4-k3s1
+K8S_MAX_VERSION=v1.34.1-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.33
 
-export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-GOOS := $(shell go env GOOS)
-GOARCH := $(shell go env GOARCH)
+GO := $(shell $(MISE) which go)
+export GO_VERSION := $(shell $(GO) mod edit -json | jq -r .Go)
+GOOS := $(shell $(GO) env GOOS)
+GOARCH := $(shell $(GO) env GOARCH)
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
@@ -47,13 +48,13 @@ endef
 KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
-# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/issues/13880
-XDS_VERSION=$(shell go list -f '{{ .Version }}' -m github.com/cncf/xds/go)
-PROTO_XDS=$(shell go mod download github.com/cncf/xds@$(XDS_VERSION) && go list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
-PGV_VERSION=$(shell go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
-PROTO_PGV=$(shell go mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && go list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
-PROTO_GOOGLE_APIS=$(shell go mod download github.com/googleapis/googleapis@master && go list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
-PROTO_ENVOY=$(shell go mod download github.com/envoyproxy/data-plane-api@main && go list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
+# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/v2/issues/13880
+XDS_VERSION=$(shell $(GO) list -f '{{ .Version }}' -m github.com/cncf/xds/go)
+PROTO_XDS=$(shell $(GO) mod download github.com/cncf/xds@$(XDS_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
+PGV_VERSION=$(shell $(GO) list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
+PROTO_PGV=$(shell $(GO) mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
+PROTO_GOOGLE_APIS=$(shell $(GO) mod download github.com/googleapis/googleapis@master && $(GO) list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
+PROTO_ENVOY=$(shell $(GO) mod download github.com/envoyproxy/data-plane-api@main && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
 BUF=$(shell $(MISE) which buf)
 YQ=$(shell $(MISE) which yq)
@@ -66,6 +67,7 @@ CONTROLLER_GEN=$(shell $(MISE) which controller-gen)
 KUBECTL=$(shell $(MISE) which kubectl)
 PROTOC_BIN=$(shell $(MISE) which protoc)
 SHELLCHECK=$(shell $(MISE) which shellcheck)
+ACTIONLINT=$(shell $(MISE) which actionlint)
 CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
 PROTOC_GEN_GO=$(shell $(MISE) which protoc-gen-go)
 PROTOC_GEN_GO_GRPC=$(shell $(MISE) which protoc-gen-go-grpc)

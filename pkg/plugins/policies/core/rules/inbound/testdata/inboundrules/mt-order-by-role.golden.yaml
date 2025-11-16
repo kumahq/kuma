@@ -7,6 +7,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-aaa_
       labels:
         kuma.io/policy-role: system
       mesh: mesh-1
@@ -22,6 +23,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-bbb_
       labels:
         kuma.io/policy-role: producer
       mesh: mesh-1
@@ -36,6 +38,7 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1___matched-for-rules-ccc_
       labels:
         kuma.io/policy-role: consumer
       mesh: mesh-1

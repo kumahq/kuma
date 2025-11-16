@@ -5,12 +5,12 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
+	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
@@ -32,6 +32,7 @@ func ClientSideMTLS(
 	upstreamService string,
 	upstreamTLSReady bool,
 	tags []envoy_tags.Tags,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -42,6 +43,7 @@ func ClientSideMTLS(
 			LocalMesh:             mesh,
 			Tags:                  tags,
 			UpstreamTLSReady:      upstreamTLSReady,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }
@@ -53,6 +55,7 @@ func ClientSideMTLSCustomSNI(
 	upstreamService string,
 	upstreamTLSReady bool,
 	sni string,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -64,6 +67,7 @@ func ClientSideMTLSCustomSNI(
 			Tags:                  nil,
 			UpstreamTLSReady:      upstreamTLSReady,
 			SNI:                   sni,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }
@@ -75,6 +79,7 @@ func ClientSideMultiIdentitiesMTLS(
 	upstreamTLSReady bool,
 	sni string,
 	identities []string,
+	useMeshTrust bool,
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -87,6 +92,7 @@ func ClientSideMultiIdentitiesMTLS(
 			Tags:                  nil,
 			UpstreamTLSReady:      upstreamTLSReady,
 			VerifyIdentities:      identities,
+			UseMeshTrust:          useMeshTrust,
 		})
 	})
 }
@@ -114,7 +120,7 @@ func CrossMeshClientSideMTLS(
 }
 
 // UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
-func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource) ClusterBuilderOpt {
+func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, useMeshTrust bool) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
@@ -123,6 +129,7 @@ func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *cor
 			LocalMesh:        mesh,
 			Tags:             nil,
 			UpstreamTLSReady: true,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }

@@ -10,17 +10,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	v1alpha1_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/k8s/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	v1alpha1_k8s "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("KubernetesStore", func() {
@@ -562,6 +562,34 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal("dn"))
 			Expect(actual.Meta.GetLabels()[metadata.KumaServiceAccount]).To(Equal("default"))
+		})
+
+		It("should return workload from annotation", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
+            mesh: default
+            metadata:
+              annotations:
+                kuma.io/workload: my-workload
+              name: %s
+            spec:
+              conf:
+                destination:
+                  path: /example
+`, name))
+			backend.Create(expected)
+
+			// given
+			actual := core_mesh.NewTrafficRouteResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual.Meta.GetLabels()[metadata.KumaWorkload]).To(Equal("my-workload"))
 		})
 	})
 

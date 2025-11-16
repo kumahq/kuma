@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/kumahq/kuma/test/server/grpc/api"
+	"github.com/kumahq/kuma/v2/test/server/grpc/api"
 )
 
 var grpcClientLog = grpcLog.WithName("client")

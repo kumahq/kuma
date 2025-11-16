@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 var _ = Describe("MeshTLS", func() {

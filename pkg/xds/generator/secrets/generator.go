@@ -5,15 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_secrets "github.com/kumahq/kuma/v2/pkg/xds/envoy/secrets/v3"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 var generatorLogger = core.Log.WithName("secrets-generator")
@@ -122,7 +122,9 @@ func (g Generator) Generate(
 			system_names.AsSystemName("mtls_ca_all_meshes"),
 			proxy.SecretsTracker.RequestAllInOneCa().Name(),
 		)
-		resources.Add(createCaSecretResource(caSecretName, allInOneCa))
+		if len(xdsCtx.Mesh.CAsByTrustDomain) == 0 {
+			resources.Add(createCaSecretResource(caSecretName, allInOneCa))
+		}
 		identitySecretName := getNameOrDefault(
 			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
 			proxy.SecretsTracker.RequestIdentityCert().Name(),
@@ -151,6 +153,10 @@ func (g Generator) Generate(
 
 		var addedCas []string
 		for mesh := range usedCAs {
+			// when there is a MeshTrust we create a different secret which includes the mTLS Mesh CA
+			if len(xdsCtx.Mesh.CAsByTrustDomain) > 0 {
+				break
+			}
 			identityName := getNameOrDefault(
 				system_names.AsSystemName("mtls_ca_"+mesh),
 				proxy.SecretsTracker.RequestCa(mesh).Name(),

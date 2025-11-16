@@ -6,11 +6,11 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
-	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
-	"github.com/kumahq/kuma/pkg/test/grpc"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	kds_client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
+	kds_util "github.com/kumahq/kuma/v2/pkg/kds/v2/util"
+	"github.com/kumahq/kuma/v2/pkg/test/grpc"
 )
 
 func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_util.Callbacks) {

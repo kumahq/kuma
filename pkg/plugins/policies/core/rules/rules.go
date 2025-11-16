@@ -12,20 +12,20 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/pkg/util/slices"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -49,6 +49,7 @@ func (i InboundListener) String() string {
 
 type FromRules struct {
 	// Rules is a map of InboundListener to a list of rules built by using 'spec.from' field.
+	//
 	// Deprecated: use InboundRules instead
 	Rules map[InboundListener]Rules
 	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
@@ -135,6 +136,7 @@ func (p PolicyItemWithMeta) GetEntry() outbound.ToEntry {
 // Rule contains a configuration for the given Subset. When rule is an inbound rule (from),
 // then Subset represents a group of clients. When rule is an outbound (to) then Subset
 // represents destinations.
+//
 // Deprecated: use inbound.Rule or outbound.ResourceRule instead
 type Rule struct {
 	Subset subsetutils.Subset
@@ -208,7 +210,7 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceRe
 	}
 
 	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
-	// see docs/madr/decisions/060-policy-matching-with-real-resources.md
+	// see docs/madr/decisions/066-policy-matching-with-real-resources.md
 	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
 	if err != nil {
 		return ToRules{}, err

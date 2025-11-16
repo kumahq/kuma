@@ -14,44 +14,44 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	api_types "github.com/kumahq/kuma/api/openapi/types"
-	api_common "github.com/kumahq/kuma/api/openapi/types/common"
-	oapi_helpers "github.com/kumahq/kuma/pkg/api-server/oapi-helpers"
-	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/policy"
-	"github.com/kumahq/kuma/pkg/core/resources/access"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/core/xds/inspect"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
+	oapi_helpers "github.com/kumahq/kuma/v2/pkg/api-server/oapi-helpers"
+	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/policy"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/inspect"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 )
 
 const (
@@ -1214,6 +1214,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
 			}
 
+			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
 			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
@@ -1245,6 +1246,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 
 			fromRules := []api_common.FromRule{}
+			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
 					if len(rulesForInbound) == 0 {

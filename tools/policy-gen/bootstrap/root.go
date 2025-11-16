@@ -157,7 +157,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&cfg.name, "name", "", "The name of the policy (UpperCamlCase)")
 	rootCmd.Flags().StringVar(&cfg.basePath, "path", "pkg/plugins/policies", "Where to put the generated code")
-	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma", "Where to put the generated code")
+	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma/v2", "Where to put the generated code")
 	rootCmd.Flags().StringVar(&cfg.version, "version", "v1alpha1", "The version to use")
 	rootCmd.Flags().BoolVar(&cfg.skipValidator, "skip-validator", false, "don't generator a validator empty file")
 	rootCmd.Flags().BoolVar(&cfg.force, "force", false, "Overwrite any existing code")
@@ -174,7 +174,7 @@ package {{ .version }}
 {{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 {{- end}}
 
@@ -239,16 +239,16 @@ var pluginTemplate = template.Must(template.New("").Option("missingkey=error").P
 	`package {{ .version }}
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	{{- if .generateTargetRef }}
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	api "{{ .package }}"
 	{{- end}}
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -279,10 +279,10 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 
 import (
 	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	{{- end}}
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (r *{{.name}}Resource) validate() error {

@@ -3,7 +3,7 @@ package datasource
 import (
 	"context"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
 )
 
 type Loader interface {

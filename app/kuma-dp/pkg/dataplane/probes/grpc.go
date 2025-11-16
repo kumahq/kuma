@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {

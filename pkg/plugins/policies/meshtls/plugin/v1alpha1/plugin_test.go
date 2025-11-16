@@ -1,3 +1,4 @@
+//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -12,42 +13,42 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/pkg/envoy/builders/tls"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/pkg/test/policies"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_policies "github.com/kumahq/kuma/v2/pkg/test/policies"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshTLS", func() {
@@ -56,6 +57,7 @@ var _ = Describe("MeshTLS", func() {
 		meshBuilder      *builders.MeshBuilder
 		meshService      bool
 		workloadIdentity *core_xds.WorkloadIdentity
+		casByTrustDomain map[string][]xds_context.PEMBytes
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -63,6 +65,7 @@ var _ = Describe("MeshTLS", func() {
 			mesh := given.meshBuilder
 			context := *xds_builders.Context().
 				WithMeshBuilder(mesh).
+				WithCAsByTrustDomain(given.casByTrustDomain).
 				Build()
 			resourceSet := core_xds.NewResourceSet()
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
@@ -158,12 +161,6 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"ca-bundle",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
 			},
 		}),
 		Entry("permissive based on workload identity and custom functions", testCase{
@@ -178,11 +175,46 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 					return bldrs_tls.SdsSecretConfigSource(
 						"ca-bundle",
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
+				},
+			},
+		}),
+		Entry("strict with MeshTrust", testCase{
+			caseName:    "strict-with-mesh-trust",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshService: true,
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"domain-1": {
+					xds_context.PEMBytes("123"),
+				},
+			},
+		}),
+		Entry("strict using external validator", testCase{
+			caseName:    "strict-with-external-validator",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshService: true,
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"ca-bundle",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"domain-1": {
+					xds_context.PEMBytes("123"),
 				},
 			},
 		}),
@@ -343,7 +375,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Name:   "outbound",
 			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
-				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil)).
+				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil, false)).
 				MustBuild(),
 			Protocol: core_meta.ProtocolHTTP,
 			ResourceOrigin: kri.Identifier{
@@ -394,7 +426,7 @@ func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBui
 			Name:   "outgoing",
 			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
-				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil)).
+				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil, false)).
 				MustBuild(),
 		},
 	}

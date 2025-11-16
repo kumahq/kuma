@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
 
 var _ = Describe("ListenerFilterChainConfigurer", func() {

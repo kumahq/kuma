@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("Config", func() {
@@ -66,6 +66,8 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
 		// and
 		Expect(cfg.MarshalingCacheExpirationTime.Duration).To(Equal(1 * time.Second))
+		// and
+		Expect(cfg.WorkloadLabels).To(Equal([]string{"app.kubernetes.io/name", "app"}))
 	})
 
 	It("should have consistent defaults", func() {

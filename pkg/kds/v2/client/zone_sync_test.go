@@ -9,27 +9,28 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/core"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/grpc"
-	"github.com/kumahq/kuma/pkg/test/kds/samples"
-	"github.com/kumahq/kuma/pkg/test/kds/setup"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
+	"github.com/kumahq/kuma/v2/pkg/kds/mux"
+	client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
+	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/grpc"
+	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
+	"github.com/kumahq/kuma/v2/pkg/test/kds/setup"
 )
 
 var _ = Describe("Zone Delta Sync", func() {
@@ -248,6 +249,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceOverviewType:   true,
 			mesh.DataplaneType:         true,
+			workload_api.WorkloadType:  true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced

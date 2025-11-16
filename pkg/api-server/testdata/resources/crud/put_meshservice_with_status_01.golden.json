@@ -1,15 +1,15 @@
 {
- "type": "MeshService",
- "mesh": "default",
- "name": "with-status",
  "creationTime": "0001-01-01T00:00:00Z",
- "modificationTime": "0001-01-01T00:00:00Z",
+ "kri": "kri_msvc_default_default__with-status_",
  "labels": {
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
+ "mesh": "default",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "name": "with-status",
  "spec": {
   "state": "Unavailable",
   "selector": {
@@ -28,5 +28,6 @@
  "status": {
   "tls": {},
   "dataplaneProxies": {}
- }
+ },
+ "type": "MeshService"
 }

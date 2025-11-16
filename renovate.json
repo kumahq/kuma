@@ -50,7 +50,7 @@
       "description": [
         " Parse version pins in Makefiles and .mk files using an inline Renovate hint placed above",
         " a VERSION-like variable assignment. The following line must assign a version variable,",
-        " e.g.: 'OAPI_TOOLS_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",
+        " e.g.: 'OAPI_TOOL_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",
         "",
         " The regex extracts:",
         " - depName (required)",
@@ -78,6 +78,40 @@
         "# renovate\\[(?<datasource>[0-9a-z-]+)(?:/(?<versioning>[0-9a-z-]+))?\\]: depName=(?<depName>\\S+?)(?: packageName=(?<packageName>\\S+?))?(?: extractVersion=(?<extractVersion>\\S+?))?(?: registryUrl=(?<registryUrl>\\S+?))?\\s+(?:export )?[A-Za-z0-9_]+?_VERSION\\s*:*\\??=\\s*[\"']?(?<currentValue>[^@\\s\"']+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?[\"']?"
       ],
       "versioningTemplate": "{{#if versioning}}{{versioning}}{{else if (or (includes (toArray 'docker' 'helm' 'npm' 'kubernetes-api') datasource))}}{{datasource}}{{else if (equals datasource 'node-version')}}node{{else if (equals datasource 'crate')}}cargo{{else if (or (includes (toArray 'go' 'golang-version') datasource))}}semver{{else}}semver-coerced{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "description": [
+        " Update kubectl image tag in Helm chart README.md.",
+        " Keeps documentation in sync with values.yaml when Renovate updates kubectl.",
+        " Uses Markdown table pattern (RE2 compatible)"
+      ],
+      "managerFilePatterns": ["/deployments/charts/.+/README\\.md$/"],
+      "matchStrings": [
+        "\\| kubectl\\.image\\.tag \\| [^|]+ \\| `\"(?<currentValue>[^@\"]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?\"` \\|"
+      ],
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "registry.k8s.io/kubectl",
+      "depNameTemplate": "kubectl"
+    },
+    {
+      "customType": "regex",
+      "description": [
+        " Update kubectl image tag in YAML files (generated helm-values.yaml and install testdata).",
+        " Keeps documentation and test data in sync with values.yaml when Renovate updates kubectl.",
+        " Uses RE2-compatible pattern matching YAML tag field with optional digest.",
+        " Pattern includes 'repository: kubectl' context to avoid false positives"
+      ],
+      "managerFilePatterns": [
+        "/docs/generated/raw/helm-values\\.yaml$/",
+        "/app/kumactl/cmd/install/testdata/install-control-plane\\.dump-values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repository: kubectl\\s+[^\\n]*\\n\\s+tag: (?<currentValue>[^@\\s]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
+      ],
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "registry.k8s.io/kubectl",
+      "depNameTemplate": "kubectl"
     }
   ],
   "packageRules": [
@@ -202,7 +236,7 @@
     {
       "description": [
         " Group kubectl updates (registry.k8s.io/kubectl or standalone 'kubectl') into a single PR",
-        " across managers"
+        " across managers (helm-values and custom.regex for README.md)"
       ],
       "matchDepNames": ["{registry.k8s.io/,}kubectl"],
       "groupName": "kubectl"

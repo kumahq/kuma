@@ -23,34 +23,32 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/metadata"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	bldrs_auth "github.com/kumahq/kuma/pkg/envoy/builders/auth"
-	bldrs_common "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/pkg/metrics"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/generator/system_names"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
+	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	bldrs_auth "github.com/kumahq/kuma/v2/pkg/envoy/builders/auth"
+	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/once"
 )
 
 const (
 	DefaultAllowedClockSkew = 10 * time.Second
 
 	cacheExpirationTime = 5 * time.Second
-	caCacheEntryKey     = "ca_pair"
 )
 
 var DefaultWorkloadCertValidityPeriod = k8s.Duration{Duration: 24 * time.Hour}
@@ -167,7 +165,8 @@ func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshi
 // we can cache it and refresh the cache periodically (e.g., every few seconds).
 // This reduces the load on the underlying store (e.g., OS, DB), as the CA pair doesn't change frequently.
 func (b *bundledIdentityProvider) getCAKeyPair(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, mesh string) (*util_tls.KeyPair, error) {
-	ca, err := b.cache.GetOrRetrieve(ctx, caCacheEntryKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (interface{}, error) {
+	cacheKey := fmt.Sprintf("ca_pair:%s:%s", mesh, model.GetDisplayName(identity.GetMeta()))
+	ca, err := b.cache.GetOrRetrieve(ctx, cacheKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (interface{}, error) {
 		bundled := pointer.Deref(identity.Spec.Provider.Bundled)
 		var err error
 		var cert, key []byte
@@ -269,13 +268,12 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	b.logger.V(1).Info("identity created", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeID", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
 
 	return &xds.WorkloadIdentity{
-		KRI:                        identifier,
-		ManagementMode:             xds.KumaManagementMode,
-		ExpirationTime:             pointer.To(template.NotAfter),
-		GenerationTime:             pointer.To(now),
-		IdentitySourceConfigurer:   sourceConfigurer(identifier.String()),
-		ValidationSourceConfigurer: sourceConfigurer(system_names.SystemResourceNameCABundle),
-		AdditionalResources:        resources,
+		KRI:                      identifier,
+		ManagementMode:           xds.KumaManagementMode,
+		ExpirationTime:           pointer.To(template.NotAfter),
+		GenerationTime:           pointer.To(now),
+		IdentitySourceConfigurer: sourceConfigurer(identifier.String()),
+		AdditionalResources:      resources,
 	}, nil
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
 )
 
 // PgxListener will listen for NOTIFY commands on a channel.

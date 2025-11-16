@@ -13,8 +13,8 @@ import (
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 const (

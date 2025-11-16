@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
-	. "github.com/kumahq/kuma/pkg/plugins/ca/provided"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/ca/provided"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 )
 
 var _ = Describe("ValidateCaCert()", func() {

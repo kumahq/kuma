@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package test.server.grpc.apo;
 
-option go_package = "github.com/kumahq/kuma/test/server/grpc/api";
+option go_package = "github.com/kumahq/kuma/v2/test/server/grpc/api";
 
 // The greeting service definition.
 service Greeter {

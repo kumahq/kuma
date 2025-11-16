@@ -3,22 +3,10 @@ InboundRules:
 Rules:
   127.0.0.1:80:
   - Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: c
-  - Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
@@ -32,6 +20,7 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
@@ -42,9 +31,24 @@ Rules:
       Not: false
       Value: a
   - Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___mtp_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: c
+  - Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp

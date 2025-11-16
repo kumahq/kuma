@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
 )
 
 func NewPrinter() output.Printer {

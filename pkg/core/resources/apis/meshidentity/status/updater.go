@@ -12,19 +12,19 @@ import (
 	"github.com/go-logr/logr"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
-	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type IdentityProviderReconciler struct {
@@ -86,6 +86,11 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 						generationConditionStatus = kube_meta.ConditionFalse
 						reason = "Failure"
 					}
+					if condition.Type == meshidentity_api.SpiffeIDProviderConditionType {
+						message = "Running in SpiffeID providing only mode."
+						generationConditionStatus = kube_meta.ConditionFalse
+						reason = "PartiallyReady"
+					}
 				}
 
 				conditions = append(conditions, common_api.Condition{
@@ -125,6 +130,15 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 			Status:  kube_meta.ConditionFalse,
 			Reason:  "MeshServicesDisabled",
 			Message: "MeshIdentity requires MeshServices to be enabled on the mesh. To enable, set `spec.meshServices.mode: Exclusive` on the mesh.",
+		})
+		return conditions
+	}
+	if mid.Spec.Provider == nil {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.SpiffeIDProviderConditionType,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  "SpiffeIDProvided",
+			Message: "Providing only SpiffeIDs for services.",
 		})
 		return conditions
 	}

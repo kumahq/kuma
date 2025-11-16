@@ -1,5 +1,5 @@
 resources:
-- name: system_dynamicconfig
+- name: _kuma:dynamicconfig
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -19,11 +19,11 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 435
+            maxDirectResponseBodySizeBytes: 517
             virtualHosts:
             - domains:
               - '*'
-              name: system_dynamicconfig
+              name: _kuma:dynamicconfig
               routes:
               - directResponse:
                   status: 304
@@ -31,23 +31,22 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 5237c55fc21d54360fbd4a6de06f58da55ea9255ee43f36c4e2f7103e273c2a7
+                      exact: b007e48a3f25ba2890db85564c07887fdf3886732fa83819ce57214d2bfe059b
                   path: /meshmetric
-                name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","service":"backend"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
-                name: system_dynamicconfig_meshmetric
+                name: _kuma:dynamicconfig:/meshmetric
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 5237c55fc21d54360fbd4a6de06f58da55ea9255ee43f36c4e2f7103e273c2a7
-          statPrefix: system_dynamicconfig
-    name: system_dynamicconfig
-- name: system_meshmetric_otel_otel-collector-observability-svc-4317
+                    value: b007e48a3f25ba2890db85564c07887fdf3886732fa83819ce57214d2bfe059b
+          statPrefix: _kuma_dynamicconfig
+    name: _kuma:dynamicconfig
+- name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -75,15 +74,15 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: system_meshmetric_otel_otel-collector-observability-svc-4317
+              name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: system_meshmetric_otel_otel-collector-observability-svc-4317
-          statPrefix: system_meshmetric_otel_otel-collector-observability-svc-4317
-    name: system_meshmetric_otel_otel-collector-observability-svc-4317
-- name: system_meshmetric_prometheus_default-backend
+                  cluster: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+          statPrefix: _kuma_metrics_opentelemetry_otel-collector_observability_svc-4317
+    name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+- name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -109,13 +108,13 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: system_meshmetric_prometheus_default-backend
+              name: _kuma:metrics:prometheus:default-backend
               routes:
               - match:
                   prefix: /metrics
                 route:
-                  cluster: system_meshmetric_prometheus_default-backend
+                  cluster: _kuma:metrics:hijacker
                   prefixRewrite: /meshmetric
-          statPrefix: system_meshmetric_prometheus_default-backend
-    name: system_meshmetric_prometheus_default-backend
+          statPrefix: _kuma_metrics_prometheus_default-backend
+    name: _kuma:metrics:prometheus:default-backend
     trafficDirection: INBOUND

@@ -1,14 +1,14 @@
 package util
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	mtp_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 func ComputeMtpRulesForTags(
@@ -42,6 +42,7 @@ func ComputeMtpRulesForTags(
 		return nil, false, err
 	}
 
+	//nolint:staticcheck // SA1019 Graph utility: compute rules using old Rules format
 	rl, ok := matched.FromRules.Rules[core_rules.InboundListener{
 		Address: "1.1.1.1",
 		Port:    1234,

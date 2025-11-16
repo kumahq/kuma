@@ -9,22 +9,22 @@ import (
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers/bundled"
-	meshtrust_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers/bundled"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("Updater", func() {
@@ -290,5 +290,38 @@ var _ = Describe("Updater", func() {
 		trust := meshtrust_api.NewMeshTrustResource()
 		Expect(resManager.Get(context.Background(), trust, store.GetByKey("identity", "default"))).To(Succeed())
 		Expect(trust.Spec.CABundles).To(HaveLen(2))
+	})
+
+	It("should successfully reconcile mesh identity when no provider defined", func() {
+		// when
+		Expect(
+			samples.MeshDefaultBuilder().
+				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+				Create(resManager),
+		).To(Succeed())
+
+		identity := builders.MeshIdentity().Build()
+		Expect(resManager.Create(context.Background(), identity, store.CreateBy(model.MetaToResourceKey(identity.GetMeta())))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			mid := meshidentity_api.NewMeshIdentityResource()
+			err := resManager.Get(context.Background(), mid, store.GetBy(model.MetaToResourceKey(identity.GetMeta())))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(mid.Status.Conditions).To(ContainElements(
+				common_api.Condition{
+					Type:    meshidentity_api.SpiffeIDProviderConditionType,
+					Status:  kube_meta.ConditionTrue,
+					Reason:  "SpiffeIDProvided",
+					Message: "Providing only SpiffeIDs for services.",
+				},
+				common_api.Condition{
+					Type:    meshidentity_api.ReadyConditionType,
+					Status:  kube_meta.ConditionFalse,
+					Reason:  "PartiallyReady",
+					Message: "Running in SpiffeID providing only mode.",
+				},
+			))
+		}, "10s", "100ms").Should(Succeed())
 	})
 })

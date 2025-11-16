@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 )
 
 const (

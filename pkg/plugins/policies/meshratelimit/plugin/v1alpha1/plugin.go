@@ -4,21 +4,21 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/plugin/xds"
+	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
 
 var (
@@ -150,6 +150,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			if !ok {
 				continue
 			}
+			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
 			for _, rule := range mrl.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {

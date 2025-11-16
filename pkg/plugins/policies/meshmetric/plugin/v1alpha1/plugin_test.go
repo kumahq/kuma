@@ -1,3 +1,4 @@
+//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -9,23 +10,23 @@ import (
 	. "github.com/onsi/gomega"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 var _ = Describe("MeshMetric", func() {
@@ -49,10 +50,14 @@ var _ = Describe("MeshMetric", func() {
 		Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
 	},
 		Entry("default", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -83,9 +88,13 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("basic", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
@@ -119,9 +128,13 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("multiple_prometheus", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
@@ -164,9 +177,13 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("openTelemetry", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
@@ -199,7 +216,10 @@ var _ = Describe("MeshMetric", func() {
 			context: *xds_builders.Context().WithMeshBuilder(samples.MeshMTLSBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir:         "/tmp",
 					MetricsCertPath: "/path/cert",
@@ -231,20 +251,71 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("otel_and_prometheus", testCase{
-			context: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &mesh.MeshResource{
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-							},
-						},
-					},
-				},
-			},
+			context: *xds_builders.Context().WithMeshBuilder(
+				samples.MeshDefaultBuilder().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{
+										Mesh: "default",
+										Name: "meshmetric1",
+									},
+								},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: "/metrics",
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("otel_and_prometheus_unified_naming", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(
+				samples.MeshDefaultBuilder().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			).Build(),
+			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir: "/tmp",
 					Features: map[string]bool{
@@ -295,8 +366,12 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("multiple_otel", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy: xds_builders.Proxy().
-				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{

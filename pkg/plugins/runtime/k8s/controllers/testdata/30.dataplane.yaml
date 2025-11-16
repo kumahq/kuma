@@ -6,6 +6,7 @@ metadata:
     k8s.kuma.io/service-account: test-sa
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
+    kuma.io/workload: test-sa
     version: "0.1"
 spec:
   networking:

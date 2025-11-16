@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/expfmt"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
 var includeUnused = true

@@ -7,17 +7,17 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/test/resources/file"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/file"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 var _ = Describe("Rules", func() {
@@ -109,10 +109,6 @@ var _ = Describe("Rules", func() {
 			// then
 			expected := []subsetutils.Subset{
 				{
-					{Key: "zone", Value: "us-east"},
-					{Key: "env", Value: "prod"},
-				},
-				{
 					{Key: "zone", Value: "us-east", Not: true},
 					{Key: "env", Value: "prod"},
 				},
@@ -133,6 +129,10 @@ var _ = Describe("Rules", func() {
 					{Key: "zone", Value: "us-east", Not: true},
 					{Key: "env", Value: "dev", Not: true},
 					{Key: "env", Value: "prod", Not: true},
+				},
+				{
+					{Key: "zone", Value: "us-east"},
+					{Key: "env", Value: "prod"},
 				},
 			}
 			for _, expectedTags := range expected {

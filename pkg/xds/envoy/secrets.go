@@ -1,9 +1,9 @@
 package envoy
 
 import (
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
 
 type identityCertRequest struct {

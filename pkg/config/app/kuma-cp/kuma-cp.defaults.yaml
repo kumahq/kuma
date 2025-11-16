@@ -421,6 +421,10 @@ runtime:
     # If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
     # The downside is that control plane requires permission to read Secrets in all namespaces.
     supportGatewaySecretsInAllNamespaces: false # ENV: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
+    # WorkloadLabels is a prioritized list of pod labels to use for generating the kuma.io/workload label on DataplaneProxy.
+    # The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
+    # Default is empty list (uses ServiceAccount as workload identifier).
+    workloadLabels: [] # ENV: KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
@@ -835,6 +839,7 @@ coreResources:
     - meshmultizoneservices
     - meshservices
     - meshtrusts
+    - workloads
 # IP address management configuration
 ipam:
   # MeshService address management

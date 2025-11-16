@@ -25,7 +25,7 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
   name: $vulnerablePackage,
   current: .package.version,
   fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events |
-  map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name != "github.com/kumahq/kuma")'); do
+  map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name | startswith("github.com/kumahq/kuma") | not)'); do
 
   fixVersion=$(go run "$SCRIPT_DIR"/main.go <<< "$dep")
 
@@ -37,9 +37,14 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
     if [[ "$package" == "stdlib" ]]; then
       go mod edit -go="$fixVersion"
     else
-      go get "$package"@v"$fixVersion"
+      # Always use GOTOOLCHAIN=auto to allow downloading newer Go toolchain
+      # when updating dependencies that require it (e.g., helm requiring Go 1.24+)
+      GOTOOLCHAIN=auto go get "$package"@v"$fixVersion"
     fi
   fi
 done
 
-go mod tidy
+# Always use GOTOOLCHAIN=auto when running `go mod tidy` to allow downloading
+# newer Go versions if `go.mod` was updated to require a newer version
+# (either explicitly via go mod edit or implicitly via go get)
+GOTOOLCHAIN=auto go mod tidy

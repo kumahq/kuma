@@ -8,14 +8,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mads "github.com/kumahq/kuma/api/observability/v1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	mads "github.com/kumahq/kuma/v2/api/observability/v1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/otelcollector"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func BasicMeshMetricForMesh(policyName string, mesh string) InstallFunc {
@@ -418,6 +418,8 @@ func MeshMetric() {
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
+			// check if workload attribute was added
+			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"default\""))
 		}).Should(Succeed())
 	})
 

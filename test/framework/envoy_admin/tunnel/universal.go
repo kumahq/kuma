@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/kumahq/kuma/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/config_dump"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/clusters"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/config_dump"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
 )
 
 type UniversalTunnel struct {

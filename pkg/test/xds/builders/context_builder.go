@@ -3,14 +3,14 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/test/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/test/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 type ContextBuilder struct {
@@ -81,6 +81,11 @@ func (mc *ContextBuilder) WithMeshBuilder(mesh *builders.MeshBuilder) *ContextBu
 
 func (mc *ContextBuilder) WithMeshContext(mesh *xds_context.MeshContext) *ContextBuilder {
 	mc.res.Mesh = *mesh
+	return mc
+}
+
+func (mc *ContextBuilder) WithCAsByTrustDomain(casByTrustDomain map[string][]xds_context.PEMBytes) *ContextBuilder {
+	mc.res.Mesh.CAsByTrustDomain = casByTrustDomain
 	return mc
 }
 

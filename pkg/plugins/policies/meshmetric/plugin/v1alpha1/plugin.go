@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"strconv"
 	"strings"
@@ -13,24 +14,25 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/core"
-	unified_naming "github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_system_names "github.com/kumahq/kuma/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/mads"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/metadata"
-	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/dynconf"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	generator_metadata "github.com/kumahq/kuma/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/mads"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/metadata"
+	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	generator_metadata "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 var (
@@ -43,6 +45,7 @@ const (
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	OpenTelemetryGrpcPort        = 4317
+	WorkloadAttributeKey         = "kuma.workload"
 )
 
 var DefaultRefreshInterval = k8s.Duration{Duration: time.Minute}
@@ -202,7 +205,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 }
 
 func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -224,7 +227,14 @@ func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
 	return values
 }
 
-func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_context.ResourceMap, prometheusBackends []*api.PrometheusBackend, openTelemetryBackends []*api.OpenTelemetryBackend) dpapi.MeshMetricDpConfig {
+func createDynamicConfig(
+	conf api.Conf,
+	proxy *core_xds.Proxy,
+	mesh *core_mesh.MeshResource,
+	resources xds_context.ResourceMap,
+	prometheusBackends []*api.PrometheusBackend,
+	openTelemetryBackends []*api.OpenTelemetryBackend,
+) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
 	for _, app := range pointer.Deref(conf.Applications) {
 		applications = append(applications, dpapi.Application{
@@ -257,7 +267,17 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_con
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
-	extraLabels := mads.DataplaneLabels(proxy.Dataplane, gateways)
+
+	extraLabels := map[string]string{}
+	if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+		extraLabels[WorkloadAttributeKey] = workload
+	}
+	if !unified_naming.Enabled(proxy.Metadata, mesh) {
+		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
+		extraLabels["mesh"] = mesh.GetMeta().GetName()
+		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
+		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
+	}
 
 	return dpapi.MeshMetricDpConfig{
 		Observability: dpapi.Observability{

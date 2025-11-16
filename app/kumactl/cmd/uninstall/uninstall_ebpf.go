@@ -18,9 +18,9 @@ import (
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/k8s"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 const (

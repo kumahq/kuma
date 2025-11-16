@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/dataplane_insight.proto";
 import "google/protobuf/struct.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
 
 // ZoneEgressInsight defines the observed state of a Zone Egress.
 message ZoneEgressInsight {

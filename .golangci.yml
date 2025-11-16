@@ -45,14 +45,14 @@ linters:
             - $all
           deny:
             - pkg: sigs.k8s.io/controller-runtime/pkg/log$
-              desc: Disallowed due to internal data races caused by cyclic dependencies and global state in controller-runtime. This can lead to long delays (up to 2 minutes) in init containers. Use sigs.k8s.io/controller-runtime instead. See https://github.com/kumahq/kuma/issues/13299
+              desc: Disallowed due to internal data races caused by cyclic dependencies and global state in controller-runtime. This can lead to long delays (up to 2 minutes) in init containers. Use sigs.k8s.io/controller-runtime instead. See https://github.com/kumahq/kuma/v2/issues/13299
         pkg-import:
           list-mode: lax
           files:
             - '!**/app/**/*.go'
             - '!**/pkg/api-server/gui_handler.go'
           deny:
-            - pkg: github.com/kumahq/kuma/app
+            - pkg: github.com/kumahq/kuma/v2/app
               desc: pkg can't import app
     gocritic:
       disabled-checks:
@@ -81,6 +81,12 @@ linters:
           - github.com/hashicorp/multierror:
               recommendations:
                 - errors
+          - golang.org/x/exp/maps:
+              recommendations:
+                - maps
+          - golang.org/x/exp/slices:
+              recommendations:
+                - slices
           - gopkg.in/yaml.v2:
               recommendations:
                 - sigs.k8s.io/yaml
@@ -98,27 +104,27 @@ linters:
         - G301 # Expect directory permissions to be 0750 or less
     importas:
       alias:
-        - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
+        - pkg: github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh
           alias: core_mesh
-        - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
+        - pkg: github.com/kumahq/kuma/v2/api/mesh/v1alpha1
           alias: mesh_proto
-        - pkg: github.com/kumahq/kuma/api/system/v1alpha1
+        - pkg: github.com/kumahq/kuma/v2/api/system/v1alpha1
           alias: system_proto
-        - pkg: github.com/kumahq/kuma/pkg/util/proto
+        - pkg: github.com/kumahq/kuma/v2/pkg/util/proto
           alias: util_proto
-        - pkg: github.com/kumahq/kuma/pkg/util/rsa
+        - pkg: github.com/kumahq/kuma/v2/pkg/util/rsa
           alias: util_rsa
-        - pkg: github.com/kumahq/kuma/pkg/cmd
+        - pkg: github.com/kumahq/kuma/v2/pkg/cmd
           alias: kuma_cmd
-        - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s
+        - pkg: github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s
           alias: bootstrap_k8s
-        - pkg: github.com/kumahq/kuma/pkg/config/core
+        - pkg: github.com/kumahq/kuma/v2/pkg/config/core
           alias: config_core
-        - pkg: github.com/kumahq/kuma/pkg/core/resources/model
+        - pkg: github.com/kumahq/kuma/v2/pkg/core/resources/model
           alias: core_model
-        - pkg: github.com/kumahq/kuma/api/common/v1alpha1
+        - pkg: github.com/kumahq/kuma/v2/api/common/v1alpha1
           alias: common_api
-        - pkg: github.com/kumahq/kuma/api/openapi/types
+        - pkg: github.com/kumahq/kuma/v2/api/openapi/types
           alias: api_types
     misspell:
       locale: US
@@ -190,5 +196,5 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/kumahq/kuma)
+        - prefix(github.com/kumahq/kuma/v2)
       custom-order: true

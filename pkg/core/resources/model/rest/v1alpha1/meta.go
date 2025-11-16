@@ -1,9 +1,11 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"time"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 type ResourceMeta struct {
@@ -13,6 +15,22 @@ type ResourceMeta struct {
 	CreationTime     time.Time         `json:"creationTime"`
 	ModificationTime time.Time         `json:"modificationTime"`
 	Labels           map[string]string `json:"labels,omitempty"`
+}
+
+func (r ResourceMeta) MarshalJSON() ([]byte, error) {
+	type Alias ResourceMeta // prevent recursion
+	out := struct {
+		Alias
+		KRI string `json:"kri,omitempty"`
+	}{
+		Alias: Alias(r),
+	}
+
+	if id, _ := kri.FromResourceMetaE(r, r.Type); !id.IsEmpty() {
+		out.KRI = id.String()
+	}
+
+	return json.Marshal(&out)
 }
 
 var _ core_model.ResourceMeta = ResourceMeta{}

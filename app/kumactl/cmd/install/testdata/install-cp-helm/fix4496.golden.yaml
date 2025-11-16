@@ -176,6 +176,7 @@ rules:
       - meshmultizoneservices
       - meshservices
       - meshtrusts
+      - workloads
     verbs:
       - get
       - list
@@ -507,7 +508,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 78a59fe0ea29976965d43929e1c03a149b76e4686e1d304bea1820e85e9d875a
+        checksum/tls-secrets: 5a9d6e3e4c75f1352d0bed03f134d61b47869cd7a3479be8444741962ef556cd
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -898,6 +899,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - workloads
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -961,6 +963,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - workloads
   
       
     sideEffects: None
@@ -1106,6 +1109,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - workloads
     
       
     sideEffects: None
@@ -1135,4 +1139,33 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
+  - name: pod.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+          - kuma-system
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-pod
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
     sideEffects: None

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -25,14 +26,14 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
-	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
-	"github.com/kumahq/kuma/pkg/util/maps"
-	commontemplate "github.com/kumahq/kuma/tools/common/template"
-	"github.com/kumahq/kuma/tools/common/types"
-	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	builtin_config "github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin/config"
+	provided_config "github.com/kumahq/kuma/v2/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
+	"github.com/kumahq/kuma/v2/tools/common/types"
+	. "github.com/kumahq/kuma/v2/tools/resource-gen/genutils"
 )
 
 // CustomResourceTemplate for creating a Kubernetes CRD to wrap a Kuma resource.
@@ -52,11 +53,11 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	{{ $pkg }} "github.com/kumahq/kuma/api/{{ .Package }}/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	{{ $pkg }} "github.com/kumahq/kuma/v2/api/{{ .Package }}/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 {{range .Resources}}
@@ -221,9 +222,9 @@ import (
 	"errors"
 	"fmt"
 
-	{{$pkg}} "github.com/kumahq/kuma/api/{{.Package}}/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	{{$pkg}} "github.com/kumahq/kuma/v2/api/{{.Package}}/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
 {{range .Resources}}
@@ -537,13 +538,15 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 	}
 
-	for _, tpe := range AdditionalProtoTypes {
-		s, err := reflector.reflectFromType(tpe, true)
-		if err != nil {
-			return err
-		}
-		if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
-			return err
+	if pkg == "mesh" {
+		for _, tpe := range AdditionalProtoTypes {
+			s, err := reflector.reflectFromType(tpe, true)
+			if err != nil {
+				return err
+			}
+			if err := writeSchemaToFile(s, tpe.Name(), getReference(tpe, pkg)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -633,12 +636,39 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 			return s
 		},
 	}
-	base := "kuma"
-	if readDir == "kuma" {
-		base = ""
+
+	// Workaround: AddGoComments requires the correct module path to load Go source
+	// comments for OpenAPI schema descriptions. Without this, field descriptions
+	// are lost during schema generation.
+	modulePath := "github.com/kumahq/kuma/v2"
+
+	// AddGoComments uses Go's package loading which requires the path to be relative
+	// to the current working directory. For downstream projects using symlinks,
+	// we need to temporarily change to the resolved directory.
+	originalDir, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
-	// workaround for https://github.com/Kong/kong-mesh/issues/7376
-	err := rflctr.AddGoComments("github.com/kumahq/"+base, path.Join(readDir, "api/"))
+
+	// Resolve symlinks in readDir to get actual module path
+	resolvedReadDir, err := filepath.EvalSymlinks(readDir)
+	if err != nil {
+		resolvedReadDir = readDir
+	}
+
+	// Convert to absolute path
+	absReadDir, err := filepath.Abs(resolvedReadDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Change to module root directory only for AddGoComments
+	// Must restore before ReflectFromType to avoid path issues in recursive calls
+	if err := os.Chdir(absReadDir); err != nil {
+		return nil, fmt.Errorf("failed to change directory to %s: %w", absReadDir, err)
+	}
+	err = rflctr.AddGoComments(modulePath, "api/")
+	_ = os.Chdir(originalDir)
 	if err != nil {
 		return nil, err
 	}

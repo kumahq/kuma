@@ -12,14 +12,14 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 type Configurer struct {
@@ -49,6 +49,7 @@ const (
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 	activeChecks := e.Conf
 
+	//nolint:staticcheck // SA1019 Backward compatibility: process deprecated HealthyPanicThreshold moved to MeshCircuitBreaker
 	err := healthPanicThreshold(cluster, activeChecks.HealthyPanicThreshold)
 	if err != nil {
 		return err

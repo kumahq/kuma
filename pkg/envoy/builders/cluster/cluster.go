@@ -11,9 +11,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func NewCluster() *Builder[envoy_cluster.Cluster] {

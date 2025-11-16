@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 233
+            maxDirectResponseBodySizeBytes: 315
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 5552b48f6cb45c95c47dc99cc18cacb7e1e252874f0140ea5bd8b08e8f5dcb75
+                      exact: 716fb435fa73ab102917235b60f43d9e3c72d5ad4c445006c39b436fc93e49ba
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"dataplane":"dp-1","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","service":"backend"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,7 +43,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 5552b48f6cb45c95c47dc99cc18cacb7e1e252874f0140ea5bd8b08e8f5dcb75
+                    value: 716fb435fa73ab102917235b60f43d9e3c72d5ad4c445006c39b436fc93e49ba
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
 - name: _kuma:metrics:prometheus:default-backend

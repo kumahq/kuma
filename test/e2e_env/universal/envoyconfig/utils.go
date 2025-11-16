@@ -9,13 +9,13 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/openapi/types"
-	api_common "github.com/kumahq/kuma/api/openapi/types/common"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v2/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
 func waitMeshServiceReady(mesh, name string) {
@@ -50,6 +50,12 @@ func getConfig(mesh, dpp string) string {
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
 		return item.Op == api_common.Test
 	}))
+	// Redact value for maxDirectResponseBodySizeBytes in diff items
+	for i := range *response.Diff {
+		if strings.HasSuffix((*response.Diff)[i].Path, "maxDirectResponseBodySizeBytes") {
+			(*response.Diff)[i].Value = 0
+		}
+	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
 		return strings.Compare(a.Path, b.Path)
 	})

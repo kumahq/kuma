@@ -17,15 +17,15 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
 )
 
 func Parse[T any](values []string) ([]T, error) {
@@ -52,6 +52,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		dataplane         string
 		existingDataplane string
 		nodeLabelsToCopy  []string
+		workloadLabels    []string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -136,6 +137,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
+				WorkloadLabels:    given.workloadLabels,
 			}
 
 			mesh := builders.Mesh().
@@ -330,6 +332,23 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "duplicated-inbounds.pod.yaml",
 			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
 			dataplane:      "duplicated-inbounds.dataplane.yaml",
+		}),
+		Entry("31. Pod with workload labels configured matching pod label", testCase{
+			pod:            "31.pod.yaml",
+			servicesForPod: "31.services-for-pod.yaml",
+			dataplane:      "31.dataplane.yaml",
+			workloadLabels: []string{"app.kubernetes.io/name", "app"},
+		}),
+		Entry("32. Pod with workload labels configured, fallback to service account", testCase{
+			pod:            "32.pod.yaml",
+			servicesForPod: "32.services-for-pod.yaml",
+			dataplane:      "32.dataplane.yaml",
+			workloadLabels: []string{"statefulset.kubernetes.io/pod-name", "app.kubernetes.io/instance"},
+		}),
+		Entry("33. Pod without workload labels configured uses service account", testCase{
+			pod:            "33.pod.yaml",
+			servicesForPod: "33.services-for-pod.yaml",
+			dataplane:      "33.dataplane.yaml",
 		}),
 	)
 

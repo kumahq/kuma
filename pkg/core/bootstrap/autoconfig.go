@@ -8,12 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/tls"
-	util_net "github.com/kumahq/kuma/pkg/util/net"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/tls"
+	util_net "github.com/kumahq/kuma/v2/pkg/util/net"
 )
 
 const (

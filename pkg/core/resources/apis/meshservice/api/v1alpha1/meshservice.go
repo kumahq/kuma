@@ -4,8 +4,8 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
 type Selector struct {

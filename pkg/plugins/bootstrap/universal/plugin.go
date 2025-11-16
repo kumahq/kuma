@@ -1,11 +1,11 @@
 package universal
 
 import (
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	plugin_leader "github.com/kumahq/kuma/pkg/plugins/leader"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	plugin_leader "github.com/kumahq/kuma/v2/pkg/plugins/leader"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}

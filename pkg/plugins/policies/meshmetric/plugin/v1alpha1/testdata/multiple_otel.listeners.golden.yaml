@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 591
+            maxDirectResponseBodySizeBytes: 673
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: adf3db3b07e4e372945f84fd920cde870bc42f2dd21a209883f8a7d16fcda5f5
+                      exact: 426f8ccfeffa078eaa8b9b8f45a866a5a9bed458d3e5838885e5cf2d0737a9e8
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}},{"type":"OpenTelemetry","name":"second-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-second-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}},{"type":"OpenTelemetry","name":"second-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-second-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","service":"backend"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,7 +43,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: adf3db3b07e4e372945f84fd920cde870bc42f2dd21a209883f8a7d16fcda5f5
+                    value: 426f8ccfeffa078eaa8b9b8f45a866a5a9bed458d3e5838885e5cf2d0737a9e8
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
 - name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317

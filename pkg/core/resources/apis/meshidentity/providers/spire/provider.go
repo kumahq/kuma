@@ -1,10 +1,10 @@
 package spire
 
 import (
-	"github.com/kumahq/kuma/pkg/config/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	meshidentity_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
 )
 
 var _ core_plugins.IdentityProviderPlugin = &plugin{}

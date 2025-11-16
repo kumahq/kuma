@@ -12,6 +12,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mt_default___default_
         mesh: default
         modificationTime: "0001-01-01T00:00:00Z"
         name: default
@@ -26,6 +27,7 @@ InboundRules:
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mt_default___override_
         mesh: default
         modificationTime: "0001-01-01T00:00:00Z"
         name: override
@@ -40,11 +42,13 @@ Rules:
       idleTimeout: 20s
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_default___default_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: default
       type: MeshTimeout
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_default___override_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: override

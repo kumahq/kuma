@@ -1,0 +1,107 @@
+name: "Workflows & Scripts"
+
+# Customize run name to show selected linters in manual runs (e.g., "Validate: actionlint + yamllint")
+run-name: >-
+  ${{
+    github.event_name == 'workflow_dispatch' &&
+    format('Validate: {0}{1}{2}',
+      inputs.run_actionlint && 'actionlint' || '',
+      inputs.run_actionlint && inputs.run_shellcheck && ' + ' || '',
+      inputs.run_shellcheck && 'shellcheck' || ''
+    ) ||
+    github.event_name
+  }}
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_actionlint:
+        description: 'Run actionlint'
+        type: boolean
+        default: true
+      run_shellcheck:
+        description: 'Run shellcheck'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Separate concurrency groups for manual vs automatic runs
+# Manual: grouped by workflow name (cancels previous manual runs only)
+# Automatic: grouped by ref (cancels previous runs on same branch/PR)
+concurrency:
+  group: >-
+    ${{
+      github.event_name == 'workflow_dispatch' &&
+      format('{0}-manual', github.workflow) ||
+      format('{0}-{1}', github.workflow, github.ref)
+    }}
+  cancel-in-progress: true
+
+jobs:
+  workflows:
+    name: "Validate Workflows"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.run_actionlint ||
+      github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        if: github.event_name == 'pull_request'
+        id: changes
+        with:
+          filters: |
+            workflows:
+              - '.github/workflows/**'
+
+      - uses: reviewdog/action-actionlint@f00ad0691526c10be4021a91b2510f0a769b14d0 # v1.68.0
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          steps.changes.outputs.workflows == 'true'
+        with:
+          github_token: ${{ github.token }}
+          reporter: ${{ github.event_name == 'workflow_dispatch' && 'local' || 'github-pr-review' }}
+          fail_level: error
+          filter_mode: ${{ github.event_name == 'workflow_dispatch' && 'nofilter' || 'diff_context' }}
+
+  shellcheck:
+    name: "Validate Shell Scripts"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.run_shellcheck ||
+      github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        if: github.event_name == 'pull_request'
+        id: changes
+        with:
+          filters: |
+            scripts:
+              - '**/*.sh'
+
+      - uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e # v1.32.0
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          steps.changes.outputs.scripts == 'true'
+        with:
+          github_token: ${{ github.token }}
+          reporter: ${{ github.event_name == 'workflow_dispatch' && 'local' || 'github-pr-review' }}
+          fail_level: error
+          filter_mode: ${{ github.event_name == 'workflow_dispatch' && 'nofilter' || 'diff_context' }}
+          shellcheck_flags: "-P SCRIPTDIR -x"
+          pattern: "*.sh"
+

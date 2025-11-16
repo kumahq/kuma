@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/plugin/xds"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/plugin/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("Match order", func() {
@@ -119,6 +119,16 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("CIDR"),
 						Value:    "192.168.0.1/24",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "192.168.1.1/30",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "192.168.2.1/30",
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{

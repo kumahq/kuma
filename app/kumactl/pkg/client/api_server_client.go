@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer, timeout time.Duration) (util_http.Client, error) {

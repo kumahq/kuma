@@ -6,22 +6,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: env
-      Not: false
-      Value: prod
-    - Key: zone
-      Not: false
-      Value: us-east
-  - Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -31,6 +16,23 @@ Rules:
     - Key: env
       Not: false
       Value: dev
+    - Key: zone
+      Not: false
+      Value: us-east
+  - Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: env
+      Not: false
+      Value: prod
     - Key: zone
       Not: false
       Value: us-east
@@ -38,6 +40,7 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -57,6 +60,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -73,6 +77,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
@@ -89,6 +94,7 @@ Rules:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1

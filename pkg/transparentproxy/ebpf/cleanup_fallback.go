@@ -5,7 +5,7 @@ package ebpf
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 func Cleanup(config.InitializedConfigIPvX) (string, error) {

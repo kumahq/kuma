@@ -17,11 +17,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
 type remoteBootstrapClient struct {
@@ -216,7 +216,8 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		OperatingSystem:      b.operatingSystem,
 		Features:             features,
 		Resources:            resources,
-		Workdir:              opts.Config.DataplaneRuntime.SocketDir,
+		//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
+		Workdir: opts.Config.DataplaneRuntime.SocketDir,
 		MetricsResources: types.MetricsResources{
 			CertPath: opts.Config.DataplaneRuntime.Metrics.CertPath,
 			KeyPath:  opts.Config.DataplaneRuntime.Metrics.KeyPath,

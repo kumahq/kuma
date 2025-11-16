@@ -1,15 +1,15 @@
 package egress
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
 )
 
 func genInternalResources(

@@ -11,9 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type MatchType int
@@ -242,9 +242,16 @@ func orderMatchers(matchers []FilterChainMatch) {
 			return sortDomains(matchers[i].Value, matchers[j].Value)
 		}
 		if matchers[i].MatchType == CIDR || matchers[i].MatchType == CIDRV6 {
-			_, prefixI := getIpAndMask(matchers[i].Value)
-			_, prefixJ := getIpAndMask(matchers[j].Value)
+			ipI, prefixI := getIpAndMask(matchers[i].Value)
+			ipJ, prefixJ := getIpAndMask(matchers[j].Value)
+			if prefixI == prefixJ {
+				return ipI > ipJ
+			}
 			return prefixI > prefixJ
+		}
+
+		if matchers[i].MatchType == IP || matchers[i].MatchType == IPV6 {
+			return matchers[i].Value > matchers[j].Value
 		}
 
 		return len(matchers[i].Routes) > len(matchers[j].Routes)

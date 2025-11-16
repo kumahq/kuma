@@ -1998,6 +1998,7 @@ spec:
                             Allows to configure panic threshold for Envoy cluster. If not specified,
                             the default is 50%. To disable panic mode, set to 0%.
                             Either int or decimal represented as string.
+
                             Deprecated: the setting has been moved to MeshCircuitBreaker policy,
                             please use MeshCircuitBreaker policy instead.
                           x-kubernetes-int-or-string: true
@@ -3117,8 +3118,6 @@ spec:
                   trustDomain:
                     type: string
                 type: object
-            required:
-            - provider
             type: object
           status:
             description: Status is the current status of the Kuma MeshIdentity resource.
@@ -8847,6 +8846,81 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
+  name: workloads.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: Workload
+    listKind: WorkloadList
+    plural: workloads
+    shortNames:
+    - wl
+    singular: workload
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Workload resource.
+            type: object
+          status:
+            description: Status is the current status of the Kuma Workload resource.
+            properties:
+              dataplaneProxies:
+                description: DataplaneProxies defines statistics of data plane proxies
+                  that are part of this workload
+                properties:
+                  connected:
+                    description: Connected defines number of connected data plane
+                      proxies
+                    format: int32
+                    type: integer
+                  healthy:
+                    description: Healthy defines number of healthy data plane proxies
+                      for this workload
+                    format: int32
+                    type: integer
+                  total:
+                    description: Total defines total number of data plane proxies
+                      for this workload
+                    format: int32
+                    type: integer
+                required:
+                - connected
+                - healthy
+                - total
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -9064,56 +9138,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: zoneinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ZoneInsight
-    listKind: ZoneInsightList
-    plural: zoneinsights
-    singular: zoneinsight
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ZoneInsight resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -9154,6 +9178,56 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma FaultInjection resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: zoneinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: ZoneInsight
+    listKind: ZoneInsightList
+    plural: zoneinsights
+    singular: zoneinsight
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma ZoneInsight resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -11249,6 +11323,7 @@ rules:
       - meshmultizoneservices
       - meshservices
       - meshtrusts
+      - workloads
     verbs:
       - get
       - list
@@ -11593,7 +11668,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 33c77d33ab23ff4cf808bc85e7f86118779c14eaa9e70ff31028c773fc53a51c
+        checksum/tls-secrets: 2c0ab72d70a85dc951f5547748e9708715259a4d372172e37dc45c8c0bfd4051
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -12088,6 +12163,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - workloads
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -12151,6 +12227,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - workloads
   
       
     sideEffects: None
@@ -12295,6 +12372,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - workloads
     
       
     sideEffects: None
@@ -12324,4 +12402,33 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
+  - name: pod.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+          - kuma-system
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-pod
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
     sideEffects: None

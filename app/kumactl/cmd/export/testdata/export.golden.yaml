@@ -1,6 +1,7 @@
 # Product: Kuma, Version: 0.0.0-testversion, Hostname: localhost, ClusterId: test-cluster, InstanceId: test-instance
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_m____default_
 modificationTime: "0001-01-01T00:00:00Z"
 name: default
 type: Mesh
@@ -8,6 +9,7 @@ skipCreatingInitialPolicies:
 - '*'
 ---
 creationTime: "0001-01-01T00:00:00Z"
+kri: kri_m____another-mesh_
 modificationTime: "0001-01-01T00:00:00Z"
 name: another-mesh
 type: Mesh

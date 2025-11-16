@@ -15,11 +15,11 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	commontemplate "github.com/kumahq/kuma/tools/common/template"
-	commontypes "github.com/kumahq/kuma/tools/common/types"
-	"github.com/kumahq/kuma/tools/openapi/gotemplates"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
+	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
+	commontypes "github.com/kumahq/kuma/v2/tools/common/types"
+	"github.com/kumahq/kuma/v2/tools/openapi/gotemplates"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
+	"github.com/kumahq/kuma/v2/tools/resource-gen/genutils"
 )
 
 var ProcessProtoResources = true

@@ -6,9 +6,9 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/pkg/errors"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
 )
 
 // ClusterBuilderOpt is a configuration option for ClusterBuilder.

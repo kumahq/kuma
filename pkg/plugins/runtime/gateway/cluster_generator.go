@@ -6,22 +6,22 @@ import (
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	"github.com/kumahq/kuma/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
 // ClusterGenerator generates Envoy clusters and their corresponding
@@ -178,6 +178,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 			true, // TODO we just assume this atm?...
 			sni,
 			meshroute.Identities(backendRef, meshCtx, false),
+			len(meshCtx.CAsByTrustDomain) > 0,
 		))
 	if proxy.WorkloadIdentity != nil {
 		upstreamCtx, err := meshroute.UpstreamTLSContext(backendRef, meshCtx, proxy, sni)
@@ -221,7 +222,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}, len(meshCtx.CAsByTrustDomain) > 0),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 

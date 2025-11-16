@@ -4,8 +4,8 @@ package v1alpha1
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	datasource_api "github.com/kumahq/kuma/api/common/v1alpha1/datasource"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
 )
 
 type Selector struct {
@@ -22,7 +22,7 @@ type Selector struct {
 type MeshIdentity struct {
 	Selector *Selector `json:"selector,omitempty"`
 	SpiffeID *SpiffeID `json:"spiffeID,omitempty"`
-	Provider Provider  `json:"provider"`
+	Provider *Provider `json:"provider,omitempty"`
 }
 
 type SpiffeID struct {
@@ -99,10 +99,11 @@ type Spire struct {
 }
 
 const (
-	ReadyConditionType     string = "Ready"
-	ProviderConditionType  string = "Provider"
-	MeshTrustConditionType string = "MeshTrustCreated"
-	DependenciesReadyType  string = "DependenciesReady"
+	ReadyConditionType            string = "Ready"
+	ProviderConditionType         string = "Provider"
+	SpiffeIDProviderConditionType string = "SpiffeIDProvider"
+	MeshTrustConditionType        string = "MeshTrustCreated"
+	DependenciesReadyType         string = "DependenciesReady"
 )
 
 type MeshIdentityStatus struct {

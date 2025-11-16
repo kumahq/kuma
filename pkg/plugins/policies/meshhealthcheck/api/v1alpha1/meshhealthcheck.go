@@ -5,7 +5,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
 // MeshHealthCheck defines health checking policies between different data plane
@@ -58,6 +58,7 @@ type Conf struct {
 	// Allows to configure panic threshold for Envoy cluster. If not specified,
 	// the default is 50%. To disable panic mode, set to 0%.
 	// Either int or decimal represented as string.
+	//
 	// Deprecated: the setting has been moved to MeshCircuitBreaker policy,
 	// please use MeshCircuitBreaker policy instead.
 	HealthyPanicThreshold *intstr.IntOrString `json:"healthyPanicThreshold,omitempty"`

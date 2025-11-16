@@ -12,10 +12,10 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("OwnerReferenceMutator", func() {

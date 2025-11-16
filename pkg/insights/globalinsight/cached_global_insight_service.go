@@ -6,8 +6,8 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	api_types "github.com/kumahq/kuma/api/openapi/types"
-	"github.com/kumahq/kuma/pkg/multitenant"
+	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 type cachedGlobalInsightService struct {

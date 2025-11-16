@@ -13,9 +13,9 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/kumahq/kuma/pkg/core"
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("ServiceReconciler", func() {

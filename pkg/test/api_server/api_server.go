@@ -3,14 +3,14 @@ package api_server
 import (
 	"net"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/server"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	"github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/server"
 )
 
 func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiServer, error) {
@@ -29,6 +29,7 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			context.AnyToAnyReachableServicesGraphBuilder,
+			runtime.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

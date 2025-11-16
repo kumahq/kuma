@@ -4,13 +4,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("ServerMtlsConfigurer", func() {
@@ -30,7 +30,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			tracker := envoy_common.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false)).
+					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false, false)).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
 			// then

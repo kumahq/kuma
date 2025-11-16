@@ -4,10 +4,10 @@ package v1alpha1
 import (
 	"fmt"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/pkg/core/metadata"
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
 
 // MeshMultiZoneService allows users to create a service that spawns across multiple zones

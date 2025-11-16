@@ -14,23 +14,23 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/server"
-	"github.com/kumahq/kuma/pkg/xds/sync"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	rest_types "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_runtime "github.com/kumahq/kuma/v2/pkg/test/runtime"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
 func initializeStore(ctx context.Context, resourceManager core_manager.ResourceManager, fileWithResourcesName string) {
@@ -94,6 +94,7 @@ var _ = Describe("Proxy Builder", func() {
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
+		builder.CAProvider(),
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())

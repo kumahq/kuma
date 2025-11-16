@@ -6,14 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func MeshFaultInjection() {
@@ -25,7 +25,7 @@ func MeshFaultInjection() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshIdentity
 metadata:
-  name: identity
+  name: identity-mfi
   namespace: %s  
   labels:
     kuma.io/mesh: %s
@@ -52,7 +52,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
-  name: mtp-1
+  name: mtp-mfi
   namespace: %s
   labels:
     kuma.io/mesh: %s

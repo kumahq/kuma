@@ -15,18 +15,18 @@ import (
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func (r *HTTPRouteReconciler) gapiToMeshRules(
@@ -81,7 +81,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	var ports []int32
 	if parentPort != nil {
-		ports = []int32{int32(*parentPort)}
+		ports = []int32{*parentPort}
 	} else {
 		for _, port := range parent.Spec.Ports {
 			ports = append(ports, port.Port)
@@ -408,7 +408,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	switch {
 	case gk.Kind == "Service" && gk.Group == "":
 		// References to Services are required by GAPI to include a port
-		port := int32(*ref.Port)
+		port := *ref.Port
 
 		svc := &kube_core.Service{}
 		if err := r.Get(ctx, namespacedName, svc); err != nil {

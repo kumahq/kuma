@@ -11,8 +11,8 @@ import (
 	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	kds_util "github.com/kumahq/kuma/pkg/kds/v2/util"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	kds_util "github.com/kumahq/kuma/v2/pkg/kds/v2/util"
 )
 
 type KDSSyncClient interface {

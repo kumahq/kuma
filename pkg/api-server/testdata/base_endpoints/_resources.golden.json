@@ -616,6 +616,16 @@
   },
   {
    "includeInFederation": false,
+   "name": "Workload",
+   "path": "workloads",
+   "pluralDisplayName": "Workloads",
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "wl",
+   "singularDisplayName": "Workload"
+  },
+  {
+   "includeInFederation": false,
    "name": "Zone",
    "path": "zones",
    "pluralDisplayName": "Zones",

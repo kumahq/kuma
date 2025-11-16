@@ -4,7 +4,7 @@ OAPI_GEN := ./build/tools-${GOOS}-${GOARCH}/oapi-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
-GO_MODULE ?= github.com/kumahq/kuma
+GO_MODULE ?= github.com/kumahq/kuma/v2
 
 HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"
 HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
@@ -33,13 +33,13 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies api-lint generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
-	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
+	cd $(KUMA_DIR) && $(GO) build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
-	go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
+	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 $(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
-	go build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
+	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
@@ -53,6 +53,7 @@ clean/legacy-resources:
 POLICIES_DIR ?= pkg/plugins/policies
 RESOURCES_DIR ?= pkg/core/resources/apis
 MESH_API_DIR ?= api/mesh/v1alpha1
+SYSTEM_API_DIR ?= api/system/v1alpha1
 COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find $(POLICIES_DIR) -maxdepth 1 -mindepth 1 -type d | grep -v -e '/core$$' | grep -v -e '/system$$' | grep -v -e '/mesh$$' | sort),$(notdir $(dir)))
@@ -106,15 +107,74 @@ generate/policy-defaults:
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
-endpoints?=$(foreach dir,$(shell find api/openapi/specs -type f -name '*.yaml' ! -iname '*kri*' | sort),$(basename $(dir)))
+# Discover OpenAPI specification files
+# - Searches api/openapi/specs/ and immediate subdirectories for *.yaml files
+# - Excludes kri/ subdirectory (handled separately by oapi-gen tool)
+# - Allows additional exclusions via OAS_SPECS_EXTRA_FILTER (for downstream projects)
+# - Sorts results for deterministic ordering
+OAS_SPECS_EXTRA_FILTER ?=
+OAS_SPECS := $(sort $(filter-out api/openapi/specs/kri/% $(OAS_SPECS_EXTRA_FILTER), \
+	$(wildcard api/openapi/specs/*.yaml) \
+	$(wildcard api/openapi/specs/*/*.yaml)))
 
-generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN)
-	for endpoint in $(endpoints); do \
-		DEST=$${endpoint#"api/openapi/specs"}; \
-		$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml  || { echo "Failed to generate $$endpoint"; exit 1; }; \
-	done
-	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	$(OAPI_GEN) kri
+# Function: Map OpenAPI spec path to generated Go types file path
+# Transforms: api/openapi/specs/common/error.yaml
+#         →  api/openapi/types/common/zz_generated.error.go
+#
+# Transformation steps:
+#   1. $(dir $(1))                    → api/openapi/specs/common/
+#   2. patsubst specs/% → %           → api/openapi/common/
+#   3. basename $(notdir $(1))        → error (removes path and extension)
+#   4. Construct final path with zz_generated. prefix
+define OAS_OUT
+api/openapi/types/$(patsubst api/openapi/specs/%,%,$(dir $(1)))zz_generated.$(basename $(notdir $(1))).go
+endef
+
+# Compute all generated Go type files corresponding to discovered specs
+# This list becomes a prerequisite for generate/oas, ensuring all files are built
+OAS_TYPES := $(foreach s,$(OAS_SPECS),$(call OAS_OUT,$(s)))
+
+# Pattern rule: Create output directories on demand
+# This is used as an order-only prerequisite (see OAS_RULE below)
+api/openapi/types%/: ; @mkdir -p $@
+
+# Template: Define a rule pattern for generating Go types from one OpenAPI spec
+#
+# Parameters:
+#   $(1) - The OpenAPI spec file path (e.g., api/openapi/specs/common/error.yaml)
+#
+# Generated rule structure:
+#   <output-file>: <spec-file> <config-file> | <output-dir>
+#       @$(OAPI_CODEGEN) -config <config> -o <output> <spec>
+#
+# Make syntax details:
+#   $$(...)           - Double-$ escapes variable expansion until rule instantiation
+#   $$(@D)            - Automatic variable: directory part of target (output file)
+#   $$@               - Automatic variable: full target name (output file)
+#   $$<               - Automatic variable: first prerequisite (spec file)
+#   | $$(@D)          - Order-only prerequisite: ensure directory exists, but don't
+#                       rebuild if directory timestamp changes (avoids spurious rebuilds)
+define OAS_RULE
+$(call OAS_OUT,$(1)): $(1) api/openapi/openapi.cfg.yaml | $$(@D)
+	@$$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o $$@ $$<
+endef
+
+# Instantiate one concrete rule per OpenAPI spec
+# How it works:
+#   1. foreach iterates over each spec in OAS_SPECS
+#   2. OAS_RULE template is expanded with the spec path as $(1)
+#   3. eval processes the expanded text as Make syntax, creating actual rules
+#
+# Example: if OAS_SPECS contains "api/openapi/specs/common/resource.yaml", this creates:
+#   api/openapi/types/common/zz_generated.resource.go: api/openapi/specs/common/resource.yaml api/openapi/openapi.cfg.yaml | api/openapi/types/common/
+#       @$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o api/openapi/types/common/zz_generated.resource.go api/openapi/specs/common/resource.yaml
+$(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
+
+.PHONY: generate/oas
+generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
+	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	@$(OAPI_GEN) kri
 
 .PHONY: validate/openapi-generated-docs
 validate/openapi-generated-docs:
@@ -134,7 +194,6 @@ validate/openapi-generated-docs:
 .PHONY: generate/oas-for-ts
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
 
-
 .PHONY: generate/builtin-crds
 generate/builtin-crds: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go
@@ -153,16 +212,16 @@ generate/envoy-imports:
 	echo '// Import all Envoy packages so protobuf are registered and are ready to used in functions such as MarshalAny.' >> ${ENVOY_IMPORTS}
 	echo '// This file is autogenerated. run "make generate/envoy-imports" to regenerate it after go-control-plane upgrade' >> ${ENVOY_IMPORTS}
 	echo 'import (' >> ${ENVOY_IMPORTS}
-	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
+	$(GO) list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
 
 .PHONY: api-lint/policies
 api-lint/policies:
-	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
+	$(GO) run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
 
 .PHONY: api-lint/resources
 api-lint/resources:
-	go run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(RESOURCES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
+	$(GO) run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(RESOURCES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
 
 .PHONY: api-lint
 api-lint: api-lint/policies api-lint/resources

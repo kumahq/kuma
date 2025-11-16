@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	commontemplate "github.com/kumahq/kuma/tools/common/template"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/parse"
+	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
+	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
 )
 
 func newPluginFile(rootArgs *args) *cobra.Command {
@@ -80,9 +80,9 @@ package {{ .Package }}
 
 import (
 {{- if or $isPolicy $registerGenerator }}
-	"github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
 {{- end}}
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 {{- range $idx, $version := .Versions}}
 	api_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/api/{{ $version }}"
 	k8s_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/k8s/{{ $version }}"
