@@ -173,6 +173,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 
 func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
 	logger := log.AddFieldsFromCtx(clientLog, stream.Context(), g.extensions)
+	logger.V(1).Info("Zone To Global new session created")
 	zone, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {
 		return err
@@ -318,9 +319,6 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 func (g *KDSSyncServiceServer) SetGrpcStop(stop func()) error {
 	if stop == nil {
 		return fmt.Errorf("stop func cannot be nil")
-	}
-	if g.grpcStop != nil {
-		return fmt.Errorf("grpc stop func is already set")
 	}
 
 	g.grpcStop = stop

@@ -101,6 +101,7 @@ func (s *kdsSyncClient) Receive(ctx context.Context, group *errgroup.Group) erro
 			select {
 			case <-ctx.Done():
 				s.log.V(1).Info("stopping receiving grpc messages")
+				return nil
 			default:
 				received, err := s.kdsStream.Receive()
 				if err != nil {
@@ -127,6 +128,7 @@ func (s *kdsSyncClient) Receive(ctx context.Context, group *errgroup.Group) erro
 				if s.callbacks != nil {
 					err, nackError := s.callbacks.OnResourcesReceived(received)
 					if err != nil {
+						s.log.Error(err, "failed to process received resources in callback")
 						return err
 					}
 					if nackError != nil {

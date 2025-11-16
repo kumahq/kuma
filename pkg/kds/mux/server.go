@@ -122,6 +122,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 
 	errChan := make(chan error)
+	grpcServerStopped := make(chan struct{})
 	go func() {
 		defer close(errChan)
 		if err = grpcServer.Serve(lis); err != nil {
@@ -129,6 +130,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 			errChan <- err
 		} else {
 			muxServerLog.Info("terminated normally")
+			grpcServerStopped <- struct{}{}
 		}
 	}()
 	muxServerLog.Info("starting", "interface", "0.0.0.0", "port", s.config.GrpcPort)
@@ -138,6 +140,9 @@ func (s *server) Start(stop <-chan struct{}) error {
 		muxServerLog.Info("stopping gracefully")
 		grpcServer.GracefulStop()
 		muxServerLog.Info("stopped")
+		return nil
+	case <-grpcServerStopped:
+		muxServerLog.Info("grpc server stopped")
 		return nil
 	case err := <-errChan:
 		return err
