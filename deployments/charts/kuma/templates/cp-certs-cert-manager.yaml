@@ -1,0 +1,28 @@
+{{- if and .Values.controlPlane.tls.general.certManager.enabled (eq .Values.controlPlane.environment "kubernetes") }}
+{{- $serviceName := (include "kuma.controlPlane.serviceName" .) -}}
+{{- $certName := print (include "kuma.name" .) "-tls-cert" -}}
+{{- $issuerName := print (include "kuma.name" .) "-selfsigned-issuer" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $certName }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  dnsNames:
+    - {{ $serviceName }}.{{ .Release.Namespace }}.svc
+    - {{ $serviceName }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: {{ $issuerName }}
+  secretName: {{ $certName }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $issuerName }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}
