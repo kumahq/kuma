@@ -18,16 +18,16 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/config/multizone"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/service"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/version"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/config/multizone"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/service"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var muxClientLog = core.Log.WithName("kds-mux-client")

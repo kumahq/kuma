@@ -7,10 +7,10 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 // virtualHostModificator assumes that the routes are specified as `routeConfig` in Listeners, not through RDS

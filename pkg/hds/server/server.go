@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	hds_cache "github.com/kumahq/kuma/pkg/hds/cache"
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	hds_cache "github.com/kumahq/kuma/v2/pkg/hds/cache"
+	hds_callbacks "github.com/kumahq/kuma/v2/pkg/hds/callbacks"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 // inspired by https://github.com/envoyproxy/go-control-plane/blob/master/pkg/server/sotw/v3/server.go

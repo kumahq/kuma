@@ -18,7 +18,7 @@ package parameters
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 type OwnerParameter struct {

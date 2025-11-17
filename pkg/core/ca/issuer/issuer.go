@@ -13,10 +13,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
+	util_rsa "github.com/kumahq/kuma/v2/pkg/util/rsa"
 )
 
 const (

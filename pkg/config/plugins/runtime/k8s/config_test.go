@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("Config", func() {

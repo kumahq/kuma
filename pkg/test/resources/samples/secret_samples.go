@@ -3,10 +3,10 @@ package samples
 import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 func SampleSigningKeySecretBuilder() *builders.SecretBuilder {

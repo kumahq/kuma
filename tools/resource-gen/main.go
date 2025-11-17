@@ -13,8 +13,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	_ "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
+	_ "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/v2/tools/resource-gen/genutils"
 )
 
 // CustomResourceTemplate for creating a Kubernetes CRD to wrap a Kuma resource.
@@ -35,11 +35,11 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	{{ $pkg }} "github.com/kumahq/kuma/api/{{ .Package }}/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	{{ $pkg }} "github.com/kumahq/kuma/v2/api/{{ .Package }}/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 {{range .Resources}}
@@ -205,9 +205,9 @@ import (
 	"errors"
 	"fmt"
 
-	{{$pkg}} "github.com/kumahq/kuma/api/{{.Package}}/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	{{$pkg}} "github.com/kumahq/kuma/v2/api/{{.Package}}/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
 {{range .Resources}}

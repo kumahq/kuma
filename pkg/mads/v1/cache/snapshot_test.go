@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1"
-	. "github.com/kumahq/kuma/pkg/mads/v1/cache"
+	observability_proto "github.com/kumahq/kuma/v2/api/observability/v1"
+	. "github.com/kumahq/kuma/v2/pkg/mads/v1/cache"
 )
 
 var _ = Describe("Snapshot", func() {

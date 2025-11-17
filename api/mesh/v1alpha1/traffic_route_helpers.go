@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 // GetSplitWithDestination returns unified list of split regardless if split or destination is used

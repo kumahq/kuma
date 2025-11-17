@@ -8,7 +8,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/server/rest/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
-	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
+	observability_v1 "github.com/kumahq/kuma/v2/api/observability/v1"
 )
 
 type Server interface {

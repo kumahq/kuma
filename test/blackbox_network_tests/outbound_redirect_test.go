@@ -11,15 +11,15 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
-	"github.com/kumahq/kuma/test/blackbox_network_tests"
-	"github.com/kumahq/kuma/test/framework/network/ip"
-	"github.com/kumahq/kuma/test/framework/network/netns"
-	"github.com/kumahq/kuma/test/framework/network/socket"
-	"github.com/kumahq/kuma/test/framework/network/syscall"
-	"github.com/kumahq/kuma/test/framework/network/tcp"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/builder"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/v2/test/blackbox_network_tests"
+	"github.com/kumahq/kuma/v2/test/framework/network/ip"
+	"github.com/kumahq/kuma/v2/test/framework/network/netns"
+	"github.com/kumahq/kuma/v2/test/framework/network/socket"
+	"github.com/kumahq/kuma/v2/test/framework/network/syscall"
+	"github.com/kumahq/kuma/v2/test/framework/network/tcp"
 )
 
 var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {

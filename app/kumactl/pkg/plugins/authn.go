@@ -1,6 +1,6 @@
 package plugins
 
-import util_http "github.com/kumahq/kuma/pkg/util/http"
+import util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 
 type AuthnPlugin interface {
 	Validate(map[string]string) error

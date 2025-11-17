@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/chain"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/consts"
 )
 
 type TableBuilder struct {

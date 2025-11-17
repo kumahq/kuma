@@ -15,13 +15,13 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
-	utilnet "github.com/kumahq/kuma/pkg/util/net"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/xds"
+	utilnet "github.com/kumahq/kuma/v2/pkg/util/net"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type ConfigFetcher struct {

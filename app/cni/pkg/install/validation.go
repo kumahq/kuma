@@ -3,7 +3,7 @@ package install
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 func lookForValidConfig(files []string, checkerFn func(string) error) (string, bool) {

@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
 
 // DataplaneInsight defines the observed state of a Dataplane.
 message DataplaneInsight {

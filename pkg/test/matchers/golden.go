@@ -8,7 +8,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/test/matchers/golden"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers/golden"
 )
 
 func MatchGoldenYAML(goldenFilePath ...string) types.GomegaMatcher {

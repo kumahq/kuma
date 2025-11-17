@@ -16,8 +16,8 @@ import (
 	"github.com/sethvargo/go-retry"
 	"go.uber.org/multierr"
 
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/util/files"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	"github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 const (

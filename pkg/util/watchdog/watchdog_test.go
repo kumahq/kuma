@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test"
-	. "github.com/kumahq/kuma/pkg/util/watchdog"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	. "github.com/kumahq/kuma/v2/pkg/util/watchdog"
 )
 
 var _ = Describe("SimpleWatchdog", func() {

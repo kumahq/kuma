@@ -3,15 +3,15 @@ package zoneproxy
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_endpoints "github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
 
 func GenerateCDS(

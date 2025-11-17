@@ -10,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
+	store_config "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
 )
 
 type Validator interface {

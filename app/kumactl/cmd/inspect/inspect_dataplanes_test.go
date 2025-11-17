@@ -12,16 +12,16 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	test_kumactl "github.com/kumahq/kuma/v2/pkg/test/kumactl"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type testDataplaneOverviewClient struct {

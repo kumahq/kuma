@@ -5,11 +5,11 @@ import (
 
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 type DppConfigConfigurer struct {

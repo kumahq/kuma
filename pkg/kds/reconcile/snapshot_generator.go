@@ -7,14 +7,14 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/cache"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/cache"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 type (

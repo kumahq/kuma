@@ -17,11 +17,11 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/kumahq/kuma/pkg/config"
-	pg_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
-	util_files "github.com/kumahq/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	pg_config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
+	util_files "github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 type PostgresContainer struct {
@@ -30,6 +30,16 @@ type PostgresContainer struct {
 }
 
 func findProjectRoot(cwd, callerFile string) string {
+	// When -trimpath is used, runtime.Caller returns relative paths like:
+	// "github.com/kumahq/kuma/v2@v2.0.0-20251106183812-a52a8779dbb5/pkg/test/store/postgres/test_container.go"
+	// We need to prepend GOPATH/pkg/mod/ to construct the full path
+	if !strings.HasPrefix(callerFile, "/") {
+		file := path.Join(util_files.GetGopath(), "pkg", "mod", callerFile)
+		if util_files.FileExists(file) {
+			return util_files.GetProjectRoot(file)
+		}
+	}
+
 	projectRootParent := util_files.GetProjectRootParent(cwd)
 	fileRelativeToProjectRootParent := util_files.RelativeToProjectRootParent(callerFile)
 	projectRoot := util_files.GetProjectRoot(cwd)

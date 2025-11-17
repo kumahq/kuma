@@ -3,8 +3,8 @@ package generate
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli/generate"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/cli/generate"
 )
 
 func NewGenerateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

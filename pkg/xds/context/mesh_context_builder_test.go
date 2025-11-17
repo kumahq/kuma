@@ -10,15 +10,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/config/manager"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test"
-	test_store "github.com/kumahq/kuma/pkg/test/store"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_server "github.com/kumahq/kuma/pkg/xds/server"
+	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server"
 )
 
 var _ = Describe("hash", func() {

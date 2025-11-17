@@ -17,12 +17,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/maps"
 
-	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
-	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
+	config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
+	pgx_config "github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
 )
 
 type pgxResourceStore struct {

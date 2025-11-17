@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/plugins"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 const (

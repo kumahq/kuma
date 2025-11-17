@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Bootstrap File", func() {

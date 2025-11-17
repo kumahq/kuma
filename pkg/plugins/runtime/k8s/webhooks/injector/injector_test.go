@@ -14,13 +14,13 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/config"
-	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
-	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	conf "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	inject "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks/injector"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("Injector", func() {

@@ -12,12 +12,12 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	secret_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	common_k8s "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 type SecretValidator struct {

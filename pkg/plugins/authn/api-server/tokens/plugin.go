@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/api-server/authn"
-	config_access "github.com/kumahq/kuma/pkg/config/access"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
+	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
+	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/access"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws/server"
 )
 
 const PluginName = "tokens"

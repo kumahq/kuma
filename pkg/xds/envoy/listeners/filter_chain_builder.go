@@ -6,9 +6,9 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 // FilterChainBuilderOpt is a configuration option for FilterChainBuilder.

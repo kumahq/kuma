@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
 )
 
 func CorefileTemplate() {

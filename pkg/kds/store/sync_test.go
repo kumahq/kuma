@@ -7,15 +7,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	sync_store "github.com/kumahq/kuma/pkg/kds/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	sync_store "github.com/kumahq/kuma/v2/pkg/kds/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	model2 "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 var _ = Describe("SyncResourceStore", func() {

@@ -4,8 +4,8 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
 // MatchTransportProtocol sets the transport protocol match for the filter chain.

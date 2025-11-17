@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
+	util_rsa "github.com/kumahq/kuma/v2/pkg/util/rsa"
 )
 
 // fileSigningKeyManager is a key manager that only manages one key from specified file

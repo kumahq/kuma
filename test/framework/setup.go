@@ -19,11 +19,11 @@ import (
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	"github.com/kumahq/kuma/pkg/tls"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/v2/pkg/tls"
 )
 
 type InstallFunc func(cluster Cluster) error

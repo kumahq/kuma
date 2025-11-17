@@ -3,9 +3,9 @@ package issuer
 import (
 	"github.com/golang-jwt/jwt/v4"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/core/user"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 const UserTokenSigningKeyPrefix = "user-token-signing-key"

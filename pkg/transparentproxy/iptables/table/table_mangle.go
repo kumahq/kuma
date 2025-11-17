@@ -1,7 +1,7 @@
 package table
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/chain"
 )
 
 type MangleTable struct {

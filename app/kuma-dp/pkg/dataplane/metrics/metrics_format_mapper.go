@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const (

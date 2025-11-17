@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
 )
 
 type Command struct {

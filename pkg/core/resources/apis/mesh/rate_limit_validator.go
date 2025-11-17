@@ -3,8 +3,8 @@ package mesh
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 func (d *RateLimitResource) Validate() error {

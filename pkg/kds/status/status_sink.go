@@ -8,15 +8,15 @@ import (
 	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/proto"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/user"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 )
 
 type ZoneInsightSink interface {

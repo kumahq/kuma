@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/context"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/context"
+	"github.com/kumahq/kuma/v2/pkg/kds/reconcile"
+	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 var _ = Describe("Resource", func() {

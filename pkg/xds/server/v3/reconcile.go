@@ -10,15 +10,15 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kumahq/kuma/pkg/core"
-	model "github.com/kumahq/kuma/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
-	xds_template "github.com/kumahq/kuma/pkg/xds/template"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	model "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/modifications"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
+	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
+	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
 )
 
 var reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")

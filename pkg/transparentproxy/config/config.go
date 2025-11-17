@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type TransparentProxyConfig struct {

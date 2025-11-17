@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 func SNIFromTags(tags envoy_tags.Tags) string {

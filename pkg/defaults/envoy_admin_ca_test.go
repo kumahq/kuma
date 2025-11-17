@@ -6,12 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/defaults"
-	envoy_admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/defaults"
+	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
+	resources_memory "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Envoy Admin CA defaults", func() {

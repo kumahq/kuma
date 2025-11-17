@@ -12,11 +12,11 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/util/test"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/util/test"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var _ = Describe("kumactl install control-plane", func() {

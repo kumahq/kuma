@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/test"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/util/test"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var _ = Describe("kumactl install demo", func() {

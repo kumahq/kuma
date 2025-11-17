@@ -1,7 +1,7 @@
 package builders
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
 func TargetRefMesh() common_api.TargetRef {

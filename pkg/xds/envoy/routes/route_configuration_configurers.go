@@ -3,9 +3,9 @@ package routes
 import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
 )
 
 // ResetTagsHeader adds x-kuma-tags header to the RequestHeadersToRemove list. x-kuma-tags header is planned to be used

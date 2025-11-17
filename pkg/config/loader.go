@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
 
 func Load(file string, cfg Config) error {

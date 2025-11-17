@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	secret_model "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	secret_cipher "github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
+	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
 )
 
 func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator, unsafeDelete bool) manager.ResourceManager {

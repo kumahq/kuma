@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/builder"
 )
 
 func Setup(ctx context.Context, cfg config.Config) (string, error) {

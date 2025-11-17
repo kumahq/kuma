@@ -22,8 +22,8 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/kubernetes"
 )
 
 var _ = Describe("kubernetes", func() {

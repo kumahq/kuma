@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters/match/conntrack"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters/match/conntrack"
 )
 
 // Conntrack

@@ -5,12 +5,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	config_postgres "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
-	test_store "github.com/kumahq/kuma/pkg/test/store"
+	config_postgres "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
+	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
 )
 
 var _ = Describe("PostgresStore template", func() {

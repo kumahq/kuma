@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kumahq/kuma/app/cni/pkg/install"
+	"github.com/kumahq/kuma/v2/app/cni/pkg/install"
 )
 
 func main() {

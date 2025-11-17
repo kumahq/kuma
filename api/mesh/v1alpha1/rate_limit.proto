@@ -8,7 +8,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
 
 message RateLimit {
   option (kuma.mesh.resource).name = "RateLimitResource";

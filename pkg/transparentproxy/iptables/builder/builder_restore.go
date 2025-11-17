@@ -13,9 +13,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/consts"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
 )
 
 var dockerOutputChainRegex = regexp.MustCompile(`(?m)^:DOCKER_OUTPUT`)

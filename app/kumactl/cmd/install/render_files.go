@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/data"
 )
 
 type templateFilter interface {

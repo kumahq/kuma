@@ -17,11 +17,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	kumadp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("run", func() {

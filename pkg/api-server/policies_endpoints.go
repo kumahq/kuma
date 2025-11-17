@@ -5,9 +5,9 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/api-server/mappers"
-	"github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/api-server/mappers"
+	"github.com/kumahq/kuma/v2/pkg/api-server/types"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {

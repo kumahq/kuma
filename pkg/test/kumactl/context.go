@@ -3,13 +3,13 @@ package kumactl
 import (
 	"time"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
-	util_test "github.com/kumahq/kuma/pkg/util/test"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	util_test "github.com/kumahq/kuma/v2/pkg/util/test"
 )
 
 var defaultArgs = kumactl_cmd.RootArgs{

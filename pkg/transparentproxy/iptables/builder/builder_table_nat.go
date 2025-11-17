@@ -5,11 +5,11 @@ import (
 	"net"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/chain"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/consts"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/table"
 )
 
 func buildMeshInbound(cfg config.TrafficFlow, prefix string, meshInboundRedirect string) *Chain {

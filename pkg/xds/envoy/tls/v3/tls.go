@@ -5,10 +5,10 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/tls"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
 
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections

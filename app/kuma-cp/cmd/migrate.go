@@ -4,11 +4,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/pkg/config"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
 var migrateLog = controlPlaneLog.WithName("migrate")

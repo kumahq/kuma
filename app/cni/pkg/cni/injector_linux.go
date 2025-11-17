@@ -11,8 +11,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy"
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 func convertToUint16(field string, value string) (uint16, error) {

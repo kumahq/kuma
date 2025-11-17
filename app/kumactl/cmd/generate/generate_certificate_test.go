@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
-	"github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/v2/app/kumactl/cmd/generate"
+	"github.com/kumahq/kuma/v2/pkg/tls"
+	"github.com/kumahq/kuma/v2/pkg/util/test"
 )
 
 var _ = Describe("kumactl generate tls-certificate", func() {

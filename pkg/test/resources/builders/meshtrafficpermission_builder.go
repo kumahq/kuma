@@ -1,10 +1,10 @@
 package builders
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	mtp_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	mtp_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
 type MeshTrafficPermissionBuilder struct {

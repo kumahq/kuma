@@ -3,10 +3,10 @@ package topology
 import (
 	"context"
 
-	core_policy "github.com/kumahq/kuma/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_policy "github.com/kumahq/kuma/v2/pkg/core/policy"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 )
 
 func GetTrafficTrace(ctx context.Context, dataplane *core_mesh.DataplaneResource, manager core_manager.ReadOnlyResourceManager) (*core_mesh.TrafficTraceResource, error) {

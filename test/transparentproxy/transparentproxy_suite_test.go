@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/test/transparentproxy"
-	"github.com/kumahq/kuma/test/transparentproxy/install"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/test/transparentproxy"
+	"github.com/kumahq/kuma/v2/test/transparentproxy/install"
 )
 
 func TestTransparentProxy(t *testing.T) {

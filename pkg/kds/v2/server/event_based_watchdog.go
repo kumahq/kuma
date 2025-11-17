@@ -10,13 +10,13 @@ import (
 	"github.com/go-logr/logr"
 	"golang.org/x/exp/maps"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/events"
-	"github.com/kumahq/kuma/pkg/kds/v2/reconcile"
-	"github.com/kumahq/kuma/pkg/multitenant"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/events"
+	"github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
 )
 
 type EventBasedWatchdog struct {

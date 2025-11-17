@@ -18,16 +18,16 @@ import (
 	kube_podcmd "k8s.io/kubectl/pkg/cmd/util/podcmd"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/core"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	tp_cfg "github.com/kumahq/kuma/pkg/transparentproxy/config"
-	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	tp_cfg "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	tp_k8s "github.com/kumahq/kuma/v2/pkg/transparentproxy/kubernetes"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const (

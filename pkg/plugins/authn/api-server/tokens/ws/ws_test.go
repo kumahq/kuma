@@ -15,17 +15,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
+	store_config "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws/client"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws/server"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
 )
 
 type noopGenerateUserTokenAccess struct{}

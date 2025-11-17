@@ -5,8 +5,8 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
-	v1 "github.com/kumahq/kuma/pkg/mads/v1"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	v1 "github.com/kumahq/kuma/v2/pkg/mads/v1"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 // NewSnapshot creates a snapshot from response types and a version.

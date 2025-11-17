@@ -7,12 +7,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 )
 
 type EnvoyAdminCaDefaultComponent struct {

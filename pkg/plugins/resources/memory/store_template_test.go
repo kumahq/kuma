@@ -3,8 +3,8 @@ package memory_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_store "github.com/kumahq/kuma/pkg/test/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
 )
 
 var _ = Describe("MemoryStore template", func() {

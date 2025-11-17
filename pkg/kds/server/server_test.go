@@ -10,17 +10,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/grpc"
-	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
-	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
-	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/grpc"
+	kds_samples "github.com/kumahq/kuma/v2/pkg/test/kds/samples"
+	kds_setup "github.com/kumahq/kuma/v2/pkg/test/kds/setup"
+	kds_verifier "github.com/kumahq/kuma/v2/pkg/test/kds/verifier"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var node = &envoy_core.Node{

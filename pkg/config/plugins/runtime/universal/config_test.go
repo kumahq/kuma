@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/config/plugins/runtime/universal"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/universal"
 )
 
 var _ = Describe("Config", func() {

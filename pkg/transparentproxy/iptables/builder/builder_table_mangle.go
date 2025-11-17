@@ -1,10 +1,10 @@
 package builder
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters/match/conntrack"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters/match/conntrack"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/table"
 )
 
 func buildMangleTable(cfg config.Config) *table.MangleTable {

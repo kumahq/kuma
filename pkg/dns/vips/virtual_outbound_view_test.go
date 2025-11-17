@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 )
 
 var _ = Describe("Virtual outbound", func() {

@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/test/server/grpc/api"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/test/server/grpc/api"
 )
 
 var grpcServerLog = grpcLog.WithName("server")

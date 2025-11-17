@@ -6,15 +6,15 @@ import (
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
+	tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {

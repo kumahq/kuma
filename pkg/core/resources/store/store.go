@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 type ResourceStore interface {

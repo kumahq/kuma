@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 )
 
 // signingKeyFromPublicKeyAccessor is an accessor which can be used in situation
