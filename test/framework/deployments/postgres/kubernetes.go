@@ -105,7 +105,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		cluster.GetKubectlOptions(t.options.namespace),
 		"wait",
 		"--for=condition=Ready",
-		fmt.Sprintf("cluster/%s", t.options.primaryName),
+		fmt.Sprintf("clusters.postgresql.cnpg.io/%s-cluster", t.options.primaryName),
 		"--timeout=180s",
 	)
 }
