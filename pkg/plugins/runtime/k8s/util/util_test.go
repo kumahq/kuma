@@ -12,7 +12,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
 var _ = Describe("Util", func() {

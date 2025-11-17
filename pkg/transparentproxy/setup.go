@@ -3,9 +3,9 @@ package transparentproxy
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/ebpf"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/ebpf"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables"
 )
 
 func Setup(ctx context.Context, cfg config.Config) (string, error) {

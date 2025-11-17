@@ -5,7 +5,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 // Reconciler re-computes configuration for a given node.

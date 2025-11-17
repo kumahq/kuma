@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 type AccessDeniedError struct {

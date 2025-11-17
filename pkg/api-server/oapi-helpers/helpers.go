@@ -1,9 +1,9 @@
 package oapi_helpers
 
 import (
-	api_common "github.com/kumahq/kuma/api/openapi/types/common"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 )
 
 func ResourceToMeta(m core_model.Resource) api_common.Meta {

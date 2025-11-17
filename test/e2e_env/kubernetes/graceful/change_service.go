@@ -10,13 +10,13 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/channels"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/channels"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func ChangeService() {

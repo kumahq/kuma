@@ -8,11 +8,11 @@ import (
 	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func NewGatewayInstanceValidatorWebhook(converter k8s_common.Converter, resourceManager manager.ResourceManager) k8s_common.AdmissionValidator {

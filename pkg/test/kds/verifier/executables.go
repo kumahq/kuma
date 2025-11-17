@@ -10,10 +10,10 @@ import (
 	protov1 "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func Create(ctx context.Context, r model.Resource, opts ...store.CreateOptionsFunc) Executable {

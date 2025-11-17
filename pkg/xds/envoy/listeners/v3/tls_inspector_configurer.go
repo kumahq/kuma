@@ -4,7 +4,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_extensions_filters_listener_tls_inspector_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type TLSInspectorConfigurer struct{}

@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	"github.com/kumahq/kuma/pkg/test"
+	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 var (

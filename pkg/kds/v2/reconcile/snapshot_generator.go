@@ -7,13 +7,13 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
+	cache_kds_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/cache"
 )
 
 func NoopResourceMapper(_ kds.Features, r model.Resource) (model.Resource, error) {

@@ -10,15 +10,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	"github.com/kumahq/kuma/pkg/kds/status"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/v2/pkg/kds/status"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 func New(

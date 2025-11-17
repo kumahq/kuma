@@ -7,10 +7,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/test/framework/ssh"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/clusters"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v2/test/framework/ssh"
 )
 
 type UniversalTunnel struct {

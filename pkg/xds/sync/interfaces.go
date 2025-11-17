@@ -3,10 +3,10 @@ package sync
 import (
 	"context"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 type DataplaneMetadataTracker interface {

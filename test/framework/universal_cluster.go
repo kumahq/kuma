@@ -12,14 +12,14 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/util/template"
-	"github.com/kumahq/kuma/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/ssh"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/util/template"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	"github.com/kumahq/kuma/v2/test/framework/ssh"
 )
 
 type UniversalNetworking struct {

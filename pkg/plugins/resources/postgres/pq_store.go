@@ -14,11 +14,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/maps"
 
-	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	common_postgres "github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
 )
 
 type postgresResourceStore struct {

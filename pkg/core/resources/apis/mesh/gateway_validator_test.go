@@ -3,10 +3,10 @@ package mesh_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
-	. "github.com/kumahq/kuma/pkg/test/resources/validators"
+	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	_ "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/register"
+	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
 )
 
 var _ = Describe("Gateway", func() {

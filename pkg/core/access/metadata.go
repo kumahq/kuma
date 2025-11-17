@@ -3,8 +3,8 @@ package access
 import (
 	"context"
 
-	config_access "github.com/kumahq/kuma/pkg/config/access"
-	"github.com/kumahq/kuma/pkg/core/user"
+	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 type ControlPlaneMetadataAccess interface {

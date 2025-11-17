@@ -1,6 +1,6 @@
 package test
 
-import "github.com/kumahq/kuma/pkg/events"
+import "github.com/kumahq/kuma/v2/pkg/events"
 
 type TestEventReader struct {
 	Ch chan events.Event

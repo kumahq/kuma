@@ -6,19 +6,19 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 type ruleByHostname struct {

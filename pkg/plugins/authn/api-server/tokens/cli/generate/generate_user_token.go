@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws/client"
 )
 
 var NewHTTPUserTokenClient = client.NewHTTPUserTokenClient

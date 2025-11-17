@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 // CustomTablePrinters are used to define different ways to print entities in table format.

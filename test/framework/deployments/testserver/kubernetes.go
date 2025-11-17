@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 type k8SDeployment struct {

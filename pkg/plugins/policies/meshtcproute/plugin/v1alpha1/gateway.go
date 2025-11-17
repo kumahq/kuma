@@ -7,15 +7,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 func generateGatewayListeners(

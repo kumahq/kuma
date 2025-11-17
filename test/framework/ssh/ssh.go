@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	k8s_strings "k8s.io/utils/strings"
 
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/v2/test/framework/utils"
 )
 
 // Logf logs a test progress message.

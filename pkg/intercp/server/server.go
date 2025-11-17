@@ -15,11 +15,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/kumahq/kuma/pkg/config/intercp"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/config/intercp"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 var log = core.Log.WithName("intercp-server")

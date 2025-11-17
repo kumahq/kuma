@@ -8,10 +8,10 @@ import (
 	"sort"
 	"strings"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_policy "github.com/kumahq/kuma/pkg/core/policy"
-	"github.com/kumahq/kuma/pkg/util/maps"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_policy "github.com/kumahq/kuma/v2/pkg/core/policy"
+	"github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 const TagsHeaderName = "x-kuma-tags"

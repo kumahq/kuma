@@ -12,13 +12,13 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
 )
 
 func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLimitConfiguration {

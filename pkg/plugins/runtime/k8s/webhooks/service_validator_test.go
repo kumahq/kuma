@@ -9,8 +9,8 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("ServiceValidator", func() {

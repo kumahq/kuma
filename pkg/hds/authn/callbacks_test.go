@@ -10,15 +10,15 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/hds/authn"
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/xds/auth"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/hds/authn"
+	hds_callbacks "github.com/kumahq/kuma/v2/pkg/hds/callbacks"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/xds/auth"
 )
 
 type testAuthenticator struct {

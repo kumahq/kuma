@@ -7,7 +7,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 
-	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
+	"github.com/kumahq/kuma/v2/app/kuma-ui/pkg/resources"
 )
 
 type GuiConfig struct {

@@ -6,10 +6,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 type MeteredStore struct {

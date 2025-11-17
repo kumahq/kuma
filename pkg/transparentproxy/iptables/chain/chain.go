@@ -1,8 +1,8 @@
 package chain
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/commands"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/commands"
+	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
 )
 
 type Chain struct {

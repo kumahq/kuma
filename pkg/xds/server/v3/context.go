@@ -6,9 +6,9 @@ import (
 	envoy_log "github.com/envoyproxy/go-control-plane/pkg/log"
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 type XdsContext interface {

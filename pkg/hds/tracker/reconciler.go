@@ -5,8 +5,8 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
-	"github.com/kumahq/kuma/pkg/hds/cache"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v2/pkg/hds/cache"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 type reconciler struct {

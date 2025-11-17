@@ -3,16 +3,16 @@ package server
 import (
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	"github.com/kumahq/kuma/pkg/xds/cache/cla"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/secrets"
-	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/cla"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	v3 "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
 )
 
 var (

@@ -7,8 +7,8 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	cache_kds_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/cache"
 )
 
 // Reconciler re-computes configuration for a given node.

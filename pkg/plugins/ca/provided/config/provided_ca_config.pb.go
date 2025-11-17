@@ -7,7 +7,7 @@
 package config
 
 import (
-	v1alpha1 "github.com/kumahq/kuma/api/system/v1alpha1"
+	v1alpha1 "github.com/kumahq/kuma/v2/api/system/v1alpha1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

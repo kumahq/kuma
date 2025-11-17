@@ -4,10 +4,10 @@ import (
 	"context"
 	stdsync "sync"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")

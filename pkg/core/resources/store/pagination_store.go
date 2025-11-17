@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
 // The Pagination Store is handling only the pagination functionality in the List.

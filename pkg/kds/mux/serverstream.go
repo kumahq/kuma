@@ -6,7 +6,7 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 )
 
 type kdsServerStream struct {

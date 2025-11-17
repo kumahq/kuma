@@ -6,16 +6,16 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/permissions"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/permissions"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
 type Sublistener struct {

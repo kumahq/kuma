@@ -1,12 +1,12 @@
 package xds
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
 )
 
 var log = core.Log.WithName("MeshMetric")

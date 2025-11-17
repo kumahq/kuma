@@ -3,14 +3,14 @@ package runtime
 import (
 	"context"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
-	"github.com/kumahq/kuma/pkg/xds/auth/components"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
+	"github.com/kumahq/kuma/v2/pkg/xds/auth/components"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 type XDSRuntimeContext struct {

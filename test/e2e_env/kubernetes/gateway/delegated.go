@@ -6,14 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway/delegated"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/kic"
-	"github.com/kumahq/kuma/test/framework/deployments/observability"
-	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway/delegated"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/otelcollector"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func Delegated() {

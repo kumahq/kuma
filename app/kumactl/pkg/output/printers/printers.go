@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/json"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/json"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/yaml"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	rest_types "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 )
 
 type Table = table.Table

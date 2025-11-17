@@ -7,17 +7,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	"github.com/kumahq/kuma/pkg/intercp/catalog"
-	"github.com/kumahq/kuma/pkg/kds/service"
-	"github.com/kumahq/kuma/pkg/multitenant"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/v2/pkg/kds/service"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 var clientLog = core.Log.WithName("intercp").WithName("envoyadmin").WithName("client")

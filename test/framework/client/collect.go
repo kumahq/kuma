@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 	k8s_exec "k8s.io/client-go/util/exec"
 
-	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/utils"
-	"github.com/kumahq/kuma/test/server/types"
+	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v2/test/server/types"
 )
 
 type CollectResponsesOpts struct {

@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/yaml"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("printer", func() {

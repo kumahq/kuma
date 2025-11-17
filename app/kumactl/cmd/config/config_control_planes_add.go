@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/maps"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/plugins"
+	config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 type controlPlaneAddArgs struct {

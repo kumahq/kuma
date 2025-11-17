@@ -7,7 +7,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 )
 
 type ServerStream interface {

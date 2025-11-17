@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	"github.com/kumahq/kuma/pkg/test/matchers/golden"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers/golden"
 )
 
 func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {

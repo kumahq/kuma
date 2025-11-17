@@ -6,7 +6,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 const HealthCheckSpecifierType = "envoy.service.health.v3.HealthCheckSpecifier"

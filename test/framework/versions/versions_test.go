@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/framework/versions"
+	"github.com/kumahq/kuma/v2/test/framework/versions"
 )
 
 var _ = Describe("versions", func() {

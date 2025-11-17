@@ -5,8 +5,8 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
-	"github.com/kumahq/kuma/pkg/kds"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 )
 
 // We are using go-control-plane's server and cache for KDS exchange.

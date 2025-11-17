@@ -3,17 +3,17 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 )
 
 func generateFromService(

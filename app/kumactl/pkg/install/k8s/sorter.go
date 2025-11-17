@@ -4,7 +4,7 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/releaseutil"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/data"
 )
 
 func SortResourcesByKind(files []data.File, kindsToSkip ...string) ([]data.File, error) {

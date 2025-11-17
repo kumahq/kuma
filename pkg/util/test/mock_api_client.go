@@ -5,12 +5,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_pkg_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	"github.com/kumahq/kuma/pkg/api-server/types"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	kumactl_pkg_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	kumactl_resources "github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/v2/pkg/api-server/types"
+	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 type MockAPIServerClient struct {

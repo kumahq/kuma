@@ -6,9 +6,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/pkg/config"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/mads"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/mads"
 )
 
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {

@@ -8,7 +8,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 
-	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 // NOTE: We intentionally do not use the tag form like

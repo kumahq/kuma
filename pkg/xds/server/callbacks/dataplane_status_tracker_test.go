@@ -12,13 +12,13 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_runtime "github.com/kumahq/kuma/v2/pkg/test/runtime"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("DataplaneStatusTracker", func() {

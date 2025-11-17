@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	"github.com/kumahq/kuma/test/framework/universal_logs"
+	"github.com/kumahq/kuma/v2/test/framework/universal_logs"
 )
 
 func matchTempWithTimePrefix(suffix string) types.GomegaMatcher {

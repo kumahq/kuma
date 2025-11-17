@@ -6,10 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	install_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/install/context"
+	kumactl_data "github.com/kumahq/kuma/v2/app/kumactl/data"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/k8s"
 )
 
 type demoTemplateArgs struct {

@@ -13,10 +13,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/test/framework/ssh"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v2/test/framework/ssh"
+	"github.com/kumahq/kuma/v2/test/framework/universal_logs"
 )
 
 type AppMode string

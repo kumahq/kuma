@@ -3,11 +3,11 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/events"
-	k8s_runtime "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-	k8s_events "github.com/kumahq/kuma/pkg/plugins/resources/k8s/events"
+	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/events"
+	k8s_runtime "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
+	k8s_events "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/events"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}

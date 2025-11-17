@@ -3,8 +3,8 @@ package zone
 import (
 	"github.com/golang-jwt/jwt/v4"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
 )
 
 const (

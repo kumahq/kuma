@@ -6,16 +6,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	store_config "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens"
+	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Admin Token Bootstrap", func() {

@@ -3,7 +3,7 @@ package access
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 type NoopZoneTokenAccess struct{}

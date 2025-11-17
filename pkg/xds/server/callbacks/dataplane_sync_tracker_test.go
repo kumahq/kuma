@@ -10,11 +10,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/test"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
+	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("Sync", func() {

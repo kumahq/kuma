@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/util/test"
+	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/util/test"
 )
 
 var _ = Describe("kumactl completion", func() {

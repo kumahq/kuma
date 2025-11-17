@@ -3,7 +3,7 @@ package observability
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework"
 )
 
 type Observability interface {

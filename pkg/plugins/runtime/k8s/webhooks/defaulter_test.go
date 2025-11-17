@@ -12,12 +12,12 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Defaulter", func() {

@@ -8,14 +8,14 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 )
 
 var statusTrackerLog = core.Log.WithName("xds").WithName("status-tracker")

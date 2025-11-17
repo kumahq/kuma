@@ -16,14 +16,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	. "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
+	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
 func defaultBootstrapParams() BootstrapParams {

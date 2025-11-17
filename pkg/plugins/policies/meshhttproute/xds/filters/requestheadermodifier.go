@@ -6,8 +6,8 @@ import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
 
 type RequestHeaderModifierConfigurer struct {

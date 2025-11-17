@@ -7,16 +7,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/datasource"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("DataSource Loader", func() {

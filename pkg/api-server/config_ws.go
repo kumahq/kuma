@@ -3,10 +3,10 @@ package api_server
 import (
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/core/access"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	"github.com/kumahq/kuma/v2/pkg/core/access"
+	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 )
 
 func addConfigEndpoints(ws *restful.WebService, access access.ControlPlaneMetadataAccess, cfg config.Config) error {

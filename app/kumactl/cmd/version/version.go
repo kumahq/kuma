@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/api-server/types"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/pkg/api-server/types"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 func NewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

@@ -18,12 +18,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/app/cni/pkg/install"
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/v2/app/cni/pkg/install"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 const (

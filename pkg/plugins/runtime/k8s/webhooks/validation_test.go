@@ -16,13 +16,13 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 )
 
 var _ = Describe("Validating Webhook", func() {

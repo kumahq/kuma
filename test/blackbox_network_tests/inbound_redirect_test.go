@@ -8,12 +8,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
-	"github.com/kumahq/kuma/test/blackbox_network_tests"
-	"github.com/kumahq/kuma/test/framework/network/netns"
-	"github.com/kumahq/kuma/test/framework/network/socket"
-	"github.com/kumahq/kuma/test/framework/network/tcp"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/builder"
+	"github.com/kumahq/kuma/v2/test/blackbox_network_tests"
+	"github.com/kumahq/kuma/v2/test/framework/network/netns"
+	"github.com/kumahq/kuma/v2/test/framework/network/socket"
+	"github.com/kumahq/kuma/v2/test/framework/network/tcp"
 )
 
 var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {

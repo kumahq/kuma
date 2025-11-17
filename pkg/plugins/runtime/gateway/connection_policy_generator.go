@@ -3,11 +3,11 @@ package gateway
 import (
 	"sort"
 
-	"github.com/kumahq/kuma/pkg/core/policy"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/core/policy"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
 
 func PopulatePolicies(host GatewayHost, routes []route.Entry) []route.Entry {

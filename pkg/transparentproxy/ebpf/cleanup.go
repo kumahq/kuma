@@ -10,7 +10,7 @@ import (
 
 	"github.com/moby/sys/mountinfo"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 func buildOptionSet(rawOptions string) map[string]struct{} {

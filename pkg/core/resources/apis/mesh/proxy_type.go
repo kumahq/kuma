@@ -3,8 +3,8 @@ package mesh
 import (
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func ProxyTypeFromResourceType(t core_model.ResourceType) (mesh_proto.ProxyType, error) {

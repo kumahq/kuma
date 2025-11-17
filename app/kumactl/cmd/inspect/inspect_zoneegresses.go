@@ -6,13 +6,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func newInspectZoneEgressesCmd(pctx *cmd.RootContext) *cobra.Command {

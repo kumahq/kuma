@@ -16,9 +16,9 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	"github.com/kumahq/kuma/pkg/test"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/kds/mux"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 // This is a go antipattern but it's the simplest way to check we're not running send or recv from multiple goroutines.

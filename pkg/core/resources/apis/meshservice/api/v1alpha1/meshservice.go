@@ -2,7 +2,7 @@
 package v1alpha1
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
 type DataplaneTags map[string]string

@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"sigs.k8s.io/yaml"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func ResourceFromYaml(resYaml string) (proto.Message, error) {

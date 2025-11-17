@@ -4,7 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 
-	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
 )
 
 type pqListener struct {

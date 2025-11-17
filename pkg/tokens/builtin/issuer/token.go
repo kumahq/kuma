@@ -3,9 +3,9 @@ package issuer
 import (
 	"github.com/golang-jwt/jwt/v4"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/tokens"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/tokens"
 )
 
 func DataplaneTokenSigningKeyPrefix(mesh string) string {

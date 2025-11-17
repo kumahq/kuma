@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 type Resource struct {

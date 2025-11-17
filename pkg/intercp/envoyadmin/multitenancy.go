@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/v2/pkg/multitenant"
 )
 
 const TenantMetadataKey = "tenant_id"

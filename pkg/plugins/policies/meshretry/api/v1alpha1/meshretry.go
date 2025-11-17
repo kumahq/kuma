@@ -5,7 +5,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
 // MeshRetry

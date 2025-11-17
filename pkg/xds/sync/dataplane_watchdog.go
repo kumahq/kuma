@@ -7,15 +7,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	envoy_admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	util_tls "github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
+	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
+	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 type DataplaneWatchdogDependencies struct {

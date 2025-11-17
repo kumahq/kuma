@@ -1,8 +1,8 @@
 package builders
 
 import (
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
 type EndpointBuilder struct {

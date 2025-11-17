@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
 )
 
 var _ = Describe("Generate Public Key", func() {

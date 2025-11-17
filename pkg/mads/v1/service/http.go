@@ -10,10 +10,10 @@ import (
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/jsonpb"
 
-	"github.com/kumahq/kuma/pkg/core"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	rest_error_types "github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
+	mads_v1 "github.com/kumahq/kuma/v2/pkg/mads/v1"
 )
 
 const FetchMonitoringAssignmentsPath = "/v3/discovery:monitoringassignments"

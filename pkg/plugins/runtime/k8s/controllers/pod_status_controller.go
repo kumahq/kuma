@@ -15,12 +15,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
 // PodStatusReconciler tracks pods status changes and signals kuma-dp when it has to complete

@@ -8,9 +8,9 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 var allowedKinds = map[string]struct{}{

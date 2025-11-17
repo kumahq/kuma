@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 type DataplaneMetadataTracker struct {

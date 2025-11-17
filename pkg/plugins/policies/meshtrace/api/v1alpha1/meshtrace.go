@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
 // MeshTrace allows users to enable request tracing between services in the mesh

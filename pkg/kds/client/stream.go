@@ -8,13 +8,13 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	"github.com/kumahq/kuma/v2/pkg/kds/util"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 )
 
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.

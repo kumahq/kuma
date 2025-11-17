@@ -3,10 +3,10 @@ package mappers
 import (
 	"sort"
 
-	api_types "github.com/kumahq/kuma/api/openapi/types"
-	api_common "github.com/kumahq/kuma/api/openapi/types/common"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bool, federatedZone bool) api_types.ResourceTypeDescriptionList {

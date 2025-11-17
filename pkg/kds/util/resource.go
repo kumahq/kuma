@@ -8,12 +8,12 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	cache_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/cache"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceList, error) {

@@ -13,14 +13,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
-	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
+	"github.com/kumahq/kuma/v2/pkg/core/datasource"
+	"github.com/kumahq/kuma/v2/pkg/plugins/ca/provided"
+	provided_config "github.com/kumahq/kuma/v2/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("Provided CA", func() {

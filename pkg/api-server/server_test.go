@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/config/multizone"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	config_api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/config/multizone"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
 var _ = Describe("Resource", func() {

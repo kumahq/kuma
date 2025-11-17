@@ -3,8 +3,8 @@
 package apis
 
 import (
-	"github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
+	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{

@@ -17,11 +17,11 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/kumahq/kuma/pkg/config"
-	pg_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
-	util_files "github.com/kumahq/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/v2/pkg/config"
+	pg_config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
+	util_files "github.com/kumahq/kuma/v2/pkg/util/files"
 )
 
 type PostgresContainer struct {

@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy"
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy"
+	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
 type transparentProxyArgs struct {

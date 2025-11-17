@@ -4,9 +4,9 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
 )
 
 func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
