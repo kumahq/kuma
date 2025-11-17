@@ -1,8 +1,8 @@
 package k8s
 
 import (
-	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/releaseutil"
+	chartcommon "helm.sh/helm/v4/pkg/chart/common"
+	releaseutilv1 "helm.sh/helm/v4/pkg/release/v1/util"
 
 	"github.com/kumahq/kuma/v2/pkg/util/data"
 )
@@ -13,9 +13,9 @@ func SortResourcesByKind(files []data.File, kindsToSkip ...string) ([]data.File,
 		skippedKinds[k] = struct{}{}
 	}
 	singleFile := data.JoinYAML(files)
-	resources := releaseutil.SplitManifests(string(singleFile.Data))
+	resources := releaseutilv1.SplitManifests(string(singleFile.Data))
 
-	hooks, manifests, err := releaseutil.SortManifests(resources, chartutil.VersionSet{"v1", "v1beta1", "v1alpha1"}, releaseutil.InstallOrder)
+	hooks, manifests, err := releaseutilv1.SortManifests(resources, chartcommon.VersionSet{"v1", "v1beta1", "v1alpha1"}, releaseutilv1.InstallOrder)
 	if err != nil {
 		return nil, err
 	}

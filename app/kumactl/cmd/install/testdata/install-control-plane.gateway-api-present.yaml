@@ -11762,13 +11762,6 @@ spec:
         - name: tmp
           emptyDir: {}
 ---
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
- name: kuma
-spec:
- controllerName: "gateways.kuma.io/controller"
----
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -12107,3 +12100,10 @@ webhooks:
         resources:
           - pods
     sideEffects: None
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+ name: kuma
+spec:
+ controllerName: "gateways.kuma.io/controller"
