@@ -9,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/strvals"
+	chartcommon "helm.sh/helm/v4/pkg/chart/common"
+	"helm.sh/helm/v4/pkg/strvals"
 	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
@@ -48,14 +48,14 @@ func (cv *componentVersion) Type() string {
 
 // getVersionSet retrieves a set of available k8s API versions
 // This is inlined from https://github.com/helm/helm/blob/v3.8.1/pkg/action/action.go#L309
-func getVersionSet(client discovery.ServerResourcesInterface) (chartutil.VersionSet, error) {
+func getVersionSet(client discovery.ServerResourcesInterface) (chartcommon.VersionSet, error) {
 	groups, resources, err := client.ServerGroupsAndResources()
 	if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
-		return chartutil.DefaultVersionSet, errors.Wrap(err, "could not get apiVersions from Kubernetes")
+		return chartcommon.DefaultVersionSet, errors.Wrap(err, "could not get apiVersions from Kubernetes")
 	}
 
 	if len(groups) == 0 && len(resources) == 0 {
-		return chartutil.DefaultVersionSet, nil
+		return chartcommon.DefaultVersionSet, nil
 	}
 
 	versionMap := make(map[string]interface{})
@@ -87,12 +87,12 @@ func getVersionSet(client discovery.ServerResourcesInterface) (chartutil.Version
 		versions = append(versions, k)
 	}
 
-	return chartutil.VersionSet(versions), nil
+	return chartcommon.VersionSet(versions), nil
 }
 
 // getCapabilities builds a Capabilities from discovery information.
 // This is inlined from https://github.com/helm/helm/blob/v3.8.1/pkg/action/action.go#L239
-func getCapabilities(kubeConfig *rest.Config) (*chartutil.Capabilities, error) {
+func getCapabilities(kubeConfig *rest.Config) (*chartcommon.Capabilities, error) {
 	dc, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
 	if err != nil {
 		return nil, err
@@ -113,9 +113,9 @@ func getCapabilities(kubeConfig *rest.Config) (*chartutil.Capabilities, error) {
 		return nil, errors.Wrap(err, "could not get apiVersions from Kubernetes")
 	}
 
-	return &chartutil.Capabilities{
+	return &chartcommon.Capabilities{
 		APIVersions: apiVersions,
-		KubeVersion: chartutil.KubeVersion{
+		KubeVersion: chartcommon.KubeVersion{
 			Version: kubeVersion.GitVersion,
 			Major:   kubeVersion.Major,
 			Minor:   kubeVersion.Minor,
@@ -212,7 +212,7 @@ This command requires that the KUBECONFIG environment is set`,
 				}
 			}
 
-			capabilities := chartutil.DefaultCapabilities
+			capabilities := chartcommon.DefaultCapabilities
 			if !args.WithoutKubernetesConnection {
 				capabilities, err = getCapabilities(kubeClientConfig)
 				if err != nil {
