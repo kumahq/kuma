@@ -72,7 +72,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.46.0
 	golang.org/x/sync v0.18.0
-	golang.org/x/sys v0.37.0
+	golang.org/x/sys v0.38.0
 	golang.org/x/text v0.30.0
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
