@@ -15,7 +15,7 @@ env:
   # on the runner).
   CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
-  GOLANGCI_LINT_VERSION: "v2.6.0"
+  GOLANGCI_LINT_VERSION: "v2.6.1"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
@@ -91,7 +91,7 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"

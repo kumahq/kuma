@@ -136,16 +136,21 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
+			//nolint:staticcheck // SA1019 Backward compatibility: migrate deprecated ConfigDir to WorkDir
 			if cfg.DataplaneRuntime.WorkDir == "" && cfg.DataplaneRuntime.ConfigDir != "" {
 				runLog.Info("ConfigDir is deprecated, please use WorkDir instead")
+				//nolint:staticcheck // SA1019 Backward compatibility: migrate deprecated ConfigDir to WorkDir
 				cfg.DataplaneRuntime.WorkDir = cfg.DataplaneRuntime.ConfigDir
 			}
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
 			if cfg.DataplaneRuntime.SocketDir != "" {
 				runLog.Info("SocketDir is deprecated, please use WorkDir instead")
 			} else {
+				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
 				cfg.DataplaneRuntime.SocketDir = cfg.DataplaneRuntime.WorkDir
 			}
 
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
 			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" || cfg.DNS.ConfigDir == "" {
 				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
@@ -157,7 +162,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					cfg.DataplaneRuntime.WorkDir = tmpDir
 				}
 
+				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
 				if cfg.DataplaneRuntime.SocketDir == "" {
+					//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
 					cfg.DataplaneRuntime.SocketDir = tmpDir
 				}
 
@@ -261,6 +268,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
 			confFetcher := configfetcher.NewConfigFetcher(
+				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
@@ -332,6 +340,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
+				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
 				bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
 				cfg.Dataplane.ReadinessPort)
@@ -410,6 +419,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
+	//nolint:staticcheck // SA1019 Backward compatibility: preserve deprecated ConfigDir flag for migration
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.WorkDir, "work-dir", cfg.DataplaneRuntime.WorkDir, "Directory in which Kuma DP config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
@@ -493,6 +503,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
 		accesslogs.NewAccessLogStreamer(
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
 		cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
@@ -507,6 +518,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		kuma_version.Build.Version,
 	)
 	metricsServer := metrics.New(
+		//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		baseApplicationsToScrape,
 		tpEnabled,

@@ -290,7 +290,11 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	}
 
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
-		AllowedUsers:                 append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector"),
+		AllowedUsers: append(
+			rt.Config().Runtime.Kubernetes.AllowedUsers,
+			rt.Config().Runtime.Kubernetes.ServiceAccountName,
+			"system:serviceaccount:kube-system:generic-garbage-collector",
+		),
 		Mode:                         rt.Config().Mode,
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
 		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
@@ -406,7 +410,11 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
-		AllowedUsers:                 append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector"),
+		AllowedUsers: append(
+			rt.Config().Runtime.Kubernetes.AllowedUsers,
+			rt.Config().Runtime.Kubernetes.ServiceAccountName,
+			"system:serviceaccount:kube-system:generic-garbage-collector",
+		),
 		Mode:                         rt.Config().Mode,
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
 		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
