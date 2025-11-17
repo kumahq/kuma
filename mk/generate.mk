@@ -3,7 +3,7 @@ RESOURCE_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/resource-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
-GO_MODULE ?= github.com/kumahq/kuma
+GO_MODULE ?= github.com/kumahq/kuma/v2
 
 HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"
 HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"

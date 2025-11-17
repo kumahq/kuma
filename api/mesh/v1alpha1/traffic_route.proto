@@ -7,7 +7,7 @@ import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
 
 // TrafficRoute defines routing rules for the traffic in the mesh.
 message TrafficRoute {

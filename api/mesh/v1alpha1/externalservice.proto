@@ -7,7 +7,7 @@ import "api/system/v1alpha1/datasource.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
 
 // ExternalService defines configuration of the externally accessible service
 message ExternalService {
