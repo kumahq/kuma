@@ -190,7 +190,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred(), "failed to get workload '%s'", workloadK8sName)
 			g.Expect(workload.GetMeta().GetName()).To(Equal(workloadK8sName))
 			g.Expect(workload.GetMeta().GetMesh()).To(Equal(mesh))
-		}, "2m", "1s").Should(Succeed())
+		}).Should(Succeed())
 
 		// when delete the deployment
 		err = k8s.RunKubectlE(
@@ -202,11 +202,10 @@ spec:
 
 		// then verify Workload resource is deleted
 		Eventually(func(g Gomega) {
-			// verify Workload resource exists and has correct content
 			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
 			_, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
 			g.Expect(err).To(HaveOccurred(), "workload should be deleted")
 			g.Expect(err.Error()).To(ContainSubstring("No resources found in workloads mesh"))
-		}, "2m", "3s").Should(Succeed())
+		}).Should(Succeed())
 	})
 }

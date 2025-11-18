@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -18,7 +17,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	workload_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -62,11 +60,9 @@ var _ = Describe("WorkloadController", func() {
 				Build()
 
 			reconciler = &WorkloadReconciler{
-				Client:            kubeClient,
-				Log:               logr.Discard(),
-				Scheme:            k8sClientScheme,
-				EventRecorder:     kube_record.NewFakeRecorder(10),
-				ResourceConverter: k8s.NewSimpleConverter(),
+				Client: kubeClient,
+				Log:    logr.Discard(),
+				Scheme: k8sClientScheme,
 			}
 
 			key := kube_types.NamespacedName{
