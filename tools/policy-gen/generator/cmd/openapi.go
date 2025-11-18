@@ -37,17 +37,28 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			if pconfig.SkipRegistration {
 				return nil
 			}
-			crdPath := filepath.Join(rootArgs.pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
-			openApiOutPath := filepath.Join(filepath.Dir(policyPath), "rest.yaml")
-			if err := template.PlainFileTemplate(localArgs.openAPITemplate, openApiOutPath, pconfig); err != nil {
+
+			// Create temp directory for intermediate files
+			tmpDir, err := os.MkdirTemp("", "openapi-gen-*")
+			if err != nil {
 				return err
 			}
-			schemaOutPath := filepath.Join(filepath.Dir(policyPath), "schema.yaml")
-			if err := template.PlainFileTemplate(localArgs.jsonSchemaTemplate, schemaOutPath, pconfig); err != nil {
+			defer os.RemoveAll(tmpDir)
+
+			crdPath := filepath.Join(rootArgs.pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
+
+			// Generate temporary files
+			tmpRestPath := filepath.Join(tmpDir, "rest.yaml")
+			if err := template.PlainFileTemplate(localArgs.openAPITemplate, tmpRestPath, pconfig); err != nil {
+				return err
+			}
+			tmpSchemaPath := filepath.Join(tmpDir, "schema.yaml")
+			if err := template.PlainFileTemplate(localArgs.jsonSchemaTemplate, tmpSchemaPath, pconfig); err != nil {
 				return err
 			}
 
-			yqExec := exec.CommandContext(cmd.Context(), //nolint:gosec
+			// Enrich schema with CRD information
+			yqEnrichSchema := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
 				fmt.Sprintf(`.properties *= (
     load(%q)
@@ -60,10 +71,63 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
       ) * {"type": {"enum": [.spec.names.kind]}}
   )
   | (.properties | select(has("status")).status) |= . + {"readOnly": true}`, crdPath),
-				schemaOutPath,
+				tmpSchemaPath,
 			)
-			yqExec.Stderr = cmd.ErrOrStderr()
-			return yqExec.Run()
+			yqEnrichSchema.Stderr = cmd.ErrOrStderr()
+			if err := yqEnrichSchema.Run(); err != nil {
+				return err
+			}
+
+			// Merge schema.yaml into rest.yaml by replacing the $ref
+			yqMerge := exec.CommandContext(cmd.Context(), //nolint:gosec
+				localArgs.yqBin, "e", "-i",
+				fmt.Sprintf(`.components.schemas.%sItem = load(%q)`, pconfig.Name, tmpSchemaPath),
+				tmpRestPath,
+			)
+			yqMerge.Stderr = cmd.ErrOrStderr()
+			if err := yqMerge.Run(); err != nil {
+				return err
+			}
+
+			// Determine subfolder based on plugin directory
+			subfolder := "policies"
+			if strings.Contains(rootArgs.pluginDir, "/resources/apis/") {
+				subfolder = "resources"
+			} else if strings.Contains(rootArgs.pluginDir, "/proto/") {
+				subfolder = "protos"
+			}
+
+			// Determine output path
+			// Find the kuma root directory by walking up from pluginDir
+			kumaRoot := rootArgs.pluginDir
+			for {
+				if _, err := os.Stat(filepath.Join(kumaRoot, "go.mod")); err == nil {
+					break
+				}
+				parent := filepath.Dir(kumaRoot)
+				if parent == kumaRoot {
+					return fmt.Errorf("could not find kuma root directory")
+				}
+				kumaRoot = parent
+			}
+
+			outputDir := filepath.Join(kumaRoot, "api", "openapi", "generated", subfolder)
+			if err := os.MkdirAll(outputDir, 0o755); err != nil {
+				return err
+			}
+
+			finalOutputPath := filepath.Join(outputDir, pconfig.NameLower+".yaml")
+
+			// Copy merged file to final location
+			content, err := os.ReadFile(tmpRestPath)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(finalOutputPath, content, 0o644); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 

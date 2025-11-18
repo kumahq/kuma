@@ -14,7 +14,7 @@ GENERATE_OAS_PREREQUISITES ?=
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
-clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
+clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools clean/openapi-generated
 
 .PHONY: generate/protos
 generate/protos:
@@ -76,6 +76,10 @@ generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(poli
 
 .PHONY: clean/policies
 clean/policies: $(addprefix clean/policy/,$(policies))
+
+.PHONY: clean/openapi-generated
+clean/openapi-generated:
+	@rm -rf api/openapi/generated
 
 # deletes all files in policy directory except *.proto, validator.go and schema.yaml
 clean/policy/%:
