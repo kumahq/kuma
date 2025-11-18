@@ -5,18 +5,15 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -49,36 +46,52 @@ type WorkloadReconciler struct {
 }
 
 func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	log := r.Log.WithValues("dataplane", req.NamespacedName)
+	log := r.Log.WithValues("workload", req.NamespacedName)
 
-	// Fetch the Dataplane
-	dp := &mesh_k8s.Dataplane{}
-	if err := r.Get(ctx, req.NamespacedName, dp); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			// Dataplane deleted, check if we should cleanup Workload
-			log.V(1).Info("dataplane not found, checking for orphaned workloads")
-			return kube_ctrl.Result{}, r.cleanupOrphanedWorkloads(ctx, req.Namespace)
+	// Fetch the Workload
+	workload := &workload_k8s.Workload{}
+	if err := r.Get(ctx, req.NamespacedName, workload); err != nil {
+		if !kube_apierrs.IsNotFound(err) {
+			return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Workload %s", req.Name)
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Dataplane %s", req.Name)
+		// Workload doesn't exist, we may need to create it
+		workload = nil
 	}
 
-	// If Dataplane is being deleted, trigger cleanup instead of create/update
-	if !dp.GetDeletionTimestamp().IsZero() {
-		log.V(1).Info("dataplane is being deleted, checking for orphaned workloads")
-		return kube_ctrl.Result{}, r.cleanupOrphanedWorkloads(ctx, req.Namespace)
+	// List all Dataplanes in the namespace that reference this workload
+	dataplanes := &mesh_k8s.DataplaneList{}
+	if err := r.List(ctx, dataplanes, kube_client.InNamespace(req.Namespace)); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list Dataplanes")
 	}
 
-	// Extract workload label from Dataplane
-	workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]
-	if !ok || workloadName == "" {
-		log.V(1).Info("dataplane has no kuma.io/workload label, skipping")
+	// Find Dataplanes that reference this workload
+	var referencingDPs []mesh_k8s.Dataplane
+	var meshName string
+	for _, dp := range dataplanes.Items {
+		if workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]; ok && workloadName == req.Name {
+			referencingDPs = append(referencingDPs, dp)
+			if meshName == "" {
+				meshName = dp.Mesh
+			}
+		}
+	}
+
+	// If no Dataplanes reference this workload, delete it (if it exists and is managed by us)
+	if len(referencingDPs) == 0 {
+		if workload != nil {
+			// Only delete if managed by k8s-controller
+			if managedBy, ok := workload.Labels[mesh_proto.ManagedByLabel]; ok && managedBy == "k8s-controller" {
+				log.Info("deleting workload with no dataplane references")
+				if err := r.Delete(ctx, workload); err != nil && !kube_apierrs.IsNotFound(err) {
+					return kube_ctrl.Result{}, errors.Wrapf(err, "failed to delete Workload %s", req.Name)
+				}
+			}
+		}
 		return kube_ctrl.Result{}, nil
 	}
 
-	meshName := dp.Mesh
-
-	// Ensure Workload resource exists
-	if err := r.createOrUpdateWorkload(ctx, workloadName, meshName, dp.Namespace); err != nil {
+	// Create or update the Workload
+	if err := r.createOrUpdateWorkload(ctx, req.Name, meshName, req.Namespace); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -96,7 +109,7 @@ func (r *WorkloadReconciler) createOrUpdateWorkload(ctx context.Context, workloa
 	}
 
 	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, workload, func() error {
-		// Set mesh label
+		// Set labels
 		if workload.Labels == nil {
 			workload.Labels = map[string]string{}
 		}
@@ -125,89 +138,35 @@ func (r *WorkloadReconciler) createOrUpdateWorkload(ctx context.Context, workloa
 	return nil
 }
 
-func (r *WorkloadReconciler) cleanupOrphanedWorkloads(ctx context.Context, namespace string) error {
-	log := r.Log.WithValues("namespace", namespace)
-
-	// List all Workloads in the namespace
-	workloads := &workload_k8s.WorkloadList{}
-	if err := r.List(ctx, workloads, kube_client.InNamespace(namespace)); err != nil {
-		return errors.Wrap(err, "unable to list Workloads")
-	}
-
-	// List all Dataplanes in the namespace
-	dataplanes := &mesh_k8s.DataplaneList{}
-	if err := r.List(ctx, dataplanes, kube_client.InNamespace(namespace)); err != nil {
-		return errors.Wrap(err, "unable to list Dataplanes")
-	}
-
-	// Build a map of workload names that are still referenced
-	referencedWorkloads := make(map[string]map[string]bool) // mesh -> workload name -> true
-	for _, dp := range dataplanes.Items {
-		if workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]; ok && workloadName != "" {
-			if referencedWorkloads[dp.Mesh] == nil {
-				referencedWorkloads[dp.Mesh] = make(map[string]bool)
-			}
-			referencedWorkloads[dp.Mesh][workloadName] = true
-		}
-	}
-
-	// Delete Workloads that are no longer referenced
-	for _, workload := range workloads.Items {
-		workloadName := workload.Name
-		meshName := workload.GetMesh()
-
-		if referencedWorkloads[meshName] == nil || !referencedWorkloads[meshName][workloadName] {
-			log.Info("deleting orphaned workload", "workload", workloadName, "mesh", meshName)
-			if err := r.Delete(ctx, &workload); err != nil && !kube_apierrs.IsNotFound(err) {
-				return errors.Wrapf(err, "failed to delete orphaned Workload %s", workloadName)
-			}
-		}
-	}
-
-	return nil
-}
-
 func (r *WorkloadReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-workload-controller").
-		For(&mesh_k8s.Dataplane{}).
-		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToDataplanesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
-		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllDataplanesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).
+		For(&workload_k8s.Workload{}).
+		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToWorkloadMapper(r.Log))).
 		Complete(r)
 }
 
-func NamespaceToDataplanesMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
-	l = l.WithName("namespace-to-dataplanes-mapper")
+func DataplaneToWorkloadMapper(l logr.Logger) kube_handler.MapFunc {
+	l = l.WithName("dataplane-to-workload-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
-		dataplanes := &mesh_k8s.DataplaneList{}
-		if err := client.List(ctx, dataplanes, kube_client.InNamespace(obj.GetName())); err != nil {
-			l.WithValues("namespace", obj.GetName()).Error(err, "failed to fetch Dataplanes")
+		dp, ok := obj.(*mesh_k8s.Dataplane)
+		if !ok {
+			l.Error(nil, "unexpected object type", "type", obj.GetObjectKind())
 			return nil
 		}
-		var req []kube_reconcile.Request
-		for _, dp := range dataplanes.Items {
-			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: dp.Namespace, Name: dp.Name},
-			})
-		}
-		return req
-	}
-}
 
-func MeshToAllDataplanesMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
-	l = l.WithName("mesh-to-dataplanes-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
-		dataplanes := &mesh_k8s.DataplaneList{}
-		if err := client.List(ctx, dataplanes); err != nil {
-			l.WithValues("mesh", obj.GetName()).Error(err, "failed to fetch Dataplanes")
+		workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]
+		if !ok || workloadName == "" {
 			return nil
 		}
-		var req []kube_reconcile.Request
-		for _, dp := range dataplanes.Items {
-			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: dp.Namespace, Name: dp.Name},
-			})
+
+		return []kube_reconcile.Request{
+			{
+				NamespacedName: kube_types.NamespacedName{
+					Namespace: dp.Namespace,
+					Name:      workloadName,
+				},
+			},
 		}
-		return req
 	}
 }

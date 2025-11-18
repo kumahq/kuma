@@ -30,11 +30,13 @@ var _ = Describe("WorkloadController", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	type testCase struct {
-		inputFile  string
-		outputFile string
+		inputFile    string
+		outputFile   string
+		workloadName string
+		namespace    string
 	}
 
-	DescribeTable("should reconcile dataplane",
+	DescribeTable("should reconcile workload",
 		func(given testCase) {
 			// given
 			bytes, err := os.ReadFile(filepath.Join("testdata", "workload", given.inputFile))
@@ -68,8 +70,8 @@ var _ = Describe("WorkloadController", func() {
 			}
 
 			key := kube_types.NamespacedName{
-				Name:      "example",
-				Namespace: "demo",
+				Name:      given.workloadName,
+				Namespace: given.namespace,
 			}
 
 			// when
@@ -83,28 +85,40 @@ var _ = Describe("WorkloadController", func() {
 			Expect(yaml.Marshal(workloads)).To(MatchGoldenYAML("testdata", "workload", given.outputFile))
 		},
 		Entry("should create Workload when Dataplane with workload label exists", testCase{
-			inputFile:  "01.resources.yaml",
-			outputFile: "01.workload.yaml",
+			inputFile:    "01.resources.yaml",
+			outputFile:   "01.workload.yaml",
+			workloadName: "test-workload",
+			namespace:    "demo",
 		}),
 		Entry("should not create Workload when Dataplane has no workload label", testCase{
-			inputFile:  "02.resources.yaml",
-			outputFile: "02.workload.yaml",
+			inputFile:    "02.resources.yaml",
+			outputFile:   "02.workload.yaml",
+			workloadName: "nonexistent-workload",
+			namespace:    "demo",
 		}),
 		Entry("should keep Workload when multiple Dataplanes reference it", testCase{
-			inputFile:  "03.resources.yaml",
-			outputFile: "03.workload.yaml",
+			inputFile:    "03.resources.yaml",
+			outputFile:   "03.workload.yaml",
+			workloadName: "shared-workload",
+			namespace:    "demo",
 		}),
 		Entry("should delete Workload when no Dataplanes reference it", testCase{
-			inputFile:  "04.resources.yaml",
-			outputFile: "04.workload.yaml",
+			inputFile:    "04.resources.yaml",
+			outputFile:   "04.workload.yaml",
+			workloadName: "orphaned-workload",
+			namespace:    "demo",
 		}),
 		Entry("should create Workload in correct namespace and mesh", testCase{
-			inputFile:  "05.resources.yaml",
-			outputFile: "05.workload.yaml",
+			inputFile:    "05.resources.yaml",
+			outputFile:   "05.workload.yaml",
+			workloadName: "custom-workload",
+			namespace:    "demo",
 		}),
 		Entry("should not delete Workload when one Dataplane still references it", testCase{
-			inputFile:  "06.resources.yaml",
-			outputFile: "06.workload.yaml",
+			inputFile:    "06.resources.yaml",
+			outputFile:   "06.workload.yaml",
+			workloadName: "persistent-workload",
+			namespace:    "demo",
 		}),
 	)
 })

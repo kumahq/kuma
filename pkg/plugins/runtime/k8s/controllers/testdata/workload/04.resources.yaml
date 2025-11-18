@@ -12,4 +12,5 @@ metadata:
   namespace: demo
   labels:
     kuma.io/mesh: default
+    kuma.io/managed-by: k8s-controller
 spec: {}
