@@ -254,18 +254,6 @@ var _ = Describe("Mesh", func() {
                 - field: mtls.dpcert.rotation.expiration
                   message: has to be a valid format`,
 			}),
-			Entry("mtls backend with invalid type", testCase{
-				mesh: `
-                mtls:
-                  enabledBackend: ca-1
-                  backends:
-                  - name: ca-1
-                    type: bulitin`,
-				expected: `
-                violations:
-                - field: mtls.backends[0].type
-                  message: 'unknown backend type. Available backends: "builtin", "provided"'`,
-			}),
 			Entry("logging backend with empty name", testCase{
 				mesh: `
                 logging:

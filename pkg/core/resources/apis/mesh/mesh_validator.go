@@ -13,11 +13,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
-const (
-	CaBuiltinType  = "builtin"
-	CaProvidedType = "provided"
-)
-
 var AllowedMTLSBackends = 1
 
 func (m *MeshResource) Validate() error {
@@ -80,12 +75,6 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
 		}
 		usedNames[backend.Name] = true
-
-		switch backend.GetType() {
-		case CaBuiltinType, CaProvidedType:
-		default:
-			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q, %q", CaBuiltinType, CaProvidedType))
-		}
 
 		if backend.GetDpCert() != nil {
 			_, err := ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
