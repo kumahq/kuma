@@ -12,7 +12,7 @@ kind: ServiceAccount
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -22,7 +22,7 @@ kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -36,7 +36,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kuma-control-plane
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -194,7 +194,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kuma-control-plane-workloads
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -207,7 +207,7 @@ rules:
       - create
       - patch
   - apiGroups:
-    # required by MeshGateway
+      # required by MeshGateway
       - "apps"
     resources:
       - deployments
@@ -229,7 +229,7 @@ rules:
       - list
       - watch
   - apiGroups:
-    # required by MeshGateway
+      # required by MeshGateway
       - ""
     resources:
       - services
@@ -250,7 +250,7 @@ rules:
       - patch
       - update
   - apiGroups:
-    # Gateway API
+      # Gateway API
       - gateway.networking.k8s.io
     resources:
       - gateways
@@ -278,7 +278,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-control-plane
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -295,7 +295,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-control-plane-workloads
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -313,7 +313,7 @@ kind: Role
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -386,7 +386,7 @@ kind: RoleBinding
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -404,7 +404,7 @@ kind: Service
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -443,12 +443,12 @@ kind: Deployment
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-  annotations: 
-    
+  annotations:
+
 spec:
   replicas: 1
   minReadySeconds: 0
@@ -466,31 +466,31 @@ spec:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
         checksum/tls-secrets: 46b87f065b48494f2db8277fb1160ce02cc1ff5c72159594cb9445ed4574e9d0
-      labels: 
+      labels:
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
-      affinity: 
+      affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                  - 'kuma'
-                - key: app.kubernetes.io/instance
-                  operator: In
-                  values:
-                  - 'kuma'
-                - key: app
-                  operator: In
-                  values:
-                  - 'kuma-control-plane'
-              topologyKey: kubernetes.io/hostname
-            weight: 100
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - 'kuma'
+                    - key: app.kubernetes.io/instance
+                      operator: In
+                      values:
+                        - 'kuma'
+                    - key: app
+                      operator: In
+                      values:
+                        - 'kuma-control-plane'
+                topologyKey: kubernetes.io/hostname
+              weight: 100
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -621,42 +621,12 @@ spec:
         - name: tmp
           emptyDir: {}
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: kuma-tls-cert
-  namespace: kuma-system
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  dnsNames:
-    - kuma-control-plane.kuma-system.svc
-    - kuma-control-plane.kuma-system.svc.cluster.local
-  issuerRef:
-    kind: Issuer
-    name: kuma-selfsigned-issuer
-  secretName: kuma-tls-cert
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: kuma-selfsigned-issuer
-  namespace: kuma-system
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  selfSigned: {}
----
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -673,7 +643,7 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-          - kube-system
+            - kube-system
     clientConfig:
       service:
         namespace: kuma-system
@@ -733,7 +703,7 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-          - kube-system
+            - kube-system
     clientConfig:
       service:
         namespace: kuma-system
@@ -785,8 +755,8 @@ webhooks:
           - meshservices
           - meshtrusts
           - workloads
-  
-      
+
+
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
@@ -796,13 +766,13 @@ webhooks:
         - key: kuma.io/sidecar-injection
           operator: In
           values:
-          - enabled
-          - "true"
+            - enabled
+            - "true"
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-          - kube-system
-          - kuma-system
+            - kube-system
+            - kuma-system
     clientConfig:
       service:
         namespace: kuma-system
@@ -828,8 +798,8 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-          - kube-system
-          - kuma-system
+            - kube-system
+            - kuma-system
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
@@ -854,7 +824,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -871,7 +841,7 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-          - kube-system
+            - kube-system
     clientConfig:
       service:
         namespace: kuma-system
@@ -929,8 +899,8 @@ webhooks:
           - meshservices
           - meshtrusts
           - workloads
-    
-      
+
+
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -939,7 +909,7 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: In
           values:
-          - kuma-system
+            - kuma-system
     failurePolicy: Ignore
     clientConfig:
       service:
@@ -967,8 +937,8 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-          - kube-system
-          - kuma-system
+            - kube-system
+            - kuma-system
     failurePolicy: Fail
     clientConfig:
       service:
@@ -986,3 +956,33 @@ webhooks:
         resources:
           - pods
     sideEffects: None
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kuma-tls-cert
+  namespace: kuma-system
+  labels:
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  dnsNames:
+    - kuma-control-plane.kuma-system.svc
+    - kuma-control-plane.kuma-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: kuma-selfsigned-issuer
+  secretName: kuma-tls-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kuma-selfsigned-issuer
+  namespace: kuma-system
+  labels:
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  selfSigned: {}
