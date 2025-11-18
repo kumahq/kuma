@@ -99,5 +99,5 @@ var (
 	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
 	_ = Describe("ApplicationProbeProxy", appprobeproxy.ApplicationProbeProxy, Ordered)
 	_ = Describe("MeshIdentity Spire", meshidentity.Spire, Ordered)
-	_ = FDescribe("Workload", workload.Workload, Ordered)
+	_ = Describe("Workload", workload.Workload, Ordered)
 )
