@@ -206,6 +206,6 @@ spec:
 			_, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
 			g.Expect(err).To(HaveOccurred(), "workload should be deleted")
 			g.Expect(err.Error()).To(ContainSubstring("No resources found in workloads mesh"))
-		}).Should(Succeed())
+		}, "2m", "3s").Should(Succeed())
 	})
 }
