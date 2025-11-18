@@ -3,7 +3,6 @@ info:
   version: {{ .Package }}
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "{{ .Name }}"
 
 paths:
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:

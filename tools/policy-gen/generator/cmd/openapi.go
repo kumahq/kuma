@@ -89,36 +89,8 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return err
 			}
 
-			// Determine subfolder based on plugin directory
-			subfolder := "policies"
-			if strings.Contains(rootArgs.pluginDir, "/resources/apis/") {
-				subfolder = "resources"
-			} else if strings.Contains(rootArgs.pluginDir, "/proto/") {
-				subfolder = "protos"
-			}
-
-			// Determine output path
-			// Find the kuma root directory by walking up from pluginDir
-			kumaRoot := rootArgs.pluginDir
-			for {
-				if _, err := os.Stat(filepath.Join(kumaRoot, "go.mod")); err == nil {
-					break
-				}
-				parent := filepath.Dir(kumaRoot)
-				if parent == kumaRoot {
-					return fmt.Errorf("could not find kuma root directory")
-				}
-				kumaRoot = parent
-			}
-
-			outputDir := filepath.Join(kumaRoot, "api", "openapi", "generated", subfolder)
-			if err := os.MkdirAll(outputDir, 0o755); err != nil {
-				return err
-			}
-
-			finalOutputPath := filepath.Join(outputDir, pconfig.NameLower+".yaml")
-
-			// Copy merged file to final location
+			// Write the merged file back to the original location as rest.yaml
+			finalOutputPath := filepath.Join(filepath.Dir(policyPath), "rest.yaml")
 			content, err := os.ReadFile(tmpRestPath)
 			if err != nil {
 				return err
