@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	core "github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/certmanager"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/certmanager"
+	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
 func CertManagerCAInjection() {
@@ -41,7 +42,7 @@ func CertManagerCAInjection() {
 
 		// Deploy Kuma control plane with cert-manager enabled
 		err := NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(Kuma(config_core.Zone,
 				WithCtlOpts(map[string]string{
 					"--set": "controlPlane.tls.general.certManager.enabled=true",
 				}),
