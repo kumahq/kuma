@@ -7,11 +7,12 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/certmanager"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 func CertManagerCAInjection() {
@@ -51,7 +52,7 @@ func CertManagerCAInjection() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	FIt("should inject CA bundle into Kuma webhook configurations", func() {
+	It("should inject CA bundle into Kuma webhook configurations", func() {
 		kumaNamespace := Config.KumaNamespace
 
 		// Verify Certificate resource exists
@@ -125,4 +126,3 @@ func CertManagerCAInjection() {
 		}, "60s", "1s").Should(Succeed(), "CA bundle should be injected into mutating webhook by cert-manager")
 	})
 }
-
