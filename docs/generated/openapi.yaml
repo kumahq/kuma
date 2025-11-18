@@ -2388,128 +2388,128 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
-  /meshes/{mesh}/dataplanes/{name}:
-    get:
-      operationId: getDataplane
-      summary: Returns Dataplane entity
-      tags:
-        - Dataplane
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Dataplane
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putDataplane
-      summary: Creates or Updates Dataplane entity
-      tags:
-        - Dataplane
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Dataplane
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/schema'
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
-    delete:
-      operationId: deleteDataplane
-      summary: Deletes Dataplane entity
-      tags:
-        - Dataplane
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Dataplane
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/dataplanes:
     get:
       operationId: getDataplaneList
-      summary: Returns a list of Dataplane in the mesh.
-      tags:
-        - Dataplane
       parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
+        - description: offset in the list of entities
           example: 0
-        - in: query
-          name: size
-          description: the number of items per page
+          in: query
+          name: offset
           required: false
           schema:
             type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
             default: 100
             maximum: 1000
             minimum: 1
-        - in: query
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
           name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
           required: false
           schema:
-            type: object
             properties:
               key:
                 type: string
               value:
                 type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-        - in: path
+            type: object
+        - description: name of the mesh
+          in: path
           name: mesh
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the mesh
       responses:
         '200':
           $ref: '#/components/responses/DataplaneList'
+      summary: Returns a list of Dataplane in the mesh.
+      tags:
+        - Dataplane
+  /meshes/{mesh}/dataplanes/{name}:
+    delete:
+      operationId: deleteDataplane
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+        - description: name of the Dataplane
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Deletes Dataplane entity
+      tags:
+        - Dataplane
+    get:
+      operationId: getDataplane
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+        - description: name of the Dataplane
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns Dataplane entity
+      tags:
+        - Dataplane
+    put:
+      operationId: putDataplane
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+        - description: name of the Dataplane
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Dataplane entity
+      tags:
+        - Dataplane
   /meshes/{mesh}/dataplanes/{name}/_overview:
     get:
       operationId: getDataplaneOverview
@@ -2550,544 +2550,544 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{name}:
+  /meshes:
     get:
-      operationId: getMesh
-      summary: Returns Mesh entity
-      tags:
-        - Mesh
+      operationId: getMeshList
       parameters:
-        - in: path
-          name: name
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
           schema:
-            type: string
-          required: true
-          description: name of the Mesh
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
       responses:
         '200':
-          $ref: '#/components/responses/MeshItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putMesh
-      summary: Creates or Updates Mesh entity
+          $ref: '#/components/responses/MeshList'
+      summary: Returns a list of Mesh in the mesh.
       tags:
         - Mesh
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Mesh
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/schema'
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+  /meshes/{name}:
     delete:
       operationId: deleteMesh
-      summary: Deletes Mesh entity
-      tags:
-        - Mesh
       parameters:
-        - in: path
+        - description: name of the Mesh
+          in: path
           name: name
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the Mesh
       responses:
         '200':
           $ref: '#/components/responses/MeshDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /meshes:
-    get:
-      operationId: getMeshList
-      summary: Returns a list of Mesh in the mesh.
+      summary: Deletes Mesh entity
       tags:
         - Mesh
+    get:
+      operationId: getMesh
       parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
+        - description: name of the Mesh
+          in: path
+          name: name
+          required: true
           schema:
-            type: integer
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns Mesh entity
+      tags:
+        - Mesh
+    put:
+      operationId: putMesh
+      parameters:
+        - description: name of the Mesh
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Mesh entity
+      tags:
+        - Mesh
+  /meshes/{mesh}/meshgateways:
+    get:
+      operationId: getMeshGatewayList
+      parameters:
+        - description: offset in the list of entities
           example: 0
-        - in: query
-          name: size
-          description: the number of items per page
+          in: query
+          name: offset
           required: false
           schema:
             type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
             default: 100
             maximum: 1000
             minimum: 1
-        - in: query
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
           name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
           required: false
           schema:
-            type: object
             properties:
               key:
                 type: string
               value:
                 type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
+            type: object
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          $ref: '#/components/responses/MeshList'
+          $ref: '#/components/responses/MeshGatewayList'
+      summary: Returns a list of MeshGateway in the mesh.
+      tags:
+        - MeshGateway
   /meshes/{mesh}/meshgateways/{name}:
-    get:
-      operationId: getMeshGateway
-      summary: Returns MeshGateway entity
-      tags:
-        - MeshGateway
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshGateway
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putMeshGateway
-      summary: Creates or Updates MeshGateway entity
-      tags:
-        - MeshGateway
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshGateway
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/schema'
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteMeshGateway
-      summary: Deletes MeshGateway entity
-      tags:
-        - MeshGateway
       parameters:
-        - in: path
+        - description: name of the mesh
+          in: path
           name: mesh
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the mesh
-        - in: path
+        - description: name of the MeshGateway
+          in: path
           name: name
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the MeshGateway
       responses:
         '200':
           $ref: '#/components/responses/MeshGatewayDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /meshes/{mesh}/meshgateways:
-    get:
-      operationId: getMeshGatewayList
-      summary: Returns a list of MeshGateway in the mesh.
+      summary: Deletes MeshGateway entity
       tags:
         - MeshGateway
+    get:
+      operationId: getMeshGateway
       parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
           schema:
-            type: integer
+            type: string
+        - description: name of the MeshGateway
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns MeshGateway entity
+      tags:
+        - MeshGateway
+    put:
+      operationId: putMeshGateway
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+        - description: name of the MeshGateway
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshGatewayItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates MeshGateway entity
+      tags:
+        - MeshGateway
+  /meshes/{mesh}/secrets:
+    get:
+      operationId: getSecretList
+      parameters:
+        - description: offset in the list of entities
           example: 0
-        - in: query
-          name: size
-          description: the number of items per page
+          in: query
+          name: offset
           required: false
           schema:
             type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
             default: 100
             maximum: 1000
             minimum: 1
-        - in: query
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
           name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
           required: false
           schema:
-            type: object
             properties:
               key:
                 type: string
               value:
                 type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-        - in: path
+            type: object
+        - description: name of the mesh
+          in: path
           name: mesh
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the mesh
       responses:
         '200':
-          $ref: '#/components/responses/MeshGatewayList'
+          $ref: '#/components/responses/SecretList'
+      summary: Returns a list of Secret in the mesh.
+      tags:
+        - Secret
   /meshes/{mesh}/secrets/{name}:
-    get:
-      operationId: getSecret
-      summary: Returns Secret entity
-      tags:
-        - Secret
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Secret
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putSecret
-      summary: Creates or Updates Secret entity
-      tags:
-        - Secret
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Secret
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/schema'
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteSecret
-      summary: Deletes Secret entity
-      tags:
-        - Secret
       parameters:
-        - in: path
+        - description: name of the mesh
+          in: path
           name: mesh
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the mesh
-        - in: path
+        - description: name of the Secret
+          in: path
           name: name
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the Secret
       responses:
         '200':
           $ref: '#/components/responses/SecretDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /meshes/{mesh}/secrets:
-    get:
-      operationId: getSecretList
-      summary: Returns a list of Secret in the mesh.
+      summary: Deletes Secret entity
       tags:
         - Secret
+    get:
+      operationId: getSecret
       parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
           schema:
-            type: integer
+            type: string
+        - description: name of the Secret
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns Secret entity
+      tags:
+        - Secret
+    put:
+      operationId: putSecret
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+        - description: name of the Secret
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Secret entity
+      tags:
+        - Secret
+  /zoneegresses:
+    get:
+      operationId: getZoneEgressList
+      parameters:
+        - description: offset in the list of entities
           example: 0
-        - in: query
-          name: size
-          description: the number of items per page
+          in: query
+          name: offset
           required: false
           schema:
             type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
             default: 100
             maximum: 1000
             minimum: 1
-        - in: query
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
           name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
           required: false
           schema:
-            type: object
             properties:
               key:
                 type: string
               value:
                 type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
+            type: object
       responses:
         '200':
-          $ref: '#/components/responses/SecretList'
+          $ref: '#/components/responses/ZoneEgressList'
+      summary: Returns a list of ZoneEgress in the mesh.
+      tags:
+        - ZoneEgress
   /zoneegresses/{name}:
-    get:
-      operationId: getZoneEgress
-      summary: Returns ZoneEgress entity
-      tags:
-        - ZoneEgress
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneEgress
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putZoneEgress
-      summary: Creates or Updates ZoneEgress entity
-      tags:
-        - ZoneEgress
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneEgress
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/schema'
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteZoneEgress
-      summary: Deletes ZoneEgress entity
-      tags:
-        - ZoneEgress
       parameters:
-        - in: path
+        - description: name of the ZoneEgress
+          in: path
           name: name
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the ZoneEgress
       responses:
         '200':
           $ref: '#/components/responses/ZoneEgressDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /zoneegresses:
-    get:
-      operationId: getZoneEgressList
-      summary: Returns a list of ZoneEgress in the mesh.
+      summary: Deletes ZoneEgress entity
       tags:
         - ZoneEgress
+    get:
+      operationId: getZoneEgress
       parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
+        - description: name of the ZoneEgress
+          in: path
+          name: name
+          required: true
           schema:
-            type: integer
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns ZoneEgress entity
+      tags:
+        - ZoneEgress
+    put:
+      operationId: putZoneEgress
+      parameters:
+        - description: name of the ZoneEgress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneEgressItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates ZoneEgress entity
+      tags:
+        - ZoneEgress
+  /zoneingresses:
+    get:
+      operationId: getZoneIngressList
+      parameters:
+        - description: offset in the list of entities
           example: 0
-        - in: query
-          name: size
-          description: the number of items per page
+          in: query
+          name: offset
           required: false
           schema:
             type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
             default: 100
             maximum: 1000
             minimum: 1
-        - in: query
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
           name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
           required: false
           schema:
-            type: object
             properties:
               key:
                 type: string
               value:
                 type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
+            type: object
       responses:
         '200':
-          $ref: '#/components/responses/ZoneEgressList'
+          $ref: '#/components/responses/ZoneIngressList'
+      summary: Returns a list of ZoneIngress in the mesh.
+      tags:
+        - ZoneIngress
   /zoneingresses/{name}:
-    get:
-      operationId: getZoneIngress
-      summary: Returns ZoneIngress entity
-      tags:
-        - ZoneIngress
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneIngress
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putZoneIngress
-      summary: Creates or Updates ZoneIngress entity
-      tags:
-        - ZoneIngress
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneIngress
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/schema'
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
     delete:
       operationId: deleteZoneIngress
-      summary: Deletes ZoneIngress entity
-      tags:
-        - ZoneIngress
       parameters:
-        - in: path
+        - description: name of the ZoneIngress
+          in: path
           name: name
+          required: true
           schema:
             type: string
-          required: true
-          description: name of the ZoneIngress
       responses:
         '200':
           $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /zoneingresses:
-    get:
-      operationId: getZoneIngressList
-      summary: Returns a list of ZoneIngress in the mesh.
+      summary: Deletes ZoneIngress entity
       tags:
         - ZoneIngress
+    get:
+      operationId: getZoneIngress
       parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
+        - description: name of the ZoneIngress
+          in: path
+          name: name
+          required: true
           schema:
-            type: integer
-          example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
+            type: string
       responses:
         '200':
-          $ref: '#/components/responses/ZoneIngressList'
+          $ref: '#/components/responses/ZoneIngressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns ZoneIngress entity
+      tags:
+        - ZoneIngress
+    put:
+      operationId: putZoneIngress
+      parameters:
+        - description: name of the ZoneIngress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneIngressItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates ZoneIngress entity
+      tags:
+        - ZoneIngress
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
@@ -15124,125 +15124,6 @@ components:
           type: boolean
       type: object
     DataplaneItem:
-      $ref: '#/components/schemas/schema'
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/DataplaneItem'
-    PrometheusMetricsBackendConfig:
-      description: >-
-        PrometheusMetricsBackendConfig defines configuration of Prometheus
-        backend
-      properties:
-        aggregate:
-          description: >-
-            Map with the configuration of applications which metrics are going
-            to be
-
-            scrapped by kuma-dp.
-          items:
-            description: >-
-              PrometheusAggregateMetricsConfig defines endpoints that should be
-              scrapped by kuma-dp for prometheus metrics.
-            properties:
-              address:
-                description: >-
-                  Address on which a service expose HTTP endpoint with
-                  Prometheus metrics.
-                type: string
-              enabled:
-                description: >-
-                  If false then the application won't be scrapped. If nil, then
-                  it is treated
-
-                  as true and kuma-dp scrapes metrics from the service.
-                type: boolean
-              name:
-                description: Name which identify given configuration.
-                type: string
-              path:
-                description: >-
-                  Path on which a service expose HTTP endpoint with Prometheus
-                  metrics.
-                type: string
-              port:
-                description: >-
-                  Port on which a service expose HTTP endpoint with Prometheus
-                  metrics.
-                type: integer
-            type: object
-          type: array
-        envoy:
-          description: Configuration of Envoy's metrics.
-          properties:
-            filterRegex:
-              description: >-
-                FilterRegex value that is going to be passed to Envoy for
-                filtering
-
-                Envoy metrics.
-              type: string
-            usedOnly:
-              description: >-
-                If true then return metrics that Envoy has updated (counters
-                incremented
-
-                at least once, gauges changed at least once, and histograms
-                added to at
-
-                least once). If nil, then it is treated as false.
-              type: boolean
-          type: object
-        path:
-          description: >-
-            Path on which a dataplane should expose HTTP endpoint with
-            Prometheus
-
-            metrics.
-          type: string
-        port:
-          description: >-
-            Port on which a dataplane should expose HTTP endpoint with
-            Prometheus
-
-            metrics.
-          type: integer
-        skipMTLS:
-          description: >-
-            If true then endpoints for scraping metrics won't require mTLS even
-            if mTLS
-
-            is enabled in Mesh. If nil, then it is treated as false.
-          type: boolean
-        tags:
-          additionalProperties:
-            type: string
-          description: >-
-            Tags associated with an application this dataplane is deployed next
-            to,
-
-            e.g. service=web, version=1.0.
-
-            `service` tag is mandatory.
-          type: object
-        tls:
-          description: Configuration of TLS for prometheus listener.
-          properties:
-            mode:
-              description: >-
-                mode defines how configured is the TLS for Prometheus.
-
-                Supported values, delegated, disabled, activeMTLSBackend.
-                Default to
-
-                `activeMTLSBackend`.
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
-      type: object
-    schema:
       properties:
         labels:
           additionalProperties:
@@ -15252,18 +15133,15 @@ components:
           type: string
         metrics:
           description: >-
-            Configuration for metrics collected and exposed by dataplanes.
+            Configuration for metrics that should be collected and exposed by
+            the
+
+            data plane proxy.
 
 
-            Settings defined here become defaults for every dataplane in a given
-            Mesh.
+            Settings defined here will override their respective defaults
 
-            Additionally, it is also possible to further customize this
-            configuration
-
-            for each dataplane individually using Dataplane resource.
-
-            +optional
+            defined at a Mesh level.
           properties:
             conf:
               oneOf:
@@ -15277,52 +15155,68 @@ components:
             type:
               description: Type of the backend (Kuma ships with 'prometheus')
               type: string
-            backends:
-              description: List of available Metrics backends
-              items:
-                description: MetricsBackend defines metric backends
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: '#/components/schemas/PrometheusMetricsBackendConfig'
-                    type: object
-                  name:
-                    description: >-
-                      Name of the backend, can be then used in
-                      Mesh.metrics.enabledBackend
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'prometheus')
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
           type: object
         name:
           type: string
         networking:
           description: >-
-            Networking defines the address and port of the Ingress to listen on.
+            Networking describes inbound and outbound interfaces of the data
+            plane
 
-            Additionally publicly advertised address and port could be
-            specified.
+            proxy.
           properties:
             address:
-              description: Address on which inbound listener will be exposed
+              description: >-
+                IP on which the data plane proxy is accessible to the control
+                plane and
+
+                other data plane proxies in the same network. This can also be a
+
+                hostname, in which case the control plane will periodically
+                resolve it.
               type: string
             admin:
-              description: Admin contains configuration related to Envoy Admin API
+              description: >-
+                Admin describes configuration related to Envoy Admin API.
+
+                Due to security, all the Envoy Admin endpoints are exposed only
+                on
+
+                localhost. Additionally, Envoy will expose `/ready` endpoint on
+
+                `networking.address` for health checking systems to be able to
+                check the
+
+                state of Envoy. The rest of the endpoints exposed on
+                `networking.address`
+
+                are always protected by mTLS and only meant to be consumed
+                internally by
+
+                the control plane.
               properties:
                 port:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
               type: object
             advertisedAddress:
-              description: |-
-                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
-                accessible to other Kuma clusters.
+              description: >-
+                In some situations, a data plane proxy resides in a private
+                network (e.g.
+
+                Docker) and is not reachable via `address` to other data plane
+                proxies.
+
+                `advertisedAddress` is configured with a routable address for
+                such data
+
+                plane proxy so that other proxies in the mesh can connect to it
+                over
+
+                `advertisedAddress` and not via address.
+
+
+                Envoy still binds to the `address`, not `advertisedAddress`.
               type: string
             gateway:
               description: >-
@@ -15550,7 +15444,12 @@ components:
                 type: object
               type: array
             outbound:
-              description: Outbound settings
+              description: >-
+                Outbound describes a list of services consumed by the data plane
+                proxy.
+
+                For every defined Outbound, there is a corresponding Envoy
+                Listener.
               items:
                 description: Outbound describes a service consumed by the data plane proxy.
                 properties:
@@ -15627,11 +15526,7 @@ components:
                       better practice is to use TrafficRoute.
                     type: object
                 type: object
-              type: object
-              properties:
-                passthrough:
-                  description: Control the passthrough cluster
-                  type: boolean
+              type: array
             transparentProxying:
               description: >-
                 TransparentProxying describes the configuration for transparent
@@ -15722,18 +15617,6 @@ components:
                     redirected.
                   type: integer
               type: object
-            port:
-              description: >-
-                Port of the inbound interface that will forward requests to the
-                service.
-              type: integer
-            advertisedPort:
-              description: >-
-                AdvertisedPort defines port on which ZoneIngress is accessible
-                to other
-
-                Kuma clusters.
-              type: integer
           type: object
         probes:
           description: >-
@@ -15794,474 +15677,127 @@ components:
           type: object
         type:
           type: string
-        constraints:
-          description: Constraints that applies to the mesh and its entities
-          properties:
-            dataplaneProxy:
-              description: >-
-                DataplaneProxyMembership defines a set of requirements for data
-                plane
-
-                proxies to be a member of the mesh.
-              properties:
-                requirements:
-                  description: >-
-                    Requirements defines a set of requirements that data plane
-                    proxies must
-
-                    fulfill in order to join the mesh. A data plane proxy must
-                    fulfill at
-
-                    least one requirement in order to join the mesh. Empty list
-                    of allowed
-
-                    requirements means that any proxy that is not explicitly
-                    denied can join.
-                  items:
-                    description: >-
-                      Rules defines a set of rules for data plane proxies to be
-                      member of the mesh.
-                    properties:
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags defines set of required tags. You can specify '*'
-                          in value to
-
-                          require non empty value of tag
-                        type: object
-                    type: object
-                  type: array
-                restrictions:
-                  description: >-
-                    Restrictions defines a set of restrictions that data plane
-                    proxies cannot
-
-                    fulfill in order to join the mesh. A data plane proxy cannot
-                    fulfill any
-
-                    requirement in order to join the mesh.
-
-                    Restrictions takes precedence over requirements.
-                  items:
-                    description: >-
-                      Rules defines a set of rules for data plane proxies to be
-                      member of the mesh.
-                    properties:
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags defines set of required tags. You can specify '*'
-                          in value to
-
-                          require non empty value of tag
-                        type: object
-                    type: object
-                  type: array
-              type: object
-          type: object
-        logging:
-          description: |-
-            Logging settings.
-            +optional
-          properties:
-            backends:
-              description: List of available logging backends
-              items:
-                description: LoggingBackend defines logging backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: '#/components/schemas/FileLoggingBackendConfig'
-                      - $ref: '#/components/schemas/TcpLoggingBackendConfig'
-                    type: object
-                  format:
-                    description: >-
-                      Format of access logs. Placeholders available on
-
-                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                    type: string
-                  name:
-                    description: >-
-                      Name of the backend, can be then used in
-                      Mesh.logging.defaultBackend or in
-
-                      TrafficLogging
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
-          type: object
-        meshServices:
-          properties:
-            mode:
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
-        mtls:
-          description: |-
-            mTLS settings.
-            +optional
-          properties:
-            backends:
-              description: List of available Certificate Authority backends
-              items:
-                description: >-
-                  CertificateAuthorityBackend defines Certificate Authority
-                  backend
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: >-
-                          #/components/schemas/ProvidedCertificateAuthorityConfig
-                      - $ref: '#/components/schemas/BuiltinCertificateAuthorityConfig'
-                    type: object
-                  dpCert:
-                    description: Dataplane certificate settings
-                    properties:
-                      requestTimeout:
-                        description: >-
-                          Timeout on request to CA for DP certificate generation
-                          and retrieval
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                      rotation:
-                        description: Rotation settings
-                        properties:
-                          expiration:
-                            description: >-
-                              Time after which generated certificate for
-                              Dataplane will expire
-                            type: string
-                        type: object
-                    type: object
-                  mode:
-                    description: >-
-                      Mode defines the behaviour of inbound listeners with
-                      regard to traffic
-
-                      encryption
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  name:
-                    description: Name of the backend
-                    type: string
-                  rootChain:
-                    properties:
-                      requestTimeout:
-                        description: >-
-                          Timeout on request for to CA for root certificate
-                          chain.
-
-                          If not specified, defaults to 10s.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                    type: object
-                  type:
-                    description: >-
-                      Type of the backend. Has to be one of the loaded plugins
-                      (Kuma ships with
-
-                      builtin and provided)
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
-            skipValidation:
-              description: If enabled, skips CA validation.
-              type: boolean
-          type: object
-        routing:
-          description: Routing settings of the mesh
-          properties:
-            defaultForbidMeshExternalServiceAccess:
-              description: |-
-                If true, blocks traffic to MeshExternalServices.
-                Default: false
-              type: boolean
-            localityAwareLoadBalancing:
-              description: Enable the Locality Aware Load Balancing
-              type: boolean
-            zoneEgress:
-              description: >-
-                Enable routing traffic to services in other zone or external
-                services
-
-                through ZoneEgress. Default: false
-              type: boolean
-          type: object
-        skipCreatingInitialPolicies:
-          description: >-
-            List of policies to skip creating by default when the mesh is
-            created.
-
-            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip
-            all
-
-            policies.
-          items:
-            type: string
-          type: array
-        tracing:
-          description: |-
-            Tracing settings.
-            +optional
-          properties:
-            backends:
-              description: List of available tracing backends
-              items:
-                description: TracingBackend defines tracing backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: '#/components/schemas/DatadogTracingBackendConfig'
-                      - $ref: '#/components/schemas/ZipkinTracingBackendConfig'
-                    type: object
-                  name:
-                    description: >-
-                      Name of the backend, can be then used in
-                      Mesh.tracing.defaultBackend or in
-
-                      TrafficTrace
-                    type: string
-                  sampling:
-                    description: >-
-                      Percentage of traces that will be sent to the backend
-                      (range 0.0 - 100.0).
-
-                      Empty value defaults to 100.0%
-                    type: number
-                  type:
-                    description: Type of the backend (Kuma ships with 'zipkin')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
-          type: object
-        conf:
-          description: The desired configuration of the MeshGateway.
-          properties:
-            listeners:
-              description: >-
-                Listeners define logical endpoints that are bound on this
-                MeshGateway's
-
-                address(es).
-              items:
-                properties:
-                  crossMesh:
-                    description: >-
-                      CrossMesh enables traffic to flow to this listener only
-                      from other
-
-                      meshes.
-                    type: boolean
-                  hostname:
-                    description: >-
-                      Hostname specifies the virtual hostname to match for
-                      protocol types that
-
-                      define this concept. When unspecified, "", or `*`, all
-                      hostnames are
-
-                      matched. This field can be omitted for protocols that
-                      don't require
-
-                      hostname based matching.
-                    type: string
-                  port:
-                    description: |-
-                      Port is the network port. Multiple listeners may use the
-                      same port, subject to the Listener compatibility rules.
-                    type: integer
-                  protocol:
-                    description: >-
-                      Protocol specifies the network protocol this listener
-                      expects to receive.
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  resources:
-                    description: >-
-                      Resources is used to specify listener-specific resource
-                      settings.
-                    properties:
-                      connectionLimit:
-                        type: integer
-                    type: object
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags specifies a unique combination of tags that routes
-                      can use
-
-                      to match themselves to this listener.
-
-
-                      When matching routes to listeners, the control plane
-                      constructs a
-
-                      set of matching tags for each listener by forming the
-                      union of the
-
-                      gateway tags and the listener tags. A route will be
-                      attached to the
-
-                      listener if all of the route's tags are preset in the
-                      matching tags
-                    type: object
-                  tls:
-                    description: |-
-                      TLS is the TLS configuration for the Listener. This field
-                      is required if the Protocol field is "HTTPS" or "TLS" and
-                      ignored otherwise.
-                    properties:
-                      certificates:
-                        description: >-
-                          Certificates is an array of datasources that contain
-                          TLS
-
-                          certificates and private keys.  Each datasource must
-                          contain a
-
-                          sequence of PEM-encoded objects. The server
-                          certificate and private
-
-                          key are required, but additional certificates are
-                          allowed and will
-
-                          be added to the certificate chain.  The server
-                          certificate must
-
-                          be the first certificate in the datasource.
-
-
-                          When multiple certificate datasources are configured,
-                          they must have
-
-                          different key types. In practice, this means that one
-                          datasource
-
-                          should contain an RSA key and certificate, and the
-                          other an
-
-                          ECDSA key and certificate.
-                        items:
-                          oneOf:
-                            - $ref: '#/components/schemas/DataSource_File'
-                            - $ref: '#/components/schemas/DataSource_Inline'
-                            - $ref: '#/components/schemas/DataSource_InlineString'
-                            - $ref: '#/components/schemas/DataSource_Secret'
-                        type: array
-                      mode:
-                        description: >-
-                          Mode defines the TLS behavior for the TLS session
-                          initiated
-
-                          by the client.
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      options:
-                        description: >-
-                          Options should eventually configure how TLS is
-                          configured. This
-
-                          is where cipher suite and version configuration can be
-                          specified,
-
-                          client certificates enforced, and so on.
-                        properties: {}
-                        type: object
-                    type: object
-                type: object
-              type: array
-          type: object
-        selectors:
-          description: |-
-            Selectors is a list of selectors that are used to match builtin
-            gateway dataplanes that will receive this MeshGateway configuration.
-          items:
-            description: Selector defines structure for selecting tags for given dataplane
-            properties:
-              match:
-                additionalProperties:
-                  type: string
-                description: Tags to match, can be used for both source and destinations
-                type: object
-            type: object
-          type: array
-        tags:
-          additionalProperties:
-            type: string
-          description: >-
-            Tags is the set of tags common to all of the gateway's listeners.
-
-
-            This field must not include a `kuma.io/service` tag (the service is
-            always
-
-            defined on the dataplanes).
-          type: object
-        data:
-          description: Value of the secret
-          format: byte
-          type: string
-        zone:
-          description: >-
-            Zone field contains Zone name where ingress is serving, field will
-            be
-
-            automatically set by Global Kuma CP
-          type: string
-        availableServices:
-          description: |-
-            AvailableService contains tags that represent unique subset of
-            endpoints
-          items:
-            properties:
-              externalService:
-                description: instance of external service available from the zone
-                type: boolean
-              instances:
-                description: number of instances available for given tags
-                type: integer
-              mesh:
-                description: mesh of the instances available for given tags
-                type: string
-              tags:
-                additionalProperties:
-                  type: string
-                description: tags of the service
-                type: object
-            type: object
-          type: array
       required:
         - type
         - name
         - mesh
+      type: object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneItem'
+      description: Successful response
+    PrometheusMetricsBackendConfig:
+      description: >-
+        PrometheusMetricsBackendConfig defines configuration of Prometheus
+        backend
+      properties:
+        aggregate:
+          description: >-
+            Map with the configuration of applications which metrics are going
+            to be
+
+            scrapped by kuma-dp.
+          items:
+            description: >-
+              PrometheusAggregateMetricsConfig defines endpoints that should be
+              scrapped by kuma-dp for prometheus metrics.
+            properties:
+              address:
+                description: >-
+                  Address on which a service expose HTTP endpoint with
+                  Prometheus metrics.
+                type: string
+              enabled:
+                description: >-
+                  If false then the application won't be scrapped. If nil, then
+                  it is treated
+
+                  as true and kuma-dp scrapes metrics from the service.
+                type: boolean
+              name:
+                description: Name which identify given configuration.
+                type: string
+              path:
+                description: >-
+                  Path on which a service expose HTTP endpoint with Prometheus
+                  metrics.
+                type: string
+              port:
+                description: >-
+                  Port on which a service expose HTTP endpoint with Prometheus
+                  metrics.
+                type: integer
+            type: object
+          type: array
+        envoy:
+          description: Configuration of Envoy's metrics.
+          properties:
+            filterRegex:
+              description: >-
+                FilterRegex value that is going to be passed to Envoy for
+                filtering
+
+                Envoy metrics.
+              type: string
+            usedOnly:
+              description: >-
+                If true then return metrics that Envoy has updated (counters
+                incremented
+
+                at least once, gauges changed at least once, and histograms
+                added to at
+
+                least once). If nil, then it is treated as false.
+              type: boolean
+          type: object
+        path:
+          description: >-
+            Path on which a dataplane should expose HTTP endpoint with
+            Prometheus
+
+            metrics.
+          type: string
+        port:
+          description: >-
+            Port on which a dataplane should expose HTTP endpoint with
+            Prometheus
+
+            metrics.
+          type: integer
+        skipMTLS:
+          description: >-
+            If true then endpoints for scraping metrics won't require mTLS even
+            if mTLS
+
+            is enabled in Mesh. If nil, then it is treated as false.
+          type: boolean
+        tags:
+          additionalProperties:
+            type: string
+          description: >-
+            Tags associated with an application this dataplane is deployed next
+            to,
+
+            e.g. service=web, version=1.0.
+
+            `service` tag is mandatory.
+          type: object
+        tls:
+          description: Configuration of TLS for prometheus listener.
+          properties:
+            mode:
+              description: >-
+                mode defines how configured is the TLS for Prometheus.
+
+                Supported values, delegated, disabled, activeMTLSBackend.
+                Default to
+
+                `activeMTLSBackend`.
+              oneOf:
+                - type: string
+                - type: integer
+          type: object
       type: object
     DataplaneOverviewWithMeta:
       allOf:
@@ -17080,12 +16616,338 @@ components:
           type: string
       type: object
     MeshItem:
-      $ref: '#/components/schemas/schema'
-      description: Successful response
+      properties:
+        constraints:
+          description: Constraints that applies to the mesh and its entities
+          properties:
+            dataplaneProxy:
+              description: >-
+                DataplaneProxyMembership defines a set of requirements for data
+                plane
+
+                proxies to be a member of the mesh.
+              properties:
+                requirements:
+                  description: >-
+                    Requirements defines a set of requirements that data plane
+                    proxies must
+
+                    fulfill in order to join the mesh. A data plane proxy must
+                    fulfill at
+
+                    least one requirement in order to join the mesh. Empty list
+                    of allowed
+
+                    requirements means that any proxy that is not explicitly
+                    denied can join.
+                  items:
+                    description: >-
+                      Rules defines a set of rules for data plane proxies to be
+                      member of the mesh.
+                    properties:
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags defines set of required tags. You can specify '*'
+                          in value to
+
+                          require non empty value of tag
+                        type: object
+                    type: object
+                  type: array
+                restrictions:
+                  description: >-
+                    Restrictions defines a set of restrictions that data plane
+                    proxies cannot
+
+                    fulfill in order to join the mesh. A data plane proxy cannot
+                    fulfill any
+
+                    requirement in order to join the mesh.
+
+                    Restrictions takes precedence over requirements.
+                  items:
+                    description: >-
+                      Rules defines a set of rules for data plane proxies to be
+                      member of the mesh.
+                    properties:
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags defines set of required tags. You can specify '*'
+                          in value to
+
+                          require non empty value of tag
+                        type: object
+                    type: object
+                  type: array
+              type: object
+          type: object
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        logging:
+          description: |-
+            Logging settings.
+            +optional
+          properties:
+            backends:
+              description: List of available logging backends
+              items:
+                description: LoggingBackend defines logging backend available to mesh.
+                properties:
+                  conf:
+                    oneOf:
+                      - $ref: '#/components/schemas/FileLoggingBackendConfig'
+                      - $ref: '#/components/schemas/TcpLoggingBackendConfig'
+                    type: object
+                  format:
+                    description: >-
+                      Format of access logs. Placeholders available on
+
+                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                    type: string
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.logging.defaultBackend or in
+
+                      TrafficLogging
+                    type: string
+                  type:
+                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                    type: string
+                type: object
+              type: array
+            defaultBackend:
+              description: Name of the default backend
+              type: string
+          type: object
+        meshServices:
+          properties:
+            mode:
+              oneOf:
+                - type: string
+                - type: integer
+          type: object
+        metrics:
+          description: >-
+            Configuration for metrics collected and exposed by dataplanes.
+
+
+            Settings defined here become defaults for every dataplane in a given
+            Mesh.
+
+            Additionally, it is also possible to further customize this
+            configuration
+
+            for each dataplane individually using Dataplane resource.
+
+            +optional
+          properties:
+            backends:
+              description: List of available Metrics backends
+              items:
+                description: MetricsBackend defines metric backends
+                properties:
+                  conf:
+                    oneOf:
+                      - $ref: '#/components/schemas/PrometheusMetricsBackendConfig'
+                    type: object
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.metrics.enabledBackend
+                    type: string
+                  type:
+                    description: Type of the backend (Kuma ships with 'prometheus')
+                    type: string
+                type: object
+              type: array
+            enabledBackend:
+              description: Name of the enabled backend
+              type: string
+          type: object
+        mtls:
+          description: |-
+            mTLS settings.
+            +optional
+          properties:
+            backends:
+              description: List of available Certificate Authority backends
+              items:
+                description: >-
+                  CertificateAuthorityBackend defines Certificate Authority
+                  backend
+                properties:
+                  conf:
+                    oneOf:
+                      - $ref: >-
+                          #/components/schemas/ProvidedCertificateAuthorityConfig
+                      - $ref: '#/components/schemas/BuiltinCertificateAuthorityConfig'
+                    type: object
+                  dpCert:
+                    description: Dataplane certificate settings
+                    properties:
+                      requestTimeout:
+                        description: >-
+                          Timeout on request to CA for DP certificate generation
+                          and retrieval
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      rotation:
+                        description: Rotation settings
+                        properties:
+                          expiration:
+                            description: >-
+                              Time after which generated certificate for
+                              Dataplane will expire
+                            type: string
+                        type: object
+                    type: object
+                  mode:
+                    description: >-
+                      Mode defines the behaviour of inbound listeners with
+                      regard to traffic
+
+                      encryption
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  name:
+                    description: Name of the backend
+                    type: string
+                  rootChain:
+                    properties:
+                      requestTimeout:
+                        description: >-
+                          Timeout on request for to CA for root certificate
+                          chain.
+
+                          If not specified, defaults to 10s.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                    type: object
+                  type:
+                    description: >-
+                      Type of the backend. Has to be one of the loaded plugins
+                      (Kuma ships with
+
+                      builtin and provided)
+                    type: string
+                type: object
+              type: array
+            enabledBackend:
+              description: Name of the enabled backend
+              type: string
+            skipValidation:
+              description: If enabled, skips CA validation.
+              type: boolean
+          type: object
+        name:
+          type: string
+        networking:
+          description: Networking settings of the mesh
+          properties:
+            outbound:
+              description: Outbound settings
+              properties:
+                passthrough:
+                  description: Control the passthrough cluster
+                  type: boolean
+              type: object
+          type: object
+        routing:
+          description: Routing settings of the mesh
+          properties:
+            defaultForbidMeshExternalServiceAccess:
+              description: |-
+                If true, blocks traffic to MeshExternalServices.
+                Default: false
+              type: boolean
+            localityAwareLoadBalancing:
+              description: Enable the Locality Aware Load Balancing
+              type: boolean
+            zoneEgress:
+              description: >-
+                Enable routing traffic to services in other zone or external
+                services
+
+                through ZoneEgress. Default: false
+              type: boolean
+          type: object
+        skipCreatingInitialPolicies:
+          description: >-
+            List of policies to skip creating by default when the mesh is
+            created.
+
+            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip
+            all
+
+            policies.
+          items:
+            type: string
+          type: array
+        tracing:
+          description: |-
+            Tracing settings.
+            +optional
+          properties:
+            backends:
+              description: List of available tracing backends
+              items:
+                description: TracingBackend defines tracing backend available to mesh.
+                properties:
+                  conf:
+                    oneOf:
+                      - $ref: '#/components/schemas/DatadogTracingBackendConfig'
+                      - $ref: '#/components/schemas/ZipkinTracingBackendConfig'
+                    type: object
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.tracing.defaultBackend or in
+
+                      TrafficTrace
+                    type: string
+                  sampling:
+                    description: >-
+                      Percentage of traces that will be sent to the backend
+                      (range 0.0 - 100.0).
+
+                      Empty value defaults to 100.0%
+                    type: number
+                  type:
+                    description: Type of the backend (Kuma ships with 'zipkin')
+                    type: string
+                type: object
+              type: array
+            defaultBackend:
+              description: Name of the default backend
+              type: string
+          type: object
+        type:
+          type: string
+      required:
+        - type
+        - name
+      type: object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshItem'
+      description: Successful response
     TcpLoggingBackendConfig:
       description: TcpLoggingBackendConfig defines configuration for TCP based access logs
       properties:
@@ -17135,14 +16997,214 @@ components:
           type: string
       type: object
     MeshGatewayItem:
-      $ref: '#/components/schemas/schema'
-      description: Successful response
+      properties:
+        conf:
+          description: The desired configuration of the MeshGateway.
+          properties:
+            listeners:
+              description: >-
+                Listeners define logical endpoints that are bound on this
+                MeshGateway's
+
+                address(es).
+              items:
+                properties:
+                  crossMesh:
+                    description: >-
+                      CrossMesh enables traffic to flow to this listener only
+                      from other
+
+                      meshes.
+                    type: boolean
+                  hostname:
+                    description: >-
+                      Hostname specifies the virtual hostname to match for
+                      protocol types that
+
+                      define this concept. When unspecified, "", or `*`, all
+                      hostnames are
+
+                      matched. This field can be omitted for protocols that
+                      don't require
+
+                      hostname based matching.
+                    type: string
+                  port:
+                    description: |-
+                      Port is the network port. Multiple listeners may use the
+                      same port, subject to the Listener compatibility rules.
+                    type: integer
+                  protocol:
+                    description: >-
+                      Protocol specifies the network protocol this listener
+                      expects to receive.
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  resources:
+                    description: >-
+                      Resources is used to specify listener-specific resource
+                      settings.
+                    properties:
+                      connectionLimit:
+                        type: integer
+                    type: object
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: >-
+                      Tags specifies a unique combination of tags that routes
+                      can use
+
+                      to match themselves to this listener.
+
+
+                      When matching routes to listeners, the control plane
+                      constructs a
+
+                      set of matching tags for each listener by forming the
+                      union of the
+
+                      gateway tags and the listener tags. A route will be
+                      attached to the
+
+                      listener if all of the route's tags are preset in the
+                      matching tags
+                    type: object
+                  tls:
+                    description: |-
+                      TLS is the TLS configuration for the Listener. This field
+                      is required if the Protocol field is "HTTPS" or "TLS" and
+                      ignored otherwise.
+                    properties:
+                      certificates:
+                        description: >-
+                          Certificates is an array of datasources that contain
+                          TLS
+
+                          certificates and private keys.  Each datasource must
+                          contain a
+
+                          sequence of PEM-encoded objects. The server
+                          certificate and private
+
+                          key are required, but additional certificates are
+                          allowed and will
+
+                          be added to the certificate chain.  The server
+                          certificate must
+
+                          be the first certificate in the datasource.
+
+
+                          When multiple certificate datasources are configured,
+                          they must have
+
+                          different key types. In practice, this means that one
+                          datasource
+
+                          should contain an RSA key and certificate, and the
+                          other an
+
+                          ECDSA key and certificate.
+                        items:
+                          oneOf:
+                            - $ref: '#/components/schemas/DataSource_File'
+                            - $ref: '#/components/schemas/DataSource_Inline'
+                            - $ref: '#/components/schemas/DataSource_InlineString'
+                            - $ref: '#/components/schemas/DataSource_Secret'
+                        type: array
+                      mode:
+                        description: >-
+                          Mode defines the TLS behavior for the TLS session
+                          initiated
+
+                          by the client.
+                        oneOf:
+                          - type: string
+                          - type: integer
+                      options:
+                        description: >-
+                          Options should eventually configure how TLS is
+                          configured. This
+
+                          is where cipher suite and version configuration can be
+                          specified,
+
+                          client certificates enforced, and so on.
+                        properties: {}
+                        type: object
+                    type: object
+                type: object
+              type: array
+          type: object
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mesh:
+          type: string
+        name:
+          type: string
+        selectors:
+          description: |-
+            Selectors is a list of selectors that are used to match builtin
+            gateway dataplanes that will receive this MeshGateway configuration.
+          items:
+            description: Selector defines structure for selecting tags for given dataplane
+            properties:
+              match:
+                additionalProperties:
+                  type: string
+                description: Tags to match, can be used for both source and destinations
+                type: object
+            type: object
+          type: array
+        tags:
+          additionalProperties:
+            type: string
+          description: >-
+            Tags is the set of tags common to all of the gateway's listeners.
+
+
+            This field must not include a `kuma.io/service` tag (the service is
+            always
+
+            defined on the dataplanes).
+          type: object
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - mesh
+      type: object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/MeshGatewayItem'
+      description: Successful response
     SecretItem:
-      $ref: '#/components/schemas/schema'
+      properties:
+        data:
+          description: Value of the secret
+          format: byte
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mesh:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - mesh
+      type: object
     Zone:
       description: >-
         Zone defines the Zone configuration used at the Global Control Plane
@@ -17157,19 +17219,131 @@ components:
           type: boolean
       type: object
     ZoneEgressItem:
-      $ref: '#/components/schemas/schema'
-      description: Successful response
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+        networking:
+          description: Networking defines the address and port of the Egress to listen on.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            port:
+              description: >-
+                Port of the inbound interface that will forward requests to the
+                service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: |-
+            Zone field contains Zone name where egress is serving, field will be
+            automatically set by Global Kuma CP
+          type: string
+      required:
+        - type
+        - name
+      type: object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ZoneEgressItem'
-    ZoneIngressItem:
-      $ref: '#/components/schemas/schema'
       description: Successful response
+    ZoneIngressItem:
+      properties:
+        availableServices:
+          description: |-
+            AvailableService contains tags that represent unique subset of
+            endpoints
+          items:
+            properties:
+              externalService:
+                description: instance of external service available from the zone
+                type: boolean
+              instances:
+                description: number of instances available for given tags
+                type: integer
+              mesh:
+                description: mesh of the instances available for given tags
+                type: string
+              tags:
+                additionalProperties:
+                  type: string
+                description: tags of the service
+                type: object
+            type: object
+          type: array
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+        networking:
+          description: >-
+            Networking defines the address and port of the Ingress to listen on.
+
+            Additionally publicly advertised address and port could be
+            specified.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            advertisedAddress:
+              description: |-
+                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+                accessible to other Kuma clusters.
+              type: string
+            advertisedPort:
+              description: >-
+                AdvertisedPort defines port on which ZoneIngress is accessible
+                to other
+
+                Kuma clusters.
+              type: integer
+            port:
+              description: >-
+                Port of the inbound interface that will forward requests to the
+                service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: >-
+            Zone field contains Zone name where ingress is serving, field will
+            be
+
+            automatically set by Global Kuma CP
+          type: string
+      required:
+        - type
+        - name
+      type: object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ZoneIngressItem'
+      description: Successful response
     HostnameGeneratorItem:
       type: object
       required:
@@ -19383,39 +19557,12 @@ components:
         application/json:
           schema:
             type: object
-    DataplaneItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/schema'
-    DataplaneList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/schema'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
     DataplaneCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: >
                   warnings is a list of warning messages to return to the
                   requesting Kuma API clients.
@@ -19424,12 +19571,39 @@ components:
                   request should correct or be aware of.
                 items:
                   type: string
-    DataplaneDeleteSuccessResponse:
+                readOnly: true
+                type: array
+            type: object
       description: Successful response
+    DataplaneDeleteSuccessResponse:
       content:
         application/json:
           schema:
             type: object
+      description: Successful response
+    DataplaneItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneItem'
+      description: Successful response
+    DataplaneList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/DataplaneItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     GetDataplaneOverviewResponse:
       description: A response containing the overview of a dataplane.
       content:
@@ -19452,39 +19626,12 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/DataplaneOverviewWithMeta'
-    MeshItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/schema'
-    MeshList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/schema'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
     MeshCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: >
                   warnings is a list of warning messages to return to the
                   requesting Kuma API clients.
@@ -19493,45 +19640,45 @@ components:
                   request should correct or be aware of.
                 items:
                   type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
     MeshDeleteSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
             type: object
-    MeshGatewayItem:
       description: Successful response
+    MeshItem:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schema'
-    MeshGatewayList:
-      description: List
+            $ref: '#/components/schemas/MeshItem'
+      description: Successful response
+    MeshList:
       content:
         application/json:
           schema:
-            type: object
             properties:
               items:
-                type: array
                 items:
-                  $ref: '#/components/schemas/schema'
-              total:
-                type: number
-                description: The total number of entities
+                  $ref: '#/components/schemas/MeshItem'
+                type: array
               next:
-                type: string
                 description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     MeshGatewayCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: >
                   warnings is a list of warning messages to return to the
                   requesting Kuma API clients.
@@ -19540,45 +19687,45 @@ components:
                   request should correct or be aware of.
                 items:
                   type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
     MeshGatewayDeleteSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
             type: object
-    SecretItem:
       description: Successful response
+    MeshGatewayItem:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schema'
-    SecretList:
-      description: List
+            $ref: '#/components/schemas/MeshGatewayItem'
+      description: Successful response
+    MeshGatewayList:
       content:
         application/json:
           schema:
-            type: object
             properties:
               items:
-                type: array
                 items:
-                  $ref: '#/components/schemas/schema'
-              total:
-                type: number
-                description: The total number of entities
+                  $ref: '#/components/schemas/MeshGatewayItem'
+                type: array
               next:
-                type: string
                 description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     SecretCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: >
                   warnings is a list of warning messages to return to the
                   requesting Kuma API clients.
@@ -19587,45 +19734,45 @@ components:
                   request should correct or be aware of.
                 items:
                   type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
     SecretDeleteSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
             type: object
-    ZoneEgressItem:
       description: Successful response
+    SecretItem:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schema'
-    ZoneEgressList:
-      description: List
+            $ref: '#/components/schemas/SecretItem'
+      description: Successful response
+    SecretList:
       content:
         application/json:
           schema:
-            type: object
             properties:
               items:
-                type: array
                 items:
-                  $ref: '#/components/schemas/schema'
-              total:
-                type: number
-                description: The total number of entities
+                  $ref: '#/components/schemas/SecretItem'
+                type: array
               next:
-                type: string
                 description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     ZoneEgressCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: >
                   warnings is a list of warning messages to return to the
                   requesting Kuma API clients.
@@ -19634,45 +19781,45 @@ components:
                   request should correct or be aware of.
                 items:
                   type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
     ZoneEgressDeleteSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
             type: object
-    ZoneIngressItem:
       description: Successful response
+    ZoneEgressItem:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/schema'
-    ZoneIngressList:
-      description: List
+            $ref: '#/components/schemas/ZoneEgressItem'
+      description: Successful response
+    ZoneEgressList:
       content:
         application/json:
           schema:
-            type: object
             properties:
               items:
-                type: array
                 items:
-                  $ref: '#/components/schemas/schema'
-              total:
-                type: number
-                description: The total number of entities
+                  $ref: '#/components/schemas/ZoneEgressItem'
+                type: array
               next:
-                type: string
                 description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     ZoneIngressCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: >
                   warnings is a list of warning messages to return to the
                   requesting Kuma API clients.
@@ -19681,12 +19828,39 @@ components:
                   request should correct or be aware of.
                 items:
                   type: string
-    ZoneIngressDeleteSuccessResponse:
+                readOnly: true
+                type: array
+            type: object
       description: Successful response
+    ZoneIngressDeleteSuccessResponse:
       content:
         application/json:
           schema:
             type: object
+      description: Successful response
+    ZoneIngressItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneIngressItem'
+      description: Successful response
+    ZoneIngressList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneIngressItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     HostnameGeneratorItem:
       description: Successful response
       content:
