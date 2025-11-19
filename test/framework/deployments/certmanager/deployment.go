@@ -22,7 +22,7 @@ type deployOptionsFunc func(*deployOptions)
 func newDeployOpt(fs ...deployOptionsFunc) *deployOptions {
 	rv := &deployOptions{
 		namespace: "cert-manager",
-		version:   "v1.13.0",
+		version:   "v1.16.0",
 	}
 	for _, f := range fs {
 		f(rv)

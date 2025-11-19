@@ -3,6 +3,7 @@ package certmanager
 import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/test/framework"
@@ -41,17 +42,15 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	// Wait for cert-manager pods to be ready
-	err = t.isPodReady(cluster, "app.kubernetes.io/name=cert-manager")
-	if err != nil {
-		return err
+	podSelectors := []string{
+		"app.kubernetes.io/name=cert-manager",
+		"app.kubernetes.io/name=cainjector",
+		"app.kubernetes.io/name=webhook",
 	}
-	err = t.isPodReady(cluster, "app.kubernetes.io/name=cainjector")
-	if err != nil {
-		return err
-	}
-	err = t.isPodReady(cluster, "app.kubernetes.io/name=webhook")
-	if err != nil {
-		return err
+	for _, selector := range podSelectors {
+		if err := t.isPodReady(cluster, selector); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -67,7 +66,9 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
 	if err != nil {
-		return err
+		return errors.Wrapf(err,
+			"cert-manager pod with selector %q in namespace %q failed to become ready",
+			selector, t.namespace)
 	}
 	return nil
 }

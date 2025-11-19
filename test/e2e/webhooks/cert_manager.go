@@ -1,6 +1,7 @@
 package webhooks
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -55,25 +56,29 @@ func CertManagerCAInjection() {
 	It("should inject CA bundle into Kuma webhook configurations", func() {
 		kumaNamespace := Config.KumaNamespace
 
-		// Verify Certificate resource exists
+		// Verify Certificate resource exists and is Ready
 		Eventually(func(g Gomega) {
-			_, err := k8s.RunKubectlAndGetOutputE(
+			output, err := k8s.RunKubectlAndGetOutputE(
 				cluster.GetTesting(),
 				cluster.GetKubectlOptions(kumaNamespace),
 				"get", "certificate", "kuma-tls-cert",
+				"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "60s", "1s").Should(Succeed(), "Certificate resource should exist")
+			g.Expect(output).To(Equal("True"))
+		}, "60s", "1s").Should(Succeed(), "Certificate resource should exist and be Ready")
 
-		// Verify Issuer resource exists
+		// Verify Issuer resource exists and is Ready
 		Eventually(func(g Gomega) {
-			_, err := k8s.RunKubectlAndGetOutputE(
+			output, err := k8s.RunKubectlAndGetOutputE(
 				cluster.GetTesting(),
 				cluster.GetKubectlOptions(kumaNamespace),
 				"get", "issuer", "kuma-selfsigned-issuer",
+				"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "60s", "1s").Should(Succeed(), "Issuer resource should exist")
+			g.Expect(output).To(Equal("True"))
+		}, "60s", "1s").Should(Succeed(), "Issuer resource should exist and be Ready")
 
 		// Verify cert-manager annotation on validating webhook configuration
 		Eventually(func(g Gomega) {
@@ -108,8 +113,14 @@ func CertManagerCAInjection() {
 				"-o", "jsonpath={.webhooks[0].clientConfig.caBundle}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			// CA bundle should be non-empty base64-encoded certificate
-			g.Expect(len(output)).To(BeNumerically(">", 100))
+
+			// Verify it's valid base64
+			decoded, err := base64.StdEncoding.DecodeString(output)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			// Verify it contains PEM certificate
+			g.Expect(string(decoded)).To(ContainSubstring("BEGIN CERTIFICATE"))
+			g.Expect(len(decoded)).To(BeNumerically(">", 100))
 		}, "60s", "1s").Should(Succeed(), "CA bundle should be injected into validating webhook by cert-manager")
 
 		// Verify CA bundle is injected into mutating webhook configuration
@@ -121,8 +132,44 @@ func CertManagerCAInjection() {
 				"-o", "jsonpath={.webhooks[0].clientConfig.caBundle}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			// CA bundle should be non-empty base64-encoded certificate
-			g.Expect(len(output)).To(BeNumerically(">", 100))
+
+			// Verify it's valid base64
+			decoded, err := base64.StdEncoding.DecodeString(output)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			// Verify it contains PEM certificate
+			g.Expect(string(decoded)).To(ContainSubstring("BEGIN CERTIFICATE"))
+			g.Expect(len(decoded)).To(BeNumerically(">", 100))
 		}, "60s", "1s").Should(Succeed(), "CA bundle should be injected into mutating webhook by cert-manager")
+	})
+
+	It("should successfully validate resources using the webhook", func() {
+		// Test that webhooks actually work by creating a Mesh resource
+		meshYaml := `
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: test-mesh
+spec:
+  mtls:
+    enabledBackend: ca-1
+    backends:
+    - name: ca-1
+      type: builtin
+`
+		err := k8s.KubectlApplyFromStringE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(Config.KumaNamespace),
+			meshYaml,
+		)
+		Expect(err).ToNot(HaveOccurred(), "Webhooks should successfully validate Mesh resource")
+
+		// Clean up the test mesh
+		err = k8s.KubectlDeleteFromStringE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(Config.KumaNamespace),
+			meshYaml,
+		)
+		Expect(err).ToNot(HaveOccurred())
 	})
 }
