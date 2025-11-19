@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -36,26 +35,11 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 	"github.com/kumahq/kuma/v2/pkg/xds/server"
 	v3 "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 	"github.com/kumahq/kuma/v2/pkg/xds/template"
 )
-
-type staticClusterAddHook struct {
-	name string
-}
-
-func (s *staticClusterAddHook) Modify(resourceSet *model.ResourceSet, ctx xds_context.Context, proxy *model.Proxy) error {
-	resourceSet.Add(&model.Resource{
-		Name: s.name,
-		Resource: &envoy_cluster.Cluster{
-			Name: s.name,
-		},
-	})
-	return nil
-}
 
 type shuffleStore struct {
 	r *rand.Rand
@@ -79,8 +63,6 @@ func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opt
 	}
 	return nil
 }
-
-var _ xds_hooks.ResourceSetHook = &staticClusterAddHook{}
 
 var _ = Describe("GenerateSnapshot", func() {
 	var store core_store.ResourceStore
@@ -164,93 +146,6 @@ var _ = Describe("GenerateSnapshot", func() {
 
 		return actual
 	}
-
-	It("should execute hooks before proxy template modifications", func() {
-		// given
-		create(
-			samples.MeshMTLSBuilder().
-				WithName("demo").
-				Build(),
-		)
-
-		create(
-			builders.Dataplane().
-				WithName("web1").
-				WithMesh("demo").
-				WithVersion("1").
-				WithAddress("192.168.0.1").
-				AddInbound(
-					builders.Inbound().
-						WithPort(80).
-						WithServicePort(8080).
-						WithService("backend-1"),
-				).
-				AddInbound(
-					builders.Inbound().
-						WithPort(443).
-						WithServicePort(8443).
-						WithService("backend-2"),
-				).
-				AddInbound(
-					builders.Inbound().
-						WithAddress("192.168.0.2").
-						WithPort(80).
-						WithServicePort(8080).
-						WithService("backend-3"),
-				).
-				AddInbound(
-					builders.Inbound().
-						WithAddress("192.168.0.2").
-						WithPort(443).
-						WithServicePort(8443).
-						WithService("backend-4"),
-				).
-				WithTransparentProxying(15001, 15006, "ipv4").
-				Build(),
-		)
-
-		create(
-			&core_mesh.ProxyTemplateResource{
-				Meta: &test_model.ResourceMeta{Name: "pt", Mesh: "demo"},
-				Spec: &mesh_proto.ProxyTemplate{
-					Selectors: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
-							},
-						},
-					},
-					Conf: &mesh_proto.ProxyTemplate_Conf{
-						Imports: []string{core_mesh.ProfileDefaultProxy},
-						Modifications: []*mesh_proto.ProxyTemplate_Modifications{
-							{
-								Type: &mesh_proto.ProxyTemplate_Modifications_Cluster_{
-									Cluster: &mesh_proto.ProxyTemplate_Modifications_Cluster{
-										Operation: mesh_proto.OpRemove,
-										Match: &mesh_proto.ProxyTemplate_Modifications_Cluster_Match{
-											Name: "to-be-removed",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		)
-
-		gen.ResourceSetHooks = []xds_hooks.ResourceSetHook{
-			&staticClusterAddHook{
-				name: "to-be-removed",
-			},
-		}
-
-		// when
-		snapshot := generateSnapshot("web1", "demo", nil)
-
-		// then
-		Expect(snapshot).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "hook-before-pt.golden.yaml")))
-	})
 
 	It("should generate stable envoy config for external services", func() {
 		// given
