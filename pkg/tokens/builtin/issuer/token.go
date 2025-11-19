@@ -8,17 +8,19 @@ import (
 )
 
 type DataplaneIdentity struct {
-	Name string
-	Mesh string
-	Tags mesh_proto.MultiValueTagSet
-	Type mesh_proto.ProxyType
+	Name     string
+	Mesh     string
+	Tags     mesh_proto.MultiValueTagSet
+	Type     mesh_proto.ProxyType
+	Workload string
 }
 
 type DataplaneClaims struct {
-	Name string
-	Mesh string
-	Tags map[string][]string
-	Type string
+	Name     string
+	Mesh     string
+	Tags     map[string][]string
+	Type     string
+	Workload string
 	jwt.RegisteredClaims
 }
 

@@ -20,6 +20,7 @@ type generateDataplaneTokenContext struct {
 		name           string
 		proxyType      string
 		tags           map[string]string
+		workload       string
 		validFor       time.Duration
 		kid            string
 		signingKeyPath string
@@ -44,6 +45,9 @@ $ kumactl generate dataplane-token --type ingress --valid-for 24h
 
 Generate token bound by tag
 $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api --valid-for 24h
+
+Generate token bound by workload
+$ kumactl generate dataplane-token --mesh demo --workload backend --valid-for 24h
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -68,10 +72,11 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 					return tokens.NewTokenIssuer(tokens.NewFileSigningKeyManager(ctx.args.signingKeyPath, ctx.args.kid))
 				})
 				token, err = dpTokenIssuer.Generate(cmd.Context(), issuer.DataplaneIdentity{
-					Name: name,
-					Mesh: pctx.CurrentMesh(),
-					Tags: mesh_proto.MultiValueTagSetFrom(tags),
-					Type: mesh_proto.ProxyType(ctx.args.proxyType),
+					Name:     name,
+					Mesh:     pctx.CurrentMesh(),
+					Tags:     mesh_proto.MultiValueTagSetFrom(tags),
+					Type:     mesh_proto.ProxyType(ctx.args.proxyType),
+					Workload: ctx.args.workload,
 				}, ctx.args.validFor)
 				if err != nil {
 					return err
@@ -80,7 +85,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 				if ctx.args.kid != "" {
 					return errors.New("--kid cannot be used when --signing-key-path is used")
 				}
-				token, err = client.Generate(name, pctx.CurrentMesh(), tags, ctx.args.proxyType, ctx.args.validFor)
+				token, err = client.Generate(name, pctx.CurrentMesh(), tags, ctx.args.proxyType, ctx.args.workload, ctx.args.validFor)
 				if err != nil {
 					return errors.Wrap(err, "failed to generate a dataplane token")
 				}
@@ -96,6 +101,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 	_ = cmd.Flags().MarkDeprecated("type", "please use --proxy-type instead")
 	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane", "ingress")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
+	cmd.Flags().StringVar(&ctx.args.workload, "workload", "", "required workload label value for dataplane")
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 	cmd.Flags().StringVar(&ctx.args.signingKeyPath, "signing-key-path", "", "path to a file that contains private signing key. When specified, control plane won't be used to issue the token.")
 	cmd.Flags().StringVar(&ctx.args.kid, "kid", "", "ID of the key that is used to issue a token. Required when --signing-key-path is used.")

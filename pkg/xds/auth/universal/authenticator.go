@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	builtin_issuer "github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/v2/pkg/xds/auth"
@@ -66,6 +67,9 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
 		return err
 	}
+	if err := validateWorkload(dpIdentity.Workload, dataplane.Meta.GetLabels()); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -105,6 +109,20 @@ func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.Multi
 				return errors.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, value, tokenTags.Values(tagName))
 			}
 		}
+	}
+	return nil
+}
+
+func validateWorkload(tokenWorkload string, dpLabels map[string]string) error {
+	if tokenWorkload == "" {
+		return nil
+	}
+	dpWorkload, exists := dpLabels[metadata.KumaWorkload]
+	if !exists {
+		return errors.Errorf("dataplane has no workload label required by the token")
+	}
+	if dpWorkload != tokenWorkload {
+		return errors.Errorf("dataplane workload %q is not allowed with this token. Allowed workload in token is %q", dpWorkload, tokenWorkload)
 	}
 	return nil
 }
