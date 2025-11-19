@@ -16,6 +16,8 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 //go:embed schema.yaml
@@ -114,11 +116,23 @@ func (t *MeshExternalServiceResource) Descriptor() model.ResourceTypeDescriptor 
 }
 
 func (t *MeshExternalServiceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
+	var verr validators.ValidationError
+	// Run built-in validation if exists
+	if v, ok := interface{}(t).(interface{ validate() error }); ok {
+		if err := v.validate(); err != nil {
+			if validationErr, ok := err.(*validators.ValidationError); ok {
+				verr.Add(*validationErr)
+			} else {
+				verr.AddViolationAt(validators.Root(), err.Error())
+			}
+		}
 	}
+	// Run additional registered validators from global registry
+	validators := registry.Global().GetValidators(MeshExternalServiceType)
+	for _, validator := range validators {
+		verr.Add(validator.Validate(t))
+	}
+	return verr.OrNil()
 }
 
 var _ model.ResourceList = &MeshExternalServiceResourceList{}

@@ -14,6 +14,10 @@ func RegisterType(res model.ResourceTypeDescriptor) {
 	}
 }
 
+func RegisterTypeValidator(res model.ResourceTypeDescriptor, validator AdditionalValidator) {
+	global.RegisterValidator(res, validator)
+}
+
 func RegisterTypeIfAbsent(res model.ResourceTypeDescriptor) {
 	for _, typ := range global.ObjectTypes() {
 		if typ == res.Name {

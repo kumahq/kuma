@@ -104,31 +104,23 @@ func (t *MeshHealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshHealthCheckResource) Validate() error {
-	var allErrors validators.ValidationError
-
-	// Run built-in validation if present and accumulate errors
+	var verr validators.ValidationError
+	// Run built-in validation if exists
 	if v, ok := interface{}(t).(interface{ validate() error }); ok {
 		if err := v.validate(); err != nil {
-			if verr, ok := err.(*validators.ValidationError); ok {
-				allErrors.Violations = append(allErrors.Violations, verr.Violations...)
+			if validationErr, ok := err.(*validators.ValidationError); ok {
+				verr.Add(*validationErr)
 			} else {
-				return err
+				verr.AddViolationAt(validators.Root(), err.Error())
 			}
 		}
 	}
-
-	// Run all additional validators from registry and accumulate errors
+	// Run additional registered validators from global registry
 	validators := registry.Global().GetValidators(MeshHealthCheckType)
 	for _, validator := range validators {
-		if verr := validator.Validate(t); verr.HasViolations() {
-			allErrors.Violations = append(allErrors.Violations, verr.Violations...)
-		}
+		verr.Add(validator.Validate(t))
 	}
-
-	if allErrors.HasViolations() {
-		return &allErrors
-	}
-	return nil
+	return verr.OrNil()
 }
 
 var _ model.ResourceList = &MeshHealthCheckResourceList{}
