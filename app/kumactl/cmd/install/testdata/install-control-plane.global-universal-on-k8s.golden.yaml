@@ -110,7 +110,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 6a3cf5192354f71615ac51034b3e97c20eda99643fcaf5bbe6d41ad59bd12167
+        checksum/tls-secrets: 75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma

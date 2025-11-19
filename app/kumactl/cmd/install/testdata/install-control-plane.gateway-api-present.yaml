@@ -11606,7 +11606,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 22984ab190b42402cb4f97dbe810c792fcf05493e0174e80e1280eda492d9308
+        checksum/tls-secrets: 2c0ab72d70a85dc951f5547748e9708715259a4d372172e37dc45c8c0bfd4051
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -11791,7 +11791,6 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -11853,7 +11852,6 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -11924,7 +11922,6 @@ webhooks:
           - kube-system
           - kuma-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -11956,7 +11953,6 @@ webhooks:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -11995,7 +11991,6 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -12066,7 +12061,6 @@ webhooks:
           - kuma-system
     failurePolicy: Ignore
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -12097,7 +12091,6 @@ webhooks:
           - kuma-system
     failurePolicy: Fail
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system

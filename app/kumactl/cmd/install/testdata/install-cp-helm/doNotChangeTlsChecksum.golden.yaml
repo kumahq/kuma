@@ -642,7 +642,6 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -704,7 +703,6 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -775,7 +773,6 @@ webhooks:
           - kube-system
           - kuma-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -807,7 +804,6 @@ webhooks:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -846,7 +842,6 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -917,7 +912,6 @@ webhooks:
           - kuma-system
     failurePolicy: Ignore
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
@@ -948,7 +942,6 @@ webhooks:
           - kuma-system
     failurePolicy: Fail
     clientConfig:
-      
       caBundle: XYZ
       service:
         namespace: kuma-system
