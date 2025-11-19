@@ -240,7 +240,6 @@ func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error
 	reconciler := &k8s_controllers.WorkloadReconciler{
 		Client: mgr.GetClient(),
 		Log:    core.Log.WithName("controllers").WithName("Workload"),
-		Scheme: mgr.GetScheme(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }

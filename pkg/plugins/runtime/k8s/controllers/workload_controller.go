@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,8 +24,7 @@ import (
 // WorkloadReconciler reconciles Workload resources based on Dataplane labels
 type WorkloadReconciler struct {
 	kube_client.Client
-	Log    logr.Logger
-	Scheme *kube_runtime.Scheme
+	Log logr.Logger
 }
 
 func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -45,11 +43,11 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list Dataplanes")
 	}
 
-	var referencingDPs []mesh_k8s.Dataplane
 	var meshName string
+	var hasReferences bool
 	for _, dp := range dataplanes.Items {
 		if workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]; ok && workloadName == req.Name {
-			referencingDPs = append(referencingDPs, dp)
+			hasReferences = true
 			if meshName == "" {
 				meshName = dp.Mesh
 			}
@@ -57,7 +55,7 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 	}
 
 	// If no Dataplanes reference this workload, delete it (if it exists and is managed by us)
-	if len(referencingDPs) == 0 {
+	if !hasReferences {
 		if workload != nil {
 			// Only delete if managed by k8s-controller
 			if managedBy, ok := workload.Labels[mesh_proto.ManagedByLabel]; ok && managedBy == "k8s-controller" {

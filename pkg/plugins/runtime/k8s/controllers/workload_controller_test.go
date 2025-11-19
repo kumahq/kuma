@@ -62,7 +62,6 @@ var _ = Describe("WorkloadController", func() {
 			reconciler = &WorkloadReconciler{
 				Client: kubeClient,
 				Log:    logr.Discard(),
-				Scheme: k8sClientScheme,
 			}
 
 			key := kube_types.NamespacedName{
