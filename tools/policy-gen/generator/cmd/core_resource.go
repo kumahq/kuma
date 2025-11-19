@@ -63,6 +63,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 {{- if .IsDestination }}
     "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 {{- end }}
@@ -180,11 +182,31 @@ func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *{{.Name}}Resource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
+	var allErrors validators.ValidationError
+
+	// Run built-in validation if present and accumulate errors
+	if v, ok := interface{}(t).(interface{ validate() error }); ok {
+		if err := v.validate(); err != nil {
+			if verr, ok := err.(*validators.ValidationError); ok {
+				allErrors.Violations = append(allErrors.Violations, verr.Violations...)
+			} else {
+				return err
+			}
+		}
 	}
+
+	// Run all additional validators from registry and accumulate errors
+	validators := registry.Global().GetValidators({{.Name}}Type)
+	for _, validator := range validators {
+		if verr := validator.Validate(t); verr.HasViolations() {
+			allErrors.Violations = append(allErrors.Violations, verr.Violations...)
+		}
+	}
+
+	if allErrors.HasViolations() {
+		return &allErrors
+	}
+	return nil
 }
 
 var _ model.ResourceList = &{{.Name}}ResourceList{}

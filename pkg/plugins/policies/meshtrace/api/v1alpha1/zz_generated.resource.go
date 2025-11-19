@@ -16,6 +16,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 //go:embed schema.yaml
@@ -102,11 +104,31 @@ func (t *MeshTraceResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshTraceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
+	var allErrors validators.ValidationError
+
+	// Run built-in validation if present and accumulate errors
+	if v, ok := interface{}(t).(interface{ validate() error }); ok {
+		if err := v.validate(); err != nil {
+			if verr, ok := err.(*validators.ValidationError); ok {
+				allErrors.Violations = append(allErrors.Violations, verr.Violations...)
+			} else {
+				return err
+			}
+		}
 	}
+
+	// Run all additional validators from registry and accumulate errors
+	validators := registry.Global().GetValidators(MeshTraceType)
+	for _, validator := range validators {
+		if verr := validator.Validate(t); verr.HasViolations() {
+			allErrors.Violations = append(allErrors.Violations, verr.Violations...)
+		}
+	}
+
+	if allErrors.HasViolations() {
+		return &allErrors
+	}
+	return nil
 }
 
 var _ model.ResourceList = &MeshTraceResourceList{}
