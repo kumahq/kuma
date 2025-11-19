@@ -46,10 +46,26 @@ type KDSSyncServiceStream interface {
 	Context() context.Context
 }
 
-func NewDeltaKDSStream(s KDSSyncServiceStream, clientID string, instanceID string, cpConfig string) DeltaKDSStream {
+func NewDeltaKDSStream(
+	s KDSSyncServiceStream,
+	clientID string,
+	instanceID string,
+	cpConfig string,
+	numberOfDistinctTypes int,
+) DeltaKDSStream {
 	ctx, cancel := context.WithCancelCause(s.Context())
-	// TODO: channel capacity should be calculated based on the number of distinct typeURLs
-	channelCapacity := 100
+
+	// In theory capacity == numberOfDistinctTypes would be enough:
+	//
+	//   - sendCh: we enqueue one initial DiscoveryRequest per type and only enqueue
+	//     an ACK or NACK after the previous message for that type has been sent
+	//   - recvCh: the server sends at most one DiscoveryResponse per type and waits
+	//     for an ACK or NACK before sending the next one
+	//
+	// To be safer and to tolerate unexpected client or server behaviour and future
+	// changes, we add an extra safety margin.
+	capacity := 2*numberOfDistinctTypes + 10
+
 	stream := &stream{
 		streamClient:       s,
 		initialRequestDone: make(map[core_model.ResourceType]bool),
@@ -57,8 +73,8 @@ func NewDeltaKDSStream(s KDSSyncServiceStream, clientID string, instanceID strin
 		clientID:           clientID,
 		cpConfig:           cpConfig,
 		instanceID:         instanceID,
-		sendCh:             make(chan *envoy_sd.DeltaDiscoveryRequest, channelCapacity),
-		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, channelCapacity),
+		sendCh:             make(chan *envoy_sd.DeltaDiscoveryRequest, capacity),
+		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
 		ctx:                ctx,
 		cancel:             cancel,
 	}
