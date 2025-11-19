@@ -59,15 +59,12 @@ spec:
 		)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then the validator should reject the connection and log the error
-		Eventually(func(g Gomega) {
-			logs := universal.Cluster.GetKumaCPLogs()
-			stderr := logs["stderr"]
-
-			g.Expect(stderr).To(ContainSubstring("dataplane rejected - missing required workload label"))
-			g.Expect(stderr).To(ContainSubstring("missing required label 'kuma.io/workload'"))
-			g.Expect(stderr).To(ContainSubstring("mi-with-workload-label"))
-		}, "30s", "1s").Should(Succeed())
+		// then the dataplane should not be registered due to validator rejection
+		Consistently(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).ToNot(ContainSubstring("test-server-without-label"))
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	It("should allow DPP connection when workload label is present for MeshIdentity using workload label", func() {

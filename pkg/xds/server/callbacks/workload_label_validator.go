@@ -2,7 +2,7 @@ package callbacks
 
 import (
 	"context"
-	"strings"
+	"regexp"
 
 	"github.com/pkg/errors"
 
@@ -55,9 +55,10 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 		WithValues("proxyKey", proxyKey).
 		WithValues("streamID", streamID)
 
+	// List MeshIdentities for this mesh. This operation is performed on every proxy connection,
+	// but the ReadOnlyResourceManager provides cached results, so performance impact is minimal.
 	meshIdentities := &meshidentity_api.MeshIdentityResourceList{}
 	if err := v.rm.List(ctx, meshIdentities, store.ListByMesh(mesh)); err != nil {
-		log.Error(err, "failed to list MeshIdentities")
 		return errors.Wrap(err, "failed to list MeshIdentities")
 	}
 
@@ -94,13 +95,13 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 	return nil
 }
 
-func (v *WorkloadLabelValidator) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, proxyKey core_model.ResourceKey) {
+func (v *WorkloadLabelValidator) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
 	// No-op
 }
 
+var workloadLabelRegex = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
+
 // usesWorkloadLabel checks if the SPIFFE ID path template contains the kuma.io/workload label reference.
 func usesWorkloadLabel(pathTemplate string) bool {
-	return strings.Contains(pathTemplate, `label "kuma.io/workload"`) ||
-		strings.Contains(pathTemplate, `label 'kuma.io/workload'`) ||
-		strings.Contains(pathTemplate, "label `kuma.io/workload`")
+	return workloadLabelRegex.MatchString(pathTemplate)
 }

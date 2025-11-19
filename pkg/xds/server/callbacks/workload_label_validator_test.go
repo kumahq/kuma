@@ -428,4 +428,198 @@ var _ = Describe("Workload Label Validator", func() {
 			Expect(err.Error()).To(ContainSubstring("mi-more-specific"))
 		})
 	})
+
+	Context("edge cases", func() {
+		It("should allow connection when MeshIdentity has nil SpiffeID", func() {
+			// given
+			mi := &meshidentity_api.MeshIdentityResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mi-nil-spiffeid",
+					Mesh: "default",
+				},
+				Spec: &meshidentity_api.MeshIdentity{
+					Selector: &meshidentity_api.Selector{
+						Dataplane: &common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								"kuma.io/service": "test",
+							},
+						},
+					},
+					SpiffeID: nil,
+				},
+			}
+			err := resManager.Create(context.Background(), mi, core_store.CreateByKey("mi-nil-spiffeid", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			dpRes := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "test-01",
+					Mesh: "default",
+					Labels: map[string]string{
+						"kuma.io/service": "test",
+					},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8080,
+								ServicePort: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "test",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			md := core_xds.DataplaneMetadata{
+				Resource:  dpRes,
+				ProxyType: mesh_proto.DataplaneProxyType,
+			}
+
+			// when
+			err = validator.OnProxyConnected(
+				core_xds.StreamID(8),
+				core_model.ResourceKey{Mesh: "default", Name: "test-01"},
+				context.Background(),
+				md,
+			)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should allow connection when MeshIdentity has empty path", func() {
+			// given
+			mi := &meshidentity_api.MeshIdentityResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mi-empty-path",
+					Mesh: "default",
+				},
+				Spec: &meshidentity_api.MeshIdentity{
+					Selector: &meshidentity_api.Selector{
+						Dataplane: &common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								"kuma.io/service": "empty",
+							},
+						},
+					},
+					SpiffeID: &meshidentity_api.SpiffeID{
+						Path: pointer.To(""),
+					},
+				},
+			}
+			err := resManager.Create(context.Background(), mi, core_store.CreateByKey("mi-empty-path", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			dpRes := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "empty-01",
+					Mesh: "default",
+					Labels: map[string]string{
+						"kuma.io/service": "empty",
+					},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8080,
+								ServicePort: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "empty",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			md := core_xds.DataplaneMetadata{
+				Resource:  dpRes,
+				ProxyType: mesh_proto.DataplaneProxyType,
+			}
+
+			// when
+			err = validator.OnProxyConnected(
+				core_xds.StreamID(9),
+				core_model.ResourceKey{Mesh: "default", Name: "empty-01"},
+				context.Background(),
+				md,
+			)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should handle whitespace variations in workload label template", func() {
+			// Test with extra whitespace
+			mi := &meshidentity_api.MeshIdentityResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mi-whitespace",
+					Mesh: "default",
+				},
+				Spec: &meshidentity_api.MeshIdentity{
+					Selector: &meshidentity_api.Selector{
+						Dataplane: &common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								"kuma.io/service": "whitespace-test",
+							},
+						},
+					},
+					SpiffeID: &meshidentity_api.SpiffeID{
+						Path: pointer.To("/workload/{{  label  \"kuma.io/workload\"  }}"),
+					},
+				},
+			}
+			err := resManager.Create(context.Background(), mi, core_store.CreateByKey("mi-whitespace", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			dpRes := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "whitespace-01",
+					Mesh: "default",
+					Labels: map[string]string{
+						"kuma.io/service": "whitespace-test",
+						// Missing workload label
+					},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8080,
+								ServicePort: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "whitespace-test",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			md := core_xds.DataplaneMetadata{
+				Resource:  dpRes,
+				ProxyType: mesh_proto.DataplaneProxyType,
+			}
+
+			// when - should fail with whitespace variations
+			err = validator.OnProxyConnected(
+				core_xds.StreamID(10),
+				core_model.ResourceKey{Mesh: "default", Name: "whitespace-01"},
+				context.Background(),
+				md,
+			)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("missing required label 'kuma.io/workload'"))
+		})
+	})
 })
