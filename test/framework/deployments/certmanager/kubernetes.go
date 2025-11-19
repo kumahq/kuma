@@ -57,20 +57,17 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) error {
-	err := k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.namespace),
-		metav1.ListOptions{
-			LabelSelector: selector,
-		},
-		1,
-		framework.DefaultRetries,
-		framework.DefaultTimeout)
-	if err != nil {
-		return errors.Wrapf(err,
-			"cert-manager pod with selector %q in namespace %q failed to become ready",
-			selector, t.namespace)
-	}
-	return nil
+	return errors.Wrapf(
+		k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
+			cluster.GetKubectlOptions(t.namespace),
+			metav1.ListOptions{
+				LabelSelector: selector,
+			},
+			1,
+			framework.DefaultRetries,
+			framework.DefaultTimeout),
+		"cert-manager pod with selector %q in namespace %q failed to become ready",
+		selector, t.namespace)
 }
 
 func (t *k8sDeployment) Delete(cluster framework.Cluster) error {

@@ -17,4 +17,5 @@ func TestE2E(t *testing.T) {
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
 	_ = Describe("Cert-Manager CA Injection", Label("job-0"), webhooks.CertManagerCAInjection, Ordered)
+	_ = Describe("Cert-Manager Helm Validation", Label("job-0"), webhooks.CertManagerHelmValidation)
 )
