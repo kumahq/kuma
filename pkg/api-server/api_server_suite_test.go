@@ -202,7 +202,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
-		nil,
 	)
 	if err != nil {
 		return nil, cfg, stop, err
