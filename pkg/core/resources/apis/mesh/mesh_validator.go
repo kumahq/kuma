@@ -75,17 +75,16 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
 		}
 		usedNames[backend.Name] = true
-	}
-	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
-		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
-	}
-	for _, backend := range mtls.Backends {
+
 		if backend.GetDpCert() != nil {
 			_, err := ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
 			if err != nil {
 				verr.AddViolation("dpcert.rotation.expiration", "has to be a valid format")
 			}
 		}
+	}
+	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
+		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
 	return verr
 }

@@ -14,8 +14,8 @@ package origin
 //     pkg/xds/generator/origin (e.g. "inbound", "outbound", "dns", "egress", "ingress", "transparent",
 //     "prometheus", "secrets", "tracing", "probe", "proxy-template-raw", "proxy-template-modifications")
 //     and in feature-specific packages like pkg/plugins/runtime/gateway/origin ("gateway").
-//   - Hooks, policy plugins, and reconcilers filter or select resources by origin. For example, see
-//     pkg/xds/hooks/resource_set.go and NonGatewayResources in pkg/core/xds/resource.go.
+//   - Policy plugins and reconcilers filter or select resources by origin. For example, see
+//     NonGatewayResources in pkg/core/xds/resource.go.
 //
 // Adding a new origin:
 //   - Define a constant of this type close to the code that produces the resources, for example:
