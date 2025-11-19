@@ -91,6 +91,32 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should fail with invalid CA backend type", func() {
+			// given
+			mesh := core_mesh.NewMeshResource()
+			err := util_proto.FromYAML([]byte(`
+                mtls:
+                  enabledBackend: ca-1
+                  backends:
+                  - name: ca-1
+                    type: bulitin
+            `), mesh.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = resManager.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
+
+			// then
+			Expect(err).To(MatchError(&validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   "mtls.backends[0].type",
+						Message: "could not find installed plugin for this type",
+					},
+				},
+			}))
+		})
+
 		It("should create CA without validation", func() {
 			// given
 			meshName := "mesh-no-validation"

@@ -11,6 +11,29 @@
 * fix(xds): set keepalive configuration for dpp to cpp connection (backport of #14912) [#14926](https://github.com/kumahq/kuma/pull/14926) @kumahq
 * perf(rules): optimize SubsetIter to enumerate only correct subsets (backport of #14862) [#14871](https://github.com/kumahq/kuma/pull/14871) @kumahq
 
+## v2.10.9
+> Released on 2025/11/18
+
+* chore(deps): bump `go` to `1.24.9` [#14822](https://github.com/kumahq/kuma/pull/14822) @bartsmykla
+* chore(deps): bump golang.org/x/crypto from 0.40.0 to 0.43.0 [#14993](https://github.com/kumahq/kuma/pull/14993) @renovate
+* feat(deps)!: migrate module path to github.com/kumahq/kuma/v2 [#15010](https://github.com/kumahq/kuma/pull/15010) @bartsmykla
+* fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (backport of #14875) [#14879](https://github.com/kumahq/kuma/pull/14879) @kumahq
+* fix(meshpassthrough): sort IP address to provide predictable order (backport of #14857) [#14864](https://github.com/kumahq/kuma/pull/14864) @kumahq
+* fix(xds): set keepalive configuration for dpp to cpp connection (backport of #14912) [#14925](https://github.com/kumahq/kuma/pull/14925) @kumahq
+* perf(rules): optimize SubsetIter to enumerate only correct subsets (backport of #14862) [#14869](https://github.com/kumahq/kuma/pull/14869) @kumahq
+
+
+## v2.7.20
+> Released on 2025/11/18
+
+* chore(deps): bump `go` to `1.24.9` [#14821](https://github.com/kumahq/kuma/pull/14821) [#14825](https://github.com/kumahq/kuma/pull/14825) @bartsmykla
+* chore(deps): bump github.com/containerd/containerd from 1.7.27 to 1.7.29 [#14930](https://github.com/kumahq/kuma/pull/14930) @renovate
+* chore(deps): bump golang.org/x/crypto from 0.40.0 to 0.43.0 [#14996](https://github.com/kumahq/kuma/pull/14996) @renovate
+* feat(deps)!: migrate module path to github.com/kumahq/kuma/v2 [#15032](https://github.com/kumahq/kuma/pull/15032) @bartsmykla
+* fix(xds): set keepalive configuration for dpp to cpp connection (backport of #14912) [#14924](https://github.com/kumahq/kuma/pull/14924) @kumahq
+* perf(rules): optimize SubsetIter to enumerate only correct subsets (backport of #14862) [#14868](https://github.com/kumahq/kuma/pull/14868) @kumahq
+
+
 ## v2.11.8
 > Released on 2025/11/14
 
