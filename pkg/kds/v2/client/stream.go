@@ -62,7 +62,7 @@ func NewDeltaKDSStream(
 	//   - recvCh: the server sends at most one DiscoveryResponse per type and waits
 	//     for an ACK or NACK before sending the next one
 	//
-	// To be safer and to tolerate unexpected client or server behaviour and future
+	// To be safer and to tolerate unexpected client or server behavior and future
 	// changes, we add an extra safety margin.
 	capacity := 2*numberOfDistinctTypes + 10
 
