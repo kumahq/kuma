@@ -44,6 +44,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/trafficroute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/transparentproxy"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/virtualoutbound"
+	"github.com/kumahq/kuma/v2/test/e2e_env/universal/workload"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
@@ -75,6 +76,7 @@ var (
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
+	_ = Describe("Workload", workload.Workload, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)

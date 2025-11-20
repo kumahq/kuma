@@ -868,3 +868,8 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
+workload:
+  # How often we check whether Workloads need to be generated from Dataplanes
+  generationInterval: 2s # ENV: KUMA_WORKLOAD_GENERATION_INTERVAL
+  # How long we wait before deleting a Workload if all Dataplanes are gone
+  deletionGracePeriod: 1h # ENV: KUMA_WORKLOAD_DELETION_GRACE_PERIOD

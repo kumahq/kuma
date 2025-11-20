@@ -184,6 +184,8 @@ type Config struct {
 	IPAM IPAMConfig `json:"ipam"`
 	// MeshService holds configuration for features around MeshServices
 	MeshService MeshServiceConfig `json:"meshService"`
+	// Workload holds configuration for features around Workloads
+	Workload WorkloadConfig `json:"workload"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -299,6 +301,10 @@ var DefaultConfig = func() Config {
 			KnownInternalCIDRs: defaultKnownInternalCIDRs,
 		},
 		MeshService: MeshServiceConfig{
+			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
+			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
+		},
+		Workload: WorkloadConfig{
 			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
 			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
 		},
@@ -570,5 +576,17 @@ type MeshServiceConfig struct {
 }
 
 func (i MeshServiceConfig) Validate() error {
+	return nil
+}
+
+type WorkloadConfig struct {
+	// How often we check whether Workloads need to be generated from
+	// Dataplanes
+	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_WORKLOAD_GENERATION_INTERVAL"`
+	// How long we wait before deleting a Workload if all Dataplanes are gone
+	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_WORKLOAD_DELETION_GRACE_PERIOD"`
+}
+
+func (i WorkloadConfig) Validate() error {
 	return nil
 }
