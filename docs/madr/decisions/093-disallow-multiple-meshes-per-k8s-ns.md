@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/15049
 
 ## Context and Problem Statement
 
-Kuma currently allows users to set the `kuma.io/mesh` annotation on individual pods.
+Kuma currently allows users to set the `kuma.io/mesh` label on individual pods.
 As a result, pods in the same Kubernetes namespace can belong to different meshes.
 While having multiple namespaces in a single mesh is a valid and common pattern,
 having multiple meshes in a single namespace leads to several issues:
@@ -36,7 +36,7 @@ Add detection to `workload_controller.go` for multiple meshes per namespace and:
 
 Add a configuration flag `runtime.kubernetes.disallowMultipleMeshesPerNamespace` that:
 - Disabled by default (current behavior)
-- When enabled, prevents pods from using `kuma.io/mesh` annotation that would result in multiple meshes in a namespace
+- When enabled, prevents pods from using `kuma.io/mesh` label that would result in multiple meshes in a namespace
 - Flip the default to enabled in the next major Kuma release, making it a breaking change
 
 ### Pros and Cons
