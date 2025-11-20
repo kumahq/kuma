@@ -30,14 +30,15 @@ which cannot behave correctly when a single namespace is spread across multiple 
 
 Add detection to `workload_controller.go` for multiple meshes per namespace and:
 - Skip Workload resource generation when multiple meshes are detected in a namespace
-- Emit a Kubernetes event to inform the user about the configuration issue
+- Emit a Kubernetes event to inform the user about the configuration issue and log the CP error
 
 ### Add Runtime Flag with Future Default Change
 
 Add a configuration flag `runtime.kubernetes.disallowMultipleMeshesPerNamespace` that:
 - Disabled by default (current behavior)
 - When enabled, prevents pods from using `kuma.io/mesh` label that would result in multiple meshes in a namespace
-- Flip the default to enabled in the next major Kuma release, making it a breaking change
+- Flip the default to enabled in the next major Kuma release to persist this behaviour,
+remove the feature flag, document it's a breaking change
 
 ### Pros and Cons
 
