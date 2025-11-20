@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
@@ -33,6 +34,7 @@ type StatusUpdater struct {
 	metric       prometheus.Summary
 	interval     time.Duration
 	localZone    string
+	environment  config_core.EnvironmentType
 }
 
 var _ component.Component = &StatusUpdater{}
@@ -44,6 +46,7 @@ func NewStatusUpdater(
 	interval time.Duration,
 	metrics core_metrics.Metrics,
 	localZone string,
+	environment config_core.EnvironmentType,
 ) (component.Component, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_ms_status_updater",
@@ -60,6 +63,7 @@ func NewStatusUpdater(
 		metric:       metric,
 		interval:     interval,
 		localZone:    localZone,
+		environment:  environment,
 	}, nil
 }
 
@@ -303,7 +307,7 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 				s.logger.Error(err, "cannot resolve trust domain")
 				continue
 			}
-			spiffeID, err := identity.Spec.GetSpiffeID(td, dpp.GetMeta())
+			spiffeID, err := identity.Spec.GetSpiffeID(td, dpp.GetMeta(), s.environment)
 			if err != nil {
 				s.logger.Error(err, "cannot resolve spiffeID, skip", "dataplane", dpp)
 				continue

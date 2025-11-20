@@ -10,6 +10,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
@@ -75,12 +76,12 @@ func BestMatched(
 	return matches[0].policy, true
 }
 
-func (i *MeshIdentity) getSpiffeIDTemplate(env string) string {
+func (i *MeshIdentity) getSpiffeIDTemplate(env config_core.EnvironmentType) string {
 	var defaultSpiffeIDPathTemplate string
 	switch env {
-	case mesh_proto.KubernetesEnvironment:
+	case config_core.KubernetesEnvironment:
 		defaultSpiffeIDPathTemplate = defaultK8sSpiffeIDPathTemplate
-	case mesh_proto.UniversalEnvironment:
+	case config_core.UniversalEnvironment:
 		defaultSpiffeIDPathTemplate = defaultUniversalSpiffeIDPathTemplate
 	}
 	builder := strings.Builder{}
@@ -118,9 +119,8 @@ func (i *MeshIdentity) GetTrustDomain(meta model.ResourceMeta, localZone string)
 	return renderTemplate(trustDomainTmpl, meta, data)
 }
 
-func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta) (string, error) {
-	env := meta.GetLabels()[mesh_proto.EnvTag]
-	spiffeIDTemplate := i.getSpiffeIDTemplate(env)
+func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, environment config_core.EnvironmentType) (string, error) {
+	spiffeIDTemplate := i.getSpiffeIDTemplate(environment)
 
 	data := struct {
 		TrustDomain    string
