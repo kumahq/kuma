@@ -146,6 +146,6 @@ func DpAuth() {
 			online, found, err := IsDataplaneOnline(universal.Cluster, meshName, "dp-workload-mismatch")
 			Expect(err).ToNot(HaveOccurred())
 			return found && online
-		}).Should(BeFalse(), "dataplane should never come online due to authentication failure")
+		}, "10s", "1s").Should(BeFalse(), "dataplane should never come online due to authentication failure")
 	})
 }
