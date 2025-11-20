@@ -600,6 +600,7 @@ func WithAppDockerRunOptions(options []string) AppDeploymentOption {
 
 func WithLabels(labels map[string]string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.labels = make(map[string]string)
 		for k, v := range labels {
 			o.labels[k] = v
 		}
