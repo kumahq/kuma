@@ -10,7 +10,7 @@ func (w *WorkloadResource) IsLocalWorkload() bool {
 	}
 	origin, ok := w.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
-		return true // no zone label mean that it's a local resource
+		return true // no origin label means that it's a local resource
 	}
 	return origin == string(mesh_proto.ZoneResourceOrigin)
 }

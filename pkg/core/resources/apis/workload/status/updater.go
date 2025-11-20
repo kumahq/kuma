@@ -88,20 +88,17 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		return nil
 	}
 
-	// Get all DataplaneInsights once
 	dpInsightsList := core_mesh.DataplaneInsightResourceList{}
 	if err := s.roResManager.List(ctx, &dpInsightsList); err != nil {
 		return errors.Wrap(err, "could not list DataplaneInsights")
 	}
 	insightsByKey := core_model.IndexByKey(dpInsightsList.Items)
 
-	// Get all dataplanes once
 	allDpList := core_mesh.DataplaneResourceList{}
 	if err := s.roResManager.List(ctx, &allDpList); err != nil {
 		return errors.Wrap(err, "could not list Dataplanes")
 	}
 
-	// Group dataplanes by mesh and workload label
 	dpsByMeshAndWorkload := make(map[string]map[string][]*core_mesh.DataplaneResource)
 	for _, dp := range allDpList.Items {
 		workloadLabel, ok := dp.GetMeta().GetLabels()[metadata.KumaWorkload]
@@ -127,8 +124,8 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		// For Kubernetes workloads, the name format is "{name}.{namespace}"
 		// but the kuma.io/workload label on dataplanes is just "{name}"
 		workloadIdentifier := workload.GetMeta().GetName()
-		if parts := strings.Split(workloadIdentifier, "."); len(parts) > 1 {
-			workloadIdentifier = parts[0]
+		if idx := strings.Index(workloadIdentifier, "."); idx > 0 {
+			workloadIdentifier = workloadIdentifier[:idx]
 		}
 
 		var matchingDps []*core_mesh.DataplaneResource
@@ -159,19 +156,19 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 }
 
 func buildDataplaneProxies(
-	dpps []*core_mesh.DataplaneResource,
+	dataplanes []*core_mesh.DataplaneResource,
 	insightsByKey map[core_model.ResourceKey]*core_mesh.DataplaneInsightResource,
 ) workload_api.DataplaneProxies {
 	result := workload_api.DataplaneProxies{}
-	for _, dpp := range dpps {
+	for _, dp := range dataplanes {
 		result.Total++
-		if insight := insightsByKey[core_model.MetaToResourceKey(dpp.Meta)]; insight != nil {
+		if insight := insightsByKey[core_model.MetaToResourceKey(dp.Meta)]; insight != nil {
 			if insight.Spec.IsOnline() {
 				result.Connected++
 			}
 		}
 		// A dataplane is healthy if it has at least one healthy inbound
-		if len(dpp.Spec.GetNetworking().GetHealthyInbounds()) > 0 {
+		if len(dp.Spec.GetNetworking().GetHealthyInbounds()) > 0 {
 			result.Healthy++
 		}
 	}
