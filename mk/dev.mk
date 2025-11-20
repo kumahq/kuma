@@ -52,11 +52,11 @@ PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
 BUF=$(shell $(MISE) which buf)
 
 # Proto dependencies via Buf
-BUF_CACHE_DIR=$(HOME)/.cache/buf/v2/module/data
-PROTO_GOOGLE_APIS=$(shell $(BUF) export buf.build/googleapis/googleapis --output $(BUF_CACHE_DIR)/googleapis && echo $(BUF_CACHE_DIR)/googleapis)
-PROTO_PGV=$(shell $(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(BUF_CACHE_DIR)/pgv && echo $(BUF_CACHE_DIR)/pgv)
-PROTO_ENVOY=$(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
-PROTO_XDS=$(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
+BUF_CACHE_DIR := $(CI_TOOLS_DIR)/buf/cache
+PROTO_GOOGLE_APIS := $(shell $(BUF) export buf.build/googleapis/googleapis --output $(BUF_CACHE_DIR)/googleapis && echo $(BUF_CACHE_DIR)/googleapis)
+PROTO_PGV := $(shell $(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(BUF_CACHE_DIR)/pgv && echo $(BUF_CACHE_DIR)/pgv)
+PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
+PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
 K3D_BIN=$(shell $(MISE) which k3d)
