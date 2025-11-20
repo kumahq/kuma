@@ -62,6 +62,18 @@ func Identity() {
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Parallel(
+				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithLabels(map[string]string{
+					mesh_proto.WorkloadLabel: "demo-client",
+				})),
+				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithLabels(map[string]string{
+					mesh_proto.WorkloadLabel: "test-server",
+				})),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
+
 		Expect(group.Wait()).To(Succeed())
 	})
 

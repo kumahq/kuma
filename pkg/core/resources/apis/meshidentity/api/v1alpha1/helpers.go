@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	defaultTrustDomainTemplate = "{{ .Mesh }}.{{ .Zone }}.mesh.local"
-	defaultPathTemplate        = "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+	defaultTrustDomainTemplate           = "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+	defaultK8sSpiffeIDPathTemplate       = "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+	defaultUniversalSpiffeIDPathTemplate = "/workload/{{ .Workload }}"
 )
 
 // AllMatched returns a list of MeshIdentity policies that match the given labels and are initialized or in SpiffeIDProviderMode.
@@ -74,14 +75,21 @@ func BestMatched(
 	return matches[0].policy, true
 }
 
-func (i *MeshIdentity) getSpiffeIDTemplate() string {
+func (i *MeshIdentity) getSpiffeIDTemplate(env string) string {
+	var defaultSpiffeIDPathTemplate string
+	switch env {
+	case mesh_proto.KubernetesEnvironment:
+		defaultSpiffeIDPathTemplate = defaultK8sSpiffeIDPathTemplate
+	case mesh_proto.UniversalEnvironment:
+		defaultSpiffeIDPathTemplate = defaultUniversalSpiffeIDPathTemplate
+	}
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
 	builder.WriteString("{{ .TrustDomain }}")
 	if i.SpiffeID != nil {
-		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultPathTemplate))
+		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultSpiffeIDPathTemplate))
 	} else {
-		builder.WriteString(defaultPathTemplate)
+		builder.WriteString(defaultSpiffeIDPathTemplate)
 	}
 	return builder.String()
 }
@@ -111,16 +119,19 @@ func (i *MeshIdentity) GetTrustDomain(meta model.ResourceMeta, localZone string)
 }
 
 func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta) (string, error) {
-	spiffeIDTemplate := i.getSpiffeIDTemplate()
+	env := meta.GetLabels()[mesh_proto.EnvTag]
+	spiffeIDTemplate := i.getSpiffeIDTemplate(env)
 
 	data := struct {
 		TrustDomain    string
 		Namespace      string
 		ServiceAccount string
+		Workload       string
 	}{
 		TrustDomain:    trustDomain,
 		Namespace:      meta.GetLabels()[mesh_proto.KubeNamespaceTag],
 		ServiceAccount: meta.GetLabels()[metadata.KumaServiceAccount],
+		Workload:       meta.GetLabels()[metadata.KumaWorkload],
 	}
 
 	return renderTemplate(spiffeIDTemplate, meta, data)

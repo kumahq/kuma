@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/tls"
 	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 )
@@ -744,6 +745,14 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		transparent := opts.transparent != nil && *opts.transparent // default false
 		var err error
 
+		labels := opts.labels
+		if opts.workload != "" {
+			if labels == nil {
+				labels = make(map[string]string)
+			}
+			labels[metadata.KumaWorkload] = opts.workload
+		}
+
 		// Build dataplane YAML if not provided
 		if appYaml == "" {
 			// Initialize template data with common fields
@@ -752,6 +761,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				ServiceName:    serviceName,
 				AdditionalTags: opts.additionalTags,
 				Team:           "client-owners",
+				Labels:         labels,
 			}
 
 			// Configure based on mode
@@ -787,7 +797,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			token := opts.token
 			var err error
 			if token == "" {
-				token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName)
+				token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName, opts.workload)
 				if err != nil {
 					return err
 				}
@@ -914,7 +924,7 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		token := opts.token
 		var err error
 		if token == "" {
-			token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName)
+			token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName, opts.workload)
 			if err != nil {
 				return err
 			}
