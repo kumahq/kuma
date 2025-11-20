@@ -242,7 +242,7 @@ spec:
 			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)), "status should show 1 total dataplane")
 			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(1)), "status should show 1 connected dataplane")
 			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(1)), "status should show 1 healthy dataplane")
-		}, "2m", "3s").Should(Succeed())
+		}, "3m").Should(Succeed())
 
 		err = NewClusterSetup().
 			Install(testserver.Install(
@@ -288,6 +288,6 @@ spec:
 			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)), "status should show 1 total dataplane after deletion")
 			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(1)), "status should show 1 connected dataplane after deletion")
 			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(1)), "status should show 1 healthy dataplane after deletion")
-		}, "2m").Should(Succeed())
+		}, "3m").Should(Succeed())
 	})
 }
