@@ -1,0 +1,13 @@
+{
+  "type": "Workload",
+  "name": "with-status",
+  "mesh": "default",
+  "spec": {},
+  "status": {
+    "dataplaneProxies": {
+      "total": 5,
+      "connected": 4,
+      "healthy": 3
+    }
+  }
+}

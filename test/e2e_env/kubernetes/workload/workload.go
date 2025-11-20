@@ -208,4 +208,92 @@ spec:
 			g.Expect(err.Error()).To(ContainSubstring("No resources found in workloads mesh"))
 		}, "2m").Should(Succeed())
 	})
+
+	It("should update Workload status as dataplanes are added and removed", func() {
+		// given
+		const workloadName = "status-test-workload"
+		const appName1 = "test-server-1"
+		const appName2 = "test-server-2"
+
+		// when deploy first test server
+		err := NewClusterSetup().
+			Install(testserver.Install(
+				testserver.WithName(appName1),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
+				testserver.WithPodLabels(map[string]string{
+					"app.kubernetes.io/name": workloadName,
+				}),
+			)).
+			Setup(kubernetes.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify pod is created
+		Eventually(func(g Gomega) {
+			_, err = PodNameOfApp(kubernetes.Cluster, appName1, namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// and verify Workload status shows 1 dataplane
+		Eventually(func(g Gomega) {
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			fmt.Printf("GOT WORKLOAD %v AND STATUS %v \n", workload, workload.GetStatus())
+
+			g.Expect(err).ToNot(HaveOccurred(), "Workload resource should exist")
+			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)), "status should show 1 total dataplane")
+			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(1)), "status should show 1 connected dataplane")
+			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(1)), "status should show 1 healthy dataplane")
+		}, "2m", "3s").Should(Succeed())
+
+		// when deploy second test server with same workload label
+		err = NewClusterSetup().
+			Install(testserver.Install(
+				testserver.WithName(appName2),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
+				testserver.WithPodLabels(map[string]string{
+					"app.kubernetes.io/name": workloadName,
+				}),
+			)).
+			Setup(kubernetes.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify second pod is created
+		Eventually(func(g Gomega) {
+			_, err = PodNameOfApp(kubernetes.Cluster, appName2, namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// and verify Workload status shows 2 dataplanes
+		Eventually(func(g Gomega) {
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			fmt.Printf("GOT WORKLOAD %v AND STATUS %v \n", workload, workload.GetStatus())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(2)), "status should show 2 total dataplanes")
+			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(2)), "status should show 2 connected dataplanes")
+			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(2)), "status should show 2 healthy dataplanes")
+		}, "2m", "3s").Should(Succeed())
+
+		// when delete first test server
+		err = k8s.RunKubectlE(
+			kubernetes.Cluster.GetTesting(),
+			kubernetes.Cluster.GetKubectlOptions(namespace),
+			"delete", "deployment", appName1,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify Workload status shows 1 dataplane again
+		Eventually(func(g Gomega) {
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			fmt.Printf("GOT WORKLOAD %v AND STATUS %v \n", workload, workload.GetStatus())
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)), "status should show 1 total dataplane after deletion")
+			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(1)), "status should show 1 connected dataplane after deletion")
+			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(1)), "status should show 1 healthy dataplane after deletion")
+		}, "2m", "3s").Should(Succeed())
+	})
 }

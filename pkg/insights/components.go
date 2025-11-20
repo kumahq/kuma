@@ -5,6 +5,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/status"
+	workload_status "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/status"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
@@ -47,6 +48,26 @@ func Setup(rt runtime.Runtime) error {
 		if err := rt.Add(component.NewResilientComponent(
 			logger,
 			meshmzsvcUpdater,
+			rt.Config().General.ResilientComponentBaseBackoff.Duration,
+			rt.Config().General.ResilientComponentMaxBackoff.Duration),
+		); err != nil {
+			return err
+		}
+
+		logger = core.Log.WithName("workload").WithName("status-updater")
+		workloadUpdater, err := workload_status.NewStatusUpdater(
+			logger,
+			rt.ReadOnlyResourceManager(),
+			rt.ResourceManager(),
+			rt.Config().CoreResources.Status.WorkloadInterval.Duration,
+			rt.Metrics(),
+		)
+		if err != nil {
+			return err
+		}
+		if err := rt.Add(component.NewResilientComponent(
+			logger,
+			workloadUpdater,
 			rt.Config().General.ResilientComponentBaseBackoff.Duration,
 			rt.Config().General.ResilientComponentMaxBackoff.Duration),
 		); err != nil {
