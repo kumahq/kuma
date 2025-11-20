@@ -57,7 +57,7 @@ func Workload() {
 		Eventually(func(g Gomega) {
 			podName, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 
 		// and verify dataplane has workload annotation set to service account
 		Eventually(func(g Gomega) {
@@ -77,7 +77,7 @@ func Workload() {
 			// (stored as annotation in k8s, accessible through labels API)
 			workloadLabel := dp.Meta.GetLabels()[metadata.KumaWorkload]
 			g.Expect(workloadLabel).To(Equal(serviceAccount), "workload should equal service account name")
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should use pod label as workload when workload labels configured", func() {
@@ -103,7 +103,7 @@ func Workload() {
 		Eventually(func(g Gomega) {
 			podName, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 
 		// and verify dataplane has workload annotation set to "test-server" (from app.kubernetes.io/name label)
 		Eventually(func(g Gomega) {
@@ -122,7 +122,7 @@ func Workload() {
 			// verify workload is set from app label, not service account
 			workloadLabel := dp.Meta.GetLabels()[metadata.KumaWorkload]
 			g.Expect(workloadLabel).To(Equal(appLabel), "workload should equal app label value")
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should reject pod creation with manual kuma.io/workload label", func() {
@@ -156,5 +156,56 @@ spec:
 		// then webhook should deny the creation
 		Expect(err).To(HaveOccurred(), "pod with manual kuma.io/workload label should be rejected")
 		Expect(err.Error()).To(ContainSubstring("cannot manually set kuma.io/workload label"))
+	})
+
+	It("should automatically create and delete Workload resource", func() {
+		// given
+		const appName = "workload-resource-test"
+		const workloadName = "test-workload-resource"
+
+		// when deploy test server with workload label
+		err := NewClusterSetup().
+			Install(testserver.Install(
+				testserver.WithName(appName),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
+				testserver.WithPodLabels(map[string]string{
+					"app.kubernetes.io/name": workloadName,
+				}),
+			)).
+			Setup(kubernetes.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify pod is created
+		Eventually(func(g Gomega) {
+			_, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
+
+		// and verify Workload resource is created
+		Eventually(func(g Gomega) {
+			// verify Workload resource exists and has correct content
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get workload '%s'", workloadK8sName)
+			g.Expect(workload.GetMeta().GetName()).To(Equal(workloadK8sName))
+			g.Expect(workload.GetMeta().GetMesh()).To(Equal(mesh))
+		}).Should(Succeed())
+
+		// when delete the deployment
+		err = k8s.RunKubectlE(
+			kubernetes.Cluster.GetTesting(),
+			kubernetes.Cluster.GetKubectlOptions(namespace),
+			"delete", "deployment", appName,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify Workload resource is deleted
+		Eventually(func(g Gomega) {
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			_, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+			g.Expect(err).To(HaveOccurred(), "workload should be deleted")
+			g.Expect(err.Error()).To(ContainSubstring("No resources found in workloads mesh"))
+		}, "2m").Should(Succeed())
 	})
 }

@@ -1,0 +1,16 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: example
+  namespace: demo
+mesh: default
+---
+apiVersion: kuma.io/v1alpha1
+kind: Workload
+metadata:
+  name: orphaned-workload
+  namespace: demo
+  labels:
+    kuma.io/mesh: default
+    kuma.io/managed-by: k8s-controller
+spec: {}

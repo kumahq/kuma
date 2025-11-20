@@ -33,9 +33,10 @@ func (j *jwtValidator) Validate(ctx context.Context, token core_tokens.Token, me
 		return DataplaneIdentity{}, err
 	}
 	return DataplaneIdentity{
-		Name: claims.Name,
-		Mesh: claims.Mesh,
-		Tags: mesh_proto.MultiValueTagSetFrom(claims.Tags),
-		Type: mesh_proto.ProxyType(claims.Type),
+		Name:     claims.Name,
+		Mesh:     claims.Mesh,
+		Tags:     mesh_proto.MultiValueTagSetFrom(claims.Tags),
+		Type:     mesh_proto.ProxyType(claims.Type),
+		Workload: claims.Workload,
 	}, nil
 }
