@@ -8,3 +8,8 @@ modules:
 lint:
   use:
     - STANDARD
+deps:
+  - buf.build/googleapis/googleapis:72c8614f3bd0466ea67931ef2c43d608 # main
+  - buf.build/envoyproxy/protoc-gen-validate:daf171c6cdb54629b5f51e345a79e4dd # v1.2.1
+  - buf.build/envoyproxy/envoy:86528c2a78124314bed0b23bea1f7006 # main
+  - buf.build/cncf/xds:373284492eb241aeaff806189696d127 # main
