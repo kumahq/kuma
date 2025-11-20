@@ -123,6 +123,7 @@ type appDeploymentOptions struct {
 	dpEnvs                map[string]string
 	additionalTags        map[string]string
 	bindOutbounds         bool
+	labels                map[string]string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -594,6 +595,14 @@ func WithDockerContainerName(name string) AppDeploymentOption {
 func WithAppDockerRunOptions(options []string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.dockerRunOptions = options
+	})
+}
+
+func WithLabels(labels map[string]string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		for k, v := range labels {
+			o.labels[k] = v
+		}
 	})
 }
 
