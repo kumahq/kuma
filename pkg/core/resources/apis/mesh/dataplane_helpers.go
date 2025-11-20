@@ -3,7 +3,9 @@ package mesh
 import (
 	"hash/fnv"
 	"net"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
@@ -170,4 +172,19 @@ func (d *DataplaneResource) Hash() []byte {
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
+}
+
+// SortDataplanes sorts dataplanes by creation time, then by name.
+// Used by generators to ensure consistent processing order.
+func SortDataplanes(dps []*DataplaneResource) []*DataplaneResource {
+	sorted := slices.Clone(dps)
+	slices.SortFunc(sorted, func(a, b *DataplaneResource) int {
+		if a, b := a.Meta.GetCreationTime(), b.Meta.GetCreationTime(); a.Before(b) {
+			return -1
+		} else if a.After(b) {
+			return 1
+		}
+		return strings.Compare(a.Meta.GetName(), b.Meta.GetName())
+	})
+	return sorted
 }

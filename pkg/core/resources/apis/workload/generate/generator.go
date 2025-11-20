@@ -3,12 +3,11 @@ package generate
 import (
 	"context"
 	"maps"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -70,34 +69,26 @@ func New(
 	}, nil
 }
 
-// workloadForDataplane extracts the workload identifier from a dataplane
+// workloadForDataplane extracts and validates the workload identifier from a dataplane
 func (g *Generator) workloadForDataplane(dataplane *core_mesh.DataplaneResource) (string, bool) {
 	workloadName, ok := dataplane.GetMeta().GetLabels()[metadata.KumaWorkload]
 	if !ok || workloadName == "" {
 		return "", false
 	}
+	allErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false)
+	if len(allErrs) != 0 {
+		g.logger.Info("couldn't generate Workload from kuma.io/workload label, contains invalid characters", "value", workloadName, "error", allErrs, "dataplane", dataplane.GetMeta().GetName())
+		return "", false
+	}
 	return workloadName, true
-}
-
-func sortDataplanes(dps []*core_mesh.DataplaneResource) []*core_mesh.DataplaneResource {
-	sorted := slices.Clone(dps)
-	slices.SortFunc(sorted, func(a, b *core_mesh.DataplaneResource) int {
-		if a, b := a.Meta.GetCreationTime(), b.Meta.GetCreationTime(); a.Before(b) {
-			return -1
-		} else if a.After(b) {
-			return 1
-		}
-		return strings.Compare(a.Meta.GetName(), b.Meta.GetName())
-	})
-	return sorted
 }
 
 func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource, workloads []*workload_api.WorkloadResource) {
 	log := g.logger.WithValues("mesh", mesh)
 	workloadsByName := map[string]bool{}
-	for _, dataplane := range sortDataplanes(dataplanes) {
+	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
 		if workloadName, ok := g.workloadForDataplane(dataplane); ok {
-			log.V(1).Info("found dataplane with workload label", "dataplane", dataplane.GetMeta().GetName(), "workload", workloadName)
+			log.V(1).Info("will generate Workload for dataplane", "dataplane", dataplane.GetMeta().GetName(), "workload", workloadName)
 			workloadsByName[workloadName] = true
 		}
 	}
@@ -158,6 +149,8 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	for workloadName := range workloadsByName {
 		log := log.WithValues("Workload", workloadName)
 		workload := workload_api.NewWorkloadResource()
+		// Workload spec is intentionally empty here - the actual spec is computed
+		// separately by the workload status controller based on dataplane state
 		workload.Spec = &workload_api.Workload{}
 		if err := g.resManager.Create(ctx, workload, store.CreateByKey(workloadName, mesh), store.CreateWithLabels(map[string]string{
 			metadata.KumaMeshLabel:         mesh,
@@ -181,6 +174,7 @@ func (g *Generator) NeedLeaderElection() bool {
 func (g *Generator) Start(stop <-chan struct{}) error {
 	g.logger.Info("starting")
 	ticker := time.NewTicker(g.generateInterval)
+	defer ticker.Stop()
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	for {
@@ -189,6 +183,8 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 			start := time.Now()
 			aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, g.resManager, g.meshCache.GetMeshContext)
 			if err != nil {
+				// Error from AggregateMeshContexts indicates a fundamental issue
+				// with resource manager or mesh cache, so we terminate the component
 				return err
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {

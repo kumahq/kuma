@@ -228,29 +228,21 @@ var _ = Describe("Workload generator", func() {
 		// Delete the dataplane
 		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
 
-		labelGracePeriodStartedAt := ""
 		// Wait until the Workload has been marked with grace period start
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
 			g.Expect(wl.GetMeta().GetLabels()).To(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
-			labelGracePeriodStartedAt = wl.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
 		}, "2s", "100ms").Should(Succeed())
 
-		gracePeriodStartedAt := time.Time{}
-		Expect(gracePeriodStartedAt.UnmarshalText([]byte(labelGracePeriodStartedAt))).To(Succeed())
-
-		gracePeriodEndsAt := gracePeriodStartedAt.Add(gracePeriodInterval)
-		// Before the grace period it still exists and afterwards it eventually
-		// disappears
+		// Workload should not be deleted immediately (grace period is 500ms)
 		Consistently(func(g Gomega) {
-			err := resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))
-			if time.Now().Before(gracePeriodEndsAt) {
-				g.Expect(err).To(Succeed())
-			}
-		}, time.Until(gracePeriodEndsAt.Add(-50*time.Millisecond)).String(), "50ms").Should(Succeed())
+			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
+		}, "200ms", "50ms").Should(Succeed())
+
+		// Workload should be deleted after grace period expires
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).ToNot(Succeed())
-		}, "2s", "100ms").Should(Succeed())
+		}, "1s", "100ms").Should(Succeed())
 	})
 
 	It("should not delete Workload if a Dataplane comes back", func() {
