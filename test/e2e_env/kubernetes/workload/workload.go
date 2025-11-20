@@ -57,7 +57,7 @@ func Workload() {
 		Eventually(func(g Gomega) {
 			podName, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s").Should(Succeed())
+		}).Should(Succeed())
 
 		// and verify dataplane has workload annotation set to service account
 		Eventually(func(g Gomega) {
@@ -77,7 +77,7 @@ func Workload() {
 			// (stored as annotation in k8s, accessible through labels API)
 			workloadLabel := dp.Meta.GetLabels()[metadata.KumaWorkload]
 			g.Expect(workloadLabel).To(Equal(serviceAccount), "workload should equal service account name")
-		}, "30s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should use pod label as workload when workload labels configured", func() {
@@ -103,7 +103,7 @@ func Workload() {
 		Eventually(func(g Gomega) {
 			podName, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s").Should(Succeed())
+		}).Should(Succeed())
 
 		// and verify dataplane has workload annotation set to "test-server" (from app.kubernetes.io/name label)
 		Eventually(func(g Gomega) {
@@ -122,7 +122,7 @@ func Workload() {
 			// verify workload is set from app label, not service account
 			workloadLabel := dp.Meta.GetLabels()[metadata.KumaWorkload]
 			g.Expect(workloadLabel).To(Equal(appLabel), "workload should equal app label value")
-		}, "30s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should reject pod creation with manual kuma.io/workload label", func() {
@@ -180,7 +180,7 @@ spec:
 		Eventually(func(g Gomega) {
 			_, err = PodNameOfApp(kubernetes.Cluster, appName, namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s").Should(Succeed())
+		}).Should(Succeed())
 
 		// and verify Workload resource is created
 		Eventually(func(g Gomega) {
