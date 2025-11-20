@@ -2,7 +2,7 @@
 
 * Status: accepted
 
-Technical Story: <!-- link to the github issue -->
+Technical Story: https://github.com/kumahq/kuma/issues/15049
 
 ## Context and Problem Statement
 
@@ -30,7 +30,7 @@ which cannot behave correctly when a single namespace is spread across multiple 
 
 Add detection to `workload_controller.go` for multiple meshes per namespace and:
 - Skip Workload resource generation when multiple meshes are detected in a namespace
-- Emit an Kubernetes event to inform the user about the configuration issue
+- Emit a Kubernetes event to inform the user about the configuration issue
 
 ### Add Runtime Flag with Future Default Change
 
