@@ -746,10 +746,13 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		var err error
 
 		labels := opts.labels
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		if opts.appLabel != "" {
+			labels["app"] = opts.appLabel
+		}
 		if opts.workload != "" {
-			if labels == nil {
-				labels = make(map[string]string)
-			}
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
@@ -878,11 +881,14 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 
 		// Build labels map, merging opts.labels with appLabel
 		labels := opts.labels
+		if labels == nil {
+			labels = make(map[string]string)
+		}
 		if opts.appLabel != "" {
-			if labels == nil {
-				labels = make(map[string]string)
-			}
 			labels["app"] = opts.appLabel
+		}
+		if opts.workload != "" {
+			labels[metadata.KumaWorkload] = opts.workload
 		}
 
 		// Initialize dataplane template data

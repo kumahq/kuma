@@ -85,9 +85,6 @@ const (
 	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
 	// universal, it's here to avoid import cycles
 	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
-
-	// WorkloadLabel specifies the workload identifier associated with the dataplane.
-	WorkloadLabel string = "kuma.io/workload"
 )
 
 type ResourceOrigin string

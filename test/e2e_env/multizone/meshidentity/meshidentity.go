@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
 )
 
 func Identity() {
@@ -63,14 +62,9 @@ func Identity() {
 			SetupInGroup(multizone.KubeZone2, &group)
 
 		NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
-				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithLabels(map[string]string{
-					mesh_proto.WorkloadLabel: "demo-client",
-				})),
-				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithLabels(map[string]string{
-					mesh_proto.WorkloadLabel: "test-server",
-				})),
+				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client")),
+				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server-zone-4"}), WithWorkload("test-server")),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -81,18 +75,20 @@ func Identity() {
 		DebugUniversal(multizone.Global, meshName)
 		DebugKube(multizone.KubeZone1, meshName, namespace)
 		DebugKube(multizone.KubeZone2, meshName, namespace)
+		DebugUniversal(multizone.UniZone1, meshName)
 	})
 
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 	// identity-c2v4v6874cx8x6c8-cww8457w48b482c7
 	// identity-c2v4v6874cx8x6c8-w54dw4d47449z9z8
 
-	getMeshTrust := func(zone string) (*meshtrust_api.MeshTrust, error) {
-		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), zone, Config.KumaNamespace), "-ojson")
+	getMeshTrust := func(hashValues ...string) (*meshtrust_api.MeshTrust, error) {
+		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), hashValues...), "-ojson")
 		if err != nil {
 			return nil, err
 		}
@@ -101,6 +97,42 @@ func Identity() {
 			return nil, err
 		}
 		return r.GetSpec().(*meshtrust_api.MeshTrust), nil
+	}
+
+	waitForMeshTrust := func(hashValues ...string) *meshtrust_api.MeshTrust {
+		var trust *meshtrust_api.MeshTrust
+		Eventually(func(g Gomega) {
+			var err error
+			trust, err = getMeshTrust(hashValues...)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(trust).ToNot(BeNil())
+		}, "30s", "1s").Should(Succeed())
+		return trust
+	}
+
+	buildMeshTrustYaml := func(trust *meshtrust_api.MeshTrust, sourceZoneName, targetZoneName string, isK8s bool) string {
+		builder := builders.MeshTrust().
+			WithName("identity-trust-" + sourceZoneName).
+			WithMesh(meshName).
+			WithLabels(map[string]string{
+				"kuma.io/origin": "zone",
+				"kuma.io/zone":   targetZoneName,
+			}).
+			WithCA(trust.CABundles[0].PEM.Value).
+			WithTrustDomain(trust.TrustDomain)
+		if isK8s {
+			return builder.WithNamespace(Config.KumaNamespace).KubeYaml()
+		}
+		return builder.UniYaml()
+	}
+
+	installTrustToZone := func(trust *meshtrust_api.MeshTrust, sourceZoneName string, targetZone Cluster, isK8s bool) error {
+		yaml := buildMeshTrustYaml(trust, sourceZoneName, targetZone.ZoneName(), isK8s)
+		if isK8s {
+			return NewClusterSetup().Install(YamlK8s(yaml)).Setup(targetZone)
+		} else {
+			return NewClusterSetup().Install(YamlUniversal(yaml)).Setup(targetZone)
+		}
 	}
 
 	It("should access the service in the same zone using mTLS", func() {
@@ -125,6 +157,15 @@ func Identity() {
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
+		// and
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				multizone.UniZone1, "demo-client", "test-server.svc.mesh.local",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
 		// when
 		yaml := fmt.Sprintf(`
 type: MeshIdentity
@@ -136,7 +177,6 @@ spec:
       matchLabels: {}
   spiffeID:
     trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
-    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
   provider:
     type: Bundled
     bundled:
@@ -174,50 +214,31 @@ spec:
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
+		// and
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				multizone.UniZone1, "demo-client", "test-server.svc.mesh.local",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
 		// when
 		// added Trust from zone 1 to zone 2
-		trustTmpl := `
-apiVersion: kuma.io/v1alpha1
-kind: MeshTrust
-metadata:
-  name: identity-trust-%s
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: %s
-    kuma.io/origin: zone
-    kuma.io/zone: %s
-spec:
-  caBundles:
-    - type: Pem
-      pem:
-        value: |-
-%s
-  trustDomain: %s
-`
-		var trustZone1 *meshtrust_api.MeshTrust
-		Eventually(func(g Gomega) {
-			var err error
-			trustZone1, err = getMeshTrust(multizone.KubeZone1.Name())
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(trustZone1).ToNot(BeNil())
-		}, "30s", "1s").Should(Succeed())
-		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone1.Name(), meshName, multizone.KubeZone2.Name(), utils.Indent(trustZone1.CABundles[0].PEM.Value, 10), trustZone1.TrustDomain))).
-			Setup(multizone.KubeZone2)).To(Succeed())
+		trustZone1 := waitForMeshTrust(multizone.KubeZone1.Name(), Config.KumaNamespace)
+		Expect(installTrustToZone(trustZone1, multizone.KubeZone1.Name(), multizone.KubeZone2, true)).To(Succeed())
+		Expect(installTrustToZone(trustZone1, multizone.KubeZone1.Name(), multizone.UniZone1, false)).To(Succeed())
 
-		var trustZone2 *meshtrust_api.MeshTrust
-		Eventually(func(g Gomega) {
-			var err error
-			trustZone2, err = getMeshTrust(multizone.KubeZone2.Name())
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(trustZone2).ToNot(BeNil())
-		}, "30s", "1s").Should(Succeed())
-		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(trustTmpl, multizone.KubeZone2.Name(), meshName, multizone.KubeZone1.Name(), utils.Indent(trustZone2.CABundles[0].PEM.Value, 10), trustZone2.TrustDomain))).
-			Setup(multizone.KubeZone1)).To(Succeed())
+		trustZone2 := waitForMeshTrust(multizone.KubeZone2.Name(), Config.KumaNamespace)
+		Expect(installTrustToZone(trustZone2, multizone.KubeZone2.Name(), multizone.KubeZone1, true)).To(Succeed())
+		Expect(installTrustToZone(trustZone2, multizone.KubeZone2.Name(), multizone.UniZone1, false)).To(Succeed())
 
-		// and Trust from zone 2 to zone 1
-		// cross zone traffic works
+		trustZone4 := waitForMeshTrust(multizone.UniZone1.Name())
+		Expect(installTrustToZone(trustZone4, multizone.UniZone1.Name(), multizone.KubeZone1, true)).To(Succeed())
+		Expect(installTrustToZone(trustZone4, multizone.UniZone1.Name(), multizone.KubeZone2, true)).To(Succeed())
+
+		// time.Sleep(1 * time.Hour)
+		// cross zone traffic works: kube-1 -> kube-2
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", "test-server.meshidentity.svc.kuma-2.mesh.local",
@@ -227,11 +248,30 @@ spec:
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
-		// cross zone traffic works
+		// cross zone traffic works: kube-2 -> kube-1
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				multizone.KubeZone2, "demo-client", "test-server.meshidentity.svc.kuma-1.mesh.local",
 				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// cross zone traffic works: kube-2 -> uni-1
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				multizone.KubeZone2, "demo-client", "test-server.svc.kuma-4.mesh.local",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// cross zone traffic works: uni-1 -> kube-1
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				multizone.UniZone1, "demo-client", "test-server.meshidentity.svc.kuma-1.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
