@@ -38,6 +38,8 @@ jobs:
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        with:
+          driver-opts: network=host
       - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
