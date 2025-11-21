@@ -103,17 +103,13 @@ jobs:
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
-        with:
-          driver-opts: network=host
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
           echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> "$GITHUB_OUTPUT"
       - name: Build images with BuildKit cache
         env:
-          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=base-images --cache-from=type=gha,scope=${{ matrix.image }} --cache-to=type=gha,mode=max,scope=base-images --cache-to=type=gha,mode=max,scope=${{ matrix.image }}
+          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=${{ matrix.image }} --cache-to=type=gha,mode=max,scope=${{ matrix.image }}
         run: |
           make images/${{ matrix.image }}
       - name: Save Docker images

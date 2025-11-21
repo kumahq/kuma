@@ -42,23 +42,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
-        with:
-          driver-opts: network=host
       - run: |
           make build
       - run: |
           make -j build/distributions
-      - name: Build base images first
-        env:
-          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=base-images --cache-to=type=gha,mode=max,scope=base-images
-        run: |
-          make -j image/static/amd64 image/base/amd64 image/base-root/amd64 image/envoy/amd64
       - uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         id: retry
         env:
-          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=base-images --cache-from=type=gha,scope=e2e --cache-to=type=gha,mode=max,scope=e2e
+          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=e2e --cache-to=type=gha,mode=max,scope=e2e
         with:
           max_attempts: 3
           retry_wait_seconds: 15s
