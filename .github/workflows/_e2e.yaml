@@ -57,7 +57,7 @@ jobs:
       - uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         id: retry
         env:
-          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=e2e --cache-to=type=gha,mode=max,scope=e2e
+          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=base-images --cache-from=type=gha,scope=e2e --cache-to=type=gha,mode=max,scope=base-images --cache-to=type=gha,mode=max,scope=e2e
         with:
           max_attempts: 3
           retry_wait_seconds: 15s
