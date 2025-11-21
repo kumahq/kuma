@@ -82,6 +82,13 @@ jobs:
           gomemlimit=$((mem_total_bytes * 8 / 10))
           echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
+      - name: "Free up disk space for the Runner"
+        uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a # v3.0.0
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          remove_docker_images: true
       - name: Cache Go build
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
