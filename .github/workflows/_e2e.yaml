@@ -35,6 +35,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+      - name: "Download pre-built artifacts"
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: build-artifacts-${{ runner.os }}-${{ runner.arch }}
       - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
@@ -45,10 +49,6 @@ jobs:
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      - run: |
-          make build
-      - run: |
-          make -j build/distributions
       - uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         id: retry
         with:

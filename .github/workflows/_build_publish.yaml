@@ -53,7 +53,13 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
-      - run: |
+      - name: "Download pre-built artifacts"
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: build-artifacts-${{ runner.os }}-${{ runner.arch }}
+      - name: "Build binaries for other architectures if needed"
+        if: ${{ fromJSON(inputs.FULL_MATRIX) }}
+        run: |
           make build
       - id: annotate-image-tag
         name: Image tag

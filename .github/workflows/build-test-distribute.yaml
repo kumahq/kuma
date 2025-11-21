@@ -108,6 +108,16 @@ jobs:
           make clean
       - run: |
           make check
+      - name: "Build binaries for downstream jobs"
+        run: |
+          make build
+      - name: "Upload build artifacts for reuse"
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: build-artifacts-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            build/artifacts-*/**
+          retention-days: 1
       - name: "Set metadata for downstream jobs"
         id: metadata
         run: |
