@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -190,24 +189,6 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesMode string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  meshServices:
-    mode: %s
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name, meshServicesMode)
-	return YamlK8s(mesh)
-}
-
 func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
 	mtp := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -226,16 +207,6 @@ spec:
       default:
         action: Allow`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
-}
-
-func MeshWithMeshServicesUniversal(name string, meshServicesMode string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-meshServices:
-  mode: %s
-`, name, meshServicesMode)
-	return YamlUniversal(mesh)
 }
 
 func MTLSMeshUniversal(name string) InstallFunc {
@@ -408,29 +379,6 @@ conf:
 	return YamlUniversal(cb)
 }
 
-func CircuitBreakerKubernetes(name string) InstallFunc {
-	cb := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: CircuitBreaker
-mesh: %[1]s
-metadata:
-  name: circuit-breaker-all-%[1]s
-spec:
-  sources:
-  - match:
-      kuma.io/service: '*'
-  destinations:
-  - match:
-      kuma.io/service: '*'
-  conf:
-    thresholds:
-      maxConnections: 1024
-      maxPendingRequests: 1024
-      maxRequests: 1024
-      maxRetries: 3`, name)
-	return YamlK8s(cb)
-}
-
 func RetryUniversal(name string) InstallFunc {
 	retry := fmt.Sprintf(`
 type: Retry
@@ -459,39 +407,6 @@ conf:
     maxConnectAttempts: 5
 `, name)
 	return YamlUniversal(retry)
-}
-
-func RetryKubernetes(name string) InstallFunc {
-	retry := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Retry
-mesh: %[1]s
-metadata:
-  name: retry-all-%[1]s
-spec:
-  sources:
-  - match:
-      kuma.io/service: '*'
-  destinations:
-  - match:
-      kuma.io/service: '*'
-  conf:
-    http:
-      numRetries: 5
-      perTryTimeout: 16s
-      backOff:
-        baseInterval: 25ms
-        maxInterval: 250s
-    grpc:
-      numRetries: 5
-      perTryTimeout: 16s
-      backOff:
-        baseInterval: 25ms
-        maxInterval: 250ms
-    tcp:
-      maxConnectAttempts: 5
-`, name)
-	return YamlK8s(retry)
 }
 
 func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
@@ -665,7 +580,7 @@ func universalZoneProxyRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	dpName string,
 	appType AppMode,
-	resourceManifestFunc func(address string, port int) string,
+	resourceManifestFunc func(address string, port int) (string, error),
 	concurrency int,
 ) func(cluster Cluster) error {
 	return func(cluster Cluster) error {
@@ -696,7 +611,10 @@ func universalZoneProxyRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.GetIP()
-		dpYAML := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
+		dpYAML, err := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
+		if err != nil {
+			return err
+		}
 
 		token, err := tokenProvider(uniCluster.name)
 		if err != nil {
@@ -715,8 +633,14 @@ func universalZoneProxyRelatedResource(
 }
 
 func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, AppIngress, address, UniversalZoneIngressPort, port)
+	manifestFunc := func(address string, port int) (string, error) {
+		zi := ZoneIngressTemplateData{
+			Name:              AppIngress,
+			AdvertisedAddress: address,
+			AdvertisedPort:    UniversalZoneIngressPort,
+			Port:              port,
+		}
+		return RenderZoneIngressTemplate(zi)
 	}
 
 	var opts appDeploymentOptions
@@ -727,8 +651,14 @@ func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...Ap
 
 func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
 	name := fmt.Sprintf("%s-%d", AppIngress, advertisedPort)
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
+	manifestFunc := func(address string, port int) (string, error) {
+		zi := ZoneIngressTemplateData{
+			Name:              name,
+			AdvertisedAddress: address,
+			AdvertisedPort:    advertisedPort,
+			Port:              port,
+		}
+		return RenderZoneIngressTemplate(zi)
 	}
 
 	var opts appDeploymentOptions
@@ -738,8 +668,11 @@ func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(_ string, port int) string {
-		return fmt.Sprintf(ZoneEgress, port)
+	manifestFunc := func(_ string, port int) (string, error) {
+		ze := ZoneEgressTemplateData{
+			Port: port,
+		}
+		return RenderZoneEgressTemplate(ze)
 	}
 
 	var opts appDeploymentOptions
@@ -802,30 +735,51 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
+
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
+
+		// Determine service name
+		serviceName := getValueOrDefault(opts.serviceName, name)
 		transparent := opts.transparent != nil && *opts.transparent // default false
-		additionalTags := ""
-		for key, val := range opts.additionalTags {
-			additionalTags += fmt.Sprintf(`
-      %s: %s`, key, val)
-		}
-		serviceName := opts.serviceName
-		if opts.serviceName == "" {
-			serviceName = name
-		}
+		var err error
+
+		// Build dataplane YAML if not provided
 		if appYaml == "" {
+			// Initialize template data with common fields
+			dpp := DataplaneTemplateData{
+				Mesh:           mesh,
+				ServiceName:    serviceName,
+				AdditionalTags: opts.additionalTags,
+				Team:           "client-owners",
+			}
+
+			// Configure based on mode
 			switch {
 			case transparent:
-				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", serviceName, additionalTags, redirectPortInbound, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
-			case opts.bindOutbounds:
-				appYaml = fmt.Sprintf(DemoClientDataplaneBindOutbounds, mesh, "13000", "3000", serviceName, additionalTags)
-			default:
-				if opts.serviceProbe {
-					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", serviceName, additionalTags, "80", "8080")
-				} else {
-					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", serviceName, additionalTags, "80", "8080")
+				dpp.InboundPort = "3000"
+				dpp.TransparentProxy = &TransparentProxyConfig{
+					RedirectPortInbound:  redirectPortInbound,
+					RedirectPortOutbound: redirectPortOutbound,
+					ReachableServices:    opts.reachableServices,
 				}
+			case opts.bindOutbounds:
+				dpp.InboundPort = "13000"
+				dpp.InboundServicePort = "3000"
+			default:
+				dpp.InboundPort = "13000"
+				dpp.InboundServicePort = "3000"
+				dpp.ServiceProbe = opts.serviceProbe
+				dpp.Outbounds = []OutboundConfig{
+					{Port: "4000", Service: "echo-server_kuma-test_svc_80"},
+					{Port: "4001", Service: "echo-server_kuma-test_svc_8080"},
+					{Port: "5000", Service: "external-service"},
+				}
+			}
+
+			appYaml, err = RenderDataplaneTemplate(dpp)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -897,92 +851,85 @@ func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...
 	}
 }
 
+func getValueOrDefault(value string, defaultValue string) string {
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
 func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
-		if opts.protocol == "" {
-			opts.protocol = "http"
+
+		// Determine service name and defaults
+		serviceName := getValueOrDefault(opts.serviceName, "test-server")
+
+		// Build labels map, merging opts.labels with appLabel
+		labels := opts.labels
+		if opts.appLabel != "" {
+			if labels == nil {
+				labels = make(map[string]string)
+			}
+			labels["app"] = opts.appLabel
 		}
-		if opts.serviceVersion == "" {
-			opts.serviceVersion = "v1"
+
+		// Initialize dataplane template data
+		dpp := DataplaneTemplateData{
+			Mesh:               mesh,
+			ServiceName:        serviceName,
+			InboundPort:        "80",
+			InboundServicePort: "8080",
+			Protocol:           getValueOrDefault(string(opts.protocol), "http"),
+			Version:            getValueOrDefault(opts.serviceVersion, "v1"),
+			Instance:           getValueOrDefault(opts.serviceInstance, "1"),
+			Team:               "server-owners",
+			AdditionalTags:     opts.additionalTags,
+			Labels:             labels,
+			ServiceProbe:       opts.serviceProbe,
+			ServiceAddress:     opts.serviceAddress,
+			AppendConfig:       opts.appendDataplaneConfig,
 		}
+
+		// Add transparent proxy configuration
+		transparent := opts.transparent == nil || *opts.transparent // default true
+		if transparent {
+			dpp.TransparentProxy = &TransparentProxyConfig{
+				RedirectPortInbound:  redirectPortInbound,
+				RedirectPortOutbound: redirectPortOutbound,
+			}
+		}
+
+		// Build args
 		args := []string{"test-server"}
 		if len(opts.appArgs) > 0 {
 			args = append(args, opts.appArgs...)
 		}
-		if opts.serviceName == "" {
-			opts.serviceName = "test-server"
+		if len(args) < 2 || args[1] != "grpc" { // grpc client does not have port
+			args = append(args, "--port", "8080")
 		}
-		if opts.serviceInstance == "" {
-			opts.serviceInstance = "1"
-		}
-		transparent := opts.transparent == nil || *opts.transparent // default true
-		transparentProxy := ""
-		if transparent {
-			transparentProxy = fmt.Sprintf(`
-  transparentProxying:
-    redirectPortInbound: %s
-    redirectPortOutbound: %s
-`, redirectPortInbound, redirectPortOutbound)
-		}
+
+		// Generate token if not provided
 		token := opts.token
 		var err error
 		if token == "" {
-			token, err = cluster.GetKuma().GenerateDpToken(mesh, opts.serviceName)
+			token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName)
 			if err != nil {
 				return err
 			}
 		}
 
-		additionalTags := ""
-		for key, val := range opts.additionalTags {
-			additionalTags += fmt.Sprintf(`
-      %s: %s`, key, val)
+		// Render dataplane YAML
+		appYaml, err := RenderDataplaneTemplate(dpp)
+		if err != nil {
+			return err
 		}
-
-		serviceProbe := ""
-		if opts.serviceProbe {
-			serviceProbe = `    serviceProbe:
-      tcp: {}`
-		}
-
-		serviceAddress := ""
-		if opts.serviceAddress != "" {
-			serviceAddress = fmt.Sprintf(`    serviceAddress: %s`, opts.serviceAddress)
-		}
-
-		if len(args) < 2 || args[1] != "grpc" { // grpc client does not have port
-			args = append(args, "--port", "8080")
-		}
-		appYaml := fmt.Sprintf(`
-type: Dataplane
-mesh: %s
-name: {{ name }}
-labels:
-  app: %s
-networking:
-  address:  {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-%s
-    tags:
-      kuma.io/service: %s
-      kuma.io/protocol: %s
-      version: %s
-      instance: '%s'
-      team: server-owners
-%s
-%s
-%s
-%s
-`, mesh, opts.appLabel, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, additionalTags, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
-			WithAppname(opts.serviceName),
+			WithAppname(serviceName),
 			WithTransparentProxy(transparent),
 			WithToken(token),
 			WithArgs(args),
