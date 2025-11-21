@@ -9,6 +9,7 @@ on:
         required: true
 permissions:
   contents: read
+  actions: write # Required for BuildKit GHA cache
 env:
   CI_TOOLS_DIR: ${{ contains(inputs.runner, '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}

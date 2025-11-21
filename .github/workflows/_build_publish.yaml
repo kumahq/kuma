@@ -88,6 +88,7 @@ jobs:
     permissions:
       id-token: write # Required for image signing
       contents: write # needed to upload SBOM assets to GitHub releases
+      actions: write # Required for BuildKit GHA cache
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -111,7 +112,8 @@ jobs:
           DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=${{ matrix.image }} --cache-to=type=gha,mode=max,scope=${{ matrix.image }}
         run: |
           make images/${{ matrix.image }}
-      - run: |
+      - name: Save Docker images
+        run: |
           make docker/save/${{ matrix.image }}
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}

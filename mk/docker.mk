@@ -18,7 +18,9 @@ KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
 
-# Optional cache flags for docker build (e.g., --cache-from=type=gha --cache-to=type=gha,mode=max)
+# Optional cache flags for docker build
+# In CI: Set via env to enable GHA cache (--cache-from=type=gha --cache-to=type=gha,mode=max)
+# Local dev: Leave empty or set to use alternative cache backends
 DOCKER_CACHE_FLAGS ?=
 
 # add targets to build images for each arch
