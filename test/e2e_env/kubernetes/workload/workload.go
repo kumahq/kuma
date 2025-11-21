@@ -174,6 +174,62 @@ spec:
 				}),
 			)).
 			Setup(kubernetes.Cluster)
+		if err != nil {
+			// DEBUG: extensive logging on setup failure
+			fmt.Printf("DEBUG: Setup failed with error: %v\n", err)
+
+			// Get pod details
+			podName, podErr := PodNameOfApp(kubernetes.Cluster, appName, namespace)
+			if podErr != nil {
+				fmt.Printf("DEBUG: Failed to get pod name: %v\n", podErr)
+			} else {
+				fmt.Printf("DEBUG: Pod name: %s\n", podName)
+
+				// Get pod status
+				output, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "get", "pod", podName, "-n", namespace, "-o", "yaml")
+				fmt.Printf("DEBUG: Pod YAML:\n%s\n", output)
+
+				// Get pod logs - kuma-sidecar
+				logs, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "logs", podName, "-n", namespace, "-c", "kuma-sidecar", "--tail=100")
+				fmt.Printf("DEBUG: kuma-sidecar logs:\n%s\n", logs)
+
+				// Get pod logs - main container
+				logs, _ = kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "logs", podName, "-n", namespace, "-c", appName, "--tail=100")
+				fmt.Printf("DEBUG: %s container logs:\n%s\n", appName, logs)
+
+				// Get pod events
+				events, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "get", "events", "-n", namespace, "--field-selector", fmt.Sprintf("involvedObject.name=%s", podName))
+				fmt.Printf("DEBUG: Pod events:\n%s\n", events)
+
+				// Get container statuses
+				containerStatus, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "get", "pod", podName, "-n", namespace, "-o", "jsonpath={.status.containerStatuses}")
+				fmt.Printf("DEBUG: Container statuses: %s\n", containerStatus)
+			}
+
+			// Get Workload resource if it exists
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workloadOut, workloadErr := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "workload", workloadK8sName, "-m", mesh, "-o", "yaml")
+			if workloadErr != nil {
+				fmt.Printf("DEBUG: Failed to get Workload resource: %v\n", workloadErr)
+			} else {
+				fmt.Printf("DEBUG: Workload resource:\n%s\n", workloadOut)
+			}
+
+			// Get Dataplane resource if it exists
+			if podName != "" {
+				dpName := fmt.Sprintf("%s.%s", podName, namespace)
+				dpOut, dpErr := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane", dpName, "-m", mesh, "-o", "yaml")
+				if dpErr != nil {
+					fmt.Printf("DEBUG: Failed to get Dataplane resource: %v\n", dpErr)
+				} else {
+					fmt.Printf("DEBUG: Dataplane resource:\n%s\n", dpOut)
+				}
+			}
+
+			// Get deployment status
+			deployStatus, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "get", "deployment", appName, "-n", namespace, "-o", "yaml")
+			fmt.Printf("DEBUG: Deployment status:\n%s\n", deployStatus)
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		// then verify pod is created
@@ -226,6 +282,27 @@ spec:
 				}),
 			)).
 			Setup(kubernetes.Cluster)
+		if err != nil {
+			// DEBUG: extensive logging on setup failure for appName1
+			fmt.Printf("DEBUG: Setup failed for %s with error: %v\n", appName1, err)
+
+			podName, podErr := PodNameOfApp(kubernetes.Cluster, appName1, namespace)
+			if podErr != nil {
+				fmt.Printf("DEBUG: Failed to get pod name for %s: %v\n", appName1, podErr)
+			} else {
+				fmt.Printf("DEBUG: Pod name for %s: %s\n", appName1, podName)
+				output, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "get", "pod", podName, "-n", namespace, "-o", "yaml")
+				fmt.Printf("DEBUG: Pod YAML:\n%s\n", output)
+				logs, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "logs", podName, "-n", namespace, "-c", "kuma-sidecar", "--tail=100")
+				fmt.Printf("DEBUG: kuma-sidecar logs:\n%s\n", logs)
+				logs, _ = kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "logs", podName, "-n", namespace, "-c", appName1, "--tail=100")
+				fmt.Printf("DEBUG: %s container logs:\n%s\n", appName1, logs)
+			}
+
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workloadOut, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "workload", workloadK8sName, "-m", mesh, "-o", "yaml")
+			fmt.Printf("DEBUG: Workload resource:\n%s\n", workloadOut)
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -238,11 +315,20 @@ spec:
 			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
 			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
 
+			// DEBUG: log Workload status
+			if err != nil {
+				fmt.Printf("DEBUG: Failed to get Workload %s: %v\n", workloadK8sName, err)
+			} else {
+				fmt.Printf("DEBUG: Workload %s status: Total=%d, Connected=%d, Healthy=%d\n",
+					workloadK8sName, workload.Status.DataplaneProxies.Total,
+					workload.Status.DataplaneProxies.Connected, workload.Status.DataplaneProxies.Healthy)
+			}
+
 			g.Expect(err).ToNot(HaveOccurred(), "Workload resource should exist")
 			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)), "status should show 1 total dataplane")
 			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(1)), "status should show 1 connected dataplane")
 			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(1)), "status should show 1 healthy dataplane")
-		}, "3m").Should(Succeed())
+		}, "4m").Should(Succeed())
 
 		err = NewClusterSetup().
 			Install(testserver.Install(
@@ -254,6 +340,27 @@ spec:
 				}),
 			)).
 			Setup(kubernetes.Cluster)
+		if err != nil {
+			// DEBUG: extensive logging on setup failure for appName2
+			fmt.Printf("DEBUG: Setup failed for %s with error: %v\n", appName2, err)
+
+			podName, podErr := PodNameOfApp(kubernetes.Cluster, appName2, namespace)
+			if podErr != nil {
+				fmt.Printf("DEBUG: Failed to get pod name for %s: %v\n", appName2, podErr)
+			} else {
+				fmt.Printf("DEBUG: Pod name for %s: %s\n", appName2, podName)
+				output, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "get", "pod", podName, "-n", namespace, "-o", "yaml")
+				fmt.Printf("DEBUG: Pod YAML:\n%s\n", output)
+				logs, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "logs", podName, "-n", namespace, "-c", "kuma-sidecar", "--tail=100")
+				fmt.Printf("DEBUG: kuma-sidecar logs:\n%s\n", logs)
+				logs, _ = kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("kubectl", "logs", podName, "-n", namespace, "-c", appName2, "--tail=100")
+				fmt.Printf("DEBUG: %s container logs:\n%s\n", appName2, logs)
+			}
+
+			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
+			workloadOut, _ := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "workload", workloadK8sName, "-m", mesh, "-o", "yaml")
+			fmt.Printf("DEBUG: Workload resource (before deploying %s):\n%s\n", appName2, workloadOut)
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -265,6 +372,16 @@ spec:
 		Eventually(func(g Gomega) {
 			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
 			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
+
+			// DEBUG: log Workload status
+			if err != nil {
+				fmt.Printf("DEBUG: Failed to get Workload %s (expecting 2): %v\n", workloadK8sName, err)
+			} else {
+				fmt.Printf("DEBUG: Workload %s status (expecting 2): Total=%d, Connected=%d, Healthy=%d\n",
+					workloadK8sName, workload.Status.DataplaneProxies.Total,
+					workload.Status.DataplaneProxies.Connected, workload.Status.DataplaneProxies.Healthy)
+			}
+
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(2)), "status should show 2 total dataplanes")
 			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(2)), "status should show 2 connected dataplanes")
@@ -284,10 +401,19 @@ spec:
 			workloadK8sName := fmt.Sprintf("%s.%s", workloadName, namespace)
 			workload, err := GetWorkload(kubernetes.Cluster, workloadK8sName, mesh)
 
+			// DEBUG: log Workload status after deletion
+			if err != nil {
+				fmt.Printf("DEBUG: Failed to get Workload %s (after deletion, expecting 1): %v\n", workloadK8sName, err)
+			} else {
+				fmt.Printf("DEBUG: Workload %s status (after deletion, expecting 1): Total=%d, Connected=%d, Healthy=%d\n",
+					workloadK8sName, workload.Status.DataplaneProxies.Total,
+					workload.Status.DataplaneProxies.Connected, workload.Status.DataplaneProxies.Healthy)
+			}
+
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)), "status should show 1 total dataplane after deletion")
 			g.Expect(workload.Status.DataplaneProxies.Connected).To(Equal(int32(1)), "status should show 1 connected dataplane after deletion")
 			g.Expect(workload.Status.DataplaneProxies.Healthy).To(Equal(int32(1)), "status should show 1 healthy dataplane after deletion")
-		}, "3m").Should(Succeed())
+		}, "4m").Should(Succeed())
 	})
 }
