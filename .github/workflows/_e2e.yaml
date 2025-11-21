@@ -46,8 +46,6 @@ jobs:
         with:
           name: build-artifacts-Linux-X64
       - run: |
-          make build
-      - run: |
           make -j build/distributions
       - uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         id: retry
