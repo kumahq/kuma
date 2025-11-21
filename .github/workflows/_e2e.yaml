@@ -28,6 +28,12 @@ jobs:
       matrix:
         parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '4' && '[0, 1, 2, 3]') || '[0]') }}
     steps:
+      - name: "Free up disk space for the Runner"
+        uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a # v3.0.0
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
@@ -35,12 +41,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
-      - name: "Free up disk space for the Runner"
-        uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a # v3.0.0
-        with:
-          remove_android: true
-          remove_dotnet: true
-          remove_haskell: true
       - run: |
           make build
       - run: |
