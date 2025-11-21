@@ -84,8 +84,6 @@ func Identity() {
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
-	// identity-c2v4v6874cx8x6c8-cww8457w48b482c7
-	// identity-c2v4v6874cx8x6c8-w54dw4d47449z9z8
 
 	getMeshTrust := func(hashValues ...string) (*meshtrust_api.MeshTrust, error) {
 		trust, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, hash.HashedName(meshName, hash.HashedName(meshName, "identity"), hashValues...), "-ojson")
