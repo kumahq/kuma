@@ -9,6 +9,7 @@ on:
         type: string
 permissions:
   contents: read
+  actions: write # Required for BuildKit GHA cache in e2e workflow
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
