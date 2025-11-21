@@ -216,8 +216,6 @@ type ResourceTypeDescriptor struct {
 	DumpForGlobal bool
 	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
 	AllowedOnSystemNamespaceOnly bool
-	// IsReferenceableInTo whether this resource type can be used in spec.to[].targetRef
-	IsReferenceableInTo bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
 	ShortName string
 	// IsFromAsRules if true, the entries in the spec.from field should be interpreted as rules.
