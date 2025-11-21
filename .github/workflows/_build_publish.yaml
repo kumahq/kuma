@@ -109,7 +109,7 @@ jobs:
           echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> "$GITHUB_OUTPUT"
       - name: Build images with BuildKit cache
         env:
-          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=${{ matrix.image }} --cache-to=type=gha,mode=max,scope=${{ matrix.image }}
+          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=e2e --cache-from=type=gha,scope=${{ matrix.image }} --cache-to=type=gha,mode=max,scope=${{ matrix.image }}
         run: |
           make images/${{ matrix.image }}
       - name: Save Docker images
