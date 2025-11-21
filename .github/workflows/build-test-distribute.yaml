@@ -8,6 +8,7 @@ on:
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
   contents: read
+  actions: write # Required for BuildKit GHA cache in test/e2e workflows
 env:
   KUMA_DIR: "."
   # To keep CI tools out of the SBOM, we use a `.ci_tools` directory in the parent
@@ -150,6 +151,7 @@ jobs:
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       id-token: write # Required for image signing
+      actions: write # Required for BuildKit GHA cache
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
