@@ -38,7 +38,7 @@ jobs:
       - name: "Download pre-built artifacts"
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: build-artifacts-${{ runner.os }}-${{ runner.arch }}
+          name: build-artifacts-Linux-X64
       - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
