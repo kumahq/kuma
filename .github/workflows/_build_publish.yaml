@@ -103,6 +103,8 @@ jobs:
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074 # v3.4.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b424aad1d0f3cec0e2434f10897c60c50f8dc7a4 # v5.0.0
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"

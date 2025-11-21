@@ -36,6 +36,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b424aad1d0f3cec0e2434f10897c60c50f8dc7a4 # v5.0.0
       - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
