@@ -237,7 +237,6 @@ spec:
 		Expect(installTrustToZone(trustZone4, multizone.UniZone1.Name(), multizone.KubeZone1, true)).To(Succeed())
 		Expect(installTrustToZone(trustZone4, multizone.UniZone1.Name(), multizone.KubeZone2, true)).To(Succeed())
 
-		// time.Sleep(1 * time.Hour)
 		// cross zone traffic works: kube-1 -> kube-2
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
