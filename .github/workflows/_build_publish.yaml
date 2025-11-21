@@ -106,7 +106,10 @@ jobs:
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
           echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> "$GITHUB_OUTPUT"
-      - run: |
+      - name: Build images with BuildKit cache
+        env:
+          DOCKER_CACHE_FLAGS: --cache-from=type=gha,scope=${{ matrix.image }} --cache-to=type=gha,mode=max,scope=${{ matrix.image }}
+        run: |
           make images/${{ matrix.image }}
       - run: |
           make docker/save/${{ matrix.image }}
