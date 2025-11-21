@@ -41,7 +41,6 @@ jobs:
           remove_android: true
           remove_dotnet: true
           remove_haskell: true
-          remove_docker_images: true
       - run: |
           make build
       - run: |
