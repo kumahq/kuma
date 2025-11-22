@@ -29,11 +29,6 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.MetricsBackend",
                     "additionalProperties": true,
                     "description": "Configuration for metrics that should be collected and exposed by the data plane proxy. Settings defined here will override their respective defaults defined at a Mesh level."
-                },
-                "probes": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
-                    "additionalProperties": true,
-                    "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information. Deprecated: this feature will be removed for Universal; on Kubernetes, it's not needed anymore."
                 }
             },
             "additionalProperties": true,
@@ -387,43 +382,6 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Reachable Backends"
-        },
-        "kuma.mesh.v1alpha1.Dataplane.Probes": {
-            "properties": {
-                "port": {
-                    "type": "integer",
-                    "description": "Port on which the probe endpoints will be exposed. This cannot overlap with any other ports."
-                },
-                "endpoints": {
-                    "items": {
-                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint"
-                    },
-                    "type": "array",
-                    "description": "List of endpoints to expose without mTLS."
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Probes"
-        },
-        "kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint": {
-            "properties": {
-                "inbound_port": {
-                    "type": "integer",
-                    "description": "Inbound port is a port of the application from which we expose the endpoint."
-                },
-                "inbound_path": {
-                    "type": "string",
-                    "description": "Inbound path is a path of the application from which we expose the endpoint. It is recommended to be as specific as possible."
-                },
-                "path": {
-                    "type": "string",
-                    "description": "Path is a path on which we expose inbound path on the probes port."
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Endpoint"
         },
         "kuma.mesh.v1alpha1.DataplaneInsight": {
             "properties": {

@@ -3,7 +3,6 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: busybox
-    kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
@@ -11,8 +10,6 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: enabled
-    kuma.io/virtual-probes-port: "9000"
   labels:
     kuma.io/mesh: default
     run: busybox
@@ -29,8 +26,6 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
-    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
-      value: "9000"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
@@ -120,8 +115,8 @@ spec:
   - image: busybox
     livenessProbe:
       httpGet:
-        path: /8080/metrics
-        port: 9000
+        path: /metrics
+        port: liveness-port
       initialDelaySeconds: 3
       periodSeconds: 3
     name: busybox
@@ -134,15 +129,15 @@ spec:
       name: startup-port
     readinessProbe:
       httpGet:
-        path: /3001/metrics
-        port: 9000
+        path: /metrics
+        port: readiness-port
       initialDelaySeconds: 3
       periodSeconds: 3
     resources: {}
     startupProbe:
       httpGet:
-        path: /8081/startup
-        port: 9000
+        path: /startup
+        port: startup-port
       initialDelaySeconds: 3
       periodSeconds: 3
     volumeMounts:
@@ -151,7 +146,6 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --exclude-inbound-ports=9000
     - --verbose
     command:
     - /usr/bin/kumactl

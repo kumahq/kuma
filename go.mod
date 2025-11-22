@@ -296,6 +296,13 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
 
+require github.com/kr/pretty v0.3.1
+
+require (
+	github.com/kr/text v0.2.0 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
+)
+
 replace (
 	github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.4-kong-2
 	github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.32.4-kong-1

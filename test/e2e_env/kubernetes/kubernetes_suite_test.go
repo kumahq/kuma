@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/graceful"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/inspect"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/jobs"
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/k8s_api_bypass"
@@ -54,7 +53,6 @@ var (
 )
 
 var (
-	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 	_ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)

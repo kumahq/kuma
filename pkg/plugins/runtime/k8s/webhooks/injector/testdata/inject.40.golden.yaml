@@ -11,8 +11,6 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
   labels:
     kuma.io/mesh: default
     run: busybox
@@ -29,8 +27,6 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
-    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
-      value: "9000"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
@@ -119,28 +115,24 @@ spec:
       readOnly: true
   - image: busybox
     livenessProbe:
-      httpGet:
-        httpHeaders:
-        - name: X-Kuma-Probes-GRPC-Service
-          value: grpc-service
-        path: /grpc/3333
-        port: 9000
+      grpc:
+        port: 3333
+        service: grpc-service
       initialDelaySeconds: 3
       periodSeconds: 3
     name: busybox
     readinessProbe:
       httpGet:
-        path: /3001/metrics
-        port: 9000
+        path: /metrics
+        port: 3001
       initialDelaySeconds: 3
       periodSeconds: 3
     resources: {}
     startupProbe:
-      httpGet:
-        path: /tcp/8081
-        port: 9000
       initialDelaySeconds: 3
       periodSeconds: 3
+      tcpSocket:
+        port: 8081
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf

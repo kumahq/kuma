@@ -1,6 +1,7 @@
 # gRPC and TCP probes
 
-- Status: accepted
+- Status: superseded
+- **Note**: Virtual Probes and Application Probe Proxy features described in this MADR were removed in Kuma 2.12. Native Kubernetes probes now work directly without requiring special proxy configuration.
 
 Technical Story: https://github.com/kumahq/kuma/issues/3875
 

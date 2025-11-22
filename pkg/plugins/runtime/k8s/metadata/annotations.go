@@ -49,14 +49,6 @@ const (
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
 
-	// KumaVirtualProbesAnnotation enables automatic converting HttpGet probes to virtual. Virtual probe
-	// serves on sub-path of insecure port defined in 'KumaVirtualProbesPortAnnotation',
-	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is a value of'KumaVirtualProbesPortAnnotation'
-	KumaVirtualProbesAnnotation = "kuma.io/virtual-probes"
-
-	// KumaVirtualProbesPortAnnotation is an insecure port for listening virtual probes
-	KumaVirtualProbesPortAnnotation = "kuma.io/virtual-probes-port"
-
 	// KumaApplicationProbeProxyPortAnnotation is a port for proxying application probes
 	KumaApplicationProbeProxyPortAnnotation = "kuma.io/application-probe-proxy-port"
 
@@ -152,8 +144,6 @@ const (
 var PodAnnotationDeprecations = []Deprecation{
 	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
 	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
-	NewDeprecation(KumaVirtualProbesAnnotation, false),
-	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
 	{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
