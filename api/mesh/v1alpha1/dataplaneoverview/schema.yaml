@@ -340,22 +340,6 @@ components:
                       type: integer
                   type: object
               type: object
-            probes:
-              properties:
-                endpoints:
-                  items:
-                    properties:
-                      inboundPath:
-                        type: string
-                      inboundPort:
-                        type: integer
-                      path:
-                        type: string
-                    type: object
-                  type: array
-                port:
-                  type: integer
-              type: object
           type: object
         dataplaneInsight:
           properties:
