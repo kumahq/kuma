@@ -28,6 +28,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshLoadBalancingStrategy configures how traffic is distributed
+          across service instances. It supports multiple load balancing algorithms
+          (round-robin, least request, ring hash, random, maglev), locality-aware
+          routing to prefer nearby instances, and cross-zone failover strategies for
+          high availability.
         properties:
           apiVersion:
             description: |-

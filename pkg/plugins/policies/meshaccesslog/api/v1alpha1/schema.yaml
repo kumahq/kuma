@@ -1,4 +1,5 @@
 type: object
+description: "MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes."
 required: [type, name, spec]
 properties:
   type:

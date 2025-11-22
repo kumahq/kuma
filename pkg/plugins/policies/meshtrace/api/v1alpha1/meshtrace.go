@@ -7,8 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
-// MeshTrace allows users to enable request tracing between services in the mesh
-// and sending these traces to a third party storage.
+// MeshTrace enables distributed tracing to track requests as they flow through multiple services in the mesh. It supports exporting trace data to backends like Zipkin, Datadog, and OpenTelemetry, with configurable sampling rates and custom tags for detailed observability and debugging of service interactions.
 // +kuma:policy:short_name=mtr
 type MeshTrace struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.

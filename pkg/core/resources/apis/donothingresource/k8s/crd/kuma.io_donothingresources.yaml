@@ -21,6 +21,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: DoNothingResource
         properties:
           apiVersion:
             description: |-

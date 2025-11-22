@@ -1,4 +1,5 @@
 type: object
+description: ""
 required: [type, name, spec]
 properties:
   type:

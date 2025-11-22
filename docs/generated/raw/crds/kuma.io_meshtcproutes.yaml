@@ -28,6 +28,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTCPRoute configures routing for TCP traffic between services
+          in the mesh. It enables traffic splitting and weighted load balancing across
+          different backend endpoints, useful for canary deployments, blue-green deployments,
+          and gradual traffic migration for TCP-based services.
         properties:
           apiVersion:
             description: |-

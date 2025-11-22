@@ -178,7 +178,7 @@ import (
 )
 {{- end}}
 
-// {{ .name }}
+// {{ .name }} TODO add some description for public usage!
 // +kuma:policy:skip_registration=true
 // +kuma:policy:is_policy={{ .isPolicy }}
 type {{ .name }} struct {

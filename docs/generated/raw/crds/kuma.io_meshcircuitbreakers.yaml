@@ -28,6 +28,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshCircuitBreaker protects services from cascading failures
+          by limiting connections and detecting unhealthy instances. It provides connection
+          limits to prevent overload and outlier detection to temporarily remove failing
+          endpoints from the load balancing pool.
         properties:
           apiVersion:
             description: |-

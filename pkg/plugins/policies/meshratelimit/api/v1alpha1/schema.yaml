@@ -1,4 +1,5 @@
 type: object
+description: "MeshRateLimit protects services from being overwhelmed by limiting the rate of incoming requests or connections. It supports local rate limiting for both HTTP (requests per interval) and TCP (connections per interval) traffic with customizable response codes and headers for rate-limited requests."
 required: [type, name, spec]
 properties:
   type:

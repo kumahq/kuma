@@ -1,4 +1,5 @@
 type: object
+description: "MeshTrust defines trusted Certificate Authority (CA) bundles for a trust domain in the mesh. It establishes trust relationships for service-to-service mTLS authentication by specifying which CA certificates are trusted to verify service identities, supporting PEM-encoded CA bundles and enabling secure cross-service communication within the trust domain."
 required: [type, name, spec]
 properties:
   type:

@@ -28,6 +28,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshHealthCheck enables active health checking of services in
+          the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC
+          health checks to detect and remove unhealthy instances from the load balancing
+          pool, improving overall service reliability.
         properties:
           apiVersion:
             description: |-
