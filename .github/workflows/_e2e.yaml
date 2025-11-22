@@ -50,11 +50,16 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - name: "Download pre-built artifacts"
+      - name: "Download pre-built artifacts (amd64 only)"
+        if: ${{ runner.arch == 'X64' }}
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: build-artifacts-Linux-X64
-      - run: |
+          path: build
+      - name: "Build distributions"
+        run: |
+          # For amd64: artifacts already downloaded, make will skip rebuild
+          # For arm64: no artifacts, make will build from scratch
           make -j build/distributions
       - uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         id: retry
