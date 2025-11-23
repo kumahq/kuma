@@ -14,6 +14,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
@@ -35,6 +36,7 @@ type DataplaneProxyFactory struct {
 	sidecarContainersEnabled     bool
 	unifiedResourceNamingEnabled bool
 	spireEnabled                 bool
+	applicationProbeProxyPort    uint32
 }
 
 func NewDataplaneProxyFactory(
@@ -47,6 +49,7 @@ func NewDataplaneProxyFactory(
 	sidecarContainersEnabled bool,
 	unifiedResourceNamingEnabled bool,
 	spireEnabled bool,
+	applicationProbeProxyPort uint32,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -58,6 +61,7 @@ func NewDataplaneProxyFactory(
 		sidecarContainersEnabled:     sidecarContainersEnabled,
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		spireEnabled:                 spireEnabled,
+		applicationProbeProxyPort:    applicationProbeProxyPort,
 	}
 }
 
@@ -341,6 +345,17 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DATAPLANE_RUNTIME_SPIRE_SUPPORTED"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_SPIRE_SUPPORTED",
 			Value: "true",
+		}
+	}
+
+	annotations := make(map[string]string)
+	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, podAnnotations, i.applicationProbeProxyPort); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation))
+	}
+	if appProbeProxyPort, exists, _ := metadata.Annotations(annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation); exists {
+		envVars["KUMA_APPLICATION_PROBE_PROXY_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_APPLICATION_PROBE_PROXY_PORT",
+			Value: strconv.Itoa(int(appProbeProxyPort)),
 		}
 	}
 

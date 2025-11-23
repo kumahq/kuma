@@ -122,6 +122,7 @@ func New(
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
 			cfg.UnifiedResourceNamingEnabled,
 			cfg.Spire.Enabled,
+			cfg.ApplicationProbeProxyPort,
 		),
 		systemNamespace: systemNamespace,
 	}, nil
