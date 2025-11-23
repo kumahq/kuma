@@ -1,4 +1,5 @@
 //go:build tools
+// +build tools
 
 // This package contains import references to packages required only for the
 // build process.

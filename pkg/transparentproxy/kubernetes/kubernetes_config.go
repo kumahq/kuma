@@ -11,6 +11,7 @@ import (
 	core_config "github.com/kumahq/kuma/v2/pkg/config"
 	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	k8s_probes "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 )
 
@@ -420,6 +421,17 @@ func ConfigForKubernetes(
 		} else {
 			cfg.Redirect.Inbound.ExcludePorts = v
 		}
+
+		if v, err := k8s_probes.GetApplicationProbeProxyPort(
+			annotations,
+			runtimeCfg.ApplicationProbeProxyPort,
+		); err != nil {
+			return cfg, err
+		} else if v != 0 {
+			if err := cfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", v)); err != nil {
+				return cfg, err
+			}
+		}
 	}
 
 	if v, exists, err := annotations.GetEnabled(k8s_metadata.KumaTransparentProxyingEbpf); err != nil {
@@ -486,6 +498,15 @@ func ConfigToAnnotations(
 
 	if cfg.CNIMode {
 		result[k8s_metadata.CNCFNetworkAnnotation] = k8s_metadata.KumaCNI
+	}
+
+	if v, err := k8s_probes.GetApplicationProbeProxyPort(
+		annotations,
+		runtimeCfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return nil, errors.Wrapf(err, "unable to set %s", k8s_metadata.KumaApplicationProbeProxyPortAnnotation)
+	} else {
+		result[k8s_metadata.KumaApplicationProbeProxyPortAnnotation] = fmt.Sprintf("%d", v)
 	}
 
 	if v, _, err := k8s_metadata.Annotations(result).GetUint32WithDefault(
