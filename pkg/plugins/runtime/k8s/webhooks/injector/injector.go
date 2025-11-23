@@ -25,6 +25,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
 	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
@@ -332,6 +333,10 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
+
+	if err := probes.SetupAppProbeProxies(pod, log); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -881,6 +886,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		metadata.KumaTrafficExcludeInboundIPs,
 	); v != "" {
 		result[metadata.KumaTrafficExcludeInboundIPs] = v
+	}
+
+	if err := probes.SetApplicationProbeProxyPortAnnotation(
+		result,
+		pod.Annotations,
+		i.cfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return nil, errors.Wrap(
+			err,
+			fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation),
+		)
 	}
 
 	return result, nil

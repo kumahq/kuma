@@ -24,7 +24,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		ControlPlaneServiceName: "kuma-control-plane",
 		ServiceAccountName:      defaultServiceAccountName,
 		Injector: Injector{
-			CNIEnabled: false,
+			CNIEnabled:                false,
+			ApplicationProbeProxyPort: 9001,
 			SidecarContainer: SidecarContainer{
 				IpFamilyMode:         "dualstack",
 				RedirectPortInbound:  15006,
@@ -220,6 +221,8 @@ type Injector struct {
 	ContainerPatches []string `json:"containerPatches" envconfig:"kuma_runtime_kubernetes_injector_container_patches"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
 	CNIEnabled bool `json:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
+	// ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS.
+	ApplicationProbeProxyPort uint32 `json:"applicationProbeProxyPort" envconfig:"kuma_runtime_kubernetes_application_probe_proxy_port"`
 	// SidecarTraffic is a configuration for traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `json:"sidecarTraffic"`
 	// Exceptions defines list of exceptions for Kuma injection
