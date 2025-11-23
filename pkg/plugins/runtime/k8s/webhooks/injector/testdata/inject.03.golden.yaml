@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: coredns
+    kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
@@ -131,9 +132,12 @@ spec:
         httpHeaders:
         - name: x-custom-header
           value: custom-value
-        path: /health
-        port: 9999
-        scheme: HTTPS
+        - name: X-Kuma-Probes-Scheme
+          value: HTTPS
+        - name: X-Kuma-Probes-Timeout
+          value: "5"
+        path: /9999/health
+        port: 9000
       initialDelaySeconds: 60
       periodSeconds: 10
       successThreshold: 1
@@ -151,10 +155,11 @@ spec:
       protocol: TCP
     readinessProbe:
       failureThreshold: 3
+      httpGet:
+        path: /tcp/1433
+        port: 9000
       periodSeconds: 10
       successThreshold: 1
-      tcpSocket:
-        port: 1433
       timeoutSeconds: 1
     resources:
       limits:
@@ -173,9 +178,14 @@ spec:
       readOnlyRootFilesystem: true
     startupProbe:
       failureThreshold: 5
-      grpc:
-        port: 5678
-        service: /startup
+      httpGet:
+        httpHeaders:
+        - name: X-Kuma-Probes-Timeout
+          value: "5"
+        - name: X-Kuma-Probes-GRPC-Service
+          value: /startup
+        path: /grpc/5678
+        port: 9000
       initialDelaySeconds: 60
       periodSeconds: 10
       successThreshold: 1
@@ -193,6 +203,7 @@ spec:
   enableServiceLinks: true
   initContainers:
   - args:
+    - --exclude-inbound-ports=9000
     - --verbose
     command:
     - /usr/bin/kumactl

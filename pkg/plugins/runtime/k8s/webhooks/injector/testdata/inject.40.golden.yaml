@@ -115,24 +115,28 @@ spec:
       readOnly: true
   - image: busybox
     livenessProbe:
-      grpc:
-        port: 3333
-        service: grpc-service
+      httpGet:
+        httpHeaders:
+        - name: X-Kuma-Probes-GRPC-Service
+          value: grpc-service
+        path: /grpc/3333
+        port: 9000
       initialDelaySeconds: 3
       periodSeconds: 3
     name: busybox
     readinessProbe:
       httpGet:
-        path: /metrics
-        port: 3001
+        path: /3001/metrics
+        port: 9000
       initialDelaySeconds: 3
       periodSeconds: 3
     resources: {}
     startupProbe:
+      httpGet:
+        path: /tcp/8081
+        port: 9000
       initialDelaySeconds: 3
       periodSeconds: 3
-      tcpSocket:
-        port: 8081
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
