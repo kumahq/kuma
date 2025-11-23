@@ -183,6 +183,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeInboundIPs).To(Equal([]string{"192.168.0.1", "172.32.16.8/16", "a81b:a033:6399:73c7:72b6:aa8c:6f22:7098", "fe80::/10"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundIPs).To(Equal([]string{"10.0.0.1", "172.16.0.0/16", "fe80::1", "fe80::/10"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.Injector.ApplicationProbeProxyPort).To(Equal(uint32(9999)))
 			Expect(cfg.Runtime.Kubernetes.Injector.ContainerPatches).To(Equal([]string{"patch1", "patch2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Image).To(Equal("test-image:test"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.EnvVars).To(Equal(map[string]string{"a": "b", "c": "d"}))
@@ -919,6 +920,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE":                        "dualstack",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND":                "1010",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED":                                             "true",
+				"KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT":                                     "9999",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS":                              "a:b,c:d",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID":                                   "100",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT":                            "1099",
