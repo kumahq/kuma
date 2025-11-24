@@ -237,8 +237,9 @@ func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error
 		return nil
 	}
 	reconciler := &k8s_controllers.WorkloadReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("Workload"),
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("kuma-workload-controller"),
+		Log:           core.Log.WithName("controllers").WithName("Workload"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
