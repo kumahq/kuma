@@ -102,7 +102,17 @@ var _ = Describe("Zone Delta Sync", func() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+<<<<<<< HEAD
 			_ = newPolicySink(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
+=======
+			policySync := client_v2.NewKDSSyncClient(
+				core.Log.WithName("kds-sink"),
+				kdsCtx.TypesSentByGlobal,
+				client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal)),
+				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
+			)
+			_ = policySync.Receive()
+>>>>>>> c4f7db2534 (fix(kds): server Send blocks when client doesn't call Recv for some time (#15042))
 		}()
 		closeFunc = func() {
 			defer GinkgoRecover()

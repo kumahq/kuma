@@ -132,9 +132,38 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
+<<<<<<< HEAD
 	processingErrorsCh := make(chan error)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
 	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+=======
+	defer func() {
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+	}()
+
+	syncClient := kds_client_v2.NewKDSSyncClient(
+		log,
+		c.typesSentByGlobal,
+		kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal)),
+		kds_sync_store.ZoneSyncCallback(
+			stream.Context(),
+			c.resourceSyncer,
+			c.rt.Config().Store.Type == store.KubernetesStore,
+			resources_k8s.NewSimpleKubeFactory(),
+			c.rt.Config().Store.Kubernetes.SystemNamespace,
+		),
+		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+	)
+
+	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
+		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+		return
+	}
+
+	log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
+>>>>>>> c4f7db2534 (fix(kds): server Send blocks when client doesn't call Recv for some time (#15042))
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {

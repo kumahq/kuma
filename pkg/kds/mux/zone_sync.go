@@ -113,8 +113,45 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone)
 	defer shouldDisconnectStream.Close()
 
+<<<<<<< HEAD
 	processingErrorsCh := make(chan error)
 	go g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
+=======
+	processingErrorsCh := make(chan error, 1)
+	go func() {
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
+		sink := kds_client_v2.NewKDSSyncClient(
+			logger,
+			g.typesSentByZone,
+			kdsStream,
+			kds_sync_store_v2.GlobalSyncCallback(
+				stream.Context(),
+				g.resourceSyncer,
+				g.k8sStore,
+				k8s.NewSimpleKubeFactory(),
+				g.systemNamespace,
+			),
+			g.responseBackoff,
+		)
+		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			processingErrorsCh <- errors.Wrap(err, "KDSSyncClient finished with an error")
+			return
+		}
+
+		logger.V(1).Info("KDSSyncClient finished gracefully")
+		processingErrorsCh <- nil
+	}()
+
+	if err := g.storeStreamConnection(stream.Context(), zone, service.ZoneToGlobal, connectTime); err != nil {
+		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
+			return status.Error(codes.Canceled, "stream was cancelled")
+		}
+		logger.Error(err, "could not store stream connection")
+		return status.Error(codes.Internal, "could not store stream connection")
+	}
+	logger.Info("stored stream connection")
+
+>>>>>>> c4f7db2534 (fix(kds): server Send blocks when client doesn't call Recv for some time (#15042))
 	select {
 	case <-shouldDisconnectStream.Recv():
 		logger.Info("ending stream, zone health check failed")
