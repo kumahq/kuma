@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -33,21 +34,106 @@ type stream struct {
 	clientId           string
 	cpConfig           string
 	runtimeInfo        core_runtime.RuntimeInfo
+	instanceID         string
+
+	sendCh chan *envoy_sd.DeltaDiscoveryRequest
+	recvCh chan *envoy_sd.DeltaDiscoveryResponse
+	ctx    context.Context
+	cancel context.CancelCauseFunc
 }
 
 type KDSSyncServiceStream interface {
 	Send(*envoy_sd.DeltaDiscoveryRequest) error
 	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
+	Context() context.Context
 }
 
 func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core_runtime.RuntimeInfo, cpConfig string) DeltaKDSStream {
 	return &stream{
+func NewDeltaKDSStream(
+	s KDSSyncServiceStream,
+	clientID string,
+	instanceID string,
+	cpConfig string,
+	numberOfDistinctTypes int,
+) DeltaKDSStream {
+	ctx, cancel := context.WithCancelCause(s.Context())
+
+	// In theory capacity == numberOfDistinctTypes would be enough:
+	//
+	//   - sendCh: we enqueue one initial DiscoveryRequest per type and only enqueue
+	//     an ACK or NACK after the previous message for that type has been sent
+	//   - recvCh: the server sends at most one DiscoveryResponse per type and waits
+	//     for an ACK or NACK before sending the next one
+	//
+	// To be safer and to tolerate unexpected client or server behavior and future
+	// changes, we add an extra safety margin.
+	capacity := 2*numberOfDistinctTypes + 10
+
+	stream := &stream{
 		streamClient:       s,
 		runtimeInfo:        runtimeInfo,
 		initialRequestDone: make(map[core_model.ResourceType]bool),
 		latestReceived:     make(map[core_model.ResourceType]*latestReceived),
 		clientId:           clientId,
 		cpConfig:           cpConfig,
+		instanceID:         instanceID,
+		sendCh:             make(chan *envoy_sd.DeltaDiscoveryRequest, capacity),
+		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
+		ctx:                ctx,
+		cancel:             cancel,
+	}
+
+	go stream.sendLoop()
+	go stream.recvLoop()
+
+	return stream
+}
+
+func (s *stream) sendLoop() {
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case req := <-s.sendCh:
+			if err := s.streamClient.Send(req); err != nil {
+				s.cancel(err)
+				return
+			}
+		}
+	}
+}
+
+func (s *stream) recvLoop() {
+	for {
+		resp, err := s.streamClient.Recv()
+		if err != nil {
+			s.cancel(err)
+			return
+		}
+		select {
+		case <-s.ctx.Done():
+			return
+		case s.recvCh <- resp:
+		}
+	}
+}
+
+func (s *stream) send(req *envoy_sd.DeltaDiscoveryRequest) error {
+	select {
+	case <-s.ctx.Done():
+		return context.Cause(s.ctx)
+	case s.sendCh <- req:
+		return nil
+	}
+}
+
+func (s *stream) recv() (*envoy_sd.DeltaDiscoveryResponse, error) {
+	select {
+	case <-s.ctx.Done():
+		return nil, context.Cause(s.ctx)
+	case resp := <-s.recvCh:
+		return resp, nil
 	}
 }
 
@@ -88,11 +174,11 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 		ResourceNamesSubscribe: []string{"*"},
 		TypeUrl:                string(resourceType),
 	}
-	return s.streamClient.Send(req)
+	return s.send(req)
 }
 
 func (s *stream) Receive() (UpstreamResponse, error) {
-	resp, err := s.streamClient.Recv()
+	resp, err := s.recv()
 	if err != nil {
 		return UpstreamResponse{}, err
 	}
@@ -121,7 +207,7 @@ func (s *stream) ACK(resourceType core_model.ResourceType) error {
 	if latestReceived == nil {
 		return nil
 	}
-	err := s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
+	err := s.send(&envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce: latestReceived.nonce,
 		Node: &envoy_core.Node{
 			Id: s.clientId,
@@ -140,7 +226,7 @@ func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 		return nil
 	}
 	s.initialRequestDone[resourceType] = true
-	return s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
+	return s.send(&envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce:          latestReceived.nonce,
 		ResourceNamesSubscribe: []string{"*"},
 		TypeUrl:                string(resourceType),
