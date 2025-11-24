@@ -171,7 +171,6 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
-	IsReferenceableInTo:          false,
 	ShortName:                    "mtr",
 	IsFromAsRules:                false,
 }

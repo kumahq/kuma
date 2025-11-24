@@ -44,7 +44,6 @@ type PolicyConfig struct {
 	KDSFlags                     string
 	Scope                        ResourceScope
 	AllowedOnSystemNamespaceOnly bool
-	IsReferenceableInTo          bool
 	KubebuilderMarkers           []string
 	IsFromAsRules                bool
 	RegisterGenerator            bool
@@ -170,9 +169,6 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := parseBool(markers, "kuma:policy:allowed_on_system_namespace_only"); ok {
 		res.AllowedOnSystemNamespaceOnly = v
-	}
-	if v, ok := parseBool(markers, "kuma:policy:is_referenceable_in_to"); ok {
-		res.IsReferenceableInTo = v
 	}
 	if v, ok := parseBool(markers, "kuma:policy:is_from_as_rules"); ok {
 		res.IsFromAsRules = v
