@@ -34,9 +34,9 @@ type DataplaneProxyFactory struct {
 	BuiltinDNS                   runtime_k8s.BuiltinDNS
 	WaitForDataplane             bool
 	sidecarContainersEnabled     bool
+	applicationProbeProxyPort    uint32
 	unifiedResourceNamingEnabled bool
 	spireEnabled                 bool
-	applicationProbeProxyPort    uint32
 }
 
 func NewDataplaneProxyFactory(
@@ -47,9 +47,9 @@ func NewDataplaneProxyFactory(
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
 	sidecarContainersEnabled bool,
+	applicationProbeProxyPort uint32,
 	unifiedResourceNamingEnabled bool,
 	spireEnabled bool,
-	applicationProbeProxyPort uint32,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -59,9 +59,9 @@ func NewDataplaneProxyFactory(
 		BuiltinDNS:                   builtinDNS,
 		WaitForDataplane:             waitForDataplane,
 		sidecarContainersEnabled:     sidecarContainersEnabled,
+		applicationProbeProxyPort:    applicationProbeProxyPort,
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		spireEnabled:                 spireEnabled,
-		applicationProbeProxyPort:    applicationProbeProxyPort,
 	}
 }
 
