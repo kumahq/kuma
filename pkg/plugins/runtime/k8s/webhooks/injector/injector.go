@@ -120,9 +120,8 @@ func New(
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
-			cfg.UnifiedResourceNamingEnabled,
+			cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
 			cfg.Spire.Enabled,
-			cfg.ApplicationProbeProxyPort,
 		),
 		systemNamespace: systemNamespace,
 	}, nil
@@ -882,13 +881,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		result[metadata.KumaTrafficExcludeOutboundIPs] = v
 	}
 
-	if v, _ := annotations.GetStringWithDefault(
-		strings.Join(i.cfg.SidecarTraffic.ExcludeInboundIPs, ","),
-		metadata.KumaTrafficExcludeInboundIPs,
-	); v != "" {
-		result[metadata.KumaTrafficExcludeInboundIPs] = v
-	}
-
 	if err := probes.SetApplicationProbeProxyPortAnnotation(
 		result,
 		pod.Annotations,
@@ -898,6 +890,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 			err,
 			fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation),
 		)
+	}
+
+	if v, _ := annotations.GetStringWithDefault(
+		strings.Join(i.cfg.SidecarTraffic.ExcludeInboundIPs, ","),
+		metadata.KumaTrafficExcludeInboundIPs,
+	); v != "" {
+		result[metadata.KumaTrafficExcludeInboundIPs] = v
 	}
 
 	return result, nil
