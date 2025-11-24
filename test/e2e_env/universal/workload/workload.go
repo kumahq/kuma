@@ -64,7 +64,7 @@ spec:
 			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring("test-server-without-label"))
-		}, "10s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should allow DPP connection when workload label is present for MeshIdentity using workload label", func() {
@@ -105,7 +105,7 @@ labels:
 			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring("backend-with-label"))
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should allow DPP connection when MeshIdentity does not use workload label", func() {
@@ -143,7 +143,7 @@ spec:
 			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring("api-without-label"))
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 
 	It("should allow DPP connection when no MeshIdentity applies", func() {
@@ -159,6 +159,6 @@ spec:
 			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring("other-service"))
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 }

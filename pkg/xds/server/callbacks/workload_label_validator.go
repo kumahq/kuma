@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -78,7 +79,7 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 
 	if _, ok := labels[metadata.KumaWorkload]; !ok {
 		miName := matched.Meta.GetName()
-		errMsg := errors.Errorf(
+		errMsg := fmt.Errorf(
 			"missing required label '%s' - dataplane is selected by MeshIdentity '%s' with path template '%s'",
 			metadata.KumaWorkload,
 			miName,
