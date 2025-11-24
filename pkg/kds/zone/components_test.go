@@ -219,6 +219,7 @@ var _ = Describe("Zone Sync", func() {
 					core.Log.WithName("kds-sink"),
 					kdsCtx.TypesSentByGlobal,
 					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
+					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal)),
 					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
 					0,
 				)
