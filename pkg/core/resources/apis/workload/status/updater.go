@@ -22,6 +22,8 @@ import (
 	util_time "github.com/kumahq/kuma/v2/pkg/util/time"
 )
 
+// StatusUpdater is a component that periodically updates Workload resource status
+// based on associated DataplaneResource and DataplaneInsightResource statuses.
 type StatusUpdater struct {
 	roResManager manager.ReadOnlyResourceManager
 	resManager   manager.ResourceManager

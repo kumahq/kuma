@@ -142,7 +142,7 @@ type KubernetesRuntimeConfig struct {
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
-	// Name of Service Account that is used to run the Control Plane
+	// ServiceAccountName is the name of Service Account that is used to run the Control Plane.
 	//
 	// Deprecated: Use AllowedUsers instead.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
