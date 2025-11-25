@@ -14,7 +14,6 @@ import (
 // It aggregates existing MeshServices by labels.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
-// +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=mzsvc
 // MeshMultizoneServices are only created on global
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag

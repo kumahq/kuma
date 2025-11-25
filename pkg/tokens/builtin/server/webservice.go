@@ -96,10 +96,11 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 	}
 
 	token, err := d.issuer.Generate(request.Request.Context(), issuer.DataplaneIdentity{
-		Mesh: idReq.Mesh,
-		Name: idReq.Name,
-		Type: mesh_proto.ProxyType(idReq.Type),
-		Tags: mesh_proto.MultiValueTagSetFrom(idReq.Tags),
+		Mesh:     idReq.Mesh,
+		Name:     idReq.Name,
+		Type:     mesh_proto.ProxyType(idReq.Type),
+		Tags:     mesh_proto.MultiValueTagSetFrom(idReq.Tags),
+		Workload: idReq.Workload,
 	}, validFor)
 	if err != nil {
 		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
