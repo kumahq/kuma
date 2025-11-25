@@ -31,7 +31,7 @@
     "mise"
   ],
   "automergeStrategy": "squash",
-  "internalChecksFilter": "strict",
+  "internalChecksFilter": "flexible",
   "keepUpdatedLabel": "renovate/keep-updated",
   "rebaseWhen": "conflicted",
   "prTitleStrict": true,
