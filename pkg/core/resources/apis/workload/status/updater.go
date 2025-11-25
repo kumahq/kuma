@@ -22,8 +22,8 @@ import (
 	util_time "github.com/kumahq/kuma/v2/pkg/util/time"
 )
 
-// StatusUpdater is a component that periodically updates Workload resource status
-// based on associated DataplaneResource and DataplaneInsightResource statuses.
+// StatusUpdater periodically updates Workload resource status
+// based on associated DataplaneResource and DataplaneInsightResource.
 type StatusUpdater struct {
 	roResManager manager.ReadOnlyResourceManager
 	resManager   manager.ResourceManager
@@ -122,13 +122,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 
 		log := s.logger.WithValues("workload", workload.GetMeta().GetName(), "mesh", workload.GetMeta().GetMesh())
 
-		// Get dataplanes for this workload
-		// For Kubernetes workloads, the name format is "{name}.{namespace}"
-		// but the kuma.io/workload label on dataplanes is just "{name}"
-		workloadIdentifier := workload.GetMeta().GetName()
-		if idx := strings.Index(workloadIdentifier, "."); idx > 0 {
-			workloadIdentifier = workloadIdentifier[:idx]
-		}
+		workloadIdentifier := extractWorkloadIdentifier(workload.GetMeta().GetName())
 
 		var matchingDps []*core_mesh.DataplaneResource
 		if meshDps, ok := dpsByMeshAndWorkload[workload.GetMeta().GetMesh()]; ok {
@@ -155,6 +149,15 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func extractWorkloadIdentifier(fullName string) string {
+	// For Kubernetes workloads, name format is "{name}.{namespace}"
+	// but kuma.io/workload label on dataplanes is just "{name}"
+	if idx := strings.Index(fullName, "."); idx > 0 {
+		return fullName[:idx]
+	}
+	return fullName
 }
 
 func buildDataplaneProxies(
