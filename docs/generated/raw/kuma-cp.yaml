@@ -214,8 +214,6 @@ runtime:
   kubernetes:
     # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.
     controlPlaneServiceName: kuma-control-plane # ENV: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
-    # Name of Service Account that is used to run the Control Plane
-    serviceAccountName: "system:serviceaccount:kuma-system:kuma-control-plane" # ENV: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
     # Taint controller that prevents applications from scheduling until CNI is ready.
     nodeTaintController:
       # If true enables the taint controller.

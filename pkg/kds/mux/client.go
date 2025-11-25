@@ -175,7 +175,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	syncClient := kds_client_v2.NewKDSSyncClient(
 		log,
 		c.typesSentByGlobal,
-		kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson),
+		kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal)),
 		kds_sync_store.ZoneSyncCallback(
 			stream.Context(),
 			c.resourceSyncer,
