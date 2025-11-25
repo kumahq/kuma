@@ -34,7 +34,6 @@ type stream struct {
 	clientId           string
 	cpConfig           string
 	runtimeInfo        core_runtime.RuntimeInfo
-	instanceID         string
 
 	sendCh chan *envoy_sd.DeltaDiscoveryRequest
 	recvCh chan *envoy_sd.DeltaDiscoveryResponse
@@ -48,12 +47,10 @@ type KDSSyncServiceStream interface {
 	Context() context.Context
 }
 
-func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core_runtime.RuntimeInfo, cpConfig string) DeltaKDSStream {
-	return &stream{
 func NewDeltaKDSStream(
 	s KDSSyncServiceStream,
-	clientID string,
-	instanceID string,
+	clientId string,
+	runtimeInfo core_runtime.RuntimeInfo,
 	cpConfig string,
 	numberOfDistinctTypes int,
 ) DeltaKDSStream {
@@ -77,7 +74,6 @@ func NewDeltaKDSStream(
 		latestReceived:     make(map[core_model.ResourceType]*latestReceived),
 		clientId:           clientId,
 		cpConfig:           cpConfig,
-		instanceID:         instanceID,
 		sendCh:             make(chan *envoy_sd.DeltaDiscoveryRequest, capacity),
 		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
 		ctx:                ctx,
