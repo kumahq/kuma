@@ -4,7 +4,7 @@ DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
 # renovate[docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io
-OAPI_TOOL_VERSION ?= v1.3.0@sha256:af710d0810c2fa081ef21d1534a33069d81c519dae32dc89fdc106c635d01b22
+OAPI_TOOL_VERSION ?= v1.3.1@sha256:9c0234cb3c7de79c0fc671cb11fd7c9c490325e0012fbaf8312edd6b99f065a7
 OAPI_TOOL_IMAGE   := ghcr.io/kumahq/openapi-tool:$(OAPI_TOOL_VERSION)
 
 .PHONY: clean/docs
