@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -133,8 +134,15 @@ func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, 
 		ServiceAccount: meta.GetLabels()[metadata.KumaServiceAccount],
 		Workload:       meta.GetLabels()[metadata.KumaWorkload],
 	}
-
-	return renderTemplate(spiffeIDTemplate, meta, data)
+	path, err := renderTemplate(spiffeIDTemplate, meta, data)
+	if err != nil {
+		return "", err
+	}
+	spiffeID, err := spiffeid.FromString(path)
+	if err != nil {
+		return "", err
+	}
+	return spiffeID.String() , nil
 }
 
 func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, error) {

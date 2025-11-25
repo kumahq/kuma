@@ -28,7 +28,7 @@ import (
 var _ = Describe("Spire Providers Test", func() {
 	var spireProvider providers.IdentityProvider
 	BeforeEach(func() {
-		spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets", "socket", "my-zone", config_core.KubernetesEnvironment)
+		spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets/socket", "my-zone", config_core.KubernetesEnvironment)
 	})
 
 	Context("CreateIdentity", func() {

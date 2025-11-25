@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
@@ -254,6 +255,12 @@ func (s *StatusUpdater) buildTLS(
 		}
 		if identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities); matches {
 			if identity.Status.IsInitialized() {
+				// spire manages trusts so we don't need to validate if trustDomain is supported
+				if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
+					allTrustDomainsSupported = true
+					dppsWithIdentities++
+					continue
+				}
 				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
 				if err != nil {
 					s.logger.Error(err, "cannot resolve trust domain")
@@ -295,6 +302,7 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
+		core.Log.Info("GET ME TAGS", "tags", dpp.GetMeta().GetLabels())
 		for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
 			serviceTagIdentities[service] = struct{}{}
 		}

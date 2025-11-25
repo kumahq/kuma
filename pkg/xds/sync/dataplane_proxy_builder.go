@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/logs"
@@ -44,6 +45,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
+	core.Log.Info("DataplaneProxyBuilder build test", "dp.Meta", dp.Meta, "dp.GetMeta(", dp.GetMeta())
 
 	tpEnabled := tproxy_dp.GetDataplaneConfig(dp, meta).Enabled()
 	routing, destinations, outbounds := p.resolveRouting(ctx, meshContext, dp, tpEnabled, meta.HasFeature(xds_types.FeatureBindOutbounds))

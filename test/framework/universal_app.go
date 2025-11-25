@@ -43,6 +43,8 @@ type UniversalApp struct {
 	mainAppCmd          string
 	dpApp               *kssh.Session
 	dpAppCmd            string
+	spireAgent          *kssh.Session
+	spireAgentCmd       string
 	ports               map[string]string
 	container           string
 	containerName       string
@@ -255,6 +257,27 @@ func (s *UniversalApp) CreateMainApp(cmd string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (s *UniversalApp) CreateSpireAgent(
+	name, token, serverAddress, port, trustDomain string,
+) error {
+	cmd := &strings.Builder{}
+	_, _ = cmd.WriteString("#!/bin/sh\n")
+	args := []string{
+		"/usr/bin/spire-agent", "run",
+		"-config", "/spire/spire-agent.conf",
+		"--serverAddress=" + serverAddress,
+		"--serverPort=" + port,
+		"--trustDomain=" + trustDomain,
+		"-joinToken=" + token,
+	}
+
+	_, _ = cmd.WriteString(strings.Join(args, " "))
+	s.spireAgentCmd = cmd.String()
+	var err error
+	s.spireAgent, err = s.newSession("spire-agent-"+name, s.spireAgentCmd)
+	return err
 }
 
 func (s *UniversalApp) CreateDP(

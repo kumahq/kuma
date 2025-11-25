@@ -125,6 +125,11 @@ type appDeploymentOptions struct {
 	bindOutbounds         bool
 	labels                map[string]string
 	workload              string
+	spireAgent            bool
+	spireAgentToken       string
+	spireServerAddress    string
+	spireServerPort       string
+	spireTrustDomain      string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -542,6 +547,16 @@ func WithToken(token string) AppDeploymentOption {
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.transparent = &transparent
+	})
+}
+
+func WithSpireAgent(token string, serverAddress string, port string, trustDomain string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.spireAgent = true
+		o.spireAgentToken = token
+		o.spireServerAddress = serverAddress
+		o.spireServerPort = port
+		o.spireTrustDomain = trustDomain
 	})
 }
 
