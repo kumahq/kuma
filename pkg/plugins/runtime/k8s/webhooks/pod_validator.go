@@ -59,7 +59,7 @@ func (h *PodValidator) ValidatePod(ctx context.Context, req admission.Request) a
 
 func (h *PodValidator) validateMultipleMeshesPerNamespace(ctx context.Context, pod *kube_core.Pod) admission.Response {
 	// Get the mesh for this pod
-	podMesh := pod.Annotations[metadata.KumaMeshAnnotation]
+	podMesh := pod.Annotations[metadata.KumaMeshLabel]
 	if podMesh == "" {
 		podMesh = "default"
 	}
