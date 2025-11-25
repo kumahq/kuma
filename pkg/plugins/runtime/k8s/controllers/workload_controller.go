@@ -24,6 +24,8 @@ import (
 )
 
 const (
+	// MultipleMeshesDetectedReason is a Kubernetes event type, used when
+	// dataplanes in multiple meshes reference the same workload.
 	MultipleMeshesDetectedReason = "MultipleMeshesDetected"
 )
 
@@ -95,12 +97,12 @@ func (r *WorkloadReconciler) handleMultipleMeshesDetected(ctx context.Context, n
 
 	log.Error(errors.New("multiple meshes detected"),
 		"namespace has dataplanes in multiple meshes for same workload",
-		"namespace", namespace,
-		"workload", workloadName,
 		"meshCount", meshCount)
 
 	ns := &kube_core.Namespace{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Name: namespace}, ns); err == nil {
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: namespace}, ns); err != nil {
+		log.V(1).Info("unable to fetch namespace for event emission", "error", err)
+	} else {
 		r.Eventf(ns, kube_core.EventTypeWarning, MultipleMeshesDetectedReason,
 			"Skipping Workload generation: namespace %s has pods in multiple meshes (%d meshes) for workload %s. This configuration is not supported.",
 			namespace, meshCount, workloadName)
