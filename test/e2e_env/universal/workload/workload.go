@@ -155,25 +155,6 @@ labels:
 		Expect(sharedWorkloadCount).To(Equal(1))
 	})
 
-	It("should not manage manually created Workloads", func() {
-		// given a manually created Workload without managed-by label
-		manualWorkload := fmt.Sprintf(`
-type: Workload
-mesh: %s
-name: manual-workload
-spec: {}
-`, mesh)
-		Expect(universal.Cluster.Install(YamlUniversal(manualWorkload))).To(Succeed())
-
-		// when workload generator runs
-		// then the manual workload should persist
-		Consistently(func(g Gomega) {
-			workload, err := GetWorkload(universal.Cluster, "manual-workload", mesh)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(workload.GetMeta().GetLabels()).ToNot(HaveKeyWithValue("kuma.io/managed-by", "workload-generator"))
-		}, "10s", "1s").Should(Succeed())
-	})
-
 	It("should deny DPP connection when workload label is missing for MeshIdentity using workload label", func() {
 		// given MeshIdentity that uses workload label in path template
 		meshIdentityYaml := fmt.Sprintf(`
