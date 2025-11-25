@@ -159,7 +159,11 @@ func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloa
 }
 
 func (g *Generator) removeGracePeriodLabel(ctx context.Context, log logr.Logger, workload *workload_api.WorkloadResource) {
-	newLabels := maps.Clone(workload.GetMeta().GetLabels())
+	labels := workload.GetMeta().GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	newLabels := maps.Clone(labels)
 	delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
 
 	if err := g.resManager.Update(ctx, workload, store.UpdateWithLabels(newLabels)); err != nil {
@@ -175,7 +179,11 @@ func (g *Generator) setGracePeriodLabel(ctx context.Context, log logr.Logger, wo
 		log.Error(err, "couldn't marshal time.Now as text, this shouldn't be possible")
 		return
 	}
-	newLabels := maps.Clone(workload.GetMeta().GetLabels())
+	labels := workload.GetMeta().GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	newLabels := maps.Clone(labels)
 	newLabels[mesh_proto.DeletionGracePeriodStartedLabel] = string(nowText)
 	if err := g.resManager.Update(ctx, workload, store.UpdateWithLabels(newLabels)); err != nil {
 		log.Error(err, "couldn't update Workload")

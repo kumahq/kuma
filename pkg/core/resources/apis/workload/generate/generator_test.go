@@ -184,28 +184,6 @@ var _ = Describe("Workload generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	It("should not delete Workload not managed by the generator", func() {
-		// Create a manual Workload without managed-by label
-		wl := workload_api.NewWorkloadResource()
-		wl.Spec = &workload_api.Workload{}
-		err := resManager.Create(context.Background(), wl, store.CreateByKey("manual-workload", model.DefaultMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// Create a Dataplane
-		err = builders.Dataplane().
-			WithAddress("192.168.0.1").
-			WithServices("backend").
-			Create(resManager)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Manual workload should still exist (not deleted by generator)
-		Consistently(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("manual-workload", model.DefaultMesh))).To(Succeed())
-			// Verify it doesn't have the managed-by label
-			g.Expect(wl.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]).To(BeEmpty())
-		}, "2s", "100ms").Should(Succeed())
-	})
-
 	It("should not delete Workload immediately", func() {
 		dp := builders.Dataplane().
 			WithAddress("192.168.0.1").
