@@ -115,28 +115,18 @@ func (g *Generator) handleExistingWorkload(ctx context.Context, log logr.Logger,
 	log = log.WithValues("Workload", workload.GetMeta().GetName())
 	gracePeriodStartedAtText, hasGracePeriodLabel := workload.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
 
-	if stillExists && hasGracePeriodLabel {
-		// Workload is still in use, unset the grace period by deleting the label
-		newLabels := maps.Clone(workload.GetMeta().GetLabels())
-		delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
-
-		if err := g.resManager.Update(ctx, workload, store.UpdateWithLabels(newLabels)); err != nil {
-			log.Error(err, "couldn't update Workload")
-			return
-		}
-		log.Info("updated Workload", "reason", "no longer scheduled for deletion")
-		return
-	}
-
 	if stillExists {
+		if hasGracePeriodLabel {
+			g.removeGracePeriodLabel(ctx, log, workload)
+		}
 		return
 	}
 
 	gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
-	if hasGracePeriodLabel && err == nil {
-		if time.Since(gracePeriodStartedAt) <= g.deletionGracePeriod {
-			return
-		}
+	if err != nil {
+		log.Info("couldn't parse grace period label, ignoring", "value", gracePeriodStartedAtText)
+	}
+	if hasGracePeriodLabel && time.Since(gracePeriodStartedAt) > g.deletionGracePeriod {
 		if err := g.resManager.Delete(ctx, workload_api.NewWorkloadResource(), store.DeleteBy(model.MetaToResourceKey(workload.GetMeta()))); err != nil {
 			log.Error(err, "couldn't delete Workload")
 		} else {
@@ -145,21 +135,7 @@ func (g *Generator) handleExistingWorkload(ctx context.Context, log logr.Logger,
 		return
 	}
 
-	if hasGracePeriodLabel && err != nil {
-		log.Info("couldn't parse grace period label, ignoring", "value", gracePeriodStartedAtText)
-	}
-	nowText, err := time.Now().MarshalText()
-	if err != nil {
-		log.Error(err, "couldn't marshal time.Now as text, this shouldn't be possible")
-		return
-	}
-	newLabels := maps.Clone(workload.GetMeta().GetLabels())
-	newLabels[mesh_proto.DeletionGracePeriodStartedLabel] = string(nowText)
-	if err := g.resManager.Update(ctx, workload, store.UpdateWithLabels(newLabels)); err != nil {
-		log.Error(err, "couldn't update Workload")
-		return
-	}
-	log.Info("Workload deletion grace period started", "period", g.deletionGracePeriod.String())
+	g.setGracePeriodLabel(ctx, log, workload)
 }
 
 func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloadName, mesh string) {
@@ -180,6 +156,32 @@ func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloa
 		return
 	}
 	log.Info("created Workload")
+}
+
+func (g *Generator) removeGracePeriodLabel(ctx context.Context, log logr.Logger, workload *workload_api.WorkloadResource) {
+	newLabels := maps.Clone(workload.GetMeta().GetLabels())
+	delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
+
+	if err := g.resManager.Update(ctx, workload, store.UpdateWithLabels(newLabels)); err != nil {
+		log.Error(err, "couldn't update Workload")
+		return
+	}
+	log.Info("updated Workload", "reason", "no longer scheduled for deletion")
+}
+
+func (g *Generator) setGracePeriodLabel(ctx context.Context, log logr.Logger, workload *workload_api.WorkloadResource) {
+	nowText, err := time.Now().MarshalText()
+	if err != nil {
+		log.Error(err, "couldn't marshal time.Now as text, this shouldn't be possible")
+		return
+	}
+	newLabels := maps.Clone(workload.GetMeta().GetLabels())
+	newLabels[mesh_proto.DeletionGracePeriodStartedLabel] = string(nowText)
+	if err := g.resManager.Update(ctx, workload, store.UpdateWithLabels(newLabels)); err != nil {
+		log.Error(err, "couldn't update Workload")
+		return
+	}
+	log.Info("Workload deletion grace period started", "period", g.deletionGracePeriod.String())
 }
 
 func (g *Generator) NeedLeaderElection() bool {
