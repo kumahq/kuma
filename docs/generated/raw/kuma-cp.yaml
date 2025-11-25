@@ -433,6 +433,11 @@ runtime:
     zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
     vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
+    workload:
+      # How often we check whether Workloads need to be generated from Dataplanes
+      generationInterval: 2s # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL
+      # How long we wait before deleting a Workload if all Dataplanes are gone
+      deletionGracePeriod: 1h # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_DELETION_GRACE_PERIOD
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh
@@ -868,8 +873,3 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
-workload:
-  # How often we check whether Workloads need to be generated from Dataplanes
-  generationInterval: 2s # ENV: KUMA_WORKLOAD_GENERATION_INTERVAL
-  # How long we wait before deleting a Workload if all Dataplanes are gone
-  deletionGracePeriod: 1h # ENV: KUMA_WORKLOAD_DELETION_GRACE_PERIOD

@@ -392,8 +392,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
-			Expect(cfg.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
-			Expect(cfg.Workload.DeletionGracePeriod.Duration).To(Equal(12 * time.Second))
+			Expect(cfg.Runtime.Universal.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
+			Expect(cfg.Runtime.Universal.Workload.DeletionGracePeriod.Duration).To(Equal(12 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
@@ -504,6 +504,9 @@ runtime:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
     vipRefreshInterval: 10s
+    workload:
+      generationInterval: 9s
+      deletionGracePeriod: 12s
   kubernetes:
     serviceAccountName: custom-sa
     allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
@@ -820,9 +823,6 @@ ipam:
 meshService:
   generationInterval: 8s
   deletionGracePeriod: 11s
-workload:
-  generationInterval: 9s
-  deletionGracePeriod: 12s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1124,8 +1124,8 @@ workload:
 				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
-				"KUMA_WORKLOAD_GENERATION_INTERVAL":                                                        "9s",
-				"KUMA_WORKLOAD_DELETION_GRACE_PERIOD":                                                      "12s",
+				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL":                                      "9s",
+				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_DELETION_GRACE_PERIOD":                                    "12s",
 			},
 			yamlFileConfig: "",
 		}),

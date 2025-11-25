@@ -1,3 +1,6 @@
 dataplaneCleanupAge: 72h0m0s
-zoneResourceCleanupAge: 72h0m0s
 vipRefreshInterval: 500ms
+workload:
+    deletionGracePeriod: 1h0m0s
+    generationInterval: 2s
+zoneResourceCleanupAge: 72h0m0s
