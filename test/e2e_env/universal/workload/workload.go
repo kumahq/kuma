@@ -17,28 +17,28 @@ func expectManagedWorkload(g Gomega, cluster Cluster, name, mesh string) {
 }
 
 func Workload() {
-	meshName := "workload-test"
+	const mesh = "workload"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MeshUniversal(meshName)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {
-		DebugUniversal(universal.Cluster, meshName)
+		DebugUniversal(universal.Cluster, mesh)
 	})
 
 	E2EAfterAll(func() {
 		// Delete manually created dataplanes first
-		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "dp-with-workload", "-m", meshName)
-		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "manual-dp-1", "-m", meshName)
-		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "manual-dp-2", "-m", meshName)
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "dp-with-workload", "-m", mesh)
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "manual-dp-1", "-m", mesh)
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "manual-dp-2", "-m", mesh)
 
-		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	It("should auto-generate Workload from Dataplane", func() {
@@ -56,13 +56,13 @@ networking:
       kuma.io/protocol: http
 labels:
   kuma.io/workload: auto-workload
-`, meshName)
+`, mesh)
 		Expect(universal.Cluster.Install(YamlUniversal(dataplane))).To(Succeed())
 
 		// when workload generator runs
 		// then a Workload resource should be auto-created
 		Eventually(func(g Gomega) {
-			expectManagedWorkload(g, universal.Cluster, "auto-workload", meshName)
+			expectManagedWorkload(g, universal.Cluster, "auto-workload", mesh)
 		}, "1m", "1s").Should(Succeed())
 	})
 
@@ -81,20 +81,20 @@ networking:
       kuma.io/protocol: http
 labels:
   kuma.io/workload: workload-for-deletion
-`, meshName)
+`, mesh)
 		Expect(universal.Cluster.Install(YamlUniversal(dataplane))).To(Succeed())
 
 		// when workload is created
 		Eventually(func(g Gomega) {
-			expectManagedWorkload(g, universal.Cluster, "workload-for-deletion", meshName)
+			expectManagedWorkload(g, universal.Cluster, "workload-for-deletion", mesh)
 		}, "30s", "1s").Should(Succeed())
 
 		// and dataplane is deleted
-		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "dp-for-deletion", "-m", meshName)).To(Succeed())
+		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "dp-for-deletion", "-m", mesh)).To(Succeed())
 
 		// then workload should be marked with deletion grace period label
 		Eventually(func(g Gomega) {
-			workload, err := GetWorkload(universal.Cluster, "workload-for-deletion", meshName)
+			workload, err := GetWorkload(universal.Cluster, "workload-for-deletion", mesh)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(workload.GetMeta().GetLabels()).To(HaveKey("kuma.io/deletion-grace-period-started-at"))
 		}, "30s", "1s").Should(Succeed())
@@ -118,7 +118,7 @@ networking:
       kuma.io/protocol: http
 labels:
   kuma.io/workload: shared-workload
-`, meshName)
+`, mesh)
 		dataplane2 := fmt.Sprintf(`
 type: Dataplane
 mesh: %s
@@ -132,7 +132,7 @@ networking:
       kuma.io/protocol: http
 labels:
   kuma.io/workload: shared-workload
-`, meshName)
+`, mesh)
 
 		Expect(universal.Cluster.Install(YamlUniversal(dataplane1))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(dataplane2))).To(Succeed())
@@ -140,11 +140,11 @@ labels:
 		// when workload generator runs
 		// then only one Workload should be created
 		Eventually(func(g Gomega) {
-			expectManagedWorkload(g, universal.Cluster, "shared-workload", meshName)
+			expectManagedWorkload(g, universal.Cluster, "shared-workload", mesh)
 		}, "30s", "1s").Should(Succeed())
 
 		// verify only one workload named "shared-workload" exists
-		workloads, err := universal.Cluster.GetKumactlOptions().KumactlList("workloads", meshName)
+		workloads, err := universal.Cluster.GetKumactlOptions().KumactlList("workloads", mesh)
 		Expect(err).ToNot(HaveOccurred())
 		sharedWorkloadCount := 0
 		for _, name := range workloads {
@@ -162,15 +162,148 @@ type: Workload
 mesh: %s
 name: manual-workload
 spec: {}
-`, meshName)
+`, mesh)
 		Expect(universal.Cluster.Install(YamlUniversal(manualWorkload))).To(Succeed())
 
 		// when workload generator runs
 		// then the manual workload should persist
 		Consistently(func(g Gomega) {
-			workload, err := GetWorkload(universal.Cluster, "manual-workload", meshName)
+			workload, err := GetWorkload(universal.Cluster, "manual-workload", mesh)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(workload.GetMeta().GetLabels()).ToNot(HaveKeyWithValue("kuma.io/managed-by", "workload-generator"))
 		}, "10s", "1s").Should(Succeed())
+	})
+
+	It("should deny DPP connection when workload label is missing for MeshIdentity using workload label", func() {
+		// given MeshIdentity that uses workload label in path template
+		meshIdentityYaml := fmt.Sprintf(`
+type: MeshIdentity
+name: mi-with-workload-label
+mesh: %s
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: test-server
+  spiffeID:
+    trustDomain: "{{ label \"kuma.io/mesh\" }}.mesh.local"
+    path: "/workload/{{ label \"kuma.io/workload\" }}"
+  provider:
+    type: Bundled
+    bundled:
+      autogenerate:
+        enabled: true
+`, mesh)
+		Expect(YamlUniversal(meshIdentityYaml)(universal.Cluster)).To(Succeed())
+
+		// when trying to start proxy without workload label
+		err := TestServerUniversal("test-server-without-label", mesh,
+			WithArgs([]string{"echo", "--instance", "test-v1"}),
+			WithServiceName("test-server"),
+			WithAppLabel("test-server"),
+		)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane should not be registered due to validator rejection
+		Consistently(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).ToNot(ContainSubstring("test-server-without-label"))
+		}).Should(Succeed())
+	})
+
+	It("should allow DPP connection when workload label is present for MeshIdentity using workload label", func() {
+		// given MeshIdentity that uses workload label in path template
+		meshIdentityYaml := fmt.Sprintf(`
+type: MeshIdentity
+name: mi-with-workload-label-2
+mesh: %s
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: backend
+  spiffeID:
+    trustDomain: "{{ label \"kuma.io/mesh\" }}.mesh.local"
+    path: "/workload/{{ label \"kuma.io/workload\" }}"
+  provider:
+    type: Bundled
+    bundled:
+      autogenerate:
+        enabled: true
+`, mesh)
+		Expect(YamlUniversal(meshIdentityYaml)(universal.Cluster)).To(Succeed())
+
+		// when trying to start test server with workload label
+		err := TestServerUniversal("backend-with-label", mesh,
+			WithArgs([]string{"echo", "--instance", "backend-v1"}),
+			WithServiceName("backend"),
+			WithAppLabel("backend"),
+			WithAppendDataplaneYaml(`
+labels:
+  kuma.io/workload: my-workload`),
+		)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane proxy should connect successfully
+		Eventually(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("backend-with-label"))
+		}).Should(Succeed())
+	})
+
+	It("should allow DPP connection when MeshIdentity does not use workload label", func() {
+		// given MeshIdentity that does NOT use workload label in path template
+		meshIdentityYaml := fmt.Sprintf(`
+type: MeshIdentity
+name: mi-without-workload-label
+mesh: %s
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: api
+  spiffeID:
+    trustDomain: "mesh.local"
+    path: "/ns/default/sa/{{ label \"kuma.io/service\" }}"
+  provider:
+    type: Bundled
+    bundled:
+      autogenerate:
+        enabled: true
+`, mesh)
+		Expect(YamlUniversal(meshIdentityYaml)(universal.Cluster)).To(Succeed())
+
+		// when trying to start test server without workload label
+		err := TestServerUniversal("api-without-label", mesh,
+			WithArgs([]string{"echo", "--instance", "api-v1"}),
+			WithServiceName("api"),
+			WithAppLabel("api"),
+		)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane proxy should connect successfully
+		Eventually(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("api-without-label"))
+		}).Should(Succeed())
+	})
+
+	It("should allow DPP connection when no MeshIdentity applies", func() {
+		// when trying to start test server with no matching MeshIdentity
+		err := TestServerUniversal("other-service", mesh,
+			WithArgs([]string{"echo", "--instance", "other-v1"}),
+			WithServiceName("other"),
+		)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane proxy should connect successfully
+		Eventually(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-ojson")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("other-service"))
+		}).Should(Succeed())
 	})
 }

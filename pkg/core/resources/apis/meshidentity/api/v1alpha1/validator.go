@@ -32,7 +32,7 @@ func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {
 	if pointer.Deref(spiffeID.Path) != "" {
 		_, err := template.New("").
 			Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
-			Parse(pointer.Deref(spiffeID.TrustDomain))
+			Parse(pointer.Deref(spiffeID.Path))
 		if err != nil {
 			verr.AddViolation("path", errors.Wrap(err, "couldn't parse template").Error())
 		}

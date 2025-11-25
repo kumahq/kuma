@@ -70,6 +70,7 @@ var (
 	_ = Describe("HealthCheck", healthcheck.Policy)
 	_ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
 	_ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
+	_ = Describe("Workload", workload.Workload, Ordered)
 	_ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 	_ = Describe("External Services", externalservices.Policy, Ordered)
 	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
