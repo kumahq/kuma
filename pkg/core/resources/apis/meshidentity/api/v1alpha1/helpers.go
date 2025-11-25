@@ -142,7 +142,7 @@ func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, 
 	if err != nil {
 		return "", err
 	}
-	return spiffeID.String() , nil
+	return spiffeID.String(), nil
 }
 
 func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, error) {

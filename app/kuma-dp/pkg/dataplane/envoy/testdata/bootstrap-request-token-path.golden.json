@@ -35,5 +35,8 @@
   "keyPath": ""
  },
  "systemCaPath": "",
- "ipv6Enabled": true
+ "ipv6Enabled": true,
+ "spireResources": {
+  "socketPath": ""
+ }
 }

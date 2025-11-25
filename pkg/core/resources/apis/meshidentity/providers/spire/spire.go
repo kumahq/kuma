@@ -85,7 +85,11 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 	if identity.Spec.Provider.Spire != nil && identity.Spec.Provider.Spire.Agent != nil {
 		connectTimeout = pointer.DerefOr(identity.Spec.Provider.Spire.Agent.Timeout, k8s.Duration{Duration: defaultSpireAgentConnTimeout})
 	}
-	resources, err := additionalResources(s.socketPath, connectTimeout.Duration)
+	socketPath := s.socketPath
+	if proxy.Metadata != nil && proxy.Metadata.SpireSocketPath != "" {
+		socketPath = proxy.Metadata.SpireSocketPath
+	}
+	resources, err := additionalResources(socketPath, connectTimeout.Duration)
 	if err != nil {
 		return nil, err
 	}
