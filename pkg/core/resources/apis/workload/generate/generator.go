@@ -122,15 +122,18 @@ func (g *Generator) handleExistingWorkload(ctx context.Context, log logr.Logger,
 		return
 	}
 
-	gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
-	if err != nil {
-		log.Info("couldn't parse grace period label, ignoring", "value", gracePeriodStartedAtText)
-	}
-	if hasGracePeriodLabel && time.Since(gracePeriodStartedAt) > g.deletionGracePeriod {
-		if err := g.resManager.Delete(ctx, workload_api.NewWorkloadResource(), store.DeleteBy(model.MetaToResourceKey(workload.GetMeta()))); err != nil {
-			log.Error(err, "couldn't delete Workload")
-		} else {
-			log.Info("deleted Workload")
+	if hasGracePeriodLabel {
+		gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
+		if err != nil {
+			log.Info("couldn't parse grace period label, ignoring", "value", gracePeriodStartedAtText)
+			return
+		}
+		if time.Since(gracePeriodStartedAt) > g.deletionGracePeriod {
+			if err := g.resManager.Delete(ctx, workload_api.NewWorkloadResource(), store.DeleteBy(model.MetaToResourceKey(workload.GetMeta()))); err != nil {
+				log.Error(err, "couldn't delete Workload")
+			} else {
+				log.Info("deleted Workload")
+			}
 		}
 		return
 	}
