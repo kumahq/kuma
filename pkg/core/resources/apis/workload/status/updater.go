@@ -86,7 +86,6 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		return errors.Wrap(err, "could not list Workloads")
 	}
 	if len(workloadList.Items) == 0 {
-		// skip if no workloads
 		return nil
 	}
 
@@ -101,8 +100,29 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		return errors.Wrap(err, "could not list Dataplanes")
 	}
 
+	dpsByMeshAndWorkload := indexDataplanesByMeshAndWorkload(allDpList.Items)
+
+	for _, workload := range workloadList.Items {
+		if !workload.IsLocalWorkload() {
+			continue
+		}
+
+		log := s.logger.WithValues("workload", workload.GetMeta().GetName(), "mesh", workload.GetMeta().GetMesh())
+		workloadIdentifier := extractWorkloadIdentifier(workload.GetMeta().GetName())
+		matchingDps := findMatchingDataplanes(dpsByMeshAndWorkload, workload.GetMeta().GetMesh(), workloadIdentifier)
+
+		dataplaneProxies := buildDataplaneProxies(matchingDps, insightsByKey)
+		if !reflect.DeepEqual(workload.Status.DataplaneProxies, dataplaneProxies) {
+			workload.Status.DataplaneProxies = dataplaneProxies
+			s.tryUpdateWorkload(ctx, workload, log)
+		}
+	}
+	return nil
+}
+
+func indexDataplanesByMeshAndWorkload(dataplanes []*core_mesh.DataplaneResource) map[string]map[string][]*core_mesh.DataplaneResource {
 	dpsByMeshAndWorkload := make(map[string]map[string][]*core_mesh.DataplaneResource)
-	for _, dp := range allDpList.Items {
+	for _, dp := range dataplanes {
 		workloadLabel, ok := dp.GetMeta().GetLabels()[metadata.KumaWorkload]
 		if !ok || workloadLabel == "" {
 			continue
@@ -113,42 +133,29 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 		dpsByMeshAndWorkload[mesh][workloadLabel] = append(dpsByMeshAndWorkload[mesh][workloadLabel], dp)
 	}
+	return dpsByMeshAndWorkload
+}
 
-	for _, workload := range workloadList.Items {
-		if !workload.IsLocalWorkload() {
-			// status is already computed by the other zone
-			continue
-		}
-
-		log := s.logger.WithValues("workload", workload.GetMeta().GetName(), "mesh", workload.GetMeta().GetMesh())
-
-		workloadIdentifier := extractWorkloadIdentifier(workload.GetMeta().GetName())
-
-		var matchingDps []*core_mesh.DataplaneResource
-		if meshDps, ok := dpsByMeshAndWorkload[workload.GetMeta().GetMesh()]; ok {
-			matchingDps = meshDps[workloadIdentifier]
-		}
-
-		var changeReasons []string
-
-		dataplaneProxies := buildDataplaneProxies(matchingDps, insightsByKey)
-		if !reflect.DeepEqual(workload.Status.DataplaneProxies, dataplaneProxies) {
-			changeReasons = append(changeReasons, "data plane proxies")
-			workload.Status.DataplaneProxies = dataplaneProxies
-		}
-
-		if len(changeReasons) > 0 {
-			log.Info("updating workload", "reason", changeReasons)
-			if err := s.resManager.Update(ctx, workload); err != nil {
-				if store.IsConflict(err) {
-					log.Info("couldn't update workload, will try again in next interval")
-				} else {
-					log.Error(err, "could not update workload")
-				}
-			}
-		}
+func findMatchingDataplanes(
+	dpsByMeshAndWorkload map[string]map[string][]*core_mesh.DataplaneResource,
+	mesh string,
+	workloadIdentifier string,
+) []*core_mesh.DataplaneResource {
+	if meshDps, ok := dpsByMeshAndWorkload[mesh]; ok {
+		return meshDps[workloadIdentifier]
 	}
 	return nil
+}
+
+func (s *StatusUpdater) tryUpdateWorkload(ctx context.Context, workload *workload_api.WorkloadResource, log logr.Logger) {
+	log.Info("updating workload", "reason", []string{"data plane proxies"})
+	if err := s.resManager.Update(ctx, workload); err != nil {
+		if store.IsConflict(err) {
+			log.Info("couldn't update workload, will try again in next interval")
+		} else {
+			log.Error(err, "could not update workload")
+		}
+	}
 }
 
 func extractWorkloadIdentifier(fullName string) string {
