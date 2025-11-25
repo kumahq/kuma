@@ -102,7 +102,7 @@ func (v *WorkloadLabelValidator) OnProxyDisconnected(_ context.Context, _ core_x
 
 var workloadLabelRegex = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
 
-// usesWorkloadLabel checks if the SPIFFE ID path template contains the kuma.io/workload label reference.
+// usesWorkloadLabel checks if pathTemplate contains the kuma.io/workload label reference.
 func usesWorkloadLabel(pathTemplate string) bool {
 	return workloadLabelRegex.MatchString(pathTemplate)
 }
