@@ -97,8 +97,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			policySync := client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				kdsCtx.TypesSentByGlobal,
-				client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
-				client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal)),
+				client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, "", len(kdsCtx.TypesSentByGlobal)),
 				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
 			)
 			_ = policySync.Receive()
