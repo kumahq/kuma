@@ -71,9 +71,8 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 		return nil
 	}
 
-	pathTemplate := pointer.DerefOr(matched.Spec.SpiffeID.Path, "")
-
 	if _, ok := labels[metadata.KumaWorkload]; !ok {
+		pathTemplate := pointer.Deref(matched.Spec.SpiffeID.Path)
 		miName := matched.Meta.GetName()
 		errMsg := fmt.Errorf(
 			"missing required label '%s' - dataplane is selected by MeshIdentity '%s' with path template '%s'",
