@@ -167,6 +167,8 @@ var _ = Describe("MeshIdentity Helper", func() {
 		Entry("nil SpiffeID", nil, false),
 		Entry("uses workload label", pointer.To("/ns/{{ .Namespace }}/workload/{{ label \"kuma.io/workload\" }}"), true),
 		Entry("uses workload label with extra spaces", pointer.To("/workload/{{  label  \"kuma.io/workload\"  }}"), true),
+		Entry("uses .Workload placeholder", pointer.To("/ns/{{ .Namespace }}/workload/{{ .Workload }}"), true),
+		Entry("uses .Workload placeholder with extra spaces", pointer.To("/workload/{{  .Workload  }}"), true),
 		Entry("does not use workload label", pointer.To("/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"), false),
 		Entry("uses different label", pointer.To("/ns/{{ .Namespace }}/label/{{ label \"app\" }}"), false),
 		Entry("empty path", pointer.To(""), false),

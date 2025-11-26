@@ -166,13 +166,17 @@ func (s *MeshIdentityStatus) IsPartiallyReady() bool {
 	return false
 }
 
-var workloadLabelRegex = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
+var (
+	workloadLabelRegex       = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
+	workloadPlaceholderRegex = regexp.MustCompile(`\{\{\s*\.Workload\s*\}\}`)
+)
 
 // UsesWorkloadLabel checks if this MeshIdentity's SPIFFE ID path template contains
-// the kuma.io/workload label reference in the form of {{ label "kuma.io/workload" }}.
+// the workload reference in the form of {{ label "kuma.io/workload" }} or {{ .Workload }}.
 func (i *MeshIdentity) UsesWorkloadLabel() bool {
 	if i.SpiffeID == nil || i.SpiffeID.Path == nil {
 		return false
 	}
-	return workloadLabelRegex.MatchString(*i.SpiffeID.Path)
+	path := *i.SpiffeID.Path
+	return workloadLabelRegex.MatchString(path) || workloadPlaceholderRegex.MatchString(path)
 }
