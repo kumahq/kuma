@@ -3,7 +3,6 @@ package callbacks
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/pkg/errors"
 
@@ -68,16 +67,12 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 		return nil
 	}
 
-	if matched.Spec.SpiffeID == nil {
-		return nil
-	}
-
-	pathTemplate := pointer.DerefOr(matched.Spec.SpiffeID.Path, "")
-	if !usesWorkloadLabel(pathTemplate) {
+	if !matched.Spec.UsesWorkloadLabel() {
 		return nil
 	}
 
 	if _, ok := labels[metadata.KumaWorkload]; !ok {
+		pathTemplate := pointer.Deref(matched.Spec.SpiffeID.Path)
 		miName := matched.Meta.GetName()
 		errMsg := fmt.Errorf(
 			"missing required label '%s' - dataplane is selected by MeshIdentity '%s' with path template '%s'",
@@ -98,11 +93,4 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 
 func (v *WorkloadLabelValidator) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
 	// No-op
-}
-
-var workloadLabelRegex = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
-
-// usesWorkloadLabel checks if pathTemplate contains the kuma.io/workload label reference.
-func usesWorkloadLabel(pathTemplate string) bool {
-	return workloadLabelRegex.MatchString(pathTemplate)
 }
