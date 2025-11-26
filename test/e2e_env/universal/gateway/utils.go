@@ -128,7 +128,7 @@ spec:
 
 func mkGatewayDataplane(name, mesh, serviceName string) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := universal.Cluster.GetKuma().GenerateDpToken(mesh, serviceName)
+		token, err := universal.Cluster.GetKuma().GenerateDpToken(mesh, serviceName, "")
 		if err != nil {
 			return err
 		}

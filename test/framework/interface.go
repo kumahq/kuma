@@ -124,6 +124,7 @@ type appDeploymentOptions struct {
 	additionalTags        map[string]string
 	bindOutbounds         bool
 	labels                map[string]string
+	workload              string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -607,6 +608,12 @@ func WithLabels(labels map[string]string) AppDeploymentOption {
 	})
 }
 
+func WithWorkload(workload string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.workload = workload
+	})
+}
+
 type NamespaceDeleteHookFunc func(c Cluster, namespace string) error
 
 type Deployment interface {
@@ -657,7 +664,7 @@ type ControlPlane interface {
 	GetKDSInsecureServerAddress() string
 	GetXDSServerAddress() string
 	GetAPIServerAddress() string
-	GenerateDpToken(mesh, serviceName string) (string, error)
+	GenerateDpToken(mesh, serviceName, workload string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
 	GenerateZoneToken(zone string, scope []string) (string, error)
