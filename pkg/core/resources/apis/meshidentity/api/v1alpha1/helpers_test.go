@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("MeshIdentity Helper", func() {
@@ -145,5 +146,31 @@ var _ = Describe("MeshIdentity Helper", func() {
 			},
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{},
 		}),
+	)
+
+	DescribeTable("UsesWorkloadLabel",
+		func(pathTemplate *string, expected bool) {
+			// given
+			mi := &meshidentity_api.MeshIdentity{}
+			if pathTemplate != nil {
+				mi.SpiffeID = &meshidentity_api.SpiffeID{
+					Path: pathTemplate,
+				}
+			}
+
+			// when
+			result := mi.UsesWorkloadLabel()
+
+			// then
+			Expect(result).To(Equal(expected))
+		},
+		Entry("nil SpiffeID", nil, false),
+		Entry("uses workload label", pointer.To("/ns/{{ .Namespace }}/workload/{{ label \"kuma.io/workload\" }}"), true),
+		Entry("uses workload label with extra spaces", pointer.To("/workload/{{  label  \"kuma.io/workload\"  }}"), true),
+		Entry("uses .Workload placeholder", pointer.To("/ns/{{ .Namespace }}/workload/{{ .Workload }}"), true),
+		Entry("uses .Workload placeholder with extra spaces", pointer.To("/workload/{{  .Workload  }}"), true),
+		Entry("does not use workload label", pointer.To("/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"), false),
+		Entry("uses different label", pointer.To("/ns/{{ .Namespace }}/label/{{ label \"app\" }}"), false),
+		Entry("empty path", pointer.To(""), false),
 	)
 })
