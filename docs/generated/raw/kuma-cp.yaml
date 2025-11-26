@@ -436,7 +436,7 @@ runtime:
     # Spire defines default configuration of the spire properties
     spire:
       # SocketPath is the location of the socket file one the host
-      socketPath: /tmp/spire-agent/public/api.sock string # ENV: "KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH"`
+      socketPath: /tmp/spire-agent/public/api.sock # ENV: KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh
