@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
@@ -289,7 +288,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
 		AllowedUsers: append(
 			rt.Config().Runtime.Kubernetes.AllowedUsers,
-			rt.Config().Runtime.Kubernetes.ServiceAccountName,
 			"system:serviceaccount:kube-system:generic-garbage-collector",
 		),
 		Mode:                         rt.Config().Mode,
@@ -332,10 +330,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	})
 
 	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.IntoWebhook(mgr.GetScheme()))
-	// TODO remove in 2.12 or higher https://github.com/kumahq/kuma/issues/12759
-	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: kube_admission.HandlerFunc(func(ctx context.Context, request kube_admission.Request) kube_admission.Response {
-		return kube_admission.Allowed("")
-	})})
 
 	admissionDecoder := kube_admission.NewDecoder(mgr.GetScheme())
 
@@ -409,7 +403,6 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
 		AllowedUsers: append(
 			rt.Config().Runtime.Kubernetes.AllowedUsers,
-			rt.Config().Runtime.Kubernetes.ServiceAccountName,
 			"system:serviceaccount:kube-system:generic-garbage-collector",
 		),
 		Mode:                         rt.Config().Mode,
