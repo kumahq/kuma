@@ -50,6 +50,31 @@ module github.com/Kong/kong-mesh
 
 **Reviewers: Please approve or reject this approach.**
 
+## Who Is Affected
+
+This change **only affects users who import Kuma or Kong Mesh as Go libraries** in their own projects.
+
+**Affected users** (must update imports):
+
+- Projects with `import "github.com/kumahq/kuma/..."` in Go files
+- Projects with `require github.com/kumahq/kuma` in `go.mod`
+
+**Not affected** (no action required):
+
+- Users deploying Kuma via Helm charts
+- Users deploying Kuma via `kumactl`
+- Users deploying Kuma via Docker images
+- Users interacting only with Kuma's REST API or UI
+
+For affected users, migration is a simple find-replace operation:
+
+```bash
+# Update imports
+find . -name "*.go" -type f -exec sed -i '' \
+  's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v2/|g' {} +
+go mod tidy
+```
+
 ## Design
 
 ### Why `/v2` Path is Required
@@ -306,14 +331,26 @@ make check && make test && make build
 
 ### Phase 3: Staged Release
 
-1. Merge all PRs (same day)
-2. Monitor CI/CD
-3. Tag `release-2.12` first
-4. Tag remaining branches (`release-2.11`, `release-2.10`, `release-2.7`, `master`)
+**Approach**: Start with `master` branch first, then propagate to release branches.
+
+**Rationale**: Merging to `master` first allows us to:
+
+- Validate the migration in a less critical environment
+- Catch unexpected issues before affecting release branches
+- Build confidence before applying to branches that receive patch releases
+
+**Steps**:
+
+1. Merge `master` PR first, monitor CI for 24-48 hours
+2. If stable, merge release branch PRs (`release-2.12`, `release-2.11`, `release-2.10`, `release-2.7`)
+3. Tag `release-2.12` first (most active branch)
+4. Tag remaining release branches
 5. Verify each release, run smoke tests
 6. Update docs, publish migration guide
 7. Create and pin GitHub issue with migration instructions
 8. Announce in release notes and community channels
+
+**Alternative considered**: Merge all PRs same day. This reduces the migration window but increases risk if issues are discovered post-merge.
 
 ### Phase 4: Kong Mesh `/v2` Migration
 
