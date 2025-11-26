@@ -70,7 +70,7 @@ For affected users, migration is a simple find-replace operation:
 
 ```bash
 # Update imports
-find . -name "*.go" -type f -exec sed -i '' \
+find . -name "*.go" -type f -exec sed -i.bak \
   's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v2/|g' {} +
 go mod tidy
 ```
@@ -148,7 +148,7 @@ github.com/kumahq/kuma/v2 v2.0.0-20251103153646-fc66bbfced92
 **External user migration**:
 
 ```bash
-find . -name "*.go" -type f -exec sed -i '' \
+find . -name "*.go" -type f -exec sed -i.bak \
   's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v2/|g' {} +
 go mod tidy
 ```
