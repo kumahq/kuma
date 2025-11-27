@@ -28,7 +28,12 @@ func (w *workloadLabelValidator) ValidateUpdate(_ context.Context, newDp *core_m
 }
 
 func (w *workloadLabelValidator) validateWorkloadLabel(dp *core_mesh.DataplaneResource) error {
-	workloadName, ok := dp.GetMeta().GetLabels()[metadata.KumaWorkload]
+	labels := dp.GetMeta().GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	workloadName, ok := labels[metadata.KumaWorkload]
 	if !ok || workloadName == "" {
 		return nil
 	}

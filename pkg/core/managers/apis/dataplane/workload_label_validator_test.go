@@ -86,4 +86,38 @@ var _ = Describe("WorkloadLabelValidator", func() {
 			errorContains: "must be a valid DNS-1035 label",
 		}),
 	)
+
+	It("should handle nil labels gracefully", func() {
+		// given
+		validator := dataplane.NewWorkloadLabelValidator()
+		dp := core_mesh.NewDataplaneResource()
+
+		dp.Meta = &test_model.ResourceMeta{
+			Mesh:   model.DefaultMesh,
+			Name:   "test-dp",
+			Labels: nil, // nil labels
+		}
+
+		Expect(dp.SetSpec(&mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 8080,
+						Tags: map[string]string{
+							"kuma.io/service": "test-service",
+						},
+					},
+				},
+			},
+		})).To(Succeed())
+
+		mesh := core_mesh.NewMeshResource()
+
+		// when
+		err := validator.ValidateCreate(context.Background(), model.ResourceKey{Mesh: model.DefaultMesh, Name: "test-dp"}, dp, mesh)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
 })

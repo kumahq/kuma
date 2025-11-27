@@ -113,7 +113,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithResourceValidators(core_runtime.ResourceValidators{
 		Dataplane: dataplane.NewCompositeValidator(
 			dataplane.Always(dataplane.NewMembershipValidator()),
-			dataplane.When(func() bool { return cfg.Environment != config_core.KubernetesEnvironment }, dataplane.NewWorkloadLabelValidator()),
+			dataplane.When(func() bool {
+				return cfg.Environment != config_core.KubernetesEnvironment && cfg.Mode != config_core.Global
+			}, dataplane.NewWorkloadLabelValidator()),
 		),
 		Mesh: mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
 	})
