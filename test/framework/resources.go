@@ -41,20 +41,23 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 	return err
 }
 
-func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string) error {
+func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string, mesh ...string) error {
 	_, err := retry.DoWithRetryE(
 		cluster.GetTesting(),
 		"delete policy",
 		10,
 		time.Second,
 		func() (string, error) {
-			return k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
-				cluster.GetKubectlOptions(Config.KumaNamespace),
-				"delete",
-				descriptor.KumactlArg,
-				policyName,
-			)
+			if _, ok := cluster.(*K8sCluster); ok {
+				return k8s.RunKubectlAndGetOutputE(
+					cluster.GetTesting(),
+					cluster.GetKubectlOptions(Config.KumaNamespace),
+					"delete",
+					descriptor.KumactlArg,
+					policyName,
+				)
+			}
+			return cluster.GetKumactlOptions().RunKumactlAndGetOutput("delete", descriptor.KumactlArg, policyName, "-m", mesh[0])
 		},
 	)
 
