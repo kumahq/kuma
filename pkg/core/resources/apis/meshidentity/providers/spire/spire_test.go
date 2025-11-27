@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers/spire"
@@ -27,7 +28,7 @@ import (
 var _ = Describe("Spire Providers Test", func() {
 	var spireProvider providers.IdentityProvider
 	BeforeEach(func() {
-		spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets", "socket", "my-zone")
+		spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets", "socket", "my-zone", config_core.KubernetesEnvironment)
 	})
 
 	Context("CreateIdentity", func() {

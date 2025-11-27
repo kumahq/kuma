@@ -21,6 +21,7 @@ func (p plugin) NewIdentityProvider(context core_plugins.PluginContext, config c
 			context.Config().Runtime.Kubernetes.Injector.Spire.MountPath,
 			context.Config().Runtime.Kubernetes.Injector.Spire.SocketFileName,
 			context.Config().Multizone.Zone.Name,
+			context.Config().Environment,
 		), nil
 	}
 	return nil, nil

@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -42,15 +43,17 @@ type spireIdentityProvider struct {
 	mountPath      string
 	socketFileName string
 	zone           string
+	environment    config_core.EnvironmentType
 }
 
-func NewSpireIdentityProvider(mountPath, socketFileName, zone string) providers.IdentityProvider {
+func NewSpireIdentityProvider(mountPath, socketFileName, zone string, environment config_core.EnvironmentType) providers.IdentityProvider {
 	logger := core.Log.WithName("identity-provider").WithName("spire")
 	return &spireIdentityProvider{
 		logger:         logger,
 		mountPath:      mountPath,
 		socketFileName: socketFileName,
 		zone:           zone,
+		environment:    environment,
 	}
 }
 
@@ -77,7 +80,7 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 		return nil, err
 	}
 
-	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta())
+	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta(), s.environment)
 	if err != nil {
 		return nil, err
 	}
