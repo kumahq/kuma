@@ -149,8 +149,8 @@ Listener:
 
 **Approach:**
 
-1. **Container resources** (listeners, clusters, HCM): Use service KRI or contextual format
-2. **Component resources** (individual routes): Use policy KRI
+1. **Container resources** (listeners, clusters, HCM that hold merged policy configurations): Use service KRI or contextual format
+2. **Component resources** (individual routes that can be attributed to specific policies): Use policy KRI
 3. **Observability**: Combine aggregate metrics with attributed data sources
 
 **Why this works:**
@@ -167,8 +167,8 @@ Listener:
 
 For multi-policy resources:
 
-1. **Container resources**: Use **service KRI** (outbounds) or **contextual format** (inbounds)
-2. **Policy-contributed components**: Use **policy KRI** with component identifier (`_rule_0`)
+1. **Container resources** (listeners, clusters, HCM): Use **service KRI** (outbounds) or **contextual format** (inbounds)
+2. **Policy-contributed components** (individual routes): Use **policy KRI** with component identifier (`_rule_0`)
 3. **Stats interpretation**:
    - Aggregate stats (`http.<stat_prefix>.*`) → Combined effect of all policies
    - Attributed data (access logs, traces) → Specific policy identification
