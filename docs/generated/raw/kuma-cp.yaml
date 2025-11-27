@@ -434,8 +434,6 @@ runtime:
     workload:
       # How often we check whether Workloads need to be generated from Dataplanes
       generationInterval: 2s # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL
-      # How long we wait before deleting a Workload if all Dataplanes are gone
-      deletionGracePeriod: 1h # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_DELETION_GRACE_PERIOD
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh
