@@ -16,8 +16,7 @@ func DefaultUniversalRuntimeConfig() *UniversalRuntimeConfig {
 		ZoneResourceCleanupAge: config_types.Duration{Duration: 3 * 24 * time.Hour},
 		VIPRefreshInterval:     config_types.Duration{Duration: 500 * time.Millisecond},
 		Workload: WorkloadConfig{
-			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
-			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
+			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
 		},
 	}
 }
@@ -43,9 +42,6 @@ type WorkloadConfig struct {
 	// GenerationInterval is how often we check whether Workloads need to be
 	// generated from Dataplanes
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL"`
-	// DeletionGracePeriod is how long we wait before deleting a Workload if
-	// all Dataplanes are gone
-	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_DELETION_GRACE_PERIOD"`
 }
 
 func (i WorkloadConfig) Validate() error {

@@ -392,7 +392,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Runtime.Universal.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
-			Expect(cfg.Runtime.Universal.Workload.DeletionGracePeriod.Duration).To(Equal(12 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
@@ -505,7 +504,6 @@ runtime:
     vipRefreshInterval: 10s
     workload:
       generationInterval: 9s
-      deletionGracePeriod: 12s
   kubernetes:
     serviceAccountName: custom-sa
     allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
@@ -1123,7 +1121,6 @@ meshService:
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
 				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL":                                      "9s",
-				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_DELETION_GRACE_PERIOD":                                    "12s",
 			},
 			yamlFileConfig: "",
 		}),

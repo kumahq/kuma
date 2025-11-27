@@ -25,7 +25,6 @@ func Setup(rt runtime.Runtime) error {
 	generator, err := New(
 		logger,
 		rt.Config().Runtime.Universal.Workload.GenerationInterval.Duration,
-		rt.Config().Runtime.Universal.Workload.DeletionGracePeriod.Duration,
 		rt.Metrics(),
 		rt.ResourceManager(),
 		rt.MeshCache(),

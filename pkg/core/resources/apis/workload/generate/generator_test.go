@@ -33,8 +33,6 @@ var _ = Describe("Workload generator", func() {
 	var resManager manager.ResourceManager
 	var metrics core_metrics.Metrics
 
-	gracePeriodInterval := 500 * time.Millisecond
-
 	BeforeEach(func() {
 		m, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
@@ -61,7 +59,6 @@ var _ = Describe("Workload generator", func() {
 		generator, err := generate.New(
 			logr.Discard(),
 			50*time.Millisecond,
-			gracePeriodInterval,
 			metrics,
 			resManager,
 			meshCache,
@@ -156,7 +153,7 @@ var _ = Describe("Workload generator", func() {
 		Expect(wls.GetItems()).To(HaveLen(1))
 	})
 
-	It("should eventually delete Workload if all Dataplanes disappear", func() {
+	It("should delete Workload if all Dataplanes disappear", func() {
 		dp := builders.Dataplane().
 			WithAddress("192.168.0.1").
 			WithServices("backend").
@@ -178,94 +175,9 @@ var _ = Describe("Workload generator", func() {
 		// Delete the dataplane
 		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
 
-		// Workload should eventually be deleted after grace period
+		// Workload should be deleted
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).ToNot(Succeed())
-		}, "2s", "100ms").Should(Succeed())
-	})
-
-	It("should not delete Workload immediately", func() {
-		dp := builders.Dataplane().
-			WithAddress("192.168.0.1").
-			WithServices("backend").
-			Build()
-		err := resManager.Create(context.Background(), dp,
-			store.CreateBy(model.MetaToResourceKey(dp.GetMeta())),
-			store.CreateWithLabels(map[string]string{
-				metadata.KumaWorkload: "test-workload",
-			}))
-		Expect(err).ToNot(HaveOccurred())
-
-		wl := workload_api.NewWorkloadResource()
-
-		Eventually(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
-			g.Expect(wl.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]).To(Equal("workload-generator"))
-		}, "2s", "100ms").Should(Succeed())
-
-		// Delete the dataplane
-		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
-
-		// Wait until the Workload has been marked with grace period start
-		Eventually(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
-			g.Expect(wl.GetMeta().GetLabels()).To(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
-		}, "2s", "100ms").Should(Succeed())
-
-		// Workload should not be deleted immediately (grace period is 500ms)
-		Consistently(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
-		}, "200ms", "50ms").Should(Succeed())
-
-		// Workload should be deleted after grace period expires
-		Eventually(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).ToNot(Succeed())
-		}, "1s", "100ms").Should(Succeed())
-	})
-
-	It("should not delete Workload if a Dataplane comes back", func() {
-		dp := builders.Dataplane().
-			WithAddress("192.168.0.1").
-			WithServices("backend").
-			Build()
-		err := resManager.Create(context.Background(), dp,
-			store.CreateBy(model.MetaToResourceKey(dp.GetMeta())),
-			store.CreateWithLabels(map[string]string{
-				metadata.KumaWorkload: "test-workload",
-			}))
-		Expect(err).ToNot(HaveOccurred())
-
-		wl := workload_api.NewWorkloadResource()
-
-		Eventually(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
-			g.Expect(wl.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]).To(Equal("workload-generator"))
-		}, "2s", "100ms").Should(Succeed())
-
-		// Delete the dataplane
-		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
-
-		// Wait until the Workload has been marked with grace period start
-		Eventually(func(g Gomega) {
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
-			g.Expect(wl.GetMeta().GetLabels()).To(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
-		}, "2s", "100ms").Should(Succeed())
-
-		// Recreate the dataplane
-		dp2 := builders.Dataplane().
-			WithAddress("192.168.0.1").
-			WithServices("backend").
-			Build()
-		Expect(resManager.Create(context.Background(), dp2,
-			store.CreateBy(model.MetaToResourceKey(dp2.GetMeta())),
-			store.CreateWithLabels(map[string]string{
-				metadata.KumaWorkload: "test-workload",
-			}))).To(Succeed())
-
-		// The Workload isn't ever deleted
-		Consistently(func(g Gomega) {
-			wl := workload_api.NewWorkloadResource()
-			g.Expect(resManager.Get(context.Background(), wl, store.GetByKey("test-workload", model.DefaultMesh))).To(Succeed())
 		}, "2s", "100ms").Should(Succeed())
 	})
 
