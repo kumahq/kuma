@@ -105,14 +105,14 @@ Cluster (service KRI)
 
 ## Multi-Policy Scenarios
 
-| Scenario                    | Merge Location           | Container Naming | Component Naming     | Stats Attribution               |
-|:----------------------------|:-------------------------|:-----------------|:---------------------|:--------------------------------|
-| Multi-MeshHTTPRoute         | RouteConfig.routes[]     | Service KRI      | Policy KRI per route | Routes: ✅ HCM stats: aggregate |
-| Multi-MeshTrafficPermission | RBAC filter rules        | Contextual       | N/A                  | Aggregate                       |
-| Multi-MeshTimeout           | route.timeout            | Service KRI      | Inherits route       | Aggregate at HCM level          |
-| Multi-MeshRetry             | route.retry_policy       | Service KRI      | Inherits route       | Aggregate at HCM level          |
-| Multi-MeshHealthCheck       | cluster.health_checks[]  | Service KRI      | N/A                  | Aggregate                       |
-| Multi-MeshCircuitBreaker    | cluster.circuit_breakers | Service KRI      | N/A                  | Aggregate                       |
+| Scenario                    | Merge Location           | Listener/Cluster/HCM Naming | Route Naming         | Stats Attribution               |
+|:----------------------------|:-------------------------|:----------------------------|:---------------------|:--------------------------------|
+| Multi-MeshHTTPRoute         | RouteConfig.routes[]     | Service KRI                 | Policy KRI per route | Routes: ✅ HCM stats: aggregate |
+| Multi-MeshTrafficPermission | RBAC filter rules        | Contextual                  | N/A                  | Aggregate                       |
+| Multi-MeshTimeout           | route.timeout            | Service KRI                 | Inherits route       | Aggregate at HCM level          |
+| Multi-MeshRetry             | route.retry_policy       | Service KRI                 | Inherits route       | Aggregate at HCM level          |
+| Multi-MeshHealthCheck       | cluster.health_checks[]  | Service KRI                 | N/A                  | Aggregate                       |
+| Multi-MeshCircuitBreaker    | cluster.circuit_breakers | Service KRI                 | N/A                  | Aggregate                       |
 
 ### Example: Three MeshHTTPRoute Policies Merged
 
@@ -138,19 +138,19 @@ Listener:
 
 ## Design Options
 
-| Option                      | Approach                                              | Verdict                                  |
-|:----------------------------|:------------------------------------------------------|:-----------------------------------------|
-| Encode all policies         | Include all policy KRIs in resource name              | ❌ Cardinality explosion, unstable names |
-| Multi-policy marker         | Add `__multipolicy` suffix                            | ❌ No actual attribution benefit         |
-| Status quo                  | Keep current behavior                                 | ❌ Maintains traceability gaps           |
-| **Aggregate + Attribution** | Service KRI for containers, policy KRI for components | ✅ Recommended                           |
+| Option                      | Approach                                                      | Verdict                                  |
+|:----------------------------|:--------------------------------------------------------------|:-----------------------------------------|
+| Encode all policies         | Include all policy KRIs in resource name                      | ❌ Cardinality explosion, unstable names |
+| Multi-policy marker         | Add `__multipolicy` suffix                                    | ❌ No actual attribution benefit         |
+| Status quo                  | Keep current behavior                                         | ❌ Maintains traceability gaps           |
+| **Aggregate + Attribution** | Service KRI for listeners/clusters/HCM, policy KRI for routes | ✅ Recommended                           |
 
 ### Recommended: Aggregate Naming + Policy Attribution
 
 **Approach:**
 
-1. **Container resources** (listeners, clusters, HCM that hold merged policy configurations): Use service KRI or contextual format
-2. **Component resources** (individual routes that can be attributed to specific policies): Use policy KRI
+1. **Listeners, clusters, HTTPConnectionManager**: Use service KRI or contextual format
+2. **Routes**: Use policy KRI
 3. **Observability**: Combine aggregate metrics with attributed data sources
 
 **Why this works:**
@@ -167,8 +167,8 @@ Listener:
 
 For multi-policy resources:
 
-1. **Container resources** (listeners, clusters, HCM): Use **service KRI** (outbounds) or **contextual format** (inbounds)
-2. **Policy-contributed components** (individual routes): Use **policy KRI** with component identifier (`_rule_0`)
+1. **Listeners, clusters, HTTPConnectionManager**: Use **service KRI** (outbounds) or **contextual format** (inbounds)
+2. **Routes**: Use **policy KRI** with component identifier (`_rule_0`)
 3. **Stats interpretation**:
    - Aggregate stats (`http.<stat_prefix>.*`) → Combined effect of all policies
    - Attributed data (access logs, traces) → Specific policy identification
@@ -206,8 +206,8 @@ For multi-policy resources:
 
 When implementing policies that may merge:
 
-1. If creating new named component → Use policy KRI
-2. If merging into existing component → Use service KRI or contextual
+1. If creating new route entries → Use policy KRI
+2. If merging into listener, cluster, or HCM configuration → Use service KRI or contextual
 3. Include policy KRI in access logs and tracing spans
 
 ### For Users
