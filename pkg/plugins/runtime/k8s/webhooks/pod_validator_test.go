@@ -29,6 +29,9 @@ func dataplaneInDifferentMesh(namespace, mesh string) []kube_client.Object {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-dp",
 				Namespace: namespace,
+				Labels: map[string]string{
+					"kuma.io/mesh": mesh,
+				},
 			},
 		},
 	}

@@ -8,6 +8,8 @@ import (
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -60,29 +62,42 @@ func (h *PodValidator) ValidatePod(ctx context.Context, req admission.Request) a
 }
 
 func (h *PodValidator) validateMultipleMeshesPerNamespace(ctx context.Context, pod *kube_core.Pod) admission.Response {
-	// Get the namespace
 	ns := &kube_core.Namespace{}
 	if err := h.client.Get(ctx, kube_client.ObjectKey{Name: pod.Namespace}, ns); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to get namespace: %w", err))
 	}
 
-	// Get the mesh for this pod using proper precedence
 	podMesh := util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)
 
-	// List all dataplanes in the namespace to check for different meshes
+	// Create a selector to find dataplanes NOT in our mesh
+	// This is much more efficient than listing all dataplanes and filtering
+	selector := labels.NewSelector()
+	requirement, err := labels.NewRequirement(
+		metadata.KumaMeshLabel,
+		selection.NotEquals,
+		[]string{podMesh},
+	)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to create label selector: %w", err))
+	}
+	selector = selector.Add(*requirement)
+
+	// List only dataplanes in different meshes (with limit=1 since we only need one to reject)
 	dataplanes := &mesh_k8s.DataplaneList{}
-	if err := h.client.List(ctx, dataplanes, kube_client.InNamespace(pod.Namespace)); err != nil {
+	if err := h.client.List(ctx, dataplanes,
+		kube_client.InNamespace(pod.Namespace),
+		kube_client.MatchingLabelsSelector{Selector: selector},
+		kube_client.Limit(1),
+	); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to list dataplanes: %w", err))
 	}
 
-	// Check if there are dataplanes in a different mesh
-	for _, dp := range dataplanes.Items {
-		if dp.Mesh != podMesh {
-			return admission.Denied(fmt.Sprintf(
-				"pod is in mesh %q but namespace %q already contains dataplanes in mesh %q; only one mesh per namespace is allowed when runtime.kubernetes.disallowMultipleMeshesPerNamespace is enabled",
-				podMesh, pod.Namespace, dp.Mesh,
-			))
-		}
+	// If we found any dataplane in a different mesh, deny
+	if len(dataplanes.Items) > 0 {
+		return admission.Denied(fmt.Sprintf(
+			"pod is in mesh %q but namespace %q already contains dataplanes in mesh %q; only one mesh per namespace is allowed when runtime.kubernetes.disallowMultipleMeshesPerNamespace is enabled",
+			podMesh, pod.Namespace, dataplanes.Items[0].Mesh,
+		))
 	}
 
 	return admission.Allowed("")
