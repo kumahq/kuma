@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: coredns
-    kuma.io/application-probe-proxy-port: "9000"
+    kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
@@ -11,7 +11,7 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes: disabled
     kuma.io/virtual-probes-port: "9000"
   generateName: coredns-fb8b8dccf-
   labels:
@@ -38,7 +38,7 @@ spec:
           apiVersion: v1
           fieldPath: status.podIP
     - name: KUMA_APPLICATION_PROBE_PROXY_PORT
-      value: "9000"
+      value: "0"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
@@ -136,12 +136,9 @@ spec:
         httpHeaders:
         - name: x-custom-header
           value: custom-value
-        - name: X-Kuma-Probes-Scheme
-          value: HTTPS
-        - name: X-Kuma-Probes-Timeout
-          value: "5"
-        path: /9999/health
-        port: 9000
+        path: /health
+        port: 9999
+        scheme: HTTPS
       initialDelaySeconds: 60
       periodSeconds: 10
       successThreshold: 1
@@ -159,11 +156,10 @@ spec:
       protocol: TCP
     readinessProbe:
       failureThreshold: 3
-      httpGet:
-        path: /tcp/1433
-        port: 9000
       periodSeconds: 10
       successThreshold: 1
+      tcpSocket:
+        port: 1433
       timeoutSeconds: 1
     resources:
       limits:
@@ -182,14 +178,9 @@ spec:
       readOnlyRootFilesystem: true
     startupProbe:
       failureThreshold: 5
-      httpGet:
-        httpHeaders:
-        - name: X-Kuma-Probes-Timeout
-          value: "5"
-        - name: X-Kuma-Probes-GRPC-Service
-          value: /startup
-        path: /grpc/5678
-        port: 9000
+      grpc:
+        port: 5678
+        service: /startup
       initialDelaySeconds: 60
       periodSeconds: 10
       successThreshold: 1
@@ -207,7 +198,6 @@ spec:
   enableServiceLinks: true
   initContainers:
   - args:
-    - --exclude-inbound-ports=9000
     - --verbose
     command:
     - /usr/bin/kumactl
