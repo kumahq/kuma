@@ -5,9 +5,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -21,9 +23,16 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+const (
+	// MultipleMeshesDetectedReason is a Kubernetes event type, used when
+	// dataplanes in multiple meshes reference the same workload.
+	MultipleMeshesDetectedReason = "MultipleMeshesDetected"
+)
+
 // WorkloadReconciler reconciles Workload resources based on Dataplane labels
 type WorkloadReconciler struct {
 	kube_client.Client
+	kube_record.EventRecorder
 	Log logr.Logger
 }
 
@@ -43,15 +52,18 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list Dataplanes")
 	}
 
-	var meshName string
+	meshNames := make(map[string]bool)
 	var hasReferences bool
 	for _, dp := range dataplanes.Items {
 		if workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]; ok && workloadName == req.Name {
 			hasReferences = true
-			if meshName == "" {
-				meshName = dp.Mesh
-			}
+			meshNames[dp.Mesh] = true
 		}
+	}
+
+	if len(meshNames) > 1 {
+		r.handleMultipleMeshesDetected(ctx, req.Namespace, req.Name, len(meshNames))
+		return kube_ctrl.Result{}, nil
 	}
 
 	// If no Dataplanes reference this workload, delete it (if it exists and is managed by us)
@@ -68,11 +80,33 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 		return kube_ctrl.Result{}, nil
 	}
 
+	var meshName string
+	for meshName = range meshNames {
+		break
+	}
+
 	if err := r.createOrUpdateWorkload(ctx, req.Name, meshName, req.Namespace); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func (r *WorkloadReconciler) handleMultipleMeshesDetected(ctx context.Context, namespace, workloadName string, meshCount int) {
+	log := r.Log.WithValues("workload", workloadName, "namespace", namespace)
+
+	log.Error(errors.New("multiple meshes detected"),
+		"namespace has dataplanes in multiple meshes for same workload",
+		"meshCount", meshCount)
+
+	ns := &kube_core.Namespace{}
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: namespace}, ns); err != nil {
+		log.V(1).Info("unable to fetch namespace for event emission", "error", err)
+	} else {
+		r.Eventf(ns, kube_core.EventTypeWarning, MultipleMeshesDetectedReason,
+			"Skipping Workload generation: namespace %s has pods in multiple meshes (%d meshes) for workload %s. This configuration is not supported.",
+			namespace, meshCount, workloadName)
+	}
 }
 
 func (r *WorkloadReconciler) createOrUpdateWorkload(ctx context.Context, workloadName, meshName, namespace string) error {
