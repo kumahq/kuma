@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,6 +13,7 @@ import (
 
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
 func NewPodValidatorWebhook(decoder admission.Decoder, client kube_client.Client, disallowMultipleMeshesPerNamespace bool) *PodValidator {
@@ -58,11 +60,14 @@ func (h *PodValidator) ValidatePod(ctx context.Context, req admission.Request) a
 }
 
 func (h *PodValidator) validateMultipleMeshesPerNamespace(ctx context.Context, pod *kube_core.Pod) admission.Response {
-	// Get the mesh for this pod
-	podMesh := pod.Annotations[metadata.KumaMeshLabel]
-	if podMesh == "" {
-		podMesh = "default"
+	// Get the namespace
+	ns := &kube_core.Namespace{}
+	if err := h.client.Get(ctx, kube_client.ObjectKey{Name: pod.Namespace}, ns); err != nil {
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to get namespace: %w", err))
 	}
+
+	// Get the mesh for this pod using proper precedence
+	podMesh := util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)
 
 	// List all dataplanes in the namespace to check for different meshes
 	dataplanes := &mesh_k8s.DataplaneList{}

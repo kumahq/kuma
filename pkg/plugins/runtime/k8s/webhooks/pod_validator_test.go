@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
+	kube_core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -18,6 +19,11 @@ import (
 
 func dataplaneInDifferentMesh(namespace, mesh string) []kube_client.Object {
 	return []kube_client.Object{
+		&kube_core.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		},
 		&mesh_k8s.Dataplane{
 			Mesh: mesh,
 			ObjectMeta: metav1.ObjectMeta{
