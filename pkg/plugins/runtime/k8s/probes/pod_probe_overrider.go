@@ -195,6 +195,9 @@ func GetApplicationProbeProxyPort(
 	case vpExist && vpEnabled:
 		// If virtual probes are explicitly enabled, return default to support both
 		return defaultAppProbeProxyPort, nil
+	case vpExist && !vpEnabled:
+		// If virtual probes are explicitly disabled, disable app probe proxy
+		return 0, nil
 	default:
 		return defaultAppProbeProxyPort, nil
 	}
