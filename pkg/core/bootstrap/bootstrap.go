@@ -404,7 +404,8 @@ func initializeAPIServerAuthenticator(builder *core_runtime.Builder) error {
 
 func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
-	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, nil)
+	validatingManager := core_manager.NewValidationManager(defaultManager, builder.CustomValidators())
+	customizableManager := core_manager.NewCustomizableResourceManager(validatingManager, nil)
 
 	customizableManager.Customize(
 		mesh.MeshType,

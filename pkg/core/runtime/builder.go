@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/core/secrets/store"
@@ -55,6 +56,7 @@ type BuilderContext interface {
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	ResourceValidators() ResourceValidators
+	CustomValidators() map[core_model.ResourceType][]core_manager.CustomValidator
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
 	Access() Access
@@ -69,37 +71,38 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg            kuma_cp.Config
-	cm             component.Manager
-	rs             core_store.CustomizableResourceStore
-	ss             store.SecretStore
-	cs             core_store.ResourceStore
-	txs            core_store.Transactions
-	rm             core_manager.CustomizableResourceManager
-	rom            core_manager.ReadOnlyResourceManager
-	gis            globalinsight.GlobalInsightService
-	cam            core_ca.Managers
-	dsl            datasource.Loader
-	ext            context.Context
-	configm        config_manager.ConfigManager
-	leadInfo       component.LeaderInfo
-	lif            lookup.LookupIPFunc
-	eac            admin.EnvoyAdminClient
-	metrics        metrics.Metrics
-	erf            events.EventBus
-	apim           api_server.APIManager
-	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
-	dps            *dp_server.DpServer
-	kdsctx         *kds_context.Context
-	rv             ResourceValidators
-	au             authn.Authenticator
-	acc            Access
-	appCtx         context.Context
-	extraReportsFn ExtraReportsFn
-	tokenIssuers   builtin.TokenIssuers
-	meshCache      *mesh.Cache
-	interCpPool    *client.Pool
+	cfg              kuma_cp.Config
+	cm               component.Manager
+	rs               core_store.CustomizableResourceStore
+	ss               store.SecretStore
+	cs               core_store.ResourceStore
+	txs              core_store.Transactions
+	rm               core_manager.CustomizableResourceManager
+	rom              core_manager.ReadOnlyResourceManager
+	gis              globalinsight.GlobalInsightService
+	cam              core_ca.Managers
+	dsl              datasource.Loader
+	ext              context.Context
+	configm          config_manager.ConfigManager
+	leadInfo         component.LeaderInfo
+	lif              lookup.LookupIPFunc
+	eac              admin.EnvoyAdminClient
+	metrics          metrics.Metrics
+	erf              events.EventBus
+	apim             api_server.APIManager
+	xds              xds_runtime.XDSRuntimeContext
+	cap              secrets.CaProvider
+	dps              *dp_server.DpServer
+	kdsctx           *kds_context.Context
+	rv               ResourceValidators
+	customValidators map[core_model.ResourceType][]core_manager.CustomValidator
+	au               authn.Authenticator
+	acc              Access
+	appCtx           context.Context
+	extraReportsFn   ExtraReportsFn
+	tokenIssuers     builtin.TokenIssuers
+	meshCache        *mesh.Cache
+	interCpPool      *client.Pool
 	RuntimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
@@ -235,6 +238,11 @@ func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
 
 func (b *Builder) WithResourceValidators(rv ResourceValidators) *Builder {
 	b.rv = rv
+	return b
+}
+
+func (b *Builder) WithCustomValidators(customValidators map[core_model.ResourceType][]core_manager.CustomValidator) *Builder {
+	b.customValidators = customValidators
 	return b
 }
 
@@ -504,6 +512,10 @@ func (b *Builder) KDSContext() *kds_context.Context {
 
 func (b *Builder) ResourceValidators() ResourceValidators {
 	return b.rv
+}
+
+func (b *Builder) CustomValidators() map[core_model.ResourceType][]core_manager.CustomValidator {
+	return b.customValidators
 }
 
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
