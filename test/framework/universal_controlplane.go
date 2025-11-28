@@ -166,12 +166,24 @@ func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
 	return c.cpNetworking.RunCommand(strings.Join(cmd, " "))
 }
 
-func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
-	data := fmt.Sprintf(
-		`'{"mesh": %q, "tags": {"kuma.io/service":[%q]}}'`,
-		mesh,
-		service,
-	)
+func (c *UniversalControlPlane) GenerateDpToken(mesh, service, workload string) (string, error) {
+	tokenData := map[string]interface{}{
+		"mesh": mesh,
+		"tags": map[string][]string{
+			"kuma.io/service": {service},
+		},
+	}
+
+	if workload != "" {
+		tokenData["workload"] = workload
+	}
+
+	dataBytes, err := json.Marshal(tokenData)
+	if err != nil {
+		return "", err
+	}
+
+	data := fmt.Sprintf("'%s'", string(dataBytes))
 
 	return c.generateToken("/dataplane", data)
 }

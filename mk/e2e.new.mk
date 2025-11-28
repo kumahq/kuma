@@ -132,9 +132,23 @@ test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slowe
 .PHONY: test/e2e-kubernetes
 test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag
+ifdef DEBUG
+	@need_start=0; \
+	for cluster in $(K8SCLUSTERS); do \
+		if ! KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$$cluster-config $(KUBECTL) cluster-info >/dev/null 2>&1; then \
+			need_start=1; \
+			break; \
+		fi; \
+	done; \
+	if [ $$need_start -eq 1 ]; then \
+		$(MAKE) test/e2e/k8s/start; \
+	fi
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST)
+else
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
+endif
 
 .PHONY: test/e2e-gatewayapi
 test/e2e-gatewayapi: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues

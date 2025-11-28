@@ -10,6 +10,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -39,7 +40,7 @@ var _ = Describe("Updater", func() {
 		metrics = m
 		resManager = manager.NewResourceManager(memory.NewStore())
 
-		updater, err := NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m, "east")
+		updater, err := NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m, "east", config_core.KubernetesEnvironment)
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
 		go func(stopCh chan struct{}) {

@@ -94,7 +94,20 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		opts.SetValues[fmt.Sprintf("cluster.initdb.postInitSQL[%d]", i)] = script
 	}
 
-	return helm.UpgradeE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName)
+	if err := helm.UpgradeE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName); err != nil {
+		return err
+	}
+
+	// Helm's --wait flag doesn't wait for custom resources to be ready, so we
+	// explicitly wait for the CNPG Cluster to reach Ready condition
+	return k8s.RunKubectlE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(t.options.namespace),
+		"wait",
+		"--for=condition=Ready",
+		fmt.Sprintf("clusters.postgresql.cnpg.io/%s-cluster", t.options.primaryName),
+		"--timeout=180s",
+	)
 }
 
 func (t *k8SDeployment) Delete(framework.Cluster) error {

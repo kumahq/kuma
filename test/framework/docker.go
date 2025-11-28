@@ -367,7 +367,7 @@ func formatDockerStopArgs(containers []string, options *docker.StopOptions) []st
 	args := []string{"stop"}
 
 	if options.Time != 0 {
-		args = append(args, "--time", strconv.Itoa(options.Time))
+		args = append(args, "--timeout", strconv.Itoa(options.Time))
 	}
 
 	args = append(args, containers...)

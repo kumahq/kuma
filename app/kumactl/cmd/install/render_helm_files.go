@@ -11,10 +11,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/engine"
+	chartcommon "helm.sh/helm/v4/pkg/chart/common"
+	chartcommonutil "helm.sh/helm/v4/pkg/chart/common/util"
+	"helm.sh/helm/v4/pkg/chart/loader/archive"
+	chartv2 "helm.sh/helm/v4/pkg/chart/v2"
+	"helm.sh/helm/v4/pkg/chart/v2/loader"
+	chartv2util "helm.sh/helm/v4/pkg/chart/v2/util"
+	"helm.sh/helm/v4/pkg/engine"
 	"k8s.io/client-go/rest"
 
 	"github.com/kumahq/kuma/v2/pkg/util/data"
@@ -55,9 +58,9 @@ func (w onlyWriteWarnings) Write(p []byte) (int, error) {
 func renderHelmFiles(
 	templates []data.File,
 	namespace string,
-	overrideValues chartutil.Values,
+	overrideValues chartcommon.Values,
 	kubeClientConfig *rest.Config,
-	capabilities chartutil.Capabilities,
+	capabilities chartcommon.Capabilities,
 ) ([]data.File, error) {
 	kumaChart, err := loadCharts(templates)
 	if err != nil {
@@ -68,14 +71,14 @@ func renderHelmFiles(
 	// as trash
 	writer := log.Writer()
 	log.SetOutput(onlyWriteWarnings{writer: writer})
-	if err := chartutil.ProcessDependencies(kumaChart, overrideValues); err != nil {
+	if err := chartv2util.ProcessDependencies(kumaChart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 	log.SetOutput(writer)
 
 	options := generateReleaseOptions(kumaChart.Metadata.Name, namespace)
 
-	valuesToRender, err := chartutil.ToRenderValues(kumaChart, overrideValues, options, &capabilities)
+	valuesToRender, err := chartcommonutil.ToRenderValues(kumaChart, overrideValues, options, &capabilities)
 	if err != nil {
 		return nil, errors.Errorf("Failed to render values: %s", err)
 	}
@@ -94,17 +97,17 @@ func renderHelmFiles(
 	return postRender(kumaChart, files), nil
 }
 
-func loadCharts(templates []data.File) (*chart.Chart, error) {
-	var files []*loader.BufferedFile
+func loadCharts(templates []data.File) (*chartv2.Chart, error) {
+	var files []*archive.BufferedFile
 
 	for _, template := range templates {
-		files = append(files, &loader.BufferedFile{
+		files = append(files, &archive.BufferedFile{
 			Name: template.FullPath,
 			Data: template.Data,
 		})
 	}
 
-	var fileteredFiles []*loader.BufferedFile
+	var fileteredFiles []*archive.BufferedFile
 	for _, f := range files {
 		if strings.Contains(f.Name, "templates/pre-") || strings.Contains(f.Name, "templates/post-") {
 			continue
@@ -176,8 +179,8 @@ func adjustType(value interface{}) interface{} {
 	return value
 }
 
-func generateReleaseOptions(name, namespace string) chartutil.ReleaseOptions {
-	return chartutil.ReleaseOptions{
+func generateReleaseOptions(name, namespace string) chartcommon.ReleaseOptions {
+	return chartcommon.ReleaseOptions{
 		Name:      name,
 		Namespace: namespace,
 		Revision:  1,
@@ -186,7 +189,7 @@ func generateReleaseOptions(name, namespace string) chartutil.ReleaseOptions {
 	}
 }
 
-func postRender(loadedChart *chart.Chart, files map[string]string) []data.File {
+func postRender(loadedChart *chartv2.Chart, files map[string]string) []data.File {
 	result := []data.File{}
 
 	for _, crd := range loadedChart.CRDObjects() {

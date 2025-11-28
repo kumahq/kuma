@@ -41,12 +41,13 @@ func RegisterXDS(
 
 	authenticator := rt.XDS().PerProxyTypeAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
+	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager()))
 
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks)
-	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks)
-	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks)
+	ingressReconciler := DefaultIngressReconciler(xdsContext, statsCallbacks)
+	egressReconciler := DefaultEgressReconciler(xdsContext, statsCallbacks)
 	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, envoy_common.APIV3)
 	if err != nil {
 		return err
@@ -59,6 +60,7 @@ func RegisterXDS(
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		util_xds_v3.AdaptCallbacks(authCallbacks),
+		util_xds_v3.AdaptCallbacks(workloadLabelValidator),
 		util_xds_v3.AdaptCallbacks(dpLifecycle),
 		util_xds_v3.AdaptCallbacks(syncTracker),
 		util_xds_v3.AdaptCallbacks(dpStatusTracker),
@@ -73,6 +75,7 @@ func RegisterXDS(
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		util_xds_v3.AdaptDeltaCallbacks(authCallbacks),
+		util_xds_v3.AdaptDeltaCallbacks(workloadLabelValidator),
 		util_xds_v3.AdaptDeltaCallbacks(dpLifecycle),
 		util_xds_v3.AdaptDeltaCallbacks(syncTracker),
 		util_xds_v3.AdaptDeltaCallbacks(dpStatusTracker),
@@ -109,7 +112,6 @@ func DefaultReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -118,7 +120,6 @@ func DefaultReconciler(
 }
 
 func DefaultIngressReconciler(
-	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
 ) xds_sync.SnapshotReconciler {
@@ -134,7 +135,6 @@ func DefaultIngressReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -143,7 +143,6 @@ func DefaultIngressReconciler(
 }
 
 func DefaultEgressReconciler(
-	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
 ) xds_sync.SnapshotReconciler {
@@ -159,7 +158,6 @@ func DefaultEgressReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},

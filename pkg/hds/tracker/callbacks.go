@@ -235,7 +235,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 
 	if changed {
 		t.log.V(1).Info("status updated", "dataplaneKey", dataplaneKey)
-		return t.resourceManager.Update(ctx, dp)
+		return t.resourceManager.Update(ctx, dp, store.UpdateWithLabels(dp.Meta.GetLabels()))
 	}
 
 	return nil

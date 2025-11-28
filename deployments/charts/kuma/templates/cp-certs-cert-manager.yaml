@@ -1,0 +1,41 @@
+{{- if and .Values.controlPlane.tls.general.certManager.enabled (eq .Values.controlPlane.environment "kubernetes") }}
+{{- /* Only validate CRDs exist when actually installing (lookup returns non-empty), not during template rendering */ -}}
+{{- $lookupResult := (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "") }}
+{{- if $lookupResult }}
+  {{- $certManagerCRDExists := false }}
+  {{- range $crd := $lookupResult.items }}
+    {{- if eq $crd.metadata.name "certificates.cert-manager.io" }}
+      {{- $certManagerCRDExists = true }}
+    {{- end }}
+  {{- end }}
+  {{- if not $certManagerCRDExists }}
+    {{- fail "cert-manager CRDs not found. Please install cert-manager before enabling controlPlane.tls.general.certManager.enabled" }}
+  {{- end }}
+{{- end }}
+{{- $serviceName := (include "kuma.controlPlane.serviceName" .) -}}
+{{- $certName := print (include "kuma.name" .) "-tls-cert" -}}
+{{- $issuerName := print (include "kuma.name" .) "-selfsigned-issuer" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $certName }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  dnsNames:
+    - {{ $serviceName }}.{{ .Release.Namespace }}.svc
+    - {{ $serviceName }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: {{ $issuerName }}
+  secretName: {{ $certName }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $issuerName }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}

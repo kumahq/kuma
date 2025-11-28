@@ -22,10 +22,10 @@ jobs:
         uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761
         with:
           swap-size-gb: 10
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ matrix.branch }}
-      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+      - uses: jdx/mise-action@9dc7d5dd454262207dea3ab5a06a3df6afc8ff26 # v3.4.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
@@ -35,7 +35,7 @@ jobs:
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |
-          SCAN_OUTPUT_BEFORE=$(osv-scanner "$OSV_SCANNER_ADDITIONAL_OPTS" --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          SCAN_OUTPUT_BEFORE=$(osv-scanner ${OSV_SCANNER_ADDITIONAL_OPTS} --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
           {
             echo "SCAN_OUTPUT_BEFORE<<EOF"
             echo "$SCAN_OUTPUT_BEFORE"
@@ -48,7 +48,7 @@ jobs:
       - name: "Prepare commit body - after"
         id: prepare_commit_body_after
         run: |
-          SCAN_OUTPUT_AFTER=$(osv-scanner "$OSV_SCANNER_ADDITIONAL_OPTS" --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          SCAN_OUTPUT_AFTER=$(osv-scanner ${OSV_SCANNER_ADDITIONAL_OPTS} --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
           {
             echo "SCAN_OUTPUT_AFTER<<EOF"
             echo "$SCAN_OUTPUT_AFTER"
@@ -61,7 +61,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
         with:
           commit-message: "chore(deps): security update"
           signoff: true

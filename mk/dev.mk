@@ -48,15 +48,15 @@ endef
 KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
-# TODO find better way of managing proto deps: https://github.com/kumahq/kuma/v2/issues/13880
-XDS_VERSION=$(shell $(GO) list -f '{{ .Version }}' -m github.com/cncf/xds/go)
-PROTO_XDS=$(shell $(GO) mod download github.com/cncf/xds@$(XDS_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/cncf/xds@$(XDS_VERSION))
-PGV_VERSION=$(shell $(GO) list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
-PROTO_PGV=$(shell $(GO) mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
-PROTO_GOOGLE_APIS=$(shell $(GO) mod download github.com/googleapis/googleapis@master && $(GO) list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
-PROTO_ENVOY=$(shell $(GO) mod download github.com/envoyproxy/data-plane-api@main && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
 BUF=$(shell $(MISE) which buf)
+
+# Proto dependencies via Buf
+BUF_CACHE_DIR := $(CI_TOOLS_DIR)/buf/cache
+PROTO_GOOGLE_APIS := $(shell $(BUF) export buf.build/googleapis/googleapis --output $(BUF_CACHE_DIR)/googleapis && echo $(BUF_CACHE_DIR)/googleapis)
+PROTO_PGV := $(shell $(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(BUF_CACHE_DIR)/pgv && echo $(BUF_CACHE_DIR)/pgv)
+PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
+PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
 K3D_BIN=$(shell $(MISE) which k3d)
@@ -98,6 +98,7 @@ cmd/check/%:
 .PHONY: install
 install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/go
 	$(MISE) install
+	$(BUF) dep update
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)

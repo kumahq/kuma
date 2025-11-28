@@ -297,7 +297,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 			destinations = append(destinations, rmap[t].GetItems())
-		case desc.IsPolicy || desc.IsReferenceableInTo || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
+		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 		case desc.Name == system.ConfigType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, func(rs core_model.Resource) bool {
