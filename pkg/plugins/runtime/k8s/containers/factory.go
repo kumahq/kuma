@@ -34,7 +34,6 @@ type DataplaneProxyFactory struct {
 	BuiltinDNS                   runtime_k8s.BuiltinDNS
 	WaitForDataplane             bool
 	sidecarContainersEnabled     bool
-	virtualProbesEnabled         bool
 	applicationProbeProxyPort    uint32
 	unifiedResourceNamingEnabled bool
 	spireEnabled                 bool
@@ -48,7 +47,6 @@ func NewDataplaneProxyFactory(
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
 	sidecarContainersEnabled bool,
-	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
 	unifiedResourceNamingEnabled bool,
 	spireEnabled bool,
@@ -61,7 +59,6 @@ func NewDataplaneProxyFactory(
 		BuiltinDNS:                   builtinDNS,
 		WaitForDataplane:             waitForDataplane,
 		sidecarContainersEnabled:     sidecarContainersEnabled,
-		virtualProbesEnabled:         virtualProbesEnabled,
 		applicationProbeProxyPort:    applicationProbeProxyPort,
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		spireEnabled:                 spireEnabled,
@@ -352,9 +349,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 
 	annotations := make(map[string]string)
-	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, podAnnotations, i.virtualProbesEnabled); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
-	}
 	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, podAnnotations, i.applicationProbeProxyPort); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation))
 	}

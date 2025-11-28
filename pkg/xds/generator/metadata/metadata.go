@@ -28,9 +28,6 @@ const (
 	// OriginOutbound is the origin for outbound listeners, clusters, and related resources
 	OriginOutbound Origin = "outbound"
 
-	// OriginProbe is the origin for resources produced by the probe/health-check generator
-	OriginProbe Origin = "probe"
-
 	// OriginPrometheus is the origin for resources produced by the Prometheus endpoint generator
 	OriginPrometheus Origin = "prometheus"
 
@@ -64,11 +61,6 @@ const (
 const (
 	ProxyTemplateProfileEgressProxy  = "egress-proxy"
 	ProxyTemplateProfileIngressProxy = "ingress-proxy"
-)
-
-const (
-	ProbeListenerName    = "probe:listener"
-	ProbeRouteConfigName = "probe:route_configuration"
 )
 
 const DirectAccessClusterName = "direct_access"

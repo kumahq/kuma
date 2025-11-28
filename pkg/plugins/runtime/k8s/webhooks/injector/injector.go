@@ -120,7 +120,7 @@ func New(
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
-			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
+			cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
 			cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
@@ -334,19 +334,8 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
-	if err != nil {
+	if err := probes.SetupAppProbeProxies(pod, log); err != nil {
 		return err
-	}
-
-	if disabledAppProbeProxy {
-		if err := i.overrideHTTPProbes(pod); err != nil {
-			return err
-		}
-	} else {
-		if err := probes.SetupAppProbeProxies(pod, log); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -853,35 +842,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		}
 	}
 
-	if err := probes.SetVirtualProbesEnabledAnnotation(
-		result,
-		pod.Annotations,
-		i.cfg.VirtualProbesEnabled,
-	); err != nil {
-		return nil, errors.Wrap(
-			err,
-			fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation),
-		)
-	}
-
-	if err := setVirtualProbesPortAnnotation(result, pod, i.cfg); err != nil {
-		return nil, errors.Wrap(
-			err,
-			fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation),
-		)
-	}
-
-	if err := probes.SetApplicationProbeProxyPortAnnotation(
-		result,
-		pod.Annotations,
-		i.cfg.ApplicationProbeProxyPort,
-	); err != nil {
-		return nil, errors.Wrap(
-			err,
-			fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation),
-		)
-	}
-
 	if v, _ := annotations.GetStringWithDefault(
 		portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts),
 		metadata.KumaTrafficExcludeInboundPorts,
@@ -919,6 +879,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		metadata.KumaTrafficExcludeOutboundIPs,
 	); v != "" {
 		result[metadata.KumaTrafficExcludeOutboundIPs] = v
+	}
+
+	if err := probes.SetApplicationProbeProxyPortAnnotation(
+		result,
+		pod.Annotations,
+		i.cfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return nil, errors.Wrap(
+			err,
+			fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation),
+		)
 	}
 
 	if v, _ := annotations.GetStringWithDefault(

@@ -560,28 +560,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.outbound
                   message: outbound cannot be defined for builtin gateways`,
 		}),
-		Entry("networking: builtin gateway must not have probes", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
-                probes:
-                  port: 0
-                  endpoints:
-                   - inboundPort: 8088
-                     inboundPath: /healthz
-                     path: /8080/healthz`,
-			expected: `
-                violations:
-                - field: networking.probes
-                  message: probes cannot be defined for builtin gateways`,
-		}),
 		Entry("networking: builtin gateway must have a service tag", testCase{
 			dataplane: `
                 type: Dataplane
@@ -1043,49 +1021,6 @@ var _ = Describe("Dataplane", func() {
                       servicePort: 10002
                       tags:
                         kuma.io/service: backend`,
-		}),
-		Entry("dataplane with virtual probe", testCase{
-			dataplane: `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
-              outbound:
-                - port: 3333
-                  tags:
-                    kuma.io/service: redis
-            probes:
-              port: 0
-              endpoints:
-               - inboundPort: 8088
-                 inboundPath: /healthz
-                 path: /8080/healthz
-               - inboundPort: 99999999
-                 inboundPath: healthz
-                 path: 8080/healthz
-               - inboundPort: 1000
-                 inboundPath:
-                 path: `,
-			expected: `
-                violations:
-                - field: probes.port
-                  message: port must be in the range [1, 65535]
-                - field: probes.endpoints[1].inboundPort
-                  message: port must be in the range [1, 65535]
-                - field: probes.endpoints[1].inboundPath
-                  message: should be a valid URL Path
-                - field: probes.endpoints[1].path
-                  message: should be a valid URL Path
-                - field: probes.endpoints[2].inboundPath
-                  message: should be a valid URL Path
-                - field: probes.endpoints[2].path
-                  message: should be a valid URL Path`,
 		}),
 		Entry("dataplane with service probe", testCase{
 			dataplane: `

@@ -46,7 +46,7 @@ func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	}
 	for _, c := range pod.Spec.Containers {
 		if c.Name != util.KumaSidecarContainerName {
-			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
+			// we don't want to create application probe proxies for Envoy container, because we generate real listener which is not protected by mTLS
 			containersNeedingProbes = append(containersNeedingProbes, c)
 		}
 	}
@@ -134,32 +134,20 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 		return fmt.Sprintf("%d", port)
 	}
 
-	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp   proxy    	result
-	// Y    Y      	     proxy
-	// Y    N            vp
-	// N    N      	     N
-	// N    Y - config   N
-	// N    Y - pod      proxy
-
-	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
-	// this is treated as deprecated though
 	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
 	}
-	if vpEnabled, _, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation); !vpEnabled && !proxyPortAnnoExists {
-		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
-		return nil
-	}
+
 	appProbeProxyPort := defaultAppProbeProxyPort
 	if proxyPortAnnoExists {
 		appProbeProxyPort = proxyPortAnno
 	}
+
 	_, gwExists := metadata.Annotations(podAnnotations).GetString(metadata.KumaGatewayAnnotation)
 	if gwExists {
 		if proxyPortAnnoExists && proxyPortAnno > 0 {
-			return errors.New("application probe proxies probes can't be enabled in gateway mode")
+			return errors.New("application probe proxies can't be enabled in gateway mode")
 		}
 		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
 		return nil
@@ -173,33 +161,17 @@ func GetApplicationProbeProxyPort(
 	annotations metadata.Annotations,
 	defaultAppProbeProxyPort uint32,
 ) (uint32, error) {
-	// metadata.KumaApplicationProbeProxyPortAnnotation
-
-	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp   proxy    	result
-	// Y    Y      	     proxy
-	// Y    N            vp
-	// N    N      	     N
-	// N    Y - config   N
-	// N    Y - pod      proxy
-
-	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
-	// this is treated as deprecated though
-
 	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return 0, err
 	}
 
-	vpEnabled, vpExist, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	gwEnabled, _, _ := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
 
 	switch {
 	case gwEnabled && proxyPort > 0:
-		return 0, errors.New("application probe proxies probes can't be enabled in gateway mode")
+		return 0, errors.New("application probe proxies can't be enabled in gateway mode")
 	case gwEnabled:
-		return 0, nil
-	case vpExist && !vpEnabled && !proxyPortExist:
 		return 0, nil
 	case proxyPortExist:
 		return proxyPort, nil

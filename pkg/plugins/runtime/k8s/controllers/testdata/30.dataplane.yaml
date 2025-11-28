@@ -48,9 +48,3 @@ spec:
         kuma.io/service: sample_playground_svc_7071
         kuma.io/zone: zone-1
         version: "0.1"
-  probes:
-    endpoints:
-    - inboundPath: /metrics
-      inboundPort: 3001
-      path: /3001/metrics
-    port: 19000

@@ -144,7 +144,6 @@ var booleanAnnotations = map[string]bool{
 	metadata.KumaSidecarInjectedAnnotation:         true,
 	metadata.KumaTransparentProxyingAnnotation:     true,
 	metadata.KumaMetricsPrometheusAggregateEnabled: true,
-	metadata.KumaVirtualProbesAnnotation:           true,
 	metadata.KumaIgnoreAnnotation:                  true,
 	metadata.KumaInitFirst:                         true,
 }

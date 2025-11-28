@@ -500,23 +500,6 @@ func ConfigToAnnotations(
 		result[k8s_metadata.CNCFNetworkAnnotation] = k8s_metadata.KumaCNI
 	}
 
-	if err := k8s_probes.SetVirtualProbesEnabledAnnotation(
-		result,
-		annotations,
-		runtimeCfg.VirtualProbesEnabled,
-	); err != nil {
-		return nil, errors.Wrapf(err, "unable to set %s", k8s_metadata.KumaVirtualProbesAnnotation)
-	}
-
-	if v, _, err := k8s_metadata.Annotations(result).GetUint32WithDefault(
-		runtimeCfg.VirtualProbesPort,
-		k8s_metadata.KumaVirtualProbesPortAnnotation,
-	); err != nil {
-		return nil, errors.Wrapf(err, "unable to set %s", k8s_metadata.KumaVirtualProbesPortAnnotation)
-	} else {
-		result[k8s_metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", v)
-	}
-
 	if v, err := k8s_probes.GetApplicationProbeProxyPort(
 		annotations,
 		runtimeCfg.ApplicationProbeProxyPort,

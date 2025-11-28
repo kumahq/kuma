@@ -208,3 +208,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		}),
 	)
 })
+
+// DummyInternalAddresses are used when the internal addresses should not be used when generating Envoy config
+var DummyInternalAddresses = []model.InternalAddress{
+	{AddressPrefix: "100.64.0.0", PrefixLen: 16},
+}
