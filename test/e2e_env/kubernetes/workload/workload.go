@@ -209,7 +209,7 @@ spec:
 		}, "2m").Should(Succeed())
 	})
 
-	FIt("should update Workload status as dataplanes are added and removed", func() {
+	It("should update Workload status as dataplanes are added and removed", func() {
 		// given
 		const workloadName = "status-test-workload"
 		const appName1 = "test-server-1"
