@@ -19,6 +19,12 @@ import (
 	logger_extensions "github.com/kumahq/kuma/v2/pkg/plugins/extensions/logger"
 )
 
+var (
+	// defaultAtomicLevel is the global atomic level used by NewLoggerWithGlobalLevel.
+	// This allows dynamic log level changes without replacing the logger instance.
+	defaultAtomicLevel = zap.NewAtomicLevel()
+)
+
 type LogLevel int
 
 const (
@@ -70,27 +76,93 @@ func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
 	return zapr.NewLogger(newZapLoggerTo(destWriter, level))
 }
 
-func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *zap.Logger {
-	var lvl zap.AtomicLevel
+// NewLoggerWithGlobalLevel creates a logger that uses the global atomic level.
+// The log level can be changed dynamically using SetGlobalLogLevel without
+// replacing the logger instance. This is useful for early initialization
+// (e.g., in init() functions) where the final log level is not yet known.
+func NewLoggerWithGlobalLevel() logr.Logger {
+	return zapr.NewLogger(newZapLoggerWithGlobalLevel(os.Stderr))
+}
+
+// SetGlobalLogLevel updates the global atomic log level used by loggers
+// created with NewLoggerWithGlobalLevel. This allows changing the log level
+// of all such loggers without replacing the logger instances.
+func SetGlobalLogLevel(level LogLevel) {
 	switch level {
 	case OffLevel:
+		// Set to a very high level to effectively disable logging
+		defaultAtomicLevel.SetLevel(zapcore.Level(100))
+	case DebugLevel:
+		// The value we pass here is the most verbose level that
+		// will end up being emitted through the `V(level int)`
+		// accessor. Passing -10 ensures that levels up to `V(10)`
+		// will work, which seems like plenty.
+		defaultAtomicLevel.SetLevel(zapcore.Level(-10))
+	case InfoLevel:
+		defaultAtomicLevel.SetLevel(zapcore.InfoLevel)
+	}
+}
+
+func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *zap.Logger {
+	if level == OffLevel {
 		return zap.NewNop()
+	}
+
+	// Create a new AtomicLevel for this logger
+	var lvl zap.AtomicLevel
+	var verbose bool
+
+	switch level {
 	case DebugLevel:
 		// The value we pass here is the most verbose level that
 		// will end up being emitted through the `V(level int)`
 		// accessor. Passing -10 ensures that levels up to `V(10)`
 		// will work, which seems like plenty.
 		lvl = zap.NewAtomicLevelAt(-10)
-		opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
+		verbose = true
 	default:
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
+		verbose = false
 	}
+
+	return buildZapLogger(destWriter, lvl, verbose, opts...)
+}
+
+func newZapLoggerWithGlobalLevel(destWriter io.Writer, opts ...zap.Option) *zap.Logger {
+	// Start with InfoLevel by default, will be updated via SetGlobalLogLevel
+	defaultAtomicLevel.SetLevel(zapcore.InfoLevel)
+
+	// Check current level to determine verbosity
+	verbose := defaultAtomicLevel.Level() <= zapcore.Level(-10)
+
+	return buildZapLogger(destWriter, defaultAtomicLevel, verbose, opts...)
+}
+
+// buildZapLogger is the common implementation for creating zap loggers.
+// It takes an AtomicLevel (either per-logger or global) and constructs
+// the logger with the standard Kuma configuration.
+func buildZapLogger(
+	destWriter io.Writer,
+	lvl zap.AtomicLevel,
+	verbose bool,
+	opts ...zap.Option,
+) *zap.Logger {
 	encCfg := zap.NewDevelopmentEncoderConfig()
 	enc := zapcore.NewConsoleEncoder(encCfg)
 	sink := zapcore.AddSync(destWriter)
+
+	// Add standard options
 	opts = append(opts, zap.AddCallerSkip(1), zap.ErrorOutput(sink))
-	return zap.New(zapcore.NewCore(&kube_log_zap.KubeAwareEncoder{Encoder: enc, Verbose: level == DebugLevel}, sink, lvl)).
-		WithOptions(opts...)
+	if !verbose {
+		opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
+	}
+
+	encoder := &kube_log_zap.KubeAwareEncoder{
+		Encoder: enc,
+		Verbose: verbose,
+	}
+
+	return zap.New(zapcore.NewCore(encoder, sink, lvl)).WithOptions(opts...)
 }
 
 const (
