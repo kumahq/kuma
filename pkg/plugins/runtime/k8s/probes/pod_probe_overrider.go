@@ -138,19 +138,13 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	// vp   proxy    	result
 	// Y    Y      	     proxy
 	// Y    N            vp
-	// N    N      	     N
-	// N    Y - config   N
+	// N    N      	     proxy (default)
+	// N    Y - config   proxy
 	// N    Y - pod      proxy
 
-	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
-	// this is treated as deprecated though
 	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
-	}
-	if vpEnabled, _, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation); !vpEnabled && !proxyPortAnnoExists {
-		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
-		return nil
 	}
 	appProbeProxyPort := defaultAppProbeProxyPort
 	if proxyPortAnnoExists {
@@ -179,12 +173,9 @@ func GetApplicationProbeProxyPort(
 	// vp   proxy    	result
 	// Y    Y      	     proxy
 	// Y    N            vp
-	// N    N      	     N
-	// N    Y - config   N
+	// N    N      	     proxy (default)
+	// N    Y - config   proxy
 	// N    Y - pod      proxy
-
-	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
-	// this is treated as deprecated though
 
 	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
@@ -199,10 +190,14 @@ func GetApplicationProbeProxyPort(
 		return 0, errors.New("application probe proxies probes can't be enabled in gateway mode")
 	case gwEnabled:
 		return 0, nil
-	case vpExist && !vpEnabled && !proxyPortExist:
-		return 0, nil
 	case proxyPortExist:
 		return proxyPort, nil
+	case vpExist && vpEnabled:
+		// If virtual probes are explicitly enabled, return default to support both
+		return defaultAppProbeProxyPort, nil
+	case vpExist && !vpEnabled:
+		// If virtual probes are explicitly disabled, disable app probe proxy
+		return 0, nil
 	default:
 		return defaultAppProbeProxyPort, nil
 	}

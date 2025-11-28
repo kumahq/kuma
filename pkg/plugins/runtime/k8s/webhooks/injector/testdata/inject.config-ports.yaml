@@ -31,7 +31,7 @@ sidecarContainer:
       memory: 1512Mi
 initContainer:
   image: kuma/kuma-init:latest
-virtualProbesEnabled: true
+virtualProbesEnabled: false
 virtualProbesPort: 9000
 applicationProbeProxyPort: 0
 sidecarTraffic:

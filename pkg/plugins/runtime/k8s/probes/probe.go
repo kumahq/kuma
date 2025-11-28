@@ -105,6 +105,17 @@ func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnno
 		return nil
 	}
 
+	// Check if application probe proxy is explicitly disabled
+	appProbeProxyPort, appProbeProxyPortExist, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	if err != nil {
+		return err
+	}
+	if appProbeProxyPortExist && appProbeProxyPort == 0 {
+		// Application probe proxy disabled, fallback to virtual probes
+		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
+		return nil
+	}
+
 	if vpExist {
 		annotations[metadata.KumaVirtualProbesAnnotation] = str(vpEnabled)
 		return nil

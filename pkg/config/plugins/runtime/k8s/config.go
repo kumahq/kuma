@@ -19,7 +19,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		ControlPlaneServiceName: "kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:                false,
-			VirtualProbesEnabled:      true,
+			VirtualProbesEnabled:      false,
 			VirtualProbesPort:         9000,
 			ApplicationProbeProxyPort: 9001,
 			SidecarContainer: SidecarContainer{

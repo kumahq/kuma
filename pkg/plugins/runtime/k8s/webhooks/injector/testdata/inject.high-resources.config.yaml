@@ -33,7 +33,7 @@ initContainer:
 builtinDNS:
   enabled: true
   port: 25053
-virtualProbesEnabled: true
+virtualProbesEnabled: false
 virtualProbesPort: 9000
 applicationProbeProxyPort: 0
 exceptions:
