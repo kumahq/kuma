@@ -95,6 +95,7 @@ node:
     ipv6Enabled: false
     metricsCertPath: /path/cert/pem
     metricsKeyPath: /path/key/pem
+    spireAgent.socketPath: ""
     systemCaPath: ""
     version:
       envoy:

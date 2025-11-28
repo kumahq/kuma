@@ -150,6 +150,14 @@ func WithNetwork(network string) DockerContainerOptFn {
 	}
 }
 
+func WithCommand(command ...string) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.dockerOpts.Command = command
+
+		return nil
+	}
+}
+
 func (d *DockerContainer) addID(id string) {
 	d.id = id
 }

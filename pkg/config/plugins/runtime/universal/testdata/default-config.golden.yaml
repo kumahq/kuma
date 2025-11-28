@@ -1,3 +1,5 @@
+spire:
+  socketPath: /tmp/spire-agent/public/api.sock
 dataplaneCleanupAge: 72h0m0s
 zoneResourceCleanupAge: 72h0m0s
 vipRefreshInterval: 500ms

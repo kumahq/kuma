@@ -216,7 +216,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.UnifiedResourceNamingEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
 			}
-			if cfg.DataplaneRuntime.SpireSupported {
+			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
 			if !cfg.Dataplane.ReadinessUnixSocketDisabled {

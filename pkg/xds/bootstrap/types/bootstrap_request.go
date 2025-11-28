@@ -62,6 +62,7 @@ type BootstrapRequest struct {
 	SystemCaPath         string                     `json:"systemCaPath"`
 	TransparentProxy     *tproxy_dp.DataplaneConfig `json:"dataplaneConfig,omitempty"`
 	IPv6Enabled          bool                       `json:"ipv6Enabled"`
+	SpireResources       SpireResources             `json:"spireResources"`
 }
 
 type Version struct {
@@ -72,6 +73,10 @@ type Version struct {
 type MetricsResources struct {
 	CertPath string `json:"certPath"`
 	KeyPath  string `json:"keyPath"`
+}
+
+type SpireResources struct {
+	SocketPath string `json:"socketPath"`
 }
 
 type KumaDpVersion struct {
