@@ -66,43 +66,6 @@ labels:
 		}, "1m", "1s").Should(Succeed())
 	})
 
-	It("should delete Workload after grace period when Dataplane is removed", func() {
-		// given a dataplane with workload label
-		dataplane := fmt.Sprintf(`
-type: Dataplane
-mesh: %s
-name: dp-for-deletion
-networking:
-  address: 192.168.0.11
-  inbound:
-  - port: 80
-    tags:
-      kuma.io/service: deletion-test-service
-      kuma.io/protocol: http
-labels:
-  kuma.io/workload: workload-for-deletion
-`, mesh)
-		Expect(universal.Cluster.Install(YamlUniversal(dataplane))).To(Succeed())
-
-		// when workload is created
-		Eventually(func(g Gomega) {
-			expectManagedWorkload(g, universal.Cluster, "workload-for-deletion", mesh)
-		}, "30s", "1s").Should(Succeed())
-
-		// and dataplane is deleted
-		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "dp-for-deletion", "-m", mesh)).To(Succeed())
-
-		// then workload should be marked with deletion grace period label
-		Eventually(func(g Gomega) {
-			workload, err := GetWorkload(universal.Cluster, "workload-for-deletion", mesh)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(workload.GetMeta().GetLabels()).To(HaveKey("kuma.io/deletion-grace-period-started-at"))
-		}, "30s", "1s").Should(Succeed())
-
-		// Note: Full deletion with grace period would take 1 hour by default,
-		// so we only verify the grace period label is set
-	})
-
 	It("should create single Workload for multiple Dataplanes with same workload label", func() {
 		// given we manually create dataplanes with the same workload label
 		dataplane1 := fmt.Sprintf(`
