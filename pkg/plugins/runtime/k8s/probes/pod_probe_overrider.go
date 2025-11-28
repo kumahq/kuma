@@ -142,15 +142,9 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	// N    Y - config   proxy
 	// N    Y - pod      proxy
 
-	// if disabled explicitly by "kuma.io/virtual-probes: disabled", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
-	// this is treated as deprecated though
 	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
-	}
-	if vpEnabled, vpExists, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation); vpExists && !vpEnabled && !proxyPortAnnoExists {
-		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
-		return nil
 	}
 	appProbeProxyPort := defaultAppProbeProxyPort
 	if proxyPortAnnoExists {
@@ -183,9 +177,6 @@ func GetApplicationProbeProxyPort(
 	// N    Y - config   proxy
 	// N    Y - pod      proxy
 
-	// if disabled explicitly by "kuma.io/virtual-probes: disabled", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
-	// this is treated as deprecated though
-
 	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return 0, err
@@ -201,9 +192,6 @@ func GetApplicationProbeProxyPort(
 		return 0, nil
 	case proxyPortExist:
 		return proxyPort, nil
-	case vpExist && !vpEnabled:
-		// If virtual probes are explicitly disabled, respect that for backward compatibility
-		return 0, nil
 	case vpExist && vpEnabled:
 		// If virtual probes are explicitly enabled, return default to support both
 		return defaultAppProbeProxyPort, nil
