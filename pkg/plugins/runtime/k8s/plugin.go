@@ -348,7 +348,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
 	if rt.Config().Mode != config_core.Global {
-		podValidator := k8s_webhooks.NewPodValidatorWebhook(admissionDecoder)
+		podValidator := k8s_webhooks.NewPodValidatorWebhook(admissionDecoder, client, rt.Config().Runtime.Kubernetes.DisallowMultipleMeshesPerNamespace)
 		mgr.GetWebhookServer().Register("/validate-v1-pod", &kube_webhook.Admission{Handler: podValidator})
 	}
 
