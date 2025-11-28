@@ -62,7 +62,7 @@ jobs:
             workflows:
               - '.github/workflows/**'
 
-      - uses: reviewdog/action-actionlint@f00ad0691526c10be4021a91b2510f0a769b14d0 # v1.68.0
+      - uses: reviewdog/action-actionlint@437bbe918b0d29544cbf9e8b1d63fe6f4e7a881d # v1.69.0
         if: >-
           github.event_name == 'workflow_dispatch' ||
           steps.changes.outputs.workflows == 'true'
