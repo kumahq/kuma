@@ -56,10 +56,14 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			l := core.NewLogger(level)
-			core.SetLogger(l)
-			// Required for any k8s stuff that may log.
-			klog.SetLogger(l)
+
+			// Update the global atomic log level. This affects the logger set
+			// in main.go's init() function, ensuring controller-runtime components
+			// respect the user's --log-level flag.
+			kuma_log.SetGlobalLogLevel(level)
+
+			// Set logger for k8s client-go (klog).
+			klog.SetLogger(core.NewLogger(level))
 
 			// once command line flags have been parsed,
 			// avoid printing usage instructions

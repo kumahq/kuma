@@ -117,4 +117,5 @@ var (
 	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity - Spire", meshidentity.Spire, Ordered)
+	_ = Describe("MeshIdentity - Rotate CA", meshidentity.Rotate, Ordered)
 )

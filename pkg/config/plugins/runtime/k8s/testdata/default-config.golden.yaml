@@ -8,6 +8,7 @@ clientConfig:
 controlPlaneServiceName: kuma-control-plane
 controllersConcurrency:
   podController: 10
+disallowMultipleMeshesPerNamespace: false
 injector:
   applicationProbeProxyPort: 9001
   builtinDNS:

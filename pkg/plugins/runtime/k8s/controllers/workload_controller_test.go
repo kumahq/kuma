@@ -9,7 +9,9 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -49,6 +51,8 @@ var _ = Describe("WorkloadController", func() {
 					obj = &mesh_k8s.Dataplane{}
 				case strings.Contains(yamlObj, "kind: Mesh"):
 					obj = &mesh_k8s.Mesh{}
+				case strings.Contains(yamlObj, "kind: Namespace"):
+					obj = &kube_core.Namespace{}
 				}
 				Expect(yaml.Unmarshal([]byte(yamlObj), obj)).To(Succeed())
 				objects = append(objects, obj)
@@ -60,8 +64,9 @@ var _ = Describe("WorkloadController", func() {
 				Build()
 
 			reconciler = &WorkloadReconciler{
-				Client: kubeClient,
-				Log:    logr.Discard(),
+				Client:        kubeClient,
+				EventRecorder: kube_record.NewFakeRecorder(10),
+				Log:           logr.Discard(),
 			}
 
 			key := kube_types.NamespacedName{
@@ -113,6 +118,12 @@ var _ = Describe("WorkloadController", func() {
 			inputFile:    "06.resources.yaml",
 			outputFile:   "06.workload.yaml",
 			workloadName: "persistent-workload",
+			namespace:    "demo",
+		}),
+		Entry("should not create Workload when multiple meshes detected for same workload", testCase{
+			inputFile:    "07.resources.yaml",
+			outputFile:   "07.workload.yaml",
+			workloadName: "multi-mesh-workload",
 			namespace:    "demo",
 		}),
 	)
