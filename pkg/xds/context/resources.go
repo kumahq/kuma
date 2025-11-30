@@ -12,6 +12,7 @@ import (
 	meshsvc "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -178,6 +179,18 @@ func (r Resources) MeshServices() *meshsvc.MeshServiceResourceList {
 		}
 	}
 	return list.(*meshsvc.MeshServiceResourceList)
+}
+
+func (r Resources) Workloads() *workload_api.WorkloadResourceList {
+	list, ok := r.MeshLocalResources[workload_api.WorkloadType]
+	if !ok {
+		var err error
+		list, err = registry.Global().NewList(workload_api.WorkloadType)
+		if err != nil {
+			return &workload_api.WorkloadResourceList{}
+		}
+	}
+	return list.(*workload_api.WorkloadResourceList)
 }
 
 func (r Resources) MeshExternalServices() *meshextsvc.MeshExternalServiceResourceList {

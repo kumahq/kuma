@@ -15,6 +15,9 @@ func DefaultUniversalRuntimeConfig() *UniversalRuntimeConfig {
 		DataplaneCleanupAge:    config_types.Duration{Duration: 3 * 24 * time.Hour},
 		ZoneResourceCleanupAge: config_types.Duration{Duration: 3 * 24 * time.Hour},
 		VIPRefreshInterval:     config_types.Duration{Duration: 500 * time.Millisecond},
+		Workload: WorkloadConfig{
+			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
+		},
 	}
 }
 
@@ -30,6 +33,19 @@ type UniversalRuntimeConfig struct {
 	ZoneResourceCleanupAge config_types.Duration `json:"zoneResourceCleanupAge" envconfig:"kuma_runtime_universal_zone_resource_cleanup_age"`
 	// VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
 	VIPRefreshInterval config_types.Duration `json:"vipRefreshInterval" envconfig:"kuma_runtime_universal_vip_refresh_interval"`
+	// Workload holds configuration for Workload generation features
+	Workload WorkloadConfig `json:"workload"`
+}
+
+// WorkloadConfig holds configuration for Workload generation from Dataplanes.
+type WorkloadConfig struct {
+	// GenerationInterval is how often we check whether Workloads need to be
+	// generated from Dataplanes
+	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL"`
+}
+
+func (i WorkloadConfig) Validate() error {
+	return nil
 }
 
 func (u *UniversalRuntimeConfig) Validate() error {
