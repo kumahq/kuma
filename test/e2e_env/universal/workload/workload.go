@@ -161,4 +161,57 @@ spec:
 			g.Expect(out).To(ContainSubstring("other-service"))
 		}).Should(Succeed())
 	})
+
+	It("should update Workload status as dataplanes are added and removed", func() {
+		const workloadName = "status-test-workload"
+		const appName1 = "test-server-1"
+		const appName2 = "test-server-2"
+
+		// when deploy first test server with workload label
+		err := TestServerUniversal(appName1, mesh,
+			WithArgs([]string{"echo", "--instance", "v1"}),
+			WithServiceName(appName1),
+			WithAppLabel(appName1),
+			WithAppendDataplaneYaml(fmt.Sprintf(`
+labels:
+  kuma.io/workload: %s`, workloadName)),
+		)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify Workload status shows 1 dataplane
+		Eventually(func(g Gomega) {
+			workload, err := GetWorkload(universal.Cluster, workloadName, mesh)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)))
+		}).Should(Succeed())
+
+		// when deploy second test server with same workload label
+		err = TestServerUniversal(appName2, mesh,
+			WithArgs([]string{"echo", "--instance", "v2"}),
+			WithServiceName(appName2),
+			WithAppLabel(appName2),
+			WithAppendDataplaneYaml(fmt.Sprintf(`
+labels:
+  kuma.io/workload: %s`, workloadName)),
+		)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify Workload status shows 2 dataplanes
+		Eventually(func(g Gomega) {
+			workload, err := GetWorkload(universal.Cluster, workloadName, mesh)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(2)))
+		}).Should(Succeed())
+
+		// when delete first test server
+		err = universal.Cluster.DeleteApp(appName1)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then verify Workload status shows 1 dataplane again
+		Eventually(func(g Gomega) {
+			workload, err := GetWorkload(universal.Cluster, workloadName, mesh)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(workload.Status.DataplaneProxies.Total).To(Equal(int32(1)))
+		}).Should(Succeed())
+	})
 }
