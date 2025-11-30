@@ -132,11 +132,15 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			if watchCancellation != nil {
 				watchCancellation()
 			}
-			watchCancellation = s.cache.CreateWatch(&envoy_cache.Request{
+			var err error
+			watchCancellation, err = s.cache.CreateWatch(&envoy_cache.Request{
 				Node:        node,
 				TypeUrl:     v3.HealthCheckSpecifierType,
 				VersionInfo: lastVersion,
-			}, envoy_stream.NewStreamState(false, nil), responseChan)
+			}, envoy_stream.NewSotwSubscription(nil, false), responseChan)
+			if err != nil {
+				return err
+			}
 		case reqOrResp, more := <-reqOrRespCh:
 			if !more {
 				return nil
@@ -166,11 +170,15 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			if watchCancellation != nil {
 				watchCancellation()
 			}
-			watchCancellation = s.cache.CreateWatch(&envoy_cache.Request{
+			var err error
+			watchCancellation, err = s.cache.CreateWatch(&envoy_cache.Request{
 				Node:        node,
 				TypeUrl:     v3.HealthCheckSpecifierType,
 				VersionInfo: lastVersion,
-			}, envoy_stream.NewStreamState(false, nil), responseChan)
+			}, envoy_stream.NewSotwSubscription(nil, false), responseChan)
+			if err != nil {
+				return err
+			}
 		}
 	}
 }
