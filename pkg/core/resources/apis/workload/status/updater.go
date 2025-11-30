@@ -63,6 +63,7 @@ func (s *StatusUpdater) Start(stop <-chan struct{}) error {
 	util_time.SleepUpTo(s.interval)
 	s.logger.Info("starting")
 	ticker := time.NewTicker(s.interval)
+	defer ticker.Stop()
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	for {
