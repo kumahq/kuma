@@ -453,7 +453,7 @@ func (r *resourceEndpoints) createResource(
 	res.SetMeta(resRest.GetMeta())
 
 	// Validate workload label on Universal Zone dataplanes
-	if r.mode != config_core.Global && r.descriptor.Name == core_mesh.DataplaneType {
+	if r.descriptor.Name == core_mesh.DataplaneType {
 		if resLabels := res.GetMeta().GetLabels(); resLabels != nil {
 			if workloadName, ok := resLabels[metadata.KumaWorkload]; ok && workloadName != "" {
 				if validationErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(validationErrs) != 0 {

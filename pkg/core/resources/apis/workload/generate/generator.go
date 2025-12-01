@@ -88,7 +88,14 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		workloadName := workload.GetMeta().GetName()
 		stillExists := workloadsByName[workloadName]
 
-		g.handleExistingWorkload(ctx, log, workload, stillExists)
+		if !stillExists {
+			log := log.WithValues("Workload", workloadName)
+			if err := g.resManager.Delete(ctx, workload_api.NewWorkloadResource(), store.DeleteBy(model.MetaToResourceKey(workload.GetMeta()))); err != nil {
+				log.Error(err, "couldn't delete Workload")
+			} else {
+				log.Info("deleted Workload")
+			}
+		}
 		delete(workloadsByName, workloadName)
 	}
 
@@ -107,20 +114,6 @@ func (g *Generator) collectWorkloadsByName(dataplanes []*core_mesh.DataplaneReso
 	return workloadsByName
 }
 
-func (g *Generator) handleExistingWorkload(ctx context.Context, log logr.Logger, workload *workload_api.WorkloadResource, stillExists bool) {
-	log = log.WithValues("Workload", workload.GetMeta().GetName())
-
-	if stillExists {
-		return
-	}
-
-	if err := g.resManager.Delete(ctx, workload_api.NewWorkloadResource(), store.DeleteBy(model.MetaToResourceKey(workload.GetMeta()))); err != nil {
-		log.Error(err, "couldn't delete Workload")
-	} else {
-		log.Info("deleted Workload")
-	}
-}
-
 func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloadName, mesh string) {
 	log = log.WithValues("Workload", workloadName)
 	workload := workload_api.NewWorkloadResource()
@@ -128,12 +121,10 @@ func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloa
 	// separately by the workload status controller based on dataplane state
 	workload.Spec = &workload_api.Workload{}
 	if err := g.resManager.Create(ctx, workload, store.CreateByKey(workloadName, mesh), store.CreateWithLabels(map[string]string{
-		metadata.KumaMeshLabel:         mesh,
-		mesh_proto.DisplayName:         workloadName,
-		mesh_proto.ManagedByLabel:      managedByValue,
-		mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
-		mesh_proto.ZoneTag:             g.zone,
-		mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+		metadata.KumaMeshLabel:    mesh,
+		mesh_proto.ManagedByLabel: managedByValue,
+		mesh_proto.EnvTag:         mesh_proto.UniversalEnvironment,
+		mesh_proto.ZoneTag:        g.zone,
 	})); err != nil {
 		log.Error(err, "couldn't create Workload")
 		return
