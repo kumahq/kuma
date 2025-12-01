@@ -135,12 +135,13 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	}
 
 	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp   proxy    	result
-	// Y    Y      	     proxy
-	// Y    N            vp
-	// N    N      	     proxy (default)
-	// N    Y - config   proxy
-	// N    Y - pod      proxy
+	// vp           proxy    	result
+	// Y            Y      	     proxy
+	// Y            N            proxy (default)
+	// disabled     N      	     N (disabled)
+	// not set      N      	     proxy (default)
+	// not set      Y - config   proxy
+	// not set      Y - pod      proxy
 
 	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
@@ -170,12 +171,13 @@ func GetApplicationProbeProxyPort(
 	// metadata.KumaApplicationProbeProxyPortAnnotation
 
 	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp   proxy    	result
-	// Y    Y      	     proxy
-	// Y    N            vp
-	// N    N      	     proxy (default)
-	// N    Y - config   proxy
-	// N    Y - pod      proxy
+	// vp           proxy    	result
+	// Y            Y      	     proxy
+	// Y            N            proxy (default)
+	// disabled     N      	     N (disabled)
+	// not set      N      	     proxy (default)
+	// not set      Y - config   proxy
+	// not set      Y - pod      proxy
 
 	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
