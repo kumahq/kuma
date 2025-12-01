@@ -10,6 +10,7 @@ import (
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 )
 
 type rateLimitManager struct {
@@ -49,7 +50,7 @@ func (m *rateLimitManager) Create(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return err
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 	if err := m.rateLimitValidator.ValidateCreate(ctx, opts.Mesh, rateLimit); err != nil {
@@ -90,7 +91,7 @@ func (m *rateLimitManager) Update(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return err
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 

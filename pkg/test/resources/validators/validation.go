@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
@@ -54,7 +55,7 @@ func DescribeValidCases[T core_model.Resource](generator func() T, cases ...Tabl
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			verr := core_model.Validate(resource)
+			verr := validator.Validate(resource)
 
 			// then
 			Expect(verr).ToNot(HaveOccurred())
@@ -88,7 +89,7 @@ func DescribeErrorCases[T core_model.Resource](generator func() T, cases ...Tabl
 			}
 
 			// then
-			err := core_model.Validate(resource)
+			err := validator.Validate(resource)
 			Expect(err).To(HaveOccurred())
 			verr := err.(*validators.ValidationError)
 			Expect(verr.Violations).To(ConsistOf(expected.Violations))

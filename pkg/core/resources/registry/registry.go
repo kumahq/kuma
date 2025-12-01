@@ -7,11 +7,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
 type AdditionalValidator interface {
-	Validate(model.Resource) validators.ValidationError
+	Validate(model.Resource) error
 }
 
 type TypeRegistry interface {
