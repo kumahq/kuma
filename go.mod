@@ -23,7 +23,7 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.0
-	github.com/golang-migrate/migrate/v4 v4.19.0
+	github.com/golang-migrate/migrate/v4 v4.19.1
 	// NOTE: We intentionally keep github.com/golang/protobuf/jsonpb (via github.com/golang/protobuf)
 	// because jsonpb's unmarshalling semantics match our expectations and existing payloads, whereas
 	// google.golang.org/protobuf/protojson differs in several edge-cases (e.g., well-known types,
