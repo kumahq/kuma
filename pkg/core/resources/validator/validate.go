@@ -31,5 +31,5 @@ func Validate(resource model.Resource) error {
 			}
 		}
 	}
-	return nil
+	return verr.OrNil()
 }
