@@ -3,6 +3,8 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
+servers:
+  - null
 paths:
   /:
     get:
@@ -2510,46 +2512,6 @@ paths:
       summary: Creates or Updates Dataplane entity
       tags:
         - Dataplane
-  /meshes/{mesh}/dataplanes/{name}/_overview:
-    get:
-      operationId: getDataplaneOverview
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-        - in: path
-          name: name
-          required: true
-          description: The name of the DPP within the mesh to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GetDataplaneOverviewResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/_overview:
-    get:
-      operationId: getDataplaneOverviewList
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/Internal'
   /meshes:
     get:
       operationId: getMeshList
@@ -3969,10 +3931,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
-security:
-  - BasicAuth: []
-  - BearerAuth: []
-  - {}
 components:
   securitySchemes:
     BasicAuth:
@@ -15799,10 +15757,6 @@ components:
                 - type: integer
           type: object
       type: object
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: '#/components/schemas/Meta'
-        - $ref: '#/components/schemas/DataplaneOverview'
     DataplaneOverview:
       description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
@@ -19604,28 +19558,6 @@ components:
                 type: number
             type: object
       description: List
-    GetDataplaneOverviewResponse:
-      description: A response containing the overview of a dataplane.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/DataplaneOverviewWithMeta'
-    GetDataplaneOverviewListResponse:
-      description: A response containing the overview of a dataplane.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              total:
-                type: integer
-                example: 200
-              next:
-                type: string
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DataplaneOverviewWithMeta'
     MeshCreateOrUpdateSuccessResponse:
       content:
         application/json:
