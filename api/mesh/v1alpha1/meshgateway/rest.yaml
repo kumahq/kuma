@@ -252,7 +252,7 @@ paths:
         "200":
           $ref: '#/components/responses/MeshGatewayDeleteSuccessResponse'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Deletes MeshGateway entity
       tags:
       - MeshGateway
@@ -275,7 +275,7 @@ paths:
         "200":
           $ref: '#/components/responses/MeshGatewayItem'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns MeshGateway entity
       tags:
       - MeshGateway

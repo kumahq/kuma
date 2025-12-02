@@ -507,7 +507,7 @@ paths:
         "200":
           $ref: '#/components/responses/DataplaneDeleteSuccessResponse'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Deletes Dataplane entity
       tags:
       - Dataplane
@@ -530,7 +530,7 @@ paths:
         "200":
           $ref: '#/components/responses/DataplaneItem'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns Dataplane entity
       tags:
       - Dataplane

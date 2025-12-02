@@ -382,7 +382,7 @@ paths:
         "200":
           $ref: '#/components/responses/MeshDeleteSuccessResponse'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Deletes Mesh entity
       tags:
       - Mesh
@@ -399,7 +399,7 @@ paths:
         "200":
           $ref: '#/components/responses/MeshItem'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns Mesh entity
       tags:
       - Mesh

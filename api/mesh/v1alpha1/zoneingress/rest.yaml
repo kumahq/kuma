@@ -176,7 +176,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Deletes ZoneIngress entity
       tags:
       - ZoneIngress
@@ -193,7 +193,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneIngressItem'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns ZoneIngress entity
       tags:
       - ZoneIngress

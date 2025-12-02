@@ -10,4 +10,6 @@ components:
             balancing traffic on it
           type: boolean
       type: object
+info:
+  x-ref-schema-name: Zone
 openapi: 3.1.0

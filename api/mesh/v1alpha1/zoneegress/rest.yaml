@@ -143,7 +143,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneEgressDeleteSuccessResponse'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Deletes ZoneEgress entity
       tags:
       - ZoneEgress
@@ -160,7 +160,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneEgressItem'
         "404":
-          $ref: /specs/base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns ZoneEgress entity
       tags:
       - ZoneEgress

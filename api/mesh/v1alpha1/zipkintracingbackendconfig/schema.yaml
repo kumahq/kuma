@@ -21,4 +21,6 @@ components:
           description: Address of Zipkin collector.
           type: string
       type: object
+info:
+  x-ref-schema-name: ZipkinTracingBackendConfig
 openapi: 3.1.0
