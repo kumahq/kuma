@@ -239,6 +239,14 @@ controlPlane:
       caSecretName: ""
       # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       caBundle: ""
+      # Configuration for cert-manager integration
+      certManager:
+        # -- Enable cert-manager integration for webhook certificates.
+        # When enabled, cert-manager will manage the webhook certificates and inject
+        # the CA bundle into webhook configurations automatically.
+        # This requires cert-manager to be installed in the cluster.
+        # Note: When enabled, secretName and caBundle should be empty.
+        enabled: false
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""

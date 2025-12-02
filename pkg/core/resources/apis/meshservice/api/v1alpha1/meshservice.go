@@ -33,7 +33,6 @@ const maxNameLength = 63
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
 // +kuma:policy:kds_flags=model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag
-// +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=msvc
 // +kuma:policy:is_destination=true
 // +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string

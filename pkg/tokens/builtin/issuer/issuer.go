@@ -38,6 +38,7 @@ func (i *jwtTokenIssuer) Generate(ctx context.Context, identity DataplaneIdentit
 		Mesh:             identity.Mesh,
 		Tags:             tags,
 		Type:             string(identity.Type),
+		Workload:         identity.Workload,
 		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 

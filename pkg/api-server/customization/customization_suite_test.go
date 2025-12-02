@@ -91,7 +91,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		),
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,
-		nil,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

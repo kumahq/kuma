@@ -197,7 +197,6 @@ var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
-	IsReferenceableInTo:          false,
 	ShortName:                    "dnp",
 	IsFromAsRules:                false,
 }

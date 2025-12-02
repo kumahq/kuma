@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
@@ -103,7 +104,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 	if resource.GetMeta() == nil {
 		resource.SetMeta(From.Meta(resource))
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return nil, err
 	}
 

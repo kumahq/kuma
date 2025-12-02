@@ -15,5 +15,5 @@ func InitProvider() {
 }
 
 func (p plugin) NewIdentityProvider(context core_plugins.PluginContext, config core_plugins.PluginConfig) (providers.IdentityProvider, error) {
-	return NewBundledIdentityProvider(context.ResourceManager(), context.ResourceManager(), context.Metrics(), context.Config().Multizone.Zone.Name)
+	return NewBundledIdentityProvider(context.ResourceManager(), context.ResourceManager(), context.Metrics(), context.Config().Multizone.Zone.Name, context.Config().Environment)
 }

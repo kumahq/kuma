@@ -166,7 +166,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.MonitoringAssignmentServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
-			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
 			Expect(cfg.Runtime.Kubernetes.AllowedUsers).To(Equal([]string{"allowed-usr-1", "allowed-usr-2"}))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniApp).To(Equal("kuma-cni"))
@@ -503,6 +502,7 @@ runtime:
     zoneResourceCleanupAge: 1h
     vipRefreshInterval: 10s
   kubernetes:
+    disallowMultipleMeshesPerNamespace: true
     serviceAccountName: custom-sa
     allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
     controlPlaneServiceName: custom-control-plane
@@ -898,7 +898,7 @@ meshService:
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES":                                      "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
-				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
+				"KUMA_RUNTIME_KUBERNETES_DISALLOW_MULTIPLE_MESHES_PER_NAMESPACE":                           "true",
 				"KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS":                                                    "allowed-usr-1,allowed-usr-2",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP":                                    "kuma-cni",

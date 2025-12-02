@@ -4,7 +4,7 @@ import "fmt"
 
 func GatewayProxyUniversal(mesh, name string, appDeploymentOptions ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := cluster.GetKuma().GenerateDpToken(mesh, name)
+		token, err := cluster.GetKuma().GenerateDpToken(mesh, name, "")
 		if err != nil {
 			return err
 		}

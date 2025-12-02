@@ -11,6 +11,7 @@ import (
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 )
 
 func NewDataplaneManager(
@@ -43,7 +44,7 @@ type dataplaneManager struct {
 }
 
 func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 	dp, err := m.dataplane(resource)

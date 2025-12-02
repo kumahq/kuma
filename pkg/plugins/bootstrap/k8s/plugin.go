@@ -2,8 +2,6 @@ package k8s
 
 import (
 	"context"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,7 +23,6 @@ import (
 	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
@@ -181,15 +178,6 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 	if b.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}
-	apiServerAddress := os.Getenv("KUBERNETES_SERVICE_HOST")
-	port := os.Getenv("KUBERNETES_SERVICE_PORT")
-	apiServerPort, err := strconv.ParseUint(port, 10, 32)
-	if err != nil {
-		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
-	}
-
-	b.XDS().Hooks.AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
-
 	return nil
 }
 

@@ -17,6 +17,7 @@ import (
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/tokens"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
@@ -36,6 +37,8 @@ var _ = Describe("Authentication flow", func() {
 	dpRes := *samples.DataplaneWebBuilder().
 		AddInboundOfService("web-api").
 		Build()
+
+	var dpResWithWorkload core_mesh.DataplaneResource
 
 	BeforeEach(func() {
 		ctx = context.Background()
@@ -63,6 +66,14 @@ var _ = Describe("Authentication flow", func() {
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpResWithWorkload = *samples.DataplaneWebBuilder().
+			WithName("dp-with-workload").
+			WithLabels(map[string]string{metadata.KumaWorkload: "backend"}).
+			AddInboundOfService("web-api").
+			Build()
+		err = resStore.Create(ctx, &dpResWithWorkload, core_store.CreateByKey("dp-with-workload", "default"), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend"}))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -109,6 +120,13 @@ var _ = Describe("Authentication flow", func() {
 				},
 			},
 			dpRes: &dpRes,
+		}),
+		Entry("should auth with token bound to workload", testCase{
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh:     "default",
+				Workload: "backend",
+			},
+			dpRes: &dpResWithWorkload,
 		}),
 	)
 
@@ -179,6 +197,22 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpRes,
 			err:   `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
+		}),
+		Entry("on token with different workload", testCase{
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh:     "default",
+				Workload: "frontend",
+			},
+			dpRes: &dpResWithWorkload,
+			err:   `dataplane workload "backend" is not allowed with this token. Allowed workload in token is "frontend"`,
+		}),
+		Entry("on token with workload when dataplane has no workload label", testCase{
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh:     "default",
+				Workload: "backend",
+			},
+			dpRes: &dpRes,
+			err:   "dataplane has no workload label required by the token",
 		}),
 	)
 
