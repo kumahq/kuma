@@ -118,17 +118,6 @@ func HashMeta(r Resource) []byte {
 	return hasher.Sum(nil)
 }
 
-type ResourceValidator interface {
-	Validate() error
-}
-
-func Validate(resource Resource) error {
-	if rv, ok := resource.(ResourceValidator); ok {
-		return rv.Validate()
-	}
-	return nil
-}
-
 func Deprecations(resource Resource) []string {
 	if v, ok := interface{}(resource).(interface{ Deprecations() []string }); ok {
 		return v.Deprecations()
