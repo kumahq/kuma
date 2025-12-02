@@ -95,7 +95,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := os.WriteFile(finalOutputPath, content, 0o644); err != nil {
+			if err := os.WriteFile(finalOutputPath, content, 0o600); err != nil {
 				return err
 			}
 
