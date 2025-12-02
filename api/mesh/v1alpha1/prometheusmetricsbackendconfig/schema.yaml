@@ -85,6 +85,4 @@ components:
               - type: integer
           type: object
       type: object
-info:
-  x-ref-schema-name: PrometheusMetricsBackendConfig
 openapi: 3.1.0

@@ -20,7 +20,12 @@ paths:
         '200':
           $ref: "#/components/responses/HostnameGeneratorItem"
         '404':
+<<<<<<< Updated upstream
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+=======
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+>>>>>>> Stashed changes
     put:
       operationId: putHostnameGenerator
       summary: Creates or Updates HostnameGenerator entity
@@ -59,7 +64,12 @@ paths:
         '200':
           $ref: '#/components/responses/HostnameGeneratorDeleteSuccessResponse'
         '404':
+<<<<<<< Updated upstream
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+=======
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+>>>>>>> Stashed changes
   /hostnamegenerators:
     get:
       operationId: getHostnameGeneratorList

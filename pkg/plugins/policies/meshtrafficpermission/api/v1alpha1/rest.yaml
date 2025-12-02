@@ -26,7 +26,12 @@ paths:
         '200':
           $ref: "#/components/responses/MeshTrafficPermissionItem"
         '404':
+<<<<<<< Updated upstream
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+=======
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+>>>>>>> Stashed changes
     put:
       operationId: putMeshTrafficPermission
       summary: Creates or Updates MeshTrafficPermission entity
@@ -77,7 +82,12 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionDeleteSuccessResponse'
         '404':
+<<<<<<< Updated upstream
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+=======
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+>>>>>>> Stashed changes
   /meshes/{mesh}/meshtrafficpermissions:
     get:
       operationId: getMeshTrafficPermissionList

@@ -3,6 +3,8 @@ info:
   title: Kuma API
   description: Kuma API
   version: '1.0.0'
+servers:
+  - 
 paths:
   /:
     get:
@@ -392,10 +394,6 @@ paths:
           $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
           $ref: './common/error_schema.yaml#/components/responses/Internal'
-security:
-  - BasicAuth: []
-  - BearerAuth: []
-  - {}
 components:
   securitySchemes:
     BasicAuth:
