@@ -13,6 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 )
 
 type ReadOnlyResourceManager interface {
@@ -61,7 +62,7 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 			return err
 		}
 	}
-	if err := model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 	resource.SetMeta(existingMeta)
@@ -112,7 +113,7 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 			return err
 		}
 	}
-	if err := model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)

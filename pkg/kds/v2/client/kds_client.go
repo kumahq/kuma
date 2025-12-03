@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 )
 
 type UpstreamResponse struct {
@@ -26,7 +27,7 @@ func (u *UpstreamResponse) Validate() error {
 	}
 	var err error
 	for _, res := range u.AddedResources.GetItems() {
-		if validationErr := core_model.Validate(res); validationErr != nil {
+		if validationErr := validator.Validate(res); validationErr != nil {
 			err = std_errors.Join(err, validationErr)
 			u.InvalidResourcesKey = append(u.InvalidResourcesKey, core_model.MetaToResourceKey(res.GetMeta()))
 		}

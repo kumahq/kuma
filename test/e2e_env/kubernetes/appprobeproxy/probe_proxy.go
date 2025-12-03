@@ -141,9 +141,9 @@ func ApplicationProbeProxy() {
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "3s").Should(Succeed())
 
-		By("fourth, assert Probes data is present for HTTP Probes")
+		By("fourth, assert Probes data is NOT present when using application probe proxy")
 		Eventually(func(g Gomega) {
-			checkDPProbes := func(podName string, shouldHasProbes bool) {
+			checkDPProbes := func(podName string) {
 				dpName := fmt.Sprintf("%s.%s", podName, namespace)
 				dpYAML, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane",
 					dpName, "--mesh", meshName, "-oyaml")
@@ -154,20 +154,13 @@ func ApplicationProbeProxy() {
 				dp, ok := dpRes.(*core_mesh.DataplaneResource)
 				g.Expect(ok).To(BeTrue(), fmt.Errorf("invalid dataplane object type: %t", dpRes))
 
-				// 9000 is the default port of Virtual Probes
-				// Probes field should always be available regardless if it has any HTTP probes on the Pod
-				g.Expect(dp.Spec.Probes.Port).To(Equal(uint32(9000)))
-
-				if shouldHasProbes {
-					g.Expect(dp.Spec.Probes.Endpoints).ToNot(BeEmpty())
-				} else {
-					g.Expect(dp.Spec.Probes.Endpoints).To(BeEmpty())
-				}
+				// With application probe proxy enabled (default), the Probes field (used for virtual probes) should be nil
+				g.Expect(dp.Spec.Probes).To(BeNil(), "Probes field should be nil when application probe proxy is enabled")
 			}
 
-			checkDPProbes(httpAppPodName, true)
-			checkDPProbes(tcpAppPodName, false)
-			checkDPProbes(grpcAppPodName, false)
+			checkDPProbes(httpAppPodName)
+			checkDPProbes(tcpAppPodName)
+			checkDPProbes(grpcAppPodName)
 		}, "30s", "1s").Should(Succeed())
 	})
 

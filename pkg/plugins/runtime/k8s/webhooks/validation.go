@@ -13,6 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
@@ -73,7 +74,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if err := core_model.Validate(coreRes); err != nil {
+		if err := validator.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
 				return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
