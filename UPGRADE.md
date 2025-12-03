@@ -6,6 +6,48 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.13.x`
+
+### Virtual Probes Disabled by Default
+
+Virtual Probes are now disabled by default. This feature was deprecated in version 2.9.x in favor of Application Probe Proxy, which provides broader support for different probe types (HTTPGet, TCPSocket, and gRPC).
+
+**What changed:**
+- `virtualProbesEnabled` now defaults to `false` (previously `true`)
+- Application Probe Proxy remains enabled by default on port 9001
+
+**Action required:**
+
+If you still rely on Virtual Probes and want to keep using them:
+
+1. Enable Virtual Probes explicitly in control plane configuration:
+
+   ```yaml
+   runtime:
+     kubernetes:
+       injector:
+         virtualProbesEnabled: true
+   ```
+
+2. Or via environment variable:
+
+   ```bash
+   KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED=true
+   ```
+
+**How to disable Application Probe Proxy:**
+
+If you need to disable Application Probe Proxy entirely:
+
+1. Set `kuma.io/virtual-probes: disabled` annotation on your pods
+2. Gateway mode automatically disables it
+
+When both Virtual Probes and Application Probe Proxy are not explicitly configured, Application Probe Proxy is enabled by default.
+
+**Migration recommendation:**
+
+We strongly recommend migrating to Application Probe Proxy, which is the supported solution going forward. Virtual Probes will be removed in a future release. Application Probe Proxy works automatically with no configuration changes required.
+
 ## Upgrade to `2.12.x`
 
 ### Removal of `/status/zones` endpoints
