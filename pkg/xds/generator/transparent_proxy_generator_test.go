@@ -206,5 +206,43 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			expected:         "05.envoy.golden.yaml",
 		}),
+		Entry("transparent_proxying=true,unified_naming=true,inbound_filter", testCase{
+			proxy: &model.Proxy{
+				Metadata: &model.DataplaneMetadata{Features: map[string]bool{types.FeatureUnifiedResourceNaming: true}},
+				Id:       *model.BuildProxyId("", "side-car"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Version: "v1",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Port: 8080,
+								},
+							},
+							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
+							},
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				Policies: model.MatchedPolicies{
+					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
+						"some-service": {
+							Spec: &mesh_proto.TrafficLog{
+								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
+							},
+						},
+					},
+				},
+				InternalAddresses: DummyInternalAddresses,
+			},
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			expected:         "06.envoy.golden.yaml",
+		}),
 	)
 })
