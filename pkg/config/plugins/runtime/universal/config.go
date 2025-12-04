@@ -18,6 +18,9 @@ func DefaultUniversalRuntimeConfig() *UniversalRuntimeConfig {
 		Spire: Spire{
 			SocketPath: "/tmp/spire-agent/public/api.sock",
 		},
+		Workload: WorkloadConfig{
+			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
+		},
 	}
 }
 
@@ -40,6 +43,19 @@ type UniversalRuntimeConfig struct {
 	VIPRefreshInterval config_types.Duration `json:"vipRefreshInterval" envconfig:"kuma_runtime_universal_vip_refresh_interval"`
 	// Spire defines default configuration of the spire properties
 	Spire Spire `json:"spire"`
+	// Workload holds configuration for Workload generation features
+	Workload WorkloadConfig `json:"workload"`
+}
+
+// WorkloadConfig holds configuration for Workload generation from Dataplanes.
+type WorkloadConfig struct {
+	// GenerationInterval is how often we check whether Workloads need to be
+	// generated from Dataplanes
+	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL"`
+}
+
+func (i WorkloadConfig) Validate() error {
+	return nil
 }
 
 func (u *UniversalRuntimeConfig) Validate() error {

@@ -29,7 +29,11 @@ func (p plugin) NewIdentityProvider(context core_plugins.PluginContext, config c
 			context.Config().Runtime.Kubernetes.Injector.Spire.SocketFileName,
 		)
 	default:
-		return nil, fmt.Errorf("cannot initialize spire identity provider, unsupported environment: %s", context.Config().Environment)
+		return nil, fmt.Errorf("spire identity provider does not support environment %q (only %q and %q are supported)",
+			context.Config().Environment,
+			config_core.KubernetesEnvironment,
+			config_core.UniversalEnvironment,
+		)
 	}
 	return NewSpireIdentityProvider(
 		socketPath,

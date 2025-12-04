@@ -137,11 +137,11 @@ func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, 
 	}
 	path, err := renderTemplate(spiffeIDTemplate, meta, data)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to render SPIFFE ID template: %w", err)
 	}
 	spiffeID, err := spiffeid.FromString(path)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse SPIFFE ID %q: %w", path, err)
 	}
 	return spiffeID.String(), nil
 }

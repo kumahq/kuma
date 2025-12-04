@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -154,19 +152,6 @@ func checkMeshServicesConsistency(
 	return conflicting, meshService
 }
 
-func sortDataplanes(dps []*core_mesh.DataplaneResource) []*core_mesh.DataplaneResource {
-	sorted := slices.Clone(dps)
-	slices.SortFunc(sorted, func(a, b *core_mesh.DataplaneResource) int {
-		if a, b := a.Meta.GetCreationTime(), b.Meta.GetCreationTime(); a.Before(b) {
-			return -1
-		} else if a.After(b) {
-			return 1
-		}
-		return strings.Compare(a.Meta.GetName(), b.Meta.GetName())
-	})
-	return sorted
-}
-
 func servicesDiffer(a, b *meshservice_api.MeshService) bool {
 	return !reflect.DeepEqual(a.Ports, b.Ports)
 }
@@ -174,7 +159,7 @@ func servicesDiffer(a, b *meshservice_api.MeshService) bool {
 func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource, meshServices []*meshservice_api.MeshServiceResource) {
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
-	for _, dataplane := range sortDataplanes(dataplanes) {
+	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
 		for name, ms := range g.meshServicesForDataplane(dataplane) {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
 				dataplane:   dataplane.GetMeta(),

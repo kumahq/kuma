@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 	defaults_mesh "github.com/kumahq/kuma/v2/pkg/defaults/mesh"
 )
 
@@ -81,7 +82,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := mesh.Default(); err != nil {
 		return err
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
@@ -151,7 +152,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err := mesh.Default(); err != nil {
 		return err
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 
