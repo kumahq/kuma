@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not update a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/display-name\"]",
+   "reason": "is immutable, cannot be changed from \"my-display-name\" to \"different-display-name\""
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/display-name\"]",
+   "message": "is immutable, cannot be changed from \"my-display-name\" to \"different-display-name\""
+  }
+ ]
+}

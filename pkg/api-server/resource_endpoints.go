@@ -495,9 +495,7 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	_ = currentRes.SetSpec(newResRest.GetSpec())
-
-	// Compute labels for current state to get correct immutable values
+	// Compute labels for current state BEFORE modifying spec
 	currentLabels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
@@ -512,6 +510,8 @@ func (r *resourceEndpoints) updateResource(
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
 		return
 	}
+
+	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
 	labels, err := core_model.ComputeLabels(
@@ -531,7 +531,9 @@ func (r *resourceEndpoints) updateResource(
 
 	// Validate immutable labels by comparing computed results
 	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
-		rest_errors.HandleError(ctx, response, &validationErr, "Could not update a resource")
+		var err validators.ValidationError
+		err.AddError("labels", validationErr)
+		rest_errors.HandleError(ctx, response, &err, "Could not update a resource")
 		return
 	}
 
@@ -668,7 +670,7 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 
 func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
-	
+
 	immutableLabels := []string{
 		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
