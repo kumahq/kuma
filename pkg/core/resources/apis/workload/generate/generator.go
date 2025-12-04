@@ -129,7 +129,7 @@ func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloa
 		log.Error(err, "couldn't create Workload")
 		return
 	}
-	log.Info("created Workload")
+	log.V(1).Info("created Workload")
 }
 
 func (g *Generator) NeedLeaderElection() bool {
@@ -155,6 +155,7 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 			if err != nil {
 				// Error from AggregateMeshContexts indicates a fundamental issue
 				// with resource manager or mesh cache, so we terminate the component
+				g.logger.Error(err, "fundamental issue with resource manager or mesh cache, terminating component")
 				return err
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {

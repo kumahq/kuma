@@ -14,7 +14,7 @@ func Setup(rt runtime.Runtime) error {
 	if rt.GetMode() == config_core.Global {
 		return nil
 	}
-	if storeType := rt.Config().Store.Type; storeType == store.KubernetesStore {
+	if rt.Config().Store.Type == store.KubernetesStore {
 		return nil
 	}
 	logger := core.Log.WithName("workload").WithName("generator")

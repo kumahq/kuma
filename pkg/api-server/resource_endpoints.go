@@ -453,9 +453,14 @@ func (r *resourceEndpoints) createResource(
 	res.SetMeta(resRest.GetMeta())
 
 	// Validate workload label on Universal Zone dataplanes
-	if r.descriptor.Name == core_mesh.DataplaneType {
+	if r.descriptor.Name == core_mesh.DataplaneType && !r.isK8s {
 		if resLabels := res.GetMeta().GetLabels(); resLabels != nil {
 			if workloadName, ok := resLabels[metadata.KumaWorkload]; ok && workloadName != "" {
+				if r.mode == config_core.Global {
+					err := rest_errors.NewBadRequestError("labels[\"kuma.io/workload\"]: not allowed on Global control plane")
+					rest_errors.HandleError(ctx, response, err, "Invalid workload label")
+					return
+				}
 				if validationErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(validationErrs) != 0 {
 					err := rest_errors.NewBadRequestError(fmt.Sprintf("labels[\"kuma.io/workload\"]: must be a valid DNS-1035 label (at most 63 characters, matching regex [a-z]([-a-z0-9]*[a-z0-9])?): %s", strings.Join(validationErrs, "; ")))
 					rest_errors.HandleError(ctx, response, err, "Invalid workload label")
