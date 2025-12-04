@@ -26,7 +26,7 @@ paths:
         '200':
           $ref: "#/components/responses/MeshTraceItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putMeshTrace
       summary: Creates or Updates MeshTrace entity
@@ -77,7 +77,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTraceDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshtraces:
     get:
       operationId: getMeshTraceList

@@ -26,7 +26,7 @@ paths:
         '200':
           $ref: "#/components/responses/MeshHTTPRouteItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putMeshHTTPRoute
       summary: Creates or Updates MeshHTTPRoute entity
@@ -77,7 +77,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshHTTPRouteDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshhttproutes:
     get:
       operationId: getMeshHTTPRouteList
