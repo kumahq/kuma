@@ -10,12 +10,19 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
+func expectManagedWorkload(g Gomega, cluster Cluster, name, mesh string) {
+	workload, err := GetWorkload(cluster, name, mesh)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(workload.GetMeta().GetLabels()).To(HaveKeyWithValue("kuma.io/managed-by", "workload-generator"))
+}
+
 func Workload() {
 	const mesh = "workload"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -25,8 +32,90 @@ func Workload() {
 	})
 
 	E2EAfterAll(func() {
+		// Delete manually created dataplanes first
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "dp-with-workload", "-m", mesh)
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "manual-dp-1", "-m", mesh)
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "manual-dp-2", "-m", mesh)
+
 		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
+	})
+
+	It("should auto-generate Workload from Dataplane", func() {
+		// given a dataplane with workload label
+		dataplane := fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: dp-with-workload
+networking:
+  address: 192.168.0.10
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: test-service
+      kuma.io/protocol: http
+labels:
+  kuma.io/workload: auto-workload
+`, mesh)
+		Expect(universal.Cluster.Install(YamlUniversal(dataplane))).To(Succeed())
+
+		// when workload generator runs
+		// then a Workload resource should be auto-created
+		Eventually(func(g Gomega) {
+			expectManagedWorkload(g, universal.Cluster, "auto-workload", mesh)
+		}, "1m", "1s").Should(Succeed())
+	})
+
+	It("should create single Workload for multiple Dataplanes with same workload label", func() {
+		// given we manually create dataplanes with the same workload label
+		dataplane1 := fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: manual-dp-1
+networking:
+  address: 192.168.0.1
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: manual-service
+      kuma.io/protocol: http
+labels:
+  kuma.io/workload: shared-workload
+`, mesh)
+		dataplane2 := fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: manual-dp-2
+networking:
+  address: 192.168.0.2
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: manual-service
+      kuma.io/protocol: http
+labels:
+  kuma.io/workload: shared-workload
+`, mesh)
+
+		Expect(universal.Cluster.Install(YamlUniversal(dataplane1))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(dataplane2))).To(Succeed())
+
+		// when workload generator runs
+		// then only one Workload should be created
+		Eventually(func(g Gomega) {
+			expectManagedWorkload(g, universal.Cluster, "shared-workload", mesh)
+		}, "30s", "1s").Should(Succeed())
+
+		// verify only one workload named "shared-workload" exists
+		workloads, err := universal.Cluster.GetKumactlOptions().KumactlList("workloads", mesh)
+		Expect(err).ToNot(HaveOccurred())
+		sharedWorkloadCount := 0
+		for _, name := range workloads {
+			if name == "shared-workload" {
+				sharedWorkloadCount++
+			}
+		}
+		Expect(sharedWorkloadCount).To(Equal(1))
 	})
 
 	It("should deny DPP connection when workload label is missing for MeshIdentity using workload label", func() {

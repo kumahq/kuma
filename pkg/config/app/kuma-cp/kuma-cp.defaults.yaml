@@ -245,7 +245,7 @@ runtime:
       # (Deprecated, set ApplicationProbeProxyPort to 0 to disable probe proxying) VirtualProbesEnabled enables automatic converting HttpGet probes to virtual.
       #	Virtual probe serves on sub-path of insecure port 'virtualProbesPort',
       #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
-      virtualProbesEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
+      virtualProbesEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
       # (Deprecated, use ApplicationProbeProxyPort instead) VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
       virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
       # ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS. By setting to 0, probe proxying will be disabled.
@@ -423,6 +423,10 @@ runtime:
     # The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
     # Default is empty list (uses ServiceAccount as workload identifier).
     workloadLabels: [] # ENV: KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS
+    # DisallowMultipleMeshesPerNamespace prevents pods from using kuma.io/mesh label in ways that would create
+    # multiple meshes within a single namespace. When enabled, Workload generation is skipped for namespaces
+    # with multiple meshes and a warning event is emitted.
+    disallowMultipleMeshesPerNamespace: false # ENV: KUMA_RUNTIME_KUBERNETES_DISALLOW_MULTIPLE_MESHES_PER_NAMESPACE
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
@@ -431,6 +435,9 @@ runtime:
     zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
     vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
+    workload:
+      # How often we check whether Workloads need to be generated from Dataplanes
+      generationInterval: 2s # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh

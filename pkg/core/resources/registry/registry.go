@@ -9,8 +9,14 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
+type AdditionalValidator interface {
+	Validate(model.Resource) error
+}
+
 type TypeRegistry interface {
 	RegisterType(model.ResourceTypeDescriptor) error
+	RegisterValidator(model.ResourceTypeDescriptor, AdditionalValidator)
+	GetValidators(model.ResourceType) []AdditionalValidator
 
 	NewObject(model.ResourceType) (model.Resource, error)
 	NewList(model.ResourceType) (model.ResourceList, error)
@@ -27,6 +33,7 @@ type TypeRegistry interface {
 func NewTypeRegistry() TypeRegistry {
 	return &typeRegistry{
 		descriptors: make(map[model.ResourceType]model.ResourceTypeDescriptor),
+		validators:  make(map[model.ResourceType][]AdditionalValidator),
 	}
 }
 
@@ -48,6 +55,7 @@ func (e *InvalidResourceTypeError) Is(target error) bool {
 
 type typeRegistry struct {
 	descriptors map[model.ResourceType]model.ResourceTypeDescriptor
+	validators  map[model.ResourceType][]AdditionalValidator
 }
 
 func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
@@ -114,6 +122,14 @@ func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
 	}
 	t.descriptors[res.Name] = res
 	return nil
+}
+
+func (t *typeRegistry) RegisterValidator(res model.ResourceTypeDescriptor, validator AdditionalValidator) {
+	t.validators[res.Name] = append(t.validators[res.Name], validator)
+}
+
+func (t *typeRegistry) GetValidators(resType model.ResourceType) []AdditionalValidator {
+	return t.validators[resType]
 }
 
 func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, error) {

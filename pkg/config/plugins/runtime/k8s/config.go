@@ -19,7 +19,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		ControlPlaneServiceName: "kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:                false,
-			VirtualProbesEnabled:      true,
+			VirtualProbesEnabled:      false,
 			VirtualProbesPort:         9000,
 			ApplicationProbeProxyPort: 9001,
 			SidecarContainer: SidecarContainer{
@@ -160,6 +160,10 @@ type KubernetesRuntimeConfig struct {
 	// The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
 	// Default is empty list (uses ServiceAccount as workload identifier).
 	WorkloadLabels []string `json:"workloadLabels" envconfig:"kuma_runtime_kubernetes_workload_labels"`
+	// DisallowMultipleMeshesPerNamespace prevents pods from using kuma.io/mesh label in ways that would create
+	// multiple meshes within a single namespace. When enabled, Workload generation is skipped for namespaces
+	// with multiple meshes and a warning event is emitted. Default is false.
+	DisallowMultipleMeshesPerNamespace bool `json:"disallowMultipleMeshesPerNamespace" envconfig:"kuma_runtime_kubernetes_disallow_multiple_meshes_per_namespace"`
 }
 
 type ControllersConcurrency struct {

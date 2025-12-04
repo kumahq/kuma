@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -47,6 +48,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
@@ -449,6 +451,24 @@ func (r *resourceEndpoints) createResource(
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
+
+	// Validate workload label on Universal Zone dataplanes
+	if r.descriptor.Name == core_mesh.DataplaneType && !r.isK8s {
+		if resLabels := res.GetMeta().GetLabels(); resLabels != nil {
+			if workloadName, ok := resLabels[metadata.KumaWorkload]; ok && workloadName != "" {
+				if r.mode == config_core.Global {
+					err := rest_errors.NewBadRequestError("labels[\"kuma.io/workload\"]: not allowed on Global control plane")
+					rest_errors.HandleError(ctx, response, err, "Invalid workload label")
+					return
+				}
+				if validationErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(validationErrs) != 0 {
+					err := rest_errors.NewBadRequestError(fmt.Sprintf("labels[\"kuma.io/workload\"]: must be a valid DNS-1035 label (at most 63 characters, matching regex [a-z]([-a-z0-9]*[a-z0-9])?): %s", strings.Join(validationErrs, "; ")))
+					rest_errors.HandleError(ctx, response, err, "Invalid workload label")
+					return
+				}
+			}
+		}
+	}
 
 	labels, err := core_model.ComputeLabels(
 		res.Descriptor(),

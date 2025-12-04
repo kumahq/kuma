@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshexternalservice"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshfaultinjection"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshhealthcheck"
+	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshidentity"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshloadbalancingstrategy"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshratelimit"
@@ -77,6 +78,7 @@ var (
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
+	_ = Describe("Workload", workload.Workload, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
@@ -115,4 +117,5 @@ var (
 	_ = Describe("Envoy Config – Sidecars", envoyconfig.Sidecars, Ordered)
 	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
+	_ = Describe("MeshIdentity Rotate CA", meshidentity.Rotate, Ordered)
 )
