@@ -8,6 +8,73 @@ does not have any particular instructions.
 
 ## Upgrade to `2.13.x`
 
+### Strict Inbound Port Filtering Enabled by Default
+
+Strict inbound port filtering is now enabled by default to improve security. When transparent proxy is enabled, the sidecar will only accept inbound traffic on ports that are explicitly defined in the dataplane configuration. This prevents unauthorized access to services through undeclared ports.
+
+**What changed:**
+- `strictInboundPortsEnabled` now defaults to `true` in `kuma-dp` configuration
+- Inbound passthrough listeners now filter traffic to only allow explicitly configured ports
+- This applies to both IPv4 and IPv6 traffic
+
+**Action required:**
+
+No action is required for most users. However, if you have services that:
+1. Accept traffic on ports not explicitly declared in your dataplane configuration, AND
+2. Rely on transparent proxy to route this traffic
+
+You will need to either:
+- Add the missing ports to your dataplane inbound configuration, OR
+- Disable strict inbound port filtering (see below)
+
+**How to disable strict inbound port filtering:**
+
+If you need to disable this feature and revert to the previous behavior:
+
+**Kubernetes**
+
+Create a `ContainerPatch`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: disable-strict-inbounds-ports
+  namespace: kuma-system
+spec:
+  sidecarPatch:
+  - op: add
+    path: /env/-
+    value: '{
+      \"name\": \"KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED\",
+      \"value\": \"false\"
+    }'
+```
+
+Then set the annotation `kuma.io/container-patches` on deployment where it should be disabled
+
+```yaml
+"kuma.io/container-patches":"disable-strict-inbounds-ports"
+```
+
+or for all Deployments by setting control-plane configuration:
+
+```
+KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES="disable-strict-inbounds-ports"
+```
+
+**Universal**
+
+Set the environment variable when running `kuma-dp`:
+
+```bash
+KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED=false kuma-dp run ...
+```
+
+**Security recommendation:**
+
+We strongly recommend keeping strict inbound port filtering enabled. If you need to disable it temporarily, please audit your dataplane configurations to ensure all required inbound ports are explicitly declared, then re-enable the feature.
+
 ### Virtual Probes Disabled by Default
 
 Virtual Probes are now disabled by default. This feature was deprecated in version 2.9.x in favor of Application Probe Proxy, which provides broader support for different probe types (HTTPGet, TCPSocket, and gRPC).

@@ -19,6 +19,7 @@ dataplaneRuntime:
     refreshInterval: 1s
   metrics: {}
   resources: {}
+  strictInboundPortsEnabled: true
 dns:
   coreDnsBinaryPath: coredns
   coreDnsPort: 15053
