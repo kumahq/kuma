@@ -18594,6 +18594,11 @@ components:
               description: >-
                 Origin specifies whether the resource was created from a
                 MeshIdentity.
+
+                DEPRECATED: This field is deprecated and will be removed in a
+                future version.
+
+                Use status.origin instead.
               properties:
                 kri:
                   description: Resource identifier
@@ -18619,6 +18624,20 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+        status:
+          description: Status is the current status of the Kuma MeshTrust resource.
+          properties:
+            origin:
+              description: >-
+                Origin specifies whether the resource was created from a
+                MeshIdentity.
+              properties:
+                kri:
+                  description: Resource identifier
+                  type: string
+              type: object
+          type: object
+          readOnly: true
     WorkloadItem:
       type: object
       required:
