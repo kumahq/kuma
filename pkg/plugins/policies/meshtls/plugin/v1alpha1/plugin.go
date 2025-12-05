@@ -18,7 +18,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
@@ -305,7 +304,7 @@ func configureInboundPassthroughListener(
 ) (envoy_common.NamedResource, error) {
 	tpCfg := proxy.GetTransparentProxy()
 	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
-	if tpCfg == nil && caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(types.FeatureStrictInboundPorts) {
+	if tpCfg == nil && caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
 		return nil, nil
 	}
 	tlsMode := getMeshTLSMode(
