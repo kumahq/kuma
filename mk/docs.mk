@@ -3,10 +3,6 @@ DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DOCS_EXTRA_TARGETS ?=
 DOCS_OPENAPI_PREREQUISITES ?=
 
-# renovate[docker]: depName=kumahq/openapi-tool registryUrl=https://ghcr.io
-OAPI_TOOL_VERSION ?= v1.3.1@sha256:9c0234cb3c7de79c0fc671cb11fd7c9c490325e0012fbaf8312edd6b99f065a7
-OAPI_TOOL_IMAGE   := ghcr.io/kumahq/openapi-tool:$(OAPI_TOOL_VERSION)
-
 .PHONY: clean/docs
 clean/docs:
 	rm -rf docs/generated
@@ -55,16 +51,21 @@ docs/generated:
 
 .PHONY: docs/generated/openapi.yaml
 docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
-# Target-scoped settings for readability
-docs/generated/openapi.yaml: DOCKER      ?= docker
-docs/generated/openapi.yaml: IMAGE       := $(OAPI_TOOL_IMAGE)
-docs/generated/openapi.yaml: SPECS_MOUNT := -v $(OAPI_TMP_DIR):/specs
-docs/generated/openapi.yaml: BASE_MOUNT  := $(if $(BASE_API),-v $(CURDIR)/$(dir $(BASE_API)):/base,)
-docs/generated/openapi.yaml: BASE_ARG    := $(if $(BASE_API),/base/$(notdir $(BASE_API)),)
-docs/generated/openapi.yaml: EXCLUDES    := $(if $(BASE_API),'!/specs/kuma/**',)
-docs/generated/openapi.yaml: INCLUDES    := '/specs/**/*.yaml'
-docs/generated/openapi.yaml:
-	@$(DOCKER) run --rm $(BASE_MOUNT) $(SPECS_MOUNT) $(IMAGE) generate $(BASE_ARG) $(INCLUDES) $(EXCLUDES) > $@
+	@echo "Rewriting /specs/ paths in all YAML files..."
+	@mkdir -p $(BUILD_DIR)/oapitmp-rewritten
+	@cd $(OAPI_TMP_DIR) && find . -name '*.yaml' | while read f; do \
+		mkdir -p $(BUILD_DIR)/oapitmp-rewritten/$$(dirname $$f); \
+		sed 's|"/specs/|"$(BUILD_DIR)/oapitmp-rewritten/|g; s|'"'"'/specs/|'"'"'$(BUILD_DIR)/oapitmp-rewritten/|g; s| /specs/| $(BUILD_DIR)/oapitmp-rewritten/|g; s|: /specs/|: $(BUILD_DIR)/oapitmp-rewritten/|g' $$f > $(BUILD_DIR)/oapitmp-rewritten/$$f; \
+	done
+	@echo "Bundling individual OpenAPI specs..."
+	@mkdir -p $(BUILD_DIR)/openapi-bundled
+	@cd $(BUILD_DIR)/oapitmp-rewritten && \
+		find . \( -name 'rest.yaml' -o -name 'api.yaml' -o -name 'kri.yaml' \) | while read f; do \
+			mkdir -p $(BUILD_DIR)/openapi-bundled/$$(dirname $$f); \
+			mise exec -- redocly bundle $$f -o $(BUILD_DIR)/openapi-bundled/$$f || echo "Skipping $$f"; \
+		done
+	@echo "Merging all bundled specs..."
+	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | sort) > $@
 	@$(MAKE) --no-print-directory validate/openapi-generated-docs
 
 # Prepare $(OAPI_TMP_DIR) with a normalized directory layout for the generator

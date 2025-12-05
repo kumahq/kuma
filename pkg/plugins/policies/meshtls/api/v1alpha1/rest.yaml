@@ -3,14 +3,12 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "MeshTLS"
-
 paths:
   /meshes/{mesh}/meshtlses/{name}:
     get:
       operationId: getMeshTLS
       summary: Returns MeshTLS entity
-      tags: [ "MeshTLS" ]
+      tags: ["MeshTLS"]
       parameters:
         - in: path
           name: mesh
@@ -28,12 +26,11 @@ paths:
         '200':
           $ref: "#/components/responses/MeshTLSItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putMeshTLS
       summary: Creates or Updates MeshTLS entity
-      tags: [ "MeshTLS" ]
+      tags: ["MeshTLS"]
       parameters:
         - in: path
           name: mesh
@@ -59,11 +56,10 @@ paths:
           $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
         '201':
           $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
-
     delete:
       operationId: deleteMeshTLS
       summary: Deletes MeshTLS entity
-      tags: [ "MeshTLS" ]
+      tags: ["MeshTLS"]
       parameters:
         - in: path
           name: mesh
@@ -81,13 +77,12 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTLSDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshtlses:
     get:
       operationId: getMeshTLSList
       summary: Returns a list of MeshTLS in the mesh.
-      tags: [ "MeshTLS" ]
+      tags: ["MeshTLS"]
       parameters:
         - in: query
           name: offset
@@ -127,12 +122,287 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshTLSList"
-
 components:
   schemas:
     MeshTLSItem:
-      $ref: 'schema.yaml'
-
+      type: object
+      required: [type, name, spec]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - MeshTLS
+        mesh:
+          description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+          type: string
+          default: default
+        kri:
+          description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+          type: string
+          readOnly: true
+          example: 'kri_mtls_default_zone-east_kuma-demo_mypolicy1_'
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshTLS resource.
+          properties:
+            from:
+              description: From list makes a match between clients and corresponding configurations
+              items:
+                properties:
+                  default:
+                    description: |-
+                      Default is a configuration specific to the group of clients referenced in
+                      'targetRef'
+                    properties:
+                      mode:
+                        description: Mode defines the behavior of inbound listeners with regard to traffic encryption.
+                        enum:
+                          - Permissive
+                          - Strict
+                        type: string
+                      tlsCiphers:
+                        description: TlsCiphers section for providing ciphers specification.
+                        items:
+                          enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                          type: string
+                        type: array
+                      tlsVersion:
+                        description: Version section for providing version specification.
+                        properties:
+                          max:
+                            default: TLSAuto
+                            description: Max defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                          min:
+                            default: TLSAuto
+                            description: Min defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                        type: object
+                    type: object
+                  targetRef:
+                    description: |-
+                      TargetRef is a reference to the resource that represents a group of
+                      clients.
+                    properties:
+                      kind:
+                        description: Kind of the referenced resource
+                        enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshExternalService
+                          - MeshMultiZoneService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                          - Dataplane
+                        type: string
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Labels are used to select group of MeshServices that match labels. Either Labels or
+                          Name and Namespace can be used.
+                        type: object
+                      mesh:
+                        description: Mesh is reserved for future use to identify cross mesh resources.
+                        type: string
+                      name:
+                        description: |-
+                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                          `MeshServiceSubset` and `MeshGatewayRoute`
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                          will be targeted.
+                        type: string
+                      proxyTypes:
+                        description: |-
+                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                          all data plane types are targeted by the policy.
+                        items:
+                          enum:
+                            - Sidecar
+                            - Gateway
+                          type: string
+                        type: array
+                      sectionName:
+                        description: |-
+                          SectionName is used to target specific section of resource.
+                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                        type: string
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Tags used to select a subset of proxies by tags. Can only be used with kinds
+                          `MeshSubset` and `MeshServiceSubset`
+                        type: object
+                    required:
+                      - kind
+                    type: object
+                required:
+                  - targetRef
+                type: object
+              type: array
+            rules:
+              description: |-
+                Rules defines inbound tls configurations. Currently limited to
+                selecting all inbound traffic, as L7 matching is not yet implemented.
+              items:
+                properties:
+                  default:
+                    description: Default contains configuration of the inbound tls
+                    properties:
+                      mode:
+                        description: Mode defines the behavior of inbound listeners with regard to traffic encryption.
+                        enum:
+                          - Permissive
+                          - Strict
+                        type: string
+                      tlsCiphers:
+                        description: TlsCiphers section for providing ciphers specification.
+                        items:
+                          enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                          type: string
+                        type: array
+                      tlsVersion:
+                        description: Version section for providing version specification.
+                        properties:
+                          max:
+                            default: TLSAuto
+                            description: Max defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                          min:
+                            default: TLSAuto
+                            description: Min defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                        type: object
+                    type: object
+                type: object
+              type: array
+            targetRef:
+              description: |-
+                TargetRef is a reference to the resource the policy takes an effect on.
+                The resource could be either a real store object or virtual resource
+                defined in-place.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                    - Dataplane
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    Labels are used to select group of MeshServices that match labels. Either Labels or
+                    Name and Namespace can be used.
+                  type: object
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: |-
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                    `MeshServiceSubset` and `MeshGatewayRoute`
+                  type: string
+                namespace:
+                  description: |-
+                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                    will be targeted.
+                  type: string
+                proxyTypes:
+                  description: |-
+                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                    all data plane types are targeted by the policy.
+                  items:
+                    enum:
+                      - Sidecar
+                      - Gateway
+                    type: string
+                  type: array
+                sectionName:
+                  description: |-
+                    SectionName is used to target specific section of resource.
+                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    Tags used to select a subset of proxies by tags. Can only be used with kinds
+                    `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              required:
+                - kind
+              type: object
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
   responses:
     MeshTLSItem:
       description: Successful response

@@ -77,7 +77,7 @@ generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(poli
 .PHONY: clean/policies
 clean/policies: $(addprefix clean/policy/,$(policies))
 
-# deletes all files in policy directory except *.proto, validator.go and schema.yaml
+# deletes all files in policy directory except *.proto and validator.go
 clean/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
