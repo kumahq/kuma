@@ -311,6 +311,20 @@
           }
         }
       ]
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:passthrough:ipv4/filterChains/0/filterChainMatch",
+      "value": {
+        "destinationPort": 80
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:passthrough:ipv6/filterChains/0/filterChainMatch",
+      "value": {
+        "destinationPort": 80
+      }
     }
   ],
   "xds": {

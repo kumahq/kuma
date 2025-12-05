@@ -571,6 +571,9 @@
         "enableReusePort": false,
         "filterChains": [
           {
+            "filterChainMatch": {
+              "destinationPort": 80
+            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
@@ -597,6 +600,9 @@
         "enableReusePort": false,
         "filterChains": [
           {
+            "filterChainMatch": {
+              "destinationPort": 80
+            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
