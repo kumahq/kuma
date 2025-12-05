@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"encoding/json"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -42,12 +43,12 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 
 	result := metaBytes[:len(metaBytes)-1] // Remove closing }
 
-	if len(specBytes) > 0 && string(specBytes) != "{}" {
+	if len(specBytes) > 0 && !bytes.Equal(specBytes, []byte("{}")) {
 		result = append(result, []byte(`,"spec":`)...)
 		result = append(result, specBytes...)
 	}
 
-	if len(statusBytes) > 0 && string(statusBytes) != "{}" {
+	if len(statusBytes) > 0 && !bytes.Equal(statusBytes, []byte("{}")) {
 		result = append(result, []byte(`,"status":`)...)
 		result = append(result, statusBytes...)
 	}
