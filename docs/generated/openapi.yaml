@@ -18595,7 +18595,8 @@ components:
                 Origin specifies whether the resource was created from a
                 MeshIdentity.
 
-                DEPRECATED: This field is deprecated and will be removed in a
+
+                Deprecated: This field is deprecated and will be removed in a
                 future version.
 
                 Use status.origin instead.
