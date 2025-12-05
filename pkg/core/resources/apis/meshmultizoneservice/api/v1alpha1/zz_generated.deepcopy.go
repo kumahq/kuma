@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	commonv1alpha1 "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	apiv1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	meshserviceapiv1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
@@ -71,6 +72,11 @@ func (in *MeshMultiZoneServiceStatus) DeepCopyInto(out *MeshMultiZoneServiceStat
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+	}
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]commonv1alpha1.Condition, len(*in))
+		copy(*out, *in)
 	}
 }
 
