@@ -134,6 +134,18 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 	}
 
+	// Check if Service backs gateway Pods (delegated gateways have annotation on Pod, not Service)
+	isGateway, err := r.isServiceForGateway(ctx, log, svc)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+	if isGateway {
+		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, nil
+	}
+
 	if svc.Spec.ClusterIP == "" {
 		log.V(1).Info("service has no cluster IP. Ignoring.")
 		return kube_ctrl.Result{}, nil
@@ -267,6 +279,58 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+// isServiceForGateway checks if Service backs gateway Pods by inspecting EndpointSlices
+func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log logr.Logger, svc *kube_core.Service) (bool, error) {
+	// Query EndpointSlices for this Service
+	endpointSlices := &kube_discovery.EndpointSliceList{}
+	if err := r.List(
+		ctx,
+		endpointSlices,
+		kube_client.InNamespace(svc.Namespace),
+		kube_client.MatchingLabels(map[string]string{
+			kube_discovery.LabelServiceName: svc.Name,
+		}),
+	); err != nil {
+		return false, errors.Wrap(err, "unable to list EndpointSlices for Service")
+	}
+
+	// Check first Pod for gateway annotation
+	for _, slice := range endpointSlices.Items {
+		for _, endpoint := range slice.Endpoints {
+			if endpoint.TargetRef == nil ||
+				endpoint.TargetRef.Kind != "Pod" ||
+				(endpoint.TargetRef.APIVersion != kube_core.SchemeGroupVersion.String() &&
+					endpoint.TargetRef.APIVersion != "") {
+				continue
+			}
+
+			// Get Pod and check for gateway annotation
+			pod := &kube_core.Pod{}
+			podKey := kube_types.NamespacedName{
+				Name:      endpoint.TargetRef.Name,
+				Namespace: endpoint.TargetRef.Namespace,
+			}
+			if err := r.Get(ctx, podKey, pod); err != nil {
+				if kube_apierrs.IsNotFound(err) {
+					continue
+				}
+				return false, errors.Wrap(err, "unable to get Pod for endpoint")
+			}
+
+			// Check if Pod has gateway annotation
+			if _, ok := pod.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
+				log.V(1).Info("service backs gateway pods. Ignoring.", "pod", podKey.String())
+				return true, nil
+			}
+
+			// Only check first Pod (all Pods selected by gateway Service should be gateway Pods)
+			return false, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
