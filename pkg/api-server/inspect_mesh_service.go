@@ -114,7 +114,7 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 			return
 		}
 
-		byHostname := map[string][]types.InspectHostnameZone{}
+		byHostname := map[string]map[string]struct{}{}
 
 		for _, hg := range hostnameGenerators.Items {
 			svcZone := model.ZoneOfResource(svc)
@@ -143,14 +143,21 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 				// hostname generator did not match the service
 				continue
 			}
-			byHostname[host] = append(byHostname[host], types.InspectHostnameZone{
-				Name: svcZone,
-			})
+			if _, ok := byHostname[host]; !ok {
+				byHostname[host] = map[string]struct{}{}
+			}
+			byHostname[host][svcZone] = struct{}{}
 		}
 
 		resp := types.InspectHostnames{}
 		for _, host := range util_maps.SortedKeys(byHostname) {
-			zones := byHostname[host]
+			zoneSet := byHostname[host]
+			zones := make([]types.InspectHostnameZone, 0, len(zoneSet))
+			for zoneName := range zoneSet {
+				zones = append(zones, types.InspectHostnameZone{
+					Name: zoneName,
+				})
+			}
 			sort.Slice(zones, func(i, j int) bool {
 				return zones[i].Name < zones[j].Name
 			})
