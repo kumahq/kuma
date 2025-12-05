@@ -18,6 +18,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
@@ -303,11 +304,10 @@ func configureInboundPassthroughListener(
 	ipv6 bool,
 ) (envoy_common.NamedResource, error) {
 	tpCfg := proxy.GetTransparentProxy()
-	if tpCfg == nil {
+	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
+	if tpCfg == nil && caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(types.FeatureStrictInboundPorts) {
 		return nil, nil
 	}
-
-	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
 	tlsMode := getMeshTLSMode(
 		conf.Mode,
 		proxy.WorkloadIdentity,
@@ -321,8 +321,8 @@ func configureInboundPassthroughListener(
 		inboundName = nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6)
 		address = metadata.TransparentAllIPv6
 	}
-	// we don't need to change anything as the rules were correctly configured in transparent_proxy_generator.go
-	if caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE && tlsMode == api.ModeStrict {
+	switch tlsMode {
+	case api.ModeStrict:
 		return generator.CreateInboundPassthroughListener(
 			proxy,
 			inboundName,
@@ -330,8 +330,7 @@ func configureInboundPassthroughListener(
 			tpCfg.Redirect.Inbound.Port.Uint32(),
 			true,
 		)
-	}
-	if caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT && tlsMode == api.ModePermissive {
+	case api.ModePermissive:
 		return generator.CreateInboundPassthroughListener(
 			proxy,
 			inboundName,

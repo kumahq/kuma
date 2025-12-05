@@ -9,7 +9,29 @@ resources:
     bindToPort: false
     enableReusePort: false
     filterChains:
-    - filters:
+    - filterChainMatch:
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:17777
+          idleTimeout: 7200s
+          statPrefix: localhost_17777
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:17777
+          idleTimeout: 7200s
+          statPrefix: localhost_17777
+    - filterChainMatch:
+        applicationProtocols:
+        - kuma
+        transportProtocol: tls
+      filters:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
@@ -27,18 +49,26 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext: {}
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
               validationContextSdsSecretConfig:
-                name: ca-bundle
+                name: mesh_ca:secret:default
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: my-secret-name
+            - name: identity_cert:secret:default
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -55,7 +85,29 @@ resources:
     bindToPort: false
     enableReusePort: false
     filterChains:
-    - filters:
+    - filterChainMatch:
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:17778
+          idleTimeout: 7200s
+          statPrefix: localhost_17778
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:17778
+          idleTimeout: 7200s
+          statPrefix: localhost_17778
+    - filterChainMatch:
+        applicationProtocols:
+        - kuma
+        transportProtocol: tls
+      filters:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
@@ -73,18 +125,26 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext: {}
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
               validationContextSdsSecretConfig:
-                name: ca-bundle
+                name: mesh_ca:secret:default
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: my-secret-name
+            - name: identity_cert:secret:default
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -100,17 +160,7 @@ resources:
         portValue: 15001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        destinationPort: 17777
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough:ipv4
-          statPrefix: inbound_passthrough_ipv4
-    - filterChainMatch:
-        destinationPort: 17778
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -128,17 +178,7 @@ resources:
         portValue: 15001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        destinationPort: 17777
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough:ipv6
-          statPrefix: inbound_passthrough_ipv6
-    - filterChainMatch:
-        destinationPort: 17778
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
