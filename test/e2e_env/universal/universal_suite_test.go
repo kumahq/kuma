@@ -39,6 +39,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/reachableservices"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/resilience"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/retry"
+	"github.com/kumahq/kuma/v2/test/e2e_env/universal/strictinbounds"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/timeout"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/trafficlog"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/trafficpermission"
@@ -117,4 +118,5 @@ var (
 	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity Rotate CA", meshidentity.Rotate, Ordered)
+	_ = Describe("Strict Inbound Ports", strictinbounds.StrictInboundPorts, Ordered)
 )

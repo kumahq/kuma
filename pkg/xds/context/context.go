@@ -129,13 +129,6 @@ func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *me
 	}
 }
 
-func (mc *MeshContext) IsMutualTLSEnabled() bool {
-	if mc.Resource.MTLSEnabled() || len(mc.Resources.MeshIdentities().Items) > 0 {
-		return true
-	}
-	return false
-}
-
 func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
 	if tl == nil {
 		return nil

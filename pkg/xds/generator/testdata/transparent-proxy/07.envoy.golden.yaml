@@ -44,9 +44,7 @@ resources:
         portValue: 15006
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        destinationPort: 8080
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -64,9 +62,7 @@ resources:
         portValue: 15006
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        destinationPort: 8080
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy

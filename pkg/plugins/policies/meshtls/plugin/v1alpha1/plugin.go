@@ -143,6 +143,28 @@ func applyToInbounds(
 				Resource: resource,
 			})
 		}
+
+		if resource, err := configureInboundPassthroughListener(proxy, ctx, conf, false); err != nil {
+			return err
+		} else if resource != nil {
+			rs.Remove(envoy_resource.ListenerType, resource.GetName())
+			rs.Add(&core_xds.Resource{
+				Name:     resource.GetName(),
+				Origin:   metadata.OriginTransparent,
+				Resource: resource,
+			})
+		}
+
+		if resource, err := configureInboundPassthroughListener(proxy, ctx, conf, true); err != nil {
+			return err
+		} else if resource != nil {
+			rs.Remove(envoy_resource.ListenerType, resource.GetName())
+			rs.Add(&core_xds.Resource{
+				Name:     resource.GetName(),
+				Origin:   metadata.OriginTransparent,
+				Resource: resource,
+			})
+		}
 	}
 
 	return nil
@@ -272,6 +294,53 @@ func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 	}
 
 	return nil
+}
+
+func configureInboundPassthroughListener(
+	proxy *core_xds.Proxy,
+	xdsCtx xds_context.Context,
+	conf api.Conf,
+	ipv6 bool,
+) (envoy_common.NamedResource, error) {
+	tpCfg := proxy.GetTransparentProxy()
+	if tpCfg == nil {
+		return nil, nil
+	}
+
+	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
+	tlsMode := getMeshTLSMode(
+		conf.Mode,
+		proxy.WorkloadIdentity,
+		caBackend,
+	)
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+	address := metadata.TransparentAllIPv4
+	inboundName := nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4)
+	if ipv6 {
+		inboundName = nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6)
+		address = metadata.TransparentAllIPv6
+	}
+	// we don't need to change anything as the rules were correctly configured in transparent_proxy_generator.go
+	if caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE && tlsMode == api.ModeStrict {
+		return generator.CreateInboundPassthroughListener(
+			proxy,
+			inboundName,
+			address,
+			tpCfg.Redirect.Inbound.Port.Uint32(),
+			true,
+		)
+	}
+	if caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT && tlsMode == api.ModePermissive {
+		return generator.CreateInboundPassthroughListener(
+			proxy,
+			inboundName,
+			address,
+			tpCfg.Redirect.Inbound.Port.Uint32(),
+			false,
+		)
+	}
+	return nil, nil
 }
 
 func configureListener(

@@ -47,30 +47,33 @@ func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.Resour
 	return resources, nil
 }
 
-func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName string, inboundName string, allIP string, inPassThroughIP string) (*model.ResourceSet, error) {
-	resources := model.NewResourceSet()
-	tpCfg := proxy.GetTransparentProxy()
+// CreateOutboundPassThroughCluster creates an outbound passthrough cluster
+func CreateOutboundPassThroughCluster(apiVersion model.APIVersion, clusterName string) (envoy_common.NamedResource, error) {
+	cluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
+		Configure(envoy_clusters.PassThroughCluster()).
+		Configure(envoy_clusters.DefaultTimeout()).
+		Build()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate outbound cluster: %s", clusterName)
+	}
+	return cluster, nil
+}
+
+// CreateOutboundListener creates an outbound listener for transparent proxy
+func CreateOutboundPassthroughListener(
+	proxy *model.Proxy,
+	ctx xds_context.Context,
+	listenerName string,
+	allIP string,
+	outboundPort uint32,
+) (envoy_common.NamedResource, error) {
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
-	var outboundPassThroughCluster envoy_common.NamedResource
-	var outboundListener envoy_common.NamedResource
-	var err error
-
-	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion, outboundName).
-			Configure(envoy_clusters.PassThroughCluster()).
-			Configure(envoy_clusters.DefaultTimeout()).
-			Build()
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not generate outbound cluster: %s", outboundName)
-		}
-	}
-
-	outboundListener, err = envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, tpCfg.Redirect.Outbound.Port.Uint32(), model.SocketAddressProtocolTCP).
-		WithOverwriteName(outboundName).
+	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, outboundPort, model.SocketAddressProtocolTCP).
+		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
 			Configure(envoy_listeners.NetworkAccessLog(
 				meshName,
 				envoy_common.TrafficDirectionUnspecified,
@@ -82,43 +85,89 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
+		return nil, errors.Wrapf(err, "could not generate listener: %s", listenerName)
 	}
+	return listener, nil
+}
 
-	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, inboundName).
+// CreateInboundPassThroughCluster creates an inbound passthrough cluster
+func CreateInboundPassThroughCluster(apiVersion model.APIVersion, clusterName string, inPassThroughIP string) (envoy_common.NamedResource, error) {
+	cluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 		Configure(envoy_clusters.PassThroughCluster()).
 		Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIP, 0)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
+		return nil, errors.Wrapf(err, "could not generate cluster: %s", clusterName)
 	}
+	return cluster, nil
+}
 
-	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), model.SocketAddressProtocolTCP).
-		WithOverwriteName(inboundName).
+// CreateInboundListener creates an inbound listener for transparent proxy
+func CreateInboundPassthroughListener(
+	proxy *model.Proxy,
+	listenerName string,
+	allIP string,
+	inboundPort uint32,
+	useStrictInboundPorts bool,
+) (envoy_common.NamedResource, error) {
+	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
+		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.OriginalDstForwarder())
 
-	// Cases
-	// No mTLS - traffic should works to everything - like in kubernetes you can request by Pod IP and port
-	// mTLS permissive - only ports?
-	// mTLS strict - only ports?
-
-	if proxy.Dataplane != nil && proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) && proxy.Dataplane.Spec.Networking != nil && ctx.Mesh.IsMutualTLSEnabled() {
+	if useStrictInboundPorts {
 		for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
 			// if service doesn't have any port we don't need to expose listener
 			if inbound.Port == mesh_proto.TCPPortReserved {
 				continue
 			}
 			inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.TcpProxyDeprecated(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName)))).
+				Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
 				Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 		}
 	} else {
 		inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName))))))
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName))))))
 	}
 
-	inboundListener, err := inboundListenerBuilder.Build()
+	listener, err := inboundListenerBuilder.Build()
+	if err != nil {
+		return nil, err
+	}
+	return listener, nil
+}
+
+func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName string, inboundName string, allIP string, inPassThroughIP string) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
+	tpCfg := proxy.GetTransparentProxy()
+
+	var outboundPassThroughCluster envoy_common.NamedResource
+	var err error
+
+	if ctx.Mesh.Resource.Spec.IsPassthrough() {
+		outboundPassThroughCluster, err = CreateOutboundPassThroughCluster(proxy.APIVersion, outboundName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	outboundListener, err := CreateOutboundPassthroughListener(proxy, ctx, outboundName, allIP, tpCfg.Redirect.Outbound.Port.Uint32())
+	if err != nil {
+		return nil, err
+	}
+
+	inboundPassThroughCluster, err := CreateInboundPassThroughCluster(proxy.APIVersion, inboundName, inPassThroughIP)
+	if err != nil {
+		return nil, err
+	}
+
+	useStrictInboundPorts := proxy.Dataplane != nil &&
+		proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) &&
+		proxy.Dataplane.Spec.Networking != nil &&
+		ctx.Mesh.Resource.MTLSEnabled() &&
+		ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_STRICT
+
+	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts)
 	if err != nil {
 		return nil, err
 	}
