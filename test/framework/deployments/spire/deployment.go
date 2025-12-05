@@ -6,11 +6,15 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework"
 )
 
-const DeploymentName = "spire"
-
-type Deployment interface {
+type SpireServer interface {
+	GetAgentJoinToken(framework.Cluster, string) (string, error)
+	RegisterWorkload(framework.Cluster, string, string, string) error
+	ExecSpireServerCommand(framework.Cluster, ...string) (string, error)
+	GetIP() (string, error)
 	framework.Deployment
 }
+
+const DeploymentName = "spire"
 
 type deployOptions struct {
 	namespace      string
@@ -29,14 +33,14 @@ func newDeployOpt(fs ...deployOptionsFunc) *deployOptions {
 	return rv
 }
 
-func From(cluster framework.Cluster) Deployment {
-	return cluster.Deployment(DeploymentName)
+func From(deploymentName string, cluster framework.Cluster) SpireServer {
+	return cluster.Deployment(deploymentName).(SpireServer)
 }
 
 func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 	opts := newDeployOpt(fs...)
 	return func(cluster framework.Cluster) error {
-		var deployment *k8sDeployment
+		var deployment framework.Deployment
 		switch cluster.(type) {
 		case *framework.K8sCluster:
 			deployment = &k8sDeployment{
@@ -45,6 +49,8 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 				trustDomain:    opts.trustDomain,
 				kubectlVersion: opts.kubectlVersion,
 			}
+		case *framework.UniversalCluster:
+			deployment = NewUniversalDeployment(cluster, opts.name, opts)
 		default:
 			return errors.New("invalid cluster")
 		}

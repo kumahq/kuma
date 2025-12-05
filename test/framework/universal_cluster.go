@@ -435,6 +435,15 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		}
 	}
 
+	if opts.spireAgent {
+		if err := app.CreateSpireAgent(opts.name, opts.spireAgentToken, opts.spireServerAddress, opts.spireServerPort, opts.spireTrustDomain); err != nil {
+			return err
+		}
+		if err := app.spireAgent.Start(); err != nil {
+			return err
+		}
+	}
+
 	if opts.boundToContainerIp {
 		args = append(args, "--ip", app.GetIP())
 	}

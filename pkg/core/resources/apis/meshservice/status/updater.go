@@ -254,6 +254,12 @@ func (s *StatusUpdater) buildTLS(
 		}
 		if identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities); matches {
 			if identity.Status.IsInitialized() {
+				// spire manages trusts so we don't need to validate if trustDomain is supported
+				if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
+					allTrustDomainsSupported = true
+					dppsWithIdentities++
+					continue
+				}
 				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
 				if err != nil {
 					s.logger.Error(err, "cannot resolve trust domain")

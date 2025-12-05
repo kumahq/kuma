@@ -16,3 +16,5 @@
 !tools/releases/templates/NOTICE
 !tools/releases/templates/README
 !test/server/certs
+!test/dockerfiles/spire-agent.conf
+!test/dockerfiles/spire-server.conf
