@@ -11,7 +11,10 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/policy"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
@@ -50,6 +53,7 @@ func addInspectEndpoints(
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ResourceManager,
+	resourceAccess access.ResourceAccess,
 ) {
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
@@ -87,6 +91,13 @@ func addInspectEndpoints(
 	ws.Route(
 		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").To(inspectGatewayRouteDataplanes(cfg, builder, rm)).
 			Doc("inspect MeshGatewayRoute").
+			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
+			Param(ws.PathParameter("name", "resource name").DataType("string")).
+			Returns(200, "OK", nil),
+	)
+	ws.Route(
+		ws.GET("/meshes/{mesh}/meshservices/{name}/_dataplanes").To(inspectMeshServiceDataplanes(rm, resourceAccess)).
+			Doc("inspect MeshService").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("name", "resource name").DataType("string")).
 			Returns(200, "OK", nil),
@@ -239,6 +250,27 @@ func inspectGatewayRouteDataplanes(
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
 			return
 		}
+	}
+}
+
+func inspectMeshServiceDataplanes(
+	rm manager.ResourceManager,
+	resourceAccess access.ResourceAccess,
+) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		matchingDataplanesForFilter(
+			request,
+			response,
+			meshservice_api.MeshServiceResourceTypeDescriptor,
+			rm,
+			resourceAccess,
+			func(resource core_model.Resource) store.ListFilterFunc {
+				meshService := resource.(*meshservice_api.MeshServiceResource)
+				return func(rs core_model.Resource) bool {
+					return meshservice.MatchesDataplane(meshService.Spec, rs.(*core_mesh.DataplaneResource))
+				}
+			},
+		)
 	}
 }
 
