@@ -5,3 +5,6 @@ violations:
   message: must be defined
 - field: spec.trustDomain
   message: must not be longer than 253 characters
+- field: spec.origin
+  message: spec.origin is deprecated, use status.origin instead. This field will be
+    removed in a future version.

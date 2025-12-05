@@ -146,7 +146,10 @@ var _ = Describe("Updater", func() {
 		// meshtrust should be created
 		meshTrust := meshtrust_api.NewMeshTrustResource()
 		Expect(resManager.Get(context.Background(), meshTrust, store.GetByKey(identity.Meta.GetName(), "default"))).ToNot(HaveOccurred())
-		Expect(meshTrust.Spec.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
+		Expect(meshTrust.Status).ToNot(BeNil())
+		Expect(meshTrust.Status.Origin).ToNot(BeNil())
+		Expect(meshTrust.Status.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
+		Expect(meshTrust.Spec.Origin).To(BeNil()) //nolint:staticcheck // testing deprecated field is not set
 		Expect(meshTrust.Spec.CABundles).To(HaveLen(1))
 	})
 

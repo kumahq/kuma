@@ -11,6 +11,12 @@ func (r *MeshTrustResource) validate() error {
 	path := validators.RootedAt("spec")
 	verr.Add(validateCABundles(path.Field("caBundles"), r.Spec.CABundles))
 	verr.Add(validateTrustDomain(path, r.Spec.TrustDomain))
+	if r.Spec.Origin != nil {
+		verr.AddViolationAt(
+			path.Field("origin"),
+			"spec.origin is deprecated, use status.origin instead. This field will be removed in a future version.",
+		)
+	}
 	return verr.OrNil()
 }
 

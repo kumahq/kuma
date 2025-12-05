@@ -3,12 +3,16 @@ package v1alpha1
 
 // MeshTrust
 // +kuma:policy:is_policy=false
+// +kuma:policy:has_status=true
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 // +kuma:policy:short_name=mtrust
 // +kuma:policy:register_generator=true
 type MeshTrust struct {
 	// Origin specifies whether the resource was created from a MeshIdentity.
+	//
+	// Deprecated: This field is deprecated and will be removed in a future version.
+	// Use status.origin instead.
 	Origin *Origin `json:"origin,omitempty"`
 	// TrustDomain is the trust domain associated with this resource.
 	// +required
@@ -44,4 +48,9 @@ type CABundle struct {
 type PEM struct {
 	// Value holds the PEM-encoded CA bundle as a string.
 	Value string `json:"value"`
+}
+
+type MeshTrustStatus struct {
+	// Origin specifies whether the resource was created from a MeshIdentity.
+	Origin *Origin `json:"origin,omitempty"`
 }
