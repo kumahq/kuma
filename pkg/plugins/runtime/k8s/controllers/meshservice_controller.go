@@ -124,6 +124,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			if err := r.List(
 				ctx,
 				meshServices,
+				kube_client.InNamespace(svc.Namespace),
 				kube_client.MatchingLabels(map[string]string{
 					metadata.KumaServiceName: svc.Name,
 				}),
