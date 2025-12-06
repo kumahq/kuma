@@ -22,5 +22,6 @@
     "appProtocol": "tcp"
    }
   ]
- }
+ },
+ "status": {}
 }
