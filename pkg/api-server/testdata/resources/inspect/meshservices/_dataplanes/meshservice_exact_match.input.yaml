@@ -1,0 +1,91 @@
+#/meshes/default/meshservices/echo-server-service/_dataplanes 200
+type: Mesh
+name: default
+---
+type: MeshService
+name: echo-server-service
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone1
+spec:
+  selector:
+    dataplaneTags:
+      app: echo-server
+      k8s.kuma.io/namespace: default
+  ports:
+    - port: 80
+      targetPort: 8080
+      appProtocol: http
+---
+type: MeshService
+name: echo-server-service-2
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone1
+spec:
+  selector:
+    dataplaneTags:
+      app: echo-server-2
+      k8s.kuma.io/namespace: default
+  ports:
+    - port: 80
+      targetPort: 8080
+      appProtocol: http
+---
+type: Dataplane
+name: echo-server-dp-01
+mesh: default
+labels:
+  kuma.io/zone: zone1
+networking:
+  address: 10.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        app: echo-server
+        k8s.kuma.io/namespace: default
+        kuma.io/service: echo-server-service_default_svc_80
+---
+type: Dataplane
+name: echo-server-dp-02
+mesh: default
+labels:
+  kuma.io/zone: zone1
+networking:
+  address: 10.0.0.2
+  inbound:
+    - port: 8080
+      tags:
+        app: echo-server
+        k8s.kuma.io/namespace: default
+        kuma.io/service: echo-server-service_default_svc_80
+---
+type: Dataplane
+name: echo-server-2-dp-01
+mesh: default
+labels:
+  kuma.io/zone: zone1
+networking:
+  address: 10.0.0.3
+  inbound:
+    - port: 8080
+      tags:
+        app: echo-server-2
+        k8s.kuma.io/namespace: default
+        kuma.io/service: echo-server-service-2_default_svc_80
+---
+type: Dataplane
+name: echo-server-2-dp-02
+mesh: default
+labels:
+  kuma.io/zone: zone1
+networking:
+  address: 10.0.0.4
+  inbound:
+    - port: 8080
+      tags:
+        app: echo-server-2
+        k8s.kuma.io/namespace: default
+        kuma.io/service: echo-server-service-2_default_svc_80

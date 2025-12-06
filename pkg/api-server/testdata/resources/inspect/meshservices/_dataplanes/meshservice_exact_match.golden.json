@@ -1,0 +1,21 @@
+{
+ "items": [
+  {
+   "labels": {
+    "kuma.io/zone": "zone1"
+   },
+   "mesh": "default",
+   "name": "echo-server-dp-01",
+   "type": "Dataplane"
+  },
+  {
+   "labels": {
+    "kuma.io/zone": "zone1"
+   },
+   "mesh": "default",
+   "name": "echo-server-dp-02",
+   "type": "Dataplane"
+  }
+ ],
+ "total": 2
+}
