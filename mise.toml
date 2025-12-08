@@ -3,7 +3,7 @@ experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
 container-structure-test = "1.19.3"
-go = "1.25.3"
+go = "1.25.4"
 ginkgo = "2.25.2"
 hadolint = "2.12.1-beta"
 helm = "3.18.6"
