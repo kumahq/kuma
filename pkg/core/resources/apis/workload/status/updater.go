@@ -3,7 +3,6 @@ package status
 import (
 	"context"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -109,7 +108,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 
 		log := s.logger.WithValues("workload", workload.GetMeta().GetName(), "mesh", workload.GetMeta().GetMesh())
-		workloadIdentifier := extractWorkloadIdentifier(workload.GetMeta().GetName())
+		workloadIdentifier := core_model.GetDisplayName(workload.GetMeta())
 		matchingDps := findMatchingDataplanes(dpsByMeshAndWorkload, workload.GetMeta().GetMesh(), workloadIdentifier)
 
 		dataplaneProxies := buildDataplaneProxies(matchingDps, insightsByKey)
@@ -157,15 +156,6 @@ func (s *StatusUpdater) tryUpdateWorkload(ctx context.Context, workload *workloa
 			log.Error(err, "could not update workload")
 		}
 	}
-}
-
-func extractWorkloadIdentifier(fullName string) string {
-	// For Kubernetes workloads, name format is "{name}.{namespace}"
-	// but kuma.io/workload label on dataplanes is just "{name}"
-	if idx := strings.Index(fullName, "."); idx > 0 {
-		return fullName[:idx]
-	}
-	return fullName
 }
 
 func buildDataplaneProxies(
