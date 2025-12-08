@@ -118,10 +118,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			return matched[i].FullyQualifiedName() < matched[j].FullyQualifiedName()
 		})
 
-		// Build condition based on whether matches were found
 		condition := buildMeshServicesMatchedCondition(matched)
-
-		// Check if status needs updating (either meshServices or conditions changed)
 		statusChanged := !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) ||
 			!conditionEquals(mzSvc.Status.Conditions, condition)
 
@@ -129,7 +126,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			log := s.logger.WithValues("meshmultizoneservice", mzSvc.Meta.GetName())
 			mzSvc.Status.MeshServices = matched
 			mzSvc.Status.Conditions = updateConditions(mzSvc.Status.Conditions, condition)
-			log.Info("updating matched mesh services", "matchedMeshServices", matched, "condition", condition.Type)
+			log.V(1).Info("updating matched mesh services", "matchedMeshServices", matched, "condition", condition.Type)
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
 				if store.IsConflict(err) {
 					log.Info("couldn't update mesh multi zone service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)

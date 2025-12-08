@@ -23,7 +23,7 @@ import (
 )
 
 var _ = Describe("Updater", func() {
-	var stopCh chan struct{}
+	var ch chan struct{}
 	var resManager manager.ResourceManager
 	var metrics core_metrics.Metrics
 
@@ -35,8 +35,7 @@ var _ = Describe("Updater", func() {
 
 		updater, err := meshmultizoneservice.NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m)
 		Expect(err).ToNot(HaveOccurred())
-		ch := make(chan struct{})
-		stopCh = ch
+		ch = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
 			Expect(updater.Start(ch)).To(Succeed())
@@ -46,8 +45,8 @@ var _ = Describe("Updater", func() {
 	})
 
 	AfterEach(func() {
-		if stopCh != nil {
-			close(stopCh)
+		if ch != nil {
+			close(ch)
 		}
 	})
 
