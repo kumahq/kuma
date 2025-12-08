@@ -10,6 +10,7 @@ import (
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
 )
 
 type externalServiceManager struct {
@@ -49,7 +50,7 @@ func (m *externalServiceManager) Create(ctx context.Context, resource core_model
 	if err != nil {
 		return err
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 	if err := m.externalServiceValidator.ValidateCreate(ctx, opts.Mesh, externalService); err != nil {
@@ -90,7 +91,7 @@ func (m *externalServiceManager) Update(ctx context.Context, resource core_model
 	if err != nil {
 		return err
 	}
-	if err := core_model.Validate(resource); err != nil {
+	if err := validator.Validate(resource); err != nil {
 		return err
 	}
 

@@ -69,20 +69,47 @@ import (
 )
 
 {{- if not .SkipRegistration }}
-//go:embed schema.yaml
+//go:embed rest.yaml
 {{- end }}
-var rawSchema []byte
+var rawOpenAPISpec []byte
 
 func init() {
 	var structuralSchema *schema.Structural
 	var v1JsonSchemaProps *apiextensionsv1.JSONSchemaProps
 	var validator *validate.SchemaValidator
-	if rawSchema != nil {
-		if err := yaml.Unmarshal(rawSchema, &v1JsonSchemaProps); err != nil {
+	if rawOpenAPISpec != nil {
+		// Parse OpenAPI spec to extract the schema
+
+		var openapiSpec map[string]interface{}
+		if err := yaml.Unmarshal(rawOpenAPISpec, &openapiSpec); err != nil {
+			panic(err)
+		}
+
+		// Extract schema from .components.schemas.{{.Name}}Item
+		components, ok := openapiSpec["components"].(map[string]interface{})
+		if !ok {
+			panic(fmt.Errorf("components not found in OpenAPI spec"))
+		}
+		schemas, ok := components["schemas"].(map[string]interface{})
+		if !ok {
+			panic(fmt.Errorf("schemas not found in components"))
+		}
+		schemaItem, ok := schemas["{{.Name}}Item"].(map[string]interface{})
+		if !ok {
+			panic(fmt.Errorf("{{.Name}}Item schema not found"))
+		}
+
+		// Marshal the extracted schema back to YAML to unmarshal into JSONSchemaProps
+		schemaBytes, err := yaml.Marshal(schemaItem)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := yaml.Unmarshal(schemaBytes, &v1JsonSchemaProps); err != nil {
 			panic(err)
 		}
 		var jsonSchemaProps apiextensions.JSONSchemaProps
-		err := apiextensionsv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(v1JsonSchemaProps, &jsonSchemaProps, nil)
+		err = apiextensionsv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(v1JsonSchemaProps, &jsonSchemaProps, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -93,7 +120,7 @@ func init() {
 		schemaObject := structuralSchema.ToKubeOpenAPI()
 		validator = validate.NewSchemaValidator(schemaObject, nil, "", strfmt.Default)
 	}
-	rawSchema = nil
+	rawOpenAPISpec = nil
 	{{.Name}}ResourceTypeDescriptor.Validator = validator
 	{{.Name}}ResourceTypeDescriptor.StructuralSchema = structuralSchema
 }

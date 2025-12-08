@@ -15,7 +15,11 @@ type k8sDeployment struct {
 	kubectlVersion string
 }
 
-var _ Deployment = &k8sDeployment{}
+func (u *k8sDeployment) GetIP() (string, error) {
+	panic("not implemented")
+}
+
+var _ framework.Deployment = &k8sDeployment{}
 
 func (t *k8sDeployment) Name() string {
 	return DeploymentName

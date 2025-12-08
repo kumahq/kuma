@@ -105,7 +105,10 @@ type Meta struct {
 	// KRI Kuma Resource Identifier (KRI) of the given resource
 	KRI *string `json:"kri,omitempty"`
 
-	// Labels the label of the resource
+	// Labels Labels of the resource. Note: certain system labels are immutable after creation:
+	// - `kuma.io/origin`: Resource origin (zone/global). Immutable.
+	// - `kuma.io/zone`: Zone where resource originated. Immutable.
+	// - `kuma.io/display-name`: Display name for the resource. Immutable.
 	Labels map[string]string `json:"labels"`
 
 	// Mesh the mesh this resource is part of

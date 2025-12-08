@@ -3,14 +3,12 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "HostnameGenerator"
-
 paths:
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
       summary: Returns HostnameGenerator entity
-      tags: [ "HostnameGenerator" ]
+      tags: ["HostnameGenerator"]
       parameters:
         - in: path
           name: name
@@ -22,12 +20,11 @@ paths:
         '200':
           $ref: "#/components/responses/HostnameGeneratorItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putHostnameGenerator
       summary: Creates or Updates HostnameGenerator entity
-      tags: [ "HostnameGenerator" ]
+      tags: ["HostnameGenerator"]
       parameters:
         - in: path
           name: name
@@ -47,11 +44,10 @@ paths:
           $ref: '#/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse'
         '201':
           $ref: '#/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse'
-
     delete:
       operationId: deleteHostnameGenerator
       summary: Deletes HostnameGenerator entity
-      tags: [ "HostnameGenerator" ]
+      tags: ["HostnameGenerator"]
       parameters:
         - in: path
           name: name
@@ -63,13 +59,12 @@ paths:
         '200':
           $ref: '#/components/responses/HostnameGeneratorDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /hostnamegenerators:
     get:
       operationId: getHostnameGeneratorList
       summary: Returns a list of HostnameGenerator in the mesh.
-      tags: [ "HostnameGenerator" ]
+      tags: ["HostnameGenerator"]
       parameters:
         - in: query
           name: offset
@@ -103,12 +98,86 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/HostnameGeneratorList"
-
 components:
   schemas:
     HostnameGeneratorItem:
-      $ref: 'schema.yaml'
-
+      type: object
+      required: [type, name, spec]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - HostnameGenerator
+        kri:
+          description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+          type: string
+          readOnly: true
+          example: 'kri_hg___kuma-system_myresource1_'
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma HostnameGenerator resource.
+          properties:
+            extension:
+              description: Extension struct for a plugin configuration
+              properties:
+                config:
+                  description: Config freeform configuration for the extension.
+                  x-kubernetes-preserve-unknown-fields: true
+                type:
+                  description: Type of the extension.
+                  type: string
+              required:
+                - type
+              type: object
+            selector:
+              properties:
+                meshExternalService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                meshMultiZoneService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                meshService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+              type: object
+            template:
+              type: string
+          required:
+            - template
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
   responses:
     HostnameGeneratorItem:
       description: Successful response

@@ -79,7 +79,7 @@ injector:
     socketFileName: socket
   transparentProxyConfigMap: ""
   unifiedResourceNamingEnabled: false
-  virtualProbesEnabled: true
+  virtualProbesEnabled: false
   virtualProbesPort: 9000
 leaderElection:
   leaseDuration: 15s
