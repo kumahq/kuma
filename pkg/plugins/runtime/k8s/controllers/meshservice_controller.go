@@ -37,6 +37,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/v2/pkg/util/k8s"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	string_util "github.com/kumahq/kuma/v2/pkg/util/strings"
 )
 
 const (
@@ -219,11 +220,10 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 					endpoint.TargetRef.APIVersion != "") {
 				continue
 			}
-			namespace := endpoint.TargetRef.Namespace
-			if namespace == "" {
-				namespace = svc.Namespace
-			}
-			servicePodEndpoints[kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: namespace}] = endpoint
+			servicePodEndpoints[kube_types.NamespacedName{
+				Name:      endpoint.TargetRef.Name,
+				Namespace: string_util.OrDefault(endpoint.TargetRef.Namespace, svc.Namespace),
+			}] = endpoint
 		}
 	}
 
