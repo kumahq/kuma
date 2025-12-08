@@ -27,8 +27,15 @@ func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.Resour
 	if !tpCfg.Redirect.Outbound.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		return resources, nil
 	}
-
-	xdsCtx.Mesh.Resources.MeshIdentities()
+	noDestCluster, err := CreateNoDestinationCluster(proxy.APIVersion, naming.ContextualNoDestinationClusterName("inbound"))
+	if err != nil {
+		return nil, err
+	}
+	resources.Add(&model.Resource{
+		Name:     noDestCluster.GetName(),
+		Origin:   metadata.OriginTransparent,
+		Resource: noDestCluster,
+	})
 
 	resourcesIPv4, err := tpg.generateIPv4(xdsCtx, proxy)
 	if err != nil {
@@ -103,6 +110,18 @@ func CreateInboundPassThroughCluster(apiVersion model.APIVersion, clusterName st
 	return cluster, nil
 }
 
+// CreateNoDestinationCluster creates a cluster which has no destination
+func CreateNoDestinationCluster(apiVersion model.APIVersion, clusterName string) (envoy_common.NamedResource, error) {
+	cluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
+		Configure(envoy_clusters.StaticNoEndpointsCluster()).
+		Configure(envoy_clusters.DefaultTimeout()).
+		Build()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate cluster: %s", clusterName)
+	}
+	return cluster, nil
+}
+
 // CreateInboundListener creates an inbound listener for transparent proxy
 func CreateInboundPassthroughListener(
 	proxy *model.Proxy,
@@ -119,11 +138,14 @@ func CreateInboundPassthroughListener(
 		for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
 			// if service doesn't have any port we don't need to expose listener
 			if inbound.Port == mesh_proto.TCPPortReserved {
-				continue
+				inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(naming.ContextualNoDestinationClusterName("inbound"))))).
+					Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
+			} else {
+				inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
+					Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 			}
-			inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
-				Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 		}
 	} else {
 		inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).

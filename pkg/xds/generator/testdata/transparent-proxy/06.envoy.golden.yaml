@@ -1,4 +1,11 @@
 resources:
+- name: self_transparentproxy_no_destination_inbound
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: self_transparentproxy_no_destination_inbound
+    connectTimeout: 5s
+    name: self_transparentproxy_no_destination_inbound
+    type: STATIC
 - name: self_transparentproxy_passthrough_inbound_ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
