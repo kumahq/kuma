@@ -60,7 +60,7 @@ docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs
 	@echo "Bundling individual OpenAPI specs..."
 	@mkdir -p $(BUILD_DIR)/openapi-bundled
 	@cd $(BUILD_DIR)/oapitmp-rewritten && \
-		find . \( -name 'rest.yaml' -o -name 'api.yaml' -o -name 'kri.yaml' -o -name 'openapi.yaml' \) | while read f; do \
+		find . \( -name 'rest.yaml' -o -name 'api.yaml' -o -name 'kri.yaml' -o -name 'openapi.yaml' -o -name 'tenants.yaml' -o -name 'global_insight.yaml' \) | while read f; do \
 			mkdir -p $(BUILD_DIR)/openapi-bundled/$$(dirname $$f); \
 			mise exec -- redocly bundle $$f -o $(BUILD_DIR)/openapi-bundled/$$f || echo "Skipping $$f"; \
 		done
