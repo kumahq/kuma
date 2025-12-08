@@ -122,5 +122,9 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
 		}),
+		Entry("headless gateway service with mode Disabled", testCase{
+			inputFile:  "headless-gateway-disabled.resources.yaml",
+			outputFile: "headless-gateway-disabled.meshservice.yaml",
+		}),
 	)
 })

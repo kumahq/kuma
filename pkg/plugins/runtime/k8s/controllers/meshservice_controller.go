@@ -119,6 +119,25 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
 			return kube_ctrl.Result{}, err
 		}
+		// For headless services, also delete per-pod MeshServices
+		if svc.Spec.ClusterIP == kube_core.ClusterIPNone {
+			meshServices := &meshservice_k8s.MeshServiceList{}
+			if err := r.List(
+				ctx,
+				meshServices,
+				kube_client.InNamespace(svc.Namespace),
+				kube_client.MatchingLabels(map[string]string{
+					metadata.KumaServiceName: svc.Name,
+				}),
+			); err != nil {
+				return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
+			}
+			for _, ms := range meshServices.Items {
+				if err := r.Delete(ctx, &ms); err != nil && !kube_apierrs.IsNotFound(err) {
+					return kube_ctrl.Result{}, errors.Wrap(err, "unable to delete MeshService for headless Service")
+				}
+			}
+		}
 		return kube_ctrl.Result{}, nil
 	}
 

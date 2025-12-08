@@ -1,7 +1,7 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 
 # renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.15.2
+METALLB_VERSION ?= v0.15.3
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
