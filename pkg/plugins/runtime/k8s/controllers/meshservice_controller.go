@@ -287,7 +287,6 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 // isServiceForGateway checks if Service backs gateway Pods by inspecting EndpointSlices
 func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log logr.Logger, svc *kube_core.Service) (bool, error) {
-	// Query EndpointSlices for this Service
 	endpointSlices := &kube_discovery.EndpointSliceList{}
 	if err := r.List(
 		ctx,
@@ -300,7 +299,6 @@ func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log log
 		return false, errors.Wrap(err, "unable to list EndpointSlices for Service")
 	}
 
-	// Check first Pod for gateway annotation
 	for _, slice := range endpointSlices.Items {
 		for _, endpoint := range slice.Endpoints {
 			if endpoint.TargetRef == nil ||
@@ -310,15 +308,10 @@ func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log log
 				continue
 			}
 
-			// Get Pod and check for gateway annotation
 			pod := &kube_core.Pod{}
-			namespace := endpoint.TargetRef.Namespace
-			if namespace == "" {
-				namespace = svc.Namespace
-			}
 			podKey := kube_types.NamespacedName{
 				Name:      endpoint.TargetRef.Name,
-				Namespace: namespace,
+				Namespace: string_util.OrDefault(endpoint.TargetRef.Namespace, svc.Namespace),
 			}
 			if err := r.Get(ctx, podKey, pod); err != nil {
 				if kube_apierrs.IsNotFound(err) {
@@ -327,13 +320,11 @@ func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log log
 				return false, errors.Wrap(err, "unable to get Pod for endpoint")
 			}
 
-			// Check if Pod has gateway annotation
 			if _, ok := pod.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
 				log.V(1).Info("service backs gateway pods. Ignoring.", "pod", podKey.String())
 				return true, nil
 			}
 
-			// For performance, only check the first Pod. In a properly configured gateway Service, all Pods should have the gateway annotation.
 			return false, nil
 		}
 	}
