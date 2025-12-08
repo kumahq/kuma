@@ -147,7 +147,7 @@ jobs:
           make docker/push/${{ matrix.image }}
           make docker/manifest/${{ matrix.image }}
       - name: Install regctl
-        uses: regclient/actions/regctl-installer@ed5268e995795eb54f4187ada5728d118ad674f3
+        uses: regclient/actions/regctl-installer@1ea6cfdb5365b98ff1201dde150f417efc4a2079
       - name: image digest
         id: image_digest
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
