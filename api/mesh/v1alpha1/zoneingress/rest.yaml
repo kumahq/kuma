@@ -1,156 +1,223 @@
-openapi: 3.1.0
-info:
-  version: v1alpha1
-  title: Kuma API
-  description: Kuma API
-  x-ref-schema-name: "ZoneIngress"
-
-paths:
-  /zoneingresses/{name}:
-    get:
-      operationId: getZoneIngress
-      summary: Returns ZoneIngress entity
-      tags: [ "ZoneIngress" ]
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneIngress
-      responses:
-        '200':
-          $ref: "#/components/responses/ZoneIngressItem"
-        '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
-    put:
-      operationId: putZoneIngress
-      summary: Creates or Updates ZoneIngress entity
-      tags: [ "ZoneIngress" ]
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneIngress
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneIngressItem'
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-
-    delete:
-      operationId: deleteZoneIngress
-      summary: Deletes ZoneIngress entity
-      tags: [ "ZoneIngress" ]
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneIngress
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
-        '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
-  /zoneingresses:
-    get:
-      operationId: getZoneIngressList
-      summary: Returns a list of ZoneIngress in the mesh.
-      tags: [ "ZoneIngress" ]
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-          example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-      responses:
-        '200':
-          $ref: "#/components/responses/ZoneIngressList"
-
 components:
-  schemas:
-    ZoneIngressItem:
-      $ref: 'schema.yaml'
-
   responses:
-    ZoneIngressItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneIngressItem'
-    ZoneIngressList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ZoneIngressItem"
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
     ZoneIngressCreateOrUpdateSuccessResponse:
-      description: Successful response
       content:
         application/json:
           schema:
-            type: object
             properties:
               warnings:
-                type: array
-                readOnly: true
                 description: |
                   warnings is a list of warning messages to return to the requesting Kuma API clients.
                   Warning messages describe a problem the client making the API request should correct or be aware of.
                 items:
                   type: string
-    ZoneIngressDeleteSuccessResponse:
+                readOnly: true
+                type: array
+            type: object
       description: Successful response
+    ZoneIngressDeleteSuccessResponse:
       content:
         application/json:
           schema:
             type: object
+      description: Successful response
+    ZoneIngressItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneIngressItem'
+      description: Successful response
+    ZoneIngressList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneIngressItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+  schemas:
+    ZoneIngressItem:
+      properties:
+        availableServices:
+          description: |-
+            AvailableService contains tags that represent unique subset of
+            endpoints
+          items:
+            properties:
+              externalService:
+                description: instance of external service available from the zone
+                type: boolean
+              instances:
+                description: number of instances available for given tags
+                type: integer
+              mesh:
+                description: mesh of the instances available for given tags
+                type: string
+              tags:
+                additionalProperties:
+                  type: string
+                description: tags of the service
+                type: object
+            type: object
+          type: array
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+        networking:
+          description: |-
+            Networking defines the address and port of the Ingress to listen on.
+            Additionally publicly advertised address and port could be specified.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            advertisedAddress:
+              description: |-
+                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+                accessible to other Kuma clusters.
+              type: string
+            advertisedPort:
+              description: |-
+                AdvertisedPort defines port on which ZoneIngress is accessible to other
+                Kuma clusters.
+              type: integer
+            port:
+              description: Port of the inbound interface that will forward requests
+                to the service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: |-
+            Zone field contains Zone name where ingress is serving, field will be
+            automatically set by Global Kuma CP
+          type: string
+      required:
+      - type
+      - name
+      type: object
+info:
+  description: Kuma API
+  title: Kuma API
+  version: v1alpha1
+openapi: 3.1.0
+paths:
+  /zoneingresses:
+    get:
+      operationId: getZoneIngressList
+      parameters:
+      - description: offset in the list of entities
+        example: 0
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneIngressList'
+      summary: Returns a list of ZoneIngress in the mesh.
+      tags:
+      - ZoneIngress
+  /zoneingresses/{name}:
+    delete:
+      operationId: deleteZoneIngress
+      parameters:
+      - description: name of the ZoneIngress
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
+        "404":
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+      summary: Deletes ZoneIngress entity
+      tags:
+      - ZoneIngress
+    get:
+      operationId: getZoneIngress
+      parameters:
+      - description: name of the ZoneIngress
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneIngressItem'
+        "404":
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+      summary: Returns ZoneIngress entity
+      tags:
+      - ZoneIngress
+    put:
+      operationId: putZoneIngress
+      parameters:
+      - description: name of the ZoneIngress
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneIngressItem'
+        description: Put request
+        required: true
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
+        "201":
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates ZoneIngress entity
+      tags:
+      - ZoneIngress

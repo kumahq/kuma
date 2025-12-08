@@ -3,14 +3,12 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "Workload"
-
 paths:
   /meshes/{mesh}/workloads/{name}:
     get:
       operationId: getWorkload
       summary: Returns Workload entity
-      tags: [ "Workload" ]
+      tags: ["Workload"]
       parameters:
         - in: path
           name: mesh
@@ -28,12 +26,11 @@ paths:
         '200':
           $ref: "#/components/responses/WorkloadItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putWorkload
       summary: Creates or Updates Workload entity
-      tags: [ "Workload" ]
+      tags: ["Workload"]
       parameters:
         - in: path
           name: mesh
@@ -59,11 +56,10 @@ paths:
           $ref: '#/components/responses/WorkloadCreateOrUpdateSuccessResponse'
         '201':
           $ref: '#/components/responses/WorkloadCreateOrUpdateSuccessResponse'
-
     delete:
       operationId: deleteWorkload
       summary: Deletes Workload entity
-      tags: [ "Workload" ]
+      tags: ["Workload"]
       parameters:
         - in: path
           name: mesh
@@ -81,13 +77,12 @@ paths:
         '200':
           $ref: '#/components/responses/WorkloadDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/workloads:
     get:
       operationId: getWorkloadList
       summary: Returns a list of Workload in the mesh.
-      tags: [ "Workload" ]
+      tags: ["Workload"]
       parameters:
         - in: query
           name: offset
@@ -127,12 +122,74 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/WorkloadList"
-
 components:
   schemas:
     WorkloadItem:
-      $ref: 'schema.yaml'
-
+      type: object
+      required: [type, name, spec]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - Workload
+        mesh:
+          description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+          type: string
+          default: default
+        kri:
+          description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+          type: string
+          readOnly: true
+          example: 'kri_wl_default_zone-east_kuma-demo_myresource1_'
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma Workload resource.
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        status:
+          description: Status is the current status of the Kuma Workload resource.
+          properties:
+            dataplaneProxies:
+              description: DataplaneProxies defines statistics of data plane proxies that are part of this workload
+              properties:
+                connected:
+                  description: Connected defines number of connected data plane proxies
+                  format: int32
+                  type: integer
+                healthy:
+                  description: Healthy defines number of healthy data plane proxies for this workload
+                  format: int32
+                  type: integer
+                total:
+                  description: Total defines total number of data plane proxies for this workload
+                  format: int32
+                  type: integer
+              required:
+                - connected
+                - healthy
+                - total
+              type: object
+          type: object
+          readOnly: true
   responses:
     WorkloadItem:
       description: Successful response

@@ -53,6 +53,7 @@ node:
     ipv6Enabled: false
     metricsCertPath: ""
     metricsKeyPath: ""
+    spireAgent.socketPath: ""
     systemCaPath: ""
     version:
       envoy:

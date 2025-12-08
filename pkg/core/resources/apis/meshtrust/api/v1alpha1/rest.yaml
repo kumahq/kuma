@@ -3,14 +3,12 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "MeshTrust"
-
 paths:
   /meshes/{mesh}/meshtrusts/{name}:
     get:
       operationId: getMeshTrust
       summary: Returns MeshTrust entity
-      tags: [ "MeshTrust" ]
+      tags: ["MeshTrust"]
       parameters:
         - in: path
           name: mesh
@@ -28,12 +26,11 @@ paths:
         '200':
           $ref: "#/components/responses/MeshTrustItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putMeshTrust
       summary: Creates or Updates MeshTrust entity
-      tags: [ "MeshTrust" ]
+      tags: ["MeshTrust"]
       parameters:
         - in: path
           name: mesh
@@ -59,11 +56,10 @@ paths:
           $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
         '201':
           $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
-
     delete:
       operationId: deleteMeshTrust
       summary: Deletes MeshTrust entity
-      tags: [ "MeshTrust" ]
+      tags: ["MeshTrust"]
       parameters:
         - in: path
           name: mesh
@@ -81,13 +77,12 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTrustDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshtrusts:
     get:
       operationId: getMeshTrustList
       summary: Returns a list of MeshTrust in the mesh.
-      tags: [ "MeshTrust" ]
+      tags: ["MeshTrust"]
       parameters:
         - in: query
           name: offset
@@ -127,12 +122,89 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshTrustList"
-
 components:
   schemas:
     MeshTrustItem:
-      $ref: 'schema.yaml'
-
+      type: object
+      required: [type, name, spec]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - MeshTrust
+        mesh:
+          description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+          type: string
+          default: default
+        kri:
+          description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+          type: string
+          readOnly: true
+          example: 'kri_mtrust_default_zone-east_kuma-system_myresource1_'
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshTrust resource.
+          properties:
+            caBundles:
+              description: |-
+                CABundles contains a list of CA bundles supported by this TrustDomain.
+                At least one CA bundle must be specified.
+              items:
+                properties:
+                  pem:
+                    description: Pem contains the PEM-encoded CA bundle if the Type is set to a PEM-based format.
+                    properties:
+                      value:
+                        description: Value holds the PEM-encoded CA bundle as a string.
+                        type: string
+                    required:
+                      - value
+                    type: object
+                  type:
+                    description: Type specifies the format or source type of the CA bundle.
+                    enum:
+                      - Pem
+                    type: string
+                required:
+                  - type
+                type: object
+              minItems: 1
+              type: array
+            origin:
+              description: Origin specifies whether the resource was created from a MeshIdentity.
+              properties:
+                kri:
+                  description: Resource identifier
+                  type: string
+              type: object
+            trustDomain:
+              description: TrustDomain is the trust domain associated with this resource.
+              maxLength: 253
+              type: string
+          required:
+            - caBundles
+            - trustDomain
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
   responses:
     MeshTrustItem:
       description: Successful response

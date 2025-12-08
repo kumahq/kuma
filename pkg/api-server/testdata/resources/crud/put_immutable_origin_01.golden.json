@@ -1,0 +1,27 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not update a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/origin\"]",
+   "reason": "is immutable, cannot be changed from \"zone\" to \"global\""
+  },
+  {
+   "field": "labels[\"kuma.io/zone\"]",
+   "reason": "is immutable, cannot be removed (was \"default\")"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/origin\"]",
+   "message": "is immutable, cannot be changed from \"zone\" to \"global\""
+  },
+  {
+   "field": "labels[\"kuma.io/zone\"]",
+   "message": "is immutable, cannot be removed (was \"default\")"
+  }
+ ]
+}

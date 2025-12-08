@@ -23,29 +23,29 @@ paths:
           description: The resource
           content:
             application/json:
-              schema: 
+              schema:
                 oneOf:
-                  - $ref: '/specs/protoresources/dataplane/rest.yaml#/components/responses/DataplaneItem'
-                  - $ref: '/specs/protoresources/mesh/rest.yaml#/components/responses/MeshItem'
-                  - $ref: '/specs/policies/meshaccesslog/rest.yaml#/components/responses/MeshAccessLogItem'
-                  - $ref: '/specs/policies/meshcircuitbreaker/rest.yaml#/components/responses/MeshCircuitBreakerItem'
-                  - $ref: '/specs/policies/meshfaultinjection/rest.yaml#/components/responses/MeshFaultInjectionItem'
-                  - $ref: '/specs/protoresources/meshgateway/rest.yaml#/components/responses/MeshGatewayItem'
-                  - $ref: '/specs/policies/meshhttproute/rest.yaml#/components/responses/MeshHTTPRouteItem'
-                  - $ref: '/specs/policies/meshhealthcheck/rest.yaml#/components/responses/MeshHealthCheckItem'
-                  - $ref: '/specs/policies/meshloadbalancingstrategy/rest.yaml#/components/responses/MeshLoadBalancingStrategyItem'
-                  - $ref: '/specs/policies/meshmetric/rest.yaml#/components/responses/MeshMetricItem'
-                  - $ref: '/specs/policies/meshpassthrough/rest.yaml#/components/responses/MeshPassthroughItem'
-                  - $ref: '/specs/policies/meshproxypatch/rest.yaml#/components/responses/MeshProxyPatchItem'
-                  - $ref: '/specs/policies/meshratelimit/rest.yaml#/components/responses/MeshRateLimitItem'
-                  - $ref: '/specs/policies/meshretry/rest.yaml#/components/responses/MeshRetryItem'
-                  - $ref: '/specs/policies/meshtcproute/rest.yaml#/components/responses/MeshTCPRouteItem'
-                  - $ref: '/specs/policies/meshtls/rest.yaml#/components/responses/MeshTLSItem'
-                  - $ref: '/specs/policies/meshtimeout/rest.yaml#/components/responses/MeshTimeoutItem'
-                  - $ref: '/specs/policies/meshtrace/rest.yaml#/components/responses/MeshTraceItem'
-                  - $ref: '/specs/policies/meshtrafficpermission/rest.yaml#/components/responses/MeshTrafficPermissionItem'
-                  - $ref: '/specs/protoresources/zoneegress/rest.yaml#/components/responses/ZoneEgressItem'
-                  - $ref: '/specs/protoresources/zoneingress/rest.yaml#/components/responses/ZoneIngressItem'
+                  - $ref: '/specs/protoresources/dataplane/rest.yaml#/components/schemas/DataplaneItem'
+                  - $ref: '/specs/protoresources/mesh/rest.yaml#/components/schemas/MeshItem'
+                  - $ref: '/specs/policies/meshaccesslog/rest.yaml#/components/schemas/MeshAccessLogItem'
+                  - $ref: '/specs/policies/meshcircuitbreaker/rest.yaml#/components/schemas/MeshCircuitBreakerItem'
+                  - $ref: '/specs/policies/meshfaultinjection/rest.yaml#/components/schemas/MeshFaultInjectionItem'
+                  - $ref: '/specs/protoresources/meshgateway/rest.yaml#/components/schemas/MeshGatewayItem'
+                  - $ref: '/specs/policies/meshhttproute/rest.yaml#/components/schemas/MeshHTTPRouteItem'
+                  - $ref: '/specs/policies/meshhealthcheck/rest.yaml#/components/schemas/MeshHealthCheckItem'
+                  - $ref: '/specs/policies/meshloadbalancingstrategy/rest.yaml#/components/schemas/MeshLoadBalancingStrategyItem'
+                  - $ref: '/specs/policies/meshmetric/rest.yaml#/components/schemas/MeshMetricItem'
+                  - $ref: '/specs/policies/meshpassthrough/rest.yaml#/components/schemas/MeshPassthroughItem'
+                  - $ref: '/specs/policies/meshproxypatch/rest.yaml#/components/schemas/MeshProxyPatchItem'
+                  - $ref: '/specs/policies/meshratelimit/rest.yaml#/components/schemas/MeshRateLimitItem'
+                  - $ref: '/specs/policies/meshretry/rest.yaml#/components/schemas/MeshRetryItem'
+                  - $ref: '/specs/policies/meshtcproute/rest.yaml#/components/schemas/MeshTCPRouteItem'
+                  - $ref: '/specs/policies/meshtls/rest.yaml#/components/schemas/MeshTLSItem'
+                  - $ref: '/specs/policies/meshtimeout/rest.yaml#/components/schemas/MeshTimeoutItem'
+                  - $ref: '/specs/policies/meshtrace/rest.yaml#/components/schemas/MeshTraceItem'
+                  - $ref: '/specs/policies/meshtrafficpermission/rest.yaml#/components/schemas/MeshTrafficPermissionItem'
+                  - $ref: '/specs/protoresources/zoneegress/rest.yaml#/components/schemas/ZoneEgressItem'
+                  - $ref: '/specs/protoresources/zoneingress/rest.yaml#/components/schemas/ZoneIngressItem'
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
         '404':

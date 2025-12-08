@@ -257,6 +257,7 @@ var _ = Describe("MeshIdentity Helper", func() {
 			Expect(spiffeID).To(Equal("spiffe://test-mesh.test-zone.mesh.local/app/my-app"))
 		})
 	})
+
 	DescribeTable("UsesWorkloadLabel",
 		func(pathTemplate *string, expected bool) {
 			// given
