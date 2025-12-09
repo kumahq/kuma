@@ -2,6 +2,7 @@ package meshmultizoneservice_test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -24,6 +25,7 @@ import (
 
 var _ = Describe("Updater", func() {
 	var ch chan struct{}
+	var updaterDone *sync.WaitGroup
 	var resManager manager.ResourceManager
 	var metrics core_metrics.Metrics
 
@@ -32,12 +34,15 @@ var _ = Describe("Updater", func() {
 		Expect(err).ToNot(HaveOccurred())
 		metrics = m
 		resManager = manager.NewResourceManager(memory.NewStore())
+		updaterDone = &sync.WaitGroup{}
 
 		updater, err := meshmultizoneservice.NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m)
 		Expect(err).ToNot(HaveOccurred())
 		ch = make(chan struct{})
+		updaterDone.Add(1)
 		go func() {
 			defer GinkgoRecover()
+			defer updaterDone.Done()
 			Expect(updater.Start(ch)).To(Succeed())
 		}()
 
@@ -47,6 +52,9 @@ var _ = Describe("Updater", func() {
 	AfterEach(func() {
 		if ch != nil {
 			close(ch)
+		}
+		if updaterDone != nil {
+			updaterDone.Wait()
 		}
 	})
 
