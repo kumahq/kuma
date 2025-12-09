@@ -97,7 +97,6 @@ var _ = Describe("Endpoints", func() {
 		Entry(nil, "/who-am-i"),
 	)
 
-
 	Describe("global mode", func() {
 		var globalApiServer *api_server.ApiServer
 		var globalResourceStore store.ResourceStore
