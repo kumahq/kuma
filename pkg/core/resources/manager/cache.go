@@ -86,6 +86,11 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 			return err
 		}
 		res.SetMeta(cached.GetMeta())
+		if res.Descriptor().HasStatus {
+			if err := res.SetStatus(cached.GetStatus()); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

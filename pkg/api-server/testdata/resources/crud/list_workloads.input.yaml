@@ -1,0 +1,23 @@
+#/meshes/default/workloads 200
+type: Mesh
+name: default
+---
+type: Workload
+name: workload-1
+mesh: default
+spec: {}
+status:
+  dataplaneProxies:
+    total: 3
+    connected: 2
+    healthy: 2
+---
+type: Workload
+name: workload-2
+mesh: default
+spec: {}
+status:
+  dataplaneProxies:
+    total: 5
+    connected: 4
+    healthy: 3

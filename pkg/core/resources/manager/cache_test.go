@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -262,4 +263,39 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 		Expect(hits + hitWaits).To(Equal(100.0))
 	}))
+
+	It("should cache status for resources with HasStatus", func() {
+		// given resource with status
+		workload := workload_api.NewWorkloadResource()
+		workload.Spec = &workload_api.Workload{}
+		workload.Status = &workload_api.WorkloadStatus{
+			DataplaneProxies: workload_api.DataplaneProxies{
+				Total:     5,
+				Connected: 4,
+				Healthy:   3,
+			},
+		}
+		err := store.Create(context.Background(), workload, core_store.CreateByKey("wl-1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when fetched from cache
+		fetch := func() *workload_api.WorkloadResource {
+			fetched := workload_api.NewWorkloadResource()
+			err := cachedManager.Get(context.Background(), fetched, core_store.GetByKey("wl-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			return fetched
+		}
+
+		// first fetch (cache miss)
+		fetched1 := fetch()
+		Expect(fetched1.Status.DataplaneProxies.Total).To(Equal(int32(5)))
+		Expect(fetched1.Status.DataplaneProxies.Connected).To(Equal(int32(4)))
+		Expect(fetched1.Status.DataplaneProxies.Healthy).To(Equal(int32(3)))
+
+		// second fetch (cache hit) - status should still be present
+		fetched2 := fetch()
+		Expect(fetched2.Status.DataplaneProxies.Total).To(Equal(int32(5)))
+		Expect(fetched2.Status.DataplaneProxies.Connected).To(Equal(int32(4)))
+		Expect(fetched2.Status.DataplaneProxies.Healthy).To(Equal(int32(3)))
+	})
 })

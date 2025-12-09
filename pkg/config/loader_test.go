@@ -243,6 +243,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Runtime.Universal.Spire.SocketPath).To(Equal("/custom/path"))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -397,6 +398,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
 			Expect(cfg.CoreResources.Status.MeshMultiZoneServiceInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.CoreResources.Status.MeshIdentityInterval.Duration).To(Equal(8 * time.Second))
+			Expect(cfg.CoreResources.Status.WorkloadInterval.Duration).To(Equal(9 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -502,6 +504,8 @@ runtime:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
     vipRefreshInterval: 10s
+    spire:
+      socketPath: /custom/path	  
     workload:
       generationInterval: 9s
   kubernetes:
@@ -799,6 +803,7 @@ coreResources:
     meshServiceInterval: 6s
     meshMultiZoneServiceInterval: 7s
     meshIdentityInterval: 8s
+    workloadInterval: 9s
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -977,6 +982,7 @@ meshService:
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
+				"KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH":                                                 "/custom/path",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",
@@ -1115,6 +1121,7 @@ meshService:
 				"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL":                                         "6s",
 				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
 				"KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL":                                        "8s",
+				"KUMA_CORE_RESOURCES_STATUS_WORKLOAD_INTERVAL":                                             "9s",
 				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
 				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
