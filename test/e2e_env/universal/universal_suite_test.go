@@ -120,5 +120,5 @@ var (
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity - Spire", meshidentity.Spire, Ordered)
 	_ = Describe("MeshIdentity - Rotate CA", meshidentity.Rotate, Ordered)
-  _ = Describe("Strict Inbound Ports", strictinbounds.StrictInboundPorts, Ordered)
+	_ = Describe("Strict Inbound Ports", strictinbounds.StrictInboundPorts, Ordered)
 )
