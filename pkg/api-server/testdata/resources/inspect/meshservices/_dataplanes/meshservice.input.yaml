@@ -11,7 +11,7 @@ labels:
 spec:
   selector:
     dataplaneTags:
-      kuma.io/service: test-server
+      app: test-server
   ports:
     - port: 80
       targetPort: 80
@@ -25,8 +25,6 @@ networking:
   address: 127.0.0.1
   inbound:
     - port: 80
-      tags:
-        kuma.io/service: test-server
 ---
 type: Dataplane
 name: ts-02
@@ -36,7 +34,7 @@ networking:
   inbound:
     - port: 80
       tags:
-        kuma.io/service: test-server
+        app: test-server
 ---
 type: Dataplane
 name: not-ts-01
@@ -46,4 +44,4 @@ networking:
   inbound:
     - port: 80
       tags:
-        kuma.io/service: not-test-server
+        app: not-test-server
