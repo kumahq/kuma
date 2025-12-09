@@ -25,6 +25,8 @@ networking:
   address: 127.0.0.1
   inbound:
     - port: 80
+      tags:
+        app: test-server
 ---
 type: Dataplane
 name: ts-02

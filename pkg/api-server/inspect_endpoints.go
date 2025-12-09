@@ -255,7 +255,7 @@ func inspectGatewayRouteDataplanes(
 
 // inspectMeshServiceDataplanes provides standardized /_dataplanes endpoint following MeshGateway/MeshGatewayRoute pattern.
 // Uses exact tag matching via meshservice.MatchesDataplane() to fix multizone aggregation issues.
-// Legacy endpoint /_resources/dataplanes (inspect_mesh_service.go:38) remains for backward compatibility.
+// Legacy endpoint /meshes/{mesh}/meshservices/{name}/_resources/dataplanes (inspect_mesh_service.go:38) remains for backward compatibility.
 func inspectMeshServiceDataplanes(
 	rm manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
