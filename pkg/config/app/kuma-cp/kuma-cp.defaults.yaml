@@ -435,6 +435,13 @@ runtime:
     zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
     vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
+    # Spire defines default configuration of the spire properties
+    spire:
+      # SocketPath is the location of the socket file one the host
+      socketPath: /tmp/spire-agent/public/api.sock # ENV: KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH
+    workload:
+      # How often we check whether Workloads need to be generated from Dataplanes
+      generationInterval: 2s # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh

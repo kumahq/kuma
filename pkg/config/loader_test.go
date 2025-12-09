@@ -243,6 +243,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Runtime.Universal.Spire.SocketPath).To(Equal("/custom/path"))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -391,6 +392,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Runtime.Universal.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
@@ -501,6 +503,10 @@ runtime:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
     vipRefreshInterval: 10s
+    spire:
+      socketPath: /custom/path	  
+    workload:
+      generationInterval: 9s
   kubernetes:
     disallowMultipleMeshesPerNamespace: true
     serviceAccountName: custom-sa
@@ -974,6 +980,7 @@ meshService:
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
+				"KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH":                                                 "/custom/path",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",
@@ -1119,6 +1126,7 @@ meshService:
 				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
+				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL":                                      "9s",
 			},
 			yamlFileConfig: "",
 		}),

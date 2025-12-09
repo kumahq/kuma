@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -47,6 +48,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
@@ -450,6 +452,24 @@ func (r *resourceEndpoints) createResource(
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
 
+	// Validate workload label on Universal Zone dataplanes
+	if r.descriptor.Name == core_mesh.DataplaneType && !r.isK8s {
+		if resLabels := res.GetMeta().GetLabels(); resLabels != nil {
+			if workloadName, ok := resLabels[metadata.KumaWorkload]; ok && workloadName != "" {
+				if r.mode == config_core.Global {
+					err := rest_errors.NewBadRequestError("labels[\"kuma.io/workload\"]: not allowed on Global control plane")
+					rest_errors.HandleError(ctx, response, err, "Invalid workload label")
+					return
+				}
+				if validationErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(validationErrs) != 0 {
+					err := rest_errors.NewBadRequestError(fmt.Sprintf("labels[\"kuma.io/workload\"]: must be a valid DNS-1035 label (at most 63 characters, matching regex [a-z]([-a-z0-9]*[a-z0-9])?): %s", strings.Join(validationErrs, "; ")))
+					rest_errors.HandleError(ctx, response, err, "Invalid workload label")
+					return
+				}
+			}
+		}
+	}
+
 	labels, err := core_model.ComputeLabels(
 		res.Descriptor(),
 		res.GetSpec(),
@@ -495,7 +515,25 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
+	// Compute labels for current state BEFORE modifying spec
+	currentLabels, err := core_model.ComputeLabels(
+		currentRes.Descriptor(),
+		currentRes.GetSpec(),
+		currentRes.GetMeta().GetLabels(),
+		meshName,
+		core_model.WithNamespace(core_model.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
+		core_model.WithMode(r.mode),
+		core_model.WithK8s(r.isK8s),
+		core_model.WithZone(r.zoneName),
+	)
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
+		return
+	}
+
 	_ = currentRes.SetSpec(newResRest.GetSpec())
+
+	// Compute labels for new request
 	labels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
@@ -508,6 +546,14 @@ func (r *resourceEndpoints) updateResource(
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
+		return
+	}
+
+	// Validate immutable labels by comparing computed results
+	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
+		var err validators.ValidationError
+		err.AddError("labels", validationErr)
+		rest_errors.HandleError(ctx, response, &err, "Could not update a resource")
 		return
 	}
 
@@ -639,6 +685,35 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
+	return err
+}
+
+func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
+	var err validators.ValidationError
+
+	immutableLabels := []string{
+		mesh_proto.ResourceOriginLabel,
+		mesh_proto.ZoneTag,
+		mesh_proto.DisplayName,
+	}
+
+	for _, label := range immutableLabels {
+		currentVal, currentExists := currentComputedLabels[label]
+		newVal, newExists := newComputedLabels[label]
+
+		if currentExists && !newExists {
+			err.AddViolationAt(
+				validators.Root().Key(label),
+				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
+			)
+		} else if currentExists && currentVal != newVal {
+			err.AddViolationAt(
+				validators.Root().Key(label),
+				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
+			)
+		}
+	}
+
 	return err
 }
 

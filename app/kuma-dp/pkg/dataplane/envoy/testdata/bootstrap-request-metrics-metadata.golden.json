@@ -36,5 +36,8 @@
   "keyPath": "/tmp/key.pem"
  },
  "systemCaPath": "",
- "ipv6Enabled": true
+ "ipv6Enabled": true,
+ "spireResources": {
+  "socketPath": ""
+ }
 }

@@ -3,14 +3,12 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "MeshPassthrough"
-
 paths:
   /meshes/{mesh}/meshpassthroughs/{name}:
     get:
       operationId: getMeshPassthrough
       summary: Returns MeshPassthrough entity
-      tags: [ "MeshPassthrough" ]
+      tags: ["MeshPassthrough"]
       parameters:
         - in: path
           name: mesh
@@ -28,12 +26,11 @@ paths:
         '200':
           $ref: "#/components/responses/MeshPassthroughItem"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
     put:
       operationId: putMeshPassthrough
       summary: Creates or Updates MeshPassthrough entity
-      tags: [ "MeshPassthrough" ]
+      tags: ["MeshPassthrough"]
       parameters:
         - in: path
           name: mesh
@@ -59,11 +56,10 @@ paths:
           $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
         '201':
           $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
-
     delete:
       operationId: deleteMeshPassthrough
       summary: Deletes MeshPassthrough entity
-      tags: [ "MeshPassthrough" ]
+      tags: ["MeshPassthrough"]
       parameters:
         - in: path
           name: mesh
@@ -81,13 +77,12 @@ paths:
         '200':
           $ref: '#/components/responses/MeshPassthroughDeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
-
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshpassthroughs:
     get:
       operationId: getMeshPassthroughList
       summary: Returns a list of MeshPassthrough in the mesh.
-      tags: [ "MeshPassthrough" ]
+      tags: ["MeshPassthrough"]
       parameters:
         - in: query
           name: offset
@@ -127,12 +122,162 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshPassthroughList"
-
 components:
   schemas:
     MeshPassthroughItem:
-      $ref: 'schema.yaml'
-
+      type: object
+      required: [type, name, spec]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - MeshPassthrough
+        mesh:
+          description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+          type: string
+          default: default
+        kri:
+          description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+          type: string
+          readOnly: true
+          example: 'kri_mp_default_zone-east_kuma-demo_mypolicy1_'
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshPassthrough resource.
+          properties:
+            default:
+              description: MeshPassthrough configuration.
+              properties:
+                appendMatch:
+                  description: AppendMatch is a list of destinations that should be allowed through the sidecar.
+                  items:
+                    properties:
+                      port:
+                        description: Port defines the port to which a user makes a request.
+                        format: int32
+                        type: integer
+                      protocol:
+                        default: tcp
+                        description: 'Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`, `mysql`.'
+                        enum:
+                          - tcp
+                          - tls
+                          - grpc
+                          - http
+                          - http2
+                          - mysql
+                        type: string
+                      type:
+                        description: Type of the match, one of `Domain`, `IP` or `CIDR` is available.
+                        enum:
+                          - Domain
+                          - IP
+                          - CIDR
+                        type: string
+                      value:
+                        description: Value for the specified Type.
+                        type: string
+                    required:
+                      - type
+                      - value
+                    type: object
+                  type: array
+                passthroughMode:
+                  description: |-
+                    Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+                    When `All` or `None` `appendMatch` has no effect.
+                    If not specified then the default value is "Matched".
+                  enum:
+                    - All
+                    - Matched
+                    - None
+                  type: string
+              type: object
+            targetRef:
+              description: |-
+                TargetRef is a reference to the resource the policy takes an effect on.
+                The resource could be either a real store object or virtual resource
+                defined in-place.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                    - Dataplane
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    Labels are used to select group of MeshServices that match labels. Either Labels or
+                    Name and Namespace can be used.
+                  type: object
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: |-
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                    `MeshServiceSubset` and `MeshGatewayRoute`
+                  type: string
+                namespace:
+                  description: |-
+                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                    will be targeted.
+                  type: string
+                proxyTypes:
+                  description: |-
+                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                    all data plane types are targeted by the policy.
+                  items:
+                    enum:
+                      - Sidecar
+                      - Gateway
+                    type: string
+                  type: array
+                sectionName:
+                  description: |-
+                    SectionName is used to target specific section of resource.
+                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    Tags used to select a subset of proxies by tags. Can only be used with kinds
+                    `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              required:
+                - kind
+              type: object
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
   responses:
     MeshPassthroughItem:
       description: Successful response

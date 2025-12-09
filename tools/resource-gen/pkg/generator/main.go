@@ -502,11 +502,6 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			schema.Required = append(schema.Required, "mesh")
 		}
 
-		out, err := yaml.Marshal(schema)
-		if err != nil {
-			return err
-		}
-
 		outDir := path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(r.ResourceType))
 
 		// Ensure the directory exists
@@ -514,18 +509,23 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
-		if err := os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600); err != nil {
-			return err
-		}
-
 		scope := "Mesh"
 		if r.Global {
 			scope = "Global"
 		}
 
+		// Generate rest.yaml from template to a temp file
+		tmpRestFile, err := os.CreateTemp("", "rest-*.yaml")
+		if err != nil {
+			return fmt.Errorf("failed to create temp file: %w", err)
+		}
+		tmpRestPath := tmpRestFile.Name()
+		tmpRestFile.Close()
+		defer os.Remove(tmpRestPath)
+
 		if err := commontemplate.PlainFileTemplate(
 			path.Join(readDir, "tools", "openapi", "templates", "endpoints.yaml"),
-			path.Join(outDir, "rest.yaml"),
+			tmpRestPath,
 			map[string]any{
 				"Package":   "v1alpha1",
 				"Name":      r.ResourceType,
@@ -534,6 +534,52 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 				"Path":      r.WsPath,
 			},
 		); err != nil {
+			return err
+		}
+
+		// Read the generated rest.yaml
+		restContent, err := os.ReadFile(tmpRestPath)
+		if err != nil {
+			return fmt.Errorf("failed to read temp rest.yaml: %w", err)
+		}
+
+		// Parse the rest.yaml
+		var restSpec map[string]interface{}
+		if err := yaml.Unmarshal(restContent, &restSpec); err != nil {
+			return fmt.Errorf("failed to unmarshal rest.yaml: %w", err)
+		}
+
+		// Inject the schema into components.schemas
+		components, ok := restSpec["components"].(map[string]interface{})
+		if !ok {
+			components = make(map[string]interface{})
+			restSpec["components"] = components
+		}
+		schemas, ok := components["schemas"].(map[string]interface{})
+		if !ok {
+			schemas = make(map[string]interface{})
+			components["schemas"] = schemas
+		}
+
+		// Convert the schema to a map
+		schemaBytes, err := yaml.Marshal(schema)
+		if err != nil {
+			return err
+		}
+		var schemaItemMap map[string]interface{}
+		if err := yaml.Unmarshal(schemaBytes, &schemaItemMap); err != nil {
+			return err
+		}
+
+		schemas[r.ResourceType+"Item"] = schemaItemMap
+
+		// Write the merged rest.yaml
+		mergedContent, err := yaml.Marshal(restSpec)
+		if err != nil {
+			return fmt.Errorf("failed to marshal merged rest.yaml: %w", err)
+		}
+
+		if err := os.WriteFile(path.Join(outDir, "rest.yaml"), mergedContent, 0o600); err != nil {
 			return err
 		}
 	}

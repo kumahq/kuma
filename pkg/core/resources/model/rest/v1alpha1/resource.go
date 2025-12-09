@@ -20,28 +20,41 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	var out map[string]json.RawMessage
-	if err := json.Unmarshal(metaBytes, &out); err != nil {
-		return nil, err
-	}
-
+	var specBytes []byte
 	if r.Spec != nil {
-		b, err := core_model.ToJSON(r.Spec)
+		specBytes, err = core_model.ToJSON(r.Spec)
 		if err != nil {
 			return nil, err
 		}
-		out["spec"] = b
 	}
 
+	var statusBytes []byte
 	if r.Status != nil {
-		b, err := core_model.ToJSON(r.Status)
+		statusBytes, err = core_model.ToJSON(r.Status)
 		if err != nil {
 			return nil, err
 		}
-		out["status"] = b
 	}
 
-	return json.Marshal(out)
+	// Manually concatenate JSON bytes to preserve field order
+	// metaBytes is like: {"type":"Mesh",...}
+	// We need to build: {"type":"Mesh",...,"spec":{...},"status":{...}}
+
+	result := metaBytes[:len(metaBytes)-1] // Remove closing }
+
+	if len(specBytes) > 0 {
+		result = append(result, []byte(`,"spec":`)...)
+		result = append(result, specBytes...)
+	}
+
+	if len(statusBytes) > 0 {
+		result = append(result, []byte(`,"status":`)...)
+		result = append(result, statusBytes...)
+	}
+
+	result = append(result, '}') // Add closing }
+
+	return result, nil
 }
 
 func (r *Resource) GetMeta() ResourceMeta {

@@ -3,7 +3,6 @@ info:
   version: {{ .Package }}
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "{{ .Name }}"
 
 paths:
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:
@@ -30,7 +29,7 @@ paths:
         '200':
           $ref: "#/components/responses/{{.Name}}Item"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
     put:
       operationId: put{{ .Name }}
@@ -87,7 +86,7 @@ paths:
         '200':
           $ref: '#/components/responses/{{.Name}}DeleteSuccessResponse'
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:

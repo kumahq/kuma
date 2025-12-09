@@ -76,7 +76,11 @@ components:
             "kuma.io/display-name": "mtp"
             "kuma.io/mesh": "default"
             "kuma.io/origin": "zone"
-          description: the label of the resource
+          description: |
+            Labels of the resource. Note: certain system labels are immutable after creation:
+            - `kuma.io/origin`: Resource origin (zone/global). Immutable.
+            - `kuma.io/zone`: Zone where resource originated. Immutable.
+            - `kuma.io/display-name`: Display name for the resource. Immutable.
     InspectRule:
       type: object
       required: [type]
