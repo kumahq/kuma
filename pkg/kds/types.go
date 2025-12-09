@@ -1,5 +1,6 @@
 package kds
 
+// Test change to verify KDS-specific copilot instructions pickup
 const (
 	googleApis = "type.googleapis.com/"
 
