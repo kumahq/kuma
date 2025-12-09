@@ -8,8 +8,10 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -65,20 +67,6 @@ var _ = Describe("Updater", func() {
 			return nil, err
 		}
 		return mzsvc.Status.MeshServices, nil
-	}
-
-	getCondition := func(conditionType string) (string, error) {
-		mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
-		err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
-		if err != nil {
-			return "", err
-		}
-		for _, c := range mzsvc.Status.Conditions {
-			if c.Type == conditionType {
-				return string(c.Status), nil
-			}
-		}
-		return "", nil
 	}
 
 	ms1Builder := samples.MeshServiceBackendBuilder().
@@ -141,11 +129,17 @@ var _ = Describe("Updater", func() {
 		// when - create MMZS without any matching MeshServices
 		Expect(samples.MeshMultiZoneServiceBackendBuilder().Create(resManager)).To(Succeed())
 
-		// then - condition should be False
+		// then - condition should be False with full details
 		Eventually(func(g Gomega) {
-			status, err := getCondition(meshmzservice_api.MeshServicesMatchedCondition)
+			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(status).To(Equal(string(kube_meta.ConditionFalse)))
+			g.Expect(mzsvc.Status.Conditions).To(ContainElement(common_api.Condition{
+				Type:    meshmzservice_api.MeshServicesMatchedCondition,
+				Status:  kube_meta.ConditionFalse,
+				Reason:  meshmzservice_api.NoMatchesFoundReason,
+				Message: "Selector does not match any MeshService in this zone",
+			}))
 		}, "10s", "100ms").Should(Succeed())
 	})
 
@@ -154,11 +148,16 @@ var _ = Describe("Updater", func() {
 		Expect(ms1Builder.Create(resManager)).To(Succeed())
 		Expect(samples.MeshMultiZoneServiceBackendBuilder().Create(resManager)).To(Succeed())
 
-		// then - condition should be True
+		// then - condition should be True with match count
 		Eventually(func(g Gomega) {
-			status, err := getCondition(meshmzservice_api.MeshServicesMatchedCondition)
+			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(status).To(Equal(string(kube_meta.ConditionTrue)))
+			g.Expect(mzsvc.Status.Conditions).To(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(meshmzservice_api.MeshServicesMatchedCondition),
+				"Status": Equal(kube_meta.ConditionTrue),
+				"Reason": Equal(meshmzservice_api.MatchesFoundReason),
+			})))
 		}, "10s", "100ms").Should(Succeed())
 	})
 
@@ -167,11 +166,16 @@ var _ = Describe("Updater", func() {
 		Expect(ms1Builder.Create(resManager)).To(Succeed())
 		Expect(samples.MeshMultiZoneServiceBackendBuilder().Create(resManager)).To(Succeed())
 
-		// then - condition should be True
+		// then - condition should be True with match count
 		Eventually(func(g Gomega) {
-			status, err := getCondition(meshmzservice_api.MeshServicesMatchedCondition)
+			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(status).To(Equal(string(kube_meta.ConditionTrue)))
+			g.Expect(mzsvc.Status.Conditions).To(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(meshmzservice_api.MeshServicesMatchedCondition),
+				"Status": Equal(kube_meta.ConditionTrue),
+				"Reason": Equal(meshmzservice_api.MatchesFoundReason),
+			})))
 		}, "10s", "100ms").Should(Succeed())
 
 		// when - delete the matching MeshService
@@ -179,11 +183,17 @@ var _ = Describe("Updater", func() {
 		Expect(resManager.Get(context.Background(), ms1, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 		Expect(resManager.Delete(context.Background(), ms1, store.DeleteByKey("backend", model.DefaultMesh))).To(Succeed())
 
-		// then - condition should change to False
+		// then - condition should change to False with full details
 		Eventually(func(g Gomega) {
-			status, err := getCondition(meshmzservice_api.MeshServicesMatchedCondition)
+			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(status).To(Equal(string(kube_meta.ConditionFalse)))
+			g.Expect(mzsvc.Status.Conditions).To(ContainElement(common_api.Condition{
+				Type:    meshmzservice_api.MeshServicesMatchedCondition,
+				Status:  kube_meta.ConditionFalse,
+				Reason:  meshmzservice_api.NoMatchesFoundReason,
+				Message: "Selector does not match any MeshService in this zone",
+			}))
 		}, "10s", "100ms").Should(Succeed())
 	})
 })
