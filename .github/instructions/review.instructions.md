@@ -1,3 +1,8 @@
+---
+applyTo: "**"
+excludeAgent: "coding-agent"
+---
+
 # PR Review Guidelines
 
 ## CoVe Methodology (MANDATORY)
