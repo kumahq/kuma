@@ -144,6 +144,8 @@ Kuma is under active development and production-ready.
 
 See [Developer Guide](DEVELOPER.md) for further details.
 
+<!-- Test PR to verify copilot instructions pickup -->
+
 ## Enterprise Support
 
 If you are implementing Kuma in a mission-critical environment and require enterprise support and features, please visit [Enterprise](https://kuma.io/enterprise/) to explore the available offerings.
