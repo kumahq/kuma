@@ -5,6 +5,8 @@ name: default
 type: MeshMultiZoneService
 name: test-server
 mesh: default
+labels:
+  kuma.io/origin: global
 spec:
   selector:
     meshService:

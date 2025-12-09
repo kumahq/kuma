@@ -35,7 +35,7 @@ var _ = Describe("Endpoints", func() {
 
 	DescribeTable("inspect for policies /meshes/{mesh}/{serviceType}/{policyName}/_hostnames", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("resources/inspect/services/_resources/hostnames"))
+	}, test.EntriesForFolder("resources/inspect/services/_resources/hostnames/zone"))
 
 	DescribeTable("inspect dataplane rules /meshes/{mesh}/dataplanes/{dpName}/_rules", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
@@ -96,4 +96,24 @@ var _ = Describe("Endpoints", func() {
 		Entry(nil, "/policies"),
 		Entry(nil, "/who-am-i"),
 	)
+
+
+	Describe("global mode", func() {
+		var globalApiServer *api_server.ApiServer
+		var globalResourceStore store.ResourceStore
+		stopGlobal := func() {}
+
+		BeforeAll(func() {
+			globalResourceStore = memory.NewStore()
+			globalApiServer, _, stopGlobal = StartApiServer(NewTestApiServerConfigurer().WithGlobal().WithStore(store.NewPaginationStore(globalResourceStore)))
+		})
+
+		AfterAll(func() {
+			stopGlobal()
+		})
+
+		DescribeTable("inspect for services /meshes/{mesh}/{serviceType}/{policyName}/_hostnames", func(inputFile string) {
+			apiTest(inputFile, globalApiServer, globalResourceStore)
+		}, test.EntriesForFolder("resources/inspect/services/_resources/hostnames/global"))
+	})
 }, Ordered)
