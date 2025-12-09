@@ -110,6 +110,10 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "05.resources.yaml",
 			outputFile: "05.meshservice.yaml",
 		}),
+		Entry("service for delegated gateway (annotation on Pod)", testCase{
+			inputFile:  "06.resources.yaml",
+			outputFile: "06.meshservice.yaml",
+		}),
 		Entry("service for headless Service", testCase{
 			inputFile:  "headless.resources.yaml",
 			outputFile: "headless.meshservice.yaml",

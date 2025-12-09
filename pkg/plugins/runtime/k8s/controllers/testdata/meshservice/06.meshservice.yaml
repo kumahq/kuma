@@ -1,0 +1,4 @@
+# Empty because no MeshService should be created for delegated gateways
+# when the kuma.io/gateway annotation is on the Pod (not the Service)
+items: []
+metadata: {}

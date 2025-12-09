@@ -1,0 +1,71 @@
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: example
+  namespace: demo
+  labels:
+    kubernetes.io/service-name: example
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 192.168.0.10
+    targetRef:
+      kind: Pod
+      name: gateway-pod-1
+      namespace: demo
+      uid: gateway-pod-1-uid
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: gateway
+spec:
+  clusterIP: 192.168.0.1
+  selector:
+    app: gateway
+  ports:
+    - name: proxy
+      appProtocol: tcp
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+    - name: proxy-tls
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: demo
+  name: gateway-pod-1
+  uid: gateway-pod-1-uid
+  labels:
+    app: gateway
+  annotations:
+    kuma.io/gateway: enabled
+spec:
+  containers:
+    - name: gateway
+      image: kong/kong-gateway:latest
+status:
+  podIP: 192.168.0.10
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+  labels:
+    kuma.io/sidecar-injection: enabled
+---
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  meshServices:
+    mode: Everywhere
