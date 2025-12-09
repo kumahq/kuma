@@ -398,6 +398,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
 			Expect(cfg.CoreResources.Status.MeshMultiZoneServiceInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.CoreResources.Status.MeshIdentityInterval.Duration).To(Equal(8 * time.Second))
+			Expect(cfg.CoreResources.Status.WorkloadInterval.Duration).To(Equal(9 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -802,6 +803,7 @@ coreResources:
     meshServiceInterval: 6s
     meshMultiZoneServiceInterval: 7s
     meshIdentityInterval: 8s
+    workloadInterval: 9s
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -1119,6 +1121,7 @@ meshService:
 				"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL":                                         "6s",
 				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
 				"KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL":                                        "8s",
+				"KUMA_CORE_RESOURCES_STATUS_WORKLOAD_INTERVAL":                                             "9s",
 				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
 				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",

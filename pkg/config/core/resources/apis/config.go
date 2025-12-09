@@ -20,6 +20,8 @@ type ConfigStatus struct {
 	MeshServiceInterval config_types.Duration `json:"meshServiceInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL"`
 	// How often we compute status of MeshIdentity
 	MeshIdentityInterval config_types.Duration `json:"meshIdentityInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL"`
+	// How often we compute status of Workload
+	WorkloadInterval config_types.Duration `json:"workloadInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_WORKLOAD_INTERVAL"`
 }
 
 func Default() *Config {
@@ -29,6 +31,7 @@ func Default() *Config {
 			MeshMultiZoneServiceInterval: config_types.Duration{Duration: 5 * time.Second},
 			MeshServiceInterval:          config_types.Duration{Duration: 5 * time.Second},
 			MeshIdentityInterval:         config_types.Duration{Duration: 5 * time.Second},
+			WorkloadInterval:             config_types.Duration{Duration: 5 * time.Second},
 		},
 	}
 }
