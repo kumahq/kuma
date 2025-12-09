@@ -1,6 +1,6 @@
 ---
 applyTo: "**"
-excludeAgent: coding-agent
+excludeAgent: "coding-agent"
 ---
 
 # PR Review Guidelines
