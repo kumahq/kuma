@@ -26,6 +26,7 @@ networking:
   inbound:
     - port: 80
       tags:
+        kuma.io/service: test-server
         app: test-server
 ---
 type: Dataplane
@@ -36,6 +37,7 @@ networking:
   inbound:
     - port: 80
       tags:
+        kuma.io/service: test-server
         app: test-server
 ---
 type: Dataplane
@@ -46,4 +48,5 @@ networking:
   inbound:
     - port: 80
       tags:
+        kuma.io/service: not-test-server
         app: not-test-server
