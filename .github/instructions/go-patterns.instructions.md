@@ -1,7 +1,3 @@
----
-excludeAgent: "coding-agent"
----
-
 # Go Code Review Patterns & Best Practices
 
 Source: 100go.co + Real-world OSS patterns
