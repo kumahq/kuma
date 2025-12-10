@@ -41,3 +41,6 @@ const FeatureSpire string = "feature-spire"
 // FeatureReadinessUnixSocket indicates the readiness probe of kuma-sidecar is responded from the kuma-dp process via Unix socket.
 // TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
 const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
+
+// FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
+const FeatureStrictInboundPorts = "feature-strict-inbound-ports"

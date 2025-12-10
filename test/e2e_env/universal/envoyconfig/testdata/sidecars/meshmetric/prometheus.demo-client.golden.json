@@ -417,6 +417,12 @@
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv6",
         "type": "ORIGINAL_DST"
+      },
+      "self_transparentproxy_no_destination_inbound": {
+        "altStatName": "self_transparentproxy_no_destination_inbound",
+        "connectTimeout": "5s",
+        "name": "self_transparentproxy_no_destination_inbound",
+        "type": "STATIC"
       }
     },
     "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment": {
@@ -666,6 +672,9 @@
         "enableReusePort": false,
         "filterChains": [
           {
+            "filterChainMatch": {
+              "destinationPort": 3000
+            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
@@ -692,6 +701,9 @@
         "enableReusePort": false,
         "filterChains": [
           {
+            "filterChainMatch": {
+              "destinationPort": 3000
+            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",

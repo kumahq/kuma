@@ -189,6 +189,20 @@
           }
         }
       ]
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:passthrough:ipv4/filterChains/0/filterChainMatch",
+      "value": {
+        "destinationPort": 3000
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:passthrough:ipv6/filterChains/0/filterChainMatch",
+      "value": {
+        "destinationPort": 3000
+      }
     }
   ],
   "xds": {
@@ -435,6 +449,12 @@
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv6",
         "type": "ORIGINAL_DST"
+      },
+      "self_transparentproxy_no_destination_inbound": {
+        "altStatName": "self_transparentproxy_no_destination_inbound",
+        "connectTimeout": "5s",
+        "name": "self_transparentproxy_no_destination_inbound",
+        "type": "STATIC"
       }
     },
     "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment": {

@@ -171,6 +171,15 @@ func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) Clust
 	})
 }
 
+func StaticNoEndpointsCluster() ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.StaticClusterConfigurer{
+			Name: builder.name,
+		})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+	})
+}
+
 func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{

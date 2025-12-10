@@ -55,6 +55,13 @@ resources:
                 portValue: 8443
     name: localhost:8443
     type: STATIC
+- name: self_transparentproxy_no_destination_inbound
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: self_transparentproxy_no_destination_inbound
+    connectTimeout: 5s
+    name: self_transparentproxy_no_destination_inbound
+    type: STATIC
 - name: inbound:192.168.0.1:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
