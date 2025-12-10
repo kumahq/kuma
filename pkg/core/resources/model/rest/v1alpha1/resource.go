@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -40,17 +41,27 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 	}
 
 	// Explicit struct with all fields in desired order
-	// Uses standard json.Marshal to avoid manual byte manipulation
+	// Cannot embed ResourceMeta as it has MarshalJSON which would override this struct's marshaling
 	aux := &struct {
-		ResourceMeta
-		KRI    string          `json:"kri,omitempty"`
-		Spec   json.RawMessage `json:"spec,omitempty"`
-		Status json.RawMessage `json:"status,omitempty"`
+		Type             string            `json:"type"`
+		Mesh             string            `json:"mesh,omitempty"`
+		Name             string            `json:"name"`
+		CreationTime     time.Time         `json:"creationTime"`
+		ModificationTime time.Time         `json:"modificationTime"`
+		Labels           map[string]string `json:"labels,omitempty"`
+		KRI              string            `json:"kri,omitempty"`
+		Spec             json.RawMessage   `json:"spec,omitempty"`
+		Status           json.RawMessage   `json:"status,omitempty"`
 	}{
-		ResourceMeta: r.ResourceMeta,
-		KRI:          kriStr,
-		Spec:         specJSON,
-		Status:       statusJSON,
+		Type:             r.Type,
+		Mesh:             r.Mesh,
+		Name:             r.Name,
+		CreationTime:     r.CreationTime,
+		ModificationTime: r.ModificationTime,
+		Labels:           r.Labels,
+		KRI:              kriStr,
+		Spec:             specJSON,
+		Status:           statusJSON,
 	}
 
 	return json.Marshal(aux)
