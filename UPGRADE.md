@@ -6,6 +6,196 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+<<<<<<< HEAD
+=======
+## Upgrade to `2.13.x`
+
+### Virtual Probes Disabled by Default
+
+Virtual Probes are now disabled by default. This feature was deprecated in version 2.9.x in favor of Application Probe Proxy, which provides broader support for different probe types (HTTPGet, TCPSocket, and gRPC).
+
+**What changed:**
+- `virtualProbesEnabled` now defaults to `false` (previously `true`)
+- Application Probe Proxy remains enabled by default on port 9001
+
+**Action required:**
+
+If you still rely on Virtual Probes and want to keep using them:
+
+1. Enable Virtual Probes explicitly in control plane configuration:
+
+   ```yaml
+   runtime:
+     kubernetes:
+       injector:
+         virtualProbesEnabled: true
+   ```
+
+2. Or via environment variable:
+
+   ```bash
+   KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED=true
+   ```
+
+**How to disable Application Probe Proxy:**
+
+If you need to disable Application Probe Proxy entirely:
+
+1. Set `kuma.io/virtual-probes: disabled` annotation on your pods
+2. Gateway mode automatically disables it
+
+When both Virtual Probes and Application Probe Proxy are not explicitly configured, Application Probe Proxy is enabled by default.
+
+**Migration recommendation:**
+
+We strongly recommend migrating to Application Probe Proxy, which is the supported solution going forward. Virtual Probes will be removed in a future release. Application Probe Proxy works automatically with no configuration changes required.
+
+## Upgrade to `2.12.x`
+
+### Removal of `/status/zones` endpoints
+
+These endpoints were deprecated, and are now removed. You can achieve the same functionality with `/zones/_overview`.
+
+### Deprecation of readiness reporter TCP port in favor of Unix socket
+
+The readiness reporter TCP port is deprecated and will be removed in a future release. It is also no longer possible to disable the readiness reporter, which means TCP port 0 is now not allowed to be used.
+
+The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
+
+## Upgrade to `2.11.x`
+
+### Helm upgrades to 2.11.8 require explicit `namespaceAllowList: []` in values.yaml
+
+If a user upgrades to 2.11.8 (or earlier 2.11.x patch versions) with `--reuse-values` Helm flag, the upgrade fails with:
+
+```
+Error: UPGRADE FAILED: template: kuma/templates/cp-webhooks-and-secrets.yaml:69:17: executing "kuma/templates/cp-webhooks-and-secrets.yaml" at <len .Values.namespaceAllowList>: error calling len: len of nil pointer
+```
+
+As a workaround, add `namespaceAllowList: []` to `values.yaml`. This behaviour is fixed starting from version 2.11.9.
+
+### Embedded Proxy DNS is Enabled by Default
+
+In version `2.11.x`, we reimplemented how mesh DNS queries are resolved by replacing CoreDNS with our Embedded DNS Server. This server is built into `kuma-dp`. After a pod restart (in Kubernetes) or an upgrade of `kuma-dp` (in Universal mode) to `2.11.x`, the embedded DNS proxy is enabled by default.
+
+If you encounter any issues, you can disable it as follows:
+
+**Kubernetes**
+Disable it by setting the environment variable when deploying `kuma-cp`:
+```bash
+KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY=false
+```
+
+Or via configuration:
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+      builtinDns:
+        experimentalProxy: false
+```
+
+**Universal**
+
+Disable it by running `kuma-dp` with the following environment variable:
+
+```bash
+KUMA_DNS_PROXY_PORT=0
+```
+
+### `kuma-sidecar` container has `allowPrivilegeEscalation` set to `false`
+
+In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. Starting with this version, it is now explicitly set to `false`.
+
+Before upgrading, ensure that your configuration does not override this setting.
+
+### System namespace requires the `kuma.io/sidecar-injection: false` label
+
+To simplify the namespace selector logic in webhooks, we now require the `kuma.io/sidecar-injection: false` label to be set on Kuma's system namespace (`kuma-system` by default).
+
+Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
+
+If you are running helm with `noHelmHooks` please set label on the system namespace:
+
+```bash
+kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
+```
+
+### More Restricted `ClusterRole` for Control Plane and CNI
+
+We have split the `ClusterRole` for the control plane into two parts:
+
+* A cluster-scoped `ClusterRole` with read access to namespaced resources.
+* A `ClusterRole` with write permissions, now scoped more narrowly.
+
+By default, a `ClusterRoleBinding` is used to grant write permissions to the control plane, and no action is required from the user. However, if you want the control plane to have access only in specific namespaces, you can use the `namespaceAllowList` configuration to define where it should have write permissions.
+
+### Namespaces that are part of the mesh requires `kuma.io/sidecar-injection` label to exist
+
+Since version 2.11.x, to improve performance and security, each namespace participating in the mesh is required to have the `kuma.io/sidecar-injection` label set.
+
+Before upgrading, check whether any deployments are using the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: disabled` to those namespaces.
+
+As a one-time fix, you can use this script to detect such namespaces by looking for running mesh-enabled pods:
+
+```bash
+for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+  ns_label=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.kuma\.io/sidecar-injection}' 2>/dev/null)
+  if [ -z "$ns_label" ]; then
+    kubectl get pods -n "$ns" --show-labels --no-headers 2>/dev/null | \
+      grep 'kuma.io/sidecar-injection' | \
+      awk -v ns="$ns" '{print ns "/" $1}'
+  fi
+done
+```
+
+You can later patch namespaces with the following command:
+
+```bash
+kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
+```
+
+It's recommended to update your workflow that creates namespaces to include this label.
+
+### Fixed: Extra Newlines in MeshAccessLog with TCP Backends
+
+This fix affects users of MeshAccessLog policies that send logs to a TCP backend using the `plain` format 
+(or where the format type was not explicitly set):
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp # <--- backend type is 'Tcp'
+            tcp:
+              format:
+                type: Plain 
+                plain: '...' # <--- the format is 'plain' or unspecified
+              address: "%s:9999"
+```
+
+In previous versions of Kuma, logs sent with this setup included **an unintended double newline** between entries, producing output like:
+
+```
+[2025-05-20T14:03:17.123Z] "GET /api/v1/users HTTP/1.1" 200 - "-" "curl/8.1.2" 0 123 45 44 "192.168.1.10" "service-backend" "cluster-backend" "10.0.0.15:8080" "envoy-router" - default
+
+[2025-05-20T14:03:18.456Z] "POST /auth/login HTTP/1.1" 401 - "-" "Mozilla/5.0" 0 98 56 55 "192.168.1.11" "auth-service" "cluster-auth" "10.0.0.20:9090" "envoy-router" - default
+
+[2025-05-20T14:03:19.789Z] "GET /metrics HTTP/1.1" 200 - "-" "Prometheus/2.47.0" 0 6789 12 12 "127.0.0.1" "metrics-service" "cluster-metrics" "127.0.0.1:9100" "envoy-router" - default
+
+```
+This has now been corrected—each log line will end with a single newline `\n`, as intended.
+
+> **Note:** If your logging backend or tooling relied on the previous double-newline behavior (e.g. for framing or parsing), 
+> you can preserve it by manually adding `\n` at the end of your `plain` format string.
+
+>>>>>>> b97f43ac58 (fix(helm): error when `namespaceAllowList` is unset in values.yaml (#15232))
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes

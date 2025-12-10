@@ -265,6 +265,136 @@ subjects:
     namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+<<<<<<< HEAD
+=======
+kind: ClusterRole
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane-workloads
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+    # required by MeshGateway
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    # required by MeshGateway
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+    # Gateway API
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+  {{- if .Values.cni.enabled }}
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - create
+      - delete
+  {{- end }}
+{{- end }}
+{{- if gt (len (default list .Values.namespaceAllowList)) 0 }}
+{{- $root := . }}
+{{- range $element := .Values.namespaceAllowList }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" $root }}-control-plane-workloads
+  labels: {{ include "kuma.cpLabels" $root | nindent 4 }}
+  namespace: {{ $element }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" $root }}-control-plane-workloads
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" $root }}-control-plane
+    namespace: {{ $root.Release.Namespace }}
+{{- end }}
+{{- end }}
+{{- if and (eq (len (default list .Values.namespaceAllowList)) 0) (not .Values.controlPlane.skipClusterRoleCreation) }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane-workloads
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" . }}-control-plane-workloads
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" . }}-control-plane
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+>>>>>>> b97f43ac58 (fix(helm): error when `namespaceAllowList` is unset in values.yaml (#15232))
 kind: Role
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
