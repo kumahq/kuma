@@ -218,6 +218,12 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 			return err
 		}
 	}
+
+	// Migrate deprecated spec.origin to status.origin for backward compatibility
+	if update {
+		meshTrust.MigrateOriginToStatus()
+	}
+
 	ca, err := i.loadCA(ctx, identity)
 	if err != nil {
 		return err
