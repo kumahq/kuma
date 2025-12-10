@@ -46,8 +46,8 @@ func RegisterXDS(
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks)
-	ingressReconciler := DefaultIngressReconciler(xdsContext, statsCallbacks)
-	egressReconciler := DefaultEgressReconciler(xdsContext, statsCallbacks)
+	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks)
+	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks)
 	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, envoy_common.APIV3)
 	if err != nil {
 		return err
@@ -112,6 +112,7 @@ func DefaultReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
+			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -120,6 +121,7 @@ func DefaultReconciler(
 }
 
 func DefaultIngressReconciler(
+	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
 ) xds_sync.SnapshotReconciler {
@@ -135,6 +137,7 @@ func DefaultIngressReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
+			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -143,6 +146,7 @@ func DefaultIngressReconciler(
 }
 
 func DefaultEgressReconciler(
+	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
 ) xds_sync.SnapshotReconciler {
@@ -158,6 +162,7 @@ func DefaultEgressReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
+			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
