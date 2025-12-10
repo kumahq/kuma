@@ -289,10 +289,15 @@ func ExecuteStoreTests(
 				err := s.Create(context.Background(), &updated, store.CreateByKey("ms-2.demo", mesh))
 				Expect(err).ToNot(HaveOccurred())
 
+				// Get the resource to ensure we have the full object with status
+				retrieved := meshservice_api.NewMeshServiceResource()
+				err = s.Get(context.Background(), retrieved, store.GetByKey("ms-2.demo", mesh))
+				Expect(err).ToNot(HaveOccurred())
+
 				// when
-				updated.Status.VIPs[0].IP = "10.0.0.2"
-				updated.Spec.Ports[0].Port = 81
-				err = s.Update(context.Background(), &updated)
+				retrieved.Status.VIPs[0].IP = "10.0.0.2"
+				retrieved.Spec.Ports[0].Port = 81
+				err = s.Update(context.Background(), retrieved)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -301,8 +306,8 @@ func ExecuteStoreTests(
 				ms := meshservice_api.NewMeshServiceResource()
 				err = s.Get(context.Background(), ms, store.GetByKey("ms-2.demo", mesh))
 				Expect(err).ToNot(HaveOccurred())
-				Expect(ms.Status).To(Equal(updated.Status))
-				Expect(ms.Spec).To(Equal(updated.Spec))
+				Expect(ms.Status).To(Equal(retrieved.Status))
+				Expect(ms.Spec).To(Equal(retrieved.Spec))
 			})
 
 			// todo(jakubdyszkiewicz) write tests for optimistic locking

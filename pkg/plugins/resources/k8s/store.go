@@ -82,6 +82,26 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
+	// For resources with status, we need to update the status subresource separately
+	// because Kubernetes ignores the status field in Create() when the resource has a status subresource
+	if r.Descriptor().HasStatus {
+		// After Create(), obj has the server's response but without the status we want to set.
+		// We need to set the status again before calling Status().Update()
+		if err := obj.SetStatus(r.GetStatus()); err != nil {
+			return errors.Wrap(err, "failed to set status before update")
+		}
+		if err := s.Client.Status().Update(ctx, obj); err != nil {
+			return errors.Wrap(err, "failed to create k8s resource status")
+		}
+		// After Status().Update(), we need to get the resource again to have the complete object
+		name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
+		if err != nil {
+			return err
+		}
+		if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
+			return errors.Wrap(err, "failed to get k8s resource after status update")
+		}
+	}
 	err = s.Converter.ToCoreResource(obj, r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
@@ -114,6 +134,29 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 			return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
+	}
+	// For resources with status, we need to update the status subresource separately
+	// because Kubernetes ignores the status field in Update() when the resource has a status subresource
+	if r.Descriptor().HasStatus {
+		// After Update(), obj has the server's response but the status might not be updated.
+		// We need to set the status again before calling Status().Update()
+		if err := obj.SetStatus(r.GetStatus()); err != nil {
+			return errors.Wrap(err, "failed to set status before update")
+		}
+		if err := s.Client.Status().Update(ctx, obj); err != nil {
+			if kube_apierrs.IsConflict(err) {
+				return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
+			}
+			return errors.Wrap(err, "failed to update k8s resource status")
+		}
+		// After Status().Update(), we need to get the resource again to have the complete object
+		name, namespace, err := k8sNameNamespace(r.GetMeta().GetName(), obj.Scope())
+		if err != nil {
+			return err
+		}
+		if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
+			return errors.Wrap(err, "failed to get k8s resource after status update")
+		}
 	}
 	err = s.Converter.ToCoreResource(obj, r)
 	if err != nil {
