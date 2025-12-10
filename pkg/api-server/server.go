@@ -154,7 +154,7 @@ func NewApiServer(
 		meshContextBuilder,
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager())
+	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
 	guiUrl := ""

@@ -261,6 +261,18 @@ type GetDataplanesXdsConfigParams struct {
 // GetDataplanesXdsConfigParamsInclude defines parameters for GetDataplanesXdsConfig.
 type GetDataplanesXdsConfigParamsInclude string
 
+// InspectMeshservicesDataplanesParams defines parameters for InspectMeshservicesDataplanes.
+type InspectMeshservicesDataplanesParams struct {
+	// Size The max number of items to return
+	Size *int `form:"size,omitempty" json:"size,omitempty"`
+
+	// Offset The offset of result
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Name A sub string to filter resources by name
+	Name *string `form:"name,omitempty" json:"name,omitempty"`
+}
+
 // InspectResourcesParams defines parameters for InspectResources.
 type InspectResourcesParams struct {
 	// Size The max number of items to return
