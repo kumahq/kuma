@@ -2,6 +2,7 @@ package meshmultizoneservice
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 	"time"
@@ -9,7 +10,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -115,10 +118,15 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			return matched[i].FullyQualifiedName() < matched[j].FullyQualifiedName()
 		})
 
-		if !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) {
+		condition := buildMeshServicesMatchedCondition(matched)
+		statusChanged := !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) ||
+			!conditionEquals(mzSvc.Status.Conditions, condition)
+
+		if statusChanged {
 			log := s.logger.WithValues("meshmultizoneservice", mzSvc.Meta.GetName())
 			mzSvc.Status.MeshServices = matched
-			log.Info("updating matched mesh services", "matchedMeshServices", matched)
+			mzSvc.Status.Conditions = updateConditions(mzSvc.Status.Conditions, condition)
+			log.V(1).Info("updating matched mesh services", "matchedMeshServices", matched, "condition", condition.Type)
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
 				if store.IsConflict(err) {
 					log.Info("couldn't update mesh multi zone service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
@@ -142,4 +150,42 @@ func matchesService(mzSvc *meshmzservice_api.MeshMultiZoneServiceResource, svc *
 
 func (s *StatusUpdater) NeedLeaderElection() bool {
 	return true
+}
+
+func buildMeshServicesMatchedCondition(matched []meshmzservice_api.MatchedMeshService) common_api.Condition {
+	if len(matched) == 0 {
+		return common_api.Condition{
+			Type:    meshmzservice_api.MeshServicesMatchedCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  meshmzservice_api.NoMatchesFoundReason,
+			Message: "Selector does not match any MeshService in this zone",
+		}
+	}
+	return common_api.Condition{
+		Type:    meshmzservice_api.MeshServicesMatchedCondition,
+		Status:  kube_meta.ConditionTrue,
+		Reason:  meshmzservice_api.MatchesFoundReason,
+		Message: fmt.Sprintf("Matched %d MeshService(s)", len(matched)),
+	}
+}
+
+func conditionEquals(conditions []common_api.Condition, newCondition common_api.Condition) bool {
+	for _, c := range conditions {
+		if c.Type == newCondition.Type {
+			return c.Status == newCondition.Status &&
+				c.Reason == newCondition.Reason &&
+				c.Message == newCondition.Message
+		}
+	}
+	return false
+}
+
+func updateConditions(conditions []common_api.Condition, newCondition common_api.Condition) []common_api.Condition {
+	for i, c := range conditions {
+		if c.Type == newCondition.Type {
+			conditions[i] = newCondition
+			return conditions
+		}
+	}
+	return append(conditions, newCondition)
 }
