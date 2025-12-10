@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -80,13 +79,15 @@ const (
 var _ model.Resource = &MeshTrustResource{}
 
 type MeshTrustResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshTrust
+	Meta   model.ResourceMeta
+	Spec   *MeshTrust
+	Status *MeshTrustStatus
 }
 
 func NewMeshTrustResource() *MeshTrustResource {
 	return &MeshTrustResource{
-		Spec: &MeshTrust{},
+		Spec:   &MeshTrust{},
+		Status: &MeshTrustStatus{},
 	}
 }
 
@@ -117,11 +118,21 @@ func (t *MeshTrustResource) SetSpec(spec model.ResourceSpec) error {
 }
 
 func (t *MeshTrustResource) GetStatus() model.ResourceStatus {
-	return nil
+	return t.Status
 }
 
-func (t *MeshTrustResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
+func (t *MeshTrustResource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*MeshTrustStatus)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", status)
+	} else {
+		if protoType == nil {
+			t.Status = &MeshTrustStatus{}
+		} else {
+			t.Status = protoType
+		}
+		return nil
+	}
 }
 
 func (t *MeshTrustResource) Descriptor() model.ResourceTypeDescriptor {
@@ -196,7 +207,7 @@ var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
-	HasStatus:                    false,
+	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: true,
 	ShortName:                    "mtrust",
 	IsFromAsRules:                false,
