@@ -2682,7 +2682,8 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -5249,6 +5250,8 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -6452,7 +6455,8 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -8547,7 +8551,8 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -10229,8 +10234,11 @@ spec:
                 minItems: 1
                 type: array
               origin:
-                description: Origin specifies whether the resource was created from
-                  a MeshIdentity.
+                description: |-
+                  Origin specifies whether the resource was created from a MeshIdentity.
+
+                  Deprecated: This field is deprecated and will be removed in a future version.
+                  Use status.origin instead.
                 properties:
                   kri:
                     description: Resource identifier
@@ -10245,9 +10253,23 @@ spec:
             - caBundles
             - trustDomain
             type: object
+          status:
+            description: Status is the current status of the Kuma MeshTrust resource.
+            properties:
+              origin:
+                description: Origin specifies whether the resource was created from
+                  a MeshIdentity.
+                properties:
+                  kri:
+                    description: Resource identifier
+                    type: string
+                type: object
+            type: object
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -10823,6 +10845,8 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition

@@ -17,6 +17,7 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=msvc
+// +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string
 type MeshService struct {
 	metav1.TypeMeta   `json:",inline"`
