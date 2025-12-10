@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
@@ -23,7 +24,7 @@ func MeshTrust() {
 		err := cluster.Install(framework.MeshUniversal(meshName))
 		Expect(err).ToNot(HaveOccurred())
 
-										yaml := `
+		yaml := `
 
 								type: MeshTrust
 
@@ -69,7 +70,8 @@ func MeshTrust() {
 
 								`
 
-										err = cluster.GetKumactlOptions().KumactlApplyFromString(yaml)		Expect(err).ToNot(HaveOccurred())
+		err = cluster.GetKumactlOptions().KumactlApplyFromString(yaml)
+		Expect(err).ToNot(HaveOccurred())
 
 		// Verify it was created
 		out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrust", "-m", meshName, "trust-1", "-o", "yaml")
@@ -79,7 +81,7 @@ func MeshTrust() {
 		Expect(out).To(ContainSubstring("status: {}")) // status field should be present but empty
 
 		// Try to create a MeshTrust with status.origin set by the user (should fail)
-								invalidYaml := `
+		invalidYaml := `
 						type: MeshTrust
 						mesh: meshtrust-test
 						name: trust-2
@@ -102,7 +104,8 @@ func MeshTrust() {
 						status:
 						  origin:
 						    kri: user-set-kri
-						`		apiServerUrl := fmt.Sprintf("https://%s:%d", cluster.GetKuma().(*framework.UniversalControlPlane).Networking().IP, 5678)
+						`
+		apiServerUrl := fmt.Sprintf("https://%s", net.JoinHostPort(cluster.GetKuma().(*framework.UniversalControlPlane).Networking().IP, "5678"))
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/meshes/%s/meshtrusts", apiServerUrl, meshName), bytes.NewBufferString(invalidYaml))
 		Expect(err).ToNot(HaveOccurred())
 		req.Header.Set("Content-Type", "application/x-yaml")

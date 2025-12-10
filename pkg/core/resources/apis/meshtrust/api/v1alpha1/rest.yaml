@@ -181,6 +181,7 @@ components:
             origin:
               description: |-
                 Origin specifies whether the resource was created from a MeshIdentity.
+
                 Deprecated: use Status.Origin instead
               properties:
                 kri:
