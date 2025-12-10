@@ -32,7 +32,7 @@ rules:
       - list
       - watch
       {{- end }}
-{{- if gt (len .Values.namespaceAllowList) 0 }}
+{{- if gt (len (default list .Values.namespaceAllowList)) 0 }}
 {{- $root := . }}
 {{- range $element := .Values.namespaceAllowList }}
 ---
