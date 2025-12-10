@@ -3,6 +3,7 @@ package webhooks
 import (
 	"context"
 	"net/http"
+	"github.com/pkg/errors"
 
 	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,6 +12,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	meshtrust_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/k8s/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
@@ -62,12 +65,22 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 
-	switch req.Operation {
-	case v1.Delete:
-		return admission.Allowed("")
-	default:
-		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
-			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
+			switch req.Operation {
+			case v1.Delete:
+				return admission.Allowed("")
+			default:
+				if coreRes.Descriptor().Name == meshtrust_api.MeshTrustType {
+					// Need to unmarshal to the K8s object type to access the Status field.
+					k8sMeshTrust, ok := k8sObj.(*meshtrust_k8s.MeshTrust)
+					if !ok {
+						return admission.Errored(http.StatusInternalServerError, errors.Errorf("failed to convert resource to MeshTrust K8s object"))
+					}
+					if k8sMeshTrust.Status.Origin != nil && k8sMeshTrust.Status.Origin.KRI != nil {
+						return admission.Denied("status.origin: field is read-only")
+					}
+				}
+	
+				if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
 		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {

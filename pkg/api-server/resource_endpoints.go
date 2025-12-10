@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/policy"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -448,6 +449,14 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
+	if r.descriptor.Name == meshtrust_api.MeshTrustType {
+		if resRest.GetStatus() != nil && resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
+			err := rest_errors.NewBadRequestError("status.origin: field is read-only")
+			rest_errors.HandleError(ctx, response, err, "Invalid MeshTrust status")
+			return
+		}
+	}
+
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
@@ -513,6 +522,14 @@ func (r *resourceEndpoints) updateResource(
 	); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Access Denied")
 		return
+	}
+
+	if r.descriptor.Name == meshtrust_api.MeshTrustType {
+		if newResRest.GetStatus() != nil && newResRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
+			err := rest_errors.NewBadRequestError("status.origin: field is read-only")
+			rest_errors.HandleError(ctx, response, err, "Invalid MeshTrust status")
+			return
+		}
 	}
 
 	// Compute labels for current state BEFORE modifying spec
