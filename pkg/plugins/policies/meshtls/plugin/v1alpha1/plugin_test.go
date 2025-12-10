@@ -226,15 +226,15 @@ var _ = Describe("MeshTLS", func() {
 				},
 			},
 		}),
-		Entry("strict with strict mTLS on the mesh (no mismatch, no passthrough listeners)", testCase{
+		Entry("strict mode + strict mesh = no passthrough listeners", testCase{
 			caseName:    "strict-with-strict-mtls",
 			meshBuilder: samples.MeshMTLSBuilder(),
 		}),
-		Entry("permissive with strict mTLS on the mesh (creates passthrough listeners)", testCase{
+		Entry("permissive mode + strict mesh = passthrough listeners", testCase{
 			caseName:    "permissive-with-strict-mtls",
 			meshBuilder: samples.MeshMTLSBuilder(),
 		}),
-		Entry("strict with workload identity and no CA backend (creates passthrough listeners)", testCase{
+		Entry("workload identity without CA = passthrough listeners", testCase{
 			caseName:    "strict-with-workload-identity-no-ca",
 			meshBuilder: samples.MeshDefaultBuilder(),
 			meshService: true,
@@ -248,7 +248,7 @@ var _ = Describe("MeshTLS", func() {
 				},
 			},
 		}),
-		Entry("strict with feature flag enabled (creates passthrough listeners with port filtering)", testCase{
+		Entry("strict inbound ports feature = port filtering", testCase{
 			caseName:    "strict-with-feature-strict-inbound-ports",
 			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
 			features: xds_types.Features{

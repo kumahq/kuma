@@ -303,8 +303,11 @@ func configureInboundPassthroughListener(
 	ipv6 bool,
 ) (envoy_common.NamedResource, error) {
 	tpCfg := proxy.GetTransparentProxy()
+	if tpCfg == nil {
+		return nil, nil
+	}
 	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
-	if tpCfg == nil && caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
+	if caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
 		return nil, nil
 	}
 	tlsMode := getMeshTLSMode(

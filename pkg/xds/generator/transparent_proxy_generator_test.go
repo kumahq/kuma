@@ -27,6 +27,41 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		tlsMode          *mesh_proto.CertificateAuthorityBackend_Mode
 	}
 
+	strictInboundPortsProxy := func(inboundPorts []uint32) *model.Proxy {
+		inbounds := make([]*mesh_proto.Dataplane_Networking_Inbound, len(inboundPorts))
+		for i, port := range inboundPorts {
+			inbounds[i] = &mesh_proto.Dataplane_Networking_Inbound{Port: port}
+		}
+
+		return &model.Proxy{
+			Metadata: &model.DataplaneMetadata{Features: map[string]bool{
+				types.FeatureUnifiedResourceNaming: true,
+				types.FeatureStrictInboundPorts:    true,
+			}},
+			Id: *model.BuildProxyId("", "side-car"),
+			Dataplane: &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{Version: "v1"},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: inbounds,
+						TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+							IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
+							RedirectPortOutbound: 15001,
+							RedirectPortInbound:  15006,
+						},
+					},
+				},
+			},
+			APIVersion: envoy_common.APIV3,
+			Policies: model.MatchedPolicies{
+				TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{
+					"some-service": {Spec: &mesh_proto.TrafficLog{Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"}}},
+				},
+			},
+			InternalAddresses: DummyInternalAddresses,
+		}
+	}
+
 	DescribeTable("Generate Envoy xDS resources",
 		func(given testCase) {
 			// given
@@ -222,130 +257,19 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			expected:         "05.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict", testCase{
-			proxy: &model.Proxy{
-				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-					types.FeatureUnifiedResourceNaming: true,
-					types.FeatureStrictInboundPorts:    true,
-				}},
-				Id: *model.BuildProxyId("", "side-car"),
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "v1",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Port: 8080,
-								},
-							},
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
-					},
-				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
-				InternalAddresses: DummyInternalAddresses,
-			},
+			proxy:            strictInboundPortsProxy([]uint32{8080}),
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
 			expected:         "06.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,permissive", testCase{
-			proxy: &model.Proxy{
-				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-					types.FeatureUnifiedResourceNaming: true,
-					types.FeatureStrictInboundPorts:    true,
-				}},
-				Id: *model.BuildProxyId("", "side-car"),
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "v1",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Port: 8080,
-								},
-								{
-									Port: 9000,
-								},
-							},
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
-					},
-				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
-				InternalAddresses: DummyInternalAddresses,
-			},
+			proxy:            strictInboundPortsProxy([]uint32{8080, 9000}),
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
 			expected:         "07.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,no tls", testCase{
-			proxy: &model.Proxy{
-				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-					types.FeatureUnifiedResourceNaming: true,
-					types.FeatureStrictInboundPorts:    true,
-				}},
-				Id: *model.BuildProxyId("", "side-car"),
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "v1",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Port: 8080,
-								},
-							},
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
-					},
-				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
-				InternalAddresses: DummyInternalAddresses,
-			},
+			proxy:            strictInboundPortsProxy([]uint32{8080}),
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
 			expected:         "08.envoy.golden.yaml",
