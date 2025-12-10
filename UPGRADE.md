@@ -6,6 +6,547 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+<<<<<<< HEAD
+=======
+## Upgrade to `2.13.x`
+
+### Virtual Probes Disabled by Default
+
+Virtual Probes are now disabled by default. This feature was deprecated in version 2.9.x in favor of Application Probe Proxy, which provides broader support for different probe types (HTTPGet, TCPSocket, and gRPC).
+
+**What changed:**
+- `virtualProbesEnabled` now defaults to `false` (previously `true`)
+- Application Probe Proxy remains enabled by default on port 9001
+
+**Action required:**
+
+If you still rely on Virtual Probes and want to keep using them:
+
+1. Enable Virtual Probes explicitly in control plane configuration:
+
+   ```yaml
+   runtime:
+     kubernetes:
+       injector:
+         virtualProbesEnabled: true
+   ```
+
+2. Or via environment variable:
+
+   ```bash
+   KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED=true
+   ```
+
+**How to disable Application Probe Proxy:**
+
+If you need to disable Application Probe Proxy entirely:
+
+1. Set `kuma.io/virtual-probes: disabled` annotation on your pods
+2. Gateway mode automatically disables it
+
+When both Virtual Probes and Application Probe Proxy are not explicitly configured, Application Probe Proxy is enabled by default.
+
+**Migration recommendation:**
+
+We strongly recommend migrating to Application Probe Proxy, which is the supported solution going forward. Virtual Probes will be removed in a future release. Application Probe Proxy works automatically with no configuration changes required.
+
+## Upgrade to `2.12.x`
+
+### Removal of `/status/zones` endpoints
+
+These endpoints were deprecated, and are now removed. You can achieve the same functionality with `/zones/_overview`.
+
+### Deprecation of readiness reporter TCP port in favor of Unix socket
+
+The readiness reporter TCP port is deprecated and will be removed in a future release. It is also no longer possible to disable the readiness reporter, which means TCP port 0 is now not allowed to be used.
+
+The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
+
+## Upgrade to `2.11.x`
+
+### Helm upgrades to 2.11.8 require explicit `namespaceAllowList: []` in values.yaml
+
+If a user upgrades to 2.11.8 (or earlier 2.11.x patch versions) with `--reuse-values` Helm flag, the upgrade fails with:
+
+```
+Error: UPGRADE FAILED: template: kuma/templates/cp-webhooks-and-secrets.yaml:69:17: executing "kuma/templates/cp-webhooks-and-secrets.yaml" at <len .Values.namespaceAllowList>: error calling len: len of nil pointer
+```
+
+As a workaround, add `namespaceAllowList: []` to `values.yaml`. This behaviour is fixed starting from version 2.11.9.
+
+### Embedded Proxy DNS is Enabled by Default
+
+In version `2.11.x`, we reimplemented how mesh DNS queries are resolved by replacing CoreDNS with our Embedded DNS Server. This server is built into `kuma-dp`. After a pod restart (in Kubernetes) or an upgrade of `kuma-dp` (in Universal mode) to `2.11.x`, the embedded DNS proxy is enabled by default.
+
+If you encounter any issues, you can disable it as follows:
+
+**Kubernetes**
+Disable it by setting the environment variable when deploying `kuma-cp`:
+```bash
+KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY=false
+```
+
+Or via configuration:
+
+```yaml
+runtime:
+  kubernetes:
+    injector:
+      builtinDns:
+        experimentalProxy: false
+```
+
+**Universal**
+
+Disable it by running `kuma-dp` with the following environment variable:
+
+```bash
+KUMA_DNS_PROXY_PORT=0
+```
+
+### `kuma-sidecar` container has `allowPrivilegeEscalation` set to `false`
+
+In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. Starting with this version, it is now explicitly set to `false`.
+
+Before upgrading, ensure that your configuration does not override this setting.
+
+### System namespace requires the `kuma.io/sidecar-injection: false` label
+
+To simplify the namespace selector logic in webhooks, we now require the `kuma.io/sidecar-injection: false` label to be set on Kuma's system namespace (`kuma-system` by default).
+
+Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
+
+If you are running helm with `noHelmHooks` please set label on the system namespace:
+
+```bash
+kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
+```
+
+### More Restricted `ClusterRole` for Control Plane and CNI
+
+We have split the `ClusterRole` for the control plane into two parts:
+
+* A cluster-scoped `ClusterRole` with read access to namespaced resources.
+* A `ClusterRole` with write permissions, now scoped more narrowly.
+
+By default, a `ClusterRoleBinding` is used to grant write permissions to the control plane, and no action is required from the user. However, if you want the control plane to have access only in specific namespaces, you can use the `namespaceAllowList` configuration to define where it should have write permissions.
+
+### Namespaces that are part of the mesh requires `kuma.io/sidecar-injection` label to exist
+
+Since version 2.11.x, to improve performance and security, each namespace participating in the mesh is required to have the `kuma.io/sidecar-injection` label set.
+
+Before upgrading, check whether any deployments are using the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: disabled` to those namespaces.
+
+As a one-time fix, you can use this script to detect such namespaces by looking for running mesh-enabled pods:
+
+```bash
+for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+  ns_label=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.kuma\.io/sidecar-injection}' 2>/dev/null)
+  if [ -z "$ns_label" ]; then
+    kubectl get pods -n "$ns" --show-labels --no-headers 2>/dev/null | \
+      grep 'kuma.io/sidecar-injection' | \
+      awk -v ns="$ns" '{print ns "/" $1}'
+  fi
+done
+```
+
+You can later patch namespaces with the following command:
+
+```bash
+kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
+```
+
+It's recommended to update your workflow that creates namespaces to include this label.
+
+### Fixed: Extra Newlines in MeshAccessLog with TCP Backends
+
+This fix affects users of MeshAccessLog policies that send logs to a TCP backend using the `plain` format 
+(or where the format type was not explicitly set):
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp # <--- backend type is 'Tcp'
+            tcp:
+              format:
+                type: Plain 
+                plain: '...' # <--- the format is 'plain' or unspecified
+              address: "%s:9999"
+```
+
+In previous versions of Kuma, logs sent with this setup included **an unintended double newline** between entries, producing output like:
+
+```
+[2025-05-20T14:03:17.123Z] "GET /api/v1/users HTTP/1.1" 200 - "-" "curl/8.1.2" 0 123 45 44 "192.168.1.10" "service-backend" "cluster-backend" "10.0.0.15:8080" "envoy-router" - default
+
+[2025-05-20T14:03:18.456Z] "POST /auth/login HTTP/1.1" 401 - "-" "Mozilla/5.0" 0 98 56 55 "192.168.1.11" "auth-service" "cluster-auth" "10.0.0.20:9090" "envoy-router" - default
+
+[2025-05-20T14:03:19.789Z] "GET /metrics HTTP/1.1" 200 - "-" "Prometheus/2.47.0" 0 6789 12 12 "127.0.0.1" "metrics-service" "cluster-metrics" "127.0.0.1:9100" "envoy-router" - default
+
+```
+This has now been corrected—each log line will end with a single newline `\n`, as intended.
+
+> **Note:** If your logging backend or tooling relied on the previous double-newline behavior (e.g. for framing or parsing), 
+> you can preserve it by manually adding `\n` at the end of your `plain` format string.
+
+## Upgrade to `2.10.x`
+
+### API Server behaviour changes
+
+The response of successful `DELETE` or `PUT` requests without warnings will now include "content-type: application/json" in the header and return an empty JSON object as the body.
+
+### Stricter validation rules for resource names
+
+In Kuma 2.7.x we deprecated usage of non [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123.html) characters, and start from 2.10.x it's no longer possible to create or update non RFC compliant resource names. In order to be compatible with Kubernetes naming policy we updated the validation rules. 
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
+
+Before the upgrade ensure that your resources don't use unsupported characters.
+
+#### Add RFC-1035-Label constraints for specific resources names
+
+Starting from version 2.10.x, we are deprecating the usage of non [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) characters for names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService`, `MeshMultizoneService` resources. These names will be rejected in the future.
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> * Characters contain at most 63 characters.
+> * Characters contain only lowercase alphanumeric characters or '-'.
+> * Characters start with an alphabetic character.
+> * Characters end with an alphanumeric character.
+
+### On Universal, a MeshService is no longer generated for any dataplane that has an invalid `kuma.io/service` tag
+
+When using `MeshService`, we were automatically generating `MeshService` resources in Universal mode. However, due to stricter resource validation, we have decided not to generate the `MeshService` resource when a dataplane has a `kuma.io/service` that is not [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) compliant.
+
+If you want the control plane on Universal to autogenerate `MeshService` resources, update the `kuma.io/service` tags to valid names. Otherwise, you must create them manually.
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> A lowercase RFC 1035 Label Names must have at most 63 characters and consist of lower case alphanumeric characters or '-', and must start with an alphabetic character, end with an alphanumeric character.
+
+### New kind Dataplane for targetRef in policies
+
+This version introduced new `Dataplane` kind for top level `targetRef` in policies. Dataplane will replace `MeshSubset` kind.
+Making `MeshSubset` deprecated. Dataplane selects Dataplane resources by its labels and adds possibility to select single inbound
+by using `sectionName` field, as opposed to old MeshSubset which was selecting proxies by inbound tags. More detailed info in docs.
+
+### New Rules API
+
+This version adds new `rules` api that replaces `from` section in policies. Making `from` deprecated. Support was added for
+policies:
+- MeshAccessLog
+- MeshCircuitBreaker
+- MeshRateLimit
+- MeshTimeout
+- MeshTls
+
+You cannot combine inbound configuration with outbound traffic configuration in policies when using new Rules API.
+If you have old policies with both `from` and `to` you need to split them into separate policies before migrating to `rules`.
+
+### MeshHTTPRoute
+
+#### Unifying defaults for `statusCode`
+
+Due to misconfiguration, a default for `statusCode` for http route on Universal could have been missing.
+If you're using Universal mode, and you did not specify `default.filters[].requestRedirect.statusCode` value in your `MeshHTTPRoute` resource, you have to explicitly set it to 302.
+
+### MeshTrace
+
+#### Unifying defaults for `apiVersion`
+
+Due to misconfiguration, a default for `apiVersion` for traces on Universal could have been missing.
+If you're using Universal mode, and you did not specify `tracing.backends[].conf.apiVersion` value in your `MeshTrace` resource, you have to explicitly set it to "httpJson".
+
+#### Unifying defaults for `sharedSpanContext`
+
+Due to misconfiguration, a default `sharedSpanContext` for traces on Universal ("false") was different from on Kubernetes ("true").
+If you're using Universal mode, and you did not specify `tracing.backends[].conf.sharedSpanContext` value in your `MeshTrace` resource, you have to explicitly set it to "false" to continue using that value.
+
+### MeshMetric
+
+#### Unifying defaults for `path`
+
+Due to misconfiguration, a default `path` for metrics on Universal ("/metrics") was different from on Kubernetes ("/metrics/prometheus").
+If you're using Universal mode, and you did not specify `default.applications[].path` value in your `MeshMetric` resource, you have to explicitly set it to "/metrics" to continue using that value.
+
+### MeshPassthrough
+
+#### Unifying defaults for `passthroughMode`
+
+Due to misconfiguration, a default `passthroughMode` for `MeshPasstrhough` on Universal ("Matched") was different from on Kubernetes ("None").
+If you're using Kubernetes mode, and you did not specify `default.passthroughMode` value in your `MeshPasstrhough` resource, you have to explicitly set it to "None" to continue using that value.
+
+### MeshLoadBalancingStrategy
+
+#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+
+The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
+is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+
+### MeshHealthCheck
+
+#### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
+
+The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated and will be removed in a future release. It has been moved to the `MeshCircuitBreaker` policy.
+
+### Changes on revoking dataplane tokens
+
+Authentication between the control plane and dataplanes is now only checked at connection start. This means if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to restart either the control plane or the concerned dataplanes.
+
+## Upgrade to `2.9.x`
+
+### MeshAccessLog
+
+Policies targeting `spec.targetRef.kind: MeshGateway` can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
+### MeshLoadBalancingStrategy
+
+Policies targeting `spec.targetRef.kind: MeshGateway` and setting the `spec.loadBalancer` field can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
+### MeshExternalService
+
+#### Removal of unix sockets support
+
+It's no longer possible to define a unix domain socket on the `address` field.
+
+### Upgrading Transparent Proxy Configuration
+
+#### Removal of Deprecated IPv6 Redirection Flag and Annotation
+
+In this release, the following deprecated options for configuring IPv6 transparent proxy redirection have been removed:
+
+- The `--redirect-inbound-port-ipv6` flag in `kumactl install transparent-proxy`.
+- The `kuma.io/transparent-proxying-inbound-v6-port` annotation.
+
+Previously, disabling IPv6 transparent proxy redirection could be achieved by setting these options to `0`. This method is no longer supported.
+
+To disable IPv6 transparent proxy redirection, you should now use the `--ip-family-mode` flag or the `kuma.io/transparent-proxying-ip-family-mode` annotation and set their value to `ipv4`. The default value for these options is `dualstack`.
+
+**Example:**
+
+In Universal mode, to install a transparent proxy:
+
+```sh
+kumactl install transparent-proxy --ip-family-mode ipv4 ...
+```
+
+In the definition of the `Dataplane` resource:
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+    ipFamilyMode: ipv4
+```
+
+To set the configuration for Kubernetes workloads:
+
+```sh
+kumactl install control-plane --set controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE=ipv4 ...
+```
+
+or
+
+```sh
+helm install --set controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE=ipv4 ... kuma kuma/kuma
+```
+
+For more information about disabling IPv6 in transparent proxy redirection, visit our documentation: [Disabling IPv6](https://kuma.io/docs/2.8.x/production/dp-config/ipv6/#disabling-ipv6).
+
+Please update your configurations accordingly to ensure a smooth transition and avoid any disruptions in your service.
+
+#### Removal of `redirectPortInboundV6` Field from Dataplane Resource
+
+The `Dataplane` resource no longer includes the `redirectPortInboundV6` field. Any configuration containing this field will fail validation. Update your `Dataplane` resources as shown below:
+
+**Previous configuration:**
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortInboundV6: 15006
+    redirectPortOutbound: 15001
+```
+
+**Updated configuration:**
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+```
+
+Ensure to update your Dataplane resources to the new format to avoid any validation errors.
+
+#### Removal of Deprecated Exclude Outbound TCP/UDP Ports for UIDs Flags
+
+The flags `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` have been removed from the `kumactl install transparent-proxy` command. Users should now use the consolidated flag `--exclude-outbound-ports-for-uids <protocol:>?<ports:>?<uids>` instead.
+
+##### Examples:
+
+- To disable redirection of outbound TCP traffic on port 22 for users with UID 1000:
+  ```sh
+  kumactl install transparent-proxy --exclude-outbound-ports-for-uids tcp:22:1000 ...
+  ```
+
+- To disable redirection of outbound UDP traffic on port 53 for users with UID 1000:
+  ```sh
+  kumactl install transparent-proxy --exclude-outbound-ports-for-uids udp:53:1000 ...
+  ```
+
+#### Removal of Deprecated Exclude Outbound TCP/UDP Ports for UIDs Annotations
+
+The annotations `traffic.kuma.io/exclude-outbound-tcp-ports-for-uids` and `traffic.kuma.io/exclude-outbound-udp-ports-for-uids` have also been removed. Use the annotation `traffic.kuma.io/exclude-outbound-ports-for-uids` instead.
+
+##### Examples:
+
+- To disable redirection of outbound TCP traffic on port 22 for users with UID 1000:
+  ```yaml
+  traffic.kuma.io/exclude-outbound-ports-for-uids: tcp:22:1000
+  ```
+
+- To disable redirection of outbound UDP traffic on port 53 for users with UID 1000:
+  ```yaml
+  traffic.kuma.io/exclude-outbound-ports-for-uids: udp:53:1000
+  ```
+
+Make sure to update your configuration files and scripts accordingly to accommodate these changes.
+
+#### Deprecation of `--kuma-dp-uid` Flag
+
+In this release, the `--kuma-dp-uid` flag used in the `kumactl install transparent-proxy` command has been deprecated. The functionality of specifying a user by UID is now included in the `--kuma-dp-user` flag, which accepts both usernames and UIDs.
+
+**New Usage Example:**
+
+Instead of using:
+```sh
+kumactl install transparent-proxy --kuma-dp-uid 1234
+```
+
+You should now use:
+```sh
+kumactl install transparent-proxy --kuma-dp-user 1234
+```
+
+If the `--kuma-dp-user` flag is not provided, the system will attempt to use the default UID (`5678`) or the default username (`kuma-dp`).
+
+Please update your scripts and configurations accordingly to accommodate this change.
+
+### Setting `kuma.io/service` in tags of `MeshGatewayInstance` had been forbidden
+
+To increase security, in version 2.7.x, setting a `kuma.io/service` tag for the `MeshGatewayInstance` was deprecated and since 2.9.x is not supported. We generate the `kuma.io/service` tag based on the `MeshGatewayInstance` resource. The service name is constructed as `{MeshGatewayInstance name}_{MeshGatewayInstance namespace}_svc`.
+
+E.g.:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayInstance
+metadata:
+  name: demo-app
+  namespace: kuma-demo
+  labels:
+    kuma.io/mesh: default
+```
+
+The generated `kuma.io/service` value is `demo-app_kuma-demo_svc`.
+
+#### Migration
+
+The migration process requires updating all policies and `MeshGateway` resources using the old `kuma.io/service` value to adopt the new one.
+
+Migration step:
+1. Create a copy of policies using the new `kuma.io/service` and the new resource name to avoid overwriting previous policies.
+2. Duplicate the `MeshGateway` resource with a selector using the new `kuma.io/service` value.
+3. Deploy the gateway and verify if traffic works correctly.
+4. Remove the old resources.
+
+### Introduction to Application Probe Proxy and deprecation of Virtual Probes
+
+To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports `HTTPGet`, `TCPSocket` and `gRPC` application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
+
+Application workloads using Virtual Probes will be migrated to Application Probe Proxy automatically on next restart/redeploy on Kubernetes, without other operations. 
+
+Application Probe Proxy will by default listen on port `9001`. To prevent potential conflicts with applications, you may customize this port using one of these methods:
+
+1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.applicationProbeProxyPort` 
+1. Configuring on the control plane to apply on all dataplanes: set the port using environment variable `KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT` 
+1. Configuring for certain dataplanes: set the port using pod annotation `kuma.io/application-probe-proxy-port`
+
+By setting the port to `0`, Application Probe Proxy feature will be disabled, and when it's disabled, Virtual Probes still works as usual until the deprecation period ends.
+
+Because of deprecation of Virtual Probes, the following items are considered deprecated:
+
+- Pod annotation `kuma.io/virtual-probes`
+- Pod annotation `kuma.io/virtual-probes-port`
+- Control plane configuration key `runtime.kubernetes.injector.virtualProbesEnabled`
+- Control plane configuration key `runtime.kubernetes.injector.virtualProbesPort`
+- Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED`
+- Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
+- Data field `probes` on `Dataplane` objects
+
+### kumactl
+
+#### Default prometheus scrape config removes `service`
+
+If you rely on a scrape config from previous version it's advised to remove the relabel config that was adding `service`.
+Indeed `service` is a very common label and metrics were sometimes coliding with Kuma metrics. If you want the label `kuma_io_service` is always the same as `service`.
+
+### Removal of KDS `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` configuration option
+
+In this release, KDS Delta is used by default and the CP environment variable `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` doesn't exist anymore.
+
+### Deprecation of `yes/no` values for annotation switches
+
+The values `yes` and `no` are deprecated for specifying boolean values in switches based on pod annotations, and support for these values will be removed in a future release. Since these values were undocumented, they are not expected to be widely used.
+
+Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. [Check the documentation](https://kuma.io/docs/latest/reference/kubernetes-annotations/) for the specific annotation to confirm the correct replacements.
+
+#### Deprecation of `kuma.io/mesh` annotation
+
+It was previously possible to create a resource in a `Mesh` by providing the `Mesh` name as an annotation, but this support has been deprecated and will be removed in the future.
+
+Please use the `kuma.io/mesh` label instead.
+
+>>>>>>> b97f43ac58 (fix(helm): error when `namespaceAllowList` is unset in values.yaml (#15232))
 ## Upgrade to `2.8.x`
 
 ## Upgrade to `2.7.x`

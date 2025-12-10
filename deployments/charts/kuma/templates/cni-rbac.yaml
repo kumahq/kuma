@@ -33,6 +33,29 @@ rules:
       - list
       - watch
       {{- end }}
+<<<<<<< HEAD
+=======
+{{- if gt (len (default list .Values.namespaceAllowList)) 0 }}
+{{- $root := . }}
+{{- range $element := .Values.namespaceAllowList }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" $root }}-cni
+  labels: {{ include "kuma.cpLabels" $root | nindent 4 }}
+  namespace: {{ $element }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" $root }}-cni
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" $root }}-cni
+    namespace: {{ $root.Release.Namespace }}
+{{- end }}
+{{- else }}
+>>>>>>> b97f43ac58 (fix(helm): error when `namespaceAllowList` is unset in values.yaml (#15232))
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
