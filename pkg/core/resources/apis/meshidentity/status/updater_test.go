@@ -320,6 +320,7 @@ var _ = Describe("Updater", func() {
 			g.Expect(trust.Status.Origin.KRI).ToNot(BeNil())
 			g.Expect(*trust.Status.Origin.KRI).ToNot(BeEmpty())
 			// Spec.origin should NOT be set (deprecated field)
+			//nolint:staticcheck // SA1019 Backward compatibility check
 			g.Expect(trust.Spec.Origin).To(BeNil())
 		}, "10s", "100ms").Should(Succeed())
 	})
