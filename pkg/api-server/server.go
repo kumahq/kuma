@@ -52,6 +52,7 @@ import (
 	util_prometheus "github.com/kumahq/kuma/v2/pkg/util/prometheus"
 	"github.com/kumahq/kuma/v2/pkg/version"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/hooks"
 	"github.com/kumahq/kuma/v2/pkg/xds/server"
 )
 
@@ -104,6 +105,7 @@ func NewApiServer(
 	meshContextBuilder xds_context.MeshContextBuilder,
 	defs []model.ResourceTypeDescriptor,
 	cfg *kuma_cp.Config,
+	xdsHooks []hooks.ResourceSetHook,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -152,6 +154,7 @@ func NewApiServer(
 		rt.Access().ResourceAccess,
 		rt.GlobalInsightService(),
 		meshContextBuilder,
+		xdsHooks,
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
@@ -256,6 +259,7 @@ func addResourcesEndpoints(
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
 	meshContextBuilder xds_context.MeshContextBuilder,
+	xdsHooks []hooks.ResourceSetHook,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
@@ -299,6 +303,7 @@ func addResourcesEndpoints(
 			filter:                       filters.Resource(definition),
 			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
+			xdsHooks:                     xdsHooks,
 			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
 			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
 			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
@@ -506,6 +511,7 @@ func SetupServer(rt runtime.Runtime) error {
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
+		rt.XDS().Hooks.ResourceSetHooks(),
 	)
 	if err != nil {
 		return err
