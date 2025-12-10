@@ -9,12 +9,14 @@ import (
 	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
 	"github.com/kumahq/kuma/v2/pkg/xds/auth/components"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 type XDSRuntimeContext struct {
 	DpProxyAuthenticator   xds_auth.Authenticator
 	ZoneProxyAuthenticator xds_auth.Authenticator
+	Hooks                  *xds_hooks.Hooks
 	ServerCallbacks        util_xds.MultiXDSCallbacks
 	Metrics                *xds_metrics.Metrics
 }
@@ -57,6 +59,10 @@ func WithDefaults(ctx ContextWithXDS) (XDSRuntimeContext, error) {
 			return XDSRuntimeContext{}, err
 		}
 		currentXDS.ZoneProxyAuthenticator = zoneProxyAuth
+	}
+
+	if currentXDS.Hooks == nil {
+		currentXDS.Hooks = &xds_hooks.Hooks{}
 	}
 
 	return currentXDS, nil

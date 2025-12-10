@@ -16,6 +16,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/modifications"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
 )
@@ -159,6 +160,7 @@ type snapshotGenerator interface {
 
 type TemplateSnapshotGenerator struct {
 	ProxyTemplateResolver xds_template.ProxyTemplateResolver
+	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
 func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
@@ -169,6 +171,11 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 	rs, err := gen.Generate(ctx, xdsCtx, proxy)
 	if err != nil {
 		return nil, err
+	}
+	for _, hook := range s.ResourceSetHooks {
+		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
+			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
+		}
 	}
 	if err := modifications.Apply(rs, template.GetConf().GetModifications(), proxy.APIVersion); err != nil {
 		return nil, errors.Wrap(err, "could not apply modifications")
