@@ -84,7 +84,8 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	// For resources with status, we need to update the status subresource separately
 	// because Kubernetes ignores the status field in Create() when the resource has a status subresource
-	if r.Descriptor().HasStatus {
+	// Only update status if it's actually provided (non-nil)
+	if r.Descriptor().HasStatus && r.GetStatus() != nil {
 		// After Create(), obj has the server's response but without the status we want to set.
 		// We need to set the status again before calling Status().Update()
 		if err := obj.SetStatus(r.GetStatus()); err != nil {
@@ -137,7 +138,8 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	// For resources with status, we need to update the status subresource separately
 	// because Kubernetes ignores the status field in Update() when the resource has a status subresource
-	if r.Descriptor().HasStatus {
+	// Only update status if it's actually provided (non-nil)
+	if r.Descriptor().HasStatus && r.GetStatus() != nil {
 		// After Update(), obj has the server's response but the status might not be updated.
 		// We need to set the status again before calling Status().Update()
 		if err := obj.SetStatus(r.GetStatus()); err != nil {
