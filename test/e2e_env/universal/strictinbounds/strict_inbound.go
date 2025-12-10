@@ -90,7 +90,7 @@ func StrictInboundPorts() {
 		// not secured DPP can be accessed
 		notSecuredDPPInboundAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "80")
 		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
-Eventually(func(g Gomega) {
+		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server-not-secure.mesh",
 			)
@@ -121,7 +121,6 @@ Eventually(func(g Gomega) {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
 		}, "30s", "1s").Should(Succeed())
-
 	})
 
 	It("should allow all traffic when permissive mode", func() {
@@ -176,7 +175,7 @@ Eventually(func(g Gomega) {
 		// not secured DPP can be accessed
 		notSecuredDPPInboundAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "80")
 		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
-Eventually(func(g Gomega) {
+		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server-not-secure.mesh",
 			)
