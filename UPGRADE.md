@@ -62,6 +62,16 @@ The Unix socket is introduced to the readiness reporter, and it is enabled by de
 
 ## Upgrade to `2.11.x`
 
+### Helm upgrades to 2.11.8 require explicit `namespaceAllowList: []` in values.yaml
+
+If a user upgrades to 2.11.8 (or earlier 2.11.x patch versions) with `--reuse-values` Helm flag, the upgrade fails with:
+
+```
+Error: UPGRADE FAILED: template: kuma/templates/cp-webhooks-and-secrets.yaml:69:17: executing "kuma/templates/cp-webhooks-and-secrets.yaml" at <len .Values.namespaceAllowList>: error calling len: len of nil pointer
+```
+
+As a workaround, add `namespaceAllowList: []` to `values.yaml`. This behaviour is fixed starting from version 2.11.9.
+
 ### Embedded Proxy DNS is Enabled by Default
 
 In version `2.11.x`, we reimplemented how mesh DNS queries are resolved by replacing CoreDNS with our Embedded DNS Server. This server is built into `kuma-dp`. After a pod restart (in Kubernetes) or an upgrade of `kuma-dp` (in Universal mode) to `2.11.x`, the embedded DNS proxy is enabled by default.
