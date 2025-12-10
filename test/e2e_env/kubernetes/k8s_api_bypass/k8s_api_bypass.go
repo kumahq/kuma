@@ -81,7 +81,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			// we expect k8s resource 'meta/v1, Kind=APIVersions'
 			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
-		}).Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// when passthrough is disabled on the Mesh
 		err := kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
@@ -98,6 +98,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			// we expect k8s resource 'meta/v1, Kind=APIVersions'
 			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
-		}).Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 	})
 }
