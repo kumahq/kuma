@@ -1,16 +1,15 @@
 {
- "type": "Workload",
- "mesh": "default",
- "name": "with-status",
  "creationTime": "0001-01-01T00:00:00Z",
- "modificationTime": "0001-01-01T00:00:00Z",
+ "kri": "kri_wl_default_default__with-status_",
  "labels": {
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
- "kri": "kri_wl_default_default__with-status_",
+ "mesh": "default",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "name": "with-status",
  "spec": {},
  "status": {
   "dataplaneProxies": {
@@ -18,5 +17,6 @@
    "healthy": 0,
    "total": 0
   }
- }
+ },
+ "type": "Workload"
 }

@@ -244,10 +244,6 @@ resources:
         portValue: 15006
     enableReusePort: false
     filterChains:
-    filterChainMatch
-     destination_port: 8080
-         filterChainMatch
-     destination_port: 10000
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:

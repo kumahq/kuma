@@ -2,12 +2,11 @@
  "total": 2,
  "items": [
   {
-   "type": "Workload",
-   "mesh": "default",
-   "name": "workload-1",
    "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z",
    "kri": "kri_wl_default___workload-1_",
+   "mesh": "default",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "name": "workload-1",
    "spec": {},
    "status": {
     "dataplaneProxies": {
@@ -15,15 +14,15 @@
      "healthy": 2,
      "total": 3
     }
-   }
+   },
+   "type": "Workload"
   },
   {
-   "type": "Workload",
-   "mesh": "default",
-   "name": "workload-2",
    "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z",
    "kri": "kri_wl_default___workload-2_",
+   "mesh": "default",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "name": "workload-2",
    "spec": {},
    "status": {
     "dataplaneProxies": {
@@ -31,7 +30,8 @@
      "healthy": 3,
      "total": 5
     }
-   }
+   },
+   "type": "Workload"
   }
  ],
  "next": null
