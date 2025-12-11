@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -19,6 +20,7 @@ func newCoreResource(rootArgs *args) *cobra.Command {
 		Short: "Generate a core model resource for the policy",
 		Long:  "Generate a core model resource for the policy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			fmt.Println("start new core resource generation")
 			policyName := filepath.Base(rootArgs.pluginDir)
 			if !govalidator.IsAlphanumeric(policyName) {
 				return errors.New("resource name must be alphanumeric")
@@ -30,11 +32,17 @@ func newCoreResource(rootArgs *args) *cobra.Command {
 
 			pconfig, err := parse.Policy(policyPath)
 			if err != nil {
+				fmt.Printf("failed to parse policy at %s: %v\n", policyPath, err)
 				return err
 			}
 
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.resource.go")
-			return commontemplate.GoTemplate(resourceTemplate, pconfig, outPath)
+			err = commontemplate.GoTemplate(resourceTemplate, pconfig, outPath)
+			if err != nil {
+				fmt.Printf("failed to generate resource file at %s: %v\n", outPath, err)
+				return err
+			}
+			return nil
 		},
 	}
 
@@ -129,139 +137,37 @@ const (
 	{{.Name}}Type model.ResourceType = "{{.Name}}"
 )
 
-var _ model.Resource = &{{.Name}}Resource{}
-
-type {{.Name}}Resource struct {
-	Meta model.ResourceMeta
-	Spec *{{.Name}}
 {{- if .HasStatus }}
-	Status *{{.Name}}Status
+func New{{.Name}}Resource() *model.ResStatus[*{{.Name}}, *{{.Name}}Status] {
+	return &model.ResStatus[*{{.Name}}, *{{.Name}}Status]{
+		Spec:       &{{.Name}}{},
+		ValidateFn: validateResource,
+		Status:     &{{.Name}}Status{},
+		DeprecationsFn: deprecations,
+	}
+}
+{{- else }}
+func New{{.Name}}Resource() *model.Res[*{{.Name}}] {
+	return &model.Res[*{{.Name}}]{
+		Spec:       &{{.Name}}{},
+		ValidateFn: validateResource,
+		DeprecationsFn: deprecations,
+	}
+}
 {{- end }}
+
+func New{{.Name}}ResourceList() *model.ResList[*{{.Name}}] {
+	return &model.ResList[*{{.Name}}]{}
 }
 
-func New{{.Name}}Resource() *{{.Name}}Resource {
-	return &{{.Name}}Resource{
-		Spec: &{{.Name}}{},
-{{- if .HasStatus }}
-		Status: &{{.Name}}Status{},
-{{- end }}
-	}
+func (x *{{.Name}}) Descriptor() model.ResourceTypeDescriptor {
+	return {{.Name}}ResourceTypeDescriptor
 }
-
-func (t *{{.Name}}Resource) GetMeta() model.ResourceMeta {
-	return t.Meta
-}
-
-func (t *{{.Name}}Resource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *{{.Name}}Resource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *{{.Name}}Resource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*{{.Name}})
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &{{.Name}}{}
-		} else  {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-{{ if .HasStatus }}
-func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
-	return t.Status
-}
-
-func (t *{{.Name}}Resource) SetStatus(status model.ResourceStatus) error {
-	protoType, ok := status.(*{{.Name}}Status)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Status", status)
-	} else {
-		if protoType == nil {
-			t.Status = &{{.Name}}Status{}
-		} else  {
-			t.Status = protoType
-		}
-		return nil
-	}
-}
-{{ else }}
-func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *{{.Name}}Resource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-{{ end }}
-
-func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
-	return {{.Name}}ResourceTypeDescriptor 
-}
-
-func (t *{{.Name}}Resource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &{{.Name}}ResourceList{}
-
-type {{.Name}}ResourceList struct {
-	Items      []*{{.Name}}Resource
-	Pagination model.Pagination
-}
-
-func (l *{{.Name}}ResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *{{.Name}}ResourceList) GetItemType() model.ResourceType {
-	return {{.Name}}Type
-}
-
-func (l *{{.Name}}ResourceList) NewItem() model.Resource {
-	return New{{.Name}}Resource()
-}
-
-func (l *{{.Name}}ResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*{{.Name}}Resource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*{{.Name}}Resource)(nil), r)
-	}
-}
-
-func (l *{{.Name}}ResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *{{.Name}}ResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
-}
-
-{{- if .IsDestination }}
-var _ core.Destination = &{{.Name}}Resource{}
-{{- end }}
 
 var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.Name}}Type,
 		Resource: New{{.Name}}Resource(),
-		ResourceList: &{{.Name}}ResourceList{},
+		ResourceList: New{{.Name}}ResourceList(),
 		Scope: model.Scope{{.Scope}},
 		KDSFlags: {{.KDSFlags}},
 		WsPath: "{{.Path}}",

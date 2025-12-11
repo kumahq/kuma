@@ -77,109 +77,26 @@ const (
 	MeshLoadBalancingStrategyType model.ResourceType = "MeshLoadBalancingStrategy"
 )
 
-var _ model.Resource = &MeshLoadBalancingStrategyResource{}
-
-type MeshLoadBalancingStrategyResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshLoadBalancingStrategy
-}
-
-func NewMeshLoadBalancingStrategyResource() *MeshLoadBalancingStrategyResource {
-	return &MeshLoadBalancingStrategyResource{
-		Spec: &MeshLoadBalancingStrategy{},
+func NewMeshLoadBalancingStrategyResource() *model.Res[*MeshLoadBalancingStrategy] {
+	return &model.Res[*MeshLoadBalancingStrategy]{
+		Spec:           &MeshLoadBalancingStrategy{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshLoadBalancingStrategyResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshLoadBalancingStrategyResourceList() *model.ResList[*MeshLoadBalancingStrategy] {
+	return &model.ResList[*MeshLoadBalancingStrategy]{}
 }
 
-func (t *MeshLoadBalancingStrategyResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshLoadBalancingStrategyResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshLoadBalancingStrategyResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshLoadBalancingStrategy)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshLoadBalancingStrategy{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshLoadBalancingStrategyResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshLoadBalancingStrategyResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshLoadBalancingStrategyResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshLoadBalancingStrategy) Descriptor() model.ResourceTypeDescriptor {
 	return MeshLoadBalancingStrategyResourceTypeDescriptor
-}
-
-func (t *MeshLoadBalancingStrategyResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshLoadBalancingStrategyResourceList{}
-
-type MeshLoadBalancingStrategyResourceList struct {
-	Items      []*MeshLoadBalancingStrategyResource
-	Pagination model.Pagination
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) GetItemType() model.ResourceType {
-	return MeshLoadBalancingStrategyType
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) NewItem() model.Resource {
-	return NewMeshLoadBalancingStrategyResource()
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshLoadBalancingStrategyResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshLoadBalancingStrategyResource)(nil), r)
-	}
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshLoadBalancingStrategyType,
 	Resource:                     NewMeshLoadBalancingStrategyResource(),
-	ResourceList:                 &MeshLoadBalancingStrategyResourceList{},
+	ResourceList:                 NewMeshLoadBalancingStrategyResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshloadbalancingstrategies",

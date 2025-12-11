@@ -76,121 +76,27 @@ const (
 	WorkloadType model.ResourceType = "Workload"
 )
 
-var _ model.Resource = &WorkloadResource{}
-
-type WorkloadResource struct {
-	Meta   model.ResourceMeta
-	Spec   *Workload
-	Status *WorkloadStatus
-}
-
-func NewWorkloadResource() *WorkloadResource {
-	return &WorkloadResource{
-		Spec:   &Workload{},
-		Status: &WorkloadStatus{},
+func NewWorkloadResource() *model.ResStatus[*Workload, *WorkloadStatus] {
+	return &model.ResStatus[*Workload, *WorkloadStatus]{
+		Spec:           &Workload{},
+		ValidateFn:     validateResource,
+		Status:         &WorkloadStatus{},
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *WorkloadResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewWorkloadResourceList() *model.ResList[*Workload] {
+	return &model.ResList[*Workload]{}
 }
 
-func (t *WorkloadResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *WorkloadResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *WorkloadResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*Workload)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &Workload{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *WorkloadResource) GetStatus() model.ResourceStatus {
-	return t.Status
-}
-
-func (t *WorkloadResource) SetStatus(status model.ResourceStatus) error {
-	protoType, ok := status.(*WorkloadStatus)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Status", status)
-	} else {
-		if protoType == nil {
-			t.Status = &WorkloadStatus{}
-		} else {
-			t.Status = protoType
-		}
-		return nil
-	}
-}
-
-func (t *WorkloadResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *Workload) Descriptor() model.ResourceTypeDescriptor {
 	return WorkloadResourceTypeDescriptor
-}
-
-func (t *WorkloadResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &WorkloadResourceList{}
-
-type WorkloadResourceList struct {
-	Items      []*WorkloadResource
-	Pagination model.Pagination
-}
-
-func (l *WorkloadResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *WorkloadResourceList) GetItemType() model.ResourceType {
-	return WorkloadType
-}
-
-func (l *WorkloadResourceList) NewItem() model.Resource {
-	return NewWorkloadResource()
-}
-
-func (l *WorkloadResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*WorkloadResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*WorkloadResource)(nil), r)
-	}
-}
-
-func (l *WorkloadResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *WorkloadResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var WorkloadResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         WorkloadType,
 	Resource:                     NewWorkloadResource(),
-	ResourceList:                 &WorkloadResourceList{},
+	ResourceList:                 NewWorkloadResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.ZoneToGlobalFlag,
 	WsPath:                       "workloads",

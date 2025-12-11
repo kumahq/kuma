@@ -77,109 +77,26 @@ const (
 	MeshTraceType model.ResourceType = "MeshTrace"
 )
 
-var _ model.Resource = &MeshTraceResource{}
-
-type MeshTraceResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshTrace
-}
-
-func NewMeshTraceResource() *MeshTraceResource {
-	return &MeshTraceResource{
-		Spec: &MeshTrace{},
+func NewMeshTraceResource() *model.Res[*MeshTrace] {
+	return &model.Res[*MeshTrace]{
+		Spec:           &MeshTrace{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshTraceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshTraceResourceList() *model.ResList[*MeshTrace] {
+	return &model.ResList[*MeshTrace]{}
 }
 
-func (t *MeshTraceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshTraceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshTraceResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshTrace)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshTrace{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshTraceResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshTraceResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshTraceResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshTrace) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTraceResourceTypeDescriptor
-}
-
-func (t *MeshTraceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshTraceResourceList{}
-
-type MeshTraceResourceList struct {
-	Items      []*MeshTraceResource
-	Pagination model.Pagination
-}
-
-func (l *MeshTraceResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshTraceResourceList) GetItemType() model.ResourceType {
-	return MeshTraceType
-}
-
-func (l *MeshTraceResourceList) NewItem() model.Resource {
-	return NewMeshTraceResource()
-}
-
-func (l *MeshTraceResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshTraceResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshTraceResource)(nil), r)
-	}
-}
-
-func (l *MeshTraceResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshTraceResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshTraceType,
 	Resource:                     NewMeshTraceResource(),
-	ResourceList:                 &MeshTraceResourceList{},
+	ResourceList:                 NewMeshTraceResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtraces",

@@ -77,109 +77,26 @@ const (
 	HostnameGeneratorType model.ResourceType = "HostnameGenerator"
 )
 
-var _ model.Resource = &HostnameGeneratorResource{}
-
-type HostnameGeneratorResource struct {
-	Meta model.ResourceMeta
-	Spec *HostnameGenerator
-}
-
-func NewHostnameGeneratorResource() *HostnameGeneratorResource {
-	return &HostnameGeneratorResource{
-		Spec: &HostnameGenerator{},
+func NewHostnameGeneratorResource() *model.Res[*HostnameGenerator] {
+	return &model.Res[*HostnameGenerator]{
+		Spec:           &HostnameGenerator{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *HostnameGeneratorResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewHostnameGeneratorResourceList() *model.ResList[*HostnameGenerator] {
+	return &model.ResList[*HostnameGenerator]{}
 }
 
-func (t *HostnameGeneratorResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *HostnameGeneratorResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *HostnameGeneratorResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*HostnameGenerator)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &HostnameGenerator{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *HostnameGeneratorResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *HostnameGeneratorResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *HostnameGeneratorResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *HostnameGenerator) Descriptor() model.ResourceTypeDescriptor {
 	return HostnameGeneratorResourceTypeDescriptor
-}
-
-func (t *HostnameGeneratorResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &HostnameGeneratorResourceList{}
-
-type HostnameGeneratorResourceList struct {
-	Items      []*HostnameGeneratorResource
-	Pagination model.Pagination
-}
-
-func (l *HostnameGeneratorResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *HostnameGeneratorResourceList) GetItemType() model.ResourceType {
-	return HostnameGeneratorType
-}
-
-func (l *HostnameGeneratorResourceList) NewItem() model.Resource {
-	return NewHostnameGeneratorResource()
-}
-
-func (l *HostnameGeneratorResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*HostnameGeneratorResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*HostnameGeneratorResource)(nil), r)
-	}
-}
-
-func (l *HostnameGeneratorResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *HostnameGeneratorResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         HostnameGeneratorType,
 	Resource:                     NewHostnameGeneratorResource(),
-	ResourceList:                 &HostnameGeneratorResourceList{},
+	ResourceList:                 NewHostnameGeneratorResourceList(),
 	Scope:                        model.ScopeGlobal,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "hostnamegenerators",

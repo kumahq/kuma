@@ -77,109 +77,26 @@ const (
 	MeshTrafficPermissionType model.ResourceType = "MeshTrafficPermission"
 )
 
-var _ model.Resource = &MeshTrafficPermissionResource{}
-
-type MeshTrafficPermissionResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshTrafficPermission
-}
-
-func NewMeshTrafficPermissionResource() *MeshTrafficPermissionResource {
-	return &MeshTrafficPermissionResource{
-		Spec: &MeshTrafficPermission{},
+func NewMeshTrafficPermissionResource() *model.Res[*MeshTrafficPermission] {
+	return &model.Res[*MeshTrafficPermission]{
+		Spec:           &MeshTrafficPermission{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshTrafficPermissionResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshTrafficPermissionResourceList() *model.ResList[*MeshTrafficPermission] {
+	return &model.ResList[*MeshTrafficPermission]{}
 }
 
-func (t *MeshTrafficPermissionResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshTrafficPermissionResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshTrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshTrafficPermission)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshTrafficPermission{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshTrafficPermissionResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshTrafficPermissionResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshTrafficPermissionResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshTrafficPermission) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTrafficPermissionResourceTypeDescriptor
-}
-
-func (t *MeshTrafficPermissionResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshTrafficPermissionResourceList{}
-
-type MeshTrafficPermissionResourceList struct {
-	Items      []*MeshTrafficPermissionResource
-	Pagination model.Pagination
-}
-
-func (l *MeshTrafficPermissionResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshTrafficPermissionResourceList) GetItemType() model.ResourceType {
-	return MeshTrafficPermissionType
-}
-
-func (l *MeshTrafficPermissionResourceList) NewItem() model.Resource {
-	return NewMeshTrafficPermissionResource()
-}
-
-func (l *MeshTrafficPermissionResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshTrafficPermissionResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshTrafficPermissionResource)(nil), r)
-	}
-}
-
-func (l *MeshTrafficPermissionResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshTrafficPermissionResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshTrafficPermissionType,
 	Resource:                     NewMeshTrafficPermissionResource(),
-	ResourceList:                 &MeshTrafficPermissionResourceList{},
+	ResourceList:                 NewMeshTrafficPermissionResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtrafficpermissions",

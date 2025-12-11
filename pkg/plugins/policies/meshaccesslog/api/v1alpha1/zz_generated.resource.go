@@ -77,109 +77,26 @@ const (
 	MeshAccessLogType model.ResourceType = "MeshAccessLog"
 )
 
-var _ model.Resource = &MeshAccessLogResource{}
-
-type MeshAccessLogResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshAccessLog
-}
-
-func NewMeshAccessLogResource() *MeshAccessLogResource {
-	return &MeshAccessLogResource{
-		Spec: &MeshAccessLog{},
+func NewMeshAccessLogResource() *model.Res[*MeshAccessLog] {
+	return &model.Res[*MeshAccessLog]{
+		Spec:           &MeshAccessLog{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshAccessLogResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshAccessLogResourceList() *model.ResList[*MeshAccessLog] {
+	return &model.ResList[*MeshAccessLog]{}
 }
 
-func (t *MeshAccessLogResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshAccessLogResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshAccessLogResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshAccessLog)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshAccessLog{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshAccessLogResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshAccessLogResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshAccessLogResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshAccessLog) Descriptor() model.ResourceTypeDescriptor {
 	return MeshAccessLogResourceTypeDescriptor
-}
-
-func (t *MeshAccessLogResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshAccessLogResourceList{}
-
-type MeshAccessLogResourceList struct {
-	Items      []*MeshAccessLogResource
-	Pagination model.Pagination
-}
-
-func (l *MeshAccessLogResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshAccessLogResourceList) GetItemType() model.ResourceType {
-	return MeshAccessLogType
-}
-
-func (l *MeshAccessLogResourceList) NewItem() model.Resource {
-	return NewMeshAccessLogResource()
-}
-
-func (l *MeshAccessLogResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshAccessLogResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshAccessLogResource)(nil), r)
-	}
-}
-
-func (l *MeshAccessLogResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshAccessLogResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshAccessLogType,
 	Resource:                     NewMeshAccessLogResource(),
-	ResourceList:                 &MeshAccessLogResourceList{},
+	ResourceList:                 NewMeshAccessLogResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshaccesslogs",

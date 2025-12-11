@@ -76,109 +76,26 @@ const (
 	DoNothingResourceType model.ResourceType = "DoNothingResource"
 )
 
-var _ model.Resource = &DoNothingResourceResource{}
-
-type DoNothingResourceResource struct {
-	Meta model.ResourceMeta
-	Spec *DoNothingResource
-}
-
-func NewDoNothingResourceResource() *DoNothingResourceResource {
-	return &DoNothingResourceResource{
-		Spec: &DoNothingResource{},
+func NewDoNothingResourceResource() *model.Res[*DoNothingResource] {
+	return &model.Res[*DoNothingResource]{
+		Spec:           &DoNothingResource{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *DoNothingResourceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewDoNothingResourceResourceList() *model.ResList[*DoNothingResource] {
+	return &model.ResList[*DoNothingResource]{}
 }
 
-func (t *DoNothingResourceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *DoNothingResourceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *DoNothingResourceResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*DoNothingResource)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &DoNothingResource{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *DoNothingResourceResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *DoNothingResourceResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *DoNothingResourceResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *DoNothingResource) Descriptor() model.ResourceTypeDescriptor {
 	return DoNothingResourceResourceTypeDescriptor
-}
-
-func (t *DoNothingResourceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &DoNothingResourceResourceList{}
-
-type DoNothingResourceResourceList struct {
-	Items      []*DoNothingResourceResource
-	Pagination model.Pagination
-}
-
-func (l *DoNothingResourceResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *DoNothingResourceResourceList) GetItemType() model.ResourceType {
-	return DoNothingResourceType
-}
-
-func (l *DoNothingResourceResourceList) NewItem() model.Resource {
-	return NewDoNothingResourceResource()
-}
-
-func (l *DoNothingResourceResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*DoNothingResourceResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*DoNothingResourceResource)(nil), r)
-	}
-}
-
-func (l *DoNothingResourceResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *DoNothingResourceResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var DoNothingResourceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         DoNothingResourceType,
 	Resource:                     NewDoNothingResourceResource(),
-	ResourceList:                 &DoNothingResourceResourceList{},
+	ResourceList:                 NewDoNothingResourceResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "donothingresources",

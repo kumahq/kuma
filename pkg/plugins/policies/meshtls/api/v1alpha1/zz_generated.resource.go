@@ -77,109 +77,26 @@ const (
 	MeshTLSType model.ResourceType = "MeshTLS"
 )
 
-var _ model.Resource = &MeshTLSResource{}
-
-type MeshTLSResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshTLS
-}
-
-func NewMeshTLSResource() *MeshTLSResource {
-	return &MeshTLSResource{
-		Spec: &MeshTLS{},
+func NewMeshTLSResource() *model.Res[*MeshTLS] {
+	return &model.Res[*MeshTLS]{
+		Spec:           &MeshTLS{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshTLSResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshTLSResourceList() *model.ResList[*MeshTLS] {
+	return &model.ResList[*MeshTLS]{}
 }
 
-func (t *MeshTLSResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshTLSResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshTLSResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshTLS)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshTLS{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshTLSResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshTLSResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshTLSResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshTLS) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTLSResourceTypeDescriptor
-}
-
-func (t *MeshTLSResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshTLSResourceList{}
-
-type MeshTLSResourceList struct {
-	Items      []*MeshTLSResource
-	Pagination model.Pagination
-}
-
-func (l *MeshTLSResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshTLSResourceList) GetItemType() model.ResourceType {
-	return MeshTLSType
-}
-
-func (l *MeshTLSResourceList) NewItem() model.Resource {
-	return NewMeshTLSResource()
-}
-
-func (l *MeshTLSResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshTLSResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshTLSResource)(nil), r)
-	}
-}
-
-func (l *MeshTLSResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshTLSResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshTLSType,
 	Resource:                     NewMeshTLSResource(),
-	ResourceList:                 &MeshTLSResourceList{},
+	ResourceList:                 NewMeshTLSResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtlses",

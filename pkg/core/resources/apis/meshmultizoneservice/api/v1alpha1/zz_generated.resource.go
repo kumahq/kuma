@@ -77,123 +77,27 @@ const (
 	MeshMultiZoneServiceType model.ResourceType = "MeshMultiZoneService"
 )
 
-var _ model.Resource = &MeshMultiZoneServiceResource{}
-
-type MeshMultiZoneServiceResource struct {
-	Meta   model.ResourceMeta
-	Spec   *MeshMultiZoneService
-	Status *MeshMultiZoneServiceStatus
-}
-
-func NewMeshMultiZoneServiceResource() *MeshMultiZoneServiceResource {
-	return &MeshMultiZoneServiceResource{
-		Spec:   &MeshMultiZoneService{},
-		Status: &MeshMultiZoneServiceStatus{},
+func NewMeshMultiZoneServiceResource() *model.ResStatus[*MeshMultiZoneService, *MeshMultiZoneServiceStatus] {
+	return &model.ResStatus[*MeshMultiZoneService, *MeshMultiZoneServiceStatus]{
+		Spec:           &MeshMultiZoneService{},
+		ValidateFn:     validateResource,
+		Status:         &MeshMultiZoneServiceStatus{},
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshMultiZoneServiceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshMultiZoneServiceResourceList() *model.ResList[*MeshMultiZoneService] {
+	return &model.ResList[*MeshMultiZoneService]{}
 }
 
-func (t *MeshMultiZoneServiceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshMultiZoneServiceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshMultiZoneServiceResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshMultiZoneService)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshMultiZoneService{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshMultiZoneServiceResource) GetStatus() model.ResourceStatus {
-	return t.Status
-}
-
-func (t *MeshMultiZoneServiceResource) SetStatus(status model.ResourceStatus) error {
-	protoType, ok := status.(*MeshMultiZoneServiceStatus)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Status", status)
-	} else {
-		if protoType == nil {
-			t.Status = &MeshMultiZoneServiceStatus{}
-		} else {
-			t.Status = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshMultiZoneServiceResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshMultiZoneService) Descriptor() model.ResourceTypeDescriptor {
 	return MeshMultiZoneServiceResourceTypeDescriptor
 }
-
-func (t *MeshMultiZoneServiceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshMultiZoneServiceResourceList{}
-
-type MeshMultiZoneServiceResourceList struct {
-	Items      []*MeshMultiZoneServiceResource
-	Pagination model.Pagination
-}
-
-func (l *MeshMultiZoneServiceResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshMultiZoneServiceResourceList) GetItemType() model.ResourceType {
-	return MeshMultiZoneServiceType
-}
-
-func (l *MeshMultiZoneServiceResourceList) NewItem() model.Resource {
-	return NewMeshMultiZoneServiceResource()
-}
-
-func (l *MeshMultiZoneServiceResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshMultiZoneServiceResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshMultiZoneServiceResource)(nil), r)
-	}
-}
-
-func (l *MeshMultiZoneServiceResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshMultiZoneServiceResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
-}
-
-var _ core.Destination = &MeshMultiZoneServiceResource{}
 
 var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshMultiZoneServiceType,
 	Resource:                     NewMeshMultiZoneServiceResource(),
-	ResourceList:                 &MeshMultiZoneServiceResourceList{},
+	ResourceList:                 NewMeshMultiZoneServiceResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag,
 	WsPath:                       "meshmultizoneservices",

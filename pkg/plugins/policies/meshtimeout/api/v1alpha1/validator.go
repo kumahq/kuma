@@ -10,10 +10,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshTimeoutResource) validate() error {
+func validateResource(r *core_model.Res[*MeshTimeout]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
@@ -27,7 +27,7 @@ func (r *MeshTimeoutResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshTimeout], targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

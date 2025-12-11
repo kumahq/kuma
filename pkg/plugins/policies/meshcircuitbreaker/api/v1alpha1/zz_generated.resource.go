@@ -77,109 +77,26 @@ const (
 	MeshCircuitBreakerType model.ResourceType = "MeshCircuitBreaker"
 )
 
-var _ model.Resource = &MeshCircuitBreakerResource{}
-
-type MeshCircuitBreakerResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshCircuitBreaker
-}
-
-func NewMeshCircuitBreakerResource() *MeshCircuitBreakerResource {
-	return &MeshCircuitBreakerResource{
-		Spec: &MeshCircuitBreaker{},
+func NewMeshCircuitBreakerResource() *model.Res[*MeshCircuitBreaker] {
+	return &model.Res[*MeshCircuitBreaker]{
+		Spec:           &MeshCircuitBreaker{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshCircuitBreakerResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshCircuitBreakerResourceList() *model.ResList[*MeshCircuitBreaker] {
+	return &model.ResList[*MeshCircuitBreaker]{}
 }
 
-func (t *MeshCircuitBreakerResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshCircuitBreakerResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshCircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshCircuitBreaker)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshCircuitBreaker{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshCircuitBreakerResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshCircuitBreakerResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshCircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshCircuitBreaker) Descriptor() model.ResourceTypeDescriptor {
 	return MeshCircuitBreakerResourceTypeDescriptor
-}
-
-func (t *MeshCircuitBreakerResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshCircuitBreakerResourceList{}
-
-type MeshCircuitBreakerResourceList struct {
-	Items      []*MeshCircuitBreakerResource
-	Pagination model.Pagination
-}
-
-func (l *MeshCircuitBreakerResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshCircuitBreakerResourceList) GetItemType() model.ResourceType {
-	return MeshCircuitBreakerType
-}
-
-func (l *MeshCircuitBreakerResourceList) NewItem() model.Resource {
-	return NewMeshCircuitBreakerResource()
-}
-
-func (l *MeshCircuitBreakerResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshCircuitBreakerResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshCircuitBreakerResource)(nil), r)
-	}
-}
-
-func (l *MeshCircuitBreakerResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshCircuitBreakerResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshCircuitBreakerType,
 	Resource:                     NewMeshCircuitBreakerResource(),
-	ResourceList:                 &MeshCircuitBreakerResourceList{},
+	ResourceList:                 NewMeshCircuitBreakerResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshcircuitbreakers",

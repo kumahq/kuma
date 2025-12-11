@@ -77,109 +77,26 @@ const (
 	MeshRateLimitType model.ResourceType = "MeshRateLimit"
 )
 
-var _ model.Resource = &MeshRateLimitResource{}
-
-type MeshRateLimitResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshRateLimit
-}
-
-func NewMeshRateLimitResource() *MeshRateLimitResource {
-	return &MeshRateLimitResource{
-		Spec: &MeshRateLimit{},
+func NewMeshRateLimitResource() *model.Res[*MeshRateLimit] {
+	return &model.Res[*MeshRateLimit]{
+		Spec:           &MeshRateLimit{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshRateLimitResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshRateLimitResourceList() *model.ResList[*MeshRateLimit] {
+	return &model.ResList[*MeshRateLimit]{}
 }
 
-func (t *MeshRateLimitResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshRateLimitResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshRateLimitResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshRateLimit)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshRateLimit{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshRateLimitResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshRateLimitResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshRateLimitResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshRateLimit) Descriptor() model.ResourceTypeDescriptor {
 	return MeshRateLimitResourceTypeDescriptor
-}
-
-func (t *MeshRateLimitResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshRateLimitResourceList{}
-
-type MeshRateLimitResourceList struct {
-	Items      []*MeshRateLimitResource
-	Pagination model.Pagination
-}
-
-func (l *MeshRateLimitResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshRateLimitResourceList) GetItemType() model.ResourceType {
-	return MeshRateLimitType
-}
-
-func (l *MeshRateLimitResourceList) NewItem() model.Resource {
-	return NewMeshRateLimitResource()
-}
-
-func (l *MeshRateLimitResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshRateLimitResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshRateLimitResource)(nil), r)
-	}
-}
-
-func (l *MeshRateLimitResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshRateLimitResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshRateLimitType,
 	Resource:                     NewMeshRateLimitResource(),
-	ResourceList:                 &MeshRateLimitResourceList{},
+	ResourceList:                 NewMeshRateLimitResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshratelimits",

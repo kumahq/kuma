@@ -76,121 +76,27 @@ const (
 	MeshIdentityType model.ResourceType = "MeshIdentity"
 )
 
-var _ model.Resource = &MeshIdentityResource{}
-
-type MeshIdentityResource struct {
-	Meta   model.ResourceMeta
-	Spec   *MeshIdentity
-	Status *MeshIdentityStatus
-}
-
-func NewMeshIdentityResource() *MeshIdentityResource {
-	return &MeshIdentityResource{
-		Spec:   &MeshIdentity{},
-		Status: &MeshIdentityStatus{},
+func NewMeshIdentityResource() *model.ResStatus[*MeshIdentity, *MeshIdentityStatus] {
+	return &model.ResStatus[*MeshIdentity, *MeshIdentityStatus]{
+		Spec:           &MeshIdentity{},
+		ValidateFn:     validateResource,
+		Status:         &MeshIdentityStatus{},
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshIdentityResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshIdentityResourceList() *model.ResList[*MeshIdentity] {
+	return &model.ResList[*MeshIdentity]{}
 }
 
-func (t *MeshIdentityResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshIdentityResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshIdentityResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshIdentity)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshIdentity{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshIdentityResource) GetStatus() model.ResourceStatus {
-	return t.Status
-}
-
-func (t *MeshIdentityResource) SetStatus(status model.ResourceStatus) error {
-	protoType, ok := status.(*MeshIdentityStatus)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Status", status)
-	} else {
-		if protoType == nil {
-			t.Status = &MeshIdentityStatus{}
-		} else {
-			t.Status = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshIdentityResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshIdentity) Descriptor() model.ResourceTypeDescriptor {
 	return MeshIdentityResourceTypeDescriptor
-}
-
-func (t *MeshIdentityResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshIdentityResourceList{}
-
-type MeshIdentityResourceList struct {
-	Items      []*MeshIdentityResource
-	Pagination model.Pagination
-}
-
-func (l *MeshIdentityResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshIdentityResourceList) GetItemType() model.ResourceType {
-	return MeshIdentityType
-}
-
-func (l *MeshIdentityResourceList) NewItem() model.Resource {
-	return NewMeshIdentityResource()
-}
-
-func (l *MeshIdentityResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshIdentityResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshIdentityResource)(nil), r)
-	}
-}
-
-func (l *MeshIdentityResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshIdentityResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshIdentityResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshIdentityType,
 	Resource:                     NewMeshIdentityResource(),
-	ResourceList:                 &MeshIdentityResourceList{},
+	ResourceList:                 NewMeshIdentityResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshidentities",

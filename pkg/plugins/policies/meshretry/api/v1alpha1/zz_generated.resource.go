@@ -77,109 +77,26 @@ const (
 	MeshRetryType model.ResourceType = "MeshRetry"
 )
 
-var _ model.Resource = &MeshRetryResource{}
-
-type MeshRetryResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshRetry
-}
-
-func NewMeshRetryResource() *MeshRetryResource {
-	return &MeshRetryResource{
-		Spec: &MeshRetry{},
+func NewMeshRetryResource() *model.Res[*MeshRetry] {
+	return &model.Res[*MeshRetry]{
+		Spec:           &MeshRetry{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshRetryResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshRetryResourceList() *model.ResList[*MeshRetry] {
+	return &model.ResList[*MeshRetry]{}
 }
 
-func (t *MeshRetryResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshRetryResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshRetryResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshRetry)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshRetry{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshRetryResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshRetryResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshRetryResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshRetry) Descriptor() model.ResourceTypeDescriptor {
 	return MeshRetryResourceTypeDescriptor
-}
-
-func (t *MeshRetryResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshRetryResourceList{}
-
-type MeshRetryResourceList struct {
-	Items      []*MeshRetryResource
-	Pagination model.Pagination
-}
-
-func (l *MeshRetryResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshRetryResourceList) GetItemType() model.ResourceType {
-	return MeshRetryType
-}
-
-func (l *MeshRetryResourceList) NewItem() model.Resource {
-	return NewMeshRetryResource()
-}
-
-func (l *MeshRetryResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshRetryResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshRetryResource)(nil), r)
-	}
-}
-
-func (l *MeshRetryResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshRetryResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshRetryType,
 	Resource:                     NewMeshRetryResource(),
-	ResourceList:                 &MeshRetryResourceList{},
+	ResourceList:                 NewMeshRetryResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshretries",

@@ -77,109 +77,26 @@ const (
 	MeshTrustType model.ResourceType = "MeshTrust"
 )
 
-var _ model.Resource = &MeshTrustResource{}
-
-type MeshTrustResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshTrust
-}
-
-func NewMeshTrustResource() *MeshTrustResource {
-	return &MeshTrustResource{
-		Spec: &MeshTrust{},
+func NewMeshTrustResource() *model.Res[*MeshTrust] {
+	return &model.Res[*MeshTrust]{
+		Spec:           &MeshTrust{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshTrustResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshTrustResourceList() *model.ResList[*MeshTrust] {
+	return &model.ResList[*MeshTrust]{}
 }
 
-func (t *MeshTrustResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshTrustResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshTrustResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshTrust)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshTrust{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshTrustResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshTrustResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshTrustResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshTrust) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTrustResourceTypeDescriptor
-}
-
-func (t *MeshTrustResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshTrustResourceList{}
-
-type MeshTrustResourceList struct {
-	Items      []*MeshTrustResource
-	Pagination model.Pagination
-}
-
-func (l *MeshTrustResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshTrustResourceList) GetItemType() model.ResourceType {
-	return MeshTrustType
-}
-
-func (l *MeshTrustResourceList) NewItem() model.Resource {
-	return NewMeshTrustResource()
-}
-
-func (l *MeshTrustResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshTrustResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshTrustResource)(nil), r)
-	}
-}
-
-func (l *MeshTrustResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshTrustResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshTrustType,
 	Resource:                     NewMeshTrustResource(),
-	ResourceList:                 &MeshTrustResourceList{},
+	ResourceList:                 NewMeshTrustResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshtrusts",

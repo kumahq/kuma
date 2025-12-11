@@ -77,109 +77,26 @@ const (
 	MeshPassthroughType model.ResourceType = "MeshPassthrough"
 )
 
-var _ model.Resource = &MeshPassthroughResource{}
-
-type MeshPassthroughResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshPassthrough
-}
-
-func NewMeshPassthroughResource() *MeshPassthroughResource {
-	return &MeshPassthroughResource{
-		Spec: &MeshPassthrough{},
+func NewMeshPassthroughResource() *model.Res[*MeshPassthrough] {
+	return &model.Res[*MeshPassthrough]{
+		Spec:           &MeshPassthrough{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshPassthroughResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshPassthroughResourceList() *model.ResList[*MeshPassthrough] {
+	return &model.ResList[*MeshPassthrough]{}
 }
 
-func (t *MeshPassthroughResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshPassthroughResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshPassthroughResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshPassthrough)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshPassthrough{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshPassthroughResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshPassthroughResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshPassthroughResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshPassthrough) Descriptor() model.ResourceTypeDescriptor {
 	return MeshPassthroughResourceTypeDescriptor
-}
-
-func (t *MeshPassthroughResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshPassthroughResourceList{}
-
-type MeshPassthroughResourceList struct {
-	Items      []*MeshPassthroughResource
-	Pagination model.Pagination
-}
-
-func (l *MeshPassthroughResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshPassthroughResourceList) GetItemType() model.ResourceType {
-	return MeshPassthroughType
-}
-
-func (l *MeshPassthroughResourceList) NewItem() model.Resource {
-	return NewMeshPassthroughResource()
-}
-
-func (l *MeshPassthroughResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshPassthroughResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshPassthroughResource)(nil), r)
-	}
-}
-
-func (l *MeshPassthroughResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshPassthroughResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshPassthroughResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshPassthroughType,
 	Resource:                     NewMeshPassthroughResource(),
-	ResourceList:                 &MeshPassthroughResourceList{},
+	ResourceList:                 NewMeshPassthroughResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshpassthroughs",

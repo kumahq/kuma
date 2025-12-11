@@ -77,109 +77,26 @@ const (
 	MeshHTTPRouteType model.ResourceType = "MeshHTTPRoute"
 )
 
-var _ model.Resource = &MeshHTTPRouteResource{}
-
-type MeshHTTPRouteResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshHTTPRoute
-}
-
-func NewMeshHTTPRouteResource() *MeshHTTPRouteResource {
-	return &MeshHTTPRouteResource{
-		Spec: &MeshHTTPRoute{},
+func NewMeshHTTPRouteResource() *model.Res[*MeshHTTPRoute] {
+	return &model.Res[*MeshHTTPRoute]{
+		Spec:           &MeshHTTPRoute{},
+		ValidateFn:     validateResource,
+		DeprecationsFn: deprecations,
 	}
 }
 
-func (t *MeshHTTPRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func NewMeshHTTPRouteResourceList() *model.ResList[*MeshHTTPRoute] {
+	return &model.ResList[*MeshHTTPRoute]{}
 }
 
-func (t *MeshHTTPRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *MeshHTTPRouteResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *MeshHTTPRouteResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*MeshHTTPRoute)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &MeshHTTPRoute{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *MeshHTTPRouteResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *MeshHTTPRouteResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *MeshHTTPRouteResource) Descriptor() model.ResourceTypeDescriptor {
+func (x *MeshHTTPRoute) Descriptor() model.ResourceTypeDescriptor {
 	return MeshHTTPRouteResourceTypeDescriptor
-}
-
-func (t *MeshHTTPRouteResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
-		return nil
-	} else {
-		return v.validate()
-	}
-}
-
-var _ model.ResourceList = &MeshHTTPRouteResourceList{}
-
-type MeshHTTPRouteResourceList struct {
-	Items      []*MeshHTTPRouteResource
-	Pagination model.Pagination
-}
-
-func (l *MeshHTTPRouteResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *MeshHTTPRouteResourceList) GetItemType() model.ResourceType {
-	return MeshHTTPRouteType
-}
-
-func (l *MeshHTTPRouteResourceList) NewItem() model.Resource {
-	return NewMeshHTTPRouteResource()
-}
-
-func (l *MeshHTTPRouteResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*MeshHTTPRouteResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*MeshHTTPRouteResource)(nil), r)
-	}
-}
-
-func (l *MeshHTTPRouteResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *MeshHTTPRouteResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
 }
 
 var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                         MeshHTTPRouteType,
 	Resource:                     NewMeshHTTPRouteResource(),
-	ResourceList:                 &MeshHTTPRouteResourceList{},
+	ResourceList:                 NewMeshHTTPRouteResourceList(),
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshhttproutes",
