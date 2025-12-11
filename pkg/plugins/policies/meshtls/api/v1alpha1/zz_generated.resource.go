@@ -86,7 +86,7 @@ func NewMeshTLSResource() *model.Res[*MeshTLS] {
 	}
 }
 
-type MeshTLSResourceList = model.ResList[*MeshTLS]
+type MeshTLSResourceList = model.ResList[*MeshTLSResource]
 
 func NewMeshTLSResourceList() *model.ResList[*MeshTLS] {
 	return &model.ResList[*MeshTLS]{}

@@ -86,7 +86,7 @@ func NewMeshMetricResource() *model.Res[*MeshMetric] {
 	}
 }
 
-type MeshMetricResourceList = model.ResList[*MeshMetric]
+type MeshMetricResourceList = model.ResList[*MeshMetricResource]
 
 func NewMeshMetricResourceList() *model.ResList[*MeshMetric] {
 	return &model.ResList[*MeshMetric]{}

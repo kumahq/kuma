@@ -86,7 +86,7 @@ func NewMeshHealthCheckResource() *model.Res[*MeshHealthCheck] {
 	}
 }
 
-type MeshHealthCheckResourceList = model.ResList[*MeshHealthCheck]
+type MeshHealthCheckResourceList = model.ResList[*MeshHealthCheckResource]
 
 func NewMeshHealthCheckResourceList() *model.ResList[*MeshHealthCheck] {
 	return &model.ResList[*MeshHealthCheck]{}

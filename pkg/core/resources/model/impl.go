@@ -126,17 +126,18 @@ func (rsi *ResStatus[T, S]) Deprecations() []string {
 	return nil
 }
 
-type ResList[T Spec] struct {
-	Items      []*Res[T]
+type ResList[T Resource] struct {
+	Items      []T
 	Pagination Pagination
 }
 
 func (rl *ResList[T]) AddItem(r Resource) error {
-	if trr, ok := r.(*Res[T]); ok {
+	if trr, ok := r.(T); ok {
 		rl.Items = append(rl.Items, trr)
 		return nil
 	} else {
-		return ErrorInvalidItemType((*Res[T])(nil), r)
+		var zero T
+		return ErrorInvalidItemType(zero, r)
 	}
 }
 

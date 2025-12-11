@@ -86,7 +86,7 @@ func NewMeshProxyPatchResource() *model.Res[*MeshProxyPatch] {
 	}
 }
 
-type MeshProxyPatchResourceList = model.ResList[*MeshProxyPatch]
+type MeshProxyPatchResourceList = model.ResList[*MeshProxyPatchResource]
 
 func NewMeshProxyPatchResourceList() *model.ResList[*MeshProxyPatch] {
 	return &model.ResList[*MeshProxyPatch]{}

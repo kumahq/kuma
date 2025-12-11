@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -20,7 +19,6 @@ func newCoreResource(rootArgs *args) *cobra.Command {
 		Short: "Generate a core model resource for the policy",
 		Long:  "Generate a core model resource for the policy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Println("start new core resource generation")
 			policyName := filepath.Base(rootArgs.pluginDir)
 			if !govalidator.IsAlphanumeric(policyName) {
 				return errors.New("resource name must be alphanumeric")
@@ -32,17 +30,11 @@ func newCoreResource(rootArgs *args) *cobra.Command {
 
 			pconfig, err := parse.Policy(policyPath)
 			if err != nil {
-				fmt.Printf("failed to parse policy at %s: %v\n", policyPath, err)
 				return err
 			}
 
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.resource.go")
-			err = commontemplate.GoTemplate(resourceTemplate, pconfig, outPath)
-			if err != nil {
-				fmt.Printf("failed to generate resource file at %s: %v\n", outPath, err)
-				return err
-			}
-			return nil
+			return commontemplate.GoTemplate(resourceTemplate, pconfig, outPath)
 		},
 	}
 
@@ -154,7 +146,7 @@ func New{{.Name}}Resource() *model.Res[*{{.Name}}] {
 }
 {{- end }}
 
-type {{.Name}}ResourceList = model.ResList[*{{.Name}}]
+type {{.Name}}ResourceList = model.ResList[*{{.Name}}Resource]
 
 func New{{.Name}}ResourceList() *model.ResList[*{{.Name}}] {
 	return &model.ResList[*{{.Name}}]{}

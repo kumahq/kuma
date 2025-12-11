@@ -87,7 +87,7 @@ func NewMeshIdentityResource() *model.ResStatus[*MeshIdentity, *MeshIdentityStat
 	}
 }
 
-type MeshIdentityResourceList = model.ResList[*MeshIdentity]
+type MeshIdentityResourceList = model.ResList[*MeshIdentityResource]
 
 func NewMeshIdentityResourceList() *model.ResList[*MeshIdentity] {
 	return &model.ResList[*MeshIdentity]{}

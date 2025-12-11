@@ -87,7 +87,7 @@ func NewWorkloadResource() *model.ResStatus[*Workload, *WorkloadStatus] {
 	}
 }
 
-type WorkloadResourceList = model.ResList[*Workload]
+type WorkloadResourceList = model.ResList[*WorkloadResource]
 
 func NewWorkloadResourceList() *model.ResList[*Workload] {
 	return &model.ResList[*Workload]{}

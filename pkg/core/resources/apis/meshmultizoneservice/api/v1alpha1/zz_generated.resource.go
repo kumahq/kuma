@@ -87,7 +87,7 @@ func NewMeshMultiZoneServiceResource() *model.ResStatus[*MeshMultiZoneService, *
 	}
 }
 
-type MeshMultiZoneServiceResourceList = model.ResList[*MeshMultiZoneService]
+type MeshMultiZoneServiceResourceList = model.ResList[*MeshMultiZoneServiceResource]
 
 func NewMeshMultiZoneServiceResourceList() *model.ResList[*MeshMultiZoneService] {
 	return &model.ResList[*MeshMultiZoneService]{}

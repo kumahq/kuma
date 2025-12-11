@@ -86,7 +86,7 @@ func NewMeshHTTPRouteResource() *model.Res[*MeshHTTPRoute] {
 	}
 }
 
-type MeshHTTPRouteResourceList = model.ResList[*MeshHTTPRoute]
+type MeshHTTPRouteResourceList = model.ResList[*MeshHTTPRouteResource]
 
 func NewMeshHTTPRouteResourceList() *model.ResList[*MeshHTTPRoute] {
 	return &model.ResList[*MeshHTTPRoute]{}

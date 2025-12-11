@@ -86,7 +86,7 @@ func NewMeshAccessLogResource() *model.Res[*MeshAccessLog] {
 	}
 }
 
-type MeshAccessLogResourceList = model.ResList[*MeshAccessLog]
+type MeshAccessLogResourceList = model.ResList[*MeshAccessLogResource]
 
 func NewMeshAccessLogResourceList() *model.ResList[*MeshAccessLog] {
 	return &model.ResList[*MeshAccessLog]{}

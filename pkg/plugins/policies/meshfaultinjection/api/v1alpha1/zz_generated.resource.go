@@ -86,7 +86,7 @@ func NewMeshFaultInjectionResource() *model.Res[*MeshFaultInjection] {
 	}
 }
 
-type MeshFaultInjectionResourceList = model.ResList[*MeshFaultInjection]
+type MeshFaultInjectionResourceList = model.ResList[*MeshFaultInjectionResource]
 
 func NewMeshFaultInjectionResourceList() *model.ResList[*MeshFaultInjection] {
 	return &model.ResList[*MeshFaultInjection]{}

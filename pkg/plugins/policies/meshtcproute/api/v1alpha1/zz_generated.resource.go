@@ -86,7 +86,7 @@ func NewMeshTCPRouteResource() *model.Res[*MeshTCPRoute] {
 	}
 }
 
-type MeshTCPRouteResourceList = model.ResList[*MeshTCPRoute]
+type MeshTCPRouteResourceList = model.ResList[*MeshTCPRouteResource]
 
 func NewMeshTCPRouteResourceList() *model.ResList[*MeshTCPRoute] {
 	return &model.ResList[*MeshTCPRoute]{}

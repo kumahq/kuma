@@ -86,7 +86,7 @@ func NewMeshLoadBalancingStrategyResource() *model.Res[*MeshLoadBalancingStrateg
 	}
 }
 
-type MeshLoadBalancingStrategyResourceList = model.ResList[*MeshLoadBalancingStrategy]
+type MeshLoadBalancingStrategyResourceList = model.ResList[*MeshLoadBalancingStrategyResource]
 
 func NewMeshLoadBalancingStrategyResourceList() *model.ResList[*MeshLoadBalancingStrategy] {
 	return &model.ResList[*MeshLoadBalancingStrategy]{}

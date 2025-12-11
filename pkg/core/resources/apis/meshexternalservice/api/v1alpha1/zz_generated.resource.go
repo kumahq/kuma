@@ -87,7 +87,7 @@ func NewMeshExternalServiceResource() *model.ResStatus[*MeshExternalService, *Me
 	}
 }
 
-type MeshExternalServiceResourceList = model.ResList[*MeshExternalService]
+type MeshExternalServiceResourceList = model.ResList[*MeshExternalServiceResource]
 
 func NewMeshExternalServiceResourceList() *model.ResList[*MeshExternalService] {
 	return &model.ResList[*MeshExternalService]{}

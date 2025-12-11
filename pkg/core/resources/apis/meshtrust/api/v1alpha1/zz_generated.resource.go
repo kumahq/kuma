@@ -86,7 +86,7 @@ func NewMeshTrustResource() *model.Res[*MeshTrust] {
 	}
 }
 
-type MeshTrustResourceList = model.ResList[*MeshTrust]
+type MeshTrustResourceList = model.ResList[*MeshTrustResource]
 
 func NewMeshTrustResourceList() *model.ResList[*MeshTrust] {
 	return &model.ResList[*MeshTrust]{}
