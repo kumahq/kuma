@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/policy"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -432,6 +433,18 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 }
 
+func (r *resourceEndpoints) clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
+	if r.descriptor.Name == meshtrust_api.MeshTrustType {
+		if resRest.GetStatus() != nil {
+			status, ok := resRest.GetStatus().(*meshtrust_api.MeshTrustStatus)
+			if ok && status != nil && status.Origin != nil {
+				log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
+				status.Origin = nil
+			}
+		}
+	}
+}
+
 func (r *resourceEndpoints) createResource(
 	ctx context.Context,
 	name string,
@@ -449,6 +462,8 @@ func (r *resourceEndpoints) createResource(
 		rest_errors.HandleError(ctx, response, err, "Access Denied")
 		return
 	}
+
+	r.clearMeshTrustOrigin(resRest, meshName, name)
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
@@ -516,6 +531,8 @@ func (r *resourceEndpoints) updateResource(
 		rest_errors.HandleError(ctx, response, err, "Access Denied")
 		return
 	}
+
+	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
 	currentLabels, err := core_model.ComputeLabels(

@@ -7,8 +7,11 @@ package v1alpha1
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 // +kuma:policy:short_name=mtrust
 // +kuma:policy:register_generator=true
+// +kuma:policy:has_status=true
 type MeshTrust struct {
 	// Origin specifies whether the resource was created from a MeshIdentity.
+	//
+	// Deprecated: use Status.Origin instead
 	Origin *Origin `json:"origin,omitempty"`
 	// TrustDomain is the trust domain associated with this resource.
 	// +required
@@ -19,6 +22,11 @@ type MeshTrust struct {
 	// +required
 	// +kubebuilder:validation:MinItems=1
 	CABundles []CABundle `json:"caBundles"`
+}
+
+type MeshTrustStatus struct {
+	// Origin specifies whether the resource was created from a MeshIdentity.
+	Origin *Origin `json:"origin,omitempty"`
 }
 
 type Origin struct {
