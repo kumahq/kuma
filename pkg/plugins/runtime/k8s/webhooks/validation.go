@@ -76,7 +76,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			if !ok {
 				return admission.Errored(http.StatusInternalServerError, errors.Errorf("failed to convert resource to MeshTrust K8s object"))
 			}
-			if k8sMeshTrust.Status.Origin != nil && k8sMeshTrust.Status.Origin.KRI != nil {
+			if k8sMeshTrust.Status != nil && k8sMeshTrust.Status.Origin != nil && k8sMeshTrust.Status.Origin.KRI != nil {
 				warnings = append(warnings, "status.origin: field is read-only")
 			}
 		}

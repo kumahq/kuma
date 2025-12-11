@@ -435,9 +435,12 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 
 func (r *resourceEndpoints) clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
 	if r.descriptor.Name == meshtrust_api.MeshTrustType {
-		if resRest.GetStatus() != nil && resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
-			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
-			resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin = nil
+		if resRest.GetStatus() != nil {
+			status, ok := resRest.GetStatus().(*meshtrust_api.MeshTrustStatus)
+			if ok && status != nil && status.Origin != nil {
+				log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
+				status.Origin = nil
+			}
 		}
 	}
 }
