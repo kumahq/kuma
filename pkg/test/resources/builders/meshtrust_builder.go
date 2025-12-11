@@ -48,6 +48,7 @@ c9Vh+kJkmPUJZQIgQBr2GkV8uSfq/5ZKHD6jz6MJvKsg06dMBdvZBIA2ujg=
 					},
 				},
 			},
+			Status: &meshtrust_api.MeshTrustStatus{},
 		},
 	}
 }
