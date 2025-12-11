@@ -19,6 +19,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/sync"
@@ -34,11 +35,12 @@ type ProxyConfigInspector struct {
 	dataplaneMetadata      *core_xds.DataplaneMetadata
 }
 
-func NewProxyConfigInspector(meshContext xds_context.MeshContext, dataplaneMetadata *core_xds.DataplaneMetadata, zone string, knownInternalAddresses []string) (*ProxyConfigInspector, error) {
+func NewProxyConfigInspector(meshContext xds_context.MeshContext, dataplaneMetadata *core_xds.DataplaneMetadata, zone string, knownInternalAddresses []string, hooks ...xds_hooks.ResourceSetHook) (*ProxyConfigInspector, error) {
 	return &ProxyConfigInspector{
 		zone:        zone,
 		meshContext: meshContext,
 		snapshotGenerator: &v3.TemplateSnapshotGenerator{
+			ResourceSetHooks:      hooks,
 			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		},
 		knownInternalAddresses: knownInternalAddresses,

@@ -33,5 +33,6 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
+		runtime.XDS().Hooks.ResourceSetHooks(),
 	)
 }

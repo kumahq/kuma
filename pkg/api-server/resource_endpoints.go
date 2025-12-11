@@ -54,6 +54,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
 )
 
 const (
@@ -76,6 +77,7 @@ type resourceEndpoints struct {
 	k8sMapper              k8s.ResourceMapperFunc
 	filter                 func(request *restful.Request) (store.ListFilterFunc, error)
 	meshContextBuilder     xds_context.MeshContextBuilder
+	xdsHooks               []xds_hooks.ResourceSetHook
 	systemNamespace        string
 	isK8s                  bool
 	knownInternalAddresses []string
@@ -929,7 +931,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata), r.zoneName, r.knownInternalAddresses)
+		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata), r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
 			return

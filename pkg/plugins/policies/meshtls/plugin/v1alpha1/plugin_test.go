@@ -58,6 +58,7 @@ var _ = Describe("MeshTLS", func() {
 		meshService      bool
 		workloadIdentity *core_xds.WorkloadIdentity
 		casByTrustDomain map[string][]xds_context.PEMBytes
+		features         xds_types.Features
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -77,7 +78,7 @@ var _ = Describe("MeshTLS", func() {
 
 			policy := getPolicy(given.caseName)
 
-			proxy := xds_builders.Proxy().
+			proxyBuilder := xds_builders.Proxy().
 				WithSecretsTracker(secretsTracker).
 				WithWorkloadIdentity(given.workloadIdentity).
 				WithApiVersion(envoy_common.APIV3).
@@ -112,8 +113,15 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From)))).
-				Build()
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From))))
+
+			if given.features != nil {
+				proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
+					Features: given.features,
+				})
+			}
+
+			proxy := proxyBuilder.Build()
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -216,6 +224,35 @@ var _ = Describe("MeshTLS", func() {
 				"domain-1": {
 					xds_context.PEMBytes("123"),
 				},
+			},
+		}),
+		Entry("strict mode + strict mesh = no passthrough listeners", testCase{
+			caseName:    "strict-with-strict-mtls",
+			meshBuilder: samples.MeshMTLSBuilder(),
+		}),
+		Entry("permissive mode + strict mesh = passthrough listeners", testCase{
+			caseName:    "permissive-with-strict-mtls",
+			meshBuilder: samples.MeshMTLSBuilder(),
+		}),
+		Entry("workload identity without CA = passthrough listeners", testCase{
+			caseName:    "strict-with-workload-identity-no-ca",
+			meshBuilder: samples.MeshDefaultBuilder(),
+			meshService: true,
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+		}),
+		Entry("strict inbound ports feature = port filtering", testCase{
+			caseName:    "strict-with-feature-strict-inbound-ports",
+			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+			features: xds_types.Features{
+				xds_types.FeatureStrictInboundPorts: true,
 			},
 		}),
 	)
