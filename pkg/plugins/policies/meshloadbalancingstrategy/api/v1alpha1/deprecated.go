@@ -3,13 +3,14 @@ package v1alpha1
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (t *MeshLoadBalancingStrategyResource) Deprecations() []string {
-	deprecations := validateHashPoliciesType(pointer.Deref(t.Spec.To))
-	deprecations = append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
+func deprecations(r *model.Res[*MeshLoadBalancingStrategy]) []string {
+	deprecations := validateHashPoliciesType(pointer.Deref(r.Spec.To))
+	deprecations = append(deprecations, validators.TopLevelTargetRefDeprecations(r.Spec.TargetRef)...)
 	return deprecations
 }
 

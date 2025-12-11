@@ -24,15 +24,15 @@ const (
 	NameFilterAfterErr  = "must be defined. You need to pick a filter after which this one will be added"
 )
 
-func (r *MeshProxyPatchResource) validate() error {
+func validateResource(r *core_model.Res[*MeshProxyPatch]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshProxyPatch], targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

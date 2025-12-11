@@ -5,11 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshIdentityResource) validate() error {
+func validateResource(r *model.ResStatus[*MeshIdentity, *MeshIdentityStatus]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("spiffeID"), validateSPIFFEID(pointer.Deref(r.Spec.SpiffeID)))

@@ -70,7 +70,8 @@ type ResStatus[T Spec, S ResourceStatus] struct {
 	Spec   T
 	Status S
 
-	ValidateFn func(*ResStatus[T, S]) error
+	ValidateFn     func(*ResStatus[T, S]) error
+	DeprecationsFn func(*ResStatus[T, S]) []string
 }
 
 func (rsi *ResStatus[T, S]) GetMeta() ResourceMeta {
@@ -114,6 +115,13 @@ func (rsi *ResStatus[T, S]) Descriptor() ResourceTypeDescriptor {
 func (rsi *ResStatus[T, S]) Validate() error {
 	if rsi.ValidateFn != nil {
 		return rsi.ValidateFn(rsi)
+	}
+	return nil
+}
+
+func (rsi *ResStatus[T, S]) Deprecations() []string {
+	if rsi.DeprecationsFn != nil {
+		return rsi.DeprecationsFn(rsi)
 	}
 	return nil
 }

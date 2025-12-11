@@ -11,6 +11,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
@@ -21,15 +22,15 @@ var (
 	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^.]+`)
 )
 
-func (r *MeshPassthroughResource) validate() error {
+func validateResource(r *core_model.Res[*MeshPassthrough]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshPassthrough], targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

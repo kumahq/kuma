@@ -18,15 +18,15 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshTraceResource) validate() error {
+func validateResource(r *core_model.Res[*MeshTrace]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshTrace], targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

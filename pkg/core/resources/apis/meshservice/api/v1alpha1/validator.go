@@ -5,7 +5,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
-func (r *MeshServiceResource) validate() error {
+func validateResource(r *model.ResStatus[*MeshService, *MeshServiceStatus]) error {
 	var verr validators.ValidationError
 
 	name := model.GetDisplayName(r.GetMeta())

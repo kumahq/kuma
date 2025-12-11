@@ -7,15 +7,16 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshAccessLogResource) validate() error {
+func validateResource(r *core_model.Res[*MeshAccessLog]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
 	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
@@ -34,7 +35,7 @@ func (r *MeshAccessLogResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshAccessLog], targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,

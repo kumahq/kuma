@@ -5,10 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
-func (r *HostnameGeneratorResource) validate() error {
+func validateResource(r *core_model.Res[*HostnameGenerator]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.Add(validateSelectors(path.Field("selector"), r.Spec.Selector))

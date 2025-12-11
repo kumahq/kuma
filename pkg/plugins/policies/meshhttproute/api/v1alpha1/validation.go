@@ -17,15 +17,15 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshHTTPRouteResource) validate() error {
+func validateResource(r *core_model.Res[*MeshHTTPRoute]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
-func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshHTTPRoute], targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

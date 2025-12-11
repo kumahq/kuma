@@ -5,15 +5,16 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshCircuitBreakerResource) validate() error {
+func validateResource(r *core_model.Res[*MeshCircuitBreaker]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
@@ -26,7 +27,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshCircuitBreaker], targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

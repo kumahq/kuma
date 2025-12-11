@@ -2,11 +2,12 @@ package v1alpha1
 
 import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshMultiZoneServiceResource) validate() error {
+func validateResource(r *model.ResStatus[*MeshMultiZoneService, *MeshMultiZoneServiceStatus]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	if len(pointer.Deref(r.Spec.Selector.MeshService.MatchLabels)) == 0 {

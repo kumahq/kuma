@@ -6,14 +6,15 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshLoadBalancingStrategyResource) validate() error {
+func validateResource(r *core_model.Res[*MeshLoadBalancingStrategy]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
 	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
@@ -22,7 +23,7 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshLoadBalancingStrategy], targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

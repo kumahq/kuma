@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"

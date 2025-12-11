@@ -12,10 +12,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshFaultInjectionResource) validate() error {
+func validateResource(r *core_model.Res[*MeshFaultInjection]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	if len(pointer.Deref(r.Spec.From)) > 0 && len(pointer.Deref(r.Spec.Rules)) > 0 {
 		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
@@ -26,7 +26,7 @@ func (r *MeshFaultInjectionResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshFaultInjection], targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

@@ -20,7 +20,7 @@ var (
 	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
 )
 
-func (r *MeshExternalServiceResource) validate() error {
+func validateResource(r *model.ResStatus[*MeshExternalService, *MeshExternalServiceStatus]) error {
 	var verr validators.ValidationError
 
 	verr.Add(validators.ValidateLength(validators.RootedAt("name"), 63, model.GetDisplayName(r.GetMeta())))

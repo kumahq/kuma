@@ -1,9 +1,10 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
 )
 
-func (t *MeshRetryResource) Deprecations() []string {
-	return validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
+func deprecations(r *model.Res[*MeshRetry]) []string {
+	return validators.TopLevelTargetRefDeprecations(r.Spec.TargetRef)
 }

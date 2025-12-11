@@ -1,14 +1,15 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (t *MeshAccessLogResource) Deprecations() []string {
+func deprecations(r *model.Res[*MeshAccessLog]) []string {
 	var deprecations []string
-	if len(pointer.Deref(t.Spec.From)) > 0 {
+	if len(pointer.Deref(r.Spec.From)) > 0 {
 		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
 	}
-	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
+	return append(deprecations, validators.TopLevelTargetRefDeprecations(r.Spec.TargetRef)...)
 }

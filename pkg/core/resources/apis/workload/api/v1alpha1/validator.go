@@ -7,7 +7,7 @@ import (
 
 const maxNameLength = 253
 
-func (r *WorkloadResource) validate() error {
+func validateResource(r *model.Res[*Workload]) error {
 	var verr validators.ValidationError
 	name := model.GetDisplayName(r.GetMeta())
 	verr.Add(validators.ValidateLength(validators.RootedAt("name"), maxNameLength, name))

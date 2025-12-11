@@ -58,9 +58,6 @@ package {{.Package}}
 
 import (
 	_ "embed"
-{{- if not .HasStatus }}
-	"errors"
-{{- end }}
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -71,9 +68,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-{{- if .IsDestination }}
-    "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-{{- end }}
 )
 
 {{- if not .SkipRegistration }}

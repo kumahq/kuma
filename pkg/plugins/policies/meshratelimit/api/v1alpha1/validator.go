@@ -13,13 +13,13 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshRateLimitResource) validate() error {
+func validateResource(r *core_model.Res[*MeshRateLimit]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	verr.AddErrorAt(path, validateRules(topLevel, pointer.Deref(r.Spec.Rules)))
 	verr.AddErrorAt(path, validateFrom(topLevel, pointer.Deref(r.Spec.From)))
@@ -27,7 +27,7 @@ func (r *MeshRateLimitResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshRateLimit], targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

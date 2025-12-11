@@ -13,10 +13,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (r *MeshRetryResource) validate() error {
+func validateResource(r *core_model.Res[*MeshRetry]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
 	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
@@ -24,7 +24,7 @@ func (r *MeshRetryResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(r *core_model.Res[*MeshRetry], targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
