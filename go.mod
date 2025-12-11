@@ -13,9 +13,9 @@ require (
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.9.0
 	github.com/emicklei/go-restful/v3 v3.13.0
-	github.com/envoyproxy/go-control-plane v0.13.5-0.20251024222203-75eaa193e329
+	github.com/envoyproxy/go-control-plane v0.14.0
 	github.com/envoyproxy/go-control-plane/contrib v1.32.4
-	github.com/envoyproxy/go-control-plane/envoy v1.35.0
+	github.com/envoyproxy/go-control-plane/envoy v1.36.0
 	github.com/envoyproxy/protoc-gen-validate v1.3.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/exaring/otelpgx v0.9.3
@@ -297,8 +297,8 @@ require (
 )
 
 replace (
-	github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.4-kong-2
-	github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.32.4-kong-1
-	github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.32.4-kong-1
+	github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.14.0-kong-1
+	github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.36.0-kong-1
+	github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.36.0-kong-1
 	github.com/envoyproxy/go-control-plane/ratelimit => github.com/kumahq/go-control-plane/ratelimit v0.1.0-kong-1
 )
