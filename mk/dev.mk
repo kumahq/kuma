@@ -8,11 +8,7 @@ GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
 # renovate: datasource=github-tags depName=envoy packageName=kumahq/envoy-builds versioning=semver
-<<<<<<< HEAD
-ENVOY_VERSION ?= 1.35.7
-=======
-ENVOY_VERSION ?= 1.36.4
->>>>>>> 7656b4db4d (chore(deps): bump envoy from 1.36.3 to 1.36.4 (#15246))
+ENVOY_VERSION ?= 1.35.8
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
