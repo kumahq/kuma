@@ -73,7 +73,7 @@ require (
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.45.0
 	golang.org/x/sync v0.18.0
-	golang.org/x/sys v0.38.0
+	golang.org/x/sys v0.39.0
 	golang.org/x/text v0.31.0
 	golang.org/x/tools v0.39.0
 	gonum.org/v1/gonum v0.16.0
