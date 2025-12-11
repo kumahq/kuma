@@ -69,6 +69,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	case v1.Delete:
 		return admission.Allowed("")
 	default:
+		var warnings []string
 		if coreRes.Descriptor().Name == meshtrust_api.MeshTrustType {
 			// Need to unmarshal to the K8s object type to access the Status field.
 			k8sMeshTrust, ok := k8sObj.(*meshtrust_k8s.MeshTrust)
@@ -76,7 +77,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 				return admission.Errored(http.StatusInternalServerError, errors.Errorf("failed to convert resource to MeshTrust K8s object"))
 			}
 			if k8sMeshTrust.Status.Origin != nil && k8sMeshTrust.Status.Origin.KRI != nil {
-				return admission.Denied("status.origin: field is read-only")
+				warnings = append(warnings, "status.origin: field is read-only")
 			}
 		}
 
@@ -96,7 +97,8 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return admission.Denied(err.Error())
 		}
 
-		return admission.Allowed("").WithWarnings(core_model.Deprecations(coreRes)...)
+		warnings = append(warnings, core_model.Deprecations(coreRes)...)
+		return admission.Allowed("").WithWarnings(warnings...)
 	}
 }
 

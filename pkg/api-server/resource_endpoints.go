@@ -451,9 +451,8 @@ func (r *resourceEndpoints) createResource(
 
 	if r.descriptor.Name == meshtrust_api.MeshTrustType {
 		if resRest.GetStatus() != nil && resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
-			err := rest_errors.NewBadRequestError("status.origin: field is read-only")
-			rest_errors.HandleError(ctx, response, err, "Invalid MeshTrust status")
-			return
+			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
+			resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin = nil
 		}
 	}
 
@@ -526,9 +525,8 @@ func (r *resourceEndpoints) updateResource(
 
 	if r.descriptor.Name == meshtrust_api.MeshTrustType {
 		if newResRest.GetStatus() != nil && newResRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
-			err := rest_errors.NewBadRequestError("status.origin: field is read-only")
-			rest_errors.HandleError(ctx, response, err, "Invalid MeshTrust status")
-			return
+			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", currentRes.GetMeta().GetName())
+			newResRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin = nil
 		}
 	}
 
