@@ -76,6 +76,8 @@ const (
 	MeshHealthCheckType model.ResourceType = "MeshHealthCheck"
 )
 
+type MeshHealthCheckResource = model.Res[*MeshHealthCheck]
+
 func NewMeshHealthCheckResource() *model.Res[*MeshHealthCheck] {
 	return &model.Res[*MeshHealthCheck]{
 		Spec:           &MeshHealthCheck{},
@@ -83,6 +85,8 @@ func NewMeshHealthCheckResource() *model.Res[*MeshHealthCheck] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshHealthCheckResourceList = model.ResList[*MeshHealthCheck]
 
 func NewMeshHealthCheckResourceList() *model.ResList[*MeshHealthCheck] {
 	return &model.ResList[*MeshHealthCheck]{}

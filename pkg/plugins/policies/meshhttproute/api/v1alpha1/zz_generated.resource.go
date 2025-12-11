@@ -76,6 +76,8 @@ const (
 	MeshHTTPRouteType model.ResourceType = "MeshHTTPRoute"
 )
 
+type MeshHTTPRouteResource = model.Res[*MeshHTTPRoute]
+
 func NewMeshHTTPRouteResource() *model.Res[*MeshHTTPRoute] {
 	return &model.Res[*MeshHTTPRoute]{
 		Spec:           &MeshHTTPRoute{},
@@ -83,6 +85,8 @@ func NewMeshHTTPRouteResource() *model.Res[*MeshHTTPRoute] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshHTTPRouteResourceList = model.ResList[*MeshHTTPRoute]
 
 func NewMeshHTTPRouteResourceList() *model.ResList[*MeshHTTPRoute] {
 	return &model.ResList[*MeshHTTPRoute]{}

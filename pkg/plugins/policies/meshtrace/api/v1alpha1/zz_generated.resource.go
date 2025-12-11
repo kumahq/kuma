@@ -76,6 +76,8 @@ const (
 	MeshTraceType model.ResourceType = "MeshTrace"
 )
 
+type MeshTraceResource = model.Res[*MeshTrace]
+
 func NewMeshTraceResource() *model.Res[*MeshTrace] {
 	return &model.Res[*MeshTrace]{
 		Spec:           &MeshTrace{},
@@ -83,6 +85,8 @@ func NewMeshTraceResource() *model.Res[*MeshTrace] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshTraceResourceList = model.ResList[*MeshTrace]
 
 func NewMeshTraceResourceList() *model.ResList[*MeshTrace] {
 	return &model.ResList[*MeshTrace]{}

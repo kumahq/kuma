@@ -132,6 +132,8 @@ const (
 )
 
 {{- if .HasStatus }}
+type {{.Name}}Resource = model.ResStatus[*{{.Name}}, *{{.Name}}Status]
+
 func New{{.Name}}Resource() *model.ResStatus[*{{.Name}}, *{{.Name}}Status] {
 	return &model.ResStatus[*{{.Name}}, *{{.Name}}Status]{
 		Spec:       &{{.Name}}{},
@@ -141,6 +143,8 @@ func New{{.Name}}Resource() *model.ResStatus[*{{.Name}}, *{{.Name}}Status] {
 	}
 }
 {{- else }}
+type {{.Name}}Resource = model.Res[*{{.Name}}]
+
 func New{{.Name}}Resource() *model.Res[*{{.Name}}] {
 	return &model.Res[*{{.Name}}]{
 		Spec:       &{{.Name}}{},
@@ -149,6 +153,8 @@ func New{{.Name}}Resource() *model.Res[*{{.Name}}] {
 	}
 }
 {{- end }}
+
+type {{.Name}}ResourceList = model.ResList[*{{.Name}}]
 
 func New{{.Name}}ResourceList() *model.ResList[*{{.Name}}] {
 	return &model.ResList[*{{.Name}}]{}

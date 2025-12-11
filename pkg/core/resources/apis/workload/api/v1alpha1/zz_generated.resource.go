@@ -76,6 +76,8 @@ const (
 	WorkloadType model.ResourceType = "Workload"
 )
 
+type WorkloadResource = model.ResStatus[*Workload, *WorkloadStatus]
+
 func NewWorkloadResource() *model.ResStatus[*Workload, *WorkloadStatus] {
 	return &model.ResStatus[*Workload, *WorkloadStatus]{
 		Spec:           &Workload{},
@@ -84,6 +86,8 @@ func NewWorkloadResource() *model.ResStatus[*Workload, *WorkloadStatus] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type WorkloadResourceList = model.ResList[*Workload]
 
 func NewWorkloadResourceList() *model.ResList[*Workload] {
 	return &model.ResList[*Workload]{}

@@ -76,6 +76,8 @@ const (
 	MeshRetryType model.ResourceType = "MeshRetry"
 )
 
+type MeshRetryResource = model.Res[*MeshRetry]
+
 func NewMeshRetryResource() *model.Res[*MeshRetry] {
 	return &model.Res[*MeshRetry]{
 		Spec:           &MeshRetry{},
@@ -83,6 +85,8 @@ func NewMeshRetryResource() *model.Res[*MeshRetry] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshRetryResourceList = model.ResList[*MeshRetry]
 
 func NewMeshRetryResourceList() *model.ResList[*MeshRetry] {
 	return &model.ResList[*MeshRetry]{}

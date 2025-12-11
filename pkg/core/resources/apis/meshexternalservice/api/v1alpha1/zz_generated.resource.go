@@ -76,6 +76,8 @@ const (
 	MeshExternalServiceType model.ResourceType = "MeshExternalService"
 )
 
+type MeshExternalServiceResource = model.ResStatus[*MeshExternalService, *MeshExternalServiceStatus]
+
 func NewMeshExternalServiceResource() *model.ResStatus[*MeshExternalService, *MeshExternalServiceStatus] {
 	return &model.ResStatus[*MeshExternalService, *MeshExternalServiceStatus]{
 		Spec:           &MeshExternalService{},
@@ -84,6 +86,8 @@ func NewMeshExternalServiceResource() *model.ResStatus[*MeshExternalService, *Me
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshExternalServiceResourceList = model.ResList[*MeshExternalService]
 
 func NewMeshExternalServiceResourceList() *model.ResList[*MeshExternalService] {
 	return &model.ResList[*MeshExternalService]{}

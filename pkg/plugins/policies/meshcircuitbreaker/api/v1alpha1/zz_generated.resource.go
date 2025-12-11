@@ -76,6 +76,8 @@ const (
 	MeshCircuitBreakerType model.ResourceType = "MeshCircuitBreaker"
 )
 
+type MeshCircuitBreakerResource = model.Res[*MeshCircuitBreaker]
+
 func NewMeshCircuitBreakerResource() *model.Res[*MeshCircuitBreaker] {
 	return &model.Res[*MeshCircuitBreaker]{
 		Spec:           &MeshCircuitBreaker{},
@@ -83,6 +85,8 @@ func NewMeshCircuitBreakerResource() *model.Res[*MeshCircuitBreaker] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshCircuitBreakerResourceList = model.ResList[*MeshCircuitBreaker]
 
 func NewMeshCircuitBreakerResourceList() *model.ResList[*MeshCircuitBreaker] {
 	return &model.ResList[*MeshCircuitBreaker]{}

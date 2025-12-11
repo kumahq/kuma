@@ -76,6 +76,8 @@ const (
 	MeshServiceType model.ResourceType = "MeshService"
 )
 
+type MeshServiceResource = model.ResStatus[*MeshService, *MeshServiceStatus]
+
 func NewMeshServiceResource() *model.ResStatus[*MeshService, *MeshServiceStatus] {
 	return &model.ResStatus[*MeshService, *MeshServiceStatus]{
 		Spec:           &MeshService{},
@@ -84,6 +86,8 @@ func NewMeshServiceResource() *model.ResStatus[*MeshService, *MeshServiceStatus]
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshServiceResourceList = model.ResList[*MeshService]
 
 func NewMeshServiceResourceList() *model.ResList[*MeshService] {
 	return &model.ResList[*MeshService]{}

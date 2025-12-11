@@ -76,6 +76,8 @@ const (
 	MeshTrustType model.ResourceType = "MeshTrust"
 )
 
+type MeshTrustResource = model.Res[*MeshTrust]
+
 func NewMeshTrustResource() *model.Res[*MeshTrust] {
 	return &model.Res[*MeshTrust]{
 		Spec:           &MeshTrust{},
@@ -83,6 +85,8 @@ func NewMeshTrustResource() *model.Res[*MeshTrust] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshTrustResourceList = model.ResList[*MeshTrust]
 
 func NewMeshTrustResourceList() *model.ResList[*MeshTrust] {
 	return &model.ResList[*MeshTrust]{}

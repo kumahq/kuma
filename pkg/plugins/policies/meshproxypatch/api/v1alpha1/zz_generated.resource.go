@@ -76,6 +76,8 @@ const (
 	MeshProxyPatchType model.ResourceType = "MeshProxyPatch"
 )
 
+type MeshProxyPatchResource = model.Res[*MeshProxyPatch]
+
 func NewMeshProxyPatchResource() *model.Res[*MeshProxyPatch] {
 	return &model.Res[*MeshProxyPatch]{
 		Spec:           &MeshProxyPatch{},
@@ -83,6 +85,8 @@ func NewMeshProxyPatchResource() *model.Res[*MeshProxyPatch] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshProxyPatchResourceList = model.ResList[*MeshProxyPatch]
 
 func NewMeshProxyPatchResourceList() *model.ResList[*MeshProxyPatch] {
 	return &model.ResList[*MeshProxyPatch]{}

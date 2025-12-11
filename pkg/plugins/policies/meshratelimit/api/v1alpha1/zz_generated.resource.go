@@ -76,6 +76,8 @@ const (
 	MeshRateLimitType model.ResourceType = "MeshRateLimit"
 )
 
+type MeshRateLimitResource = model.Res[*MeshRateLimit]
+
 func NewMeshRateLimitResource() *model.Res[*MeshRateLimit] {
 	return &model.Res[*MeshRateLimit]{
 		Spec:           &MeshRateLimit{},
@@ -83,6 +85,8 @@ func NewMeshRateLimitResource() *model.Res[*MeshRateLimit] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshRateLimitResourceList = model.ResList[*MeshRateLimit]
 
 func NewMeshRateLimitResourceList() *model.ResList[*MeshRateLimit] {
 	return &model.ResList[*MeshRateLimit]{}

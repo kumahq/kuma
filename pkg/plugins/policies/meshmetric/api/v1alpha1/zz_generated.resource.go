@@ -76,6 +76,8 @@ const (
 	MeshMetricType model.ResourceType = "MeshMetric"
 )
 
+type MeshMetricResource = model.Res[*MeshMetric]
+
 func NewMeshMetricResource() *model.Res[*MeshMetric] {
 	return &model.Res[*MeshMetric]{
 		Spec:           &MeshMetric{},
@@ -83,6 +85,8 @@ func NewMeshMetricResource() *model.Res[*MeshMetric] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshMetricResourceList = model.ResList[*MeshMetric]
 
 func NewMeshMetricResourceList() *model.ResList[*MeshMetric] {
 	return &model.ResList[*MeshMetric]{}

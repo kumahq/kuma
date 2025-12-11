@@ -76,6 +76,8 @@ const (
 	MeshAccessLogType model.ResourceType = "MeshAccessLog"
 )
 
+type MeshAccessLogResource = model.Res[*MeshAccessLog]
+
 func NewMeshAccessLogResource() *model.Res[*MeshAccessLog] {
 	return &model.Res[*MeshAccessLog]{
 		Spec:           &MeshAccessLog{},
@@ -83,6 +85,8 @@ func NewMeshAccessLogResource() *model.Res[*MeshAccessLog] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshAccessLogResourceList = model.ResList[*MeshAccessLog]
 
 func NewMeshAccessLogResourceList() *model.ResList[*MeshAccessLog] {
 	return &model.ResList[*MeshAccessLog]{}

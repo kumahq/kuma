@@ -76,6 +76,8 @@ const (
 	MeshMultiZoneServiceType model.ResourceType = "MeshMultiZoneService"
 )
 
+type MeshMultiZoneServiceResource = model.ResStatus[*MeshMultiZoneService, *MeshMultiZoneServiceStatus]
+
 func NewMeshMultiZoneServiceResource() *model.ResStatus[*MeshMultiZoneService, *MeshMultiZoneServiceStatus] {
 	return &model.ResStatus[*MeshMultiZoneService, *MeshMultiZoneServiceStatus]{
 		Spec:           &MeshMultiZoneService{},
@@ -84,6 +86,8 @@ func NewMeshMultiZoneServiceResource() *model.ResStatus[*MeshMultiZoneService, *
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshMultiZoneServiceResourceList = model.ResList[*MeshMultiZoneService]
 
 func NewMeshMultiZoneServiceResourceList() *model.ResList[*MeshMultiZoneService] {
 	return &model.ResList[*MeshMultiZoneService]{}

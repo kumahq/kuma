@@ -76,6 +76,8 @@ const (
 	HostnameGeneratorType model.ResourceType = "HostnameGenerator"
 )
 
+type HostnameGeneratorResource = model.Res[*HostnameGenerator]
+
 func NewHostnameGeneratorResource() *model.Res[*HostnameGenerator] {
 	return &model.Res[*HostnameGenerator]{
 		Spec:           &HostnameGenerator{},
@@ -83,6 +85,8 @@ func NewHostnameGeneratorResource() *model.Res[*HostnameGenerator] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type HostnameGeneratorResourceList = model.ResList[*HostnameGenerator]
 
 func NewHostnameGeneratorResourceList() *model.ResList[*HostnameGenerator] {
 	return &model.ResList[*HostnameGenerator]{}

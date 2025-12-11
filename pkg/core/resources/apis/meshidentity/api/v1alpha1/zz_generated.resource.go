@@ -76,6 +76,8 @@ const (
 	MeshIdentityType model.ResourceType = "MeshIdentity"
 )
 
+type MeshIdentityResource = model.ResStatus[*MeshIdentity, *MeshIdentityStatus]
+
 func NewMeshIdentityResource() *model.ResStatus[*MeshIdentity, *MeshIdentityStatus] {
 	return &model.ResStatus[*MeshIdentity, *MeshIdentityStatus]{
 		Spec:           &MeshIdentity{},
@@ -84,6 +86,8 @@ func NewMeshIdentityResource() *model.ResStatus[*MeshIdentity, *MeshIdentityStat
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshIdentityResourceList = model.ResList[*MeshIdentity]
 
 func NewMeshIdentityResourceList() *model.ResList[*MeshIdentity] {
 	return &model.ResList[*MeshIdentity]{}

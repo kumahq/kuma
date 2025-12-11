@@ -75,6 +75,8 @@ const (
 	DoNothingPolicyType model.ResourceType = "DoNothingPolicy"
 )
 
+type DoNothingPolicyResource = model.Res[*DoNothingPolicy]
+
 func NewDoNothingPolicyResource() *model.Res[*DoNothingPolicy] {
 	return &model.Res[*DoNothingPolicy]{
 		Spec:           &DoNothingPolicy{},
@@ -82,6 +84,8 @@ func NewDoNothingPolicyResource() *model.Res[*DoNothingPolicy] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type DoNothingPolicyResourceList = model.ResList[*DoNothingPolicy]
 
 func NewDoNothingPolicyResourceList() *model.ResList[*DoNothingPolicy] {
 	return &model.ResList[*DoNothingPolicy]{}

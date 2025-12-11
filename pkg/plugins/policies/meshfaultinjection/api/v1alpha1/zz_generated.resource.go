@@ -76,6 +76,8 @@ const (
 	MeshFaultInjectionType model.ResourceType = "MeshFaultInjection"
 )
 
+type MeshFaultInjectionResource = model.Res[*MeshFaultInjection]
+
 func NewMeshFaultInjectionResource() *model.Res[*MeshFaultInjection] {
 	return &model.Res[*MeshFaultInjection]{
 		Spec:           &MeshFaultInjection{},
@@ -83,6 +85,8 @@ func NewMeshFaultInjectionResource() *model.Res[*MeshFaultInjection] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshFaultInjectionResourceList = model.ResList[*MeshFaultInjection]
 
 func NewMeshFaultInjectionResourceList() *model.ResList[*MeshFaultInjection] {
 	return &model.ResList[*MeshFaultInjection]{}

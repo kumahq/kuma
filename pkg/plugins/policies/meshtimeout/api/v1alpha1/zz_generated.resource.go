@@ -76,6 +76,8 @@ const (
 	MeshTimeoutType model.ResourceType = "MeshTimeout"
 )
 
+type MeshTimeoutResource = model.Res[*MeshTimeout]
+
 func NewMeshTimeoutResource() *model.Res[*MeshTimeout] {
 	return &model.Res[*MeshTimeout]{
 		Spec:           &MeshTimeout{},
@@ -83,6 +85,8 @@ func NewMeshTimeoutResource() *model.Res[*MeshTimeout] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshTimeoutResourceList = model.ResList[*MeshTimeout]
 
 func NewMeshTimeoutResourceList() *model.ResList[*MeshTimeout] {
 	return &model.ResList[*MeshTimeout]{}

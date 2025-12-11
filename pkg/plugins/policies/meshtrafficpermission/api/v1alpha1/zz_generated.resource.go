@@ -76,6 +76,8 @@ const (
 	MeshTrafficPermissionType model.ResourceType = "MeshTrafficPermission"
 )
 
+type MeshTrafficPermissionResource = model.Res[*MeshTrafficPermission]
+
 func NewMeshTrafficPermissionResource() *model.Res[*MeshTrafficPermission] {
 	return &model.Res[*MeshTrafficPermission]{
 		Spec:           &MeshTrafficPermission{},
@@ -83,6 +85,8 @@ func NewMeshTrafficPermissionResource() *model.Res[*MeshTrafficPermission] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshTrafficPermissionResourceList = model.ResList[*MeshTrafficPermission]
 
 func NewMeshTrafficPermissionResourceList() *model.ResList[*MeshTrafficPermission] {
 	return &model.ResList[*MeshTrafficPermission]{}

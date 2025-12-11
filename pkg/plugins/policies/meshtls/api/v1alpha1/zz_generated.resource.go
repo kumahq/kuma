@@ -76,6 +76,8 @@ const (
 	MeshTLSType model.ResourceType = "MeshTLS"
 )
 
+type MeshTLSResource = model.Res[*MeshTLS]
+
 func NewMeshTLSResource() *model.Res[*MeshTLS] {
 	return &model.Res[*MeshTLS]{
 		Spec:           &MeshTLS{},
@@ -83,6 +85,8 @@ func NewMeshTLSResource() *model.Res[*MeshTLS] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshTLSResourceList = model.ResList[*MeshTLS]
 
 func NewMeshTLSResourceList() *model.ResList[*MeshTLS] {
 	return &model.ResList[*MeshTLS]{}

@@ -75,6 +75,8 @@ const (
 	DoNothingResourceType model.ResourceType = "DoNothingResource"
 )
 
+type DoNothingResourceResource = model.Res[*DoNothingResource]
+
 func NewDoNothingResourceResource() *model.Res[*DoNothingResource] {
 	return &model.Res[*DoNothingResource]{
 		Spec:           &DoNothingResource{},
@@ -82,6 +84,8 @@ func NewDoNothingResourceResource() *model.Res[*DoNothingResource] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type DoNothingResourceResourceList = model.ResList[*DoNothingResource]
 
 func NewDoNothingResourceResourceList() *model.ResList[*DoNothingResource] {
 	return &model.ResList[*DoNothingResource]{}

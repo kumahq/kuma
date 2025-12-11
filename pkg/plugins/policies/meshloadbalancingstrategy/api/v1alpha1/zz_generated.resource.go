@@ -76,6 +76,8 @@ const (
 	MeshLoadBalancingStrategyType model.ResourceType = "MeshLoadBalancingStrategy"
 )
 
+type MeshLoadBalancingStrategyResource = model.Res[*MeshLoadBalancingStrategy]
+
 func NewMeshLoadBalancingStrategyResource() *model.Res[*MeshLoadBalancingStrategy] {
 	return &model.Res[*MeshLoadBalancingStrategy]{
 		Spec:           &MeshLoadBalancingStrategy{},
@@ -83,6 +85,8 @@ func NewMeshLoadBalancingStrategyResource() *model.Res[*MeshLoadBalancingStrateg
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshLoadBalancingStrategyResourceList = model.ResList[*MeshLoadBalancingStrategy]
 
 func NewMeshLoadBalancingStrategyResourceList() *model.ResList[*MeshLoadBalancingStrategy] {
 	return &model.ResList[*MeshLoadBalancingStrategy]{}

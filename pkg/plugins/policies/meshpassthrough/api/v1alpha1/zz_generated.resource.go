@@ -76,6 +76,8 @@ const (
 	MeshPassthroughType model.ResourceType = "MeshPassthrough"
 )
 
+type MeshPassthroughResource = model.Res[*MeshPassthrough]
+
 func NewMeshPassthroughResource() *model.Res[*MeshPassthrough] {
 	return &model.Res[*MeshPassthrough]{
 		Spec:           &MeshPassthrough{},
@@ -83,6 +85,8 @@ func NewMeshPassthroughResource() *model.Res[*MeshPassthrough] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshPassthroughResourceList = model.ResList[*MeshPassthrough]
 
 func NewMeshPassthroughResourceList() *model.ResList[*MeshPassthrough] {
 	return &model.ResList[*MeshPassthrough]{}

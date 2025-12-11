@@ -76,6 +76,8 @@ const (
 	MeshTCPRouteType model.ResourceType = "MeshTCPRoute"
 )
 
+type MeshTCPRouteResource = model.Res[*MeshTCPRoute]
+
 func NewMeshTCPRouteResource() *model.Res[*MeshTCPRoute] {
 	return &model.Res[*MeshTCPRoute]{
 		Spec:           &MeshTCPRoute{},
@@ -83,6 +85,8 @@ func NewMeshTCPRouteResource() *model.Res[*MeshTCPRoute] {
 		DeprecationsFn: deprecations,
 	}
 }
+
+type MeshTCPRouteResourceList = model.ResList[*MeshTCPRoute]
 
 func NewMeshTCPRouteResourceList() *model.ResList[*MeshTCPRoute] {
 	return &model.ResList[*MeshTCPRoute]{}
