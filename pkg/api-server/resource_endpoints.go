@@ -433,6 +433,15 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 }
 
+func (r *resourceEndpoints) clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
+	if r.descriptor.Name == meshtrust_api.MeshTrustType {
+		if resRest.GetStatus() != nil && resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
+			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
+			resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin = nil
+		}
+	}
+}
+
 func (r *resourceEndpoints) createResource(
 	ctx context.Context,
 	name string,
@@ -451,12 +460,7 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	if r.descriptor.Name == meshtrust_api.MeshTrustType {
-		if resRest.GetStatus() != nil && resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
-			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
-			resRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin = nil
-		}
-	}
+	r.clearMeshTrustOrigin(resRest, meshName, name)
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
@@ -525,12 +529,7 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	if r.descriptor.Name == meshtrust_api.MeshTrustType {
-		if newResRest.GetStatus() != nil && newResRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin != nil {
-			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", currentRes.GetMeta().GetName())
-			newResRest.GetStatus().(*meshtrust_api.MeshTrustStatus).Origin = nil
-		}
-	}
+	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
 	currentLabels, err := core_model.ComputeLabels(
