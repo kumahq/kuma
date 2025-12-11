@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: status.origin: field is read-only",
+ "details": "bad request: status.origin: field is read-only"
+}

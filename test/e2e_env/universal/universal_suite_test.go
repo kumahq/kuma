@@ -31,7 +31,6 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservice"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtls"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtrafficpermission"
-	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtrust"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/projectedsatoken"
@@ -102,7 +101,6 @@ var (
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
 	_ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
-	_ = Describe("MeshTrust", meshtrust.MeshTrust, Ordered)
 	_ = Describe("GRPC", grpc.GRPC, Ordered)
 	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
