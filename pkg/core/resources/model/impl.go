@@ -129,6 +129,7 @@ func (rsi *ResStatus[T, S]) Deprecations() []string {
 type ResList[T Resource] struct {
 	Items      []T
 	Pagination Pagination
+	NewFn      func() T
 }
 
 func (rl *ResList[T]) AddItem(r Resource) error {
@@ -159,7 +160,7 @@ func (rl *ResList[T]) GetPagination() *Pagination {
 }
 
 func (rl *ResList[T]) NewItem() Resource {
-	return rl.NewItem()
+	return rl.NewFn()
 }
 
 func (rl *ResList[T]) SetPagination(pagination Pagination) {

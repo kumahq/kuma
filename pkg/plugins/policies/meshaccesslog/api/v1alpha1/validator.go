@@ -16,7 +16,7 @@ import (
 func validateResource(r *core_model.Res[*MeshAccessLog]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
 	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
@@ -35,7 +35,7 @@ func validateResource(r *core_model.Res[*MeshAccessLog]) error {
 	return verr.OrNil()
 }
 
-func validateTop(r *core_model.Res[*MeshAccessLog], targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,

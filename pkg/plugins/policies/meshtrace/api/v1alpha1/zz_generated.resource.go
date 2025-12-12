@@ -89,7 +89,7 @@ func NewMeshTraceResource() *model.Res[*MeshTrace] {
 type MeshTraceResourceList = model.ResList[*MeshTraceResource]
 
 func NewMeshTraceResourceList() *model.ResList[*MeshTraceResource] {
-	return &model.ResList[*MeshTraceResource]{}
+	return &model.ResList[*MeshTraceResource]{NewFn: NewMeshTraceResource}
 }
 
 func (x *MeshTrace) Descriptor() model.ResourceTypeDescriptor {

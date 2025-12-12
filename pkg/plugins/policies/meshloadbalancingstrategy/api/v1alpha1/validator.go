@@ -14,7 +14,7 @@ import (
 func validateResource(r *core_model.Res[*MeshLoadBalancingStrategy]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
@@ -23,7 +23,7 @@ func validateResource(r *core_model.Res[*MeshLoadBalancingStrategy]) error {
 	return verr.OrNil()
 }
 
-func validateTop(r *core_model.Res[*MeshLoadBalancingStrategy], targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

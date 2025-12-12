@@ -25,12 +25,12 @@ var (
 func validateResource(r *core_model.Res[*MeshPassthrough]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func validateTop(r *core_model.Res[*MeshPassthrough], targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

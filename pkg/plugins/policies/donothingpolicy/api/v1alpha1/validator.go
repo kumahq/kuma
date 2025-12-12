@@ -11,7 +11,7 @@ import (
 func validateResource(r *core_model.Res[*DoNothingPolicy]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	if len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
@@ -20,7 +20,7 @@ func validateResource(r *core_model.Res[*DoNothingPolicy]) error {
 	return verr.OrNil()
 }
 
-func validateTop(r *core_model.Res[*DoNothingPolicy], targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

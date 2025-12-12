@@ -11,12 +11,12 @@ import (
 func validateResource(r *core_model.Res[*MeshHealthCheck]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
-func validateTop(r *core_model.Res[*MeshHealthCheck], targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

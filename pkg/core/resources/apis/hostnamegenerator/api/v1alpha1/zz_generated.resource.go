@@ -89,7 +89,7 @@ func NewHostnameGeneratorResource() *model.Res[*HostnameGenerator] {
 type HostnameGeneratorResourceList = model.ResList[*HostnameGeneratorResource]
 
 func NewHostnameGeneratorResourceList() *model.ResList[*HostnameGeneratorResource] {
-	return &model.ResList[*HostnameGeneratorResource]{}
+	return &model.ResList[*HostnameGeneratorResource]{NewFn: NewHostnameGeneratorResource}
 }
 
 func (x *HostnameGenerator) Descriptor() model.ResourceTypeDescriptor {

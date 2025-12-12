@@ -89,7 +89,7 @@ func NewMeshTrustResource() *model.Res[*MeshTrust] {
 type MeshTrustResourceList = model.ResList[*MeshTrustResource]
 
 func NewMeshTrustResourceList() *model.ResList[*MeshTrustResource] {
-	return &model.ResList[*MeshTrustResource]{}
+	return &model.ResList[*MeshTrustResource]{NewFn: NewMeshTrustResource}
 }
 
 func (x *MeshTrust) Descriptor() model.ResourceTypeDescriptor {

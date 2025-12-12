@@ -89,7 +89,7 @@ func NewMeshPassthroughResource() *model.Res[*MeshPassthrough] {
 type MeshPassthroughResourceList = model.ResList[*MeshPassthroughResource]
 
 func NewMeshPassthroughResourceList() *model.ResList[*MeshPassthroughResource] {
-	return &model.ResList[*MeshPassthroughResource]{}
+	return &model.ResList[*MeshPassthroughResource]{NewFn: NewMeshPassthroughResource}
 }
 
 func (x *MeshPassthrough) Descriptor() model.ResourceTypeDescriptor {

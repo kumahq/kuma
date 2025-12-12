@@ -89,7 +89,7 @@ func NewMeshTimeoutResource() *model.Res[*MeshTimeout] {
 type MeshTimeoutResourceList = model.ResList[*MeshTimeoutResource]
 
 func NewMeshTimeoutResourceList() *model.ResList[*MeshTimeoutResource] {
-	return &model.ResList[*MeshTimeoutResource]{}
+	return &model.ResList[*MeshTimeoutResource]{NewFn: NewMeshTimeoutResource}
 }
 
 func (x *MeshTimeout) Descriptor() model.ResourceTypeDescriptor {

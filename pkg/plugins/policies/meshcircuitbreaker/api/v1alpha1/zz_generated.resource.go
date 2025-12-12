@@ -89,7 +89,7 @@ func NewMeshCircuitBreakerResource() *model.Res[*MeshCircuitBreaker] {
 type MeshCircuitBreakerResourceList = model.ResList[*MeshCircuitBreakerResource]
 
 func NewMeshCircuitBreakerResourceList() *model.ResList[*MeshCircuitBreakerResource] {
-	return &model.ResList[*MeshCircuitBreakerResource]{}
+	return &model.ResList[*MeshCircuitBreakerResource]{NewFn: NewMeshCircuitBreakerResource}
 }
 
 func (x *MeshCircuitBreaker) Descriptor() model.ResourceTypeDescriptor {

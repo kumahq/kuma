@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -70,7 +69,7 @@ func (i IngressGenerator) Generate(
 			availableServices[meshName],
 			cp.SystemNamespace,
 			meshResources,
-			v1alpha1.ToDstList(localMS),
+			meshservice_api.ToDstList(localMS),
 			meshmultizoneservice_api.ToDstList(meshResources.MeshMultiZoneServices()),
 		)
 

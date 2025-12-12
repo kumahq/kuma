@@ -89,7 +89,7 @@ func NewMeshHealthCheckResource() *model.Res[*MeshHealthCheck] {
 type MeshHealthCheckResourceList = model.ResList[*MeshHealthCheckResource]
 
 func NewMeshHealthCheckResourceList() *model.ResList[*MeshHealthCheckResource] {
-	return &model.ResList[*MeshHealthCheckResource]{}
+	return &model.ResList[*MeshHealthCheckResource]{NewFn: NewMeshHealthCheckResource}
 }
 
 func (x *MeshHealthCheck) Descriptor() model.ResourceTypeDescriptor {

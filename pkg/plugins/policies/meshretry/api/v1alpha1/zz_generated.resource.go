@@ -89,7 +89,7 @@ func NewMeshRetryResource() *model.Res[*MeshRetry] {
 type MeshRetryResourceList = model.ResList[*MeshRetryResource]
 
 func NewMeshRetryResourceList() *model.ResList[*MeshRetryResource] {
-	return &model.ResList[*MeshRetryResource]{}
+	return &model.ResList[*MeshRetryResource]{NewFn: NewMeshRetryResource}
 }
 
 func (x *MeshRetry) Descriptor() model.ResourceTypeDescriptor {

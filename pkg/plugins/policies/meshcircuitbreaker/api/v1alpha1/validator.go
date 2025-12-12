@@ -14,7 +14,7 @@ import (
 func validateResource(r *core_model.Res[*MeshCircuitBreaker]) error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r, r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
@@ -27,7 +27,7 @@ func validateResource(r *core_model.Res[*MeshCircuitBreaker]) error {
 	return verr.OrNil()
 }
 
-func validateTop(r *core_model.Res[*MeshCircuitBreaker], targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
