@@ -12,24 +12,32 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-var _ core_vip.ResourceHoldingVIPs = &MeshMultiZoneServiceResource{}
+type Destination struct {
+	MeshMultiZoneServiceResource
+}
 
-func (t *MeshMultiZoneServiceResource) VIPs() []string {
-	vips := make([]string, len(t.Status.VIPs))
-	for i, vip := range t.Status.VIPs {
+func ToDst(mz *MeshMultiZoneServiceResource) *Destination {
+	return &Destination{*mz}
+}
+
+var _ core_vip.ResourceHoldingVIPs = &Destination{}
+
+func (d *Destination) VIPs() []string {
+	vips := make([]string, len(d.Status.VIPs))
+	for i, vip := range d.Status.VIPs {
 		vips[i] = vip.IP
 	}
 	return vips
 }
 
-func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
-	t.Status.VIPs = append(t.Status.VIPs, meshservice_api.VIP{
+func (d *Destination) AllocateVIP(vip string) {
+	d.Status.VIPs = append(d.Status.VIPs, meshservice_api.VIP{
 		IP: vip,
 	})
 }
 
-func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, bool) {
-	for _, p := range m.Spec.Ports {
+func (d *Destination) FindPortByName(name string) (core.Port, bool) {
+	for _, p := range d.Spec.Ports {
 		if pointer.Deref(p.Name) == name {
 			return p, true
 		}
@@ -40,37 +48,37 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (core.Port, b
 	return Port{}, false
 }
 
-func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {
+func (d *Destination) AsOutbounds() xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
-	for _, vip := range m.Status.VIPs {
-		for _, port := range m.Spec.Ports {
+	for _, vip := range d.Status.VIPs {
+		for _, port := range d.Spec.Ports {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     uint32(port.Port),
-				Resource: kri.WithSectionName(kri.From(m), port.GetName()),
+				Resource: kri.WithSectionName(kri.From(d), port.GetName()),
 			})
 		}
 	}
 	return outbounds
 }
 
-func (t *MeshMultiZoneServiceResource) Domains() *xds_types.VIPDomains {
-	if len(t.Status.VIPs) > 0 {
+func (d *Destination) Domains() *xds_types.VIPDomains {
+	if len(d.Status.VIPs) > 0 {
 		var domains []string
-		for _, addr := range t.Status.Addresses {
+		for _, addr := range d.Status.Addresses {
 			domains = append(domains, addr.Hostname)
 		}
 		return &xds_types.VIPDomains{
-			Address: t.Status.VIPs[0].IP,
+			Address: d.Status.VIPs[0].IP,
 			Domains: domains,
 		}
 	}
 	return nil
 }
 
-func (t *MeshMultiZoneServiceResource) GetPorts() []core.Port {
+func (d *Destination) GetPorts() []core.Port {
 	var ports []core.Port
-	for _, port := range t.Spec.Ports {
+	for _, port := range d.Spec.Ports {
 		ports = append(ports, core.Port(port))
 	}
 	return ports
@@ -91,10 +99,18 @@ func (p Port) GetProtocol() core_meta.Protocol {
 	return p.AppProtocol
 }
 
-func (l *MeshMultiZoneServiceResourceList) GetDestinations() []core.Destination {
+type DestinationList struct {
+	MeshMultiZoneServiceResourceList
+}
+
+func ToDstList(mzList *MeshMultiZoneServiceResourceList) *DestinationList {
+	return &DestinationList{*mzList}
+}
+
+func (l *DestinationList) GetDestinations() []core.Destination {
 	var result []core.Destination
 	for _, item := range l.Items {
-		result = append(result, item)
+		result = append(result, &Destination{*item})
 	}
 	return result
 }

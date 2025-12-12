@@ -160,16 +160,16 @@ func fillMeshMultiZoneServices(
 			if !ok {
 				continue
 			}
-			if !ms.IsLocalMeshService() && ms.Spec.State != meshservice_api.StateAvailable {
+			if !meshservice_api.IsLocalMeshService(ms) && ms.Spec.State != meshservice_api.StateAvailable {
 				// we don't want to load balance to zones that has no available endpoints.
 				// we check this only for non-local services, because if service is unavailable in the local zone it has no endpoints.
 				// if a new local endpoint just become healthy, we can add it immediately without waiting for state to be reconciled.
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := destinationname.MustResolve(false, mzSvc, port)
+				serviceName := destinationname.MustResolve(false, &meshmzservice_api.Destination{MeshMultiZoneServiceResource: *mzSvc}, port)
 
-				existingEndpoints := outbound[destinationname.MustResolve(false, ms, port)]
+				existingEndpoints := outbound[destinationname.MustResolve(false, &meshservice_api.Destination{MeshServiceResource: *ms}, port)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -220,12 +220,12 @@ func fillRemoteMeshServices(
 	}
 
 	for _, ms := range services {
-		if ms.IsLocalMeshService() {
+		if meshservice_api.IsLocalMeshService(ms) {
 			continue
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		for _, port := range ms.Spec.Ports {
-			serviceName := destinationname.MustResolve(false, ms, port)
+			serviceName := destinationname.MustResolve(false, &meshservice_api.Destination{MeshServiceResource: *ms}, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -312,7 +312,7 @@ func fillLocalMeshServices(
 ) {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
 	for meshSvc, dpps := range dppsForMs {
-		if !meshSvc.IsLocalMeshService() {
+		if !meshservice_api.IsLocalMeshService(meshSvc) {
 			continue
 		}
 
@@ -325,7 +325,7 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := maps.Clone(inbound.GetTags())
-					serviceName := destinationname.MustResolve(false, meshSvc, port)
+					serviceName := destinationname.MustResolve(false, &meshservice_api.Destination{MeshServiceResource: *meshSvc}, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -593,7 +593,7 @@ func fillExternalServicesReachableFromZone(
 		}
 	}
 	for _, mes := range meshExternalServices {
-		if mes.IsReachableFromZone(zone) {
+		if meshexternalservice_api.IsReachableFromZone(mes, zone) {
 			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 			if err != nil {
 				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
@@ -654,7 +654,7 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
-		legacyName := destinationname.MustResolve(false, mes, mes.Spec.Match)
+		legacyName := destinationname.MustResolve(false, &meshexternalservice_api.Destination{MeshExternalServiceResource: *mes}, mes.Spec.Match)
 		outbounds[legacyName] = append(outbounds[legacyName], *outboundEndpoint)
 	}
 	return nil
@@ -784,7 +784,7 @@ func fillExternalServicesOutboundsThroughEgress(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
+		serviceName := destinationname.MustResolve(false, &meshexternalservice_api.Destination{MeshExternalServiceResource: *mes}, mes.Spec.Match)
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{

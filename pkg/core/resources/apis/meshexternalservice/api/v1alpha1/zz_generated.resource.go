@@ -89,8 +89,8 @@ func NewMeshExternalServiceResource() *model.ResStatus[*MeshExternalService, *Me
 
 type MeshExternalServiceResourceList = model.ResList[*MeshExternalServiceResource]
 
-func NewMeshExternalServiceResourceList() *model.ResList[*MeshExternalService] {
-	return &model.ResList[*MeshExternalService]{}
+func NewMeshExternalServiceResourceList() *model.ResList[*MeshExternalServiceResource] {
+	return &model.ResList[*MeshExternalServiceResource]{}
 }
 
 func (x *MeshExternalService) Descriptor() model.ResourceTypeDescriptor {

@@ -88,8 +88,8 @@ func NewMeshRateLimitResource() *model.Res[*MeshRateLimit] {
 
 type MeshRateLimitResourceList = model.ResList[*MeshRateLimitResource]
 
-func NewMeshRateLimitResourceList() *model.ResList[*MeshRateLimit] {
-	return &model.ResList[*MeshRateLimit]{}
+func NewMeshRateLimitResourceList() *model.ResList[*MeshRateLimitResource] {
+	return &model.ResList[*MeshRateLimitResource]{}
 }
 
 func (x *MeshRateLimit) Descriptor() model.ResourceTypeDescriptor {

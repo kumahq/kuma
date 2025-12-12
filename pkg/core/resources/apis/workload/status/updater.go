@@ -103,7 +103,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	dpsByMeshAndWorkload := indexDataplanesByMeshAndWorkload(allDpList.Items)
 
 	for _, workload := range workloadList.Items {
-		if !workload.IsLocalWorkload() {
+		if !workload_api.IsLocalWorkload(workload) {
 			continue
 		}
 

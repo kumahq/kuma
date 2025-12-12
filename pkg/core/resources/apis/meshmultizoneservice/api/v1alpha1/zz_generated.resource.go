@@ -89,8 +89,8 @@ func NewMeshMultiZoneServiceResource() *model.ResStatus[*MeshMultiZoneService, *
 
 type MeshMultiZoneServiceResourceList = model.ResList[*MeshMultiZoneServiceResource]
 
-func NewMeshMultiZoneServiceResourceList() *model.ResList[*MeshMultiZoneService] {
-	return &model.ResList[*MeshMultiZoneService]{}
+func NewMeshMultiZoneServiceResourceList() *model.ResList[*MeshMultiZoneServiceResource] {
+	return &model.ResList[*MeshMultiZoneServiceResource]{}
 }
 
 func (x *MeshMultiZoneService) Descriptor() model.ResourceTypeDescriptor {

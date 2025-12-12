@@ -88,8 +88,8 @@ func NewMeshProxyPatchResource() *model.Res[*MeshProxyPatch] {
 
 type MeshProxyPatchResourceList = model.ResList[*MeshProxyPatchResource]
 
-func NewMeshProxyPatchResourceList() *model.ResList[*MeshProxyPatch] {
-	return &model.ResList[*MeshProxyPatch]{}
+func NewMeshProxyPatchResourceList() *model.ResList[*MeshProxyPatchResource] {
+	return &model.ResList[*MeshProxyPatchResource]{}
 }
 
 func (x *MeshProxyPatch) Descriptor() model.ResourceTypeDescriptor {

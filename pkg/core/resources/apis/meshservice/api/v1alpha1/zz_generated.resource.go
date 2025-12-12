@@ -89,8 +89,8 @@ func NewMeshServiceResource() *model.ResStatus[*MeshService, *MeshServiceStatus]
 
 type MeshServiceResourceList = model.ResList[*MeshServiceResource]
 
-func NewMeshServiceResourceList() *model.ResList[*MeshService] {
-	return &model.ResList[*MeshService]{}
+func NewMeshServiceResourceList() *model.ResList[*MeshServiceResource] {
+	return &model.ResList[*MeshServiceResource]{}
 }
 
 func (x *MeshService) Descriptor() model.ResourceTypeDescriptor {

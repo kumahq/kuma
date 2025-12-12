@@ -88,8 +88,8 @@ func NewMeshTrafficPermissionResource() *model.Res[*MeshTrafficPermission] {
 
 type MeshTrafficPermissionResourceList = model.ResList[*MeshTrafficPermissionResource]
 
-func NewMeshTrafficPermissionResourceList() *model.ResList[*MeshTrafficPermission] {
-	return &model.ResList[*MeshTrafficPermission]{}
+func NewMeshTrafficPermissionResourceList() *model.ResList[*MeshTrafficPermissionResource] {
+	return &model.ResList[*MeshTrafficPermissionResource]{}
 }
 
 func (x *MeshTrafficPermission) Descriptor() model.ResourceTypeDescriptor {

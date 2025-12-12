@@ -15,7 +15,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -27,6 +30,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	"github.com/kumahq/kuma/v2/pkg/log"
 	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
@@ -164,13 +168,17 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	meshExternalServices := resources.MeshExternalServices().Items
 	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
 
-	outbounds = append(outbounds, xds_topology.Outbounds(meshServices)...)
-	outbounds = append(outbounds, xds_topology.Outbounds(meshExternalServices)...)
-	outbounds = append(outbounds, xds_topology.Outbounds(meshMultiZoneServices)...)
+	msDst := util_slices.Map(meshServices, meshservice_api.ToDst)
+	mesDst := util_slices.Map(meshExternalServices, meshexternalservice_api.ToDst)
+	mzDst := util_slices.Map(meshMultiZoneServices, meshmultizoneservice_api.ToDst)
 
-	domains = append(domains, xds_topology.Domains(meshServices)...)
-	domains = append(domains, xds_topology.Domains(meshExternalServices)...)
-	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
+	outbounds = append(outbounds, xds_topology.Outbounds(msDst)...)
+	outbounds = append(outbounds, xds_topology.Outbounds(mesDst)...)
+	outbounds = append(outbounds, xds_topology.Outbounds(mzDst)...)
+
+	domains = append(domains, xds_topology.Domains(msDst)...)
+	domains = append(domains, xds_topology.Domains(mesDst)...)
+	domains = append(domains, xds_topology.Domains(mzDst)...)
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh

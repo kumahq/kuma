@@ -6,6 +6,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -55,7 +56,7 @@ func getExternalServicesClusters(
 		nil,
 		"",
 		localResources,
-		localResources.MeshExternalServices(),
+		v1alpha1.ToDstList(localResources.MeshExternalServices()),
 	)
 
 	meshName := resources.Mesh.GetMeta().GetName()

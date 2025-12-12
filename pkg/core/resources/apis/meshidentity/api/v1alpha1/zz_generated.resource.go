@@ -89,8 +89,8 @@ func NewMeshIdentityResource() *model.ResStatus[*MeshIdentity, *MeshIdentityStat
 
 type MeshIdentityResourceList = model.ResList[*MeshIdentityResource]
 
-func NewMeshIdentityResourceList() *model.ResList[*MeshIdentity] {
-	return &model.ResList[*MeshIdentity]{}
+func NewMeshIdentityResourceList() *model.ResList[*MeshIdentityResource] {
+	return &model.ResList[*MeshIdentityResource]{}
 }
 
 func (x *MeshIdentity) Descriptor() model.ResourceTypeDescriptor {

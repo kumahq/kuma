@@ -88,8 +88,8 @@ func NewMeshTCPRouteResource() *model.Res[*MeshTCPRoute] {
 
 type MeshTCPRouteResourceList = model.ResList[*MeshTCPRouteResource]
 
-func NewMeshTCPRouteResourceList() *model.ResList[*MeshTCPRoute] {
-	return &model.ResList[*MeshTCPRoute]{}
+func NewMeshTCPRouteResourceList() *model.ResList[*MeshTCPRouteResource] {
+	return &model.ResList[*MeshTCPRouteResource]{}
 }
 
 func (x *MeshTCPRoute) Descriptor() model.ResourceTypeDescriptor {

@@ -11,56 +11,64 @@ import (
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 )
 
-func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {
-	return m.GetMeta().GetLabels() == nil || m.GetMeta().GetLabels()[mesh_proto.ZoneTag] == "" || m.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
+type Destination struct {
+	MeshExternalServiceResource
 }
 
-var _ vip.ResourceHoldingVIPs = &MeshExternalServiceResource{}
+func ToDst(mes *MeshExternalServiceResource) *Destination {
+	return &Destination{*mes}
+}
 
-func (t *MeshExternalServiceResource) VIPs() []string {
-	if t.Status.VIP.IP == "" {
+func IsReachableFromZone(mes *MeshExternalServiceResource, zone string) bool {
+	return mes.GetMeta().GetLabels() == nil || mes.GetMeta().GetLabels()[mesh_proto.ZoneTag] == "" || mes.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
+}
+
+var _ vip.ResourceHoldingVIPs = &Destination{}
+
+func (d *Destination) VIPs() []string {
+	if d.Status.VIP.IP == "" {
 		return nil
 	}
-	return []string{t.Status.VIP.IP}
+	return []string{d.Status.VIP.IP}
 }
 
-func (t *MeshExternalServiceResource) AllocateVIP(vip string) {
-	t.Status.VIP = VIP{
+func (d *Destination) AllocateVIP(vip string) {
+	d.Status.VIP = VIP{
 		IP: vip,
 	}
 }
 
-func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
-	if t.Status.VIP.IP != "" {
+func (d *Destination) AsOutbounds() xds_types.Outbounds {
+	if d.Status.VIP.IP != "" {
 		return xds_types.Outbounds{{
-			Address:  t.Status.VIP.IP,
-			Port:     uint32(t.Spec.Match.Port),
-			Resource: kri.WithSectionName(kri.From(t), t.Spec.Match.GetName()),
+			Address:  d.Status.VIP.IP,
+			Port:     uint32(d.Spec.Match.Port),
+			Resource: kri.WithSectionName(kri.From(d), d.Spec.Match.GetName()),
 		}}
 	}
 	return nil
 }
 
-func (t *MeshExternalServiceResource) Domains() *xds_types.VIPDomains {
-	if t.Status.VIP.IP != "" {
+func (d *Destination) Domains() *xds_types.VIPDomains {
+	if d.Status.VIP.IP != "" {
 		var domains []string
-		for _, address := range t.Status.Addresses {
+		for _, address := range d.Status.Addresses {
 			domains = append(domains, address.Hostname)
 		}
 		return &xds_types.VIPDomains{
-			Address: t.Status.VIP.IP,
+			Address: d.Status.VIP.IP,
 			Domains: domains,
 		}
 	}
 	return nil
 }
 
-func (t *MeshExternalServiceResource) GetPorts() []core.Port {
-	return []core.Port{t.Spec.Match}
+func (d *Destination) GetPorts() []core.Port {
+	return []core.Port{d.Spec.Match}
 }
 
-func (t *MeshExternalServiceResource) FindPortByName(name string) (core.Port, bool) {
-	return t.Spec.Match, true
+func (d *Destination) FindPortByName(name string) (core.Port, bool) {
+	return d.Spec.Match, true
 }
 
 func (m Match) GetName() string {
@@ -75,10 +83,18 @@ func (m Match) GetProtocol() core_meta.Protocol {
 	return m.Protocol
 }
 
-func (l *MeshExternalServiceResourceList) GetDestinations() []core.Destination {
+type DestinationList struct {
+	MeshExternalServiceResourceList
+}
+
+func ToDstList(mesList *MeshExternalServiceResourceList) *DestinationList {
+	return &DestinationList{*mesList}
+}
+
+func (l *DestinationList) GetDestinations() []core.Destination {
 	var result []core.Destination
 	for _, item := range l.Items {
-		result = append(result, item)
+		result = append(result, &Destination{*item})
 	}
 	return result
 }

@@ -8,13 +8,16 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/vip"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type Destination struct {
-	model.ResStatus[*MeshService, *MeshServiceStatus]
+	MeshServiceResource
+}
+
+func ToDst(ms *MeshServiceResource) *Destination {
+	return &Destination{*ms}
 }
 
 // FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
@@ -30,11 +33,11 @@ func (d *Destination) FindPortByName(name string) (core.Port, bool) {
 	return Port{}, false
 }
 
-func (d *Destination) IsLocalMeshService() bool {
-	if len(d.GetMeta().GetLabels()) == 0 {
+func IsLocalMeshService(ms *MeshServiceResource) bool {
+	if len(ms.GetMeta().GetLabels()) == 0 {
 		return true // no labels mean that it's a local resource
 	}
-	origin, ok := d.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+	origin, ok := ms.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
 		return true // no zone label mean that it's a local resource
 	}
@@ -129,7 +132,11 @@ func (p Port) GetProtocol() core_meta.Protocol {
 }
 
 type DestinationList struct {
-	model.ResList[*model.ResStatus[*MeshService, *MeshServiceStatus]]
+	MeshServiceResourceList
+}
+
+func ToDstList(msList *MeshServiceResourceList) *DestinationList {
+	return &DestinationList{*msList}
 }
 
 func (l *DestinationList) GetDestinations() []core.Destination {

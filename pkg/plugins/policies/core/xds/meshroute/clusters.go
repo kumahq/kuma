@@ -118,10 +118,10 @@ func GenerateClusters(
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
 							dest := meshCtx.GetServiceByKRI(realResourceRef.Resource)
 							if dest != nil {
-								ms := dest.(*meshservice_api.MeshServiceResource)
+								ms := dest.(*meshservice_api.Destination)
 								// we only check TLS status for local service
 								// services that are synced can be accessed only with TLS through ZoneIngress
-								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
+								tlsReady = !meshservice_api.IsLocalMeshService(&ms.MeshServiceResource) || ms.Status.TLS.Status == meshservice_api.TLSReady
 								if port, found := ms.FindPortByName(realResourceRef.Resource.SectionName); found {
 									protocol = port.GetProtocol()
 								}
@@ -236,7 +236,7 @@ func SniForBackendRef(
 	resource := dest.(core_model.Resource)
 	name := core_model.GetDisplayName(resource.GetMeta())
 	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
-		name = resource.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
+		name = resource.(*meshservice_api.Destination).SNIName(systemNamespace)
 	}
 
 	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, port, nil)
@@ -264,7 +264,7 @@ func Identities(
 		if ms == nil {
 			return result
 		}
-		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
+		for _, identity := range pointer.Deref(ms.(*meshservice_api.Destination).Spec.Identities) {
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, serviceTagTransformer(identity.Value))
 			}
@@ -278,7 +278,7 @@ func Identities(
 			return result
 		}
 		identities := map[string]struct{}{}
-		for _, matchedMs := range svc.(*meshmultizoneservice_api.MeshMultiZoneServiceResource).Status.MeshServices {
+		for _, matchedMs := range svc.(*meshmultizoneservice_api.Destination).Status.MeshServices {
 			ri := kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Name:         matchedMs.Name,
@@ -290,7 +290,7 @@ func Identities(
 			if ms == nil {
 				continue
 			}
-			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
+			for _, identity := range pointer.Deref(ms.(*meshservice_api.Destination).Spec.Identities) {
 				identities[identity.Value] = struct{}{}
 			}
 		}

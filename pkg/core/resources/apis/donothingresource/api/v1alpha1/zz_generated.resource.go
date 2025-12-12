@@ -87,8 +87,8 @@ func NewDoNothingResourceResource() *model.Res[*DoNothingResource] {
 
 type DoNothingResourceResourceList = model.ResList[*DoNothingResourceResource]
 
-func NewDoNothingResourceResourceList() *model.ResList[*DoNothingResource] {
-	return &model.ResList[*DoNothingResource]{}
+func NewDoNothingResourceResourceList() *model.ResList[*DoNothingResourceResource] {
+	return &model.ResList[*DoNothingResourceResource]{}
 }
 
 func (x *DoNothingResource) Descriptor() model.ResourceTypeDescriptor {

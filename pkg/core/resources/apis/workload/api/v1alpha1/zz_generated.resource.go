@@ -89,8 +89,8 @@ func NewWorkloadResource() *model.ResStatus[*Workload, *WorkloadStatus] {
 
 type WorkloadResourceList = model.ResList[*WorkloadResource]
 
-func NewWorkloadResourceList() *model.ResList[*Workload] {
-	return &model.ResList[*Workload]{}
+func NewWorkloadResourceList() *model.ResList[*WorkloadResource] {
+	return &model.ResList[*WorkloadResource]{}
 }
 
 func (x *Workload) Descriptor() model.ResourceTypeDescriptor {

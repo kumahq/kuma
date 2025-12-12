@@ -88,8 +88,8 @@ func NewMeshTLSResource() *model.Res[*MeshTLS] {
 
 type MeshTLSResourceList = model.ResList[*MeshTLSResource]
 
-func NewMeshTLSResourceList() *model.ResList[*MeshTLS] {
-	return &model.ResList[*MeshTLS]{}
+func NewMeshTLSResourceList() *model.ResList[*MeshTLSResource] {
+	return &model.ResList[*MeshTLSResource]{}
 }
 
 func (x *MeshTLS) Descriptor() model.ResourceTypeDescriptor {

@@ -148,8 +148,8 @@ func New{{.Name}}Resource() *model.Res[*{{.Name}}] {
 
 type {{.Name}}ResourceList = model.ResList[*{{.Name}}Resource]
 
-func New{{.Name}}ResourceList() *model.ResList[*{{.Name}}] {
-	return &model.ResList[*{{.Name}}]{}
+func New{{.Name}}ResourceList() *model.ResList[*{{.Name}}Resource] {
+	return &model.ResList[*{{.Name}}Resource]{}
 }
 
 func (x *{{.Name}}) Descriptor() model.ResourceTypeDescriptor {

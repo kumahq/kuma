@@ -57,7 +57,7 @@ func buildRealResourceDestinations(destinations []core_resources.Destination, sy
 
 		var rName string
 		switch r := any(dest).(type) {
-		case *meshservice_api.MeshServiceResource:
+		case *meshservice_api.Destination:
 			rName = r.SNIName(systemNS)
 		default:
 			rName = core_model.GetDisplayName(dest.GetMeta())

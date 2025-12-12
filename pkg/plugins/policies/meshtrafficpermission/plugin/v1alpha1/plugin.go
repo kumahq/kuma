@@ -172,7 +172,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 		// egress is configured for all meshes so we cannot use mesh context in this case
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
-			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
+			meshExtSvc := mes.(*meshexternalservice_api.Destination)
 			mesNames = append(mesNames, destinationname.MustResolve(unifiedNaming, meshExtSvc, meshExtSvc.Spec.Match))
 		}
 
