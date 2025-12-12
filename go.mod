@@ -4,14 +4,14 @@ go 1.24.11
 
 require (
 	cirello.io/pglock v1.16.0
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20240527124623-de85860b7d21
 	github.com/cilium/ebpf v0.17.3
-	github.com/containernetworking/cni v1.2.3
-	github.com/containernetworking/plugins v1.6.2
+	github.com/containernetworking/cni v1.3.0
+	github.com/containernetworking/plugins v1.9.0
 	github.com/emicklei/go-restful/v3 v3.12.2
 	github.com/envoyproxy/go-control-plane v0.13.4
 	github.com/envoyproxy/go-control-plane/contrib v1.32.3
@@ -19,7 +19,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/exaring/otelpgx v0.9.0
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -36,8 +36,8 @@ require (
 	github.com/miekg/dns v1.1.63
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.22.2
-	github.com/onsi/gomega v1.36.2
+	github.com/onsi/ginkgo/v2 v2.25.1
+	github.com/onsi/gomega v1.38.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
@@ -51,7 +51,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
-	github.com/vishvananda/netlink v1.3.0
+	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0
@@ -74,7 +74,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250127172529-29210b9bc287
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287
 	google.golang.org/grpc v1.71.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.18.5
 	k8s.io/api v0.33.3
@@ -181,7 +181,7 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.23.2 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
-	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
+	github.com/google/pprof v0.0.0-20250820193118-f64d9cf942d6 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1 // indirect
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect
@@ -257,7 +257,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	go.yaml.in/yaml/v3 v3.0.3 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
@@ -277,7 +277,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 )
 
-require golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
+require (
+	go.uber.org/automaxprocs v1.6.0 // indirect
+	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
+)
 
 replace github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.32.3-kong-1
 
