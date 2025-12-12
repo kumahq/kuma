@@ -2,7 +2,9 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"time"
 
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
@@ -15,46 +17,54 @@ type Resource struct {
 var _ json.Marshaler = (*Resource)(nil)
 
 func (r *Resource) MarshalJSON() ([]byte, error) {
-	metaBytes, err := json.Marshal(r.ResourceMeta) // includes "kri" from ResourceMeta.MarshalJSON
-	if err != nil {
-		return nil, err
-	}
-
-	var specBytes []byte
+	var specJSON json.RawMessage
 	if r.Spec != nil {
-		specBytes, err = core_model.ToJSON(r.Spec)
+		b, err := core_model.ToJSON(r.Spec)
 		if err != nil {
 			return nil, err
 		}
+		specJSON = b
 	}
 
-	var statusBytes []byte
+	var statusJSON json.RawMessage
 	if r.Status != nil {
-		statusBytes, err = core_model.ToJSON(r.Status)
+		b, err := core_model.ToJSON(r.Status)
 		if err != nil {
 			return nil, err
 		}
+		statusJSON = b
 	}
 
-	// Manually concatenate JSON bytes to preserve field order
-	// metaBytes is like: {"type":"Mesh",...}
-	// We need to build: {"type":"Mesh",...,"spec":{...},"status":{...}}
-
-	result := metaBytes[:len(metaBytes)-1] // Remove closing }
-
-	if len(specBytes) > 0 {
-		result = append(result, []byte(`,"spec":`)...)
-		result = append(result, specBytes...)
+	var kriStr string
+	if id, _ := kri.FromResourceMetaE(r.ResourceMeta, r.Type); !id.IsEmpty() {
+		kriStr = id.String()
 	}
 
-	if len(statusBytes) > 0 {
-		result = append(result, []byte(`,"status":`)...)
-		result = append(result, statusBytes...)
+	// Explicit struct with all fields in desired order
+	// Cannot embed ResourceMeta as it has MarshalJSON which would override this struct's marshaling
+	aux := &struct {
+		Type             string            `json:"type"`
+		Mesh             string            `json:"mesh,omitempty"`
+		Name             string            `json:"name"`
+		CreationTime     time.Time         `json:"creationTime"`
+		ModificationTime time.Time         `json:"modificationTime"`
+		Labels           map[string]string `json:"labels,omitempty"`
+		KRI              string            `json:"kri,omitempty"`
+		Spec             json.RawMessage   `json:"spec,omitempty"`
+		Status           json.RawMessage   `json:"status,omitempty"`
+	}{
+		Type:             r.Type,
+		Mesh:             r.Mesh,
+		Name:             r.Name,
+		CreationTime:     r.CreationTime,
+		ModificationTime: r.ModificationTime,
+		Labels:           r.Labels,
+		KRI:              kriStr,
+		Spec:             specJSON,
+		Status:           statusJSON,
 	}
 
-	result = append(result, '}') // Add closing }
-
-	return result, nil
+	return json.Marshal(aux)
 }
 
 func (r *Resource) GetMeta() ResourceMeta {
