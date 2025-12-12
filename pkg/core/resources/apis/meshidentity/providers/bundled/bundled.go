@@ -83,7 +83,7 @@ func NewBundledIdentityProvider(roSecretManager manager.ReadOnlyResourceManager,
 
 func (b *bundledIdentityProvider) Validate(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
 	if !pointer.DerefOr(identity.Spec.Provider.Bundled.InsecureAllowSelfSigned, false) {
-		if pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
+		if identity.Spec.Provider.Bundled.Autogenerate != nil && pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
 			return errors.Errorf("self-signed certificates are not allowed")
 		}
 		ca, err := b.GetRootCA(ctx, identity)
@@ -103,7 +103,7 @@ func (b *bundledIdentityProvider) Validate(ctx context.Context, identity *meshid
 }
 
 func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
-	if pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
+	if identity.Spec.Provider.Bundled.Autogenerate != nil && pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
 		if _, err := b.getCAKeyPair(ctx, identity, identity.Meta.GetMesh()); err != nil && core_store.IsNotFound(err) {
 			trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), b.zone)
 			if err != nil {
@@ -146,10 +146,10 @@ func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *mesh
 }
 
 func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {
-	bundled := pointer.Deref(identity.Spec.Provider.Bundled)
+	bundled := identity.Spec.Provider.Bundled
 	var err error
 	var cert []byte
-	if bundled.Autogenerate == nil || !pointer.Deref(bundled.Autogenerate.Enabled) && bundled.CA != nil {
+	if bundled.Autogenerate == nil || !pointer.DerefOr(bundled.Autogenerate.Enabled, false) && bundled.CA != nil {
 		cert, err = bundled.CA.Certificate.ReadByControlPlane(ctx, b.secretManager, identity.Meta.GetMesh())
 		if err != nil {
 			return nil, err
@@ -170,10 +170,10 @@ func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshi
 func (b *bundledIdentityProvider) getCAKeyPair(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, mesh string) (*util_tls.KeyPair, error) {
 	cacheKey := fmt.Sprintf("ca_pair:%s:%s", mesh, model.GetDisplayName(identity.GetMeta()))
 	ca, err := b.cache.GetOrRetrieve(ctx, cacheKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (interface{}, error) {
-		bundled := pointer.Deref(identity.Spec.Provider.Bundled)
+		bundled := identity.Spec.Provider.Bundled
 		var err error
 		var cert, key []byte
-		if (bundled.Autogenerate == nil || !pointer.Deref(bundled.Autogenerate.Enabled)) && bundled.CA != nil {
+		if (bundled.Autogenerate == nil || !pointer.DerefOr(bundled.Autogenerate.Enabled, false)) && bundled.CA != nil {
 			cert, err = bundled.CA.Certificate.ReadByControlPlane(ctx, b.secretManager, mesh)
 			if err != nil {
 				return nil, err
@@ -212,7 +212,10 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	if err != nil {
 		return nil, err
 	}
-	caCert, caPrivateKey, err := loadKeyPair(pointer.Deref(pair))
+	if pair == nil {
+		return nil, errors.New("CA key pair is not defined")
+	}
+	caCert, caPrivateKey, err := loadKeyPair(*pair)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load CA key pair")
 	}
@@ -237,7 +240,10 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	if err != nil {
 		return nil, err
 	}
-	certValidity := pointer.DerefOr(identity.Spec.Provider.Bundled.CertificateParameters.Expiry, DefaultWorkloadCertValidityPeriod)
+	certValidity := DefaultWorkloadCertValidityPeriod
+	if identity.Spec.Provider.Bundled != nil && identity.Spec.Provider.Bundled.CertificateParameters != nil {
+		certValidity = pointer.DerefOr(identity.Spec.Provider.Bundled.CertificateParameters.Expiry, DefaultWorkloadCertValidityPeriod)
+	}
 	b.logger.V(1).Info("creating an identity", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "spiffeID", spiffeID, "identity", model.MetaToResourceKey(identity.GetMeta()))
 
 	template := &x509.Certificate{
