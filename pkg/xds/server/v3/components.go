@@ -41,6 +41,7 @@ func RegisterXDS(
 
 	authenticator := rt.XDS().PerProxyTypeAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
+	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager()))
 
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
@@ -59,6 +60,7 @@ func RegisterXDS(
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		util_xds_v3.AdaptCallbacks(authCallbacks),
+		util_xds_v3.AdaptCallbacks(workloadLabelValidator),
 		util_xds_v3.AdaptCallbacks(dpLifecycle),
 		util_xds_v3.AdaptCallbacks(syncTracker),
 		util_xds_v3.AdaptCallbacks(dpStatusTracker),
@@ -73,6 +75,7 @@ func RegisterXDS(
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		util_xds_v3.AdaptDeltaCallbacks(authCallbacks),
+		util_xds_v3.AdaptDeltaCallbacks(workloadLabelValidator),
 		util_xds_v3.AdaptDeltaCallbacks(dpLifecycle),
 		util_xds_v3.AdaptDeltaCallbacks(syncTracker),
 		util_xds_v3.AdaptDeltaCallbacks(dpStatusTracker),

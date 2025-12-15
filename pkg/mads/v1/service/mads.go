@@ -34,14 +34,17 @@ func (s *server) FetchMonitoringAssignments(ctx context.Context, req *envoy_sd.D
 		}
 	}
 	resChan := make(chan envoy_cache.Response, 1)
-	streamState := stream.NewStreamState(false, nil)
+	subscription := stream.NewSotwSubscription(nil, false)
 	// When the context has a deadline we want to do long polling
 	// We therefore create a watch that will have 2 possible outcome:
 	// 1. context reaches deadline, in which nothing changed we're at the end of the long polling time
 	// 2. watch resolves, the cache changed, let's return the new info
 	// Note that for simplicity we don't use the value returned by the watch and simply fetch from the cache
 	if _, hasDeadline := ctx.Deadline(); hasDeadline {
-		cancelWatch := s.cache.CreateWatch(req, streamState, resChan)
+		cancelWatch, err := s.cache.CreateWatch(req, subscription, resChan)
+		if err != nil {
+			return nil, err
+		}
 		if cancelWatch != nil {
 			defer cancelWatch()
 			select { // Wait until either we timeout or the watch triggers

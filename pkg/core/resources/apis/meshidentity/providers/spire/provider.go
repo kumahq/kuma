@@ -1,7 +1,9 @@
 package spire
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"fmt"
+
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
@@ -16,12 +18,26 @@ func InitProvider() {
 }
 
 func (p plugin) NewIdentityProvider(context core_plugins.PluginContext, config core_plugins.PluginConfig) (providers.IdentityProvider, error) {
-	if context.Config().Environment == core.KubernetesEnvironment {
-		return NewSpireIdentityProvider(
+	var socketPath string
+	switch context.Config().Environment {
+	case config_core.UniversalEnvironment:
+		socketPath = context.Config().Runtime.Universal.Spire.SocketPath
+	case config_core.KubernetesEnvironment:
+		socketPath = fmt.Sprintf(
+			"%s/%s",
 			context.Config().Runtime.Kubernetes.Injector.Spire.MountPath,
 			context.Config().Runtime.Kubernetes.Injector.Spire.SocketFileName,
-			context.Config().Multizone.Zone.Name,
-		), nil
+		)
+	default:
+		return nil, fmt.Errorf("spire identity provider does not support environment %q (only %q and %q are supported)",
+			context.Config().Environment,
+			config_core.KubernetesEnvironment,
+			config_core.UniversalEnvironment,
+		)
 	}
-	return nil, nil
+	return NewSpireIdentityProvider(
+		socketPath,
+		context.Config().Multizone.Zone.Name,
+		context.Config().Environment,
+	), nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/bootstrap"
 	meshidentity_status "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/status"
 	meshservice_generate "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/generate"
+	workload_generate "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/generate"
 	"github.com/kumahq/kuma/v2/pkg/defaults"
 	"github.com/kumahq/kuma/v2/pkg/diagnostics"
 	"github.com/kumahq/kuma/v2/pkg/dns"
@@ -148,6 +149,10 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := meshservice_generate.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up MeshService generator")
+				return err
+			}
+			if err := workload_generate.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Workload generator")
 				return err
 			}
 			if err := zone.Setup(rt); err != nil {

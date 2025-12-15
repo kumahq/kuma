@@ -28,23 +28,19 @@ jobs:
       matrix:
         parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '4' && '[0, 1, 2, 3]') || '[0]') }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: "Free up disk space for the Runner"
+        uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a # v3.0.0
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+      - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3.5.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
-      - name: "Free up disk space for the Runner"
-        run: |
-          echo "Disk usage before cleanup"
-          sudo df -h
-          echo "Removing big directories"
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          echo "Pruning images"
-          docker system prune --all -f
-          echo "Disk usage after cleanup"
-          sudo df -h
       - run: |
           make build
       - run: |

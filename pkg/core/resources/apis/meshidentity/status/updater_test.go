@@ -11,6 +11,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
@@ -38,7 +39,7 @@ var _ = Describe("Updater", func() {
 		metrics = m
 		resManager = manager.NewResourceManager(memory.NewStore())
 
-		bundledProvider, err := bundled.NewBundledIdentityProvider(resManager, resManager, metrics, "zone")
+		bundledProvider, err := bundled.NewBundledIdentityProvider(resManager, resManager, metrics, "zone", config_core.KubernetesEnvironment)
 		Expect(err).ToNot(HaveOccurred())
 
 		updater, err := New(logr.Discard(), 50*time.Millisecond, resManager, resManager, providers.IdentityProviders{
@@ -145,7 +146,7 @@ var _ = Describe("Updater", func() {
 		// meshtrust should be created
 		meshTrust := meshtrust_api.NewMeshTrustResource()
 		Expect(resManager.Get(context.Background(), meshTrust, store.GetByKey(identity.Meta.GetName(), "default"))).ToNot(HaveOccurred())
-		Expect(meshTrust.Spec.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
+		Expect(meshTrust.Status.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
 		Expect(meshTrust.Spec.CABundles).To(HaveLen(1))
 	})
 

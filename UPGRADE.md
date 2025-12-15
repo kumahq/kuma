@@ -6,6 +6,115 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.13.x`
+
+### Strict Inbound Port Filtering Enabled by Default
+
+Strict inbound port filtering is now enabled by default to improve security. When transparent proxy is enabled, the sidecar will only accept inbound traffic on ports that are explicitly defined in the dataplane configuration. This prevents unauthorized access to services through undeclared ports.
+
+**What changed:**
+- `strictInboundPortsEnabled` now defaults to `true` in `kuma-dp` configuration
+- Inbound passthrough listeners now filter traffic to only allow explicitly configured ports
+- This applies to both IPv4 and IPv6 traffic
+
+**Action required:**
+
+No action is required for most users. However, if you have services that:
+1. Accept traffic on ports not explicitly declared in your dataplane configuration, AND
+2. Rely on transparent proxy to route this traffic
+
+You will need to either:
+- Add the missing ports to your dataplane inbound configuration, OR
+- Disable strict inbound port filtering (see below)
+
+**How to disable strict inbound port filtering:**
+
+If you need to disable this feature and revert to the previous behavior:
+
+**Kubernetes**
+
+Create a `ContainerPatch`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: disable-strict-inbounds-ports
+  namespace: kuma-system
+spec:
+  sidecarPatch:
+  - op: add
+    path: /env/-
+    value: '{
+      \"name\": \"KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED\",
+      \"value\": \"false\"
+    }'
+```
+
+Then set the annotation `kuma.io/container-patches` on deployment where it should be disabled
+
+```yaml
+"kuma.io/container-patches":"disable-strict-inbounds-ports"
+```
+
+or for all Deployments by setting control-plane configuration:
+
+```
+KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES="disable-strict-inbounds-ports"
+```
+
+**Universal**
+
+Set the environment variable when running `kuma-dp`:
+
+```bash
+KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED=false kuma-dp run ...
+```
+
+**Security recommendation:**
+
+We strongly recommend keeping strict inbound port filtering enabled. If you need to disable it temporarily, please audit your dataplane configurations to ensure all required inbound ports are explicitly declared, then re-enable the feature.
+
+### Virtual Probes Disabled by Default
+
+Virtual Probes are now disabled by default. This feature was deprecated in version 2.9.x in favor of Application Probe Proxy, which provides broader support for different probe types (HTTPGet, TCPSocket, and gRPC).
+
+**What changed:**
+- `virtualProbesEnabled` now defaults to `false` (previously `true`)
+- Application Probe Proxy remains enabled by default on port 9001
+
+**Action required:**
+
+If you still rely on Virtual Probes and want to keep using them:
+
+1. Enable Virtual Probes explicitly in control plane configuration:
+
+   ```yaml
+   runtime:
+     kubernetes:
+       injector:
+         virtualProbesEnabled: true
+   ```
+
+2. Or via environment variable:
+
+   ```bash
+   KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED=true
+   ```
+
+**How to disable Application Probe Proxy:**
+
+If you need to disable Application Probe Proxy entirely:
+
+1. Set `kuma.io/virtual-probes: disabled` annotation on your pods
+2. Gateway mode automatically disables it
+
+When both Virtual Probes and Application Probe Proxy are not explicitly configured, Application Probe Proxy is enabled by default.
+
+**Migration recommendation:**
+
+We strongly recommend migrating to Application Probe Proxy, which is the supported solution going forward. Virtual Probes will be removed in a future release. Application Probe Proxy works automatically with no configuration changes required.
+
 ## Upgrade to `2.12.x`
 
 ### Removal of `/status/zones` endpoints
@@ -19,6 +128,16 @@ The readiness reporter TCP port is deprecated and will be removed in a future re
 The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
 
 ## Upgrade to `2.11.x`
+
+### Helm upgrades to 2.11.8 require explicit `namespaceAllowList: []` in values.yaml
+
+If a user upgrades to 2.11.8 (or earlier 2.11.x patch versions) with `--reuse-values` Helm flag, the upgrade fails with:
+
+```
+Error: UPGRADE FAILED: template: kuma/templates/cp-webhooks-and-secrets.yaml:69:17: executing "kuma/templates/cp-webhooks-and-secrets.yaml" at <len .Values.namespaceAllowList>: error calling len: len of nil pointer
+```
+
+As a workaround, add `namespaceAllowList: []` to `values.yaml`. This behaviour is fixed starting from version 2.11.9.
 
 ### Embedded Proxy DNS is Enabled by Default
 

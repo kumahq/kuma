@@ -354,6 +354,52 @@ paths:
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
           $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/meshservices/{name}/_dataplanes:
+    get:
+      operationId: inspect-meshservices-dataplanes
+      summary: Returns dataplanes matched by a MeshService
+      description: Returns dataplanes matched by a MeshService
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: name
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
     get:
       operationId: inspect-hostnames

@@ -2,7 +2,9 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"time"
 
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
@@ -15,33 +17,54 @@ type Resource struct {
 var _ json.Marshaler = (*Resource)(nil)
 
 func (r *Resource) MarshalJSON() ([]byte, error) {
-	metaBytes, err := json.Marshal(r.ResourceMeta) // includes "kri" from ResourceMeta.MarshalJSON
-	if err != nil {
-		return nil, err
-	}
-
-	var out map[string]json.RawMessage
-	if err := json.Unmarshal(metaBytes, &out); err != nil {
-		return nil, err
-	}
-
+	var specJSON json.RawMessage
 	if r.Spec != nil {
 		b, err := core_model.ToJSON(r.Spec)
 		if err != nil {
 			return nil, err
 		}
-		out["spec"] = b
+		specJSON = b
 	}
 
+	var statusJSON json.RawMessage
 	if r.Status != nil {
 		b, err := core_model.ToJSON(r.Status)
 		if err != nil {
 			return nil, err
 		}
-		out["status"] = b
+		statusJSON = b
 	}
 
-	return json.Marshal(out)
+	var kriStr string
+	if id, _ := kri.FromResourceMetaE(r.ResourceMeta, r.Type); !id.IsEmpty() {
+		kriStr = id.String()
+	}
+
+	// Explicit struct with all fields in desired order
+	// Cannot embed ResourceMeta as it has MarshalJSON which would override this struct's marshaling
+	aux := &struct {
+		Type             string            `json:"type"`
+		Mesh             string            `json:"mesh,omitempty"`
+		Name             string            `json:"name"`
+		CreationTime     time.Time         `json:"creationTime"`
+		ModificationTime time.Time         `json:"modificationTime"`
+		Labels           map[string]string `json:"labels,omitempty"`
+		KRI              string            `json:"kri,omitempty"`
+		Spec             json.RawMessage   `json:"spec,omitempty"`
+		Status           json.RawMessage   `json:"status,omitempty"`
+	}{
+		Type:             r.Type,
+		Mesh:             r.Mesh,
+		Name:             r.Name,
+		CreationTime:     r.CreationTime,
+		ModificationTime: r.ModificationTime,
+		Labels:           r.Labels,
+		KRI:              kriStr,
+		Spec:             specJSON,
+		Status:           statusJSON,
+	}
+
+	return json.Marshal(aux)
 }
 
 func (r *Resource) GetMeta() ResourceMeta {

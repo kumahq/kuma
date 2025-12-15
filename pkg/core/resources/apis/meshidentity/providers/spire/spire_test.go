@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers/spire"
@@ -25,12 +26,11 @@ import (
 )
 
 var _ = Describe("Spire Providers Test", func() {
-	var spireProvider providers.IdentityProvider
-	BeforeEach(func() {
-		spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets", "socket", "my-zone")
-	})
-
-	Context("CreateIdentity", func() {
+	Context("CreateIdentity on Kubernetes", func() {
+		var spireProvider providers.IdentityProvider
+		BeforeEach(func() {
+			spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets/socket", "my-zone", config_core.KubernetesEnvironment)
+		})
 		It("should provide an identity for a dataplane", func() {
 			meshIdentity := builders.MeshIdentity().
 				WithName("matching-1").
@@ -92,7 +92,7 @@ var _ = Describe("Spire Providers Test", func() {
 
 			resources, err := util_yaml.GetResourcesToYaml(identity.AdditionalResources, envoy_resource.ClusterType)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resources).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "spire.cluster.golden.yaml")))
+			Expect(resources).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "spire.kubernetes.cluster.golden.yaml")))
 		})
 
 		It("should not provide an identity for a dataplane without spire support", func() {
@@ -125,6 +125,68 @@ var _ = Describe("Spire Providers Test", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identity).To(BeNil())
+		})
+	})
+
+	Context("CreateIdentity on Universal", func() {
+		var spireProvider providers.IdentityProvider
+		BeforeEach(func() {
+			spireProvider = spire.NewSpireIdentityProvider("/run/socket/sockets/socket", "my-zone", config_core.UniversalEnvironment)
+		})
+		It("should provide an identity for a dataplane", func() {
+			meshIdentity := builders.MeshIdentity().
+				WithName("matching-1").
+				WithSelector(&v1alpha1.LabelSelector{}).WithSpire().Build()
+			expectedIdentity, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
+				bldrs_tls.SdsSecretConfigSource(
+					"spiffe://default.my-zone.mesh.local/workload/web",
+					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(spire.SpireAgentClusterName)),
+				),
+			).Build()
+			Expect(err).ToNot(HaveOccurred())
+			expectedValidation, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
+				bldrs_tls.SdsSecretConfigSource(
+					spire.FederatedCASecretName,
+					bldrs_core.NewConfigSource().Configure(bldrs_core.ApiConfigSource(spire.SpireAgentClusterName)),
+				),
+			).Build()
+			Expect(err).ToNot(HaveOccurred())
+
+			proxy := xds_builders.Proxy().
+				WithMetadata(&core_xds.DataplaneMetadata{
+					SpireSocketPath: "/my-custom/socket-path",
+				}).
+				WithDataplane(builders.Dataplane().
+					WithName("web-01").
+					WithAddress("192.168.0.2").
+					WithLabels(map[string]string{
+						metadata.KumaWorkload: "web",
+					}).
+					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				Build()
+
+			// create identity
+			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(identity.KRI).To(Equal(kri.From(meshIdentity)))
+			Expect(identity.ManagementMode).To(Equal(core_xds.ExternalManagementMode))
+			// we don't manage secrets
+			Expect(identity.ExpirationTime).To(BeNil())
+			Expect(identity.GenerationTime).To(BeNil())
+
+			identitySource, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(identity.IdentitySourceConfigurer()).Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(identitySource).To(Equal(expectedIdentity))
+
+			validatorSource, err := bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(identity.ExternalValidationSourceConfigurer()).Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(validatorSource).To(Equal(expectedValidation))
+
+			resources, err := util_yaml.GetResourcesToYaml(identity.AdditionalResources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resources).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "spire.universal.cluster.golden.yaml")))
 		})
 	})
 })

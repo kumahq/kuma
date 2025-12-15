@@ -72,7 +72,7 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
 	// Assume this means one of the following:
-	// - sync from another zone (rt.Config().Runtime.Kubernetes.ServiceAccountName)
+	// - sync from another zone
 	// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
 	// - storageversionmigratior
 	// Not security; protecting user from self.

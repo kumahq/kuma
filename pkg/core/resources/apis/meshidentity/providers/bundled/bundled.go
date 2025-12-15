@@ -24,6 +24,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -61,9 +62,10 @@ type bundledIdentityProvider struct {
 	secretManager   manager.ResourceManager
 	cache           *once.Cache
 	zone            string
+	environment     config_core.EnvironmentType
 }
 
-func NewBundledIdentityProvider(roSecretManager manager.ReadOnlyResourceManager, secretManager manager.ResourceManager, metrics metrics.Metrics, zone string) (providers.IdentityProvider, error) {
+func NewBundledIdentityProvider(roSecretManager manager.ReadOnlyResourceManager, secretManager manager.ResourceManager, metrics metrics.Metrics, zone string, environment config_core.EnvironmentType) (providers.IdentityProvider, error) {
 	c, err := once.New(cacheExpirationTime, "ca_cache", metrics)
 	if err != nil {
 		return nil, err
@@ -75,6 +77,7 @@ func NewBundledIdentityProvider(roSecretManager manager.ReadOnlyResourceManager,
 		secretManager:   secretManager,
 		cache:           c,
 		zone:            zone,
+		environment:     environment,
 	}, nil
 }
 
@@ -226,7 +229,7 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	if err != nil {
 		return nil, err
 	}
-	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta())
+	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta(), b.environment)
 	if err != nil {
 		return nil, err
 	}

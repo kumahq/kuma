@@ -423,11 +423,23 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		if opts.dpEnvs == nil {
 			opts.dpEnvs = map[string]string{}
 		}
-		opts.dpEnvs["KUMA_DNS_PROXY_PORT"] = "15053"
+		// Only set default if not already configured (to allow version-specific DNS config)
+		if _, exists := opts.dpEnvs["KUMA_DNS_PROXY_PORT"]; !exists {
+			opts.dpEnvs["KUMA_DNS_PROXY_PORT"] = "15053"
+		}
 		if opts.bindOutbounds {
 			opts.dpEnvs["KUMA_DATAPLANE_RUNTIME_BIND_OUTBOUNDS"] = "true"
 		}
 		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, opts.dpEnvs, token, builtindns, opts.concurrency, transparent, opts.dpVersion); err != nil {
+			return err
+		}
+	}
+
+	if opts.spireAgent {
+		if err := app.CreateSpireAgent(opts.name, opts.spireAgentToken, opts.spireServerAddress, opts.spireServerPort, opts.spireTrustDomain); err != nil {
+			return err
+		}
+		if err := app.spireAgent.Start(); err != nil {
 			return err
 		}
 	}

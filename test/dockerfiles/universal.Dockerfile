@@ -1,19 +1,27 @@
 ARG ARCH
 FROM kumahq/envoy:no-push-$ARCH AS envoy
+FROM ghcr.io/spiffe/spire-server:1.13.3 AS spire_server
+FROM ghcr.io/spiffe/spire-agent:1.13.3 AS spire_agent
 # Built in github.com/kumahq/ci-tools
-FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:d41ba91e5fa836a5137f7d05e9c8082b9b7890217eed0133ef5e1b9fe75aead8
+FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:54137867f37eb5b499db2a685254b44a9f599a69f03ee4e2e16e11a90e07641c
 
 ARG ARCH
 
 RUN useradd -u 5678 -U kuma-dp
 
 RUN mkdir /kuma
+RUN mkdir /spire
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
     && chmod a+rw /kuma/kuma-cp.conf
 
 ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
 COPY --from=envoy /envoy /usr/bin/envoy
+COPY --from=envoy /envoy /usr/bin/envoy
+COPY --from=spire_agent /opt/spire/bin/spire-agent /usr/bin
+COPY --from=spire_server /opt/spire/bin/spire-server /usr/bin
+ADD /test/dockerfiles/spire-server.conf /spire
+ADD /test/dockerfiles/spire-agent.conf /spire
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin

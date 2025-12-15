@@ -153,7 +153,7 @@ var _ = Describe("MeshAccessLog", func() {
 				otherServiceHTTPListener(),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -350,7 +350,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -370,7 +370,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -393,7 +393,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -419,7 +419,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -455,7 +455,7 @@ var _ = Describe("MeshAccessLog", func() {
 					WithPort(37779).Build()},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
@@ -536,7 +536,7 @@ var _ = Describe("MeshAccessLog", func() {
 					WithPort(37779).Build()},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
@@ -605,7 +605,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -628,7 +628,7 @@ var _ = Describe("MeshAccessLog", func() {
 				outboundServiceTCPListener("other-service-tcp", 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
@@ -654,7 +654,7 @@ var _ = Describe("MeshAccessLog", func() {
 				otherServiceHTTPListener(),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+				Rules: []*core_rules.Rule{
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,

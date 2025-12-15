@@ -9,12 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/config"
 	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core"
 )
-
-const defaultServiceAccountName = "system:serviceaccount:kuma-system:kuma-control-plane"
-
-var logger = core.Log.WithName("kubernetes-config")
 
 func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 	return &KubernetesRuntimeConfig{
@@ -22,10 +17,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			Port: 5443,
 		},
 		ControlPlaneServiceName: "kuma-control-plane",
-		ServiceAccountName:      defaultServiceAccountName,
 		Injector: Injector{
 			CNIEnabled:                false,
-			VirtualProbesEnabled:      true,
+			VirtualProbesEnabled:      false,
 			VirtualProbesPort:         9000,
 			ApplicationProbeProxyPort: 9001,
 			SidecarContainer: SidecarContainer{
@@ -142,10 +136,6 @@ type KubernetesRuntimeConfig struct {
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
-	// Name of Service Account that is used to run the Control Plane
-	//
-	// Deprecated: Use AllowedUsers instead.
-	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// List of names of Service Accounts that admission requests are allowed.
 	// This list is appended with Control Plane's Service Account and generic-garbage-collector
 	AllowedUsers []string `json:"allowedUsers,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_users"`
@@ -170,6 +160,10 @@ type KubernetesRuntimeConfig struct {
 	// The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
 	// Default is empty list (uses ServiceAccount as workload identifier).
 	WorkloadLabels []string `json:"workloadLabels" envconfig:"kuma_runtime_kubernetes_workload_labels"`
+	// DisallowMultipleMeshesPerNamespace prevents pods from using kuma.io/mesh label in ways that would create
+	// multiple meshes within a single namespace. When enabled, Workload generation is skipped for namespaces
+	// with multiple meshes and a warning event is emitted. Default is false.
+	DisallowMultipleMeshesPerNamespace bool `json:"disallowMultipleMeshesPerNamespace" envconfig:"kuma_runtime_kubernetes_disallow_multiple_meshes_per_namespace"`
 }
 
 type ControllersConcurrency struct {
@@ -465,9 +459,6 @@ func (c *KubernetesRuntimeConfig) Validate() error {
 	}
 	if c.MarshalingCacheExpirationTime.Duration < 0 {
 		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
-	}
-	if c.ServiceAccountName != defaultServiceAccountName {
-		logger.Info("[WARNING]: using deprecated configuration option - .ServiceAccountName, please use AllowedUsers.")
 	}
 	return errs
 }

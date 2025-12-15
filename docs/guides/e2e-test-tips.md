@@ -69,6 +69,14 @@ When you use `make test/e2e/debug` and the test fails, execution will immediatel
 
 `test/e2e/debug` works with the same envs as `test/e2e` like `E2E_PKG_LIST`
 
+Similarly, `test/e2e-kubernetes` with `DEBUG=1` will:
+- Skip starting clusters if already running
+- Not stop clusters after tests finish
+
+```bash
+make test/e2e-kubernetes DEBUG=1
+```
+
 ## Decide which Kubernetes clusters will be created
 
 If you know you are running only universal tests you can skip creating Kubernetes clusters by setting

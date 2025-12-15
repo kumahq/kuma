@@ -25,7 +25,7 @@ type RuleAttachment struct {
 	Service    string
 	Tags       map[string]string
 	PolicyType core_model.ResourceType
-	Rule       core_rules.Rule //nolint:staticcheck // SA1019 Inspection API: return old Rule format for debugging
+	Rule       core_rules.Rule
 }
 
 func (r *RuleAttachment) AddAddress(address string) {
@@ -45,7 +45,6 @@ func BuildRulesAttachments(matchedPoliciesByType map[core_model.ResourceType]cor
 	var attachments []RuleAttachment
 
 	for typ, matched := range matchedPoliciesByType {
-		//nolint:staticcheck // SA1019 Inspection API: show old Rules format for debugging
 		attachments = append(attachments, getInboundRuleAttachments(matched.FromRules.Rules, networking, typ)...)
 		attachments = append(attachments, getOutboundRuleAttachments(matched.ToRules.Rules, networking, typ, domainsByAddress)...)
 		if len(matched.SingleItemRules.Rules) > 0 {

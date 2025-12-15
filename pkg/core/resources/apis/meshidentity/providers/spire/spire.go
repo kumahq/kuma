@@ -2,7 +2,6 @@ package spire
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -11,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -38,19 +38,19 @@ var SpireAgentClusterName = core_system_names.AsSystemName("identity_sds-spire-a
 var _ providers.IdentityProvider = &spireIdentityProvider{}
 
 type spireIdentityProvider struct {
-	logger         logr.Logger
-	mountPath      string
-	socketFileName string
-	zone           string
+	logger      logr.Logger
+	socketPath  string
+	zone        string
+	environment config_core.EnvironmentType
 }
 
-func NewSpireIdentityProvider(mountPath, socketFileName, zone string) providers.IdentityProvider {
+func NewSpireIdentityProvider(socketPath, zone string, environment config_core.EnvironmentType) providers.IdentityProvider {
 	logger := core.Log.WithName("identity-provider").WithName("spire")
 	return &spireIdentityProvider{
-		logger:         logger,
-		mountPath:      mountPath,
-		socketFileName: socketFileName,
-		zone:           zone,
+		logger:      logger,
+		socketPath:  socketPath,
+		zone:        zone,
+		environment: environment,
 	}
 }
 
@@ -68,7 +68,7 @@ func (s *spireIdentityProvider) GetRootCA(ctx context.Context, identity *meshide
 }
 
 func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {
-	if !proxy.Metadata.HasFeature(types.FeatureSpire) {
+	if s.environment == config_core.KubernetesEnvironment && !proxy.Metadata.HasFeature(types.FeatureSpire) {
 		s.logger.Info("dataplane doesn't have spire socket mounted, please redeploy your Pod", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "identity", model.MetaToResourceKey(identity.GetMeta()))
 		return nil, nil
 	}
@@ -77,7 +77,7 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 		return nil, err
 	}
 
-	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta())
+	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta(), s.environment)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,11 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 	if identity.Spec.Provider.Spire != nil && identity.Spec.Provider.Spire.Agent != nil {
 		connectTimeout = pointer.DerefOr(identity.Spec.Provider.Spire.Agent.Timeout, k8s.Duration{Duration: defaultSpireAgentConnTimeout})
 	}
-	resources, err := additionalResources(s.mountPath, s.socketFileName, connectTimeout.Duration)
+	socketPath := s.socketPath
+	if proxy.Metadata != nil && proxy.Metadata.SpireSocketPath != "" {
+		socketPath = proxy.Metadata.SpireSocketPath
+	}
+	resources, err := additionalResources(socketPath, connectTimeout.Duration)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +104,7 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 }
 
 // we need to create a cluster for spire agent
-func additionalResources(mountPath, socketFileName string, timeout time.Duration) (*xds.ResourceSet, error) {
+func additionalResources(socketPath string, timeout time.Duration) (*xds.ResourceSet, error) {
 	resources := xds.NewResourceSet()
 	resource, err := bldrs_cluster.NewCluster().
 		Configure(bldrs_cluster.Name(SpireAgentClusterName)).
@@ -115,7 +119,7 @@ func additionalResources(mountPath, socketFileName string, timeout time.Duration
 								Address: &envoy_core.Address{
 									Address: &envoy_core.Address_Pipe{
 										Pipe: &envoy_core.Pipe{
-											Path: fmt.Sprintf("%s/%s", mountPath, socketFileName),
+											Path: socketPath,
 										},
 									},
 								},

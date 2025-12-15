@@ -31,7 +31,7 @@
     "mise"
   ],
   "automergeStrategy": "squash",
-  "internalChecksFilter": "strict",
+  "internalChecksFilter": "flexible",
   "keepUpdatedLabel": "renovate/keep-updated",
   "rebaseWhen": "conflicted",
   "prTitleStrict": true,
@@ -269,6 +269,16 @@
       "matchBaseBranches": ["release-*"],
       "matchDepNames": ["envoy"],
       "matchUpdateTypes": ["patch"],
+      "enabled": true
+    },
+    {
+      "description": [
+        " Group 'go' version updates from 'gomod' and 'mise' managers into a single PR",
+        " and explicitly enable them to override potential preset restrictions"
+      ],
+      "matchDepNames": ["go"],
+      "matchManagers": ["gomod", "mise"],
+      "groupName": "go version",
       "enabled": true
     },
     {

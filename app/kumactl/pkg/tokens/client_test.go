@@ -56,14 +56,8 @@ var _ = Describe("Tokens Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewDataplaneTokenClient(baseClient)
 
-		// wait for server
-		Eventually(func() error {
-			_, err := client.Generate("example", "default", nil, "dataplane", 24*time.Hour)
-			return err
-		}, "5s", "100ms").ShouldNot(HaveOccurred())
-
 		// when
-		token, err := client.Generate("example", "default", nil, "dataplane", 24*time.Hour)
+		token, err := client.Generate("example", "default", nil, "dataplane", "simple-workload", 24*time.Hour)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -89,7 +83,7 @@ var _ = Describe("Tokens Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Generate("example", "default", nil, "dataplane", 24*time.Hour)
+		_, err = client.Generate("example", "default", nil, "dataplane", "simple-workload", 24*time.Hour)
 
 		// then
 		Expect(err).To(MatchError("(500): Internal Server Error"))

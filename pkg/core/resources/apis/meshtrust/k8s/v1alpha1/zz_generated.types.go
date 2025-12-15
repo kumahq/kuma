@@ -4,7 +4,6 @@
 package v1alpha1
 
 import (
-	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +25,9 @@ type MeshTrust struct {
 	// Spec is the specification of the Kuma MeshTrust resource.
 	// +kubebuilder:validation:Optional
 	Spec *policy.MeshTrust `json:"spec,omitempty"`
+	// Status is the current status of the Kuma MeshTrust resource.
+	// +kubebuilder:validation:Optional
+	Status *policy.MeshTrustStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -77,11 +79,21 @@ func (cb *MeshTrust) SetSpec(spec core_model.ResourceSpec) {
 }
 
 func (cb *MeshTrust) GetStatus() (core_model.ResourceStatus, error) {
-	return nil, nil
+	return cb.Status, nil
 }
 
 func (cb *MeshTrust) SetStatus(status core_model.ResourceStatus) error {
-	return errors.New("status not supported")
+	if status == nil {
+		cb.Status = nil
+		return nil
+	}
+
+	if _, ok := status.(*policy.MeshTrustStatus); !ok {
+		panic(fmt.Sprintf("unexpected message type %T", status))
+	}
+
+	cb.Status = status.(*policy.MeshTrustStatus)
+	return nil
 }
 
 func (cb *MeshTrust) Scope() model.Scope {

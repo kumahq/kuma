@@ -38,6 +38,7 @@ const (
 	FieldSystemCaPath                  = "systemCaPath"
 	FieldTransparentProxy              = "transparentProxy"
 	FieldIPv6Enabled                   = "ipv6Enabled"
+	FieldSpireSocketPath               = "spireAgent.socketPath"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -71,6 +72,7 @@ type DataplaneMetadata struct {
 	SystemCaPath         string
 	TransparentProxy     *tproxy_dp.DataplaneConfig
 	IPv6Enabled          bool
+	SpireSocketPath      string
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -238,6 +240,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	}
 	if xdsMetadata.Fields[FieldSystemCaPath] != nil {
 		metadata.SystemCaPath = xdsMetadata.Fields[FieldSystemCaPath].GetStringValue()
+	}
+	if xdsMetadata.Fields[FieldSpireSocketPath] != nil {
+		metadata.SpireSocketPath = xdsMetadata.Fields[FieldSpireSocketPath].GetStringValue()
 	}
 
 	if listValue := xdsMetadata.Fields[FieldFeatures]; listValue != nil {

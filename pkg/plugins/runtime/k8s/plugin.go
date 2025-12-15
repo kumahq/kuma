@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
@@ -95,6 +94,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 	if err := addPodStatusReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
+	if err := addWorkloadReconciler(mgr, rt); err != nil {
 		return err
 	}
 	if err := addDNS(mgr, rt, converter); err != nil {
@@ -230,6 +232,18 @@ func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conv
 	return reconciler.SetupWithManager(mgr)
 }
 
+func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
+	reconciler := &k8s_controllers.WorkloadReconciler{
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("kuma-workload-controller"),
+		Log:           core.Log.WithName("controllers").WithName("Workload"),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
 func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
@@ -275,7 +289,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
 		AllowedUsers: append(
 			rt.Config().Runtime.Kubernetes.AllowedUsers,
-			rt.Config().Runtime.Kubernetes.ServiceAccountName, // nolint:staticcheck
 			"system:serviceaccount:kube-system:generic-garbage-collector",
 		),
 		Mode:                         rt.Config().Mode,
@@ -318,10 +331,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	})
 
 	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.IntoWebhook(mgr.GetScheme()))
-	// TODO remove in 2.12 or higher https://github.com/kumahq/kuma/issues/12759
-	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: kube_admission.HandlerFunc(func(ctx context.Context, request kube_admission.Request) kube_admission.Response {
-		return kube_admission.Allowed("")
-	})})
 
 	admissionDecoder := kube_admission.NewDecoder(mgr.GetScheme())
 
@@ -339,7 +348,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
 	if rt.Config().Mode != config_core.Global {
-		podValidator := k8s_webhooks.NewPodValidatorWebhook(admissionDecoder)
+		podValidator := k8s_webhooks.NewPodValidatorWebhook(admissionDecoder, client, rt.Config().Runtime.Kubernetes.DisallowMultipleMeshesPerNamespace)
 		mgr.GetWebhookServer().Register("/validate-v1-pod", &kube_webhook.Admission{Handler: podValidator})
 	}
 
@@ -395,7 +404,6 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
 		AllowedUsers: append(
 			rt.Config().Runtime.Kubernetes.AllowedUsers,
-			rt.Config().Runtime.Kubernetes.ServiceAccountName, // nolint:staticcheck
 			"system:serviceaccount:kube-system:generic-garbage-collector",
 		),
 		Mode:                         rt.Config().Mode,

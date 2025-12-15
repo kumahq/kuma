@@ -8,6 +8,7 @@ clientConfig:
 controlPlaneServiceName: kuma-control-plane
 controllersConcurrency:
   podController: 10
+disallowMultipleMeshesPerNamespace: false
 injector:
   applicationProbeProxyPort: 9001
   builtinDNS:
@@ -78,7 +79,7 @@ injector:
     socketFileName: socket
   transparentProxyConfigMap: ""
   unifiedResourceNamingEnabled: false
-  virtualProbesEnabled: true
+  virtualProbesEnabled: false
   virtualProbesPort: 9000
 leaderElection:
   leaseDuration: 15s
@@ -88,7 +89,6 @@ nodeTaintController:
   cniApp: ""
   cniNamespace: kube-system
   enabled: false
-serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
 skipMeshOwnerReference: false
 supportGatewaySecretsInAllNamespaces: false
 workloadLabels: []

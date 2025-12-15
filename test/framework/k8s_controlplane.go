@@ -364,20 +364,30 @@ func (c *K8sControlPlane) generateToken(
 	)
 }
 
-func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (string, error) {
 	var dpType string
 	if service == "ingress" {
 		dpType = "ingress"
 	}
 
-	data := fmt.Sprintf(
-		`{"mesh": %q, "type": %q, "tags": {"kuma.io/service": [%q]}}`,
-		mesh,
-		dpType,
-		service,
-	)
+	tokenData := map[string]interface{}{
+		"mesh": mesh,
+		"type": dpType,
+		"tags": map[string][]string{
+			"kuma.io/service": {service},
+		},
+	}
 
-	return c.generateToken("", data)
+	if workload != "" {
+		tokenData["workload"] = workload
+	}
+
+	dataBytes, err := json.Marshal(tokenData)
+	if err != nil {
+		return "", err
+	}
+
+	return c.generateToken("", string(dataBytes))
 }
 
 func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {

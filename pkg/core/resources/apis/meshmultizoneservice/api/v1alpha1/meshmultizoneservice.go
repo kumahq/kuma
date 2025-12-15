@@ -14,7 +14,6 @@ import (
 // It aggregates existing MeshServices by labels.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
-// +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=mzsvc
 // MeshMultizoneServices are only created on global
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag
@@ -50,6 +49,8 @@ type MeshMultiZoneServiceStatus struct {
 	MeshServices []MatchedMeshService `json:"meshServices,omitempty"`
 	// Status of hostnames generator applied on this resource
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
+	// Conditions is an array of current conditions
+	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 type MatchedMeshService struct {
@@ -63,3 +64,17 @@ type MatchedMeshService struct {
 func (m *MatchedMeshService) FullyQualifiedName() string {
 	return fmt.Sprintf("%s/%s/%s/%s", m.Name, m.Namespace, m.Zone, m.Mesh)
 }
+
+// Condition types
+const (
+	// MeshServicesMatchedCondition indicates whether the MeshMultiZoneService selector matched any MeshServices
+	MeshServicesMatchedCondition string = "MeshServicesMatched"
+)
+
+// Condition reasons
+const (
+	// NoMatchesFoundReason indicates the selector did not match any MeshServices
+	NoMatchesFoundReason string = "NoMatchesFound"
+	// MatchesFoundReason indicates the selector matched one or more MeshServices
+	MatchesFoundReason string = "MatchesFound"
+)

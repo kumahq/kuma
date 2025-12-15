@@ -31,178 +31,10 @@ const (
 	AppEgress              = "egress"
 	AppModeEchoServer      = "echo-server"
 	AppModeHttpsEchoServer = "https-echo-server"
-	sshPort                = "22"
+	AppModeTcpSink         = "tcp-sink"
+	AppModeDemoClient      = "demo-client"
 
-	IngressDataplaneOldType = `
-type: Dataplane
-mesh: %s
-name: dp-ingress
-networking:
-  address: {{ address }}
-  ingress:
-    publicAddress: %s
-    publicPort: %d
-  inbound:
-  - port: %d
-    tags:
-      kuma.io/service: ingress
-`
-	ZoneIngress = `
-type: ZoneIngress
-name: %s
-networking:
-  address: {{ address }}
-  advertisedAddress: %s
-  advertisedPort: %d
-  port: %d
-`
-	ZoneEgress = `
-type: ZoneEgress
-name: egress
-networking:
-  address: {{ address }}
-  port: %d
-`
-
-	EchoServerDataplane = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address:  {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-    tags:
-      kuma.io/service: %s
-      kuma.io/protocol: %s
-      team: server-owners
-      version: %s
-`
-
-	EchoServerDataplaneWithServiceProbe = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address:  {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-    serviceProbe:
-      tcp: {}
-    tags:
-      kuma.io/service: %s
-      kuma.io/protocol: %s
-      team: server-owners
-      version: %s
-`
-
-	EchoServerDataplaneTransparentProxy = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address:  {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-    tags:
-      kuma.io/service: %s
-      kuma.io/protocol: %s
-      team: server-owners
-      version: %s
-  transparentProxying:
-    redirectPortInbound: %s
-    redirectPortOutbound: %s
-`
-
-	AppModeTcpSink      = "tcp-sink"
-	AppModeDemoClient   = "demo-client"
-	DemoClientDataplane = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address: {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-    tags:
-      kuma.io/service: %s
-      team: client-owners
-%s
-  outbound:
-  - port: 4000
-    tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
-  - port: 4001
-    tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
-  - port: 5000
-    tags:
-      kuma.io/service: external-service
-`
-
-	DemoClientDataplaneBindOutbounds = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address: {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-    tags:
-      kuma.io/service: %s
-      team: client-owners
-%s
-`
-
-	DemoClientDataplaneWithServiceProbe = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address: {{ address }}
-  inbound:
-  - port: %s
-    servicePort: %s
-    serviceProbe:
-      tcp: {}
-    tags:
-      kuma.io/service: %s
-      team: client-owners
-%s
-  outbound:
-  - port: 4000
-    tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
-  - port: 4001
-    tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
-  - port: 5000
-    tags:
-      kuma.io/service: external-service
-`
-
-	DemoClientDataplaneTransparentProxy = `
-type: Dataplane
-mesh: %s
-name: {{ name }}
-networking:
-  address: {{ address }}
-  inbound:
-  - port: %s
-    tags:
-      kuma.io/service: %s
-      team: client-owners
-%s
-  transparentProxying:
-    redirectPortInbound: %s
-    redirectPortOutbound: %s
-    reachableServices: [%s]
-`
+	sshPort = "22"
 )
 
 type UniversalApp struct {
@@ -211,6 +43,8 @@ type UniversalApp struct {
 	mainAppCmd          string
 	dpApp               *kssh.Session
 	dpAppCmd            string
+	spireAgent          *kssh.Session
+	spireAgentCmd       string
 	ports               map[string]string
 	container           string
 	containerName       string
@@ -425,6 +259,27 @@ func (s *UniversalApp) CreateMainApp(cmd string) {
 	}
 }
 
+func (s *UniversalApp) CreateSpireAgent(
+	name, token, serverAddress, port, trustDomain string,
+) error {
+	cmd := &strings.Builder{}
+	_, _ = cmd.WriteString("#!/bin/sh\n")
+	args := []string{
+		"/usr/bin/spire-agent", "run",
+		"-config", "/spire/spire-agent.conf",
+		"--serverAddress=" + serverAddress,
+		"--serverPort=" + port,
+		"--trustDomain=" + trustDomain,
+		"-joinToken=" + token,
+	}
+
+	_, _ = cmd.WriteString(strings.Join(args, " "))
+	s.spireAgentCmd = cmd.String()
+	var err error
+	s.spireAgent, err = s.newSession("spire-agent-"+name, s.spireAgentCmd)
+	return err
+}
+
 func (s *UniversalApp) CreateDP(
 	token, cpAddress, name, mesh, ip, dpyaml string,
 	builtindns bool,
@@ -456,9 +311,17 @@ cp %s/envoy /usr/bin/envoy
 
 	// Install transparent proxy
 	if transparent {
-		extraArgs := []string{}
+		extraArgs := []string{
+			"--kuma-dp-user", "kuma-dp",
+		}
 		if builtindns {
-			extraArgs = append(extraArgs, "--redirect-dns")
+			// Default: use --redirect-dns (original behavior)
+			// Override: set KUMA_TP_REDIRECT_ALL_DNS_TRAFFIC=true to use --redirect-all-dns-traffic
+			if envsMap["KUMA_TP_REDIRECT_ALL_DNS_TRAFFIC"] == "true" {
+				extraArgs = append(extraArgs, "--redirect-all-dns-traffic")
+			} else {
+				extraArgs = append(extraArgs, "--redirect-dns")
+			}
 		}
 		_, _ = fmt.Fprintf(cmd, "/usr/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n", sshPort, strings.Join(extraArgs, " "))
 	}

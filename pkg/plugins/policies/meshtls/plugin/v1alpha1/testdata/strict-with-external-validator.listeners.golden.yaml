@@ -91,3 +91,59 @@ resources:
           kuma.io/service: frontend
     name: inbound:127.0.0.1:17778
     trafficDirection: INBOUND
+- name: inbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        destinationPort: 17777
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv4
+          statPrefix: inbound_passthrough_ipv4
+    - filterChainMatch:
+        destinationPort: 17778
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv4
+          statPrefix: inbound_passthrough_ipv4
+    name: inbound:passthrough:ipv4
+    trafficDirection: INBOUND
+    useOriginalDst: true
+- name: inbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15001
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        destinationPort: 17777
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv6
+          statPrefix: inbound_passthrough_ipv6
+    - filterChainMatch:
+        destinationPort: 17778
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv6
+          statPrefix: inbound_passthrough_ipv6
+    name: inbound:passthrough:ipv6
+    trafficDirection: INBOUND
+    useOriginalDst: true

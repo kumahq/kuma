@@ -123,6 +123,13 @@ type appDeploymentOptions struct {
 	dpEnvs                map[string]string
 	additionalTags        map[string]string
 	bindOutbounds         bool
+	labels                map[string]string
+	workload              string
+	spireAgent            bool
+	spireAgentToken       string
+	spireServerAddress    string
+	spireServerPort       string
+	spireTrustDomain      string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -543,6 +550,16 @@ func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	})
 }
 
+func WithSpireAgent(token string, serverAddress string, port string, trustDomain string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.spireAgent = true
+		o.spireAgentToken = token
+		o.spireServerAddress = serverAddress
+		o.spireServerPort = port
+		o.spireTrustDomain = trustDomain
+	})
+}
+
 func WithAdditionalTags(tags map[string]string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.additionalTags = tags
@@ -597,6 +614,21 @@ func WithAppDockerRunOptions(options []string) AppDeploymentOption {
 	})
 }
 
+func WithLabels(labels map[string]string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.labels = make(map[string]string)
+		for k, v := range labels {
+			o.labels[k] = v
+		}
+	})
+}
+
+func WithWorkload(workload string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.workload = workload
+	})
+}
+
 type NamespaceDeleteHookFunc func(c Cluster, namespace string) error
 
 type Deployment interface {
@@ -647,7 +679,7 @@ type ControlPlane interface {
 	GetKDSInsecureServerAddress() string
 	GetXDSServerAddress() string
 	GetAPIServerAddress() string
-	GenerateDpToken(mesh, serviceName string) (string, error)
+	GenerateDpToken(mesh, serviceName, workload string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
 	GenerateZoneToken(zone string, scope []string) (string, error)

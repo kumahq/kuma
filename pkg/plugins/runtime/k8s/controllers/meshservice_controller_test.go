@@ -110,6 +110,10 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "05.resources.yaml",
 			outputFile: "05.meshservice.yaml",
 		}),
+		Entry("service for delegated gateway (annotation on Pod)", testCase{
+			inputFile:  "06.resources.yaml",
+			outputFile: "06.meshservice.yaml",
+		}),
 		Entry("service for headless Service", testCase{
 			inputFile:  "headless.resources.yaml",
 			outputFile: "headless.meshservice.yaml",
@@ -117,6 +121,10 @@ var _ = Describe("MeshServiceController", func() {
 		Entry("with kuma.io/ignore", testCase{
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
+		}),
+		Entry("headless gateway service with mode Disabled", testCase{
+			inputFile:  "headless-gateway-disabled.resources.yaml",
+			outputFile: "headless-gateway-disabled.meshservice.yaml",
 		}),
 	)
 })

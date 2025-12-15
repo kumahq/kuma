@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests legacy RBAC with deprecated core_rules.Rule
 package xds_test
 
 import (

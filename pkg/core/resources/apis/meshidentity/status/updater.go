@@ -227,30 +227,47 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	caPEM := string(ca)
 
 	if update {
+		needsUpdate := false
+
 		// Check if the CA PEM is already present in the MeshTrust resource
+		caBundleExists := false
 		for _, bundle := range meshTrust.Spec.CABundles {
 			if pemEqual(bundle.PEM.Value, caPEM) {
-				// Already exists; no need to update
-				return nil
+				caBundleExists = true
+				break
 			}
 		}
 
-		// Append the new CA PEM
-		meshTrust.Spec.CABundles = append(meshTrust.Spec.CABundles, meshtrust_api.CABundle{
-			Type: meshtrust_api.PemCABundleType,
-			PEM: &meshtrust_api.PEM{
-				Value: caPEM,
-			},
-		})
+		if !caBundleExists {
+			// Append the new CA PEM
+			meshTrust.Spec.CABundles = append(meshTrust.Spec.CABundles, meshtrust_api.CABundle{
+				Type: meshtrust_api.PemCABundleType,
+				PEM: &meshtrust_api.PEM{
+					Value: caPEM,
+				},
+			})
+			needsUpdate = true
+		}
 
-		return i.resManager.Update(ctx, meshTrust)
+		// Ensure status.origin is set
+		if meshTrust.Status == nil {
+			meshTrust.Status = &meshtrust_api.MeshTrustStatus{}
+		}
+		if meshTrust.Status.Origin == nil || meshTrust.Status.Origin.KRI == nil || *meshTrust.Status.Origin.KRI != origin {
+			meshTrust.Status.Origin = &meshtrust_api.Origin{
+				KRI: pointer.To(origin),
+			}
+			needsUpdate = true
+		}
+
+		if needsUpdate {
+			return i.resManager.Update(ctx, meshTrust)
+		}
+		return nil
 	}
 
 	// Resource doesn't exist, create a new one
 	meshTrust.Spec = &meshtrust_api.MeshTrust{
-		Origin: &meshtrust_api.Origin{
-			KRI: pointer.To(origin),
-		},
 		TrustDomain: trustDomain,
 		CABundles: []meshtrust_api.CABundle{
 			{
@@ -259,6 +276,11 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 					Value: caPEM,
 				},
 			},
+		},
+	}
+	meshTrust.Status = &meshtrust_api.MeshTrustStatus{
+		Origin: &meshtrust_api.Origin{
+			KRI: pointer.To(origin),
 		},
 	}
 	return i.resManager.Create(ctx, meshTrust, store.CreateByKey(resourceName, meshName))
