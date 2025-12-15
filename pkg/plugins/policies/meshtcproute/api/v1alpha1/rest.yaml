@@ -126,7 +126,7 @@ components:
   schemas:
     MeshTCPRouteItem:
       type: object
-      description: "MeshTCPRoute configures routing for TCP traffic between services in the mesh. It enables traffic splitting and weighted load balancing across different backend endpoints, useful for canary deployments, blue-green deployments, and gradual traffic migration for TCP-based services."
+      description: "NOTICE: This policy defines its own `GetDefault` method so that it can have the given\nstructure for deserialization but still use the generic policy merging\nmachinery.\n//\nMeshTCPRoute configures routing for TCP traffic between services in the mesh. It enables traffic splitting and weighted load balancing across different backend endpoints, useful for canary deployments, blue-green deployments, and gradual traffic migration for TCP-based services."
       required: [type, name, spec]
       properties:
         type:

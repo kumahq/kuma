@@ -9,10 +9,8 @@ import (
 // structure for deserialization but still use the generic policy merging
 // machinery.
 //
-
 // MeshTCPRoute configures routing for TCP traffic between services in the mesh. It enables traffic splitting and weighted load balancing across different backend endpoints, useful for canary deployments, blue-green deployments, and gradual traffic migration for TCP-based services.
 // +kuma:policy:singular_display_name=Mesh TCP Route
-//
 // +kuma:policy:skip_get_default=true
 type MeshTCPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.

@@ -11,7 +11,6 @@ import (
 )
 
 // MeshMultiZoneService provides global load balancing and service discovery across multiple zones in a multi-zone mesh deployment. It aggregates MeshServices from different zones by label selectors, creating a unified service endpoint with automatic VIP assignment and hostname generation for cross-zone communication and failover.
-// It aggregates existing MeshServices by labels.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
 // +kuma:policy:short_name=mzsvc

@@ -102,7 +102,7 @@ components:
   schemas:
     HostnameGeneratorItem:
       type: object
-      description: "HostnameGenerator automatically generates DNS hostnames for services in the mesh based on customizable templates. It provides a consistent naming scheme for service discovery by creating predictable hostnames from service labels and metadata, supporting both MeshService, MeshExternalService, and MeshMultiZoneService resources.\nhostname generators to not get synced across zones"
+      description: "HostnameGenerator automatically generates DNS hostnames for services in the mesh based on customizable templates. It provides a consistent naming scheme for service discovery by creating predictable hostnames from service labels and metadata, supporting both MeshService, MeshExternalService, and MeshMultiZoneService resources."
       required: [type, name, spec]
       properties:
         type:

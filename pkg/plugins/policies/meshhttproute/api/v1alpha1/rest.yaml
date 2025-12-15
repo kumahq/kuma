@@ -126,7 +126,7 @@ components:
   schemas:
     MeshHTTPRouteItem:
       type: object
-      description: "MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints."
+      description: "NOTICE: This policy defines its own `GetDefault` method so that it can have the given\nstructure for deserialization but still use the generic policy merging\nmachinery.\n//\nMeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints."
       required: [type, name, spec]
       properties:
         type:

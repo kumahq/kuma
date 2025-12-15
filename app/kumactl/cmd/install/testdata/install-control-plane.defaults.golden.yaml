@@ -2244,11 +2244,12 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: MeshHTTPRoute configures how HTTP requests are routed between
-          services in the mesh. It enables advanced traffic management including path-based
-          routing, header matching, request/response modification, redirects, URL
-          rewrites, traffic mirroring, and weighted load balancing across service
-          endpoints.
+        description: |-
+          NOTICE: This policy defines its own `GetDefault` method so that it can have the given
+          structure for deserialization but still use the generic policy merging
+          machinery.
+          //
+          MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints.
         properties:
           apiVersion:
             description: |-
@@ -4266,7 +4267,6 @@ spec:
       openAPIV3Schema:
         description: |-
           MeshMultiZoneService provides global load balancing and service discovery across multiple zones in a multi-zone mesh deployment. It aggregates MeshServices from different zones by label selectors, creating a unified service endpoint with automatic VIP assignment and hostname generation for cross-zone communication and failover.
-          It aggregates existing MeshServices by labels.
           MeshMultizoneServices are only created on global
         properties:
           apiVersion:
@@ -6625,10 +6625,12 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: MeshTCPRoute configures routing for TCP traffic between services
-          in the mesh. It enables traffic splitting and weighted load balancing across
-          different backend endpoints, useful for canary deployments, blue-green deployments,
-          and gradual traffic migration for TCP-based services.
+        description: |-
+          NOTICE: This policy defines its own `GetDefault` method so that it can have the given
+          structure for deserialization but still use the generic policy merging
+          machinery.
+          //
+          MeshTCPRoute configures routing for TCP traffic between services in the mesh. It enables traffic splitting and weighted load balancing across different backend endpoints, useful for canary deployments, blue-green deployments, and gradual traffic migration for TCP-based services.
         properties:
           apiVersion:
             description: |-
@@ -9480,9 +9482,11 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: |-
-          HostnameGenerator automatically generates DNS hostnames for services in the mesh based on customizable templates. It provides a consistent naming scheme for service discovery by creating predictable hostnames from service labels and metadata, supporting both MeshService, MeshExternalService, and MeshMultiZoneService resources.
-          hostname generators to not get synced across zones
+        description: HostnameGenerator automatically generates DNS hostnames for services
+          in the mesh based on customizable templates. It provides a consistent naming
+          scheme for service discovery by creating predictable hostnames from service
+          labels and metadata, supporting both MeshService, MeshExternalService, and
+          MeshMultiZoneService resources.
         properties:
           apiVersion:
             description: |-

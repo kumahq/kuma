@@ -105,7 +105,8 @@ func parseMainComment(cg *ast.CommentGroup) (string, map[string]string, []string
 	var kubebuilderMarkers []string
 	for _, comment := range cg.List {
 		if !strings.HasPrefix(comment.Text, "// +") {
-			description = append(description, comment.Text)
+			// Strip // prefix for the description text (for use in CRDs/OpenAPI)
+			description = append(description, strings.TrimPrefix(comment.Text, "// "))
 			continue
 		}
 		if strings.HasPrefix(comment.Text, "// +kubebuilder") {
@@ -119,7 +120,11 @@ func parseMainComment(cg *ast.CommentGroup) (string, map[string]string, []string
 		}
 		kumaMarkers[mrkr[0]] = mrkr[1]
 	}
-	return strings.TrimSpace(strings.Join(description, "\n")), kumaMarkers, kubebuilderMarkers, nil
+	// Join with \n// to create properly formatted Go comments
+	if len(description) == 0 {
+		return "", kumaMarkers, kubebuilderMarkers, nil
+	}
+	return strings.TrimSpace(strings.Join(description, "\n// ")), kumaMarkers, kubebuilderMarkers, nil
 }
 
 func parseBool(markers map[string]string, key string) (bool, bool) {

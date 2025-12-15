@@ -16,7 +16,6 @@ import (
 )
 
 // MeshMultiZoneService provides global load balancing and service discovery across multiple zones in a multi-zone mesh deployment. It aggregates MeshServices from different zones by label selectors, creating a unified service endpoint with automatic VIP assignment and hostname generation for cross-zone communication and failover.
-// It aggregates existing MeshServices by labels.
 // MeshMultizoneServices are only created on global
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mzsvc
