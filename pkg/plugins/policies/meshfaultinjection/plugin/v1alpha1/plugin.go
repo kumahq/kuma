@@ -87,6 +87,7 @@ func applyToInbounds(
 
 		inboundRules, ok := fromRules.InboundRules[listenerKey]
 		if !ok || len(inboundRules) == 0 {
+			//nolint:staticcheck // SA1019 Backward compatibility: fallback to old Rules format if InboundRules not present
 			rules, ok := fromRules.Rules[listenerKey]
 			if !ok {
 				continue
@@ -177,6 +178,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			}
 			protocol := util.GetExternalServiceProtocol(es)
 
+			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
 			for _, rule := range mfi.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {

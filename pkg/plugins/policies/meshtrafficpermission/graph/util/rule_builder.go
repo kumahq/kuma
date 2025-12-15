@@ -42,6 +42,7 @@ func ComputeMtpRulesForTags(
 		return nil, false, err
 	}
 
+	//nolint:staticcheck // SA1019 Graph utility: compute rules using old Rules format
 	rl, ok := matched.FromRules.Rules[core_rules.InboundListener{
 		Address: "1.1.1.1",
 		Port:    1234,
