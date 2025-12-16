@@ -73,6 +73,21 @@ var _ = Describe("Workload Label Validator", func() {
 		}
 	}
 
+	createGatewayDataplane := func(name, mesh string, labels map[string]string) *core_mesh.DataplaneResource {
+		return &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{Name: name, Mesh: mesh, Labels: labels},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.1",
+					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+						Tags: map[string]string{"kuma.io/service": labels["kuma.io/service"]},
+					},
+				},
+			},
+		}
+	}
+
 	validateConnection := func(resource core_model.Resource, proxyType mesh_proto.ProxyType, mesh, name string) error {
 		md := core_xds.DataplaneMetadata{Resource: resource, ProxyType: proxyType}
 		err := validator.OnProxyConnected(streamIDCounter, core_model.ResourceKey{Mesh: mesh, Name: name}, context.Background(), md)
@@ -84,6 +99,7 @@ var _ = Describe("Workload Label Validator", func() {
 		meshIdentities   func()
 		dataplaneLabels  map[string]string
 		dataplaneService string
+		isGateway        bool
 		expectError      bool
 		errorSubstrings  []string
 	}
@@ -99,7 +115,12 @@ var _ = Describe("Workload Label Validator", func() {
 				dpLabels[k] = v
 			}
 
-			dp := createDataplane("test-dp", "default", dpLabels)
+			var dp *core_mesh.DataplaneResource
+			if tc.isGateway {
+				dp = createGatewayDataplane("test-dp", "default", dpLabels)
+			} else {
+				dp = createDataplane("test-dp", "default", dpLabels)
+			}
 			err := validateConnection(dp, mesh_proto.DataplaneProxyType, "default", "test-dp")
 
 			if tc.expectError {
@@ -177,6 +198,17 @@ var _ = Describe("Workload Label Validator", func() {
 			dataplaneLabels:  map[string]string{},
 			expectError:      true,
 			errorSubstrings:  []string{"missing required label 'kuma.io/workload'"},
+		}),
+		Entry("should allow gateway dataplane even without workload label", testCase{
+			meshIdentities: func() {
+				createMeshIdentity("mi-gateway", "default",
+					map[string]string{"kuma.io/service": "gateway"},
+					pointer.To(`/workload/{{ label "kuma.io/workload" }}`))
+			},
+			dataplaneService: "gateway",
+			dataplaneLabels:  map[string]string{},
+			isGateway:        true,
+			expectError:      false,
 		}),
 	)
 

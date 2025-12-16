@@ -43,12 +43,18 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 		return nil
 	}
 
-	if md.Resource == nil {
+	dp := md.GetDataplaneResource()
+	if dp == nil {
+		return nil
+	}
+
+	// Skip validation for gateway dataplanes
+	if dp.Spec.IsBuiltinGateway() {
 		return nil
 	}
 
 	mesh := proxyKey.Mesh
-	labels := md.Resource.GetMeta().GetLabels()
+	labels := dp.GetMeta().GetLabels()
 
 	log := workloadLabelLog.
 		WithValues("mesh", mesh).
