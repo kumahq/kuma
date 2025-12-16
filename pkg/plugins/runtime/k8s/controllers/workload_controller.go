@@ -56,6 +56,20 @@ func (r *WorkloadReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reques
 	var hasReferences bool
 	for _, dp := range dataplanes.Items {
 		if workloadName, ok := dp.GetAnnotations()[metadata.KumaWorkload]; ok && workloadName == req.Name {
+			// Skip gateway dataplanes - they should not have workload resources
+			spec, err := dp.GetSpec()
+			if err != nil {
+				log.Error(err, "failed to get dataplane spec", "dataplane", dp.Name)
+				continue
+			}
+			dpSpec, ok := spec.(*mesh_proto.Dataplane)
+			if !ok {
+				log.Error(errors.New("invalid spec type"), "expected Dataplane spec", "dataplane", dp.Name)
+				continue
+			}
+			if dpSpec.IsBuiltinGateway() || dpSpec.IsDelegatedGateway() {
+				continue
+			}
 			hasReferences = true
 			meshNames[dp.Mesh] = true
 		}

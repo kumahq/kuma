@@ -126,5 +126,11 @@ var _ = Describe("WorkloadController", func() {
 			workloadName: "multi-mesh-workload",
 			namespace:    "demo",
 		}),
+		Entry("should not create Workload for gateway dataplane", testCase{
+			inputFile:    "08.resources.yaml",
+			outputFile:   "08.workload.yaml",
+			workloadName: "gateway-workload",
+			namespace:    "demo",
+		}),
 	)
 })

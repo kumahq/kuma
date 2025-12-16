@@ -107,6 +107,10 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 func (g *Generator) collectWorkloadsByName(dataplanes []*core_mesh.DataplaneResource) map[string]bool {
 	workloadsByName := map[string]bool{}
 	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
+		// Skip gateway dataplanes - they should not have workload resources
+		if dataplane.Spec.IsBuiltinGateway() || dataplane.Spec.IsDelegatedGateway() {
+			continue
+		}
 		if workloadName, ok := g.workloadForDataplane(dataplane); ok {
 			workloadsByName[workloadName] = true
 		}

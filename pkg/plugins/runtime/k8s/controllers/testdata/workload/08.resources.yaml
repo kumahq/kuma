@@ -1,0 +1,14 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: gateway
+  namespace: demo
+  annotations:
+    kuma.io/workload: gateway-workload
+mesh: default
+spec:
+  networking:
+    gateway:
+      type: BUILTIN
+      tags:
+        kuma.io/service: gateway

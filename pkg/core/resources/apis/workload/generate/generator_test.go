@@ -186,4 +186,23 @@ var _ = Describe("Workload generator", func() {
 			g.Expect(test_metrics.FindMetric(metrics, "component_workload_generator")).ToNot(BeNil())
 		}, "2s", "100ms").Should(Succeed())
 	})
+
+	It("should not generate Workload from builtin gateway Dataplane", func() {
+		dp := builders.Dataplane().
+			WithAddress("192.168.0.1").
+			WithBuiltInGateway("gateway").
+			Build()
+		err := resManager.Create(context.Background(), dp,
+			store.CreateBy(model.MetaToResourceKey(dp.GetMeta())),
+			store.CreateWithLabels(map[string]string{
+				metadata.KumaWorkload: "gateway-workload",
+			}))
+		Expect(err).ToNot(HaveOccurred())
+
+		Consistently(func(g Gomega) {
+			wls := &workload_api.WorkloadResourceList{}
+			g.Expect(resManager.List(context.Background(), wls)).To(Succeed())
+			g.Expect(wls.GetItems()).To(BeEmpty())
+		}, "1s", "100ms").Should(Succeed())
+	})
 })
