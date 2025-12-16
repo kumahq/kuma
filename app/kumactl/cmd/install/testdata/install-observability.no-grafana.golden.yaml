@@ -604,7 +604,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v3.8.0@sha256:d936808bdea528155c0154a922cd42fd75716b8bb7ba302641350f9f3eaeba09"
+          image: "prom/prometheus:v3.8.1@sha256:2b6f734e372c1b4717008f7d0a0152316aedd4d13ae17ef1e3268dbfaf68041b"
           imagePullPolicy: "IfNotPresent"
           args:
             - --config.file=/etc/config/prometheus.yml
@@ -1221,7 +1221,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:3.6.2@sha256:23dee723aca20844a297cf96a212256f4be1e2234a3216b8e8792066ec2081f2"
+          image: "grafana/promtail:3.6.3@sha256:130b6dd63277d99ce87560c0266c0c30d07bc15ba0a8a590d42215465d4f5363"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -1321,7 +1321,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:3.6.2@sha256:fad94db64eeb0e14544953789c942453df68a860b6f760d867f06c5b31f461ab"
+          image: "grafana/loki:3.6.3@sha256:cd6e176883a90c21755f0315688668991634143423f75bdedfef41441b0fdc3c"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
