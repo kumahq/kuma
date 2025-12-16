@@ -21,6 +21,11 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: HostnameGenerator automatically generates DNS hostnames for services
+          in the mesh based on customizable templates. It provides a consistent naming
+          scheme for service discovery by creating predictable hostnames from service
+          labels and metadata, supporting both MeshService, MeshExternalService, and
+          MeshMultiZoneService resources.
         properties:
           apiVersion:
             description: |-
