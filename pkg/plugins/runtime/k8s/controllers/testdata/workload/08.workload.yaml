@@ -1,0 +1,10 @@
+items:
+- metadata:
+    labels:
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
+    name: test-workload
+    namespace: demo
+    resourceVersion: "999"
+  spec: {}
+metadata: {}

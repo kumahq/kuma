@@ -133,6 +133,10 @@ func (r *WorkloadReconciler) createOrUpdateWorkload(ctx context.Context, workloa
 		return nil
 	})
 	if err != nil {
+		if kube_apierrs.IsAlreadyExists(err) {
+			log.Info("workload already exists")
+			return nil
+		}
 		return errors.Wrapf(err, "failed to create/update Workload %s in namespace %s", workloadName, namespace)
 	}
 
