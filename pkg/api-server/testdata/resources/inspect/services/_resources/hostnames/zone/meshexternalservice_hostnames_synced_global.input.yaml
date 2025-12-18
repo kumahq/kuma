@@ -5,6 +5,8 @@ name: default
 type: MeshExternalService
 name: mes-1
 mesh: default
+labels:
+  kuma.io/origin: global
 spec:
   match:
     type: HostnameGenerator
