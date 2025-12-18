@@ -3,6 +3,7 @@ package webhooks_test
 import (
 	"context"
 	"os"
+	"regexp"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -116,7 +117,7 @@ func webhookRequest(inputFile string) kube_admission.Request {
 		}
 	}
 
-	resources := strings.Split(string(input), "---")
+	resources := regexp.MustCompile("(?m)^---$").Split(string(input), -1)
 	var obj, oldObj []byte
 	switch op {
 	case "UPDATE":

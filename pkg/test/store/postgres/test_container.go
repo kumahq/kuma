@@ -104,6 +104,13 @@ func (v *PostgresContainer) Start() error {
 		Started:          true,
 	})
 	if err != nil {
+		if c != nil {
+			if logs, logErr := c.Logs(ctx); logErr == nil {
+				if logBytes, readErr := io.ReadAll(logs); readErr == nil {
+					GinkgoLogr.Info("Container logs on error", "logs", string(logBytes))
+				}
+			}
+		}
 		return err
 	}
 	v.container = c

@@ -390,6 +390,53 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/meshservices/{name}/_dataplanes:
+    get:
+      operationId: inspect-meshservices-dataplanes
+      summary: Returns dataplanes matched by a MeshService
+      description: Returns dataplanes matched by a MeshService
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: name
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
     get:
       operationId: inspect-hostnames
@@ -18069,6 +18116,57 @@ components:
                     type: string
                 type: object
               type: array
+            conditions:
+              description: Conditions is an array of current conditions
+              items:
+                properties:
+                  message:
+                    description: >-
+                      message is a human readable message indicating details
+                      about the transition.
+
+                      This may be an empty string.
+                    maxLength: 32768
+                    type: string
+                  reason:
+                    description: >-
+                      reason contains a programmatic identifier indicating the
+                      reason for the condition's last transition.
+
+                      Producers of specific condition types may define expected
+                      values and meanings for this field,
+
+                      and whether the values are considered a guaranteed API.
+
+                      The value should be a CamelCase string.
+
+                      This field may not be empty.
+                    maxLength: 1024
+                    minLength: 1
+                    pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                    type: string
+                  status:
+                    description: status of the condition, one of True, False, Unknown.
+                    enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
+                    type: string
+                  type:
+                    description: >-
+                      type of condition in CamelCase or in
+                      foo.example.com/CamelCase.
+                    maxLength: 316
+                    pattern: >-
+                      ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                    type: string
+                required:
+                  - message
+                  - reason
+                  - status
+                  - type
+                type: object
+              type: array
             hostnameGenerators:
               description: Status of hostnames generator applied on this resource
               items:
@@ -18480,6 +18578,9 @@ components:
               description: >-
                 Origin specifies whether the resource was created from a
                 MeshIdentity.
+
+
+                Deprecated: use Status.Origin instead
               properties:
                 kri:
                   description: Resource identifier
@@ -18505,6 +18606,20 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
+        status:
+          description: Status is the current status of the Kuma MeshTrust resource.
+          properties:
+            origin:
+              description: >-
+                Origin specifies whether the resource was created from a
+                MeshIdentity.
+              properties:
+                kri:
+                  description: Resource identifier
+                  type: string
+              type: object
+          type: object
+          readOnly: true
     WorkloadItem:
       type: object
       required:

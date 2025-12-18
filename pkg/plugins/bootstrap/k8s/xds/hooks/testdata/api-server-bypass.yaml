@@ -1,0 +1,27 @@
+resources:
+- name: plugins:bootstrap:k8s:hooks:apiServerBypass
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: plugins_bootstrap_k8s_hooks_apiServerBypass
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: plugins:bootstrap:k8s:hooks:apiServerBypass
+    type: ORIGINAL_DST
+- name: plugins:bootstrap:k8s:hooks:apiServerBypass
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 1.1.1.1
+        portValue: 9090
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: plugins:bootstrap:k8s:hooks:apiServerBypass
+          statPrefix: plugins_bootstrap_k8s_hooks_apiServerBypass
+    name: plugins:bootstrap:k8s:hooks:apiServerBypass
+    trafficDirection: OUTBOUND
+    useOriginalDst: true

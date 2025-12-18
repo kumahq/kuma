@@ -146,7 +146,7 @@ var _ = Describe("Updater", func() {
 		// meshtrust should be created
 		meshTrust := meshtrust_api.NewMeshTrustResource()
 		Expect(resManager.Get(context.Background(), meshTrust, store.GetByKey(identity.Meta.GetName(), "default"))).ToNot(HaveOccurred())
-		Expect(meshTrust.Spec.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
+		Expect(meshTrust.Status.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
 		Expect(meshTrust.Spec.CABundles).To(HaveLen(1))
 	})
 
