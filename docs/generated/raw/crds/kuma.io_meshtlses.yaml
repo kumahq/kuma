@@ -28,6 +28,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTLS configures TLS and mutual TLS (mTLS) settings for secure
+          communication between services in the mesh. It allows you to enforce encryption,
+          configure TLS versions and cipher suites, and control whether mTLS is required
+          (strict mode) or optional (permissive mode) for inbound traffic.
         properties:
           apiVersion:
             description: |-

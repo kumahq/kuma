@@ -8,8 +8,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
-// MeshHealthCheck defines health checking policies between different data plane
-// proxies.
+// MeshHealthCheck enables active health checking of services in the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC health checks to detect and remove unhealthy instances from the load balancing pool, improving overall service reliability.
 type MeshHealthCheck struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

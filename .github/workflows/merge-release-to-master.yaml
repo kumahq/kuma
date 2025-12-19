@@ -6,7 +6,12 @@ concurrency:
 on:
   push:
     branches: ["release-*"]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      _info:
+        description: "⚠️ This workflow MUST be run from a release branch (release-*), NOT from master"
+        required: false
+        default: ""
 permissions:
   contents: read
 jobs:
@@ -17,6 +22,14 @@ jobs:
         with:
           ref: "master"
           fetch-depth: 0
+      - name: Validate workflow is not run from master
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "::error::This workflow must be run from a release branch (release-*), not from master"
+            echo "::error::Current branch: ${{ github.ref }}"
+            echo "::error::Please re-run this workflow from the latest release branch"
+            exit 1
+          fi
       - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3.5.1
         env:
           GITHUB_TOKEN: ${{ github.token }}

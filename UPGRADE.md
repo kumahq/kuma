@@ -115,6 +115,100 @@ When both Virtual Probes and Application Probe Proxy are not explicitly configur
 
 We strongly recommend migrating to Application Probe Proxy, which is the supported solution going forward. Virtual Probes will be removed in a future release. Application Probe Proxy works automatically with no configuration changes required.
 
+### Go Module Path Migration
+
+**Breaking Change for Library Users**
+
+If you use Kuma as a Go library or have custom extensions, the module path has changed from `github.com/kumahq/kuma` to `github.com/kumahq/kuma/v2`.
+
+**What changed:**
+- Go module path now includes `/v2` suffix following Go modules semantic versioning conventions
+- All package imports must be updated
+
+**Action required:**
+
+Update all import statements in your code:
+
+**Before:**
+```go
+import "github.com/kumahq/kuma/pkg/core/resources/model"
+import "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+```
+
+**After:**
+```go
+import "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+import "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+```
+
+Run `go mod tidy` after updating imports.
+
+**Who is affected:**
+- Anyone building custom Kuma plugins or extensions
+- Downstream projects that import Kuma packages
+- Custom operators or controllers integrating with Kuma
+
+### Removal of ServiceAccountName Configuration
+
+The `ServiceAccountName` configuration option has been removed after deprecation in version 2.6.x.
+
+**What changed:**
+- `KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME` environment variable is no longer supported
+- `runtime.kubernetes.serviceAccountName` config option removed
+
+**Action required:**
+
+If you were using custom ServiceAccountName configuration, migrate to `AllowedUsers` instead:
+
+```yaml
+runtime:
+  kubernetes:
+    allowedUsers:
+      - "system:serviceaccount:kuma-system:kuma-control-plane"
+```
+
+Or via environment variable:
+```bash
+KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS="system:serviceaccount:kuma-system:kuma-control-plane"
+```
+
+This is already configured by default via Helm template with `KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS`.
+
+### MeshTrust spec.origin Field Deprecated
+
+The `spec.origin` field in MeshTrust resources has been moved to `status.origin`.
+
+**What changed:**
+- `spec.origin` is now deprecated and will be removed in a future release
+- The field is automatically populated in `status.origin` by the MeshIdentity status updater
+- Setting `spec.origin` continues to work but emits a deprecation warning
+
+**Action required:**
+
+No immediate action required, but update any automation or tooling that references `spec.origin` to use `status.origin` instead.
+
+**Example:**
+
+**Before:**
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrust
+spec:
+  origin: MeshIdentity
+  # ...
+```
+
+**After (read from status instead):**
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrust
+spec:
+  # origin no longer set in spec
+  # ...
+status:
+  origin: MeshIdentity  # automatically populated
+```
+
 ## Upgrade to `2.12.x`
 
 ### Removal of `/status/zones` endpoints
