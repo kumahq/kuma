@@ -50,31 +50,136 @@ jobs:
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
         if: contains(github.event.comment.body, '/format')
-        run: make clean/generated check
+        id: format
         continue-on-error: true
+        run: make clean/generated check
 
-      # Update all golden files except transparent proxy tests if /golden_files is in the comment
-      - name: "Update golden files (excluding transparent proxy)"
-        if: contains(github.event.comment.body, '/golden_files')
-        run: make test UPDATE_GOLDEN_FILES=true
-
-      # Update only transparent proxy golden files if /golden_files_tproxy is in the comment
-      - name: "Update transparent proxy golden files"
-        if: contains(github.event.comment.body, '/golden_files_tproxy')
-        run: make test/transparentproxy UPDATE_GOLDEN_FILES=true
-
-      - name: commit and push fixes
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+      - name: "Commit format changes"
+        if: contains(github.event.comment.body, '/format') && steps.format.outcome == 'success'
+        id: commit-format
+        continue-on-error: true
         run: |
           if git diff --exit-code --stat; then
-            echo "No change detected, skipping git push"
+            echo "No format changes detected"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
           else
             git config user.name "${GH_USER}"
             git config user.email "${GH_EMAIL}"
             git commit -s -m "fix(ci): format files" .
-            git push
+            echo "committed=true" >> "$GITHUB_OUTPUT"
           fi
-      - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
+
+      # Update all golden files except transparent proxy tests if /golden_files is in the comment
+      - name: "Update golden files (excluding transparent proxy)"
+        if: contains(github.event.comment.body, '/golden_files')
+        id: golden-files
+        continue-on-error: true
+        run: make test UPDATE_GOLDEN_FILES=true
+
+      - name: "Commit golden files changes"
+        if: contains(github.event.comment.body, '/golden_files') && steps.golden-files.outcome == 'success'
+        id: commit-golden-files
+        continue-on-error: true
+        run: |
+          if git diff --exit-code --stat; then
+            echo "No golden files changes detected"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "${GH_USER}"
+            git config user.email "${GH_EMAIL}"
+            git commit -s -m "fix(ci): update golden files" .
+            echo "committed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Update only transparent proxy golden files if /golden_files_tproxy is in the comment
+      - name: "Update transparent proxy golden files"
+        if: contains(github.event.comment.body, '/golden_files_tproxy')
+        id: golden-files-tproxy
+        continue-on-error: true
+        run: make test/transparentproxy UPDATE_GOLDEN_FILES=true
+
+      - name: "Commit transparent proxy golden files changes"
+        if: contains(github.event.comment.body, '/golden_files_tproxy') && steps.golden-files-tproxy.outcome == 'success'
+        id: commit-golden-files-tproxy
+        continue-on-error: true
+        run: |
+          if git diff --exit-code --stat; then
+            echo "No transparent proxy golden files changes detected"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "${GH_USER}"
+            git config user.email "${GH_EMAIL}"
+            git commit -s -m "fix(ci): update transparent proxy golden files" .
+            echo "committed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: "Push all commits"
+        if: |
+          always() &&
+          (steps.commit-format.outputs.committed == 'true' ||
+           steps.commit-golden-files.outputs.committed == 'true' ||
+           steps.commit-golden-files-tproxy.outputs.committed == 'true')
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: git push
+
+      - name: "Post summary comment"
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: |
+          SUMMARY="## Workflow Results\n\n"
+
+          if [ "${{ steps.format.outcome }}" != "" ]; then
+            if [ "${{ steps.format.outcome }}" == "success" ]; then
+              if [ "${{ steps.commit-format.outputs.committed }}" == "true" ]; then
+                SUMMARY="${SUMMARY}✅ **Format**: Succeeded and committed\n"
+              else
+                SUMMARY="${SUMMARY}✅ **Format**: Succeeded (no changes)\n"
+              fi
+            elif [ "${{ steps.format.outcome }}" == "failure" ]; then
+              SUMMARY="${SUMMARY}❌ **Format**: Failed\n"
+            fi
+          fi
+
+          if [ "${{ steps.golden-files.outcome }}" != "" ]; then
+            if [ "${{ steps.golden-files.outcome }}" == "success" ]; then
+              if [ "${{ steps.commit-golden-files.outputs.committed }}" == "true" ]; then
+                SUMMARY="${SUMMARY}✅ **Golden files**: Succeeded and committed\n"
+              else
+                SUMMARY="${SUMMARY}✅ **Golden files**: Succeeded (no changes)\n"
+              fi
+            elif [ "${{ steps.golden-files.outcome }}" == "failure" ]; then
+              SUMMARY="${SUMMARY}❌ **Golden files**: Failed\n"
+            fi
+          fi
+
+          if [ "${{ steps.golden-files-tproxy.outcome }}" != "" ]; then
+            if [ "${{ steps.golden-files-tproxy.outcome }}" == "success" ]; then
+              if [ "${{ steps.commit-golden-files-tproxy.outputs.committed }}" == "true" ]; then
+                SUMMARY="${SUMMARY}✅ **Transparent proxy golden files**: Succeeded and committed\n"
+              else
+                SUMMARY="${SUMMARY}✅ **Transparent proxy golden files**: Succeeded (no changes)\n"
+              fi
+            elif [ "${{ steps.golden-files-tproxy.outcome }}" == "failure" ]; then
+              SUMMARY="${SUMMARY}❌ **Transparent proxy golden files**: Failed\n"
+            fi
+          fi
+
+          gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "$SUMMARY"
+
+      - name: "Add success reaction"
+        if: |
+          always() &&
+          steps.format.outcome != 'failure' &&
+          steps.golden-files.outcome != 'failure' &&
+          steps.golden-files-tproxy.outcome != 'failure'
+        run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+
+      - name: "Add failure reaction"
+        if: always() && (steps.format.outcome == 'failure' || steps.golden-files.outcome == 'failure' || steps.golden-files-tproxy.outcome == 'failure')
+        run: gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
