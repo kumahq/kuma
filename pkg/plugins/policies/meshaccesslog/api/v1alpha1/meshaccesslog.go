@@ -7,8 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
-// MeshAccessLog defines access log policies between different data plane
-// proxies entities.
+// MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes.
 // +kuma:policy:is_from_as_rules=true
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.

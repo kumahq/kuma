@@ -7,7 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
-// MeshMetric allows users to enable metrics collection in the Mesh, and define third party backend for storing them.
+// MeshMetric enables collection and export of service mesh metrics. It configures sidecar and application metrics scraping, allows customization of which metrics are published, and supports exporting to Prometheus or OpenTelemetry backends for monitoring and observability.
 type MeshMetric struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

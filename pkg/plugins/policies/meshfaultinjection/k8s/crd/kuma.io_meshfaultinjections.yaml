@@ -28,6 +28,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshFaultInjection allows you to test the resiliency of your
+          services by injecting faults like delays, connection aborts, and response
+          bandwidth limits into the traffic. This is useful for chaos testing and
+          validating that your applications handle failures gracefully.
         properties:
           apiVersion:
             description: |-

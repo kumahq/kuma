@@ -1,1 +1,5 @@
-{}
+{
+ "warnings": [
+  "setting spec.origin field is deprecated"
+ ]
+}

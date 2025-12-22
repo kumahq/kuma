@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshTLS configures TLS and mutual TLS (mTLS) settings for secure communication between services in the mesh. It allows you to enforce encryption, configure TLS versions and cipher suites, and control whether mTLS is required (strict mode) or optional (permissive mode) for inbound traffic.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mtls
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"

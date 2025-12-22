@@ -177,6 +177,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 				continue
 			}
 			protocol := util.GetExternalServiceProtocol(es)
+
 			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
 			for _, rule := range mfi.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
