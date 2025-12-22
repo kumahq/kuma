@@ -1,9 +1,0 @@
-<<<<<<< HEAD:app/kuma-ui/pkg/resources/data/assets/HostnameGeneratorRootView-Bmz7SwFz.js
-<<<<<<<< HEAD:app/kuma-ui/pkg/resources/data/assets/HostnameGeneratorRootView-D7yHfYIP.js
-import{_ as c,r as e,p as m,o as _,w as o,b as t}from"./index-DXTAqJSO.js";const i={};function p(u,w){const r=e("RouterView"),n=e("AppView"),a=e("RouteView");return _(),m(a,{name:"hostname-generator-root-view"},{default:o(({t:s})=>[t(n,{breadcrumbs:[{to:{name:"hostname-generator-list-view"},text:s("hostname-generators.routes.item.breadcrumbs")}]},{default:o(()=>[t(r)]),_:1},8,["breadcrumbs"])]),_:1})}const f=c(i,[["render",p]]);export{f as default};
-========
-import{_ as c,r as e,p as m,o as _,w as o,b as t}from"./index-Cf2N1kEB.js";const i={};function p(u,w){const r=e("RouterView"),n=e("AppView"),a=e("RouteView");return _(),m(a,{name:"hostname-generator-root-view"},{default:o(({t:s})=>[t(n,{breadcrumbs:[{to:{name:"hostname-generator-list-view"},text:s("hostname-generators.routes.item.breadcrumbs")}]},{default:o(()=>[t(r)]),_:1},8,["breadcrumbs"])]),_:1})}const f=c(i,[["render",p]]);export{f as default};
->>>>>>>> d2f25ae103 (chore(deps): bump kumahq/kuma-gui to bc578f9169c0804febab9bf476942d48930cbc31 (#15311)):app/kuma-ui/pkg/resources/data/assets/HostnameGeneratorRootView-Bmz7SwFz.js
-=======
-import{_ as c,r as e,p as m,o as _,w as o,b as t}from"./index-B99ecjhH.js";const i={};function p(u,w){const r=e("RouterView"),n=e("AppView"),a=e("RouteView");return _(),m(a,{name:"hostname-generator-root-view"},{default:o(({t:s})=>[t(n,{breadcrumbs:[{to:{name:"hostname-generator-list-view"},text:s("hostname-generators.routes.item.breadcrumbs")}]},{default:o(()=>[t(r)]),_:1},8,["breadcrumbs"])]),_:1})}const f=c(i,[["render",p]]);export{f as default};
->>>>>>> 99bb946e09 (chore(deps): bump kumahq/kuma-gui to 8091d9adbde195aefcff4427179c59ee2fe69ffa (#15312)):app/kuma-ui/pkg/resources/data/assets/HostnameGeneratorRootView-v3GlvFUZ.js
