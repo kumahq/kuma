@@ -183,19 +183,27 @@ func (c *UniversalControlPlane) GenerateDpToken(mesh, service, workload string) 
 		return "", err
 	}
 
-	data := fmt.Sprintf("'%s'", string(dataBytes))
+	// Escape single quotes for shell safety: replace ' with '\''
+	escapedData := strings.ReplaceAll(string(dataBytes), "'", `'\''`)
+	data := fmt.Sprintf("'%s'", escapedData)
 
 	return c.generateToken("/dataplane", data)
 }
 
 func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": %q, "scope": ["ingress"]}'`, zone)
+	rawData := fmt.Sprintf(`{"zone": %q, "scope": ["ingress"]}`, zone)
+	// Escape single quotes for shell safety: replace ' with '\''
+	escapedData := strings.ReplaceAll(rawData, "'", `'\''`)
+	data := fmt.Sprintf("'%s'", escapedData)
 
 	return c.generateToken("/zone", data)
 }
 
 func (c *UniversalControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": %q, "scope": ["egress"]}'`, zone)
+	rawData := fmt.Sprintf(`{"zone": %q, "scope": ["egress"]}`, zone)
+	// Escape single quotes for shell safety: replace ' with '\''
+	escapedData := strings.ReplaceAll(rawData, "'", `'\''`)
+	data := fmt.Sprintf("'%s'", escapedData)
 
 	return c.generateToken("/zone", data)
 }
@@ -209,7 +217,10 @@ func (c *UniversalControlPlane) GenerateZoneToken(
 		return "", err
 	}
 
-	data := fmt.Sprintf(`'{"zone": %q, "scope": %s}'`, zone, scopeJson)
+	rawData := fmt.Sprintf(`{"zone": %q, "scope": %s}`, zone, scopeJson)
+	// Escape single quotes for shell safety: replace ' with '\''
+	escapedData := strings.ReplaceAll(rawData, "'", `'\''`)
+	data := fmt.Sprintf("'%s'", escapedData)
 
 	return c.generateToken("/zone", data)
 }
