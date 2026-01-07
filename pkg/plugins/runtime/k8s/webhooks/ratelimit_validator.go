@@ -24,10 +24,10 @@ func NewRateLimitValidatorWebhook(validator ratelimit_managers.RateLimitValidato
 type RateLimitValidator struct {
 	validator ratelimit_managers.RateLimitValidator
 	converter k8s_common.Converter
-	decoder   *admission.Decoder
+	decoder   admission.Decoder
 }
 
-func (h *RateLimitValidator) InjectDecoder(d *admission.Decoder) {
+func (h *RateLimitValidator) InjectDecoder(d admission.Decoder) {
 	h.decoder = d
 }
 
