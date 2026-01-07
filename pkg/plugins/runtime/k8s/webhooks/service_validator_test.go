@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("ServiceValidator", func() {
-	var decoder *kube_admission.Decoder
+	var decoder kube_admission.Decoder
 
 	BeforeEach(func() {
 		scheme, err := k8s.NewScheme()
