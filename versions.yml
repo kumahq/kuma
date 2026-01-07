@@ -70,8 +70,9 @@
   release: 2.13.x
   latest: true
   releaseDate: "2025-12-22"
-  endOfLifeDate: "2026-12-22"
+  endOfLifeDate: "2028-06-22"
   branch: release-2.13
+  lts: true
 - edition: kuma
   version: preview
   release: 2.14.x
