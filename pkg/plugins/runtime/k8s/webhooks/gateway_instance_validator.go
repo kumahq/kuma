@@ -24,11 +24,11 @@ func NewGatewayInstanceValidatorWebhook(converter k8s_common.Converter, resource
 
 type GatewayInstanceValidator struct {
 	converter       k8s_common.Converter
-	decoder         *admission.Decoder
+	decoder         admission.Decoder
 	resourceManager manager.ResourceManager
 }
 
-func (h *GatewayInstanceValidator) InjectDecoder(d *admission.Decoder) {
+func (h *GatewayInstanceValidator) InjectDecoder(d admission.Decoder) {
 	h.decoder = d
 }
 

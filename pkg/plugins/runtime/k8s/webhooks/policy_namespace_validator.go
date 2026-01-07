@@ -11,11 +11,11 @@ import (
 )
 
 type PolicyNamespaceValidator struct {
-	Decoder         *admission.Decoder
+	Decoder         admission.Decoder
 	SystemNamespace string
 }
 
-func (p *PolicyNamespaceValidator) InjectDecoder(decoder *admission.Decoder) {
+func (p *PolicyNamespaceValidator) InjectDecoder(decoder admission.Decoder) {
 	p.Decoder = decoder
 }
 

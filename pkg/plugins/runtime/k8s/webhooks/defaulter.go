@@ -35,7 +35,7 @@ type defaultingHandler struct {
 	ResourceAdmissionChecker
 
 	converter k8s_common.Converter
-	decoder   *admission.Decoder
+	decoder   admission.Decoder
 }
 
 func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {

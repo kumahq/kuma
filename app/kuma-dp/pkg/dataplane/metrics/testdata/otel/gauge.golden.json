@@ -3,7 +3,8 @@
     "scope": {
       "Name": "io.opentelemetry.contrib.mongodb",
       "Version": "1.9.0",
-      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0"
+      "SchemaURL": "https://opentelemetry.io/schemas/1.10.0",
+      "Attributes": null
     },
     "metrics": [
       {
@@ -147,7 +148,8 @@
     "scope": {
       "Name": "kuma",
       "Version": "0.0.0",
-      "SchemaURL": ""
+      "SchemaURL": "",
+      "Attributes": null
     },
     "metrics": [
       {
