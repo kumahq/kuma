@@ -17,7 +17,7 @@ func NewContainerPatchValidatorWebhook() k8s_common.AdmissionValidator {
 	return &ContainerPatchValidator{}
 }
 
-func (h *ContainerPatchValidator) InjectDecoder(d *admission.Decoder) {
+func (h *ContainerPatchValidator) InjectDecoder(d admission.Decoder) {
 }
 
 func (h *ContainerPatchValidator) Handle(ctx context.Context, req admission.Request) admission.Response {

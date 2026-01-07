@@ -14,7 +14,7 @@ import (
 
 // ServiceValidator validates Kuma-specific annotations on Services.
 type ServiceValidator struct {
-	Decoder *admission.Decoder
+	Decoder admission.Decoder
 }
 
 // Handle admits a Service only if Kuma-specific annotations have proper values.

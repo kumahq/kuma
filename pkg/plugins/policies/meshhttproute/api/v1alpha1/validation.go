@@ -281,7 +281,7 @@ func validatePreciseHostname(hostname *PreciseHostname) validators.ValidationErr
 		return errs
 	}
 
-	if len(k8s_validation.IsValidIP(string(*hostname))) == 0 {
+	if len(k8s_validation.IsValidIP(nil, string(*hostname))) == 0 {
 		errs.AddViolationAt(validators.Root(), "cannot be an IP address")
 		return errs
 	}
