@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.18.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -225,7 +225,8 @@ spec:
                                     requestMirror:
                                       properties:
                                         backendRef:
-                                          description: TODO forbid weight
+                                          description: BackendRef defines where to
+                                            forward traffic.
                                           properties:
                                             kind:
                                               description: Kind of the referenced
@@ -294,7 +295,6 @@ spec:
                                             PreciseHostname is the fully qualified domain name of a network host. This
                                             matches the RFC 1123 definition of a hostname with 1 notable exception that
                                             numeric IP addresses are not allowed.
-
 
                                             Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
                                             alphanumeric characters or '-', and must start and end with an alphanumeric
