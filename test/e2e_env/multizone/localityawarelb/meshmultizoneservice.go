@@ -1,6 +1,7 @@
 package localityawarelb
 
 import (
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -20,23 +21,13 @@ func MeshMzService() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(`
-type: MeshMultiZoneService
-name: test-server
-mesh: mlb-mzms
-labels:
-  test-name: mzmsconnectivity
-spec:
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/display-name: test-server
-  ports:
-  - name: "80"
-    port: 80
-    appProtocol: http
-`)).
-			Setup(multizone.Global)).To(Succeed())
+			Install(ResourceUniversal(samples.MeshMultiZoneServiceBackendBuilder().
+				WithName("test-server").
+				WithMesh(meshName).
+				WithLabels(map[string]string{"test-name": "mzmsconnectivity"}).
+				WithServiceLabelSelector(map[string]string{"kuma.io/display-name": "test-server"}).
+				AddIntPortWithName(80, "http", "80").
+				Build())).Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
