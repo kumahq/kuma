@@ -1,10 +1,10 @@
 {
  "items": [
   {
-   "hostname": "test-server.svc.west.mesh.local",
+   "hostname": "mes-1.extsvc.mesh.local",
    "zones": [
     {
-     "name": "west"
+     "name": "mes-1"
     }
    ]
   }
