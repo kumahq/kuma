@@ -126,6 +126,7 @@ components:
   schemas:
     MeshHealthCheckItem:
       type: object
+      description: "MeshHealthCheck enables active health checking of services in the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC health checks to detect and remove unhealthy instances from the load balancing pool, improving overall service reliability."
       required: [type, name, spec]
       properties:
         type:

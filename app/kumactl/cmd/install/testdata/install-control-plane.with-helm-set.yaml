@@ -56,7 +56,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -106,7 +106,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -220,7 +220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -272,7 +272,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -294,6 +294,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshExternalService represents external services (outside the
+          mesh) that mesh services can communicate with securely. It enables mesh
+          services to reach external APIs, databases, or third-party services by defining
+          endpoints, ports, protocols, and optional TLS configuration for secure outbound
+          connections with hostname-based routing support.
         properties:
           apiVersion:
             description: |-
@@ -608,7 +613,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -633,6 +638,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshFaultInjection allows you to test the resiliency of your
+          services by injecting faults like delays, connection aborts, and response
+          bandwidth limits into the traffic. This is useful for chaos testing and
+          validating that your applications handle failures gracefully.
         properties:
           apiVersion:
             description: |-
@@ -1148,7 +1157,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -1375,7 +1384,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1731,7 +1740,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -1781,7 +1790,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -1833,7 +1842,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -1858,6 +1867,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshHealthCheck enables active health checking of services in
+          the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC
+          health checks to detect and remove unhealthy instances from the load balancing
+          pool, improving overall service reliability.
         properties:
           apiVersion:
             description: |-
@@ -2226,7 +2239,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2251,6 +2264,12 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: |-
+          NOTICE: This policy defines its own `GetDefault` method so that it can have the given
+          structure for deserialization but still use the generic policy merging
+          machinery.
+          //
+          MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints.
         properties:
           apiVersion:
             description: |-
@@ -2907,7 +2926,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshidentities.kuma.io
 spec:
   group: kuma.io
@@ -2925,6 +2944,11 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshIdentity manages service identity and certificate provisioning
+          for workloads in the mesh. It configures how services obtain their identity
+          certificates, supporting multiple providers including bundled certificates
+          (self-signed or user-provided CA), SPIRE integration, and custom SPIFFE
+          ID configuration for secure service-to-service authentication.
         properties:
           apiVersion:
             description: |-
@@ -3174,7 +3198,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -3224,7 +3248,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -3274,7 +3298,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -3299,6 +3323,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshLoadBalancingStrategy configures how traffic is distributed
+          across service instances. It supports multiple load balancing algorithms
+          (round-robin, least request, ring hash, random, maglev), locality-aware
+          routing to prefer nearby instances, and cross-zone failover strategies for
+          high availability.
         properties:
           apiVersion:
             description: |-
@@ -3939,7 +3968,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -3964,6 +3993,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshMetric enables collection and export of service mesh metrics.
+          It configures sidecar and application metrics scraping, allows customization
+          of which metrics are published, and supports exporting to Prometheus or
+          OpenTelemetry backends for monitoring and observability.
         properties:
           apiVersion:
             description: |-
@@ -4230,7 +4263,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -4252,6 +4285,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: |-
+          MeshMultiZoneService provides global load balancing and service discovery across multiple zones in a multi-zone mesh deployment. It aggregates MeshServices from different zones by label selectors, creating a unified service endpoint with automatic VIP assignment and hostname generation for cross-zone communication and failover.
+          MeshMultizoneServices are only created on global
         properties:
           apiVersion:
             description: |-
@@ -4468,7 +4504,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4493,6 +4529,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshPassthrough controls how traffic to external services (outside
+          the mesh) is handled by the sidecar proxy. It allows you to configure passthrough
+          mode to permit, deny, or selectively allow traffic to specific external
+          destinations based on domain names, IPs, or CIDR ranges.
         properties:
           apiVersion:
             description: |-
@@ -4642,7 +4682,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -4667,6 +4707,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshProxyPatch provides advanced customization of the Envoy proxy
+          configuration generated by Kuma. It allows you to add, remove, or modify
+          Envoy resources (clusters, listeners, filters, virtual hosts) using YAML
+          patches or JSON patches for fine-grained control beyond standard policies.
         properties:
           apiVersion:
             description: |-
@@ -5194,7 +5238,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -5219,6 +5263,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshRateLimit protects services from being overwhelmed by limiting
+          the rate of incoming requests or connections. It supports local rate limiting
+          for both HTTP (requests per interval) and TCP (connections per interval)
+          traffic with customizable response codes and headers for rate-limited requests.
         properties:
           apiVersion:
             description: |-
@@ -5828,7 +5876,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -5853,6 +5901,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshRetry configures automatic retry behavior for failed requests
+          to improve service reliability. It supports configurable retry conditions,
+          limits, timeouts, and backoff strategies for HTTP, gRPC, and TCP traffic,
+          helping services recover from transient failures.
         properties:
           apiVersion:
             description: |-
@@ -6341,7 +6393,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -6363,6 +6415,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshService represents a service in the mesh with its connectivity
+          and health information. It defines service endpoints by selecting data plane
+          proxies through labels or direct references, configures service ports and
+          protocols, tracks service availability and health status, and provides automatic
+          VIP assignment and hostname generation for service discovery.
         properties:
           apiVersion:
             description: |-
@@ -6563,7 +6620,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6588,6 +6645,12 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: |-
+          NOTICE: This policy defines its own `GetDefault` method so that it can have the given
+          structure for deserialization but still use the generic policy merging
+          machinery.
+          //
+          MeshTCPRoute configures routing for TCP traffic between services in the mesh. It enables traffic splitting and weighted load balancing across different backend endpoints, useful for canary deployments, blue-green deployments, and gradual traffic migration for TCP-based services.
         properties:
           apiVersion:
             description: |-
@@ -6851,7 +6914,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -6923,7 +6986,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -6948,6 +7011,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTimeout configures timeout limits for service-to-service
+          communication to prevent requests from hanging indefinitely. It supports
+          connection timeouts, idle timeouts, and HTTP-specific timeouts (request,
+          stream, headers) to ensure timely failure detection and improve service
+          responsiveness.
         properties:
           apiVersion:
             description: |-
@@ -7352,7 +7420,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -7377,6 +7445,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTLS configures TLS and mutual TLS (mTLS) settings for secure
+          communication between services in the mesh. It allows you to enforce encryption,
+          configure TLS versions and cipher suites, and control whether mTLS is required
+          (strict mode) or optional (permissive mode) for inbound traffic.
         properties:
           apiVersion:
             description: |-
@@ -7654,7 +7726,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -7679,6 +7751,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTrace enables distributed tracing to track requests as they
+          flow through multiple services in the mesh. It supports exporting trace
+          data to backends like Zipkin, Datadog, and OpenTelemetry, with configurable
+          sampling rates and custom tags for detailed observability and debugging
+          of service interactions.
         properties:
           apiVersion:
             description: |-
@@ -7941,7 +8018,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7966,6 +8043,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTrafficPermission controls which services are allowed to
+          communicate with each other in the mesh. It provides fine-grained access
+          control by allowing you to define allow/deny rules based on service identity,
+          enabling zero-trust security and supporting shadow mode for testing permission
+          changes before enforcement.
         properties:
           apiVersion:
             description: |-
@@ -8243,7 +8325,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshtrusts.kuma.io
 spec:
   group: kuma.io
@@ -8261,6 +8343,11 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshTrust defines trusted Certificate Authority (CA) bundles
+          for a trust domain in the mesh. It establishes trust relationships for service-to-service
+          mTLS authentication by specifying which CA certificates are trusted to verify
+          service identities, supporting PEM-encoded CA bundles and enabling secure
+          cross-service communication within the trust domain.
         properties:
           apiVersion:
             description: |-
@@ -8349,7 +8436,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -8399,7 +8486,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -8449,7 +8536,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -8499,7 +8586,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -8549,7 +8636,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -8599,7 +8686,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -8649,7 +8736,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -8699,7 +8786,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8749,7 +8836,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -8799,7 +8886,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -8849,7 +8936,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -8899,7 +8986,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: workloads.kuma.io
 spec:
   group: kuma.io
@@ -8917,6 +9004,12 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: Workload represents a logical grouping of data plane proxies
+          in the mesh, providing visibility into their operational status. It tracks
+          statistics about the data plane proxies that belong to a workload, including
+          the number of connected, healthy, and total proxies, enabling monitoring
+          and health assessment of your workload deployments. Workloads is also the
+          primary way data-planes are grouped together in metrics and traces.
         properties:
           apiVersion:
             description: |-
@@ -8974,7 +9067,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -9032,7 +9125,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9082,7 +9175,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -9140,7 +9233,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9191,7 +9284,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -9241,7 +9334,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -9291,7 +9384,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -9341,7 +9434,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -9391,7 +9484,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -9409,6 +9502,11 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: HostnameGenerator automatically generates DNS hostnames for services
+          in the mesh based on customizable templates. It provides a consistent naming
+          scheme for service discovery by creating predictable hostnames from service
+          labels and metadata, supporting both MeshService, MeshExternalService, and
+          MeshMultiZoneService resources.
         properties:
           apiVersion:
             description: |-
@@ -9479,7 +9577,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -9504,6 +9602,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshAccessLog configures access logging for traffic between services
+          in the mesh. It allows you to capture and export request/response logs to
+          various backends (file, TCP, or OpenTelemetry) for monitoring, debugging,
+          and auditing purposes.
         properties:
           apiVersion:
             description: |-
@@ -10231,7 +10333,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -10256,6 +10358,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshCircuitBreaker protects services from cascading failures
+          by limiting connections and detecting unhealthy instances. It provides connection
+          limits to prevent overload and outlier detection to temporarily remove failing
+          endpoints from the load balancing pool.
         properties:
           apiVersion:
             description: |-

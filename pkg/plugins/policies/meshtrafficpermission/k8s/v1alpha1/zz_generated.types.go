@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshTrafficPermission controls which services are allowed to communicate with each other in the mesh. It provides fine-grained access control by allowing you to define allow/deny rules based on service identity, enabling zero-trust security and supporting shadow mode for testing permission changes before enforcement.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mtp
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"

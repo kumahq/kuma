@@ -47,6 +47,7 @@ type PolicyConfig struct {
 	KubebuilderMarkers           []string
 	IsFromAsRules                bool
 	RegisterGenerator            bool
+	Description                  string
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -91,24 +92,21 @@ func Policy(path string) (PolicyConfig, error) {
 		}
 	}
 
-	markers, kubebuilderMarkers, err := parseMarkers(mainComment)
+	cfg, err := newPolicyConfig(packageName, mainStruct.Name.String(), mainComment, fields)
 	if err != nil {
 		return PolicyConfig{}, err
 	}
-
-	cfg, err := newPolicyConfig(packageName, mainStruct.Name.String(), markers, fields)
-	if err != nil {
-		return PolicyConfig{}, err
-	}
-	cfg.KubebuilderMarkers = kubebuilderMarkers
 	return cfg, nil
 }
 
-func parseMarkers(cg *ast.CommentGroup) (map[string]string, []string, error) {
-	result := map[string]string{}
+func parseMainComment(cg *ast.CommentGroup) (string, map[string]string, []string, error) {
+	var description []string
+	kumaMarkers := map[string]string{}
 	var kubebuilderMarkers []string
 	for _, comment := range cg.List {
 		if !strings.HasPrefix(comment.Text, "// +") {
+			// Strip // prefix for the description text (for use in CRDs/OpenAPI)
+			description = append(description, strings.TrimPrefix(comment.Text, "// "))
 			continue
 		}
 		if strings.HasPrefix(comment.Text, "// +kubebuilder") {
@@ -118,11 +116,15 @@ func parseMarkers(cg *ast.CommentGroup) (map[string]string, []string, error) {
 		trimmed := strings.TrimPrefix(comment.Text, "// +")
 		mrkr := strings.Split(trimmed, "=")
 		if len(mrkr) != 2 {
-			return nil, nil, errors.Errorf("marker %s has wrong format", trimmed)
+			return "", nil, nil, errors.Errorf("marker %s has wrong format", trimmed)
 		}
-		result[mrkr[0]] = mrkr[1]
+		kumaMarkers[mrkr[0]] = mrkr[1]
 	}
-	return result, kubebuilderMarkers, nil
+	// Join with \n// to create properly formatted Go comments
+	if len(description) == 0 {
+		return "", kumaMarkers, kubebuilderMarkers, nil
+	}
+	return strings.TrimSpace(strings.Join(description, "\n// ")), kumaMarkers, kubebuilderMarkers, nil
 }
 
 func parseBool(markers map[string]string, key string) (bool, bool) {
@@ -137,7 +139,11 @@ func parseBool(markers map[string]string, key string) (bool, bool) {
 	return false, false
 }
 
-func newPolicyConfig(pkg, name string, markers map[string]string, fields map[string]bool) (PolicyConfig, error) {
+func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map[string]bool) (PolicyConfig, error) {
+	description, markers, kubebuilderMarkers, err := parseMainComment(mainComment)
+	if err != nil {
+		return PolicyConfig{}, err
+	}
 	res := PolicyConfig{
 		Package:             pkg,
 		Name:                name,
@@ -147,6 +153,8 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		HasTo:               fields["To"],
 		HasFrom:             fields["From"],
 		HasRules:            fields["Rules"],
+		KubebuilderMarkers:  kubebuilderMarkers,
+		Description:         description,
 		IsPolicy:            true,
 		IsDestination:       false,
 		KDSFlags:            "model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag",
