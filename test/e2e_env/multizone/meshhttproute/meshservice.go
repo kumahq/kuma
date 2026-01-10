@@ -3,6 +3,8 @@ package meshhttproute
 import (
 	"fmt"
 
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -18,28 +20,19 @@ import (
 func MeshService() {
 	meshName := "meshhttproutems"
 	namespace := "meshhttproutems"
-
+	meshMultiZone := builders.MeshMultiZoneService().
+		WithMesh(meshName).
+		WithName("test-server").
+		WithLabels(map[string]string{"test-name": meshName}).
+		WithServiceLabelSelector(map[string]string{"kuma.io/display-name": "test-server",
+			"k8s.kuma.io/namespace": namespace,
+			"kuma.io/zone":          "kuma-2"}).
+		AddIntPortWithName(80, core_meta.ProtocolHTTP, "80").Build()
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(`
-type: MeshMultiZoneService
-name: test-server
-mesh: meshhttproutems
-labels:
-  test-name: meshhttproutems
-spec:
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/display-name: test-server
-        k8s.kuma.io/namespace: meshhttproutems
-        kuma.io/zone: kuma-2 # pick specific zone so we do not rely on default fallback
-  ports:
-  - port: 80
-    appProtocol: http
-`)).
+			Install(ResourceUniversal(meshMultiZone)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
