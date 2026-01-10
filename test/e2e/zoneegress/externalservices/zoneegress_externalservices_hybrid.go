@@ -4,33 +4,27 @@ import (
 	"fmt"
 	"net"
 
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 )
 
 const nonDefaultMesh = "non-default"
 
 func HybridUniversalGlobal() {
 	meshMTLOnFn := func(name string, enableNetworkOutBound, enableZoneIngress bool) *core_mesh.MeshResource {
-		m := builders.Mesh().WithName(nonDefaultMesh).WithBuiltinMTLSBackend("ca-1").
-			WithEgressRoutingEnabled().With(func(resource *core_mesh.MeshResource) {
-			resource.Spec.Networking.Outbound.Passthrough = &wrapperspb.BoolValue{
-				Value: enableNetworkOutBound,
-			}
-			resource.Spec.Routing.ZoneEgress = enableZoneIngress
-		})
-
-		return m.Build()
+		return builders.Mesh().WithName(nonDefaultMesh).WithBuiltinMTLSBackend("ca-1").
+			WithEgressRoutingEnabled().
+			WithNetworkingPassThrough(enableNetworkOutBound).
+			WithRoutingZoneEgress(enableZoneIngress).
+			Build()
 	}
 	externalService1 := `
 type: ExternalService
