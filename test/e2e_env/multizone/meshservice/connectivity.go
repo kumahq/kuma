@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -28,6 +30,12 @@ func Connectivity() {
 	autoGenerateUniversalClusterName := "autogenerate-universal"
 
 	var autoGenerateUniversalCluster *UniversalCluster
+	hostGen := func(name, template string, labels map[string]string) *v1alpha1.HostnameGeneratorResource {
+		return builders.HostnameGenerator().
+			WithName(name).
+			WithTemplate(template).
+			WithMeshServiceMatchLabels(labels).Build()
+	}
 
 	var testServerPodNames []string
 	BeforeAll(func() {
@@ -38,55 +46,34 @@ func Connectivity() {
 				WithPermissiveMTLSBackends(),
 			)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(fmt.Sprintf(`
-type: HostnameGenerator
-name: kube-mesh-specific-msconnectivity
-spec:
-  template: '{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh-specific.mesh.local'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/env: kubernetes
-        kuma.io/mesh: %s
-        k8s.kuma.io/is-headless-service: "false"
-`, meshName))).
-			Install(YamlUniversal(`
-type: HostnameGenerator
-name: kube-not-my-mesh-specific-msconnectivity
-spec:
-  template: '{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.not-my-mesh-specific.mesh.local'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/env: kubernetes
-        kuma.io/mesh: non-existent-mesh
-        k8s.kuma.io/is-headless-service: "false"
-`)).
-			Install(YamlUniversal(fmt.Sprintf(`
-type: HostnameGenerator
-name: uni-mesh-specific-msconnectivity
-spec:
-  template: '{{ .DisplayName }}.svc.{{ .Zone }}.mesh-specific.mesh.local'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/env: universal
-        kuma.io/mesh: "%s"
-`, meshName))).
-			Install(YamlUniversal(`
-type: HostnameGenerator
-name: uni-not-my-mesh-specific-msconnectivity
-spec:
-  template: '{{ .DisplayName }}.svc.{{ .Zone }}.not-my-mesh-specific.mesh.local'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/env: universal
-        kuma.io/mesh: non-existent-mesh
-`)).
+			Install(ResourceUniversal(hostGen("kube-mesh-specific-msconnectivity",
+				`'{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh-specific.mesh.local'`,
+				map[string]string{
+					"kuma.io/env":                     "kubernetes",
+					"kuma.io/mesh":                    meshName,
+					"k8s.kuma.io/is-headless-service": "false",
+				}))).
+			Install(ResourceUniversal(hostGen("kube-not-my-mesh-specific-msconnectivity",
+				`'{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.not-my-mesh-specific.mesh.local'`,
+				map[string]string{
+					"kuma.io/env":                     "kubernetes",
+					"kuma.io/mesh":                    meshName,
+					"k8s.kuma.io/is-headless-service": "false",
+				}))).
+			Install(ResourceUniversal(hostGen("uni-mesh-specific-msconnectivity",
+				`{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh-specific.mesh.local`,
+				map[string]string{
+					"kuma.io/env":  "universal",
+					"kuma.io/mesh": meshName,
+				}))).
+			Install(ResourceUniversal(hostGen("uni-not-my-mesh-specific-msconnectivity",
+				`'{{ .DisplayName }}.svc.{{ .Zone }}.not-my-mesh-specific.mesh.local'`,
+				map[string]string{
+					"kuma.io/env":  "universal",
+					"kuma.io/mesh": "non-existent-mesh",
+				}))).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
-
 		meshGateway := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
