@@ -43,10 +43,16 @@ filterChains:
                   - name: retry-after-grpc
                   - format: UNIX_TIMESTAMP
                     name: x-retry-after-grpc
+                retriableRequestHeaders:
+                - name: :method
+                  stringMatch:
+                    exact: GET
+                retriableStatusCodes:
+                    - 429
                 retryBackOff:
                   baseInterval: 13s
                   maxInterval: 14s
-                retryOn: canceled,deadline-exceeded,internal,resource-exhausted,unavailable
+                retryOn: canceled,deadline-exceeded,internal,resource-exhausted,unavailable,connect-failure,retriable-status-codes
               timeout: 0s
       statPrefix: outbound_127_0_0_1_10002
 name: outbound:127.0.0.1:10002

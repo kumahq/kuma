@@ -261,7 +261,10 @@ func validateGRPCRetryOn(retryOn []GRPCRetryOn) validators.ValidationError {
 		case ResourceExhausted:
 		case Unavailable:
 		default:
-			verr.AddViolationAt(path.Index(idx), fmt.Sprintf("unknown item '%v'", ro))
+			httpVerr := validateHTTPRetryOn([]HTTPRetryOn{HTTPRetryOn(ro)})
+			if httpVerr.HasViolations() {
+				verr.AddViolationAt(path.Index(idx), fmt.Sprintf("unknown item '%v'", ro))
+			}
 		}
 	}
 	return verr
