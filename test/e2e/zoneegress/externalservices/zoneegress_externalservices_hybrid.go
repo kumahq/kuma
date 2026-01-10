@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"net"
 
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
@@ -18,21 +21,17 @@ import (
 const nonDefaultMesh = "non-default"
 
 func HybridUniversalGlobal() {
-	meshMTLSOn := `
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-networking:
-  outbound:
-    passthrough: %s
-routing:
-  zoneEgress: %s
-`
+	meshMTLOnFn := func(name string, enableNetworkOutBound, enableZoneIngress bool) *core_mesh.MeshResource {
+		m := builders.Mesh().WithName(nonDefaultMesh).WithBuiltinMTLSBackend("ca-1").
+			WithEgressRoutingEnabled().With(func(resource *core_mesh.MeshResource) {
+			resource.Spec.Networking.Outbound.Passthrough = &wrapperspb.BoolValue{
+				Value: enableNetworkOutBound,
+			}
+			resource.Spec.Routing.ZoneEgress = enableZoneIngress
+		})
 
+		return m.Build()
+	}
 	externalService1 := `
 type: ExternalService
 mesh: %s
@@ -86,7 +85,7 @@ conf:
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
-			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
+			Install(ResourceUniversal(meshMTLOnFn(nonDefaultMesh, true, true))).
 			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Install(YamlUniversal(ptWaitForWarmOnInit)).
 			Install(YamlUniversal(fmt.Sprintf(externalService1, nonDefaultMesh))).
@@ -159,7 +158,7 @@ conf:
 	})
 
 	It("passthrough false with zoneegress false", func() {
-		Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "false"))(global)).To(Succeed())
+		Expect(ResourceUniversal(meshMTLOnFn(nonDefaultMesh, false, false))(global)).To(Succeed())
 
 		By("reaching external service from k8s")
 		Eventually(func(g Gomega) {
@@ -192,7 +191,7 @@ conf:
 	})
 
 	It("passthrough false with zoneegress true", func() {
-		Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
+		Expect(ResourceUniversal(meshMTLOnFn(nonDefaultMesh, false, true))(global)).To(Succeed())
 
 		By("not reaching external service from k8s when zone egress is down")
 		Eventually(func(g Gomega) {
