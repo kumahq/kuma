@@ -108,19 +108,31 @@ func GetRouteRetryConfig(conf *api.Conf, protocol core_meta.Protocol) (*envoy_ro
 	}
 }
 
-func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
+func GrpcRetriables(conf *[]api.GRPCRetryOn) (string, []uint32, []*envoy_route.HeaderMatcher) {
 	if conf == nil || len(*conf) == 0 {
-		return ""
+		return "", []uint32{}, []*envoy_route.HeaderMatcher{}
 	}
-	var retryOn []string
+
+	var grpcRetryOn []string
+	var httpRetryOn []api.HTTPRetryOn
 
 	for _, item := range *conf {
 		// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
 		// so we need to convert it
-		retryOn = append(retryOn, api.GrpcRetryOnEnumToEnvoyValue[item])
+		if ro, ok := api.GrpcRetryOnEnumToEnvoyValue[item]; ok {
+			grpcRetryOn = append(grpcRetryOn, ro)
+		} else {
+			httpRetryOn = append(httpRetryOn, api.HTTPRetryOn(item))
+		}
 	}
 
-	return strings.Join(retryOn, ",")
+	// Process http retryOn values
+	httpRetryOnStr, retriableStatusCodes, retriableRequestHeaders := HttpRetriables(&httpRetryOn)
+	if len(httpRetryOnStr) > 0 {
+		grpcRetryOn = append(grpcRetryOn, strings.Split(httpRetryOnStr, ",")...)
+	}
+
+	return strings.Join(grpcRetryOn, ","), retriableStatusCodes, retriableRequestHeaders
 }
 
 func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
@@ -143,9 +155,15 @@ func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 		policy.NumRetries = util_proto.UInt32(*conf.NumRetries)
 	}
 
-	retryOn := GrpcRetryOn(conf.RetryOn)
+	retryOn, retriableStatusCodes, retriableRequestHeaders := GrpcRetriables(conf.RetryOn)
 	if retryOn != "" {
 		policy.RetryOn = retryOn
+	}
+	if len(retriableStatusCodes) != 0 {
+		policy.RetriableStatusCodes = retriableStatusCodes
+	}
+	if len(retriableRequestHeaders) != 0 {
+		policy.RetriableRequestHeaders = retriableRequestHeaders
 	}
 
 	if conf.BackOff != nil {
@@ -167,6 +185,31 @@ func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 	}
 
 	return &policy, nil
+}
+
+func HttpRetriables(conf *[]api.HTTPRetryOn) (string, []uint32, []*envoy_route.HeaderMatcher) {
+	retryOn, retriableStatusCodes, retriableMethods := splitRetryOn(conf)
+	if len(retriableStatusCodes) != 0 {
+		retryOn = ensureRetriableStatusCodes(retryOn)
+	}
+
+	var retriableRequestHeaders []*envoy_route.HeaderMatcher
+	for _, method := range retriableMethods {
+		matcher := envoy_type_matcher.StringMatcher{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+				Exact: method,
+			},
+		}
+		retriableRequestHeaders = append(retriableRequestHeaders,
+			&envoy_route.HeaderMatcher{
+				Name: ":method",
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+					StringMatch: &matcher,
+				},
+				InvertMatch: false,
+			})
+	}
+	return retryOn, retriableStatusCodes, retriableRequestHeaders
 }
 
 func genHttpRetryPolicy(conf *api.HTTP) (*envoy_route.RetryPolicy, error) {
@@ -207,29 +250,15 @@ func genHttpRetryPolicy(conf *api.HTTP) (*envoy_route.RetryPolicy, error) {
 		policy.RateLimitedRetryBackOff = configureRateLimitedRetryBackOff(conf.RateLimitedBackOff)
 	}
 
-	retryOn, retriableStatusCodes, retriableMethods := splitRetryOn(conf.RetryOn)
+	retryOn, retriableStatusCodes, retriableRequestHeaders := HttpRetriables(conf.RetryOn)
 	if retryOn != "" {
 		policy.RetryOn = retryOn
 	}
 	if len(retriableStatusCodes) != 0 {
 		policy.RetriableStatusCodes = retriableStatusCodes
-		policy.RetryOn = ensureRetriableStatusCodes(policy.RetryOn)
 	}
-
-	for _, method := range retriableMethods {
-		matcher := envoy_type_matcher.StringMatcher{
-			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-				Exact: method,
-			},
-		}
-		policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
-			&envoy_route.HeaderMatcher{
-				Name: ":method",
-				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
-					StringMatch: &matcher,
-				},
-				InvertMatch: false,
-			})
+	if len(retriableRequestHeaders) != 0 {
+		policy.RetriableRequestHeaders = retriableRequestHeaders
 	}
 
 	if conf.RetriableRequestHeaders != nil {
@@ -408,7 +437,10 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {
-	policyRetrySplit := strings.Split(policyRetryOn, ",")
+	var policyRetrySplit []string
+	if len(policyRetryOn) != 0 {
+		policyRetrySplit = strings.Split(policyRetryOn, ",")
+	}
 	seenRetriable := false
 	for _, r := range policyRetrySplit {
 		if r == HttpRetryOnRetriableStatusCodes {
