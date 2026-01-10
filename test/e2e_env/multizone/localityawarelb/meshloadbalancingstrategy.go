@@ -33,7 +33,7 @@ networking:
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, "false"))).
+			Install(ResourceUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, false))).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
