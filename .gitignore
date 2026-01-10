@@ -30,4 +30,4 @@ pkg/transparentproxy/ebpf/programs/arm64/mb_*
 /test/k3d
 
 # Used to ignore vendor changes
-vendor
+vendor/
