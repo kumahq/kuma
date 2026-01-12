@@ -38,7 +38,7 @@ require (
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/josephburnett/jd/v2 v2.3.1
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/miekg/dns v1.1.69
+	github.com/miekg/dns v1.1.70
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.27.3
