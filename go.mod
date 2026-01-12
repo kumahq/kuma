@@ -13,7 +13,9 @@ require (
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.4.1
 	github.com/emicklei/go-restful/v3 v3.12.0
-	github.com/envoyproxy/go-control-plane v0.13.0
+	github.com/envoyproxy/go-control-plane v0.13.4
+	github.com/envoyproxy/go-control-plane/contrib v1.32.3
+	github.com/envoyproxy/go-control-plane/envoy v1.32.4
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/exaring/otelpgx v0.5.4
@@ -103,7 +105,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/containerd/log v0.1.0 // indirect
@@ -116,6 +117,7 @@ require (
 	github.com/docker/docker v28.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -235,4 +237,10 @@ require (
 )
 
 // remove once https://github.com/envoyproxy/go-control-plane/issues/875 is resolved
-replace github.com/envoyproxy/go-control-plane v0.12.0 => github.com/envoyproxy/go-control-plane v0.11.2-0.20231010133108-1dfbe83bcebc
+replace github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.32.3-kong-1
+
+replace github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.32.3-kong-1
+
+replace github.com/envoyproxy/go-control-plane/ratelimit => github.com/kumahq/go-control-plane/ratelimit v0.1.0-kong-1
+
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.4-kong-1
