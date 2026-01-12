@@ -1,4 +1,4 @@
-FROM gcr.io/k8s-staging-build-image/distroless-iptables:v0.8.6@sha256:4e0a77d0973618ce2a76e65fa2dc97694eb690ac8baf69cefe6e20f17957d9dd
+FROM gcr.io/k8s-staging-build-image/distroless-iptables:v0.8.6@sha256:8366c73e5726bce7497b1cca2e384246a52f35d9399513220db07c10062cc519
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
