@@ -85,6 +85,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-configmap-controller").
 		For(&kube_core.ConfigMap{}).
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).

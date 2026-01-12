@@ -164,6 +164,7 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-mesh-service-controller").
 		For(&kube_core.Service{}).
 		// on Namespace update we reconcile Services in this namespace
 		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
