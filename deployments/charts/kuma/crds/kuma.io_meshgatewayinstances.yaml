@@ -209,8 +209,6 @@ spec:
                   `kuma.io/service` tag, and should match exactly one Gateway
                   resource.
                 type: object
-            required:
-            - tags
             type: object
           status:
             description: |-
