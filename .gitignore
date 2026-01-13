@@ -28,6 +28,3 @@ pkg/transparentproxy/ebpf/programs/arm64/mb_*
 
 # Used to download manifests for k3d
 /test/k3d
-
-# Used to ignore vendor changes
-vendor/
