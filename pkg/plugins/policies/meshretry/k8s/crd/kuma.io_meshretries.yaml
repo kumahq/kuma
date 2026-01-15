@@ -199,8 +199,9 @@ spec:
                               type: object
                             retryOn:
                               description: RetryOn is a list of conditions which will
-                                cause a retry. 
-                                Also, http RetryOn values are supported.
+                                cause a retry. Supports both gRPC retry conditions (Canceled,
+                                DeadlineExceeded, Internal, ResourceExhausted, Unavailable) and HTTP
+                                retry conditions (see HTTP retryOn for full list).
                               example:
                               - Canceled
                               - DeadlineExceeded
