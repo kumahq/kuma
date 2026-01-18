@@ -14,7 +14,10 @@
 {{- end }}
 {{- $serviceName := (include "kuma.controlPlane.serviceName" .) -}}
 {{- $certName := print (include "kuma.name" .) "-tls-cert" -}}
-{{- $issuerName := print (include "kuma.name" .) "-selfsigned-issuer" -}}
+{{- $customIssuerName := .Values.controlPlane.tls.general.certManager.issuerRef.name -}}
+{{- $hasCustomIssuer := ne $customIssuerName "" -}}
+{{- $issuerName := ternary $customIssuerName (print (include "kuma.name" .) "-selfsigned-issuer") $hasCustomIssuer -}}
+{{- $issuerKind := default "Issuer" .Values.controlPlane.tls.general.certManager.issuerRef.kind -}}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -26,9 +29,10 @@ spec:
     - {{ $serviceName }}.{{ .Release.Namespace }}.svc
     - {{ $serviceName }}.{{ .Release.Namespace }}.svc.cluster.local
   issuerRef:
-    kind: Issuer
+    kind: {{ $issuerKind }}
     name: {{ $issuerName }}
   secretName: {{ $certName }}
+{{- if not $hasCustomIssuer }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
@@ -38,4 +42,5 @@ metadata:
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
   selfSigned: {}
+{{- end }}
 {{- end }}
