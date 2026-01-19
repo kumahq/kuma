@@ -36,7 +36,7 @@ require (
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/invopop/jsonschema v0.13.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/josephburnett/jd/v2 v2.3.1
+	github.com/josephburnett/jd/v2 v2.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/miekg/dns v1.1.70
 	github.com/moby/sys/mountinfo v0.7.2
