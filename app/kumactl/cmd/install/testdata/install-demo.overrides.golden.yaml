@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: "redis@sha256:350e485f00477588a01de022e00a83735f9a81a30129ace85f73808a57b4a655"
+          image: "redis@sha256:73dad4271642c5966db88db7a7585fae7cf10b685d1e48006f31e0294c29fdd7"
           ports:
             - name: tcp
               containerPort: 6379
