@@ -185,7 +185,7 @@ func BuildFromRules(
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList, true)
+		rules, err := BuildRules(fromList, true, true)
 		if err != nil {
 			return FromRules{}, err
 		}
@@ -252,7 +252,7 @@ func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.Reso
 			toList = append(toList, BuildPolicyItemsWithMeta(tl, meta, topLevel)...)
 		}
 	}
-	return BuildRules(toList, false)
+	return BuildRules(toList, false, true)
 }
 
 func BuildGatewayRules(
@@ -385,7 +385,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 		items = append(items, item)
 	}
 
-	rules, err := BuildRules(items, false)
+	rules, err := BuildRules(items, false, true)
 	if err != nil {
 		return SingleItemRules{}, err
 	}
@@ -400,11 +400,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // which has empty subset or kuma.io/service.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
-	return buildRules(list, withNegations, true)
-}
-
-func buildRules(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
