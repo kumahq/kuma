@@ -50,38 +50,3 @@ spec:
           namespace: ns-5
       default:
         action: Allow
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          app: app-6
-          namespace: ns-6
-      default:
-        action: Allow
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          app: app-7
-          namespace: ns-7
-      default:
-        action: Allow
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          app: app-8
-          namespace: ns-8
-      default:
-        action: Allow
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          app: app-9
-          namespace: ns-9
-      default:
-        action: Allow
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          app: app-10
-          namespace: ns-10
-      default:
-        action: Allow
