@@ -18489,6 +18489,13 @@ components:
               x-kubernetes-list-type: map
             selector:
               properties:
+                dataplane:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
                 dataplaneRef:
                   properties:
                     name:

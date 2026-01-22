@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -14,7 +13,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
@@ -216,44 +214,7 @@ func (i *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName str
 }
 
 func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, nodeLabels map[string]string) map[string]string {
-	logger := converterLog.WithValues("pod", pod.Name, "namespace", pod.Namespace)
-	tags := map[string]string{}
-	var ignoredLabels []string
-	for key, value := range pod.Labels {
-		if value == "" {
-			continue
-		}
-		if strings.Contains(key, "kuma.io/") {
-			ignoredLabels = append(ignoredLabels, key)
-			continue
-		}
-		tags[key] = value
-	}
-	if len(ignoredLabels) > 0 {
-		logger.V(1).Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
-	}
-
-	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
-	tags[mesh_proto.KubeServiceTag] = svc.Name
-	tags[mesh_proto.KubePortTag] = strconv.Itoa(int(svcPort.Port))
-	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
-	if zone != "" {
-		tags[mesh_proto.ZoneTag] = zone
-	}
-	for key, value := range nodeLabels {
-		tags[key] = value
-	}
-	// For provided gateway we should ignore the protocol tag
-	protocol := ProtocolTagFor(svc, svcPort)
-	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); enabled && protocol != string(core_meta.ProtocolTCP) {
-		logger.Info("ignoring non TCP appProtocol or annotation as provided gateway only supports 'tcp'", "appProtocol", protocol)
-	} else {
-		tags[mesh_proto.ProtocolTag] = protocol
-	}
-	if isHeadlessService(svc) {
-		tags[mesh_proto.InstanceTag] = pod.Name
-	}
-	return tags
+	return map[string]string{} // POC: no tags
 }
 
 // ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation or `appProtocol`.
@@ -287,25 +248,5 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 }
 
 func InboundTagsForPod(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) map[string]string {
-	tags := util_k8s.CopyStringMap(pod.Labels)
-	for key, value := range tags {
-		if value == "" {
-			delete(tags, key)
-		}
-	}
-	if tags == nil {
-		tags = make(map[string]string)
-	}
-	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
-	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", name, pod.Namespace)
-	if zone != "" {
-		tags[mesh_proto.ZoneTag] = zone
-	}
-	tags[mesh_proto.ProtocolTag] = string(core_meta.ProtocolTCP)
-	tags[mesh_proto.InstanceTag] = pod.Name
-	for key, value := range nodeLabels {
-		tags[key] = value
-	}
-
-	return tags
+	return map[string]string{} // POC: no tags
 }

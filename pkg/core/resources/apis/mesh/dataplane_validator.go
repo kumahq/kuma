@@ -95,9 +95,10 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		field := path.Field("inbound").Index(i)
 		result := validateInbound(inbound, networking.Address)
 		err.AddErrorAt(field, result)
-		if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
-			err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
-		}
+		// POC: skip service tag validation
+		// if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
+		// 	err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
+		// }
 	}
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)

@@ -356,8 +356,13 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 			if inbound.Port == mesh_proto.TCPPortReserved {
 				continue
 			}
+			// POC: skip empty service names
+			serviceName := inbound.GetService()
+			if serviceName == "" {
+				continue
+			}
 			if d.serviceVipEnabled {
-				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
+				errs = multierr.Append(errs, addDefault(outboundSet, serviceName, 0))
 			}
 			for _, vob := range Match(virtualOutbounds, inbound.Tags) {
 				addFromVirtualOutbound(outboundSet, vob, inbound.Tags, dp.Descriptor().Name, dp.Meta.GetName())

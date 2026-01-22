@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -361,13 +362,15 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 		}
 	}
 	ms.Labels[metadata.HeadlessService] = "false"
-	dpTags := maps.Clone(svc.Spec.Selector)
-	if dpTags == nil {
-		dpTags = map[string]string{}
+	dpLabels := maps.Clone(svc.Spec.Selector)
+	if dpLabels == nil {
+		dpLabels = map[string]string{}
 	}
-	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
+	dpLabels[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
 	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: &dpTags,
+		Dataplane: &common_api.LabelSelector{
+			MatchLabels: &dpLabels,
+		},
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{

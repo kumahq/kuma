@@ -4,13 +4,15 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
 type Selector struct {
-	DataplaneTags *map[string]string `json:"dataplaneTags,omitempty"`
-	DataplaneRef  *DataplaneRef      `json:"dataplaneRef,omitempty"`
+	DataplaneTags *map[string]string        `json:"dataplaneTags,omitempty"`
+	DataplaneRef  *DataplaneRef             `json:"dataplaneRef,omitempty"`
+	Dataplane     *common_api.LabelSelector `json:"dataplane,omitempty"`
 }
 
 type DataplaneRef struct {

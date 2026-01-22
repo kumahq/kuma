@@ -30,7 +30,7 @@ func MatchDataplanesWithMeshServices(
 ) map[*meshservice_api.MeshServiceResource][]*core_mesh.DataplaneResource {
 	result := map[*meshservice_api.MeshServiceResource][]*core_mesh.DataplaneResource{}
 
-	dppsByNameByTag, dppsByName := indexDpsForMatching(dpps, matchOnlyHealthy)
+	dppsByNameByTag, dppsByName, dppsByNameByLabel := indexDpsForMatching(dpps, matchOnlyHealthy)
 
 	for _, ms := range meshServices {
 		switch {
@@ -38,6 +38,8 @@ func MatchDataplanesWithMeshServices(
 			result[ms] = matchByRef(ms, dppsByName)
 		case ms.Spec.Selector.DataplaneTags != nil:
 			result[ms] = matchByTags(ms, dppsByNameByTag)
+		case ms.Spec.Selector.Dataplane != nil:
+			result[ms] = matchByLabels(ms, dppsByNameByLabel)
 		default:
 			result[ms] = nil
 		}
@@ -52,10 +54,15 @@ func MatchesDataplane(meshService *meshservice_api.MeshService, dpp *core_mesh.D
 		return meshService.Selector.DataplaneRef.Name == dpp.GetMeta().GetName()
 	case meshService.Selector.DataplaneTags != nil:
 		return dpp.Spec.Matches(pointer.Deref(meshService.Selector.DataplaneTags))
+	case meshService.Selector.Dataplane != nil:
+		return meshService.Selector.Dataplane.Matches(dpp.GetMeta().GetLabels())
 	default:
 		return false
 	}
 }
+
+// DppsByNameByLabel indexes dataplanes by their resource labels (not inbound tags)
+type DppsByNameByLabel = map[dppsByNameByTagKey]map[string]*core_mesh.DataplaneResource
 
 func indexDpsForMatching(
 	dpps []*core_mesh.DataplaneResource,
@@ -63,9 +70,11 @@ func indexDpsForMatching(
 ) (
 	DppsByNameByTag,
 	map[model.ResourceKey]*core_mesh.DataplaneResource,
+	DppsByNameByLabel,
 ) {
 	dppsByNameByTag := DppsByNameByTag{}
 	dppsByName := map[model.ResourceKey]*core_mesh.DataplaneResource{}
+	dppsByNameByLabel := DppsByNameByLabel{}
 
 	for _, dpp := range dpps {
 		inbounds := dpp.Spec.GetNetworking().GetInbound()
@@ -91,8 +100,23 @@ func indexDpsForMatching(
 		if len(inbounds) > 0 {
 			dppsByName[model.MetaToResourceKey(dpp.Meta)] = dpp
 		}
+
+		// Index by resource labels for dataplane.matchLabels selector
+		for labelName, labelValue := range dpp.Meta.GetLabels() {
+			key := dppsByNameByTagKey{
+				mesh:     dpp.Meta.GetMesh(),
+				tagName:  labelName,
+				tagValue: labelValue,
+			}
+			dataplanes, ok := dppsByNameByLabel[key]
+			if !ok {
+				dataplanes = map[string]*core_mesh.DataplaneResource{}
+				dppsByNameByLabel[key] = dataplanes
+			}
+			dataplanes[dpp.Meta.GetName()] = dpp
+		}
 	}
-	return dppsByNameByTag, dppsByName
+	return dppsByNameByTag, dppsByName, dppsByNameByLabel
 }
 
 func matchByRef(
@@ -138,6 +162,41 @@ func matchByTags(
 	for _, dppName := range maps.SortedKeys(shortestDppMap) {
 		dpp := shortestDppMap[dppName]
 		if dpp.Spec.Matches(pointer.Deref(ms.Spec.Selector.DataplaneTags)) {
+			dpps = append(dpps, dpp)
+		}
+	}
+	return dpps
+}
+
+func matchByLabels(
+	ms *meshservice_api.MeshServiceResource,
+	dppsByNameByLabel DppsByNameByLabel,
+) []*core_mesh.DataplaneResource {
+	// For every label key/value pair of MeshService's selector, find the set of DPPs matched by that pair.
+	// Then take the smallest set of all sets.
+	var shortestDppMap map[string]*core_mesh.DataplaneResource
+	for labelName, labelValue := range pointer.Deref(ms.Spec.Selector.Dataplane.MatchLabels) {
+		labelKey := dppsByNameByTagKey{
+			mesh:     ms.GetMeta().GetMesh(),
+			tagName:  labelName,
+			tagValue: labelValue,
+		}
+		if dppsByName, ok := dppsByNameByLabel[labelKey]; ok {
+			if shortestDppMap == nil || len(dppsByName) < len(shortestDppMap) {
+				shortestDppMap = dppsByName
+			}
+		} else {
+			// No proxies will match this pair of labels, no point in going further.
+			shortestDppMap = nil
+			break
+		}
+	}
+
+	// Go over the shortest list of data plane proxies and pick only proxies that match all labels.
+	var dpps []*core_mesh.DataplaneResource
+	for _, dppName := range maps.SortedKeys(shortestDppMap) {
+		dpp := shortestDppMap[dppName]
+		if ms.Spec.Selector.Dataplane.Matches(dpp.Meta.GetLabels()) {
 			dpps = append(dpps, dpp)
 		}
 	}
