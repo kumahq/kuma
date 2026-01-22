@@ -1,0 +1,87 @@
+# MeshTrafficPermission with multiple 'from' rules: one Mesh-level rule that intersects
+# with everything else (AllowWithShadowDeny) and multiple MeshSubset rules (Allow) that
+# don't intersect with each other.
+type: MeshTrafficPermission
+name: mtp-from-long
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    name: test-server
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: AllowWithShadowDeny
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-1
+          namespace: ns-1
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-2
+          namespace: ns-2
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-3
+          namespace: ns-3
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-4
+          namespace: ns-4
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-5
+          namespace: ns-5
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-6
+          namespace: ns-6
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-7
+          namespace: ns-7
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-8
+          namespace: ns-8
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-9
+          namespace: ns-9
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: app-10
+          namespace: ns-10
+      default:
+        action: Allow
