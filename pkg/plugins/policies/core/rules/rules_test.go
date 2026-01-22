@@ -3,7 +3,6 @@ package rules_test
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/file"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	"github.com/kumahq/kuma/v2/pkg/xds/context"
 )
@@ -918,13 +918,13 @@ var _ = Describe("Rules", func() {
 		// Helper to create a PolicyItemWithMeta for testing
 		createPolicyItem := func(targetRef common_api.TargetRef, action meshtrafficpermission_api.Action) core_rules.PolicyItemWithMeta {
 			return core_rules.PolicyItemWithMeta{
-				PolicyItem: &testPolicyItem{
-					targetRef: targetRef,
-					conf: meshtrafficpermission_api.Conf{
+				PolicyItem: &meshtrafficpermission_api.From{
+					TargetRef: targetRef,
+					Default: meshtrafficpermission_api.Conf{
 						Action: pointer.To(action),
 					},
 				},
-				ResourceMeta: &testResourceMeta{name: "test-policy", mesh: "default"},
+				ResourceMeta: &test_model.ResourceMeta{Name: "test-policy", Mesh: "default"},
 				TopLevel:     common_api.TargetRef{Kind: common_api.Mesh},
 			}
 		}
@@ -1258,33 +1258,3 @@ var _ = Describe("Rules", func() {
 		})
 	})
 })
-
-// Test helper types
-type testPolicyItem struct {
-	targetRef common_api.TargetRef
-	conf      meshtrafficpermission_api.Conf
-}
-
-func (t *testPolicyItem) GetTargetRef() common_api.TargetRef {
-	return t.targetRef
-}
-
-func (t *testPolicyItem) GetDefault() interface{} {
-	return t.conf
-}
-
-type testResourceMeta struct {
-	name string
-	mesh string
-}
-
-func (t *testResourceMeta) GetName() string                                      { return t.name }
-func (t *testResourceMeta) GetNamespace() string                                 { return "" }
-func (t *testResourceMeta) GetNameExtensions() core_model.ResourceNameExtensions { return nil }
-func (t *testResourceMeta) GetMesh() string                                      { return t.mesh }
-func (t *testResourceMeta) GetVersion() string                                   { return "" }
-func (t *testResourceMeta) GetCreationTime() time.Time                           { return time.Time{} }
-func (t *testResourceMeta) GetModificationTime() time.Time                       { return time.Time{} }
-func (t *testResourceMeta) GetLabels() map[string]string                         { return nil }
-func (t *testResourceMeta) GetDisplayName() string                               { return t.name }
-func (t *testResourceMeta) GetKRI() string                                       { return "test-kri" }
