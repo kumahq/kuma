@@ -230,11 +230,43 @@ func addOutputRules(
 		rulePosition++
 	}
 
+<<<<<<< HEAD
 	if cfg.ShouldRedirectDNS() {
 		jumpTarget := Return()
 		if !ipv6 && cfg.ShouldFallbackDNSToUpstreamChain() {
 			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
 		}
+=======
+	if cfg.Redirect.DNS.Enabled {
+		nat.Output().AddRules(
+			rules.
+				NewInsertRule(
+					Protocol(Udp(DestinationPort(consts.DNSPort))),
+					Match(Owner(Uid(cfg.KumaDPUser))),
+					JumpConditional(
+						// if DOCKER_OUTPUT should be targeted --jump DOCKER_OUTPUT or else RETURN
+						cfg.Executables.Functionality.Chains.DockerOutput,
+						ToUserDefinedChain(consts.ChainDockerOutput),
+						Return(),
+					),
+				).
+				WithConditionalComment(
+					cfg.Executables.Functionality.Chains.DockerOutput,
+					fmt.Sprintf(
+						"redirect DNS traffic from kuma-dp to the %s chain",
+						consts.ChainDockerOutput,
+					),
+					"return early for DNS traffic from kuma-dp",
+				),
+			rules.
+				NewAppendRule(
+					Protocol(Tcp(DestinationPort(consts.DNSPort))),
+					Match(Owner(NotUid(cfg.KumaDPUser))),
+					Jump(Return()),
+				).
+				WithCommentf("allow applications to perform DNS queries over TCP to port %d without mesh redirection (only traffic not owned by UID %s (kuma-dp user))", consts.DNSPort, cfg.KumaDPUser),
+		)
+>>>>>>> 3b48cd5ef9 (fix(transparent-proxy): allow TCP DNS queries (#15401))
 
 		nat.Output().Insert(
 			rulePosition,
