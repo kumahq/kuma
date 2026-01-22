@@ -401,6 +401,10 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
+	return buildRules(list, withNegations, true)
+}
+
+func buildRules(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
@@ -468,14 +472,18 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		}
 	}
 
-	// 3. Construct rules for all connected components of the graph independently
-	components := topo.ConnectedComponents(g)
+	var nodeGroups [][]graph.Node
+	if useCliques {
+		nodeGroups = topo.BronKerbosch(g)
+	} else {
+		nodeGroups = topo.ConnectedComponents(g)
+	}
 
-	sortComponents(components)
+	sortComponents(nodeGroups)
 
-	for _, nodes := range components {
+	for _, group := range nodeGroups {
 		tagSet := map[subsetutils.Tag]bool{}
-		for _, node := range nodes {
+		for _, node := range group {
 			for _, t := range subsets[node.ID()] {
 				tagSet[t] = true
 			}
