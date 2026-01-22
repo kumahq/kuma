@@ -11,6 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 func NewDataplaneInsightManager(store core_store.ResourceStore, config *kuma_cp.DataplaneMetrics) core_manager.ResourceManager {
@@ -39,7 +40,11 @@ func (m *dataplaneInsightManager) Create(ctx context.Context, resource core_mode
 	if err := m.store.Get(ctx, dp, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
 		return err
 	}
-	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(dp))...)
+	createOpts := []core_store.CreateOptionsFunc{core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(dp)}
+	if workload, ok := dp.GetMeta().GetLabels()[metadata.KumaWorkload]; ok {
+		createOpts = append(createOpts, core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: workload}))
+	}
+	return m.store.Create(ctx, resource, append(fs, createOpts...)...)
 }
 
 func (m *dataplaneInsightManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {

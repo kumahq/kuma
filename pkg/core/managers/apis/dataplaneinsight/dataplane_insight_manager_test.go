@@ -13,6 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("DataplaneInsight Manager", func() {
@@ -78,5 +79,35 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		// then
 		Expect(actual.Spec.Subscriptions).To(BeEmpty())
 		Expect(actual.Spec.Subscriptions).To(BeNil())
+	})
+
+	It("should copy workload label from dataplane to insight", func() {
+		// setup
+		s := memory.NewStore()
+		cfg := &kuma_cp.DataplaneMetrics{
+			SubscriptionLimit: 3,
+		}
+		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
+
+		// given
+		dpLabels := map[string]string{
+			"kuma.io/zone":     "default",
+			"kuma.io/workload": "demo-app",
+			"env":              "prod",
+		}
+		err := s.Create(context.Background(), core_mesh.NewDataplaneResource(), store.CreateByKey("dp1", "default"), store.CreateWithLabels(dpLabels))
+		Expect(err).ToNot(HaveOccurred())
+
+		input := core_mesh.NewDataplaneInsightResource()
+
+		// when
+		err = manager.Create(context.Background(), input, store.CreateByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		actual := core_mesh.NewDataplaneInsightResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual.Meta.GetLabels()).To(Equal(map[string]string{metadata.KumaWorkload: "demo-app"}))
 	})
 })

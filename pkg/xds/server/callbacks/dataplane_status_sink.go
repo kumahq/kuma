@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/events"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 )
@@ -265,6 +266,13 @@ func (s *dataplaneInsightStore) Upsert(
 			return insight.Spec.UpdateSubscription(subscription)
 		})
 	case core_mesh.DataplaneType:
+		var opts []manager.UpsertFunc
+		dp := core_mesh.NewDataplaneResource()
+		if err := s.resManager.Get(ctx, dp, store.GetBy(dataplaneID)); err == nil {
+			if workload, ok := dp.GetMeta().GetLabels()[metadata.KumaWorkload]; ok {
+				opts = append(opts, manager.UpsertWithLabels(map[string]string{metadata.KumaWorkload: workload}))
+			}
+		}
 		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
 			if err := insight.Spec.UpdateSubscription(subscription); err != nil {
@@ -283,7 +291,7 @@ func (s *dataplaneInsightStore) Upsert(
 				}
 			}
 			return nil
-		})
+		}, opts...)
 	default:
 		// Return a designated precondition error since we don't expect other dataplane types.
 		return store.ErrorInvalid(fmt.Sprintf("resource 'type=%q name=%q mesh=%q' is not expected to be stored in the insight resources", dataplaneType, dataplaneID.Name, dataplaneID.Mesh))

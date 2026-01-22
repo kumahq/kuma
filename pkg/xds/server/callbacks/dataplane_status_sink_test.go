@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/events"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v2/pkg/test/xds"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
@@ -392,6 +393,45 @@ var _ = Describe("DataplaneInsightSink", func() {
                 total:
                   responsesSent: "1"
 `))
+		})
+
+		It("should copy workload label from dataplane to insight on upsert", func() {
+			ctx := context.Background()
+
+			// setup
+			key := core_model.ResourceKey{Mesh: "default", Name: "example-002"}
+			dpLabels := map[string]string{
+				"kuma.io/zone":     "default",
+				"kuma.io/workload": "demo-app",
+				"env":              "prod",
+			}
+
+			// given
+			dp := core_mesh.NewDataplaneResource()
+			err := store.Create(ctx, dp, core_store.CreateByKey(key.Name, key.Mesh), core_store.CreateWithLabels(dpLabels))
+			Expect(err).ToNot(HaveOccurred())
+
+			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
+
+			subscription := &mesh_proto.DiscoverySubscription{
+				Id:                     "test-id",
+				ControlPlaneInstanceId: "cp-01",
+				ConnectTime:            util_proto.MustTimestampProto(t0),
+				Status:                 mesh_proto.NewSubscriptionStatus(t0),
+			}
+
+			// when
+			err = statusStore.Upsert(ctx, nil, core_mesh.DataplaneType, key, subscription, nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			dataplaneInsight := core_mesh.NewDataplaneInsightResource()
+			Eventually(func() bool {
+				err := store.Get(ctx, dataplaneInsight, core_store.GetBy(key))
+				return err == nil
+			}, "1s", "1ms").Should(BeTrue())
+
+			Expect(dataplaneInsight.Meta.GetLabels()).To(Equal(map[string]string{metadata.KumaWorkload: "demo-app"}))
 		})
 	})
 })
