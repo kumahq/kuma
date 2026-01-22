@@ -297,6 +297,13 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 					),
 					"return early for DNS traffic from kuma-dp",
 				),
+			rules.
+				NewAppendRule(
+					Protocol(Tcp(DestinationPort(consts.DNSPort))),
+					Match(Owner(NotUid(cfg.KumaDPUser))),
+					Jump(Return()),
+				).
+				WithCommentf("allow applications to perform DNS queries over TCP to port %d without mesh redirection (only traffic not owned by UID %s (kuma-dp user))", consts.DNSPort, cfg.KumaDPUser),
 		)
 
 		if cfg.Redirect.DNS.CaptureAll {
