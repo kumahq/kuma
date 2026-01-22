@@ -958,15 +958,15 @@ var _ = Describe("Rules", func() {
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1", "ns": "ns-1"},
+					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-2", "ns": "ns-2"},
+					Tags: &map[string]string{"app": "app-2"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-3", "ns": "ns-3"},
+					Tags: &map[string]string{"app": "app-3"},
 				}, "Allow"),
 			}
 
@@ -982,11 +982,11 @@ var _ = Describe("Rules", func() {
 
 			// Verify semantic equivalence - this is the key property
 			testElements := []subsetutils.Element{
-				{"kuma.io/service": "app-1"},
-				{"kuma.io/service": "app-2"},
-				{"kuma.io/service": "app-3"},
-				{"kuma.io/service": "app-4"}, // not in any specific rule, should match Mesh
-				{"kuma.io/service": "app-1", "version": "v1"},
+				{"app": "app-1"},
+				{"app": "app-2"},
+				{"app": "app-3"},
+				{"app": "app-4"}, // not in any specific rule, should match Mesh
+				{"app": "app-1", "version": "v1"},
 			}
 			verifySemanticEquivalence(rulesCliques, rulesComponents, testElements)
 		})
@@ -1094,8 +1094,14 @@ var _ = Describe("Rules", func() {
 		It("should handle identical subsets", func() {
 			// Multiple policies with the same targetRef
 			items := []core_rules.PolicyItemWithMeta{
-				createPolicyItem(common_api.TargetRef{Kind: common_api.MeshService, Name: pointer.To("app-1")}, "Allow"),
-				createPolicyItem(common_api.TargetRef{Kind: common_api.MeshService, Name: pointer.To("app-1")}, "Deny"),
+				createPolicyItem(common_api.TargetRef{
+					Kind: common_api.MeshSubset,
+					Tags: &map[string]string{"app": "app-1"},
+				}, "Allow"),
+				createPolicyItem(common_api.TargetRef{
+					Kind: common_api.MeshSubset,
+					Tags: &map[string]string{"app": "app-1"},
+				}, "Deny"),
 			}
 
 			rulesCliques, err := core_rules.BuildRules(items, true, true)
@@ -1105,8 +1111,8 @@ var _ = Describe("Rules", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			testElements := []subsetutils.Element{
-				{"kuma.io/service": "app-1"},
-				{"kuma.io/service": "app-2"},
+				{"app": "app-1"},
+				{"app": "app-2"},
 			}
 			verifySemanticEquivalence(rulesCliques, rulesComponents, testElements)
 		})
@@ -1154,10 +1160,16 @@ var _ = Describe("Rules", func() {
 
 		It("should handle completely disjoint subsets (no edges in graph)", func() {
 			// Subsets that don't intersect at all
-			// {app: app-1} and {app: app-2} don't intersect
+			// {app: app-1} and {app: app-2} don't intersect because app can only have one value
 			items := []core_rules.PolicyItemWithMeta{
-				createPolicyItem(common_api.TargetRef{Kind: common_api.MeshService, Name: pointer.To("app-1")}, "Allow"),
-				createPolicyItem(common_api.TargetRef{Kind: common_api.MeshService, Name: pointer.To("app-2")}, "Deny"),
+				createPolicyItem(common_api.TargetRef{
+					Kind: common_api.MeshSubset,
+					Tags: &map[string]string{"app": "app-1"},
+				}, "Allow"),
+				createPolicyItem(common_api.TargetRef{
+					Kind: common_api.MeshSubset,
+					Tags: &map[string]string{"app": "app-2"},
+				}, "Deny"),
 			}
 
 			rulesCliques, err := core_rules.BuildRules(items, true, true)
@@ -1168,9 +1180,9 @@ var _ = Describe("Rules", func() {
 
 			// Both should handle disjoint subsets correctly
 			testElements := []subsetutils.Element{
-				{"kuma.io/service": "app-1"},
-				{"kuma.io/service": "app-2"},
-				{"kuma.io/service": "app-3"},
+				{"app": "app-1"},
+				{"app": "app-2"},
+				{"app": "app-3"},
 			}
 			verifySemanticEquivalence(rulesCliques, rulesComponents, testElements)
 		})
