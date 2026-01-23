@@ -255,4 +255,75 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		Expect(overviewList.UnmarshalJSON(body)).To(Succeed())
 		Expect(*overviewList.Next).To(Equal(fmt.Sprintf(`http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1`, apiServer.Address())))
 	})
+
+	It("should include insights when filtering by workload label", func() {
+		// given
+		memory.ClearStore(resourceStore)
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
+		Expect(err).ToNot(HaveOccurred())
+
+		// Create dataplane with workload label
+		dpResource := core_mesh.DataplaneResource{
+			Spec: &v1alpha1.Dataplane{
+				Networking: &v1alpha1.Dataplane_Networking{
+					Address: "127.0.0.1",
+					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+						{
+							Port: 1234,
+							Tags: map[string]string{
+								"service": "test-service",
+							},
+						},
+					},
+				},
+			},
+		}
+		err = resourceStore.Create(context.Background(), &dpResource,
+			store.CreateByKey("dp-with-label", "mesh1"),
+			store.CreatedAt(t1),
+			store.CreateWithLabels(map[string]string{
+				"kuma.io/workload": "test-workload",
+			}))
+		Expect(err).ToNot(HaveOccurred())
+
+		// Create matching insight
+		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
+		insightResource := core_mesh.DataplaneInsightResource{
+			Spec: &v1alpha1.DataplaneInsight{
+				Subscriptions: []*v1alpha1.DiscoverySubscription{
+					{
+						Id:                     "stream-id-test",
+						ControlPlaneInstanceId: "cp-test",
+						ConnectTime:            proto.MustTimestampProto(sampleTime),
+						Status:                 v1alpha1.NewSubscriptionStatus(sampleTime),
+					},
+				},
+			},
+		}
+		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey("dp-with-label", "mesh1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes/_overview?filter[labels.kuma.io/workload]=test-workload")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(response.StatusCode).To(Equal(200))
+		body, err := io.ReadAll(response.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Verify dataplaneInsight is present in response
+		Expect(body).To(ContainSubstring(`"dataplaneInsight"`))
+		Expect(body).To(ContainSubstring(`"stream-id-test"`))
+		Expect(body).To(ContainSubstring(`"dp-with-label"`))
+
+		// Verify only one item in list
+		overviewList := rest.ResourceListReceiver{
+			NewResource: func() model.Resource {
+				return core_mesh.NewDataplaneOverviewResource()
+			},
+		}
+		Expect(overviewList.UnmarshalJSON(body)).To(Succeed())
+		Expect(overviewList.Items).To(HaveLen(1))
+	})
 }, Ordered)
