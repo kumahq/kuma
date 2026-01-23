@@ -15,7 +15,15 @@ import (
 const (
 	EnvoyClusterLabelName               = "envoy_cluster_name"
 	EnvoyHttpConnManagerPrefixLabelName = "envoy_http_conn_manager_prefix"
+	EnvoyListenerAddressLabelName       = "envoy_listener_address"
 )
+
+// EntityLabels a set of labels which may contain entity names
+var EntityLabels = map[string]struct{}{
+	EnvoyClusterLabelName:               {},
+	EnvoyHttpConnManagerPrefixLabelName: {},
+	EnvoyListenerAddressLabelName:       {},
+}
 
 const MeshTrafficLabelName = "kuma_io_mesh_traffic"
 
