@@ -55,6 +55,34 @@ func CertManagerCAInjection() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
+	It("should have certificate with all required DNS SANs", func() {
+		kumaNamespace := Config.KumaNamespace
+		serviceName := releaseName + "-control-plane"
+
+		// Verify Certificate has all required DNS names
+		Eventually(func(g Gomega) {
+			output, err := k8s.RunKubectlAndGetOutputE(
+				cluster.GetTesting(),
+				cluster.GetKubectlOptions(kumaNamespace),
+				"get", "certificate", "kuma-tls-cert",
+				"-o", "jsonpath={.spec.dnsNames}",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			// Expected SANs:
+			// 1. Short hostname: <service>.<namespace>
+			// 2. With .svc: <service>.<namespace>.svc
+			// 3. FQDN: <service>.<namespace>.svc.cluster.local
+			expectedShortHostname := fmt.Sprintf("%s.%s", serviceName, kumaNamespace)
+			expectedSvcHostname := fmt.Sprintf("%s.%s.svc", serviceName, kumaNamespace)
+			expectedFQDN := fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, kumaNamespace)
+
+			g.Expect(output).To(ContainSubstring(expectedShortHostname))
+			g.Expect(output).To(ContainSubstring(expectedSvcHostname))
+			g.Expect(output).To(ContainSubstring(expectedFQDN))
+		}, "30s", "1s").Should(Succeed(), "Certificate should have all required DNS SANs including short hostname")
+	})
+
 	It("should inject CA bundle into Kuma webhook configurations", func() {
 		kumaNamespace := Config.KumaNamespace
 
