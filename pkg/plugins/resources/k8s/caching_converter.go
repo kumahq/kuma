@@ -41,7 +41,20 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		obj.GetObjectKind().GroupVersionKind().String(),
 	}, ":")
 	if v, ok := c.cache.Get(key); ok {
-		return out.SetSpec(v.(core_model.ResourceSpec))
+		if err := out.SetSpec(v.(core_model.ResourceSpec)); err != nil {
+			return err
+		}
+		// Status is not cached (changes frequently), fetch from obj
+		if out.Descriptor().HasStatus {
+			status, err := obj.GetStatus()
+			if err != nil {
+				return err
+			}
+			if err := out.SetStatus(status); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	spec, err := obj.GetSpec()
 	if err != nil {
