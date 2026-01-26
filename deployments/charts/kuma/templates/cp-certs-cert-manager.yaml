@@ -26,6 +26,7 @@ metadata:
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
   dnsNames:
+    - {{ $serviceName }}.{{ .Release.Namespace }}
     - {{ $serviceName }}.{{ .Release.Namespace }}.svc
     - {{ $serviceName }}.{{ .Release.Namespace }}.svc.cluster.local
   issuerRef:

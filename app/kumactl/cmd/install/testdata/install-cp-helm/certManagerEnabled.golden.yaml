@@ -975,6 +975,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 spec:
   dnsNames:
+    - kuma-control-plane.kuma-system
     - kuma-control-plane.kuma-system.svc
     - kuma-control-plane.kuma-system.svc.cluster.local
   issuerRef:
