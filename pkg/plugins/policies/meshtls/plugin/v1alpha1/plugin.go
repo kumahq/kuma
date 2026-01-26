@@ -442,7 +442,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 			if err != nil {
 				return nil, err
 			}
-			conf := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.PrefixMatcher(id.IDString()))))
+			conf := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.PrefixMatcher(id.IDString() + "/"))))
 			sanMatchers = append(sanMatchers, conf)
 		}
 	}
