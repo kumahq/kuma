@@ -7,7 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
-// MeshTimeout allows users to configure timeouts for communication between services in mesh
+// MeshTimeout configures timeout limits for service-to-service communication to prevent requests from hanging indefinitely. It supports connection timeouts, idle timeouts, and HTTP-specific timeouts (request, stream, headers) to ensure timely failure detection and improve service responsiveness.
 // +kuma:policy:is_from_as_rules=true
 type MeshTimeout struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.

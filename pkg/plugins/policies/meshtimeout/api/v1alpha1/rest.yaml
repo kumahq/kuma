@@ -126,6 +126,7 @@ components:
   schemas:
     MeshTimeoutItem:
       type: object
+      description: "MeshTimeout configures timeout limits for service-to-service communication to prevent requests from hanging indefinitely. It supports connection timeouts, idle timeouts, and HTTP-specific timeouts (request, stream, headers) to ensure timely failure detection and improve service responsiveness."
       required: [type, name, spec]
       properties:
         type:

@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshTrust defines trusted Certificate Authority (CA) bundles for a trust domain in the mesh. It establishes trust relationships for service-to-service mTLS authentication by specifying which CA certificates are trusted to verify service identities, supporting PEM-encoded CA bundles and enabling secure cross-service communication within the trust domain.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mtrust
 type MeshTrust struct {

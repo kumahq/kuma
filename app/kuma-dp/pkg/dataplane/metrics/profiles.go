@@ -281,7 +281,7 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 				for _, m := range metricFamily.Metric {
 					includeMetric := true
 					for _, l := range m.Label {
-						if metricFromInternalCluster(l, effectiveLabelsSelectors) {
+						if metricFromInternalEntity(l, effectiveLabelsSelectors) {
 							includeMetric = false
 							break
 						}
@@ -308,9 +308,12 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 	}
 }
 
-func metricFromInternalCluster(l *io_prometheus_client.LabelPair, effectiveLabelsSelectors []selectorFunction) bool {
+func metricFromInternalEntity(l *io_prometheus_client.LabelPair, effectiveLabelsSelectors []selectorFunction) bool {
+	if _, ok := EntityLabels[l.GetName()]; !ok {
+		return false
+	}
 	for _, selector := range effectiveLabelsSelectors {
-		if l.GetName() == EnvoyClusterLabelName && selector(l.GetValue()) {
+		if selector(l.GetValue()) {
 			return true
 		}
 	}

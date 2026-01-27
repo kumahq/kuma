@@ -113,6 +113,9 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+{{- if .Description }}
+// {{ .Description }}
+{{- end }}
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName={{ .ShortName }}
 {{- range $marker := .KubebuilderMarkers }}

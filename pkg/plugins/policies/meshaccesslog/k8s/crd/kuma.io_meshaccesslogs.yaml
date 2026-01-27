@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -28,6 +28,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshAccessLog configures access logging for traffic between services
+          in the mesh. It allows you to capture and export request/response logs to
+          various backends (file, TCP, or OpenTelemetry) for monitoring, debugging,
+          and auditing purposes.
         properties:
           apiVersion:
             description: |-

@@ -109,3 +109,9 @@ envoy_server_memory_heap_size{envoy_cluster_name="example"} 1
 
 # TYPE envoy_server_uptime counter
 envoy_server_uptime{envoy_cluster_name="example"} 1
+
+# TYPE envoy_http_downstream_cx_active counter
+envoy_http_downstream_cx_active{envoy_http_conn_manager_prefix="system_envoy_admin"} 23
+
+# TYPE envoy_listener_sock_downstream_pre_cx_active counter
+envoy_listener_sock_downstream_pre_cx_active{envoy_listener_address="system_meshmetric_foo_bar_baz"} 233

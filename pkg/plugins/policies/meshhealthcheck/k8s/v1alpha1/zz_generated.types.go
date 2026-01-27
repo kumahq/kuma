@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
+// MeshHealthCheck enables active health checking of services in the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC health checks to detect and remove unhealthy instances from the load balancing pool, improving overall service reliability.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=mhc
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"

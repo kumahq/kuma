@@ -126,6 +126,7 @@ components:
   schemas:
     MeshPassthroughItem:
       type: object
+      description: "MeshPassthrough controls how traffic to external services (outside the mesh) is handled by the sidecar proxy. It allows you to configure passthrough mode to permit, deny, or selectively allow traffic to specific external destinations based on domain names, IPs, or CIDR ranges."
       required: [type, name, spec]
       properties:
         type:

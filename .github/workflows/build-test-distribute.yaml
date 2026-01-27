@@ -15,7 +15,7 @@ env:
   # on the runner).
   CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
-  GOLANGCI_LINT_VERSION: "v2.7.2"
+  GOLANGCI_LINT_VERSION: "v2.8.0"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
@@ -48,12 +48,12 @@ jobs:
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
       - name: "Free up disk space for the Runner"
-        uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a # v3.0.0
+        uses: endersonmenezes/free-disk-space@e6ed9b02e683a3b55ed0252f1ee469ce3b39a885 # v3.1.0
         with:
           remove_android: true
           remove_dotnet: true
           remove_haskell: true
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Detect changed files
@@ -89,7 +89,7 @@ jobs:
           echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - name: Cache Go build
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         with:
           path: |
             ~/.cache/go-build
@@ -97,7 +97,7 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3.5.1
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3.6.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
@@ -204,7 +204,7 @@ jobs:
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: "*sbom.{cyclonedx,spdx}.json"
@@ -212,7 +212,7 @@ jobs:
       - name: "Download binary artifact provenance"
         if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
         id: collect_provenance
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: ${{ github.event.repository.name }}.intoto.jsonl

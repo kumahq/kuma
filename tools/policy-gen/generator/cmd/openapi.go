@@ -60,16 +60,12 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			// Enrich schema with CRD information
 			yqEnrichSchema := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
-				fmt.Sprintf(`.properties *= (
-    load(%q)
-    | (
-        .spec.versions[0]
-        | .schema.openAPIV3Schema.properties
-        | del(.apiVersion)
-        | del(.metadata)
-        | del(.kind)
-      ) * {"type": {"enum": [.spec.names.kind]}}
-  )
+				fmt.Sprintf(`load(%q) as $crd
+  | .properties *= (
+      $crd.spec.versions[0].schema.openAPIV3Schema.properties
+      | del(.apiVersion, .metadata, .kind)
+    ) * {"type": {"enum": [$crd.spec.names.kind]}}
+  | .description = $crd.spec.versions[0].schema.openAPIV3Schema.description
   | (.properties | select(has("status")).status) |= . + {"readOnly": true}`, crdPath),
 				tmpSchemaPath,
 			)

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.20.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -25,6 +25,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: MeshExternalService represents external services (outside the
+          mesh) that mesh services can communicate with securely. It enables mesh
+          services to reach external APIs, databases, or third-party services by defining
+          endpoints, ports, protocols, and optional TLS configuration for secure outbound
+          connections with hostname-based routing support.
         properties:
           apiVersion:
             description: |-
