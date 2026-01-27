@@ -31,9 +31,15 @@ import (
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
 
+// useCliques controls the algorithm for grouping subsets when building rules.
+// Cliques (BronKerbosch) finds maximal fully-connected subgraphs, producing fewer
+// but more precise groups. Connected components finds all reachable nodes, which
+// may over-group subsets that don't directly relate. Cliques is the default as it
+// generates more accurate rules at the cost of slightly more computation.
 var useCliques = true
 
 func init() {
+	// TODO: remove ability to opt-out for the next major version https://github.com/kumahq/kuma/issues/15440
 	if v, ok := os.LookupEnv("KUMA_MESH_TRAFFIC_PERMISSION_DISSABLE_CLIQUES_ALGORITHM"); ok && v == "true" {
 		useCliques = false
 	}
