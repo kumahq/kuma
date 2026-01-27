@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -29,6 +30,14 @@ import (
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
+
+var useCliques = true
+
+func init() {
+	if v, ok := os.LookupEnv("KUMA_MESH_TRAFFIC_PERMISSION_DISSABLE_CLIQUES_ALGORITHM"); ok && v == "true" {
+		useCliques = false
+	}
+}
 
 type InboundListener struct {
 	Address string
@@ -185,7 +194,7 @@ func BuildFromRules(
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList, true, true)
+		rules, err := BuildRules(fromList, true)
 		if err != nil {
 			return FromRules{}, err
 		}
@@ -252,7 +261,7 @@ func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.Reso
 			toList = append(toList, BuildPolicyItemsWithMeta(tl, meta, topLevel)...)
 		}
 	}
-	return BuildRules(toList, false, true)
+	return BuildRules(toList, false)
 }
 
 func BuildGatewayRules(
@@ -385,7 +394,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 		items = append(items, item)
 	}
 
-	rules, err := BuildRules(items, false, true)
+	rules, err := BuildRules(items, false)
 	if err != nil {
 		return SingleItemRules{}, err
 	}
@@ -400,7 +409,11 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // which has empty subset or kuma.io/service.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
+	return buildRulesInternal(list, withNegations, useCliques)
+}
+
+func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {

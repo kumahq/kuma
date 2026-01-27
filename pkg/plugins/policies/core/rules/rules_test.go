@@ -970,10 +970,10 @@ var _ = Describe("Rules", func() {
 				}, "Allow"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Both should produce valid rules
@@ -1010,10 +1010,10 @@ var _ = Describe("Rules", func() {
 				}, "AllowWithShadowDeny"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// For fully connected subsets, both approaches should produce similar results
@@ -1047,10 +1047,10 @@ var _ = Describe("Rules", func() {
 				}, "AllowWithShadowDeny"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			testElements := []subsetutils.Element{
@@ -1066,11 +1066,11 @@ var _ = Describe("Rules", func() {
 		It("should handle empty input", func() {
 			items := []core_rules.PolicyItemWithMeta{}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(rulesCliques).To(BeEmpty())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(rulesComponents).To(BeEmpty())
 		})
@@ -1080,10 +1080,10 @@ var _ = Describe("Rules", func() {
 				createPolicyItem(common_api.TargetRef{Kind: common_api.Mesh}, "Allow"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			verifySemanticEquivalence(rulesCliques, rulesComponents, []subsetutils.Element{
@@ -1104,10 +1104,10 @@ var _ = Describe("Rules", func() {
 				}, "Deny"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			testElements := []subsetutils.Element{
@@ -1134,10 +1134,10 @@ var _ = Describe("Rules", func() {
 				}, "Allow"))
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// With disjoint subsets connected only through Mesh, cliques produce significantly fewer rules.
@@ -1172,10 +1172,10 @@ var _ = Describe("Rules", func() {
 				}, "Deny"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Both should handle disjoint subsets correctly
@@ -1200,10 +1200,10 @@ var _ = Describe("Rules", func() {
 				}, "Deny"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			testElements := []subsetutils.Element{
@@ -1239,10 +1239,10 @@ var _ = Describe("Rules", func() {
 				}, "Allow"),
 			}
 
-			rulesCliques, err := core_rules.BuildRules(items, true, true)
+			rulesCliques, err := core_rules.BuildRulesForTesting(items, true, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			rulesComponents, err := core_rules.BuildRules(items, true, false)
+			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			testElements := []subsetutils.Element{
