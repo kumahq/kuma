@@ -12,18 +12,18 @@ func (r *MeshServiceResource) validate() error {
 	verr.Add(validators.ValidateLength(validators.RootedAt("name"), maxNameLength, name))
 
 	// Validate selector mutual exclusivity
-	count := 0
+	var setSelectors []bool
 	if r.Spec.Selector.DataplaneTags != nil {
-		count++
+		setSelectors = append(setSelectors, true)
 	}
 	if r.Spec.Selector.DataplaneRef != nil {
-		count++
+		setSelectors = append(setSelectors, true)
 	}
 	if r.Spec.Selector.DataplaneLabels != nil {
-		count++
+		setSelectors = append(setSelectors, true)
 	}
 
-	if count > 1 {
+	if len(setSelectors) > 1 {
 		verr.AddViolationAt(validators.RootedAt("spec").Field("selector"), "must specify only one of: dataplaneTags, dataplaneRef, or dataplaneLabels")
 	}
 
