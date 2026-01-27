@@ -227,5 +227,168 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				{Mesh: "default", Name: "redis"}: {},
 			},
 		}),
+		Entry("should match by labels", testCase{
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithLabels(map[string]string{"app": "redis", "version": "v1"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+				builders.Dataplane().
+					WithName("redis-02").
+					WithLabels(map[string]string{"app": "redis", "version": "v2"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+				builders.Dataplane().
+					WithName("demo-app-01").
+					WithLabels(map[string]string{"app": "demo-app"}).
+					WithInboundOfTags("kuma.io/service", "demo-app").
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("redis-v1").
+					WithDataplaneLabelsSelector(map[string]string{"app": "redis", "version": "v1"}).
+					Build(),
+				builders.MeshService().
+					WithName("demo-app").
+					WithDataplaneLabelsSelector(map[string]string{"app": "demo-app"}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "redis-v1"}: {
+					{Mesh: "default", Name: "redis-01"},
+				},
+				{Mesh: "default", Name: "demo-app"}: {
+					{Mesh: "default", Name: "demo-app-01"},
+				},
+			},
+		}),
+		Entry("should not match labels across meshes", testCase{
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithLabels(map[string]string{"app": "redis"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+				builders.Dataplane().
+					WithName("redis-02").
+					WithMesh("mesh-other").
+					WithLabels(map[string]string{"app": "redis"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("redis").
+					WithDataplaneLabelsSelector(map[string]string{"app": "redis"}).
+					Build(),
+				builders.MeshService().
+					WithName("redis").
+					WithMesh("mesh-other").
+					WithDataplaneLabelsSelector(map[string]string{"app": "redis"}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "redis"}: {
+					{Mesh: "default", Name: "redis-01"},
+				},
+				{Mesh: "mesh-other", Name: "redis"}: {
+					{Mesh: "mesh-other", Name: "redis-02"},
+				},
+			},
+		}),
+		Entry("should not match when labels don't match", testCase{
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithLabels(map[string]string{"app": "redis", "version": "v1"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("redis-v2").
+					WithDataplaneLabelsSelector(map[string]string{"app": "redis", "version": "v2"}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "redis-v2"}: {},
+			},
+		}),
+		Entry("should not match unhealthy inbound with labels", testCase{
+			matchOnlyHealthy: true,
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithLabels(map[string]string{"app": "redis"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					With(func(resource *core_mesh.DataplaneResource) {
+						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
+					}).
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("redis").
+					WithDataplaneLabelsSelector(map[string]string{"app": "redis"}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "redis"}: {},
+			},
+		}),
+		Entry("should match multiple dataplanes with same labels", testCase{
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithLabels(map[string]string{"app": "redis"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+				builders.Dataplane().
+					WithName("redis-02").
+					WithLabels(map[string]string{"app": "redis"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("redis").
+					WithDataplaneLabelsSelector(map[string]string{"app": "redis"}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "redis"}: {
+					{Mesh: "default", Name: "redis-01"},
+					{Mesh: "default", Name: "redis-02"},
+				},
+			},
+		}),
+		Entry("empty matchLabels matches all dataplanes in mesh", testCase{
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithLabels(map[string]string{"app": "redis"}).
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+				builders.Dataplane().
+					WithName("demo-app-01").
+					WithLabels(map[string]string{"app": "demo-app"}).
+					WithInboundOfTags("kuma.io/service", "demo-app").
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("all").
+					WithDataplaneLabelsSelector(map[string]string{}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "all"}: {
+					{Mesh: "default", Name: "redis-01"},
+					{Mesh: "default", Name: "demo-app-01"},
+				},
+			},
+		}),
 	)
 })

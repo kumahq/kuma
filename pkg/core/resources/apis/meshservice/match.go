@@ -31,6 +31,7 @@ func MatchDataplanesWithMeshServices(
 	result := map[*meshservice_api.MeshServiceResource][]*core_mesh.DataplaneResource{}
 
 	dppsByNameByTag, dppsByName := indexDpsForMatching(dpps, matchOnlyHealthy)
+	dppsByMesh := indexDpsByMesh(dpps, matchOnlyHealthy)
 
 	for _, ms := range meshServices {
 		switch {
@@ -38,6 +39,8 @@ func MatchDataplanesWithMeshServices(
 			result[ms] = matchByRef(ms, dppsByName)
 		case ms.Spec.Selector.DataplaneTags != nil:
 			result[ms] = matchByTags(ms, dppsByNameByTag)
+		case ms.Spec.Selector.DataplaneLabels != nil:
+			result[ms] = matchByLabels(ms, dppsByMesh)
 		default:
 			result[ms] = nil
 		}
@@ -52,6 +55,8 @@ func MatchesDataplane(meshService *meshservice_api.MeshService, dpp *core_mesh.D
 		return meshService.Selector.DataplaneRef.Name == dpp.GetMeta().GetName()
 	case meshService.Selector.DataplaneTags != nil:
 		return dpp.Spec.Matches(pointer.Deref(meshService.Selector.DataplaneTags))
+	case meshService.Selector.DataplaneLabels != nil:
+		return meshService.Selector.DataplaneLabels.Matches(dpp.Meta.GetLabels())
 	default:
 		return false
 	}
@@ -93,6 +98,28 @@ func indexDpsForMatching(
 		}
 	}
 	return dppsByNameByTag, dppsByName
+}
+
+func indexDpsByMesh(
+	dpps []*core_mesh.DataplaneResource,
+	matchOnlyHealthy bool,
+) map[string][]*core_mesh.DataplaneResource {
+	result := map[string][]*core_mesh.DataplaneResource{}
+
+	for _, dpp := range dpps {
+		inbounds := dpp.Spec.GetNetworking().GetInbound()
+		if matchOnlyHealthy {
+			inbounds = dpp.Spec.GetNetworking().GetHealthyInbounds()
+		}
+		if len(inbounds) == 0 {
+			continue
+		}
+
+		mesh := dpp.Meta.GetMesh()
+		result[mesh] = append(result[mesh], dpp)
+	}
+
+	return result
 }
 
 func matchByRef(
@@ -142,6 +169,22 @@ func matchByTags(
 		}
 	}
 	return dpps
+}
+
+func matchByLabels(
+	ms *meshservice_api.MeshServiceResource,
+	dppsByMesh map[string][]*core_mesh.DataplaneResource,
+) []*core_mesh.DataplaneResource {
+	meshDpps := dppsByMesh[ms.GetMeta().GetMesh()]
+
+	var matched []*core_mesh.DataplaneResource
+	for _, dpp := range meshDpps {
+		if ms.Spec.Selector.DataplaneLabels.Matches(dpp.Meta.GetLabels()) {
+			matched = append(matched, dpp)
+		}
+	}
+
+	return matched
 }
 
 func MatchInboundWithMeshServicePort(inbound *mesh_proto.Dataplane_Networking_Inbound, meshServicePort meshservice_api.Port) bool {

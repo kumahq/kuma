@@ -6463,6 +6463,13 @@ spec:
                 x-kubernetes-list-type: map
               selector:
                 properties:
+                  dataplaneLabels:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
                   dataplaneRef:
                     properties:
                       name:
