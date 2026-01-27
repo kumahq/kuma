@@ -336,8 +336,15 @@ func (r *resourceEndpoints) listResources(withInsight bool) func(request *restfu
 		}
 		if withInsight {
 			// we cannot paginate insights since there is no guarantee that the insights elements will be the same as regular entities
+			// Extract ResourceKeys from filtered dataplanes
+			resourceKeys := make([]core_model.ResourceKey, 0, len(list.GetItems()))
+			for _, item := range list.GetItems() {
+				resourceKeys = append(resourceKeys, core_model.MetaToResourceKey(item.GetMeta()))
+			}
+
+			// Fetch insights only for filtered dataplanes
 			insights := r.descriptor.NewInsightList()
-			if err := r.resManager.List(request.Request.Context(), insights, store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter)); err != nil {
+			if err := r.resManager.List(request.Request.Context(), insights, store.ListByMesh(meshName), store.ListByResourceKeys(resourceKeys)); err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 				return
 			}
