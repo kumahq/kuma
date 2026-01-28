@@ -112,7 +112,7 @@ With the move to mesh-scoped zone proxies, the deployment model changes:
 2. Each resource must specify a `mesh` field
 3. Deploy one zone proxy instance **per mesh** (not one per zone for all meshes)
 
-Example (exact fields and label names determined by MADR for issue #9028):
+Example (exact fields and label names determined by MADR for [issue #9028](https://github.com/kumahq/kuma/issues/9028)):
 ```yaml
 type: Dataplane
 mesh: payments-mesh
@@ -423,9 +423,9 @@ With mesh-scoped zone proxies:
 
 ### Related Issues and MADRs
 
-- Issue #9028: Dataplane fields for zone proxies
-- Issue #9029: Policies on zone proxies
-- Issue #9032: MeshIdentity for zone egress
+- [Issue #9028](https://github.com/kumahq/kuma/issues/9028): Dataplane fields for zone proxies
+- [Issue #9029](https://github.com/kumahq/kuma/issues/9029): Policies on zone proxies
+- [Issue #9032](https://github.com/kumahq/kuma/issues/9032): MeshIdentity for zone egress
 - MADR 090: Zone Egress Identity
 
 ### Key Files Reference
