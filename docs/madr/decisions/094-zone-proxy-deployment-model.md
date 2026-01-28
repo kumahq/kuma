@@ -21,7 +21,6 @@ This document addresses the following questions:
 3. Should `kuma.io/workload` annotation be required on zone proxies?
 4. Should we continue supporting `kuma.io/ingress-public-address` annotation?
 5. What should be the default Helm installation behavior for zone proxies?
-6. Can ZoneIngress and ZoneEgress run together in the same pod, or alongside MeshGateway?
 
 ## Design
 
@@ -252,111 +251,6 @@ egress:
 
 This provides multi-zone readiness while requiring explicit mesh creation.
 
-### Question 6: Combined Deployments (Ingress + Egress or with Gateway)
-
-#### Options
-
-| Option | Description | Scaling | Resource Usage |
-|--------|-------------|---------|----------------|
-| **A. Separate deployments** | Independent ZoneIngress and ZoneEgress | Independent | Higher |
-| **B. Combined pod** | Single pod with both ingress and egress | Together | Lower |
-| **C. Collocate with Gateway** | Zone proxy in same pod as MeshGateway | Shared | Lowest |
-
-#### Analysis
-
-**Option A: Separate deployments (recommended default)**
-- Advantages:
-  - Independent scaling based on actual traffic patterns
-  - Simpler debugging and monitoring
-  - Clear failure domains
-  - Traffic patterns differ (ingress vs egress load)
-- Disadvantages:
-  - Higher total resource usage
-
-**Option B: Combined pod (optional)**
-- Advantages:
-  - Lower resource usage
-  - Simpler for small deployments
-  - Useful for resource-constrained environments
-- Disadvantages:
-  - Cannot scale independently
-  - Mixed concerns in single pod
-
-**Option C: Collocate with Gateway**
-- Advantages:
-  - Lowest resource usage
-- Disadvantages:
-  - High complexity
-  - Policy conflicts between gateway and zone proxy roles
-  - Very different traffic patterns and scaling needs
-  - Debugging nightmare
-
-#### Recommendation
-
-**Option A: Separate deployments by default**, with Option B available as an opt-in for resource-constrained environments.
-
-Implementation approach:
-- Default: Separate ZoneIngress and ZoneEgress deployments
-- Optional Helm flag: `zoneProxy.combined: true` for single deployment with both roles
-- Do NOT support collocation with MeshGateway due to complexity
-
-## Security Implications and Review
-
-### mTLS and Identity
-
-With mesh-scoped zone proxies:
-- Each zone proxy has a single mesh identity (vs. current multi-mesh identity)
-- Cleaner trust model - proxy identity matches the mesh it serves
-- Better alignment with SPIRE and external identity providers
-- See MADR 090 (Zone Egress Identity) for detailed security analysis
-
-### Network Exposure
-
-- Zone proxies expose network endpoints for cross-zone communication
-- `kuma.io/ingress-public-address` override requires trust in annotation values
-- Recommendation: Validate annotation values match expected patterns
-
-### Resource Access
-
-- Zone proxies are privileged infrastructure components
-- Should be deployed in dedicated namespace with restricted RBAC
-- No change from current security model
-
-## Reliability Implications
-
-### High Availability
-
-- Separate deployments enable independent scaling and failover
-- Recommendation: Document minimum replica count for production (2+)
-- Pod disruption budgets should be configured
-
-### Failure Domains
-
-- Mesh-scoped proxies isolate failures to single mesh
-- Current global-scoped proxy failure affects all meshes
-- This is an improvement in fault isolation
-
-### Migration Risk
-
-- Migration from global to mesh-scoped requires careful coordination
-- Recommendation: Support running both during migration period
-- Provide clear rollback procedures
-
-## Implications for Kong Mesh
-
-### MinK (Mesh in Konnect)
-
-- MinK is always multi-zone by design
-- Zone proxies enabled by default aligns with MinK requirements
-- Charts at Kong/mink-charts repository use the same defaults
-- No special overrides needed
-
-### Kong Mesh Enterprise
-
-- Same deployment model applies
-- May need documentation updates for enterprise-specific guidance
-- No special handling required
-
 ## Decision
 
 1. **Standalone deployment**: Zone proxies should be deployed as standalone Kubernetes Deployments, not as sidecars to fake containers. The xDS protocol handles configuration updates regardless of deployment model.
@@ -367,9 +261,7 @@ With mesh-scoped zone proxies:
 
 4. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
-5. **Multi-zone ready Helm defaults**: Zone proxies (ingress and egress) enabled by default with the default mesh, ensuring a fully functional multi-zone setup out of the box.
-
-6. **Separate deployments**: ZoneIngress and ZoneEgress should be separate deployments by default, with an optional combined mode for resource-constrained environments. Do not support collocation with MeshGateway.
+5. **Multi-zone ready with no defaults**: Zone proxies (ingress and egress) enabled by default, but no default mesh created (`skipMeshCreation: true`).
 
 ## Notes
 
