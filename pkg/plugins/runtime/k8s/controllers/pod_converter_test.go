@@ -42,17 +42,18 @@ func Parse[T any](values []string) ([]T, error) {
 
 var _ = Describe("PodToDataplane(..)", func() {
 	type testCase struct {
-		pod               string
-		servicesForPod    string
-		otherDataplanes   string
-		otherServices     string
-		otherReplicaSets  string
-		otherJobs         string
-		node              string
-		dataplane         string
-		existingDataplane string
-		nodeLabelsToCopy  []string
-		workloadLabels    []string
+		pod                      string
+		servicesForPod           string
+		otherDataplanes          string
+		otherServices            string
+		otherReplicaSets         string
+		otherJobs                string
+		node                     string
+		dataplane                string
+		existingDataplane        string
+		nodeLabelsToCopy         []string
+		workloadLabels           []string
+		skipInboundTagGeneration bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -132,8 +133,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 						ReplicaSetGetter: replicaSetGetter,
 						JobGetter:        jobGetter,
 					},
-					NodeGetter:       nodeGetter,
-					NodeLabelsToCopy: given.nodeLabelsToCopy,
+					NodeGetter:               nodeGetter,
+					NodeLabelsToCopy:         given.nodeLabelsToCopy,
+					SkipInboundTagGeneration: given.skipInboundTagGeneration,
 				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
@@ -349,6 +351,17 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "33.pod.yaml",
 			servicesForPod: "33.services-for-pod.yaml",
 			dataplane:      "33.dataplane.yaml",
+		}),
+		Entry("34. Pod with skip inbound tag generation enabled", testCase{
+			pod:                      "34.pod.yaml",
+			servicesForPod:           "34.services-for-pod.yaml",
+			dataplane:                "34.dataplane.yaml",
+			skipInboundTagGeneration: true,
+		}),
+		Entry("35. Pod without service with skip inbound tag generation enabled", testCase{
+			pod:                      "35.pod.yaml",
+			dataplane:                "35.dataplane.yaml",
+			skipInboundTagGeneration: true,
 		}),
 	)
 

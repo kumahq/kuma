@@ -19,15 +19,16 @@ import (
 )
 
 type InboundConverter struct {
-	NameExtractor    NameExtractor
-	NodeGetter       kube_client.Reader
-	NodeLabelsToCopy []string
+	NameExtractor            NameExtractor
+	NodeGetter               kube_client.Reader
+	NodeLabelsToCopy         []string
+	SkipInboundTagGeneration bool
 }
 
-func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
+func (i *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-	for i := range service.Spec.Ports {
-		svcPort := service.Spec.Ports[i]
+	for idx := range service.Spec.Ports {
+		svcPort := service.Spec.Ports[idx]
 		if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
 			// ignore non-TCP ports
 			continue
@@ -39,7 +40,12 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			continue
 		}
 
-		tags := InboundTagsForService(zone, pod, service, &svcPort, nodeLabels)
+		var tags map[string]string
+		if i.SkipInboundTagGeneration {
+			tags = map[string]string{}
+		} else {
+			tags = InboundTagsForService(zone, pod, service, &svcPort, nodeLabels)
+		}
 		state := mesh_proto.Dataplane_Networking_Inbound_Ready
 		health := mesh_proto.Dataplane_Networking_Inbound_Health{
 			Ready: true,
@@ -87,7 +93,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 	return ifaces
 }
 
-func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
+func (i *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -98,7 +104,12 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	// will create lots of code changes to account for this other type of dataplne (we already have GW and Ingress),
 	// including GUI and CLI changes
 
-	tags := InboundTagsForPod(zone, pod, name, nodeLabels)
+	var tags map[string]string
+	if i.SkipInboundTagGeneration {
+		tags = map[string]string{}
+	} else {
+		tags = InboundTagsForPod(zone, pod, name, nodeLabels)
+	}
 	state := mesh_proto.Dataplane_Networking_Inbound_Ready
 	health := mesh_proto.Dataplane_Networking_Inbound_Health{
 		Ready: true,
@@ -166,7 +177,7 @@ func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string
 		// ExternalName service. We do not currently support ExternalName
 		// services, so we can safely skip them from processing.
 		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
-			ifaces = append(ifaces, inboundForService(zone, pod, svc, nodeLabels)...)
+			ifaces = append(ifaces, i.inboundForService(zone, pod, svc, nodeLabels)...)
 		}
 	}
 
@@ -176,7 +187,7 @@ func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string
 			return nil, err
 		}
 
-		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
+		ifaces = append(ifaces, i.inboundForServiceless(zone, pod, name, nodeLabels))
 	}
 	return ifaces, nil
 }
