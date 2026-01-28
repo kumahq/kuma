@@ -155,11 +155,12 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, co
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client:            mgr.GetClient(),
-		Log:               core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme:            mgr.GetScheme(),
-		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
-		ResourceConverter: converter,
+		Client:                   mgr.GetClient(),
+		Log:                      core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:                   mgr.GetScheme(),
+		EventRecorder:            mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
+		ResourceConverter:        converter,
+		SkipInboundTagGeneration: rt.Config().Experimental.SkipInboundTagGeneration,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
