@@ -281,10 +281,6 @@ func fillDataplaneOutbounds(
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
 			inboundTags := maps.Clone(inbound.GetTags())
-			// Propagate protocol from field to tags for endpoint consumers
-			if inbound.Protocol != "" && inboundTags[mesh_proto.ProtocolTag] == "" {
-				inboundTags[mesh_proto.ProtocolTag] = inbound.Protocol
-			}
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -329,10 +325,6 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := maps.Clone(inbound.GetTags())
-					// Propagate protocol from field to tags for endpoint consumers
-					if inbound.Protocol != "" && inboundTags[mesh_proto.ProtocolTag] == "" {
-						inboundTags[mesh_proto.ProtocolTag] = inbound.Protocol
-					}
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 

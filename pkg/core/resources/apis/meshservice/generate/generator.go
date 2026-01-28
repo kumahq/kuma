@@ -96,12 +96,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 			port.Name = pointer.To(fmt.Sprintf("%d", port.Port))
 		}
 
-		// Check protocol field first, fall back to tag for backward compatibility
-		if inbound.Protocol != "" {
-			if p := core_meta.ParseProtocol(inbound.Protocol); p != core_meta.ProtocolUnknown {
-				port.AppProtocol = p
-			}
-		} else if proto, ok := inbound.GetTags()[mesh_proto.ProtocolTag]; ok {
+		if proto := inbound.GetProtocolFallback(); proto != "" {
 			if p := core_meta.ParseProtocol(proto); p != core_meta.ProtocolUnknown {
 				port.AppProtocol = p
 			}
