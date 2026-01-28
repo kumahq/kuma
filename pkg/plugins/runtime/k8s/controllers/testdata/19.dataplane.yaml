@@ -12,6 +12,7 @@ spec:
     inbound:
     - health: {}
       port: 8080
+      protocol: http
       state: NotReady
       tags:
         app: example
@@ -24,6 +25,7 @@ spec:
         version: "0.1"
     - health: {}
       port: 8443
+      protocol: tcp
       state: NotReady
       tags:
         app: example

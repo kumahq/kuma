@@ -81,7 +81,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		return api_common.DataplaneInbound{
 			Kri:               kri.WithSectionName(kri.From(dataplane), inbound.GetSectionName()).String(),
 			Port:              int32(inbound.GetPort()),
-			Protocol:          inbound.GetProtocol(),
+			Protocol:          inbound.GetProtocolFallback(),
 			ProxyResourceName: naming.MustContextualInboundName(dataplane, inbound.GetSectionName()),
 		}
 	})

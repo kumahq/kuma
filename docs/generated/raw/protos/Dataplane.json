@@ -159,6 +159,10 @@
                 "name": {
                     "type": "string",
                     "description": "Name adds another way of referencing this port, usable with MeshService"
+                },
+                "protocol": {
+                    "type": "string",
+                    "description": "Protocol of the service (tcp, http, grpc, etc)."
                 }
             },
             "additionalProperties": true,

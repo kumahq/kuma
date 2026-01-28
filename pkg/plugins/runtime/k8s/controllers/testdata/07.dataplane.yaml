@@ -18,6 +18,7 @@ spec:
     - health:
         ready: true
       port: 7070
+      protocol: tcp
       tags:
         app: example
         k8s.kuma.io/namespace: demo

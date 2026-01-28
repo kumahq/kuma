@@ -13,6 +13,7 @@ spec:
     - health:
         ready: true
       port: 10002
+      protocol: tcp
       tags:
         app: kuma-egress
         k8s.kuma.io/namespace: kuma-system

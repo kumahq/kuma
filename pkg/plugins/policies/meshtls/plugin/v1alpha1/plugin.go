@@ -374,7 +374,7 @@ func configureListener(
 		return nil, err
 	}
 
-	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 	service := inbound.GetService()
 	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
 	routes := generator.GenerateRoutes(proxy, iface, cluster)

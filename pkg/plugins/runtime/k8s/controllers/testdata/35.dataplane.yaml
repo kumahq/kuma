@@ -13,3 +13,4 @@ spec:
     - health:
         ready: true
       port: 49151
+      protocol: tcp
