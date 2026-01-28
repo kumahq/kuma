@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	commonv1alpha1 "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	apiv1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -163,6 +164,11 @@ func (in *Selector) DeepCopyInto(out *Selector) {
 		in, out := &in.DataplaneRef, &out.DataplaneRef
 		*out = new(DataplaneRef)
 		**out = **in
+	}
+	if in.DataplaneLabels != nil {
+		in, out := &in.DataplaneLabels, &out.DataplaneLabels
+		*out = new(commonv1alpha1.LabelSelector)
+		(*in).DeepCopyInto(*out)
 	}
 }
 
