@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -15,21 +17,13 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
-func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress string) string {
-	return fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-networking:
-  outbound:
-    passthrough: false
-routing:
-  zoneEgress: %s
-`, mesh, zoneEgress)
+func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress bool) *mesh.MeshResource {
+	return builders.Mesh().
+		WithName(mesh).
+		WithBuiltinMTLSBackend("ca-1").
+		WithNetworkingPassThrough(false).
+		WithRoutingZoneEgress(zoneEgress).
+		Build()
 }
 
 func externalService(mesh string, ip string) string {
@@ -77,8 +71,8 @@ networking:
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, "true"))).
-			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, "false"))).
+			Install(ResourceUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, true))).
+			Install(ResourceUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, false))).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshNoZoneEgress)).
 			Setup(multizone.Global)).To(Succeed())
