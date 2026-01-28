@@ -6,14 +6,15 @@ Technical Story: https://github.com/kumahq/kuma/issues/9030
 
 ## Context and Problem Statement
 
-Zone proxies (ZoneIngress and ZoneEgress) are infrastructure components that handle cross-zone and external traffic in Kuma's multi-zone architecture:
+Currently, zone proxies are **global-scoped** resources, meaning a single ZoneIngress or ZoneEgress instance handles traffic for all meshes in a zone. This global nature creates fundamental limitations:
 
-- **ZoneIngress**: Receives traffic from other zones and routes it to local services
-- **ZoneEgress**: Routes outbound traffic to external services and other zones
+1. **Cannot issue MeshIdentity for zone egress**: MeshIdentity is mesh-scoped, but a global zone egress serves multiple meshes. This creates identity conflicts and prevents proper mTLS certificate issuance. See [MADR 090](090-zone-egress-identity.md) for detailed analysis.
 
-Currently, zone proxies are **global-scoped** resources, meaning a single ZoneIngress or ZoneEgress instance handles traffic for all meshes in a zone. As part of the Kuma 3.0 rework (related to MeshIdentity - see MADR 090), zone proxies are being changed to **mesh-scoped** resources represented as Dataplane resources with specific tags.
+2. **Cannot apply policies on zone proxies**: Kuma policies (MeshTrafficPermission, MeshTimeout, etc.) are mesh-scoped. A global zone proxy cannot be targeted by mesh-specific policies, limiting observability and traffic control for cross-zone communication.
 
-This architectural change requires revisiting the deployment model for zone proxies. This document addresses the following questions:
+To resolve these limitations, zone proxies are being changed to **mesh-scoped** resources represented as Dataplane resources with specific tags. This architectural change requires revisiting the deployment model for zone proxies.
+
+This document addresses the following questions:
 
 1. Should zone proxies be deployed as sidecars to "fake" containers on Kubernetes?
 2. How should zone proxies be deployed on Universal (VM/bare metal)?
@@ -254,22 +255,22 @@ egress:
 
 #### Analysis
 
-**Option A: Minimal (recommended)**
+**Option A: Minimal**
 - Advantages:
   - Most users start with single-zone; zone proxies unnecessary
   - Lower resource usage for simple deployments
-  - Zone proxies without proper network config won't work anyway
-  - Clear upgrade path when multi-zone is needed
 - Disadvantages:
   - Requires explicit configuration for multi-zone
+  - Users may not realize they need zone proxies
 
-**Option B: Multi-zone ready**
+**Option B: Multi-zone ready (recommended)**
 - Advantages:
   - Works out of the box for multi-zone
+  - No additional configuration needed when adding zones
+  - Consistent experience - default mesh is fully functional
+  - Zone proxies are lightweight when not actively used
 - Disadvantages:
-  - Unnecessary resources for single-zone users (majority)
-  - Zone proxies may not function without additional network configuration
-  - Confusing for beginners
+  - Slightly higher resource usage for single-zone users
 
 **Option C: No defaults**
 - Advantages:
@@ -280,17 +281,21 @@ egress:
 
 #### Recommendation
 
-**Option A: Minimal (current behavior)** with clear documentation:
+**Option B: Multi-zone ready** - Install zone-ingress and zone-egress with the default mesh:
 
 ```yaml
-# For multi-zone deployments, enable zone proxies:
+controlPlane:
+  defaults:
+    skipMeshCreation: false  # Creates "default" mesh
+
 ingress:
-  enabled: true
+  enabled: true  # Deployed with default mesh
+
 egress:
-  enabled: true
+  enabled: true  # Deployed with default mesh
 ```
 
-Documentation should clearly state that multi-zone deployments require enabling zone ingress and egress.
+This ensures the default mesh is fully functional for multi-zone scenarios out of the box.
 
 ### Question 6: Combined Deployments (Ingress + Egress or with Gateway)
 
@@ -387,9 +392,9 @@ With mesh-scoped zone proxies:
 ### MinK (Mesh in Konnect)
 
 - MinK is always multi-zone by design
-- May want different defaults (zone proxies enabled by default)
-- Charts at Kong/mink-charts repository can override defaults
-- Recommendation: MinK follows same principles but may enable zone proxies by default
+- Zone proxies enabled by default aligns with MinK requirements
+- Charts at Kong/mink-charts repository use the same defaults
+- No special overrides needed
 
 ### Kong Mesh Enterprise
 
@@ -407,7 +412,7 @@ With mesh-scoped zone proxies:
 
 4. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
-5. **Minimal Helm defaults**: Zone proxies disabled by default. Documentation should guide users to enable them for multi-zone deployments.
+5. **Multi-zone ready Helm defaults**: Zone proxies (ingress and egress) enabled by default with the default mesh, ensuring a fully functional multi-zone setup out of the box.
 
 6. **Separate deployments**: ZoneIngress and ZoneEgress should be separate deployments by default, with an optional combined mode for resource-constrained environments. Do not support collocation with MeshGateway.
 
