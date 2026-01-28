@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -57,9 +58,10 @@ const (
 type MeshServiceReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Log               logr.Logger
-	Scheme            *kube_runtime.Scheme
-	ResourceConverter k8s_common.Converter
+	Log                      logr.Logger
+	Scheme                   *kube_runtime.Scheme
+	ResourceConverter        k8s_common.Converter
+	SkipInboundTagGeneration bool
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -361,13 +363,26 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 		}
 	}
 	ms.Labels[metadata.HeadlessService] = "false"
-	dpTags := maps.Clone(svc.Spec.Selector)
-	if dpTags == nil {
-		dpTags = map[string]string{}
-	}
-	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
-	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: &dpTags,
+	if r.SkipInboundTagGeneration {
+		matchLabels := maps.Clone(svc.Spec.Selector)
+		if matchLabels == nil {
+			matchLabels = map[string]string{}
+		}
+		matchLabels[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
+		ms.Spec.Selector = meshservice_api.Selector{
+			DataplaneLabels: &common_api.LabelSelector{
+				MatchLabels: &matchLabels,
+			},
+		}
+	} else {
+		dpTags := maps.Clone(svc.Spec.Selector)
+		if dpTags == nil {
+			dpTags = map[string]string{}
+		}
+		dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
+		ms.Spec.Selector = meshservice_api.Selector{
+			DataplaneTags: &dpTags,
+		}
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{
