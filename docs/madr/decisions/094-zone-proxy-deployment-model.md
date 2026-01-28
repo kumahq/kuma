@@ -267,9 +267,10 @@ This provides multi-zone readiness while requiring explicit mesh creation.
 
 ### Related Issues and MADRs
 
-- [Issue #9028](https://github.com/kumahq/kuma/issues/9028): Dataplane fields for zone proxies
-- [Issue #9029](https://github.com/kumahq/kuma/issues/9029): Policies on zone proxies
-- [Issue #9032](https://github.com/kumahq/kuma/issues/9032): MeshIdentity for zone egress
+- [Kuma #15431](https://github.com/kumahq/kuma/issues/15431): Protocol stored in Inbound field, not tags
+- [KM #9028](https://github.com/Kong/kong-mesh/issues/9028): Dataplane fields for zone proxies
+- [KM #9029](https://github.com/Kong/kong-mesh/issues/9029): Policies on zone proxies
+- [KM #9032](https://github.com/Kong/kong-mesh/issues/9032): MeshIdentity for zone egress
 - MADR 090: Zone Egress Identity
 
 ### Key Files Reference
