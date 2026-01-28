@@ -43,13 +43,13 @@ Zone proxies are deployed as standalone Kubernetes Deployments with dedicated po
 
 #### Analysis
 
-The primary concern raised was that "mesh updates won't be updated automatically" with standalone deployments. However, this concern applies equally to **all** approaches:
+The primary concern raised was that "mesh updates won't be updated automatically" with standalone deployments. This concern refers to **Kuma version upgrades** (e.g., `helm upgrade`):
 
-- Sidecar injection happens at **pod creation time**, not continuously
-- Mesh configuration changes propagate via **xDS protocol**, not pod restarts
-- Only the proxy **image version** requires a pod restart to update
+- **Option A (sidecar to fake container)**: The sidecar injection webhook injects the proxy image at pod creation time. On `helm upgrade`, existing pods are **not automatically restarted** - the operator must manually trigger pod recreation to pick up the new version. This gives operators full control over upgrade timing, allowing careful rollouts that avoid dropping requests.
 
-From `pkg/plugins/runtime/k8s/webhooks/injector/injector.go`, even Kubernetes 1.29+ native sidecar containers (with `RestartPolicy=Always`) don't auto-update on mesh configuration changes - they only restart on container crashes.
+- **Option B (standalone deployment)**: The Deployment spec directly references the proxy image. On `helm upgrade`, the Deployment is updated, **triggering automatic pod rollout**. The rolling update strategy (`maxUnavailable`, `maxSurge`) controls how pods are replaced, preventing all-at-once restarts.
+
+Option B is still recommended because zone proxies are infrastructure that should update with the control plane. The rolling update strategy provides sufficient control over the upgrade process.
 
 #### Advantages and Disadvantages
 
@@ -57,9 +57,9 @@ From `pkg/plugins/runtime/k8s/webhooks/injector/injector.go`, even Kubernetes 1.
 - Advantages:
   - Consistent with application sidecar pattern
   - Could leverage existing injection infrastructure
+  - Manual upgrade control - operator decides when to roll pods
 - Disadvantages:
   - Adds unnecessary resource overhead (pause container)
-  - No actual benefit since xDS handles config updates
   - More complex deployment model
   - Confusing operational model (what is the "application"?)
 
