@@ -108,24 +108,27 @@ spec:
 
 With the move to mesh-scoped zone proxies, the deployment model changes:
 
-1. Zone proxies become `Dataplane` resources with specific tags
+1. Zone proxies become `Dataplane` resources with specific labels
 2. Each resource must specify a `mesh` field
 3. Deploy one zone proxy instance **per mesh** (not one per zone for all meshes)
 
-Example (exact fields determined by MADR for issue #9028):
+Example (exact fields and label names determined by MADR for issue #9028):
 ```yaml
 type: Dataplane
 mesh: payments-mesh
 name: zone-egress-payments
-spec:
-  networking:
-    address: 10.0.0.1
-    inbound:
-      - port: 10002
-        tags:
-          kuma.io/service: zone-egress
-          kuma.io/zone-proxy: egress
+labels:
+  kuma.io/proxy-type: zone-egress
+  kuma.io/zone: zone-1         # or kuma.io/zone-name
+networking:
+  address: 10.0.0.1
+  advertisedAddress: 203.0.113.1
+  advertisedPort: 10002
 ```
+
+Label options for zone identification:
+- `kuma.io/zone`: Consistent with existing zone label patterns
+- `kuma.io/zone-name`: Explicit new label for zone proxies
 
 #### Migration Path
 
