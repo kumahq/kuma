@@ -173,14 +173,16 @@ From `pkg/plugins/runtime/k8s/metadata/annotations.go`:
 - Advantages:
   - Simpler configuration
   - Zone proxies are infrastructure, not application workloads
-  - Targeted by role-based tags (e.g., `kuma.io/zone-proxy: egress`)
+  - Targeted by the `kuma.io/proxy-type` label (e.g., `zoneegress`) or extended `proxyTypes` in targetRef
   - The Deployment itself is the workload - no parent correlation needed
 - Disadvantages:
   - Slight inconsistency with application sidecar pattern (acceptable)
 
 #### Recommendation
 
-**Option B: Not required** - Zone proxies should not require `kuma.io/workload` annotation. They should be identified and targeted using role-based tags like `kuma.io/zone-proxy`.
+**Option B: Not required** - Zone proxies should not require `kuma.io/workload` annotation. They should be identified by the `kuma.io/proxy-type` label (with values `zoneingress` or `zoneegress`) and targeted via policies using extended `proxyTypes` in targetRef or label-based selectors.
+
+Since zone proxies become mesh-scoped Dataplane resources, targeting a zone proxy for a specific mesh is straightforward: policies themselves are mesh-scoped, so a policy in `payments-mesh` automatically only applies to zone proxies in that mesh. The `kuma.io/proxy-type` label then filters to just zone ingress or egress proxies within that mesh.
 
 ### Question 4: Support kuma.io/ingress-public-address
 
@@ -411,7 +413,7 @@ With mesh-scoped zone proxies:
 
 2. **Universal deployment**: Use mesh-scoped Dataplane resources instead of global ZoneIngress/ZoneEgress. Deploy one zone proxy per mesh.
 
-3. **kuma.io/workload not required**: Zone proxies are infrastructure components and should be targeted by role-based tags (e.g., `kuma.io/zone-proxy: egress`).
+3. **kuma.io/workload not required**: Zone proxies are infrastructure components and should be targeted by the `kuma.io/proxy-type` label (e.g., `zoneegress`).
 
 4. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
