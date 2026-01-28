@@ -234,73 +234,23 @@ Use cases for annotation override:
 
 ### Question 5: Default Helm Installation Behavior
 
-#### Current Defaults
-
-From `deployments/charts/kuma/values.yaml`:
-```yaml
-controlPlane:
-  mode: zone
-  defaults:
-    skipMeshCreation: false  # Creates "default" mesh
-
-ingress:
-  enabled: false  # NOT deployed by default
-
-egress:
-  enabled: false  # NOT deployed by default
-```
-
-#### Options
-
-| Option | Default Mesh | Zone Ingress | Zone Egress | Description |
-|--------|--------------|--------------|-------------|-------------|
-| **A. Minimal (current)** | Yes | No | No | Opt-in zone proxies |
-| **B. Multi-zone ready** | Yes | Yes | Yes | Include zone proxies |
-| **C. No defaults** | No | No | No | Fully explicit |
-
-#### Analysis
-
-**Option A: Minimal**
-- Advantages:
-  - Most users start with single-zone; zone proxies unnecessary
-  - Lower resource usage for simple deployments
-- Disadvantages:
-  - Requires explicit configuration for multi-zone
-  - Users may not realize they need zone proxies
-
-**Option B: Multi-zone ready (recommended)**
-- Advantages:
-  - Works out of the box for multi-zone
-  - No additional configuration needed when adding zones
-  - Consistent experience - default mesh is fully functional
-  - Zone proxies are lightweight when not actively used
-- Disadvantages:
-  - Slightly higher resource usage for single-zone users
-
-**Option C: No defaults**
-- Advantages:
-  - Maximum explicitness
-- Disadvantages:
-  - Poor getting-started experience
-  - Breaks existing workflows
-
 #### Recommendation
 
-**Option B: Multi-zone ready** - Install zone-ingress and zone-egress with the default mesh:
+**Multi-zone ready with no defaults** - Enable zone proxies but skip default mesh creation:
 
 ```yaml
 controlPlane:
   defaults:
-    skipMeshCreation: false  # Creates "default" mesh
+    skipMeshCreation: true  # No default mesh
 
 ingress:
-  enabled: true  # Deployed with default mesh
+  enabled: true  # Zone ingress deployed
 
 egress:
-  enabled: true  # Deployed with default mesh
+  enabled: true  # Zone egress deployed
 ```
 
-This ensures the default mesh is fully functional for multi-zone scenarios out of the box.
+This provides multi-zone readiness while requiring explicit mesh creation.
 
 ### Question 6: Combined Deployments (Ingress + Egress or with Gateway)
 
