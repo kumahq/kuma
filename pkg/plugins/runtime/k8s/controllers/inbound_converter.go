@@ -19,15 +19,23 @@ import (
 )
 
 type InboundConverter struct {
-	NameExtractor    NameExtractor
-	NodeGetter       kube_client.Reader
-	NodeLabelsToCopy []string
+	NameExtractor            NameExtractor
+	NodeGetter               kube_client.Reader
+	NodeLabelsToCopy         []string
+	SkipInboundTagGeneration bool
 }
 
-func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
+func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[string]string {
+	if ic.SkipInboundTagGeneration {
+		return map[string]string{}
+	}
+	return tagsFn()
+}
+
+func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-	for i := range service.Spec.Ports {
-		svcPort := service.Spec.Ports[i]
+	for idx := range service.Spec.Ports {
+		svcPort := service.Spec.Ports[idx]
 		if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
 			// ignore non-TCP ports
 			continue
@@ -39,7 +47,9 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			continue
 		}
 
-		tags := InboundTagsForService(zone, pod, service, &svcPort, nodeLabels)
+		tags := ic.tagsOrEmpty(func() map[string]string {
+			return InboundTagsForService(zone, pod, service, &svcPort, nodeLabels)
+		})
 		state := mesh_proto.Dataplane_Networking_Inbound_Ready
 		health := mesh_proto.Dataplane_Networking_Inbound_Health{
 			Ready: true,
@@ -87,7 +97,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 	return ifaces
 }
 
-func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
+func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -98,7 +108,9 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	// will create lots of code changes to account for this other type of dataplne (we already have GW and Ingress),
 	// including GUI and CLI changes
 
-	tags := InboundTagsForPod(zone, pod, name, nodeLabels)
+	tags := ic.tagsOrEmpty(func() map[string]string {
+		return InboundTagsForPod(zone, pod, name, nodeLabels)
+	})
 	state := mesh_proto.Dataplane_Networking_Inbound_Ready
 	health := mesh_proto.Dataplane_Networking_Inbound_Health{
 		Ready: true,
@@ -136,14 +148,14 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 // For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
 // For Dataplanes when MeshService is disabled we base identity and routing on inbound tags
 // TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
-func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	return i.inboundInterfacesFor(ctx, zone, pod, services)
+func (ic *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	return ic.inboundInterfacesFor(ctx, zone, pod, services)
 }
 
 // InboundInterfacesFor should be used when MeshService mode is Exclusive. This function deduplicates inbounds by address and port.
 // Since MeshService does not need tags we can safely deduplicate inbounds
-func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	inbounds, err := i.inboundInterfacesFor(ctx, zone, pod, services)
+func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	inbounds, err := ic.inboundInterfacesFor(ctx, zone, pod, services)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +163,8 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 	return deduplicateInboundsByAddressAndPort(inbounds), nil
 }
 
-func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	nodeLabels, err := ic.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -166,17 +178,17 @@ func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string
 		// ExternalName service. We do not currently support ExternalName
 		// services, so we can safely skip them from processing.
 		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
-			ifaces = append(ifaces, inboundForService(zone, pod, svc, nodeLabels)...)
+			ifaces = append(ifaces, ic.inboundForService(zone, pod, svc, nodeLabels)...)
 		}
 	}
 
 	if len(ifaces) == 0 {
-		name, _, err := i.NameExtractor.Name(ctx, pod)
+		name, _, err := ic.NameExtractor.Name(ctx, pod)
 		if err != nil {
 			return nil, err
 		}
 
-		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
+		ifaces = append(ifaces, ic.inboundForServiceless(zone, pod, name, nodeLabels))
 	}
 	return ifaces, nil
 }
@@ -198,16 +210,16 @@ func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networki
 	return deduplicatedInbounds
 }
 
-func (i *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName string) (map[string]string, error) {
-	if len(i.NodeLabelsToCopy) == 0 || nodeName == "" {
+func (ic *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName string) (map[string]string, error) {
+	if len(ic.NodeLabelsToCopy) == 0 || nodeName == "" {
 		return map[string]string{}, nil
 	}
 	node := &kube_core.Node{}
-	if err := i.NodeGetter.Get(ctx, types.NamespacedName{Name: nodeName}, node); err != nil {
+	if err := ic.NodeGetter.Get(ctx, types.NamespacedName{Name: nodeName}, node); err != nil {
 		return nil, errors.Wrapf(err, "unable to get Node %s", nodeName)
 	}
-	nodeLabels := make(map[string]string, len(i.NodeLabelsToCopy))
-	for _, label := range i.NodeLabelsToCopy {
+	nodeLabels := make(map[string]string, len(ic.NodeLabelsToCopy))
+	for _, label := range ic.NodeLabelsToCopy {
 		if value, exists := node.Labels[label]; exists {
 			nodeLabels[label] = value
 		}

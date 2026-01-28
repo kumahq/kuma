@@ -1,0 +1,15 @@
+mesh: default
+metadata:
+  labels:
+    app: example
+    k8s.kuma.io/namespace: demo
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    version: "0.1"
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      port: 49151
