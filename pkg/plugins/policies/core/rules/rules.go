@@ -40,7 +40,7 @@ var useCliques = true
 
 func init() {
 	// TODO: remove ability to opt-out for the next major version https://github.com/kumahq/kuma/issues/15440
-	if v, ok := os.LookupEnv("KUMA_MESH_TRAFFIC_PERMISSION_DISSABLE_CLIQUES_ALGORITHM"); ok && v == "true" {
+	if v, ok := os.LookupEnv("KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM"); ok && v == "true" {
 		useCliques = false
 	}
 }
