@@ -5408,6 +5408,9 @@ components:
 
                       this port.
                     type: integer
+                  protocol:
+                    description: Protocol of the service (tcp, http, grpc, etc).
+                    type: string
                   serviceAddress:
                     description: >-
                       Address of the service that requests will be forwarded to.
@@ -16815,6 +16818,9 @@ components:
 
                           this port.
                         type: integer
+                      protocol:
+                        description: Protocol of the service (tcp, http, grpc, etc).
+                        type: string
                       serviceAddress:
                         description: >-
                           Address of the service that requests will be forwarded

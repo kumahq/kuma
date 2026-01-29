@@ -14,6 +14,7 @@ spec:
     - health:
         ready: true
       port: 8080
+      protocol: http
       tags:
         app: example
         k8s.kuma.io/namespace: demo
@@ -26,6 +27,7 @@ spec:
     - health:
         ready: true
       port: 8443
+      protocol: tcp
       tags:
         app: example
         k8s.kuma.io/namespace: demo
@@ -38,6 +40,7 @@ spec:
     - health:
         ready: true
       port: 7070
+      protocol: tcp
       tags:
         app: example
         k8s.kuma.io/namespace: demo
@@ -51,6 +54,7 @@ spec:
         ready: true
       name: metrics
       port: 6060
+      protocol: tcp
       tags:
         app: example
         k8s.kuma.io/namespace: demo

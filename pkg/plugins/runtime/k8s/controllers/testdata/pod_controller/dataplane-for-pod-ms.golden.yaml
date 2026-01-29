@@ -24,6 +24,7 @@ spec:
     inbound:
     - health: {}
       port: 8080
+      protocol: http
       state: NotReady
       tags:
         app: sample-ms
@@ -36,6 +37,7 @@ spec:
     - health: {}
       name: metrics
       port: 6060
+      protocol: tcp
       state: NotReady
       tags:
         app: sample-ms

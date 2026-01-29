@@ -14,3 +14,4 @@ spec:
     - health:
         ready: true
       port: 8080
+      protocol: http

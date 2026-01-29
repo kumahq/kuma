@@ -16,6 +16,7 @@ spec:
     - health:
         ready: true
       port: 6379
+      protocol: tcp
       tags:
         app: redis
         k8s.kuma.io/namespace: demo

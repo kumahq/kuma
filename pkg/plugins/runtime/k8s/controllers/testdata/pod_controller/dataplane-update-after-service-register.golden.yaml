@@ -24,6 +24,7 @@ spec:
     inbound:
     - health: {}
       port: 8080
+      protocol: http
       state: NotReady
       tags:
         app: sample
@@ -36,6 +37,7 @@ spec:
     - health: {}
       name: metrics
       port: 6060
+      protocol: tcp
       state: NotReady
       tags:
         app: sample
@@ -47,6 +49,7 @@ spec:
         kuma.io/zone: zone-1
     - health: {}
       port: 9090
+      protocol: http
       state: NotReady
       tags:
         app: sample

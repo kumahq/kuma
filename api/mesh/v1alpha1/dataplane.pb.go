@@ -494,7 +494,9 @@ type Dataplane_Networking_Inbound struct {
 	// State describes the current state of the listener.
 	State Dataplane_Networking_Inbound_State `protobuf:"varint,9,opt,name=state,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_Inbound_State" json:"state,omitempty"`
 	// Name adds another way of referencing this port, usable with MeshService
-	Name          string `protobuf:"bytes,10,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,10,opt,name=name,proto3" json:"name,omitempty"`
+	// Protocol of the service (tcp, http, grpc, etc).
+	Protocol      string `protobuf:"bytes,11,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -588,6 +590,13 @@ func (x *Dataplane_Networking_Inbound) GetState() Dataplane_Networking_Inbound_S
 func (x *Dataplane_Networking_Inbound) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *Dataplane_Networking_Inbound) GetProtocol() string {
+	if x != nil {
+		return x.Protocol
 	}
 	return ""
 }
@@ -1290,13 +1299,13 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xfd\"\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\x99#\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
 	"networking\x12<\n" +
 	"\ametrics\x18\x02 \x01(\v2\".kuma.mesh.v1alpha1.MetricsBackendR\ametrics\x12<\n" +
-	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\x8b\x1a\n" +
+	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xa7\x1a\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
 	"\aaddress\x18\x05 \x01(\tR\aaddress\x12,\n" +
@@ -1305,7 +1314,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\ainbound\x18\x01 \x03(\v20.kuma.mesh.v1alpha1.Dataplane.Networking.InboundR\ainbound\x12M\n" +
 	"\boutbound\x18\x02 \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.OutboundR\boutbound\x12o\n" +
 	"\x14transparent_proxying\x18\x04 \x01(\v2<.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxyingR\x13transparentProxying\x124\n" +
-	"\x05admin\x18\b \x01(\v2\x1e.kuma.mesh.v1alpha1.EnvoyAdminR\x05admin\x1a\xec\a\n" +
+	"\x05admin\x18\b \x01(\v2\x1e.kuma.mesh.v1alpha1.EnvoyAdminR\x05admin\x1a\x88\b\n" +
 	"\aInbound\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\rR\x04port\x12 \n" +
 	"\vservicePort\x18\x04 \x01(\rR\vservicePort\x12&\n" +
@@ -1316,7 +1325,8 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\fserviceProbe\x18\b \x01(\v2=.kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbeR\fserviceProbe\x12L\n" +
 	"\x05state\x18\t \x01(\x0e26.kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.StateR\x05state\x12\x12\n" +
 	"\x04name\x18\n" +
-	" \x01(\tR\x04name\x1a7\n" +
+	" \x01(\tR\x04name\x12\x1a\n" +
+	"\bprotocol\x18\v \x01(\tR\bprotocol\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\x1e\n" +

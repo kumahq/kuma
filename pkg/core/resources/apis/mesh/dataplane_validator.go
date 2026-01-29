@@ -194,6 +194,13 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}))
 
+	if inbound.Protocol != "" && core_meta.ParseProtocol(inbound.Protocol) == core_meta.ProtocolUnknown {
+		result.AddViolationAt(
+			validators.RootedAt("protocol"),
+			fmt.Sprintf("has an invalid value %q. %s", inbound.Protocol, AllowedValuesHint(core_meta.SupportedProtocols.Strings()...)),
+		)
+	}
+
 	result.Add(validateServiceProbe(inbound.ServiceProbe))
 
 	return result
