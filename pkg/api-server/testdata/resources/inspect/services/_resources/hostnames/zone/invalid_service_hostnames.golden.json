@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "only \"meshservices,meshexternalservices,meshmultizoneservices\" are available for inspection",
+ "detail": "Resource is not valid",
+ "details": "Resource is not valid"
+}
