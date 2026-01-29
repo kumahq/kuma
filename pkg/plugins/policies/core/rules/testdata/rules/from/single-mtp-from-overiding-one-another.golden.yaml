@@ -58,7 +58,6 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___default-demo-app_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: default-demo-app
@@ -72,7 +71,6 @@ Rules:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___default-demo-app_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: default-demo-app
