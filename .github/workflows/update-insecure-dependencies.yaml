@@ -37,16 +37,10 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           ref: ${{ matrix.branch }}
-<<<<<<< HEAD
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
-        with:
-          go-version-file: go.mod
-=======
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
       - name: "Install tools"
         run: |
           go install github.com/google/osv-scanner/cmd/osv-scanner@037c3543ac60359190459b10fbb5331568b4c8f5 # v1.7.0

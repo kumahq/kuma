@@ -578,18 +578,22 @@
                 "ipv4_compat": {
                     "type": "boolean",
                     "description": "When binding to an IPv6 address above, this enables `IPv4 compatibility \u003chttps://tools.ietf.org/html/rfc3493#page-11\u003e`_. Binding to ``::`` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as ``::FFFF:\u003cIPv4-address\u003e``."
+                },
+                "network_namespace_filepath": {
+                    "type": "string",
+                    "description": "Filepath that specifies the Linux network namespace this socket will be created in (see ``man 7 network_namespaces``). If this field is set, Envoy will create the socket in the specified network namespace. .. note::    Setting this parameter requires Envoy to run with the ``CAP_NET_ADMIN`` capability. .. attention::     Network namespaces are only configurable on Linux. Otherwise, this field has no effect."
                 }
             },
             "additionalProperties": true,
             "type": "object",
             "title": "Socket Address",
-            "description": "[#next-free-field: 7]"
+            "description": "[#next-free-field: 8]"
         },
         "envoy.service.discovery.v3.DiscoveryRequest": {
             "properties": {
                 "version_info": {
                     "type": "string",
-                    "description": "The version_info provided in the request messages will be the version_info received with the most recent successfully processed response or empty on the first request. It is expected that no new request is sent after a response is received until the Envoy instance is ready to ACK/NACK the new configuration. ACK/NACK takes place by returning the new API config version as applied or the previous API config version respectively. Each type_url (see below) has an independent version associated with it."
+                    "description": "The ``version_info`` provided in the request messages will be the ``version_info`` received with the most recent successfully processed response or empty on the first request. It is expected that no new request is sent after a response is received until the Envoy instance is ready to ACK/NACK the new configuration. ACK/NACK takes place by returning the new API config version as applied or the previous API config version respectively. Each ``type_url`` (see below) has an independent version associated with it."
                 },
                 "node": {
                     "$ref": "#/definitions/envoy.config.core.v3.Node",
@@ -601,22 +605,22 @@
                         "type": "string"
                     },
                     "type": "array",
-                    "description": "List of resources to subscribe to, e.g. list of cluster names or a route configuration name. If this is empty, all resources for the API are returned. LDS/CDS may have empty resource_names, which will cause all resources for the Envoy instance to be returned. The LDS and CDS responses will then imply a number of resources that need to be fetched via EDS/RDS, which will be explicitly enumerated in resource_names."
+                    "description": "List of resources to subscribe to, e.g. list of cluster names or a route configuration name. If this is empty, all resources for the API are returned. LDS/CDS may have empty ``resource_names``, which will cause all resources for the Envoy instance to be returned. The LDS and CDS responses will then imply a number of resources that need to be fetched via EDS/RDS, which will be explicitly enumerated in ``resource_names``."
                 },
                 "resource_locators": {
                     "items": {
                         "$ref": "#/definitions/envoy.service.discovery.v3.ResourceLocator"
                     },
                     "type": "array",
-                    "description": "[#not-implemented-hide:] Alternative to ``resource_names`` field that allows specifying dynamic parameters along with each resource name. Clients that populate this field must be able to handle responses from the server where resources are wrapped in a Resource message. Note that it is legal for a request to have some resources listed in ``resource_names`` and others in ``resource_locators``."
+                    "description": "[#not-implemented-hide:] Alternative to ``resource_names`` field that allows specifying dynamic parameters along with each resource name. Clients that populate this field must be able to handle responses from the server where resources are wrapped in a Resource message. .. note::   It is legal for a request to have some resources listed   in ``resource_names`` and others in ``resource_locators``."
                 },
                 "type_url": {
                     "type": "string",
-                    "description": "Type of the resource that is being requested, e.g. \"type.googleapis.com/envoy.api.v2.ClusterLoadAssignment\". This is implicit in requests made via singleton xDS APIs such as CDS, LDS, etc. but is required for ADS."
+                    "description": "Type of the resource that is being requested, e.g. ``type.googleapis.com/envoy.api.v2.ClusterLoadAssignment``. This is implicit in requests made via singleton xDS APIs such as CDS, LDS, etc. but is required for ADS."
                 },
                 "response_nonce": {
                     "type": "string",
-                    "description": "nonce corresponding to DiscoveryResponse being ACK/NACKed. See above discussion on version_info and the DiscoveryResponse nonce comment. This may be empty only if 1) this is a non-persistent-stream xDS such as HTTP, or 2) the client has not yet accepted an update in this xDS stream (unlike delta, where it is populated only for new explicit ACKs)."
+                    "description": "nonce corresponding to ``DiscoveryResponse`` being ACK/NACKed. See above discussion on ``version_info`` and the ``DiscoveryResponse`` nonce comment. This may be empty only if: * This is a non-persistent-stream xDS such as HTTP, or * The client has not yet accepted an update in this xDS stream (unlike   delta, where it is populated only for new explicit ACKs)."
                 },
                 "error_detail": {
                     "$ref": "#/definitions/google.rpc.Status",
@@ -659,26 +663,118 @@
                 },
                 "canary": {
                     "type": "boolean",
-                    "description": "[#not-implemented-hide:] Canary is used to support two Envoy command line flags: * --terminate-on-canary-transition-failure. When set, Envoy is able to   terminate if it detects that configuration is stuck at canary. Consider   this example sequence of updates:   - Management server applies a canary config successfully.   - Management server rolls back to a production config.   - Envoy rejects the new production config.   Since there is no sensible way to continue receiving configuration   updates, Envoy will then terminate and apply production config from a   clean slate. * --dry-run-canary. When set, a canary response will never be applied, only   validated via a dry run."
+                    "description": "[#not-implemented-hide:] Canary is used to support two Envoy command line flags: * ``--terminate-on-canary-transition-failure``. When set, Envoy is able to   terminate if it detects that configuration is stuck at canary. Consider   this example sequence of updates:   * Management server applies a canary config successfully.   * Management server rolls back to a production config.   * Envoy rejects the new production config.   Since there is no sensible way to continue receiving configuration   updates, Envoy will then terminate and apply production config from a   clean slate. * ``--dry-run-canary``. When set, a canary response will never be applied, only   validated via a dry run."
                 },
                 "type_url": {
                     "type": "string",
-                    "description": "Type URL for resources. Identifies the xDS API when muxing over ADS. Must be consistent with the type_url in the 'resources' repeated Any (if non-empty)."
+                    "description": "Type URL for resources. Identifies the xDS API when muxing over ADS. Must be consistent with the ``type_url`` in the 'resources' repeated Any (if non-empty)."
                 },
                 "nonce": {
                     "type": "string",
-                    "description": "For gRPC based subscriptions, the nonce provides a way to explicitly ack a specific DiscoveryResponse in a following DiscoveryRequest. Additional messages may have been sent by Envoy to the management server for the previous version on the stream prior to this DiscoveryResponse, that were unprocessed at response send time. The nonce allows the management server to ignore any further DiscoveryRequests for the previous version until a DiscoveryRequest bearing the nonce. The nonce is optional and is not required for non-stream based xDS implementations."
+                    "description": "For gRPC based subscriptions, the nonce provides a way to explicitly ack a specific ``DiscoveryResponse`` in a following ``DiscoveryRequest``. Additional messages may have been sent by Envoy to the management server for the previous version on the stream prior to this ``DiscoveryResponse``, that were unprocessed at response send time. The nonce allows the management server to ignore any further ``DiscoveryRequests`` for the previous version until a ``DiscoveryRequest`` bearing the nonce. The nonce is optional and is not required for non-stream based xDS implementations."
                 },
                 "control_plane": {
                     "$ref": "#/definitions/envoy.config.core.v3.ControlPlane",
                     "additionalProperties": true,
                     "description": "The control plane instance that sent the response."
+                },
+                "resource_errors": {
+                    "items": {
+                        "$ref": "#/definitions/envoy.service.discovery.v3.ResourceError"
+                    },
+                    "type": "array",
+                    "description": "[#not-implemented-hide:] Errors associated with specific resources. Clients are expected to remember the most recent error for a given resource across responses; the error condition is not considered to be cleared until a response is received that contains the resource in the 'resources' field."
                 }
             },
             "additionalProperties": true,
             "type": "object",
             "title": "Discovery Response",
-            "description": "[#next-free-field: 7]"
+            "description": "[#next-free-field: 8]"
+        },
+        "envoy.service.discovery.v3.DynamicParameterConstraints": {
+            "properties": {
+                "constraint": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints.SingleConstraint",
+                    "additionalProperties": true,
+                    "description": "A single constraint to evaluate."
+                },
+                "or_constraints": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints.ConstraintList",
+                    "additionalProperties": true,
+                    "description": "A list of constraints that match if any one constraint in the list matches."
+                },
+                "and_constraints": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints.ConstraintList",
+                    "additionalProperties": true,
+                    "description": "A list of constraints that must all match."
+                },
+                "not_constraints": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints",
+                    "additionalProperties": true,
+                    "description": "The inverse (NOT) of a set of constraints."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dynamic Parameter Constraints",
+            "description": "A set of dynamic parameter constraints associated with a variant of an individual xDS resource. These constraints determine whether the resource matches a subscription based on the set of dynamic parameters in the subscription, as specified in the :ref:`ResourceLocator.dynamic_parameters \u003cenvoy_v3_api_field_service.discovery.v3.ResourceLocator.dynamic_parameters\u003e` field. This allows xDS implementations (clients, servers, and caching proxies) to determine which variant of a resource is appropriate for a given client."
+        },
+        "envoy.service.discovery.v3.DynamicParameterConstraints.ConstraintList": {
+            "properties": {
+                "constraints": {
+                    "items": {
+                        "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Constraint List"
+        },
+        "envoy.service.discovery.v3.DynamicParameterConstraints.SingleConstraint": {
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "The key to match against."
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Matches this exact value."
+                },
+                "exists": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints.SingleConstraint.Exists",
+                    "additionalProperties": true,
+                    "description": "Key is present (matches any value except for the key being absent). This allows setting a default constraint for clients that do not send a key at all, while there may be other clients that need special configuration based on that key."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Single Constraint",
+            "description": "A single constraint for a given key."
+        },
+        "envoy.service.discovery.v3.DynamicParameterConstraints.SingleConstraint.Exists": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Exists"
+        },
+        "envoy.service.discovery.v3.ResourceError": {
+            "properties": {
+                "resource_name": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.ResourceName",
+                    "additionalProperties": true,
+                    "description": "The name of the resource."
+                },
+                "error_detail": {
+                    "$ref": "#/definitions/google.rpc.Status",
+                    "additionalProperties": true,
+                    "description": "The error reported for the resource."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resource Error",
+            "description": "[#not-implemented-hide:] An error associated with a specific resource name, returned to the client by the server."
         },
         "envoy.service.discovery.v3.ResourceLocator": {
             "properties": {
@@ -698,6 +794,23 @@
             "type": "object",
             "title": "[#protodoc-title: Common discovery API components]",
             "description": "[#protodoc-title: Common discovery API components]  Specifies a resource to be subscribed to."
+        },
+        "envoy.service.discovery.v3.ResourceName": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the resource."
+                },
+                "dynamic_parameter_constraints": {
+                    "$ref": "#/definitions/envoy.service.discovery.v3.DynamicParameterConstraints",
+                    "additionalProperties": true,
+                    "description": "Dynamic parameter constraints associated with this resource. To be used by client-side caches (including xDS proxies) when matching subscribed resource locators."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resource Name",
+            "description": "Specifies a concrete resource name."
         },
         "envoy.type.SemanticVersion": {
             "properties": {

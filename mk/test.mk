@@ -28,11 +28,7 @@ ifndef TEST_REPORTS
 ifdef CI
 	$(GO) clean -testcache
 endif
-<<<<<<< HEAD
-	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "test/transparentproxy")
-=======
-	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
+	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "test/transparentproxy")
 endif
 
 $(REPORTS_DIR):

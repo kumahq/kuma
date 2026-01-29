@@ -31,13 +31,6 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 .PHONY: generate
 generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
-<<<<<<< HEAD
-$(POLICY_GEN):
-	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
-
-$(RESOURCE_GEN):
-	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
-=======
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && $(GO) build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
@@ -46,7 +39,6 @@ $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(K
 
 $(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
@@ -144,17 +136,3 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	$(GO) list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
-<<<<<<< HEAD
-=======
-
-.PHONY: api-lint/policies
-api-lint/policies:
-	$(GO) run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(POLICIES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
-
-.PHONY: api-lint/resources
-api-lint/resources:
-	$(GO) run $(TOOLS_DIR)/ci/api-linter/main.go $$(find ./$(RESOURCES_DIR)/*/api/v1alpha1 -type d -maxdepth 0 | sed 's|^|$(GO_MODULE)/|')
-
-.PHONY: api-lint
-api-lint: api-lint/policies api-lint/resources
->>>>>>> 1311e5c2d4 (feat(mise): move golang dependency to mise (#14884))
