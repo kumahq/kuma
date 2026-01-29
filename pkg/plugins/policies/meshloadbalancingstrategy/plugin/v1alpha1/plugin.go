@@ -331,20 +331,14 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 	indexed := rs.IndexByOrigin()
 	endpoints := policies_xds.GatherEgressEndpoints(rs)
 	clusters := policies_xds.GatherClusters(rs)
-<<<<<<< HEAD
 	listeners := policies_xds.GatherListeners(rs)
 	if listeners.Egress == nil {
 		return nil
 	}
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshName := meshResources.Mesh.GetMeta().GetName()
+
 		for serviceName, dynamic := range meshResources.Dynamic {
-			meshName := meshResources.Mesh.GetMeta().GetName()
-=======
-
-	for _, mr := range proxy.ZoneEgressProxy.MeshResourcesList {
-		meshName := mr.Mesh.GetMeta().GetName()
-
-		for serviceName, dynamic := range mr.Dynamic {
 			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 			cluster := clusters.Egress[clusterName]
 			if cluster == nil {
@@ -352,7 +346,6 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				continue
 			}
 
->>>>>>> c705239acb (fix(MeshLoadBalancingStrategy): skip configure endpoints due to different mesh (#14123))
 			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
 			if !ok {
 				continue
