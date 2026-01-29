@@ -1,29 +1,7 @@
 Rules:
   :0:
-<<<<<<< HEAD
   - BackendRefOriginIndex: {}
     Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
-      type: MeshTrafficPermission
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: orders
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 5b46cdfd97 (perf(rules): optimize SubsetIter to enumerate only correct subsets (#14862))
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -40,32 +18,26 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: backend
-<<<<<<< HEAD
   - BackendRefOriginIndex: {}
     Conf:
-=======
-  - Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-2_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-2
       type: MeshTrafficPermission
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-1_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: false
       Value: orders
-  - Conf:
->>>>>>> 5b46cdfd97 (perf(rules): optimize SubsetIter to enumerate only correct subsets (#14862))
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
