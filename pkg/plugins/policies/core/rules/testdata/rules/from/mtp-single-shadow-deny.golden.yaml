@@ -2,38 +2,8 @@ InboundRules:
   127.0.0.1:80: []
 Rules:
   127.0.0.1:80:
-<<<<<<< HEAD
   - BackendRefOriginIndex: {}
     Conf:
-      action: Deny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp
-      type: MeshTrafficPermission
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: b
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: Deny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp
-      type: MeshTrafficPermission
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: a
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -45,68 +15,60 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: c
-<<<<<<< HEAD
   - BackendRefOriginIndex: {}
     Conf:
-=======
-  - Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: false
       Value: b
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: false
       Value: a
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: true
       Value: c
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: true
       Value: b
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
