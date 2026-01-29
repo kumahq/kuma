@@ -6,15 +6,23 @@ Technical Story: https://github.com/kumahq/kuma/issues/9030
 
 ## Context and Problem Statement
 
-Currently, zone proxies are **global-scoped** resources, meaning a single ZoneIngress or ZoneEgress instance handles traffic for all meshes in a zone. This global nature creates fundamental limitations:
+Currently, zone proxies are **global-scoped** resources, meaning a single ZoneIngress or ZoneEgress instance handles traffic for all meshes in a zone.
+This global nature creates fundamental limitations:
 
-1. **Cannot issue MeshIdentity for zone egress**: MeshIdentity is mesh-scoped, but a global zone egress serves multiple meshes. This creates identity conflicts and prevents proper mTLS certificate issuance. See [MADR 090](090-zone-egress-identity.md) for detailed analysis.
+1. **Cannot issue MeshIdentity for zone egress**: MeshIdentity is mesh-scoped, but a global zone egress serves multiple meshes.
+   This creates identity conflicts and prevents proper mTLS certificate issuance.
+   See [MADR 090](090-zone-egress-identity.md) for detailed analysis.
 
-2. **Cannot apply policies on zone proxies**: Kuma policies (MeshTrafficPermission, MeshTimeout, etc.) are mesh-scoped. A global zone proxy cannot be targeted by mesh-specific policies, limiting observability and traffic control for cross-zone communication.
+2. **Cannot apply policies on zone proxies**: Kuma policies (MeshTrafficPermission, MeshTimeout, etc.) are mesh-scoped.
+   A global zone proxy cannot be targeted by mesh-specific policies, limiting observability and traffic control for cross-zone communication.
 
-To resolve these limitations, zone proxies are being changed to **mesh-scoped** resources represented as Dataplane resources with specific tags. This architectural change requires revisiting the deployment model for zone proxies.
+To resolve these limitations, zone proxies are being changed to **mesh-scoped** resources represented as Dataplane resources with specific tags.
+This architectural change requires revisiting the deployment model for zone proxies.
 
-**Key insight**: At its core, a zone proxy is simply an Envoy instance. Whether it functions as an ingress, egress, or both is determined by the **listeners the control plane generates** based on labels—not by fundamentally different proxy types. Ingress and egress are listener configurations pushed via XDS. This aligns with [#15429](https://github.com/kumahq/kuma/issues/15429) where label-based service matching uses `Dataplane.Meta.Labels` to determine behavior, not resource type or inbound tags.
+**Key insight**: At its core, a zone proxy is simply an Envoy instance.
+Whether it functions as an ingress, egress, or both is determined by the **listeners the control plane generates** based on labels—not by fundamentally different proxy types.
+Ingress and egress are listener configurations pushed via XDS.
+This aligns with [#15429](https://github.com/kumahq/kuma/issues/15429) where label-based service matching uses `Dataplane.Meta.Labels` to determine behavior, not resource type or inbound tags.
 
 This document addresses the following questions:
 
@@ -31,7 +39,8 @@ This document addresses the following questions:
 
 #### Core Concept
 
-Zone proxies are Envoy instances that receive listener configurations from the control plane. The distinction between "ingress" and "egress" is fundamentally about **which listeners are generated**:
+Zone proxies are Envoy instances that receive listener configurations from the control plane.
+The distinction between "ingress" and "egress" is fundamentally about **which listeners are generated**:
 
 - **Ingress listeners**: Accept traffic from other zones and route to local services
 - **Egress listeners**: Accept traffic from local services and route to other zones or external services
@@ -71,7 +80,8 @@ The `kuma.io/zone-proxy-role` label controls which listeners the control plane g
 - `ingress`: Generate only ingress listeners
 - `egress`: Generate only egress listeners
 
-Operators who need separate scaling for ingress vs egress traffic can deploy multiple zone proxies with different role labels. This provides the same flexibility as separate types while simplifying the conceptual model.
+Operators who need separate scaling for ingress vs egress traffic can deploy multiple zone proxies with different role labels.
+This provides the same flexibility as separate types while simplifying the conceptual model.
 
 - Advantages:
   - Simpler conceptual model—one proxy type instead of two
@@ -100,7 +110,8 @@ Maintains distinct ZoneIngress and ZoneEgress resource types, each generating th
 
 #### Recommendation
 
-**Option A: Unified zone proxy** - Zone proxies should be a single Dataplane type where the `kuma.io/zone-proxy-role` label determines capabilities. This aligns with the technical reality that ingress/egress are listener configurations, not fundamentally different proxy types.
+**Option A: Unified zone proxy** - Zone proxies should be a single Dataplane type where the `kuma.io/zone-proxy-role` label determines capabilities.
+This aligns with the technical reality that ingress/egress are listener configurations, not fundamentally different proxy types.
 
 Operators can deploy:
 - **Combined** (`role: both`): Single deployment handling all cross-zone traffic—recommended default
@@ -110,7 +121,8 @@ Operators can deploy:
 
 #### Current Implementation
 
-Zone proxies are deployed as standalone Kubernetes Deployments with dedicated pods containing only the kuma-dp container. With the unified zone proxy model, this would consolidate to a single deployment template (or separate templates for operators choosing split deployments).
+Zone proxies are deployed as standalone Kubernetes Deployments with dedicated pods containing only the kuma-dp container.
+With the unified zone proxy model, this would consolidate to a single deployment template (or separate templates for operators choosing split deployments).
 
 #### Options
 
@@ -122,13 +134,19 @@ Zone proxies are deployed as standalone Kubernetes Deployments with dedicated po
 
 #### Analysis
 
-The primary concern raised was that "mesh updates won't be updated automatically" with standalone deployments. This concern refers to **Kuma version upgrades** (e.g., `helm upgrade`):
+The primary concern raised was that "mesh updates won't be updated automatically" with standalone deployments.
+This concern refers to **Kuma version upgrades** (e.g., `helm upgrade`):
 
-- **Option A (sidecar to fake container)**: The sidecar injection webhook injects the proxy image at pod creation time. On `helm upgrade`, existing pods are **not automatically restarted** - the operator must manually trigger pod recreation to pick up the new version. This gives operators full control over upgrade timing, allowing careful rollouts that avoid dropping requests.
+- **Option A (sidecar to fake container)**: The sidecar injection webhook injects the proxy image at pod creation time.
+  On `helm upgrade`, existing pods are **not automatically restarted** - the operator must manually trigger pod recreation to pick up the new version.
+  This gives operators full control over upgrade timing, allowing careful rollouts that avoid dropping requests.
 
-- **Option B (standalone deployment)**: The Deployment spec directly references the proxy image. On `helm upgrade`, the Deployment is updated, **triggering automatic pod rollout**. The rolling update strategy (`maxUnavailable`, `maxSurge`) controls how pods are replaced, preventing all-at-once restarts.
+- **Option B (standalone deployment)**: The Deployment spec directly references the proxy image.
+  On `helm upgrade`, the Deployment is updated, **triggering automatic pod rollout**.
+  The rolling update strategy (`maxUnavailable`, `maxSurge`) controls how pods are replaced, preventing all-at-once restarts.
 
-Option B is still recommended because zone proxies are infrastructure that should update with the control plane. The rolling update strategy provides sufficient control over the upgrade process.
+Option B is still recommended because zone proxies are infrastructure that should update with the control plane.
+The rolling update strategy provides sufficient control over the upgrade process.
 
 #### Advantages and Disadvantages
 
@@ -285,9 +303,12 @@ From `pkg/plugins/runtime/k8s/metadata/annotations.go`:
 
 #### Recommendation
 
-**Option B: Not required** - Zone proxies should not require `kuma.io/workload` annotation. They should be identified by the `kuma.io/proxy-type: zoneproxy` label and the `kuma.io/zone-proxy-role` label for role-specific targeting. Policies can use extended `proxyTypes` in targetRef or label-based selectors.
+**Option B: Not required** - Zone proxies should not require `kuma.io/workload` annotation.
+They should be identified by the `kuma.io/proxy-type: zoneproxy` label and the `kuma.io/zone-proxy-role` label for role-specific targeting.
+Policies can use extended `proxyTypes` in targetRef or label-based selectors.
 
-Since zone proxies become mesh-scoped Dataplane resources, targeting a zone proxy for a specific mesh is straightforward: policies themselves are mesh-scoped, so a policy in `payments-mesh` automatically only applies to zone proxies in that mesh. The `kuma.io/zone-proxy-role` label then filters to specific roles (ingress, egress, or both) within that mesh.
+Since zone proxies become mesh-scoped Dataplane resources, targeting a zone proxy for a specific mesh is straightforward: policies themselves are mesh-scoped, so a policy in `payments-mesh` automatically only applies to zone proxies in that mesh.
+The `kuma.io/zone-proxy-role` label then filters to specific roles (ingress, egress, or both) within that mesh.
 
 ### Question 5: Support kuma.io/ingress-public-address
 
@@ -359,21 +380,26 @@ The `role` setting controls deployment topology:
 - `egress`: Single Deployment handling only egress
 - `separate`: Two Deployments (one ingress, one egress) for operators needing independent scaling
 
-This provides multi-zone readiness while requiring explicit mesh creation. The unified default reduces resource usage and operational complexity for typical deployments.
+This provides multi-zone readiness while requiring explicit mesh creation.
+The unified default reduces resource usage and operational complexity for typical deployments.
 
 ## Decision
 
-1. **Unified zone proxy model**: Zone proxies should be a single Dataplane type where the `kuma.io/zone-proxy-role` label determines capabilities (ingress, egress, or both). Operators can deploy combined (`role: both`) or separate (`role: ingress` / `role: egress`) based on scaling needs.
+1. **Unified zone proxy model**: Zone proxies should be a single Dataplane type where the `kuma.io/zone-proxy-role` label determines capabilities (ingress, egress, or both).
+   Operators can deploy combined (`role: both`) or separate (`role: ingress` / `role: egress`) based on scaling needs.
 
-2. **Standalone deployment**: Zone proxies should be deployed as standalone Kubernetes Deployments, not as sidecars to fake containers. The xDS protocol handles configuration updates regardless of deployment model.
+2. **Standalone deployment**: Zone proxies should be deployed as standalone Kubernetes Deployments, not as sidecars to fake containers.
+   The xDS protocol handles configuration updates regardless of deployment model.
 
-3. **Universal deployment**: Use mesh-scoped Dataplane resources with zone proxy labels instead of global ZoneIngress/ZoneEgress. Deploy one zone proxy per mesh.
+3. **Universal deployment**: Use mesh-scoped Dataplane resources with zone proxy labels instead of global ZoneIngress/ZoneEgress.
+   Deploy one zone proxy per mesh.
 
 4. **kuma.io/workload not required**: Zone proxies are infrastructure components and should be targeted by the `kuma.io/proxy-type: zoneproxy` label and `kuma.io/zone-proxy-role` for role-specific targeting.
 
 5. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
-6. **Helm defaults**: Single unified zone proxy deployment with `role: both`, with option to split via `role: separate`. No default mesh created (`skipMeshCreation: true`).
+6. **Helm defaults**: Single unified zone proxy deployment with `role: both`, with option to split via `role: separate`.
+   No default mesh created (`skipMeshCreation: true`).
 
 ## Notes
 
