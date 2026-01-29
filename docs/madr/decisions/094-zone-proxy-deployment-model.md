@@ -22,7 +22,6 @@ This architectural change requires revisiting the deployment model for zone prox
 **Key insight**: At its core, a zone proxy is simply an Envoy instance.
 Whether it functions as an ingress, egress, or both is determined by the **listeners the control plane generates** based on labels—not by fundamentally different proxy types.
 Ingress and egress are listener configurations pushed via XDS.
-This aligns with [#15429](https://github.com/kumahq/kuma/issues/15429) where label-based service matching uses `Dataplane.Meta.Labels` to determine behavior, not resource type or inbound tags.
 
 This document addresses the following questions:
 
@@ -72,8 +71,6 @@ networking:
   advertisedAddress: 203.0.113.1
   advertisedPort: 10001
 ```
-
-Note: No inbound tags are required—service identification uses `Dataplane.Meta.Labels` per [#15429](https://github.com/kumahq/kuma/issues/15429).
 
 The `kuma.io/zone-proxy-role` label controls which listeners the control plane generates:
 - `both`: Generate both ingress and egress listeners (default)
@@ -223,8 +220,6 @@ networking:
   advertisedAddress: 203.0.113.1
   advertisedPort: 10001
 ```
-
-Note: No inbound tags are required—service identification uses `Dataplane.Meta.Labels` per [#15429](https://github.com/kumahq/kuma/issues/15429).
 
 **Separate deployments** (for operators needing independent scaling):
 ```yaml
