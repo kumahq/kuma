@@ -19,6 +19,7 @@ import (
 	meshretry "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtls "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	meshtrafficpermission "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
@@ -46,6 +47,7 @@ func Sidecars() {
 		meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
 		meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
 		meshretry.MeshRetryResourceTypeDescriptor,
+		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config",
@@ -57,6 +59,7 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshretry"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshtrafficpermission"), "envoyconfig"),
 	)
 }
 
