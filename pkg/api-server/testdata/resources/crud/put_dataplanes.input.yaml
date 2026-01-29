@@ -3,7 +3,7 @@
 #/meshes/default/dataplanes/foo 400 method=PUT
 # Mesh is not the same in the request
 #/meshes/default/dataplanes/dp-3 400 method=PUT
-# Type is not the same in the request
+# Tags present but missing kuma.io/service
 #/meshes/default/dataplanes/dp-4 400 method=PUT
 # Invalid resource content
 #/meshes/default/dataplanes/dp-5 400 method=PUT
@@ -15,6 +15,8 @@
 #/meshes/default/dataplanes/dp-5 400 method=PUT
 # Name is a number
 #/meshes/default/dataplanes/dp-5 400 method=PUT
+# Empty tags (SkipInboundTagGeneration)
+#/meshes/default/dataplanes/dp-6 201 method=PUT
 type: Mesh
 name: default
 ---

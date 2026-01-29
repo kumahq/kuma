@@ -1353,4 +1353,49 @@ var _ = Describe("Dataplane", func() {
                   message: name is required, when namespace is defined`,
 		}),
 	)
+
+	Describe("service tag requirement based on inbound tags presence", func() {
+		It("should allow dataplane with empty inbound tags (SkipInboundTagGeneration)", func() {
+			// setup
+			dataplane := core_mesh.NewDataplaneResource()
+
+			// when
+			err := util_proto.FromYAML([]byte(`
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+`), dataplane.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then - empty tags = new setup, no service tag required
+			err = dataplane.Validate()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should require service tag when inbound has other tags", func() {
+			// setup
+			dataplane := core_mesh.NewDataplaneResource()
+
+			// when
+			err := util_proto.FromYAML([]byte(`
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      tags:
+                        version: "1"
+`), dataplane.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then - has tags but no service tag = old setup, service tag required
+			verr := dataplane.Validate()
+			actual, err := yaml.Marshal(verr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(`
+                violations:
+                - field: networking.inbound[0].tags["kuma.io/service"]
+                  message: tag has to exist`))
+		})
+	})
 })
