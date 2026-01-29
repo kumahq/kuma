@@ -1,5 +1,41 @@
 {
-  "diff": [],
+  "diff": [
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/commonLbConfig",
+      "value": {
+        "healthyPanicThreshold": {
+          "value": 20
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/outlierDetection",
+      "value": {
+        "baseEjectionTime": "30s",
+        "consecutive5xx": 10,
+        "consecutiveGatewayFailure": 10,
+        "consecutiveLocalOriginFailure": 10,
+        "enforcingConsecutive5xx": 100,
+        "enforcingConsecutiveGatewayFailure": 100,
+        "enforcingConsecutiveLocalOriginFailure": 100,
+        "enforcingFailurePercentage": 100,
+        "enforcingFailurePercentageLocalOrigin": 100,
+        "enforcingLocalOriginSuccessRate": 100,
+        "enforcingSuccessRate": 100,
+        "failurePercentageMinimumHosts": 5,
+        "failurePercentageRequestVolume": 10,
+        "failurePercentageThreshold": 85,
+        "interval": "5s",
+        "maxEjectionPercent": 20,
+        "splitExternalLocalOriginErrors": true,
+        "successRateMinimumHosts": 5,
+        "successRateRequestVolume": 10,
+        "successRateStdevFactor": 1900000
+      }
+    }
+  ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
@@ -62,6 +98,11 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "commonLbConfig": {
+          "healthyPanicThreshold": {
+            "value": 20
+          }
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -70,6 +111,28 @@
           }
         },
         "name": "envoyconfig_test-server__kuma-3_msvc_80",
+        "outlierDetection": {
+          "baseEjectionTime": "30s",
+          "consecutive5xx": 10,
+          "consecutiveGatewayFailure": 10,
+          "consecutiveLocalOriginFailure": 10,
+          "enforcingConsecutive5xx": 100,
+          "enforcingConsecutiveGatewayFailure": 100,
+          "enforcingConsecutiveLocalOriginFailure": 100,
+          "enforcingFailurePercentage": 100,
+          "enforcingFailurePercentageLocalOrigin": 100,
+          "enforcingLocalOriginSuccessRate": 100,
+          "enforcingSuccessRate": 100,
+          "failurePercentageMinimumHosts": 5,
+          "failurePercentageRequestVolume": 10,
+          "failurePercentageThreshold": 85,
+          "interval": "5s",
+          "maxEjectionPercent": 20,
+          "splitExternalLocalOriginErrors": true,
+          "successRateMinimumHosts": 5,
+          "successRateRequestVolume": 10,
+          "successRateStdevFactor": 1900000
+        },
         "transportSocket": {
           "name": "envoy.transport_sockets.tls",
           "typedConfig": {
@@ -151,55 +214,6 @@
           }
         }
       },
-      "kuma:envoy:admin": {
-        "altStatName": "kuma_envoy_admin",
-        "connectTimeout": "5s",
-        "loadAssignment": {
-          "clusterName": "kuma:envoy:admin",
-          "endpoints": [
-            {
-              "lbEndpoints": [
-                {
-                  "endpoint": {
-                    "address": {
-                      "socketAddress": {
-                        "address": "IP_REDACTED",
-                        "portValue": 9901
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "name": "kuma:envoy:admin",
-        "type": "STATIC"
-      },
-      "kuma:readiness": {
-        "altStatName": "kuma_readiness",
-        "connectTimeout": "5s",
-        "loadAssignment": {
-          "clusterName": "kuma:readiness",
-          "endpoints": [
-            {
-              "lbEndpoints": [
-                {
-                  "endpoint": {
-                    "address": {
-                      "pipe": {
-                        "path": "/tmp/kuma-readiness-reporter.sock"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "name": "kuma:readiness",
-        "type": "STATIC"
-      },
       "localhost:3000": {
         "altStatName": "localhost_3000",
         "connectTimeout": "5s",
@@ -244,12 +258,6 @@
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv6",
         "type": "ORIGINAL_DST"
-      },
-      "self_transparentproxy_no_destination_inbound": {
-        "altStatName": "self_transparentproxy_no_destination_inbound",
-        "connectTimeout": "5s",
-        "name": "self_transparentproxy_no_destination_inbound",
-        "type": "STATIC"
       }
     },
     "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment": {
@@ -437,9 +445,6 @@
         "enableReusePort": false,
         "filterChains": [
           {
-            "filterChainMatch": {
-              "destinationPort": 3000
-            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
@@ -466,9 +471,6 @@
         "enableReusePort": false,
         "filterChains": [
           {
-            "filterChainMatch": {
-              "destinationPort": 3000
-            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
@@ -484,169 +486,6 @@
         "name": "inbound:passthrough:ipv6",
         "trafficDirection": "INBOUND",
         "useOriginalDst": true
-      },
-      "kuma:envoy:admin": {
-        "address": {
-          "socketAddress": {
-            "address": "IP_REDACTED",
-            "portValue": 9901
-          }
-        },
-        "enableReusePort": false,
-        "filterChains": [
-          {
-            "filters": [
-              {
-                "name": "envoy.filters.network.http_connection_manager",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "httpFilters": [
-                    {
-                      "name": "envoy.filters.http.router",
-                      "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
-                      }
-                    }
-                  ],
-                  "internalAddressConfig": {
-                    "cidrRanges": [
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 32
-                      }
-                    ]
-                  },
-                  "routeConfig": {
-                    "validateClusters": false,
-                    "virtualHosts": [
-                      {
-                        "domains": [
-                          "*"
-                        ],
-                        "name": "kuma:envoy:admin",
-                        "routes": [
-                          {
-                            "match": {
-                              "prefix": "/ready"
-                            },
-                            "route": {
-                              "cluster": "kuma:readiness",
-                              "prefixRewrite": "/ready"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ]
-          },
-          {
-            "filterChainMatch": {
-              "transportProtocol": "tls"
-            },
-            "filters": [
-              {
-                "name": "envoy.filters.network.http_connection_manager",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "httpFilters": [
-                    {
-                      "name": "envoy.filters.http.router",
-                      "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
-                      }
-                    }
-                  ],
-                  "internalAddressConfig": {
-                    "cidrRanges": [
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 32
-                      }
-                    ]
-                  },
-                  "routeConfig": {
-                    "validateClusters": false,
-                    "virtualHosts": [
-                      {
-                        "domains": [
-                          "*"
-                        ],
-                        "name": "kuma:envoy:admin",
-                        "routes": [
-                          {
-                            "match": {
-                              "prefix": "/ready"
-                            },
-                            "route": {
-                              "cluster": "kuma:readiness",
-                              "prefixRewrite": "/ready"
-                            }
-                          },
-                          {
-                            "match": {
-                              "prefix": "/"
-                            },
-                            "route": {
-                              "cluster": "kuma:envoy:admin",
-                              "prefixRewrite": "/"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ],
-            "transportSocket": {
-              "name": "envoy.transport_sockets.tls",
-              "typedConfig": {
-                "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
-                "commonTlsContext": {
-                  "tlsCertificates": [
-                    {
-                      "certificateChain": {
-                        "inlineBytes": ""
-                      },
-                      "privateKey": {
-                        "inlineBytes": ""
-                      }
-                    }
-                  ],
-                  "validationContext": {
-                    "matchTypedSubjectAltNames": [
-                      {
-                        "matcher": {
-                          "exact": "kuma-cp"
-                        },
-                        "sanType": "DNS"
-                      }
-                    ],
-                    "trustedCa": {
-                      "inlineBytes": ""
-                    }
-                  }
-                },
-                "requireClientCertificate": true
-              }
-            }
-          }
-        ],
-        "listenerFilters": [
-          {
-            "name": "envoy.filters.listener.tls_inspector",
-            "typedConfig": {
-              "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
-            }
-          }
-        ],
-        "name": "kuma:envoy:admin",
-        "trafficDirection": "INBOUND"
       },
       "outbound:IP_REDACTED:3000": {
         "address": {
@@ -728,7 +567,7 @@
                   "normalizePath": true,
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {
-                    "name": "kri_msvc_envoyconfig_kuma-3__test-server_80",
+                    "name": "outbound:envoyconfig_test-server__kuma-3_msvc_80",
                     "validateClusters": false,
                     "virtualHosts": [
                       {

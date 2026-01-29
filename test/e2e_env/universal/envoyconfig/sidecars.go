@@ -14,6 +14,7 @@ import (
 	meshratelimit "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtls "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	meshtrafficpermission "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
@@ -79,7 +80,9 @@ func Sidecars() {
 			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
 			meshtls.MeshTLSResourceTypeDescriptor,
+			meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
 		)).To(Succeed())
+		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(meshName))).To(Succeed())
 	})
 
 	DescribeTable("should generate proper Envoy config",
@@ -105,5 +108,6 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshtrafficpermission"), "envoyconfig"),
 	)
 }
