@@ -3,11 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
-<<<<<<< HEAD
-=======
 	"os"
-	"slices"
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
 	"sort"
 	"strings"
 
@@ -670,15 +666,9 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 
 	sortComponents(nodeGroups)
 
-<<<<<<< HEAD
-	for _, nodes := range components {
-		tagSet := map[Tag]bool{}
-		for _, node := range nodes {
-=======
 	for _, group := range nodeGroups {
-		tagSet := map[subsetutils.Tag]bool{}
+		tagSet := map[Tag]bool{}
 		for _, node := range group {
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
 			for _, t := range subsets[node.ID()] {
 				tagSet[t] = true
 			}
@@ -874,7 +864,7 @@ func (it *SubsetIter) currentSubset() Subset {
 	return out
 }
 
-// Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
+// Deduplicate returns a new slice of Subset with duplicates removed.
 func Deduplicate(subsets []Subset) []Subset {
 	seen := make(map[string]struct{})
 	result := make([]Subset, 0, len(subsets))
@@ -890,7 +880,7 @@ func Deduplicate(subsets []Subset) []Subset {
 }
 
 // canonicalSubset returns a canonical string representation for a subset.
-// It assumes that a subset is a slice of subsetutils.Tag with fields Key, Value, and Not.
+// It assumes that a subset is a slice of Tag with fields Key, Value, and Not.
 func canonicalSubset(s Subset) string {
 	if len(s) == 0 {
 		return ""
