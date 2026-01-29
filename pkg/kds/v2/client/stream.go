@@ -33,16 +33,12 @@ type stream struct {
 	latestReceived     map[core_model.ResourceType]*latestReceived
 	clientId           string
 	cpConfig           string
-<<<<<<< HEAD
 	runtimeInfo        core_runtime.RuntimeInfo
-=======
-	instanceID         string
 
 	sendCh chan *envoy_sd.DeltaDiscoveryRequest
 	recvCh chan *envoy_sd.DeltaDiscoveryResponse
 	ctx    context.Context
 	cancel context.CancelCauseFunc
->>>>>>> c4f7db2534 (fix(kds): server Send blocks when client doesn't call Recv for some time (#15042))
 }
 
 type KDSSyncServiceStream interface {
@@ -51,14 +47,10 @@ type KDSSyncServiceStream interface {
 	Context() context.Context
 }
 
-<<<<<<< HEAD
-func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core_runtime.RuntimeInfo, cpConfig string) DeltaKDSStream {
-	return &stream{
-=======
 func NewDeltaKDSStream(
 	s KDSSyncServiceStream,
 	clientID string,
-	instanceID string,
+	runtimeInfo core_runtime.RuntimeInfo,
 	cpConfig string,
 	numberOfDistinctTypes int,
 ) DeltaKDSStream {
@@ -76,16 +68,12 @@ func NewDeltaKDSStream(
 	capacity := 2*numberOfDistinctTypes + 10
 
 	stream := &stream{
->>>>>>> c4f7db2534 (fix(kds): server Send blocks when client doesn't call Recv for some time (#15042))
 		streamClient:       s,
 		runtimeInfo:        runtimeInfo,
 		initialRequestDone: make(map[core_model.ResourceType]bool),
 		latestReceived:     make(map[core_model.ResourceType]*latestReceived),
-		clientId:           clientId,
+		clientId:           clientID,
 		cpConfig:           cpConfig,
-<<<<<<< HEAD
-=======
-		instanceID:         instanceID,
 		sendCh:             make(chan *envoy_sd.DeltaDiscoveryRequest, capacity),
 		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
 		ctx:                ctx,
@@ -142,7 +130,6 @@ func (s *stream) recv() (*envoy_sd.DeltaDiscoveryResponse, error) {
 		return nil, context.Cause(s.ctx)
 	case resp := <-s.recvCh:
 		return resp, nil
->>>>>>> c4f7db2534 (fix(kds): server Send blocks when client doesn't call Recv for some time (#15042))
 	}
 }
 
