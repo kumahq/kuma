@@ -11,7 +11,7 @@ Rules:
     Subset:
     - Key: env
       Not: false
-      Value: dev
+      Value: prod
     - Key: zone
       Not: false
       Value: us-east
@@ -26,7 +26,7 @@ Rules:
     Subset:
     - Key: env
       Not: false
-      Value: prod
+      Value: dev
     - Key: zone
       Not: false
       Value: us-east
@@ -41,9 +41,6 @@ Rules:
     Subset:
     - Key: env
       Not: true
-      Value: dev
-    - Key: env
-      Not: true
       Value: prod
     - Key: zone
       Not: false
@@ -64,6 +61,21 @@ Rules:
       Not: true
       Value: us-east
   - Conf:
+      action: Deny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshTrafficPermission
+    Subset:
+    - Key: env
+      Not: true
+      Value: dev
+    - Key: zone
+      Not: false
+      Value: us-east
+  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -89,10 +101,22 @@ Rules:
     Subset:
     - Key: env
       Not: true
-      Value: dev
+      Value: prod
+    - Key: zone
+      Not: true
+      Value: us-east
+  - Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshTrafficPermission
+    Subset:
     - Key: env
       Not: true
-      Value: prod
+      Value: dev
     - Key: zone
       Not: true
       Value: us-east

@@ -1,142 +1,7 @@
 Rules:
   127.0.0.1:80:
   - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: default
@@ -149,7 +14,7 @@ Rules:
       Value: app-9
     - Key: namespace
       Not: false
-      Value: ns-8
+      Value: ns-9
   - Conf:
       action: Allow
     Origin:
@@ -166,156 +31,6 @@ Rules:
       Not: false
       Value: ns-8
   - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -330,156 +45,6 @@ Rules:
     - Key: namespace
       Not: false
       Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-6
   - Conf:
       action: Allow
     Origin:
@@ -496,156 +61,6 @@ Rules:
       Not: false
       Value: ns-6
   - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -660,156 +75,6 @@ Rules:
     - Key: namespace
       Not: false
       Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-4
   - Conf:
       action: Allow
     Origin:
@@ -826,156 +91,6 @@ Rules:
       Not: false
       Value: ns-4
   - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -990,156 +105,6 @@ Rules:
     - Key: namespace
       Not: false
       Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-2
   - Conf:
       action: Allow
     Origin:
@@ -1156,156 +121,6 @@ Rules:
       Not: false
       Value: ns-2
   - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -1320,156 +135,6 @@ Rules:
     - Key: namespace
       Not: false
       Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-1
   - Conf:
       action: Allow
     Origin:
@@ -1486,21 +151,6 @@ Rules:
       Not: false
       Value: ns-1
   - Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -1509,33 +159,6 @@ Rules:
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
     Subset:
-    - Key: app
-      Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
     - Key: app
       Not: true
       Value: app-9
@@ -1552,35 +175,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-9
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
+      Value: ns-9
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-8
@@ -1594,35 +205,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-8
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
+      Value: ns-8
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-7
@@ -1636,35 +235,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-7
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
+      Value: ns-7
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-6
@@ -1678,35 +265,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-6
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
+      Value: ns-6
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-5
@@ -1720,35 +295,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-5
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
+      Value: ns-5
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-4
@@ -1762,35 +325,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-4
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
+      Value: ns-4
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-3
@@ -1804,35 +355,23 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-3
+    - Key: namespace
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
+      Value: ns-3
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-2
@@ -1846,37 +385,40 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: app
+      Not: false
+      Value: app-2
+    - Key: namespace
       Not: true
-      Value: app-1
+      Value: ns-2
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
     - Key: app
       Not: true
       Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
+      Value: ns-10
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-10
+    - Key: namespace
+      Not: true
       Value: ns-10
   - Conf:
       action: AllowWithShadowDeny
@@ -1890,414 +432,9 @@ Rules:
     - Key: app
       Not: true
       Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
-      Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
     - Key: namespace
       Not: false
       Value: ns-1
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
   - Conf:
       action: AllowWithShadowDeny
     Origin:
@@ -2313,30 +450,18 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-1
-    - Key: namespace
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
       Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
+      Value: app-9
     - Key: namespace
       Not: true
       Value: ns-9
@@ -2351,61 +476,127 @@ Rules:
     Subset:
     - Key: app
       Not: true
-      Value: app-1
-    - Key: app
-      Not: true
-      Value: app-10
-    - Key: app
-      Not: true
-      Value: app-2
-    - Key: app
-      Not: true
-      Value: app-3
-    - Key: app
-      Not: true
-      Value: app-4
-    - Key: app
-      Not: true
-      Value: app-5
-    - Key: app
-      Not: true
-      Value: app-6
-    - Key: app
-      Not: true
-      Value: app-7
-    - Key: app
-      Not: true
       Value: app-8
-    - Key: app
-      Not: true
-      Value: app-9
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
     - Key: namespace
       Not: true
       Value: ns-8
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-7
     - Key: namespace
       Not: true
-      Value: ns-9
+      Value: ns-7
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-6
+    - Key: namespace
+      Not: true
+      Value: ns-6
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-5
+    - Key: namespace
+      Not: true
+      Value: ns-5
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-4
+    - Key: namespace
+      Not: true
+      Value: ns-4
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-3
+    - Key: namespace
+      Not: true
+      Value: ns-3
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-2
+    - Key: namespace
+      Not: true
+      Value: ns-2
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-10
+    - Key: namespace
+      Not: true
+      Value: ns-10
+  - Conf:
+      action: AllowWithShadowDeny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: true
+      Value: app-1
+    - Key: namespace
+      Not: true
+      Value: ns-1
