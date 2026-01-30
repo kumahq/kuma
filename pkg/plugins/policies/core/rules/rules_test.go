@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-<<<<<<< HEAD
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -16,22 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/file"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/context"
-=======
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtrafficpermission_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/file"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/xds/context"
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
 )
 
 var _ = Describe("Rules", func() {
@@ -916,7 +902,7 @@ var _ = Describe("Rules", func() {
 				PolicyItem: &meshtrafficpermission_api.From{
 					TargetRef: targetRef,
 					Default: meshtrafficpermission_api.Conf{
-						Action: pointer.To(action),
+						Action: action,
 					},
 				},
 				ResourceMeta: &test_model.ResourceMeta{Name: "test-policy", Mesh: "default"},
@@ -926,7 +912,7 @@ var _ = Describe("Rules", func() {
 
 		// Helper to verify semantic equivalence: both approaches should return
 		// the same configuration for any given element
-		verifySemanticEquivalence := func(rulesCliques, rulesComponents core_rules.Rules, elements []subsetutils.Element) {
+		verifySemanticEquivalence := func(rulesCliques, rulesComponents core_rules.Rules, elements []core_rules.Element) {
 			for _, elem := range elements {
 				confCliques := rulesCliques.Compute(elem)
 				confComponents := rulesComponents.Compute(elem)
@@ -953,15 +939,15 @@ var _ = Describe("Rules", func() {
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1"},
+					Tags: map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-2"},
+					Tags: map[string]string{"app": "app-2"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-3"},
+					Tags: map[string]string{"app": "app-3"},
 				}, "Allow"),
 			}
 
@@ -976,7 +962,7 @@ var _ = Describe("Rules", func() {
 			Expect(rulesComponents).ToNot(BeEmpty())
 
 			// Verify semantic equivalence - this is the key property
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"app": "app-1"},
 				{"app": "app-2"},
 				{"app": "app-3"},
@@ -993,15 +979,15 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"zone": "us-east"},
+					Tags: map[string]string{"zone": "us-east"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"zone": "us-east", "env": "prod"},
+					Tags: map[string]string{"zone": "us-east", "env": "prod"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"env": "prod"},
+					Tags: map[string]string{"env": "prod"},
 				}, "AllowWithShadowDeny"),
 			}
 
@@ -1012,7 +998,7 @@ var _ = Describe("Rules", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// For fully connected subsets, both approaches should produce similar results
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"zone": "us-east", "env": "prod"},
 				{"zone": "us-east", "env": "dev"},
 				{"zone": "us-west", "env": "prod"},
@@ -1030,15 +1016,15 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1", "version": "v1"},
+					Tags: map[string]string{"app": "app-1", "version": "v1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1"},
+					Tags: map[string]string{"app": "app-1"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1", "version": "v2"},
+					Tags: map[string]string{"app": "app-1", "version": "v2"},
 				}, "AllowWithShadowDeny"),
 			}
 
@@ -1048,7 +1034,7 @@ var _ = Describe("Rules", func() {
 			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"app": "app-1", "version": "v1"},
 				{"app": "app-1", "version": "v2"},
 				{"app": "app-1", "version": "v3"}, // matches only B
@@ -1081,7 +1067,7 @@ var _ = Describe("Rules", func() {
 			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			verifySemanticEquivalence(rulesCliques, rulesComponents, []subsetutils.Element{
+			verifySemanticEquivalence(rulesCliques, rulesComponents, []core_rules.Element{
 				{"kuma.io/service": "any"},
 			})
 		})
@@ -1091,11 +1077,11 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1"},
+					Tags: map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1"},
+					Tags: map[string]string{"app": "app-1"},
 				}, "Deny"),
 			}
 
@@ -1105,7 +1091,7 @@ var _ = Describe("Rules", func() {
 			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"app": "app-1"},
 				{"app": "app-2"},
 			}
@@ -1122,7 +1108,7 @@ var _ = Describe("Rules", func() {
 			for i := 1; i <= 5; i++ {
 				items = append(items, createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{
+					Tags: map[string]string{
 						"app":       fmt.Sprintf("app-%d", i),
 						"namespace": fmt.Sprintf("ns-%d", i),
 					},
@@ -1144,7 +1130,7 @@ var _ = Describe("Rules", func() {
 				len(rulesCliques), len(rulesComponents))
 
 			// Still semantically equivalent
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"app": "app-1", "namespace": "ns-1"},
 				{"app": "app-2", "namespace": "ns-2"},
 				{"app": "app-1", "namespace": "ns-2"}, // mix of tags - should match Mesh
@@ -1159,11 +1145,11 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-1"},
+					Tags: map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"app": "app-2"},
+					Tags: map[string]string{"app": "app-2"},
 				}, "Deny"),
 			}
 
@@ -1174,7 +1160,7 @@ var _ = Describe("Rules", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// Both should handle disjoint subsets correctly
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"app": "app-1"},
 				{"app": "app-2"},
 				{"app": "app-3"},
@@ -1187,11 +1173,11 @@ var _ = Describe("Rules", func() {
 				createPolicyItem(common_api.TargetRef{Kind: common_api.Mesh}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"zone": "us-east", "env": "prod", "team": "platform"},
+					Tags: map[string]string{"zone": "us-east", "env": "prod", "team": "platform"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"zone": "us-west", "env": "dev", "team": "product"},
+					Tags: map[string]string{"zone": "us-west", "env": "dev", "team": "product"},
 				}, "Deny"),
 			}
 
@@ -1201,7 +1187,7 @@ var _ = Describe("Rules", func() {
 			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"zone": "us-east", "env": "prod", "team": "platform"},
 				{"zone": "us-west", "env": "dev", "team": "product"},
 				{"zone": "us-east", "env": "dev"},
@@ -1218,19 +1204,19 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"zone": "us-east"},
+					Tags: map[string]string{"zone": "us-east"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"zone": "us-east", "env": "prod"},
+					Tags: map[string]string{"zone": "us-east", "env": "prod"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"env": "prod"},
+					Tags: map[string]string{"env": "prod"},
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
 					Kind: common_api.MeshSubset,
-					Tags: &map[string]string{"env": "dev"},
+					Tags: map[string]string{"env": "dev"},
 				}, "Allow"),
 			}
 
@@ -1240,7 +1226,7 @@ var _ = Describe("Rules", func() {
 			rulesComponents, err := core_rules.BuildRulesForTesting(items, true, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			testElements := []subsetutils.Element{
+			testElements := []core_rules.Element{
 				{"zone": "us-east", "env": "prod"},
 				{"zone": "us-east", "env": "dev"},
 				{"zone": "us-west", "env": "prod"},

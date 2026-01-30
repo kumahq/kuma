@@ -1,1632 +1,5 @@
 Rules:
   127.0.0.1:80:
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-=======
-  - Conf:
-      action: Allow
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-<<<<<<< HEAD
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-      Value: ns-9
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-8
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-8
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-7
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-7
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-6
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-6
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-5
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-5
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-4
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-4
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-3
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-3
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-2
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-2
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-10
-<<<<<<< HEAD
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-10
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-9
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: false
-      Value: ns-1
-  - BackendRefOriginIndex: {}
-    Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-1
-    - Key: namespace
-      Not: false
-      Value: ns-1
-<<<<<<< HEAD
   - BackendRefOriginIndex: {}
     Conf:
       action: Allow
@@ -1645,9 +18,150 @@ Rules:
       Value: ns-9
   - BackendRefOriginIndex: {}
     Conf:
-=======
-  - Conf:
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-8
+    - Key: namespace
+      Not: false
+      Value: ns-8
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-7
+    - Key: namespace
+      Not: false
+      Value: ns-7
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-6
+    - Key: namespace
+      Not: false
+      Value: ns-6
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-5
+    - Key: namespace
+      Not: false
+      Value: ns-5
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-4
+    - Key: namespace
+      Not: false
+      Value: ns-4
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-3
+    - Key: namespace
+      Not: false
+      Value: ns-3
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-2
+    - Key: namespace
+      Not: false
+      Value: ns-2
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-10
+    - Key: namespace
+      Not: false
+      Value: ns-10
+  - BackendRefOriginIndex: {}
+    Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-allow-kuma-one
+      type: MeshTrafficPermission
+    Subset:
+    - Key: app
+      Not: false
+      Value: app-1
+    - Key: namespace
+      Not: false
+      Value: ns-1
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -1678,16 +192,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-9
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1711,16 +224,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-8
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1744,16 +256,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-7
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1777,16 +288,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-6
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1810,16 +320,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-5
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1843,16 +352,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-4
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1876,16 +384,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-3
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1909,16 +416,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-2
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1942,16 +448,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-10
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -1971,410 +476,19 @@ Rules:
     Subset:
     - Key: app
       Not: false
-<<<<<<< HEAD
-      Value: app-9
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-8
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-7
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-6
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-5
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-4
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-3
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-2
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-      Value: app-10
-    - Key: namespace
-      Not: true
-      Value: ns-1
-    - Key: namespace
-      Not: true
-      Value: ns-10
-    - Key: namespace
-      Not: true
-      Value: ns-2
-    - Key: namespace
-      Not: true
-      Value: ns-3
-    - Key: namespace
-      Not: true
-      Value: ns-4
-    - Key: namespace
-      Not: true
-      Value: ns-5
-    - Key: namespace
-      Not: true
-      Value: ns-6
-    - Key: namespace
-      Not: true
-      Value: ns-7
-    - Key: namespace
-      Not: true
-      Value: ns-8
-    - Key: namespace
-      Not: true
-      Value: ns-9
-  - BackendRefOriginIndex: {}
-    Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-allow-kuma-one
-      type: MeshTrafficPermission
-    Subset:
-    - Key: app
-      Not: false
-=======
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
       Value: app-1
     - Key: namespace
       Not: true
       Value: ns-1
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2398,16 +512,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-8
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2415,16 +528,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-7
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2432,16 +544,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-6
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2449,16 +560,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-5
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2466,16 +576,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-4
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2483,16 +592,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-3
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2500,16 +608,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-2
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true
@@ -2517,16 +624,15 @@ Rules:
     - Key: namespace
       Not: true
       Value: ns-10
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_default___mtp-allow-kuma-one_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-allow-kuma-one
       type: MeshTrafficPermission
-    OriginByMatches: {}
     Subset:
     - Key: app
       Not: true

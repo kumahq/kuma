@@ -3,12 +3,8 @@ package rules
 import (
 	"encoding"
 	"fmt"
-<<<<<<< HEAD
 	"maps"
-=======
 	"os"
-	"slices"
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
 	"sort"
 	"strings"
 
@@ -733,15 +729,9 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 
 	sortComponents(nodeGroups)
 
-<<<<<<< HEAD
-	for _, nodes := range components {
-		tagSet := map[Tag]bool{}
-		for _, node := range nodes {
-=======
 	for _, group := range nodeGroups {
-		tagSet := map[subsetutils.Tag]bool{}
+		tagSet := map[Tag]bool{}
 		for _, node := range group {
->>>>>>> 114094380d (feat(MeshTrafficPermission): use cliques instead of connected components as an optimization when building rules (#15412))
 			for _, t := range subsets[node.ID()] {
 				tagSet[t] = true
 			}
