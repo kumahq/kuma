@@ -640,6 +640,15 @@ networking:
   advertisedPort: 10001
 ```
 
+Alternative label approach using boolean toggles instead of a role enum:
+
+```yaml
+labels:
+  kuma.io/proxy-type: zoneproxy
+  kuma.io/ingress-enabled: "true"
+  kuma.io/egress-enabled: "true"
+```
+
 The `kuma.io/zone-proxy-role` label controls which listeners the control plane generates:
 - `both`: Generate both ingress and egress listeners (default)
 - `ingress`: Generate only ingress listeners
@@ -655,8 +664,8 @@ This provides the same flexibility as separate types while simplifying the conce
   - Lower resource footprint when combined
   - Aligns with the reality that both are just Envoy with different listeners
   - Easier policy application—target all zone traffic or specific roles via labels
+  - Simpler XDS generator code—unified Dataplane allows sharing generator logic instead of separate code paths for ZoneIngress vs ZoneEgress (see `pkg/xds/generator/zoneproxy/`)
 - Disadvantages:
-  - Requires migration from current ZoneIngress/ZoneEgress resources
   - Combined deployment means single failure point (mitigated by replicas)
 
 **Option B: Separate proxies (current implementation)**
@@ -664,7 +673,6 @@ This provides the same flexibility as separate types while simplifying the conce
 Maintains distinct ZoneIngress and ZoneEgress resource types, each generating their specific listener configurations.
 
 - Advantages:
-  - No migration required
   - Independent scaling already understood by operators
   - Clear separation of concerns
 - Disadvantages:
