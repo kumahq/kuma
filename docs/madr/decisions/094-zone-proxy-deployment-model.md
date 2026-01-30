@@ -34,6 +34,574 @@ This document addresses the following questions:
 
 ## Design
 
+### Tooling and User Flows
+
+With zone proxies becoming mesh-scoped, users need to specify which mesh(es) their zone proxies should serve.
+This creates different UX challenges depending on the deployment context:
+
+1. **Konnect (MinK)** - Global CP is managed, UI has full mesh visibility
+2. **Self-hosted Global CP** - Zone CP deployed via Helm, limited mesh visibility at install time
+3. **Unfederated Zone** - Standalone zone, no global CP
+4. **Terraform** - Infrastructure-as-code with dependency management
+
+#### Key Insight
+
+The core challenge is: **How does the deployment tool know which meshes exist?**
+
+- Konnect UI: Has API access to global CP → knows all meshes
+- Helm: Runs at install time → no API access to control plane
+- Terraform: Can query resources → can enforce dependencies
+
+#### Flow 1: Konnect UI (Mesh in Konnect)
+
+##### Current State
+
+User sees checkboxes: ☑ Ingress ☑ Egress
+Generates `values.yaml` with `ingress.enabled: true` / `egress.enabled: true`
+
+##### Proposed Flow
+
+**Step 1: UI Enhancement**
+
+Replace simple checkboxes with a mesh-aware configuration:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Zone Proxy Configuration                                │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ Deployment mode:                                        │
+│   ○ Unified (recommended) - single proxy, both roles    │
+│   ○ Separate - independent ingress/egress proxies       │
+│                                                         │
+│ Meshes to serve:                                        │
+│   ☑ payments-mesh                                       │
+│   ☑ orders-mesh                                         │
+│   ☐ staging-mesh                                        │
+│   [+ Add all meshes]                                    │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Step 2: Generated values.yaml**
+
+```yaml
+kuma:
+  controlPlane:
+    mode: zone
+    zone: zone-1
+    kdsGlobalAddress: grpcs://us.mesh.sync.konghq.tech:443
+
+  zoneProxy:
+    # New unified structure
+    meshes:
+      - name: payments-mesh
+        role: both  # or: ingress, egress
+        replicas: 2
+      - name: orders-mesh
+        role: both
+        replicas: 1
+
+    # Global defaults (can be overridden per-mesh)
+    defaults:
+      role: both
+      replicas: 1
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 512Mi
+```
+
+**Why this works for Konnect:**
+
+- Konnect UI has API access to global CP
+- Can fetch mesh list via `GET /meshes`
+- Pre-populates checkbox list with existing meshes
+- Validation happens UI-side before generating values.yaml
+
+#### Flow 2: Self-Hosted Global CP (Helm)
+
+##### Challenge
+
+- Helm runs at `helm install` time
+- Zone CP hasn't connected to Global CP yet
+- No way to query mesh list from Global CP
+
+##### Options Considered
+
+**Option A: Accept mesh names, fail at runtime (Recommended)**
+
+```yaml
+zoneProxy:
+  meshes:
+    - name: payments-mesh
+      role: both
+```
+
+- Helm deploys zone proxy Deployment
+- Zone proxy connects to CP, requests config for `payments-mesh`
+- **If mesh doesn't exist**: CP returns error, zone proxy logs warning, retries
+- **User experience**: Check zone proxy logs, see "mesh 'payments-mesh' not found"
+
+Pros:
+- Simple Helm chart
+- Works offline
+- Clear error at runtime
+
+Cons:
+- Delayed feedback (not at install time)
+
+**Option B: Helm pre-install hook to validate (Complex)**
+
+```yaml
+# pre-install-validate-meshes-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: validate-meshes
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    spec:
+      containers:
+      - name: validate
+        image: curlimages/curl
+        command:
+        - /bin/sh
+        - -c
+        - |
+          for mesh in {{ .Values.zoneProxy.meshes | join " " }}; do
+            curl -f https://global-cp/meshes/$mesh || exit 1
+          done
+```
+
+Pros:
+- Fails fast at install time
+
+Cons:
+- Requires network access to Global CP from installer
+- Auth complexity
+
+##### Recommendation for Self-Hosted
+
+**Option A** with good error messaging:
+
+1. User specifies mesh names in values.yaml
+2. Helm deploys zone proxy
+3. Zone proxy logs clear message if mesh doesn't exist:
+   ```
+   WARN: Mesh 'payments-mesh' not found. Zone proxy waiting for mesh creation.
+         Create the mesh on the Global CP or check the mesh name.
+   ```
+4. Once mesh exists, zone proxy auto-registers
+
+This matches the "eventual consistency" model Kuma already uses.
+
+#### Flow 3: Unfederated Zone (Standalone)
+
+##### Context
+
+- No `kdsGlobalAddress` configured
+- Zone CP manages meshes locally
+- Zone proxy is "local" to this zone
+
+##### Proposed Flow
+
+```yaml
+kuma:
+  controlPlane:
+    mode: zone
+    zone: zone-1
+    # No kdsGlobalAddress = unfederated
+
+  zoneProxy:
+    meshes:
+      - name: default
+        role: both
+
+  # Optional:
+  meshes:
+    - name: default
+      mtls:
+        enabled: true
+        backends:
+          - name: builtin
+            type: builtin
+```
+
+**Helm Logic:**
+
+```yaml
+{{- if not .Values.controlPlane.kdsGlobalAddress }}
+  {{- /* Unfederated zone - we can create meshes */}}
+  {{- range .Values.meshes }}
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: {{ .name }}
+spec:
+  mtls: {{ .mtls | toYaml | nindent 4 }}
+---
+  {{- end }}
+{{- end }}
+```
+
+**Validation:**
+
+- If unfederated AND mesh not in `.Values.meshes` → Helm error
+- Template can cross-reference: zone proxy mesh must exist in meshes list
+
+#### Flow 4: Terraform
+
+##### Key Advantage
+
+Terraform has explicit resource dependencies and can query existing resources.
+
+##### Proposed Resource Structure
+
+```hcl
+# Mesh must exist (either created or data-sourced)
+resource "kuma_mesh" "payments" {
+  name = "payments-mesh"
+
+  mtls {
+    enabled = true
+    backend {
+      name = "builtin"
+      type = "builtin"
+    }
+  }
+}
+
+# Zone proxy explicitly depends on mesh
+resource "kuma_zone_proxy" "payments_proxy" {
+  name = "zone-proxy-payments"
+  mesh = kuma_mesh.payments.name  # Explicit dependency!
+
+  role = "both"  # or "ingress", "egress"
+
+  networking {
+    address            = "10.0.0.1"
+    advertised_address = "203.0.113.1"
+    advertised_port    = 10001
+  }
+}
+
+# Or reference existing mesh
+data "kuma_mesh" "existing" {
+  name = "existing-mesh"
+}
+
+resource "kuma_zone_proxy" "existing_proxy" {
+  mesh = data.kuma_mesh.existing.name
+  # ...
+}
+```
+
+##### Validation Behavior
+
+**Option A: Provider validates mesh existence**
+
+```hcl
+resource "kuma_zone_proxy" "test" {
+  mesh = "nonexistent-mesh"  # Error during plan/apply
+  # ...
+}
+```
+
+Provider calls `GET /meshes/nonexistent-mesh`:
+- 404 → Terraform error: "Mesh 'nonexistent-mesh' does not exist"
+- 200 → Proceed with zone proxy creation
+
+**Option B: Require mesh reference (stronger)**
+
+```hcl
+resource "kuma_zone_proxy" "test" {
+  # mesh_name = "foo"  # NOT allowed
+  mesh_id = kuma_mesh.payments.id  # REQUIRED reference
+}
+```
+
+This is stricter but ensures proper dependency ordering.
+
+##### Recommended Terraform Approach
+
+1. **Soft validation**: Accept mesh name string, validate at apply time
+2. **Dependency hint**: Document that users SHOULD use resource references
+3. **Error message**: Clear error if mesh doesn't exist at apply time
+
+```
+Error: Mesh "payments-mesh" not found
+
+  on main.tf line 15, in resource "kuma_zone_proxy" "proxy":
+  15:   mesh = "payments-mesh"
+
+The specified mesh does not exist. Either:
+  - Create the mesh first: resource "kuma_mesh" "payments" { ... }
+  - Or reference an existing mesh: data "kuma_mesh" "payments" { ... }
+```
+
+#### Summary: Validation Strategies by Tool
+
+| Tool | Can Validate Mesh? | Strategy |
+|------|-------------------|----------|
+| **Konnect UI** | Yes (API access) | Pre-populate mesh list, validate before generating YAML |
+| **Helm (federated)** | No (offline install) | Accept names, fail gracefully at runtime with clear logs |
+| **Helm (unfederated)** | Yes (creates mesh) | Cross-reference in templates, fail at install if mismatch |
+| **Terraform** | Yes (API access) | Validate at plan/apply, encourage resource references |
+
+#### Design Decisions
+
+##### 1. Mesh Deletion Handling
+
+**Challenge**: Zone proxy Pod cannot delete its own Deployment.
+
+**Options analyzed**:
+
+| Option | How it works | Pros | Cons |
+|--------|-------------|------|------|
+| **A. CP garbage collection** | CP watches mesh deletions, removes orphaned zone proxy Dataplanes | Automatic cleanup | Only cleans Dataplane CR, K8s Deployment stays |
+| **B. Finalizers on Mesh** | Mesh has finalizer, deletion blocked until zone proxies removed | Clear ordering | User must manually remove zone proxies first |
+| **C. Owner references** | Zone proxy Dataplane has ownerRef to Mesh | K8s cascading delete | May not work for Universal deployments |
+| **D. Helm uninstall** | User runs `helm uninstall` for that mesh's zone proxy | Explicit, safe | Manual step required |
+
+**Recommendation**: Combination approach:
+1. **CP garbage collection** for Dataplane resources (automatic)
+2. **Zone proxy logs warning** when mesh disappears (visibility)
+3. **Documentation** that K8s Deployment must be cleaned up separately (Helm uninstall or delete)
+
+For Helm, we could create one release per mesh:
+```bash
+helm install zone-proxy-payments kuma/kuma-zone-proxy -f payments-values.yaml
+helm install zone-proxy-orders kuma/kuma-zone-proxy -f orders-values.yaml
+```
+
+Then cleanup is: `helm uninstall zone-proxy-payments`
+
+##### 2. Per-Mesh Services (Not Shared)
+
+**Decision**: Each mesh gets its own Service/LoadBalancer.
+
+**Rationale**: With mesh-scoped zone proxies:
+- Each mesh has **different mTLS CA certificates**
+- Zone ingress must present the correct mesh's certificate
+- Zone egress must verify the correct mesh's CA
+- Sharing a LoadBalancer would require SNI-based cert selection (complex)
+
+**Per-mesh services provide**:
+- Proper mTLS isolation
+- Simpler Envoy configuration
+- Independent scaling and failover
+- Clear network boundaries
+
+**Cost implication**: More LoadBalancers = higher cloud cost.
+Users can use NodePort or Ingress controllers to reduce LB count if needed.
+
+##### 3. Migration Path from Global Zone Proxies
+
+**Phased migration**:
+
+1. **Phase 1**: Deploy mesh-scoped zone proxies alongside global ones
+2. **Phase 2**: Update MeshIdentity/policies to use mesh-scoped proxies
+3. **Phase 3**: Drain traffic from global zone proxies
+4. **Phase 4**: Remove global zone proxy deployment
+
+**Helm migration**:
+```yaml
+# Before (global)
+ingress:
+  enabled: true
+egress:
+  enabled: true
+
+# After (mesh-scoped)
+ingress:
+  enabled: false  # Disable global
+egress:
+  enabled: false
+
+zoneProxy:
+  meshes:
+    - name: payments-mesh
+      role: both
+```
+
+#### Helm Release Structure Options
+
+##### Option 1: Single Release (CP + All Zone Proxies)
+
+```bash
+helm install kuma kuma/kuma -f values.yaml
+```
+
+```yaml
+# values.yaml
+controlPlane:
+  mode: zone
+  zone: zone-1
+
+zoneProxy:
+  meshes:
+    - name: payments-mesh
+      role: both
+    - name: orders-mesh
+      role: both
+```
+
+| Aspect | Analysis |
+|--------|----------|
+| **Simplicity** | ✅ One command to install everything |
+| **Upgrades** | ✅ Single `helm upgrade` updates all components |
+| **Lifecycle coupling** | ⚠️ Adding/removing a mesh requires full release upgrade |
+| **Failure blast radius** | ⚠️ Bad values.yaml can break entire zone |
+| **Cleanup** | ⚠️ Can't remove one mesh's zone proxy without touching others |
+| **GitOps** | ✅ Single source of truth for zone configuration |
+
+**Best for**: Small deployments, teams preferring simplicity, GitOps workflows.
+
+##### Option 2: Two Releases (CP separate from Zone Proxies)
+
+```bash
+helm install kuma-cp kuma/kuma -f cp-values.yaml
+helm install kuma-zone-proxies kuma/kuma-zone-proxy -f zone-proxy-values.yaml
+```
+
+```yaml
+# cp-values.yaml
+controlPlane:
+  mode: zone
+  zone: zone-1
+
+# zone-proxy-values.yaml (new chart)
+zoneProxy:
+  meshes:
+    - name: payments-mesh
+    - name: orders-mesh
+```
+
+| Aspect | Analysis |
+|--------|----------|
+| **Simplicity** | ⚠️ Two charts to manage |
+| **Upgrades** | ✅ Can upgrade CP independently of zone proxies |
+| **Lifecycle coupling** | ✅ Zone proxy changes don't affect CP stability |
+| **Failure blast radius** | ✅ Bad zone proxy config doesn't break CP |
+| **Cleanup** | ⚠️ Still can't remove one mesh without touching others |
+| **GitOps** | ✅ Clear separation of concerns |
+
+**Best for**: Production environments, teams wanting CP stability isolation.
+
+##### Option 3: N Releases (CP + One per Mesh)
+
+```bash
+helm install kuma-cp kuma/kuma -f cp-values.yaml
+helm install zp-payments kuma/kuma-zone-proxy -f payments-values.yaml
+helm install zp-orders kuma/kuma-zone-proxy -f orders-values.yaml
+```
+
+```yaml
+# payments-values.yaml
+zoneProxy:
+  mesh: payments-mesh
+  role: both
+  replicas: 2
+```
+
+| Aspect | Analysis |
+|--------|----------|
+| **Simplicity** | ❌ Many releases to manage |
+| **Upgrades** | ✅ Fine-grained control per mesh |
+| **Lifecycle coupling** | ✅ Each mesh fully independent |
+| **Failure blast radius** | ✅ Issues isolated to single mesh |
+| **Cleanup** | ✅ `helm uninstall zp-payments` removes just that mesh |
+| **GitOps** | ⚠️ Multiple files/releases to track |
+| **Scaling** | ✅ Different resource profiles per mesh |
+
+**Best for**: Large deployments, multi-team environments, meshes with different SLAs.
+
+#### Namespace Placement Options
+
+##### Option A: kuma-system Namespace (Centralized)
+
+```yaml
+# All zone proxies in kuma-system
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zone-proxy-payments-mesh
+  namespace: kuma-system
+```
+
+| Aspect | Analysis |
+|--------|----------|
+| **Operations** | ✅ All Kuma components in one place |
+| **RBAC** | ✅ Simple - one namespace to grant access |
+| **Monitoring** | ✅ Single namespace to scrape metrics |
+| **Isolation** | ❌ All meshes share failure domain |
+| **Resource quotas** | ❌ Hard to enforce per-mesh limits |
+| **Multi-tenancy** | ❌ Teams can't own their zone proxy |
+
+**Best for**: Single-team operations, simpler environments.
+
+##### Option B: Per-Mesh Namespace
+
+```yaml
+# Zone proxy in mesh's namespace
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zone-proxy
+  namespace: payments-mesh  # or payments-system
+```
+
+| Aspect | Analysis |
+|--------|----------|
+| **Operations** | ⚠️ Zone proxies distributed across namespaces |
+| **RBAC** | ✅ Teams can own their mesh's infrastructure |
+| **Monitoring** | ⚠️ Need to aggregate from multiple namespaces |
+| **Isolation** | ✅ Mesh failure doesn't affect others |
+| **Resource quotas** | ✅ Per-namespace quotas apply to zone proxy |
+| **Multi-tenancy** | ✅ Clear ownership boundaries |
+
+**Best for**: Multi-team, multi-tenant environments, strict isolation requirements.
+
+##### Option C: Dedicated Zone Proxy Namespace
+
+```yaml
+# All zone proxies in dedicated namespace
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zone-proxy-payments-mesh
+  namespace: kuma-zone-proxies
+```
+
+| Aspect | Analysis |
+|--------|----------|
+| **Operations** | ✅ All zone proxies together, separate from CP |
+| **RBAC** | ✅ Can grant zone proxy access without CP access |
+| **Monitoring** | ✅ Single namespace for zone proxy metrics |
+| **Isolation** | ⚠️ Zone proxies share namespace, but separate from CP |
+| **Resource quotas** | ⚠️ Can limit total zone proxy resources |
+| **Multi-tenancy** | ⚠️ Partial - zone proxies separate from apps |
+
+**Best for**: Teams wanting separation from CP but not full per-mesh isolation.
+
+##### Recommendation
+
+**Default to kuma-system**, make namespace configurable:
+
+```yaml
+zoneProxy:
+  meshes:
+    - name: payments-mesh
+      namespace: kuma-system  # default
+    - name: orders-mesh
+      namespace: orders-system  # override for this mesh
+```
+
+This allows gradual migration to per-mesh namespaces without breaking existing setups.
+
 ### Question 1: Unified vs Separate Zone Proxies
 
 #### Core Concept
