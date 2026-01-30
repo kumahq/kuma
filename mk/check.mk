@@ -10,7 +10,7 @@ endif
 tidy:
 	@TOP=$(shell pwd) && \
 	for m in $$(find . -name go.mod) ; do \
-		( cd $$(dirname $$m) && go mod tidy ) ; \
+		( cd $$(dirname $$m) && $(GO) mod tidy ) ; \
 	done
 
 .PHONY: shellcheck
@@ -40,7 +40,7 @@ ginkgo/unfocus:
 
 .PHONY: ginkgo/lint
 ginkgo/lint:
-	go run $(TOOLS_DIR)/ci/check_test_files.go
+	$(GO) run $(TOOLS_DIR)/ci/check_test_files.go
 
 .PHONY: format/common
 format/common: generate docs tidy ginkgo/unfocus fmt/ci
