@@ -820,7 +820,8 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 
 			// and do not redirect any dns request
 			Eventually(ns.UnsafeExec(func() {
-				Expect(udp.DialUDPAddrWithHelloMsgAndGetReply(randomAddressDnsRequest, randomAddressDnsRequest)).To(Succeed())
+				_, err := udp.DialUDPAddrWithHelloMsgAndGetReply(randomAddressDnsRequest, randomAddressDnsRequest)
+				Expect(err).ToNot(HaveOccurred())
 			})).ShouldNot(BeClosed())
 
 			// then
@@ -898,7 +899,8 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 
 			// and do not redirect any dns request
 			Eventually(ns.UnsafeExec(func() {
-				Expect(udp.DialUDPAddrWithHelloMsgAndGetReply(randomAddressDnsRequest, randomAddressDnsRequest)).To(Succeed())
+				_, err := udp.DialUDPAddrWithHelloMsgAndGetReply(randomAddressDnsRequest, randomAddressDnsRequest)
+				Expect(err).ToNot(HaveOccurred())
 			})).ShouldNot(BeClosed())
 
 			// then
