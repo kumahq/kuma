@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -29,6 +30,20 @@ import (
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
+
+// useCliques controls the algorithm for grouping subsets when building rules.
+// Cliques (BronKerbosch) finds maximal fully-connected subgraphs, producing fewer
+// but more precise groups. Connected components finds all reachable nodes, which
+// may over-group subsets that don't directly relate. Cliques is the default as it
+// generates more accurate rules at the cost of slightly more computation.
+var useCliques = true
+
+func init() {
+	// TODO: remove ability to opt-out for the next major version https://github.com/kumahq/kuma/issues/15440
+	if v, ok := os.LookupEnv("KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM"); ok && v == "true" {
+		useCliques = false
+	}
+}
 
 type InboundListener struct {
 	Address string
@@ -399,6 +414,10 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
+	return buildRulesInternal(list, withNegations, useCliques)
+}
+
+func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
@@ -466,14 +485,18 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		}
 	}
 
-	// 3. Construct rules for all connected components of the graph independently
-	components := topo.ConnectedComponents(g)
+	var nodeGroups [][]graph.Node
+	if useCliques {
+		nodeGroups = topo.BronKerbosch(g)
+	} else {
+		nodeGroups = topo.ConnectedComponents(g)
+	}
 
-	sortComponents(components)
+	sortComponents(nodeGroups)
 
-	for _, nodes := range components {
+	for _, group := range nodeGroups {
 		tagSet := map[subsetutils.Tag]bool{}
-		for _, node := range nodes {
+		for _, node := range group {
 			for _, t := range subsets[node.ID()] {
 				tagSet[t] = true
 			}
