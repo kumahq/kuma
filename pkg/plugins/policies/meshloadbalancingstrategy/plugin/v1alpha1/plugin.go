@@ -336,8 +336,16 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		return nil
 	}
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshName := meshResources.Mesh.GetMeta().GetName()
+
 		for serviceName, dynamic := range meshResources.Dynamic {
-			meshName := meshResources.Mesh.GetMeta().GetName()
+			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+			cluster := clusters.Egress[clusterName]
+			if cluster == nil {
+				// unmatch the mesh, we don't configure the MeshLoadBalancingStrategy policy cross mesh, so we skip it
+				continue
+			}
+
 			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
 			if !ok {
 				continue
@@ -349,8 +357,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			}
 			conf := rule.Conf.(api.Conf)
 
-			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion, true, egress.OriginEgress)
+			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, cluster, endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion, true, egress.OriginEgress)
 			if err != nil {
 				return err
 			}
