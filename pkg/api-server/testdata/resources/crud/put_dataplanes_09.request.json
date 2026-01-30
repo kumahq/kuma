@@ -1,15 +1,12 @@
 {
   "type": "Dataplane",
   "mesh": "default",
-  "name": "dp-4",
+  "name": "dp-6",
   "networking": {
     "address": "10.1.2.1",
     "inbound": [
       {
-        "port": 1234,
-        "tags": {
-          "version": "v1"
-        }
+        "port": 1234
       }
     ]
   }
