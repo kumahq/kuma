@@ -173,7 +173,7 @@ var _ = Describe("Zone Sync", func() {
 			return kds_client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-				kds_client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, ""),
+				kds_client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, "", len(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)))),
 				sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 				0,
 			)

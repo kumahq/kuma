@@ -40,7 +40,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		return client_v2.NewKDSSyncClient(
 			core.Log.WithName("kds-sink"),
 			registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-			client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, ""),
+			client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, "", len(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)))),
 			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"), 0,
 		)
 	}
