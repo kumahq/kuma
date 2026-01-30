@@ -34,6 +34,7 @@ KUBEBUILDER_ASSETS_VERSION=1.31
 
 GO=$(shell $(MISE) which go)
 export GO_VERSION=$(shell $(GO) mod edit -json | jq -r .Go)
+export GOLANGCI_LINT_VERSION=v$(shell grep 'golangci-lint' mise.toml | sed 's/.*= *"\(.*\)".*/\1/')
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
 
