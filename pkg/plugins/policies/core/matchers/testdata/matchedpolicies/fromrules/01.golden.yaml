@@ -4,24 +4,6 @@ InboundRules:
 Rules:
   1.1.1.1:8080:
   - Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: backend
-  - Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -40,6 +22,37 @@ Rules:
       Not: false
       Value: orders
   - Conf:
+      action: Allow
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+  - Conf:
+      action: Deny
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
+    OriginByMatches: {}
+    Subset:
+    - Key: kuma.io/service
+      Not: true
+      Value: orders
+  - Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -52,9 +65,6 @@ Rules:
     - Key: kuma.io/service
       Not: true
       Value: backend
-    - Key: kuma.io/service
-      Not: true
-      Value: orders
   1.1.1.1:8081:
   - Conf:
       action: Deny
