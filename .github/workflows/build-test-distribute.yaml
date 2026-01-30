@@ -51,7 +51,7 @@ jobs:
       - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           args: --fix=false --verbose
-          version: ""
+          version: v1.64.8
       - name: Run clang-format style check for Protobuf
         uses: jidicula/clang-format-action@4726374d1aa3c6aecf132e5197e498979588ebc8 # v4.15.0
         with:
