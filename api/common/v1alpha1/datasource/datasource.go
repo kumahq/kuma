@@ -96,16 +96,6 @@ func validateFilePath(path string) error {
 		return fmt.Errorf("file path must be absolute: %s", path)
 	}
 
-	// Clean the path to resolve any . elements and normalize separators
-	cleanPath := filepath.Clean(path)
-
-	// Additional security check: ensure no suspicious path manipulation
-	// This checks if cleaning changed the path in unexpected ways
-	originalClean := filepath.Clean(path)
-	if cleanPath != originalClean {
-		return fmt.Errorf("file path contains suspicious elements: %s", path)
-	}
-
 	return nil
 }
 
