@@ -247,6 +247,13 @@ controlPlane:
         # This requires cert-manager to be installed in the cluster.
         # Note: When enabled, secretName and caBundle should be empty.
         enabled: false
+        # -- Reference to an existing issuer. If not specified, a self-signed issuer is created.
+        issuerRef:
+          # -- Name of an existing cert-manager Issuer or ClusterIssuer.
+          # If empty, a self-signed issuer will be created automatically.
+          name: ""
+          # -- Kind of the issuer: "Issuer" or "ClusterIssuer"
+          kind: "Issuer"
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""

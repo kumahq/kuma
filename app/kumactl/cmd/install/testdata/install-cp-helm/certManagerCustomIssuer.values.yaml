@@ -1,0 +1,11 @@
+controlPlane:
+  tls:
+    general:
+      # Override the test's --tls-general-secret and --tls-general-ca-bundle flags
+      secretName: ""
+      caBundle: ""
+      certManager:
+        enabled: true
+        issuerRef:
+          name: "my-custom-ca-issuer"
+          kind: "ClusterIssuer"
