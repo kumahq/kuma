@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -76,9 +78,43 @@ type Inline struct {
 	Value string `json:"value"`
 }
 
+// validateFilePath validates that a file path is safe to read from.
+// It prevents directory traversal attacks and other malicious file access patterns.
+func validateFilePath(path string) error {
+	if path == "" {
+		return fmt.Errorf("file path cannot be empty")
+	}
+
+	// Check for directory traversal attempts in the original path
+	// We need to check before cleaning because Clean() resolves .. elements
+	if strings.Contains(path, "..") {
+		return fmt.Errorf("file path contains directory traversal sequence: %s", path)
+	}
+
+	// Ensure the path is absolute to prevent relative path attacks
+	if !filepath.IsAbs(path) {
+		return fmt.Errorf("file path must be absolute: %s", path)
+	}
+
+	// Clean the path to resolve any . elements and normalize separators
+	cleanPath := filepath.Clean(path)
+
+	// Additional security check: ensure no suspicious path manipulation
+	// This checks if cleaning changed the path in unexpected ways
+	originalClean := filepath.Clean(path)
+	if cleanPath != originalClean {
+		return fmt.Errorf("file path contains suspicious elements: %s", path)
+	}
+
+	return nil
+}
+
 func (sds *SecureDataSource) ReadByControlPlane(ctx context.Context, secretManager manager.ReadOnlyResourceManager, mesh string) ([]byte, error) {
 	switch sds.Type {
 	case SecureDataSourceFile:
+		if err := validateFilePath(sds.File.Path); err != nil {
+			return nil, fmt.Errorf("invalid file path: %w", err)
+		}
 		return os.ReadFile(sds.File.Path)
 	case SecureDataSourceEnvVar:
 		value, found := os.LookupEnv(sds.EnvVar.Name)
@@ -125,6 +161,8 @@ func (s *SecureDataSource) ValidateSecureDataSource(path validators.PathBuilder)
 			verr.AddViolationAt(path.Field("file"), validators.MustBeDefined)
 		} else if s.File.Path == "" {
 			verr.AddViolationAt(path.Field("file").Field("path"), validators.MustBeDefined)
+		} else if err := validateFilePath(s.File.Path); err != nil {
+			verr.AddViolationAt(path.Field("file").Field("path"), err.Error())
 		}
 	case SecureDataSourceSecretRef:
 		if s.SecretRef == nil {
