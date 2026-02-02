@@ -143,9 +143,10 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restfu
 				origins = []mesh_proto.ResourceOrigin{mesh_proto.ZoneResourceOrigin, mesh_proto.GlobalResourceOrigin}
 			}
 
+			originalMeta := svc.GetMeta()
 			for _, origin := range origins {
 				overridden := ResourceMetaWithOverriddenOrigin{
-					ResourceMeta: svc.GetMeta(),
+					ResourceMeta: originalMeta,
 					origin:       origin,
 				}
 				svc.SetMeta(overridden)
