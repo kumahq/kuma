@@ -979,18 +979,6 @@ spec:
     - kuma-control-plane.kuma-system.svc
     - kuma-control-plane.kuma-system.svc.cluster.local
   issuerRef:
-    kind: Issuer
-    name: kuma-selfsigned-issuer
+    kind: ClusterIssuer
+    name: my-custom-ca-issuer
   secretName: kuma-tls-cert
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: kuma-selfsigned-issuer
-  namespace: kuma-system
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  selfSigned: {}
