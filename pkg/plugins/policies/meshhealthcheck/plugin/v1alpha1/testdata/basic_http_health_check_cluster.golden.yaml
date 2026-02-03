@@ -1,6 +1,4 @@
 commonLbConfig:
-  healthyPanicThreshold:
-    value: 62.9
   zoneAwareLbConfig:
     failTrafficOnPanic: true
 healthChecks:

@@ -3,7 +3,6 @@ package v1alpha1
 
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
@@ -54,13 +53,6 @@ type Conf struct {
 	// IntervalJitterPercent are both set, both of them will be used to
 	// increase the wait time.
 	IntervalJitterPercent *int32 `json:"intervalJitterPercent,omitempty"`
-	// Allows to configure panic threshold for Envoy cluster. If not specified,
-	// the default is 50%. To disable panic mode, set to 0%.
-	// Either int or decimal represented as string.
-	//
-	// Deprecated: the setting has been moved to MeshCircuitBreaker policy,
-	// please use MeshCircuitBreaker policy instead.
-	HealthyPanicThreshold *intstr.IntOrString `json:"healthyPanicThreshold,omitempty"`
 	// If set to true, Envoy will not consider any hosts when the cluster is in
 	// 'panic mode'. Instead, the cluster will fail all requests as if all hosts
 	// are unhealthy. This can help avoid potentially overwhelming a failing

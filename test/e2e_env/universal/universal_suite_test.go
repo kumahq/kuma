@@ -70,7 +70,6 @@ var (
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
 	_ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 	_ = Describe("HealthCheck", healthcheck.Policy)
-	_ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
 	_ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 	_ = Describe("Workload", workload.Workload, Ordered)
 	_ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)

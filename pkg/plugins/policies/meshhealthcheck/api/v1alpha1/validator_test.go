@@ -41,7 +41,6 @@ to:
       initialJitter: 5s # optional
       intervalJitter: 6s # optional
       intervalJitterPercent: 10 # optional
-      healthyPanicThreshold: 60 # optional, by default 50
       failTrafficOnPanic: true # optional, by default false
       noTrafficInterval: 10s # optional, by default 60s
       eventLogPath: "/tmp/health-check.log" # optional
@@ -214,15 +213,12 @@ to:
       unhealthyThreshold: 3
       healthyThreshold: 1
       intervalJitterPercent: 110
-      healthyPanicThreshold: -10
       grpc: {}
 `,
 				expected: `
 violations:
   - field: spec.to[0].default.intervalJitterPercent
-    message: must be in inclusive range [0, 100]
-  - field: spec.to[0].default.healthyPanicThreshold
-    message: must be in inclusive range [0.0, 100.0]`,
+    message: must be in inclusive range [0, 100]`,
 			}),
 			Entry("path is invalid", testCase{
 				inputYaml: `

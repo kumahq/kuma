@@ -3,8 +3,6 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     commonLbConfig:
-      healthyPanicThreshold:
-        value: 62.9
       zoneAwareLbConfig:
         failTrafficOnPanic: true
     edsClusterConfig:

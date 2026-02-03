@@ -10,9 +10,7 @@ import (
 	envoy_healthchecks "github.com/envoyproxy/go-control-plane/envoy/extensions/health_check/event_sinks/file/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
@@ -49,11 +47,6 @@ const (
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 	activeChecks := e.Conf
 
-	//nolint:staticcheck // SA1019 Backward compatibility: process deprecated HealthyPanicThreshold moved to MeshCircuitBreaker
-	err := healthPanicThreshold(cluster, activeChecks.HealthyPanicThreshold)
-	if err != nil {
-		return err
-	}
 	failTrafficOnPanic(cluster, activeChecks.FailTrafficOnPanic)
 
 	tcp := activeChecks.Tcp
@@ -223,21 +216,6 @@ func grpcHealthCheck(
 	}
 }
 
-func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *intstr.IntOrString) error {
-	if value == nil {
-		return nil
-	}
-	if cluster.CommonLbConfig == nil {
-		cluster.CommonLbConfig = &envoy_cluster.Cluster_CommonLbConfig{}
-	}
-	percentage, err := envoyPercent(*value)
-	if err != nil {
-		return err
-	}
-	cluster.CommonLbConfig.HealthyPanicThreshold = percentage
-	return nil
-}
-
 func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *bool) {
 	if value == nil {
 		return
@@ -336,15 +314,4 @@ func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interfa
 	}
 
 	return healthCheck
-}
-
-func envoyPercent(intOrStr intstr.IntOrString) (*envoy_type.Percent, error) {
-	decimal, err := common_api.NewDecimalFromIntOrString(intOrStr)
-	if err != nil {
-		return nil, err
-	}
-	value, _ := decimal.Float64()
-	return &envoy_type.Percent{
-		Value: value,
-	}, nil
 }
