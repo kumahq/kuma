@@ -216,13 +216,25 @@ kuma:
       replicas: 1
 ```
 
-Note: Mesh creation (mTLS configuration, backends) is a separate concern.
-For unfederated zones, meshes are created via `kumactl apply` or the API before deploying zone proxies.
+For unfederated zones, Helm can also create the Mesh resources:
+
+```yaml
+{{- if not .Values.controlPlane.kdsGlobalAddress }}
+  {{- /* Unfederated zone - create meshes locally */}}
+  {{- range .Values.meshes }}
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: {{ .name }}
+---
+  {{- end }}
+{{- end }}
+```
 
 **Validation:**
 
-- Zone proxy for non-existent mesh will wait and retry (same as federated case)
-- Clear error messages guide users to create the mesh first
+- If unfederated AND mesh listed in `meshes[]` → Helm creates the Mesh resource
+- Zone proxy deployment references the same mesh name
 
 #### Flow 4: Terraform
 
