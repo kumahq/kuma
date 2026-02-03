@@ -50,7 +50,7 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	ap.applicationsToScrapeMutex.Unlock()
 
 	if len(appsToScrape) > 0 {
-		var appNames []string
+		appNames := make([]string, 0, len(appsToScrape))
 		for _, app := range appsToScrape {
 			appNames = append(appNames, app.Name)
 		}
