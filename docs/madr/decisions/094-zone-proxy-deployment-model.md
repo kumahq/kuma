@@ -56,7 +56,17 @@ The core challenge is: **How does the deployment tool know which meshes exist?**
 
 ##### Current State
 
-User sees checkboxes: ☑ Ingress ☑ Egress
+```
+┌─────────────────────────────────────────────────────────┐
+│ Connect zone                                            │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ ☑ Deploy Ingress                                        │
+│ ☑ Deploy Egress                                         │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
 Generates `values.yaml` with `ingress.enabled: true` / `egress.enabled: true`
 
 ##### Proposed Flow
@@ -67,7 +77,7 @@ Replace simple checkboxes with a mesh-aware configuration:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Zone Proxy Configuration                                │
+│ Connect zone                                            │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │ Deployment mode:                                        │
