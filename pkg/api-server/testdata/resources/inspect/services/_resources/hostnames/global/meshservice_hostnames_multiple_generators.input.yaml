@@ -36,8 +36,9 @@ name: generator-2
 labels:
   kuma.io/origin: global
 spec:
-  template: '{{ .DisplayName }}.svc.{{ .Zone }}.mesh.local'
+  template: '{{ .DisplayName }}.svc.{{ .Zone }}.zoneresource.mesh.local'
   selector:
     meshService:
       matchLabels:
         kuma.io/origin: zone
+        kuma.io/zone: west
