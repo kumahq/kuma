@@ -198,7 +198,7 @@ Cons:
 
 **Bootstrap validation**: Bootstrap already validates mesh existence for Dataplanes (returns HTTP 422 with `mesh: mesh "<name>" does not exist`).
 See [`pkg/xds/bootstrap/generator.go#L356-L366`](https://github.com/kumahq/kuma/blob/master/pkg/xds/bootstrap/generator.go#L356-L366).
-With unified zone proxy as Dataplane, this validation applies automatically.
+With mesh-scoped zone proxy as Dataplane, this validation applies automatically.
 Current ZoneIngress/ZoneEgress bootstrap paths don't have this validation.
 
 This matches the "eventual consistency" model Kuma already uses.
