@@ -32,6 +32,30 @@ This document addresses the following questions:
 5. Should we continue supporting `kuma.io/ingress-public-address` annotation?
 6. What should be the default Helm installation behavior for zone proxies?
 
+### Decision Summary
+
+| Tooling Decision | Choice |
+|------------------|--------|
+| Per-mesh Services | **Yes** - each mesh gets its own Service/LoadBalancer for mTLS isolation |
+| Namespace placement | **kuma-system** default, configurable per-mesh |
+
+| Question | Decision |
+|----------|----------|
+| 1. Unified vs Separate zone proxies? | **Unified** - single Dataplane with `kuma.io/zone-proxy-role` label |
+| 2. Sidecar vs Standalone deployment? | **Standalone** - dedicated deployment |
+| 3. Universal deployment model? | Mesh-scoped Dataplane resources |
+| 4. Require kuma.io/workload? | **Auto-generated** as `zone-proxy-<mesh>-<role>` |
+| 5. Support ingress-public-address? | **Yes** - keep as escape hatch |
+| 6. Default Helm behavior? | Unified zone proxy with `role: all` |
+
+### Document Structure
+
+This document is organized in two parts:
+
+1. **Tooling and User Flows** - Describes how users will deploy zone proxies using different tools (Konnect UI, Helm, Terraform). This covers the UX and configuration experience.
+
+2. **Questions 1-6** - Answers the design questions from the [technical story](https://github.com/kumahq/kuma/issues/9030). Each question analyzes options and recommends a decision.
+
 ## Design
 
 ### Tooling and User Flows
@@ -112,6 +136,8 @@ kuma:
 ```
 
 Note: `meshes[]` only configures zone proxy deployment per mesh. Mesh creation (mTLS, backends, etc.) is managed separately on the Global CP.
+
+Note: Zone proxy can be deployed before the mesh exists. It will wait and retry until the mesh is created on the Global CP.
 
 **Why this works for Konnect:**
 
@@ -874,9 +900,14 @@ From `pkg/plugins/runtime/k8s/metadata/annotations.go`:
 
 #### Recommendation
 
-**Option B: Not required** - Zone proxies should not require `kuma.io/workload` annotation.
+**Option B: Not required** - Zone proxies should not require manual `kuma.io/workload` configuration.
 They should be identified by the `kuma.io/proxy-type: zoneproxy` label and the `kuma.io/zone-proxy-role` label for role-specific targeting.
 Policies can use extended `proxyTypes` in targetRef or label-based selectors.
+
+**Auto-generated workload identity**: On Universal, `kuma.io/workload` is used to create identity for a Dataplane (required for token generation).
+For zone proxies, the workload will be auto-generated with the pattern: `zone-proxy-<mesh>-<role>`.
+Example: `zone-proxy-payments-mesh-all`.
+This enables token generation on Universal without manual configuration.
 
 Since zone proxies become mesh-scoped Dataplane resources, targeting a zone proxy for a specific mesh is straightforward: policies themselves are mesh-scoped, so a policy in `payments-mesh` automatically only applies to zone proxies in that mesh.
 The `kuma.io/zone-proxy-role` label then filters to specific roles (ingress, egress, or all) within that mesh.
@@ -966,7 +997,9 @@ The unified default reduces resource usage and operational complexity for typica
 3. **Universal deployment**: Use mesh-scoped Dataplane resources with zone proxy labels instead of global ZoneIngress/ZoneEgress.
    Deploy one zone proxy per mesh.
 
-4. **kuma.io/workload not required**: Zone proxies are infrastructure components and should be targeted by the `kuma.io/proxy-type: zoneproxy` label and `kuma.io/zone-proxy-role` for role-specific targeting.
+4. **kuma.io/workload auto-generated**: Zone proxies will have `kuma.io/workload` auto-generated with the pattern `zone-proxy-<mesh>-<role>` (e.g., `zone-proxy-payments-mesh-all`).
+   This enables token generation on Universal without manual configuration.
+   Zone proxies should be targeted by the `kuma.io/proxy-type: zoneproxy` label and `kuma.io/zone-proxy-role` for role-specific targeting.
 
 5. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
