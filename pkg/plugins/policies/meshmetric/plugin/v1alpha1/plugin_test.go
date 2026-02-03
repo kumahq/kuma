@@ -29,6 +29,14 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
+func workloadLabels() map[string]string {
+	return map[string]string{
+		k8s_metadata.KumaWorkload:   "backend",
+		mesh_proto.ZoneTag:          "zone-1",
+		mesh_proto.KubeNamespaceTag: "kuma-demo",
+	}
+}
+
 var _ = Describe("MeshMetric", func() {
 	type testCase struct {
 		proxy   *core_xds.Proxy
@@ -56,7 +64,7 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
@@ -93,7 +101,7 @@ var _ = Describe("MeshMetric", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
@@ -133,7 +141,7 @@ var _ = Describe("MeshMetric", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
@@ -182,7 +190,7 @@ var _ = Describe("MeshMetric", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
@@ -218,7 +226,7 @@ var _ = Describe("MeshMetric", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir:         "/tmp",
@@ -259,7 +267,7 @@ var _ = Describe("MeshMetric", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
@@ -314,7 +322,7 @@ var _ = Describe("MeshMetric", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir: "/tmp",
@@ -370,7 +378,7 @@ var _ = Describe("MeshMetric", func() {
 			proxy: xds_builders.Proxy().
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
-						WithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}),
+						WithLabels(workloadLabels()),
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().

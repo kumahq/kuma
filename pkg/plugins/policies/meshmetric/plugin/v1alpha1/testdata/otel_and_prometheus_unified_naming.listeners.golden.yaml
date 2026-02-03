@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 402
+            maxDirectResponseBodySizeBytes: 435
             virtualHosts:
             - domains:
               - '*'
@@ -31,12 +31,12 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 74d5688fa2cc6f4e8b0e563c3311eb69ce880770e8ca3f2d78169e9787d10c68
+                      exact: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
                   path: /meshmetric
                 name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.workload":"backend"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -44,7 +44,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 74d5688fa2cc6f4e8b0e563c3311eb69ce880770e8ca3f2d78169e9787d10c68
+                    value: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
 - name: system_meshmetric_otel_otel-collector-observability-svc-4317
