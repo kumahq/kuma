@@ -988,6 +988,16 @@ The unified default reduces resource usage and operational complexity for typica
 
 ## Decision
 
+### Tooling Decisions
+
+1. **Per-mesh Services**: Each mesh gets its own Service/LoadBalancer for proper mTLS isolation.
+   Sharing a LoadBalancer would require SNI-based cert selection which adds complexity.
+
+2. **Namespace placement**: Default to `kuma-system`, make namespace configurable per-mesh.
+   This allows gradual migration to per-mesh namespaces without breaking existing setups.
+
+### Design Questions
+
 1. **Unified zone proxy model**: Zone proxies should be a single Dataplane type where the `kuma.io/zone-proxy-role` label determines capabilities (ingress, egress, or all).
    Operators can deploy combined (`role: all`) or separate (`role: ingress` / `role: egress`) based on scaling needs.
 
