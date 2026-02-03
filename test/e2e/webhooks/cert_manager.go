@@ -55,6 +55,110 @@ func CertManagerCAInjection() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
+	It("should have certificate with all required DNS SANs", func() {
+		kumaNamespace := Config.KumaNamespace
+		serviceName := releaseName + "-control-plane"
+
+		// Verify Certificate has all required DNS names
+		Eventually(func(g Gomega) {
+			output, err := k8s.RunKubectlAndGetOutputE(
+				cluster.GetTesting(),
+				cluster.GetKubectlOptions(kumaNamespace),
+				"get", "certificate", "kuma-tls-cert",
+				"-o", "jsonpath={.spec.dnsNames}",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			// Expected SANs:
+			// 1. Short hostname: <service>.<namespace>
+			// 2. With .svc: <service>.<namespace>.svc
+			// 3. FQDN: <service>.<namespace>.svc.cluster.local
+			expectedShortHostname := fmt.Sprintf("%s.%s", serviceName, kumaNamespace)
+			expectedSvcHostname := fmt.Sprintf("%s.%s.svc", serviceName, kumaNamespace)
+			expectedFQDN := fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, kumaNamespace)
+
+			g.Expect(output).To(ContainSubstring(expectedShortHostname))
+			g.Expect(output).To(ContainSubstring(expectedSvcHostname))
+			g.Expect(output).To(ContainSubstring(expectedFQDN))
+		}, "30s", "1s").Should(Succeed(), "Certificate should have all required DNS SANs including short hostname")
+	})
+
+	It("should allow dataplane to connect to control plane", func() {
+		const namespace = "cert-manager-dp-test"
+		const mesh = "default"
+
+		// Create namespace with sidecar injection enabled
+		err := NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Setup(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Deploy a simple workload that will get sidecar injected
+		deployment := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app
+  namespace: %s
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      labels:
+        app: test-app
+        kuma.io/mesh: %s
+    spec:
+      containers:
+      - name: test-app
+        image: busybox:1.36
+        command: ["sleep", "infinity"]
+`
+		err = k8s.KubectlApplyFromStringE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(namespace),
+			fmt.Sprintf(deployment, namespace, mesh),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Wait for pod to be ready (sidecar injected and running)
+		Eventually(func(g Gomega) {
+			output, err := k8s.RunKubectlAndGetOutputE(
+				cluster.GetTesting(),
+				cluster.GetKubectlOptions(namespace),
+				"get", "pods", "-l", "app=test-app",
+				"-o", "jsonpath={.items[0].status.containerStatuses[*].ready}",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			// Both containers (app + sidecar) should be ready
+			g.Expect(output).To(ContainSubstring("true"))
+		}, "120s", "1s").Should(Succeed(), "Pod with sidecar should become ready")
+
+		// Verify dataplane is online (connected to control plane)
+		Eventually(func(g Gomega) {
+			online, found, err := IsDataplaneOnline(cluster, mesh, "test-app")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(found).To(BeTrue(), "Dataplane should be found")
+			g.Expect(online).To(BeTrue(), "Dataplane should be online")
+		}, "60s", "1s").Should(Succeed(), "Dataplane should connect to control plane using cert-manager certificate")
+
+		// Cleanup
+		err = k8s.KubectlDeleteFromStringE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(namespace),
+			fmt.Sprintf(deployment, namespace, mesh),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _ = k8s.RunKubectlAndGetOutputE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(),
+			"delete", "namespace", namespace,
+		)
+	})
+
 	It("should inject CA bundle into Kuma webhook configurations", func() {
 		kumaNamespace := Config.KumaNamespace
 

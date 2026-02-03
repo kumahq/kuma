@@ -82,7 +82,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 			LabelSelector: selector,
 		},
 		1,
-		framework.DefaultRetries,
+		framework.DefaultRetries*3, // spire is downloaded from the internet it might take more time
 		framework.DefaultTimeout)
 	if err != nil {
 		return err
