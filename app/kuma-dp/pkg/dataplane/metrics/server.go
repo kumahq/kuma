@@ -364,7 +364,8 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 		return nil, ""
 	}
 	if resp.StatusCode != http.StatusOK {
-		logger.Info("application returned non-200 status", "name", app.Name, "status", resp.StatusCode, "path", app.Path, "port", app.Port)
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		logger.Info("application returned non-200 status", "name", app.Name, "status", resp.StatusCode, "path", app.Path, "port", app.Port, "body", string(bodyBytes))
 		return nil, ""
 	}
 
