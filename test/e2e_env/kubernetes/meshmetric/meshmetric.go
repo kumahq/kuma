@@ -418,8 +418,8 @@ func MeshMetric() {
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
-			// check if workload attribute was added
-			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"default\""))
+			// check if workload attribute was added (KRI format with workload name from ServiceAccount)
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("kuma_workload=\"kri_wl_%s_default_%s_default_\"", mainMesh, namespace)))
 		}).Should(Succeed())
 	})
 
