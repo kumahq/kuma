@@ -78,7 +78,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 			LabelSelector: selector,
 		},
 		1,
-		framework.DefaultRetries,
+		framework.DefaultRetries*3, // spire is fetched from the internet. Increase the timeout to prevent long downloads of images.
 		framework.DefaultTimeout)
 	if err != nil {
 		return err
