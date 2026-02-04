@@ -40,8 +40,12 @@ type watchdogState struct {
 	stopped    chan struct{}
 }
 
+<<<<<<< HEAD
 //nolint:contextcheck // it's not clear how the parent go-control-plane context lives
 func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
+=======
+func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, streamCtx context.Context, meta core_xds.DataplaneMetadata) error {
+>>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
@@ -55,7 +59,16 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	stoppedDone := state.stopped
 	go func() {
 		defer close(stoppedDone)
+<<<<<<< HEAD
 		t.newDataplaneWatchdog(dpKey).Start(ctx)
+=======
+		// Use stream context if factory supports it to prevent race between stream closure and snapshot updates
+		if factory, ok := t.newDataplaneWatchdog.(sync.DataplaneWatchdogFactoryWithStreamCtx); ok {
+			factory.NewWithStreamCtx(dpKey, &meta, streamCtx).Start(ctx)
+		} else {
+			t.newDataplaneWatchdog.New(dpKey, &meta).Start(ctx)
+		}
+>>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
 	}()
 	t.watchdogs[dpKey] = state
 	return nil
