@@ -361,6 +361,11 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil, ""
 	}
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		logger.Info("application returned non-200 status", "name", app.Name, "status", resp.StatusCode, "path", app.Path, "port", app.Port, "body", string(bodyBytes))
+		return nil, ""
+	}
 
 	respContentType := responseFormat(resp.Header)
 
@@ -378,6 +383,9 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 			logger.Error(err, "failed while writing", "name", app.Name, "path", app.Path, "port", app.Port)
 			return nil, ""
 		}
+	}
+	if len(bodyBytes) == 0 {
+		logger.V(1).Info("application returned empty body", "name", app.Name, "path", app.Path, "port", app.Port)
 	}
 	return bodyBytes, respContentType
 }
