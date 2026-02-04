@@ -25,6 +25,10 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
 
 	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
+	if len(appMetrics) == 0 {
+		log.V(1).Info("FromPrometheusMetrics called with empty input")
+		return scopedMetrics
+	}
 	for _, prometheusMetric := range appMetrics {
 		var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
 		switch prometheusMetric.GetType() {

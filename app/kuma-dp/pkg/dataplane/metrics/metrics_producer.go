@@ -55,6 +55,14 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	appsToScrape = append(appsToScrape, ap.applicationsToScrape...)
 	ap.applicationsToScrapeMutex.Unlock()
 
+	if len(appsToScrape) > 0 {
+		appNames := make([]string, 0, len(appsToScrape))
+		for _, app := range appsToScrape {
+			appNames = append(appNames, app.Name)
+		}
+		log.V(1).Info("starting metrics collection", "applications", appNames, "count", len(appsToScrape))
+	}
+
 	out := make(chan map[instrumentation.Scope][]metricdata.Metrics, len(appsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
@@ -77,7 +85,11 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	case <-ctx.Done():
 		return nil, nil
 	case <-done:
-		return combineMetrics(out), nil
+		result := combineMetrics(out)
+		if len(result) == 0 && len(appsToScrape) > 0 {
+			log.Info("metrics collection completed with zero metrics", "applicationCount", len(appsToScrape))
+		}
+		return result, nil
 	}
 }
 
@@ -115,12 +127,19 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		return nil
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Info("application returned non-200 status", "name", app.Name, "status", resp.StatusCode, "path", app.Path, "port", app.Port)
+		return nil
+	}
 	requestTime := time.Now().UTC()
 
 	metricsFromApplication, err := app.MeshMetricMutator(resp.Body)
 	if err != nil {
 		log.Error(err, "failed to mutate metrics")
 		return nil
+	}
+	if len(metricsFromApplication) == 0 {
+		log.Info("application returned empty metrics after parsing", "name", app.Name, "path", app.Path, "port", app.Port)
 	}
 	return FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, ap.kumaVersion, app.ExtraLabels, requestTime)
 }
