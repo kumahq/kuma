@@ -281,91 +281,56 @@ metadata:
 
 ##### Key Advantage
 
-Terraform has explicit resource dependencies and can query existing resources.
+Terraform has `depends_on` for ordering (mesh before zone proxy) and `templatefile()` for parameterizing mesh names. No custom provider resources are needed — zone proxies are deployed via the existing Helm chart using `helm_release`.
 
-##### Proposed Resource Structure
+##### Proposed Structure
+
+`main.tf`:
 
 ```hcl
-# Mesh must exist (either created or data-sourced)
-resource "kuma_mesh" "payments" {
+resource "konnect_mesh" "payments" {
   name = "payments-mesh"
-
-  mtls {
-    enabled = true
-    backend {
-      name = "builtin"
-      type = "builtin"
-    }
-  }
-}
-
-# Zone proxy explicitly depends on mesh
-resource "kuma_zone_proxy" "payments_proxy" {
-  name = "zone-proxy-payments"
-  mesh = kuma_mesh.payments.name  # Explicit dependency!
-
-  role = "all"  # or "ingress", "egress"
-
-  networking {
-    address            = "10.0.0.1"
-    advertised_address = "203.0.113.1"
-    advertised_port    = 10001
-  }
-}
-
-# Or reference existing mesh
-data "kuma_mesh" "existing" {
-  name = "existing-mesh"
-}
-
-resource "kuma_zone_proxy" "existing_proxy" {
-  mesh = data.kuma_mesh.existing.name
   # ...
 }
-```
 
-##### Validation Behavior
+resource "helm_release" "zone_proxy" {
+  name       = "kuma-zone"
+  repository = "https://kumahq.github.io/charts"
+  chart      = "kuma"
+  namespace  = "kuma-system"
 
-**Option A: Provider validates mesh existence**
+  values = [
+    templatefile("${path.module}/values.tftpl", {
+      zone               = "zone-1"
+      kds_global_address = "grpcs://us.mesh.sync.konghq.tech:443"
+      meshes = [
+        { name = konnect_mesh.payments.name, role = "all", replicas = 2 },
+      ]
+    })
+  ]
 
-```hcl
-resource "kuma_zone_proxy" "test" {
-  mesh = "nonexistent-mesh"  # Error during plan/apply
-  # ...
+  depends_on = [konnect_mesh.payments]
 }
 ```
 
-Provider calls `GET /meshes/nonexistent-mesh`:
-- 404 → Terraform error: "Mesh 'nonexistent-mesh' does not exist"
-- 200 → Proceed with zone proxy creation
+`values.tftpl`:
 
-**Option B: Require mesh reference (stronger)**
+```yaml
+kuma:
+  controlPlane:
+    mode: zone
+    zone: ${zone}
+    kdsGlobalAddress: ${kds_global_address}
 
-```hcl
-resource "kuma_zone_proxy" "test" {
-  # mesh_name = "foo"  # NOT allowed
-  mesh_id = kuma_mesh.payments.id  # REQUIRED reference
-}
+  meshes:
+%{ for m in meshes ~}
+    - name: ${m.name}
+      role: ${m.role}
+      replicas: ${m.replicas}
+%{ endfor ~}
 ```
 
-This is stricter but ensures proper dependency ordering.
-
-##### Recommended Terraform Approach
-
-1. **Soft validation**: Accept mesh name string, validate at apply time
-2. **Dependency hint**: Document that users SHOULD use resource references
-3. **Error message**: Clear error if mesh doesn't exist at apply time
-
-```
-Error: Mesh "payments-mesh" not found
-
-  on main.tf line 15, in resource "kuma_zone_proxy" "proxy":
-  15:   mesh = "payments-mesh"
-
-The specified mesh does not exist. Either:
-  - Create the mesh first: resource "kuma_mesh" "payments" { ... }
-  - Or reference an existing mesh: data "kuma_mesh" "payments" { ... }
-```
+**Validation:** Same runtime model as Helm — zone proxy retries until the mesh exists on the Global CP. Terraform's `depends_on` ensures the mesh is created in Konnect/Global CP before the Helm release is applied, so in practice the mesh will already exist by the time the zone proxy starts.
 
 #### Summary: Validation Strategies by Tool
 
@@ -374,7 +339,7 @@ The specified mesh does not exist. Either:
 | **Konnect UI** | Yes (API access) | Pre-populate mesh list, validate before generating YAML |
 | **Helm (federated)** | No (offline install) | Accept names, fail gracefully at runtime with clear logs |
 | **Helm (unfederated)** | Yes (creates mesh) | Cross-reference in templates, fail at install if mismatch |
-| **Terraform** | Yes (API access) | Validate at plan/apply, encourage resource references |
+| **Terraform** | Via `depends_on` | `helm_release` with `templatefile()`; `depends_on` ensures mesh exists before zone proxy |
 
 #### Design Decisions
 
