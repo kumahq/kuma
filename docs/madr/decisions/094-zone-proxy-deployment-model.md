@@ -753,14 +753,36 @@ From `pkg/plugins/runtime/k8s/metadata/annotations.go`:
 **Option B: Not required** - Zone proxies should not require manual `kuma.io/workload` configuration.
 They should be identified by the `kuma.io/proxy-type: zoneproxy` label and the `kuma.io/zone-proxy-role` label for role-specific targeting.
 Policies can use extended `proxyTypes` in targetRef or label-based selectors.
+The auto-generated `kuma.io/workload` value serves as the security binding for DP tokens, replacing the coarse zone token scoping (see Token Implications below).
 
 **Auto-generated workload identity**: On Universal, `kuma.io/workload` is used to create identity for a Dataplane (required for token generation).
 For zone proxies, the workload will be auto-generated with the pattern: `zone-proxy-<mesh>-<role>`.
 Example: `zone-proxy-payments-mesh-all`.
 This enables token generation on Universal without manual configuration.
 
+#### Token Implications
+
+When zone proxies become mesh-scoped Dataplane resources, their authentication path changes from zone tokens to DP tokens. This has significant security implications:
+
+1. **Current state**: Zone proxies use zone tokens with `Zone` + `Scope` claims ([`ZoneClaims`](https://github.com/kumahq/kuma/blob/master/pkg/tokens/builtin/zone/token.go)). The auth path is [`authZoneEntity()`](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L76-L99) which checks [scope](https://github.com/kumahq/kuma/blob/master/pkg/tokens/builtin/zone/scope.go) (ingress/egress) and zone name. There is no mesh or workload binding — the token is coarse-grained.
+
+2. **New state**: Zone proxies as Dataplanes will use DP tokens ([`DataplaneClaims`](https://github.com/kumahq/kuma/blob/master/pkg/tokens/builtin/issuer/token.go) with fields: `Name`, `Mesh`, `Tags`, `Type`, `Workload`). The auth path becomes [`authDataplane()`](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L55-L73) which validates `Name`, `Mesh`, `Tags`, and `Workload`. This is strictly more secure — tokens are bound to a specific mesh and can be bound to a specific workload identity.
+
+3. **How `kuma.io/workload` fits**: With the auto-generated workload `zone-proxy-<mesh>-<role>`, DP tokens can include this workload value. [`validateWorkload()`](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L116-L128) enforces the match. This means:
+   - A token generated for `workload: zone-proxy-payments-mesh-all` can ONLY be used by a zone proxy for `payments-mesh` with role `all`
+   - This replaces the coarse `Scope: ["ingress"]` with fine-grained workload binding
+
+4. **Zone token scope → workload mapping**: The old `Scope` concept (ingress/egress) is subsumed by the workload pattern:
+   - `Scope: ["ingress"]` → `Workload: "zone-proxy-<mesh>-ingress"`
+   - `Scope: ["egress"]` → `Workload: "zone-proxy-<mesh>-egress"`
+   - `Scope: ["ingress", "egress"]` → `Workload: "zone-proxy-<mesh>-all"`
+
+5. **Migration**: Existing zone tokens continue to work for legacy `ZoneIngress`/`ZoneEgress` resources (routed via the [`Authenticate()` switch](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L42-L53)). New mesh-scoped zone proxies use DP tokens. The `authDataplane()` path is already production-proven for regular dataplanes.
+
 Since zone proxies become mesh-scoped Dataplane resources, targeting a zone proxy for a specific mesh is straightforward: policies themselves are mesh-scoped, so a policy in `payments-mesh` automatically only applies to zone proxies in that mesh.
 The `kuma.io/zone-proxy-role` label then filters to specific roles (ingress, egress, or all) within that mesh.
+
+The auto-generated workload identity is not just a convenience for token generation — it is the security mechanism that replaces zone token scoping. By binding DP tokens to a specific workload value, we get mesh-scoped, role-specific authentication that is strictly more granular than the current zone token model.
 
 ### Question 4: Support kuma.io/ingress-public-address
 
