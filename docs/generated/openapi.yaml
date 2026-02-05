@@ -4498,6 +4498,7 @@ components:
       required:
         - hasToTargetRef
         - hasFromTargetRef
+        - hasRulesTargetRef
         - isTargetRef
         - isFromAsRules
       description: information about a policy
@@ -4510,6 +4511,9 @@ components:
           type: boolean
         hasFromTargetRef:
           description: indicates that this policy can be used as an inbound policy
+          type: boolean
+        hasRulesTargetRef:
+          description: indicates that the policy has a rules targetRef field for matching
           type: boolean
         isFromAsRules:
           description: >-
