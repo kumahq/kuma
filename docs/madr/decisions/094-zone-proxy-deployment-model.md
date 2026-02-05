@@ -40,13 +40,13 @@ Note: Whether zone ingress and egress should be unified into a single zone proxy
 | Per-mesh Services | **Yes** - each mesh gets its own Service/LoadBalancer for mTLS isolation |
 | Namespace placement | **kuma-system** default, configurable per-mesh |
 
-| Question | Decision |
-|----------|----------|
-| 1. Sidecar vs Standalone deployment? | **Standalone** - dedicated deployment |
-| 2. Universal deployment model? | Mesh-scoped Dataplane resources |
+| Question | Decision                                         |
+|----------|--------------------------------------------------|
+| 1. Sidecar vs Standalone deployment? | no verdict yet                                   |
+| 2. Universal deployment model? | Mesh-scoped Dataplane resources                  |
 | 3. Require kuma.io/workload? | **Auto-generated** as `zone-proxy-<mesh>-<role>` |
-| 4. Support ingress-public-address? | **Yes** - keep as escape hatch |
-| 5. Default Helm behavior? | Zone proxy with `role: all` |
+| 4. Support ingress-public-address? | **Yes** - keep as escape hatch                   |
+| 5. Default Helm behavior? | Zone proxy with `role: all`                      |
 
 Note: Unified vs Separate zone proxies is addressed in a separate MADR (MADR XXX).
 
@@ -634,12 +634,13 @@ The rolling update strategy provides sufficient control over the upgrade process
   - Consistent with application sidecar pattern
   - Could leverage existing injection infrastructure
   - Manual upgrade control - operator decides when to roll pods
+  - You don't need special `limit / resources` for egress / ingress you can just use containerpatches for regular sidecars.
 - Disadvantages:
   - Adds unnecessary resource overhead (pause container)
   - More complex deployment model
   - Confusing operational model (what is the "application"?)
 
-**Option B: Standalone deployment (recommended)**
+**Option B: Standalone deployment**
 - Advantages:
   - Clear operational model - zone proxies are infrastructure
   - Independent scaling and lifecycle management
@@ -650,18 +651,12 @@ The rolling update strategy provides sufficient control over the upgrade process
     This enables Prometheus metrics scraping via the metrics hijacker.
     Current ZoneIngress/ZoneEgress profiles don't include this generator.
 - Disadvantages:
+  - Zone proxies are part of the helm chart so they restart at the same time as the CP which could cause newer proxies to connect to old CPs
   - Different pattern from application sidecars (minor)
-
-**Option C: Direct pod without injection**
-- Advantages:
-  - Most minimal approach
-- Disadvantages:
-  - Loses benefits of injection webhook (consistent configuration)
-  - Harder to maintain across versions
 
 #### Recommendation
 
-**Option B: Standalone deployment** - Zone proxies (whether unified or separate) should remain as standalone deployments without a fake application container.
+No verdict yet.
 
 ### Question 2: Universal Deployment Model
 
@@ -881,8 +876,7 @@ The unified default reduces resource usage and operational complexity for typica
 
 ### Design Questions
 
-1. **Standalone deployment**: Zone proxies should be deployed as standalone Kubernetes Deployments, not as sidecars to fake containers.
-   The xDS protocol handles configuration updates regardless of deployment model.
+1. **Standalone deployment**: no verdict yet.
 
 2. **Universal deployment**: Use mesh-scoped Dataplane resources with zone proxy labels instead of global ZoneIngress/ZoneEgress.
    Deploy one zone proxy per mesh.
