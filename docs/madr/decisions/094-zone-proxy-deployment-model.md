@@ -680,53 +680,25 @@ spec:
 
 #### New Mesh-Scoped Deployment
 
-With the move to mesh-scoped zone proxies and the unified model (see MADR XXX), the deployment changes:
+With the move to mesh-scoped zone proxies, the deployment changes:
 
 1. Zone proxies become `Dataplane` resources with specific labels
 2. Each resource must specify a `mesh` field
 3. Deploy one zone proxy instance **per mesh** (not one per zone for all meshes)
-4. The `kuma.io/zone-proxy-role` label determines ingress/egress/all capabilities
 
-**Unified zone proxy (recommended)**:
 ```yaml
 type: Dataplane
 mesh: payments-mesh
 name: zone-proxy-payments
 labels:
   kuma.io/proxy-type: zoneproxy
-  kuma.io/zone-proxy-role: all  # or: ingress, egress
 networking:
   address: 10.0.0.1
   advertisedAddress: 203.0.113.1
   advertisedPort: 10001
 ```
 
-**Separate deployments** (for operators needing independent scaling):
-```yaml
-# Ingress-only proxy
-type: Dataplane
-mesh: payments-mesh
-name: zone-ingress-payments
-labels:
-  kuma.io/proxy-type: zoneproxy
-  kuma.io/zone-proxy-role: ingress
-networking:
-  address: 10.0.0.1
-  advertisedAddress: 203.0.113.1
-  advertisedPort: 10001
----
-# Egress-only proxy
-type: Dataplane
-mesh: payments-mesh
-name: zone-egress-payments
-labels:
-  kuma.io/proxy-type: zoneproxy
-  kuma.io/zone-proxy-role: egress
-networking:
-  address: 10.0.0.2
-  advertisedAddress: 203.0.113.2
-  advertisedPort: 10002
-```
+Whether a zone proxy handles ingress, egress, or both (unified vs separate) is addressed in MADR XXX.
 
 #### Migration Path
 
