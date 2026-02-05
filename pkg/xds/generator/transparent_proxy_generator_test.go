@@ -274,5 +274,40 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
 			expected:         "08.envoy.golden.yaml",
 		}),
+		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,gateway", testCase{
+			proxy: &model.Proxy{
+				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
+					types.FeatureUnifiedResourceNaming: true,
+					types.FeatureStrictInboundPorts:    true,
+				}},
+				Id: *model.BuildProxyId("", "side-car"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Version: "v1",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+								Tags: map[string]string{
+									"app": "test-gateway",
+								},
+								Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+							},
+							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
+							},
+						},
+					},
+				},
+				APIVersion:        envoy_common.APIV3,
+				Policies:          model.MatchedPolicies{},
+				InternalAddresses: DummyInternalAddresses,
+			},
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected:         "09.envoy.golden.yaml",
+		}),
 	)
 })
