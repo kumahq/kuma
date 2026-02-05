@@ -32,6 +32,7 @@ This document addresses the following questions:
 5. What should be the default Helm installation behavior for zone proxies?
 
 Note: Whether zone ingress and egress should be unified into a single zone proxy deployment is addressed in a separate MADR (MADR XXX).
+All sections in this document apply to both ingress and egress zone proxies, except Question 4 (ingress only) and Design Decision 2: Per-Mesh Services (mostly ingress).
 
 ### Decision Summary
 
