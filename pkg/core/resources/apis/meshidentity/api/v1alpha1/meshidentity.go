@@ -2,6 +2,7 @@
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -48,6 +49,8 @@ type Provider struct {
 	Bundled *Bundled `json:"bundled,omitempty"`
 	// Spire indicates that SPIRE is used for certificate delivery.
 	Spire *Spire `json:"spire,omitempty"`
+	// Extension indicates that custom provider is used.
+	Extension *Extension `json:"extension,omitempty"`
 }
 
 type CertificateParameters struct {
@@ -96,6 +99,13 @@ type SpireAgent struct {
 type Spire struct {
 	// Spire agent configuration
 	Agent *SpireAgent `json:"agent,omitempty"`
+}
+
+type Extension struct {
+	// Type of the extension.
+	Type string `json:"type"`
+	// Config freeform configuration for the extension.
+	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 
 const (
