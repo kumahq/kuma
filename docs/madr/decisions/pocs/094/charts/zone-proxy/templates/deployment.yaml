@@ -1,0 +1,50 @@
+{{- $defaultContainer := dict
+  "name" "zone-proxy"
+  "image" (printf "%s:%s" .Values.image.repository .Values.image.tag)
+  "imagePullPolicy" .Values.image.pullPolicy
+  "ports" (list
+    (dict "name" "proxy" "containerPort" 10001)
+    (dict "name" "admin" "containerPort" 9901)
+  )
+  "args" (list "run" (printf "--proxy-type=%s" .Values.role))
+  "readinessProbe" (dict
+    "httpGet" (dict "path" "/ready" "port" 9901)
+    "initialDelaySeconds" 1
+    "periodSeconds" 5
+  )
+  "livenessProbe" (dict
+    "httpGet" (dict "path" "/ready" "port" 9901)
+    "initialDelaySeconds" 60
+    "periodSeconds" 5
+  )
+-}}
+{{- /* Merge user container overrides on top of defaults */ -}}
+{{- $container := merge .Values.containers $defaultContainer -}}
+
+{{- $defaultPodSpec := dict
+  "containers" (list $container)
+-}}
+{{- /* Merge user podSpec overrides on top of defaults */ -}}
+{{- $podSpec := merge .Values.podSpec $defaultPodSpec -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-zone-proxy
+  labels:
+    app: {{ .Release.Name }}-zone-proxy
+    kuma.io/mesh: {{ .Values.mesh | quote }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-zone-proxy
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-zone-proxy
+        kuma.io/mesh: {{ .Values.mesh | quote }}
+      annotations:
+        kuma.io/proxy-type: {{ .Values.role }}
+    spec:
+{{ $podSpec | toYaml | indent 6 }}

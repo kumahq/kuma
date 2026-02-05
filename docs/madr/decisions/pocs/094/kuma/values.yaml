@@ -1,0 +1,27 @@
+# Parent chart values — everything under "zone-proxy:" is passed through
+# to the subchart as-is.  No mirroring of fields required.
+
+zone-proxy:
+  mesh: payments
+  role: ingress
+  replicas: 2
+
+  # Container-level overrides — merged into the zone-proxy container spec
+  containers:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
+
+  # PodSpec-level overrides — merged into spec.template.spec
+  podSpec:
+    nodeSelector:
+      kubernetes.io/os: linux
+    tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "mesh"
+        effect: "NoSchedule"

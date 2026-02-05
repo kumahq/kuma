@@ -1,0 +1,6 @@
+dependencies:
+- name: zone-proxy
+  repository: file://../charts/zone-proxy
+  version: 0.1.0
+digest: sha256:98060e87b37fb38a2b33231bb63a424bb8e6aad9f6f2f0c754082548933a58f1
+generated: "2026-02-05T14:37:30.639433+01:00"

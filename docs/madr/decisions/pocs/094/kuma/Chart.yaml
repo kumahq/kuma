@@ -1,0 +1,10 @@
+apiVersion: v2
+name: kuma
+description: Simplified parent chart demonstrating subchart zone proxy deployment
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: zone-proxy
+    version: "0.1.0"
+    repository: "file://../charts/zone-proxy"
