@@ -23,7 +23,7 @@ func TestWebhook(t *testing.T) {
 }
 
 var (
-	decoder     *kube_admission.Decoder
+	decoder     kube_admission.Decoder
 	testEnv     *envtest.Environment
 	k8sClient   client.Client
 	scheme      *kube_runtime.Scheme

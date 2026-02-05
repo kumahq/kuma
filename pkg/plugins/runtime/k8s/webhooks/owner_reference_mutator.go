@@ -25,7 +25,7 @@ type OwnerReferenceMutator struct {
 	Client                 kube_client.Client
 	CoreRegistry           core_registry.TypeRegistry
 	K8sRegistry            k8s_registry.TypeRegistry
-	Decoder                *admission.Decoder
+	Decoder                admission.Decoder
 	Scheme                 *kube_runtime.Scheme
 	SkipMeshOwnerReference bool
 	CpMode                 config_core.CpMode

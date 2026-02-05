@@ -102,6 +102,7 @@ func (r *SecretController) deleteCopiedSecret(ctx context.Context, key types.Nam
 
 func (r *SecretController) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-secret-controller").
 		For(&kube_core.Secret{}).
 		Complete(r)
 }

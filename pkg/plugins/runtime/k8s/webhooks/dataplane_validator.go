@@ -28,11 +28,11 @@ func NewDataplaneValidatorWebhook(validator dataplane.Validator, converter k8s_c
 type DataplaneValidator struct {
 	validator       dataplane.Validator
 	converter       k8s_common.Converter
-	decoder         *admission.Decoder
+	decoder         admission.Decoder
 	resourceManager manager.ResourceManager
 }
 
-func (h *DataplaneValidator) InjectDecoder(d *admission.Decoder) {
+func (h *DataplaneValidator) InjectDecoder(d admission.Decoder) {
 	h.decoder = d
 }
 

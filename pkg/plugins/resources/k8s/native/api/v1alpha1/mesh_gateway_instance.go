@@ -30,7 +30,7 @@ type MeshGatewayInstanceSpec struct {
 	// `kuma.io/service` tag, and should match exactly one Gateway
 	// resource.
 	//
-	// +required
+	// +optional
 	// +kubebuilder:validation:MinLen=1
 	Tags map[string]string `json:"tags,omitempty"`
 }

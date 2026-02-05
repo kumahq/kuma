@@ -340,6 +340,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-http-route-controller").
 		For(&gatewayapi.HTTPRoute{}).
 		Watches(
 			&gatewayapi.Gateway{},

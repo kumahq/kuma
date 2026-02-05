@@ -73,6 +73,7 @@ func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-pod-status-controller").
 		For(&kube_core.Pod{}, builder.WithPredicates(
 			onlyUpdates,
 			onlySidecarContainerRunning,

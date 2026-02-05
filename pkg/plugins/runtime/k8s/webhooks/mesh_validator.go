@@ -29,11 +29,11 @@ func NewMeshValidatorWebhook(
 type MeshValidator struct {
 	validator    managers_mesh.MeshValidator
 	converter    k8s_common.Converter
-	decoder      *admission.Decoder
+	decoder      admission.Decoder
 	unsafeDelete bool
 }
 
-func (h *MeshValidator) InjectDecoder(d *admission.Decoder) {
+func (h *MeshValidator) InjectDecoder(d admission.Decoder) {
 	h.decoder = d
 }
 

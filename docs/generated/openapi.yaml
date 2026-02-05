@@ -4732,7 +4732,9 @@ components:
                                   requestMirror:
                                     properties:
                                       backendRef:
-                                        description: TODO forbid weight
+                                        description: >-
+                                          BackendRef defines where to forward
+                                          traffic.
                                         properties:
                                           kind:
                                             description: Kind of the referenced resource
@@ -4816,7 +4818,6 @@ components:
                                           hostname with 1 notable exception that
 
                                           numeric IP addresses are not allowed.
-
 
 
                                           Note that as per RFC1035 and RFC1123, a
@@ -6241,7 +6242,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -6265,7 +6265,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -6362,7 +6361,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -6386,7 +6384,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -6471,7 +6468,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -6495,7 +6491,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -6596,7 +6591,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -6620,7 +6614,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -6707,7 +6700,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -6731,7 +6723,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy

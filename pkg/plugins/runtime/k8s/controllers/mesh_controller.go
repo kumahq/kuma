@@ -87,6 +87,7 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 
 func (r *MeshReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-mesh-controller").
 		For(&mesh_k8s.Mesh{}).
 		Complete(r)
 }
