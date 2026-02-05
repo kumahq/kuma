@@ -766,7 +766,31 @@ When zone proxies become mesh-scoped Dataplane resources, their authentication p
 
 1. **Current state**: Zone proxies use zone tokens with `Zone` + `Scope` claims ([`ZoneClaims`](https://github.com/kumahq/kuma/blob/master/pkg/tokens/builtin/zone/token.go)). The auth path is [`authZoneEntity()`](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L76-L99) which checks [scope](https://github.com/kumahq/kuma/blob/master/pkg/tokens/builtin/zone/scope.go) (ingress/egress) and zone name. There is no mesh or workload binding — the token is coarse-grained.
 
+   ```json
+   {
+     "Zone": "us-east",
+     "Scope": ["ingress"],
+     "exp": 1735689600,
+     "jti": "a]b2c3d4-e5f6-7890-abcd-ef1234567890"
+   }
+   ```
+
 2. **New state**: Zone proxies as Dataplanes will use DP tokens ([`DataplaneClaims`](https://github.com/kumahq/kuma/blob/master/pkg/tokens/builtin/issuer/token.go) with fields: `Name`, `Mesh`, `Tags`, `Type`, `Workload`). The auth path becomes [`authDataplane()`](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L55-L73) which validates `Name`, `Mesh`, `Tags`, and `Workload`. This is strictly more secure — tokens are bound to a specific mesh and can be bound to a specific workload identity.
+
+   ```json
+   {
+     "Name": "zone-proxy-payments-mesh-all-1",
+     "Mesh": "payments-mesh",
+     "Tags": {
+       "kuma.io/proxy-type": ["zoneproxy"],
+       "kuma.io/zone-proxy-role": ["all"]
+     },
+     "Type": "dataplane",
+     "Workload": "zone-proxy-payments-mesh-all",
+     "exp": 1735689600,
+     "jti": "f6e5d4c3-b2a1-0987-fedc-ba0987654321"
+   }
+   ```
 
 3. **How `kuma.io/workload` fits**: With the auto-generated workload `zone-proxy-<mesh>-<role>`, DP tokens can include this workload value. [`validateWorkload()`](https://github.com/kumahq/kuma/blob/master/pkg/xds/auth/universal/authenticator.go#L116-L128) enforces the match. This means:
    - A token generated for `workload: zone-proxy-payments-mesh-all` can ONLY be used by a zone proxy for `payments-mesh` with role `all`
