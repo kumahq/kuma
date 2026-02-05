@@ -40,6 +40,7 @@ All sections in this document apply to both ingress and egress zone proxies, exc
 |------------------|--------|
 | Per-mesh Services | **Yes** - each mesh gets its own Service/LoadBalancer for mTLS isolation |
 | Namespace placement | **kuma-system** default, configurable per-mesh |
+| Deployment mechanism | no verdict yet (Helm-managed vs controller-managed vs mesh-reactive controller) |
 
 | Question | Decision                                         |
 |----------|--------------------------------------------------|
@@ -507,11 +508,183 @@ meshes:
 
 **Best for**: Large deployments, multi-team environments, meshes with different SLAs.
 
+#### Deployment Mechanism: Helm-Managed vs Controller-Managed
+
+The Helm release structure options above determine how many releases exist. Orthogonally, the **mechanism** that creates the actual Deployment+Service can be either Helm templates or a Kubernetes controller.
+
+##### Option A: Helm-Managed (current pattern)
+
+- Helm templates directly render Deployment + Service YAML
+- Cat-and-mouse problem: chart must enumerate every K8s field users might need
+- Current ingress: 148-line template + 144-line values = 292 lines for ~15 fields
+- Subchart approach mitigates via raw passthrough (see [POC](pocs/094/))
+- Adding a new mesh requires `helm upgrade`
+
+##### Option B: Controller-Managed (MeshGatewayInstance pattern)
+
+User creates a `ZoneProxyInstance` CRD per mesh, controller reconciles → creates Deployment + Service.
+
+Modeled after existing `MeshGatewayInstance` ([`gateway_instance_controller.go`](https://github.com/kumahq/kuma/blob/master/pkg/plugins/runtime/k8s/controllers/gateway_instance_controller.go)). CRD embeds full `corev1.PodTemplateSpec` for complete K8s API coverage.
+
+CRD shape (Go types):
+
+```go
+type ZoneProxyInstanceSpec struct {
+    Mesh        string                      `json:"mesh"`
+    Role        string                      `json:"role"`  // ingress | egress | all
+    Replicas    *int32                      `json:"replicas,omitempty"`
+    PodTemplate corev1.PodTemplateSpec      `json:"podTemplate,omitempty"`
+    Service     ZoneProxyServiceConfig      `json:"service,omitempty"`
+}
+
+type ZoneProxyInstanceStatus struct {
+    LoadBalancer *corev1.LoadBalancerStatus   `json:"loadBalancer,omitempty"`
+    Conditions   []metav1.Condition           `json:"conditions,omitempty"`
+}
+```
+
+Example YAML:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ZoneProxyInstance
+metadata:
+  name: payments-zone-proxy
+  namespace: kuma-system
+spec:
+  mesh: payments-mesh
+  role: all
+  replicas: 2
+  podTemplate:
+    spec:
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "mesh"
+      containers:
+        - name: zone-proxy
+          resources:
+            requests:
+              cpu: 100m
+  service:
+    type: LoadBalancer
+```
+
+##### Option C: Mesh-Reactive Controller (recommended variant)
+
+**Key insight**: instead of requiring users to manually create a `ZoneProxyInstance` per mesh, the controller **watches Mesh resources** and automatically creates zone proxy Deployments.
+
+Flow:
+
+```
+Global CP: admin creates Mesh "payments"
+    ↓ (KDS sync — Mesh has GlobalToZonesFlag)
+Zone CP: Mesh "payments" appears as K8s CRD
+    ↓ (controller watches Mesh resources)
+Controller: creates Deployment + Service for payments-mesh zone proxy
+    ↓ (reconciliation loop)
+Status: ZoneProxyInstance shows Ready condition
+```
+
+This is natural because:
+
+- `MeshReconciler` already watches Mesh creation to generate defaults (CA certs, signing keys, policies) — see [`mesh_controller.go`](https://github.com/kumahq/kuma/blob/master/pkg/plugins/runtime/k8s/controllers/mesh_controller.go)
+- `MeshToPodsMapper` already watches Mesh changes and reconciles child resources — see [`pod_controller.go`](https://github.com/kumahq/kuma/blob/master/pkg/plugins/runtime/k8s/controllers/pod_controller.go)
+- Mesh resources are synced Global→Zone via KDS (`GlobalToZonesFlag`)
+
+**Configuration model:**
+
+- **Global defaults**: CP config or a `ZoneProxyDefaults` resource (cluster-scoped) specifying default replicas, resources, role, podTemplate
+- **Per-mesh overrides**: User creates/edits `ZoneProxyInstance` to customize a specific mesh's zone proxy (tolerations, resources, replicas, etc.)
+- **Opt-out**: Annotation on Mesh resource to skip auto-creation (e.g., `kuma.io/skip-zone-proxy: "true"`)
+
+Example global defaults in Helm values:
+
+```yaml
+zoneProxy:
+  defaults:
+    role: all
+    replicas: 1
+    podTemplate:
+      spec:
+        containers:
+          - name: zone-proxy
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+```
+
+Per-mesh override — user applies after mesh creation:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ZoneProxyInstance
+metadata:
+  name: payments-zone-proxy
+  namespace: kuma-system
+spec:
+  mesh: payments-mesh
+  replicas: 3
+  podTemplate:
+    spec:
+      tolerations:
+        - key: "dedicated"
+          value: "mesh"
+```
+
+**Impact on user flows from the MADR:**
+
+| Flow | Before (Helm meshes[]) | After (mesh-reactive controller) |
+|------|----------------------|----------------------------------|
+| Konnect UI | UI generates values.yaml with mesh list | No mesh list needed — create Mesh on Global, zone proxy appears automatically |
+| Helm (federated) | User specifies mesh names, can't validate at install time | Just enable controller, zone proxies auto-created when meshes sync |
+| Unfederated | Same as Helm | Create Mesh locally → zone proxy auto-created |
+| Terraform | depends_on for ordering | No ordering needed — controller handles lifecycle |
+
+**Eliminates the "how does Helm know which meshes exist?" problem entirely.**
+
+##### Comparison Table
+
+| Aspect | Helm-Managed | Controller (manual) | Controller (mesh-reactive) |
+|--------|-------------|--------------------|-----------------------------|
+| K8s API surface | Subchart: full; main chart: limited | Full (PodTemplateSpec in CRD) | Full (PodTemplateSpec in CRD) |
+| Status/conditions | None | Yes | Yes |
+| Self-healing | No | Yes | Yes |
+| Add new mesh | `helm upgrade` | `kubectl apply` ZoneProxyInstance | Automatic — create Mesh, done |
+| Remove mesh | `helm upgrade` | `kubectl delete` ZoneProxyInstance | Automatic on Mesh deletion (if not protected) |
+| Per-mesh config | N releases or complex values | Natural — one CR per mesh | Defaults + optional override CR |
+| Code complexity | Templates only | Controller + CRD types | Controller + CRD types + Mesh watcher |
+| Existing pattern | Current ingress/egress | MeshGatewayInstance | MeshReconciler (defaults) |
+| Universal support | N/A (K8s-only) | N/A (K8s-only) | N/A (K8s-only) |
+
+##### Advantages of Mesh-Reactive Controller
+
+- **Zero-config mesh onboarding**: create Mesh → zone proxy appears (no Helm upgrade, no kubectl apply)
+- Eliminates `meshes[]` from Helm values entirely
+- Solves the "Helm can't validate mesh existence" problem
+- Status conditions (`kubectl get zoneproxyinstances`)
+- Self-healing reconciliation
+- Full PodTemplateSpec avoids cat-and-mouse
+- Natural per-mesh lifecycle (follows Mesh lifecycle)
+- Proven patterns: MeshReconciler + MeshGatewayInstance
+
+##### Tradeoffs
+
+- More Go code to maintain (controller + CRD + webhook + Mesh watcher)
+- CRD schema large when embedding PodTemplateSpec
+- Magic: zone proxies appear without explicit user action (may surprise operators)
+- Need opt-out mechanism for meshes that shouldn't have zone proxies
+- Mesh deletion handling: should deleting Mesh auto-delete zone proxy? (protected by existing Dataplane check, but Deployment cleanup needs thought)
+- **Cyclic dependency risk**: Mesh deletion is currently blocked when online Dataplanes exist (see [mesh_validator.go](https://github.com/kumahq/kuma/blob/master/pkg/core/managers/apis/mesh/mesh_validator.go#L70-L88)). If the controller creates a Dataplane for the zone proxy, that Dataplane would block Mesh deletion, and the controller wouldn't delete the Dataplane until the Mesh is deleted — a deadlock. The controller-managed Dataplanes need a label/annotation (e.g., `kuma.io/managed-by: zone-proxy-controller`) so the "online DPPs check" in the mesh validator can skip them, allowing Mesh deletion to proceed and the controller to clean up the Deployment afterwards.
+
 #### Namespace Placement Options
 
 **K8s Naming Constraint**: Kubernetes resource names (Deployments, Services) are limited to 63 characters.
 With the naming pattern `zone-proxy-<mesh-name>`, mesh names should be kept under ~50 characters to avoid truncation.
 Helm templates truncate at 63 chars (see [`deployments/charts/kuma/templates/_helpers.tpl#L31-L46`](https://github.com/kumahq/kuma/blob/master/deployments/charts/kuma/templates/_helpers.tpl#L31-L46)) which may cause unexpected name collisions with very long mesh names.
+
+**Note**: With a controller-based deployment mechanism, resources are created within the same namespace as the `ZoneProxyInstance` CR, so the naming pattern can be simpler (e.g., just `zone-proxy`) without risk of cross-mesh collisions — the namespace provides isolation. The 63-char concern primarily applies to Helm-managed deployments where all zone proxies share a namespace and need mesh-qualified names.
 
 ##### Option A: kuma-system Namespace (Centralized)
 
@@ -892,6 +1065,8 @@ The unified default reduces resource usage and operational complexity for typica
 
 2. **Namespace placement**: Default to `kuma-system`, make namespace configurable per-mesh.
    This allows gradual migration to per-mesh namespaces without breaking existing setups.
+
+3. **Deployment mechanism**: no verdict yet. Options are Helm-managed (current pattern), controller-managed (MeshGatewayInstance pattern with `ZoneProxyInstance` CRD), or mesh-reactive controller (auto-creates zone proxies when Mesh resources appear). See [Deployment Mechanism](#deployment-mechanism-helm-managed-vs-controller-managed) for full analysis.
 
 ### Design Questions
 
