@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma/v2
 
-go 1.24.12
+go 1.24.13
 
 require (
 	cirello.io/pglock v1.14.2
