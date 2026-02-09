@@ -135,11 +135,11 @@ Field `targetRef.sectionName` can be used to select only zone egress or zone ing
 #### Labels on Zone Ingress/Egress Dataplanes
 
 Currently we have `kuma.io/proxy-type: sidecar | gateway` label that is automatically set on the DPP.
-The only purpose of this label was to let user select proxy types in `spec.targetRef.labels`.
+The only purpose of this label was to let users select proxy types in `spec.targetRef.labels`.
 
-However, in v3 we're going to remove `gateway`. 
-New `zoneEgress` and `zoneIngress` sections have `name` and can be selected with `spec.targetRef.sectionName`.
-It seems like there are no reasons to keep `kuma.io/proxy-type` label and it should be removed in v3, see the [#15567](https://github.com/kumahq/kuma/issues/15567).
+However, in v3 we're going to remove `gateway`.
+New `zoneEgress` and `zoneIngress` sections have `name` field and can be selected with `spec.targetRef.sectionName`.
+There are no reasons to keep `kuma.io/proxy-type` label and it should be removed in v3, see [#15567](https://github.com/kumahq/kuma/issues/15567).
 
 ### Syncing Zone Ingress Addresses via MeshService
 
@@ -185,15 +185,15 @@ Zone ingress related section of MeshService should be computed on the zone where
 ### Zone Egress Address in MeshExternalService
 
 When configuring outbounds to external services, we need to know the zone egress address and port.
-Rather than scanning through all Dataplanes to find the one with `networking.zoneEgress`,
-we store this information directly in the MeshExternalService status for efficient lookup.
+Rather than scanning through all Dataplanes to find one with `networking.zoneEgress`,
+we store this information directly in MeshExternalService status for efficient lookup.
 
 #### Proposed Approach: MeshExternalService Status
 
 Unlike MeshService (where `zoneIngress` is in `spec` for cross-zone syncing),
 the `zoneEgress` section belongs in `status` because:
 - MeshExternalService is typically created on Global and synced to zones
-- Each zone has its own zone egress with different addresses
+- Each zone has its own zone egress with different address
 - Status is computed locally per zone and not synced back to Global
 
 ```
@@ -221,7 +221,7 @@ status:
     sni: "ae10a8071b8a8eeb8.backend.8080.demo.mes"
 ```
 
-Zone egress section should be computed by the Zone CP based on local Dataplanes with `networking.zoneEgress`.
+Zone egress related section of MeshExternalService should be computed on the zone based on local Dataplanes with `networking.zoneEgress`.
 
 ## Implications for Kong Mesh
 
