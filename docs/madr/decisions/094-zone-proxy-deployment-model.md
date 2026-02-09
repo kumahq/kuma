@@ -151,7 +151,6 @@ Note: Zone proxy can be deployed before the mesh exists. It will wait and retry 
 
 - Konnect UI has API access to global CP
 - Can fetch mesh list via `GET /meshes`
-- Pre-populates dropdown with existing meshes
 - Validation happens UI-side before generating values.yaml
 - If multiple meshes exist in the zone, the UI should inform the user that additional zone proxies must be configured manually (link to multi-mesh deployment docs)
 
