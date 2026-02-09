@@ -2,7 +2,7 @@
 
 * Status: accepted
 
-Technical Story: <!-- link to the github issue -->
+Technical Story: https://github.com/Kong/kong-mesh/issues/9028
 
 ## Context and Problem Statement
 
@@ -90,6 +90,13 @@ spec:
 * Good, because in the future if we want clean DPP spec we can deprecate `networking.inbound` and add listeners with `type: Inbound`
 * Bad, because items in `listeners` need to have the same schema so we'd have to validate `advertisedAddress` based on `type`
 
+### Mixing sidecars and zone proxies
+
+Dataplanes that represent zone proxies don't need `transparentProxying` even on Kubernetes.
+This means on Kubernetes we can't mix `inbounds` and zone proxy listeners on the same DPP.
+However, on Universal we can have both sidecar and zone proxy listeners on the same DPP since transparent proxying is not required.
+But the question is do we want to allow that? It might be confusing for users and doesn't allow us having schema level validation.
+
 ### Policy Targeting for Zone Ingress and Zone Egress
 
 In Kuma, it is fine if `spec.targetRef` is too broad.
@@ -127,7 +134,8 @@ Field `targetRef.sectionName` can be used to select only zone egress or zone ing
 
 #### Labels on Zone Ingress/Egress Dataplanes
 
-TBD
+Currently we have `kuma.io/proxy-type: sidecar | gateway` label that can be set on the DPP.
+We need to introduce a new value `zoneproxy`.
 
 ### Syncing Zone Ingress Addresses via MeshService
 
@@ -137,7 +145,38 @@ we need to find another way to share `advertisedAddress` and `advertisedPort` wi
 
 #### Proposed Approach: MeshService as the Carrier
 
-TBD
+Address and port of zone ingress have to be placed in the MeshService `spec` since Global removes `status` before syncing MeshServices to the zone.
+
+```
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: redis
+  namespace: kuma-demo
+  labels:
+    team: db-operators
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+      k8s.kuma.io/namespace: kuma-demo
+  ports:
+  - port: 6739
+    targetPort: 6739
+    appProtocol: tcp
+  - name: some-port
+    port: 16739
+    targetPort: target-port-from-container
+    appProtocol: tcp
+  zoneIngress: # different name? maybe 'multizone'?
+    address: 192.168.0.1 # advertised address of zone ingress
+    port: 10002 # advertised port of zone ingress
+    sni: "ae10a8071b8a8eeb8.backend.8080.demo.ms"
+status: {}
+```
+
+Zone ingress related section of MeshService should be computed on the zone where zone ingress is running.
 
 ## Deprecation of ZoneIngress and ZoneEgress Resources
 
