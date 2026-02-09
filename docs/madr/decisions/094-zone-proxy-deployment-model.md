@@ -447,8 +447,6 @@ replicas: 1
 | **Failure blast radius** | ✅ Bad zone proxy config doesn't break CP |
 | **GitOps** | ✅ Clear separation of concerns |
 
-**Best for**: Multi-mesh deployments, production environments wanting CP stability isolation.
-
 ##### Recommendation
 
 **Subchart approach**: single release for the default mesh (simple, one `helm install`); standalone release of the same `kuma-zone-proxy` chart for additional meshes.
