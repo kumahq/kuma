@@ -319,7 +319,6 @@ No additional implementation is needed for mesh deletion handling - the existing
 **Note**: Current ZoneIngress/ZoneEgress resources are NOT covered by this protection (they're global-scoped).
 The move to mesh-scoped Dataplanes resolves this gap.
 
-**K8s Deployment cleanup**: When a mesh is deleted (after removing its Dataplanes), the K8s Deployment for zone proxies remains.
 For single-mesh, cleanup is straightforward: `helm uninstall <release-name>`.
 
 ##### 2. Per-Mesh Services (Not Shared)
