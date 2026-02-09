@@ -12,16 +12,20 @@ docs: helm-docs docs/generated/raw docs/generated/openapi.yaml $(DOCS_EXTRA_TARG
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
-	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
+	@if [ -n "$(HELM_DOCS)" ]; then \
+		$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts ; \
+	else \
+		echo "Warning: helm-docs not found, skipping helm documentation generation" ; \
+	fi
 
 .PHONY: docs/generated/raw
 docs/generated/raw: docs/generated/raw/rbac.yaml
 	mkdir -p $@
-	cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
-	cp $(HELM_VALUES_FILE) $@/helm-values.yaml
+	command cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
+	command cp $(HELM_VALUES_FILE) $@/helm-values.yaml
 
 	mkdir -p $@/crds
-	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do cp $$f $@/crds/; done
+	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do command cp $$f $@/crds/; done
 
 	mkdir -p $@/protos
 	$(PROTOC) \
@@ -104,7 +108,7 @@ docs/generated/openapi/prepare/base: docs/generated/openapi/prepare/layout
 	@for i in $(API_DIRS); do \
 		src=$$(echo "$$i" | cut -d: -f1); dst=$$(echo "$$i" | cut -d: -f2); \
 		mkdir -p "$(OAPI_TMP_DIR)/$${dst}"; \
-		cp -R "$$src" "$(OAPI_TMP_DIR)/$${dst}"; \
+		command cp -R "$$src" "$(OAPI_TMP_DIR)/$${dst}"; \
 	done
 
 # Helper macro to collect YAML specs into $(OAPI_TMP_DIR)/<subdir>/<name>/
@@ -116,7 +120,7 @@ define OAPI_COLLECT
 		name=$$($(2)); \
 		dst="$(OAPI_TMP_DIR)/$(3)/$$name"; \
 		mkdir -p "$$dst"; \
-		cp "$$i" "$$dst/$$(basename "$$i")"; \
+		command cp "$$i" "$$dst/$$(basename "$$i")"; \
 	done
 endef
 

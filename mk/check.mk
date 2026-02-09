@@ -42,12 +42,16 @@ format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
-	@find ./deployments/charts -maxdepth 1 -mindepth 1 -type d -exec $(KUBE_LINTER) lint {} \;
-	@if [ -d ./app/kumactl/cmd/install/testdata ]; then \
-		find ./app/kumactl/cmd/install/testdata -maxdepth 1 -type f -name 'install-control-plane*.golden.yaml' -exec $(KUBE_LINTER) lint {} +; \
-	fi
-	@if [ -d ./app/kumactl/cmd/install/testdata/install-cp-helm ]; then \
-		find ./app/kumactl/cmd/install/testdata/install-cp-helm -maxdepth 1 -type f -name '*.golden.yaml' -exec $(KUBE_LINTER) lint {} +; \
+	@if [ -n "$(KUBE_LINTER)" ]; then \
+		find ./deployments/charts -maxdepth 1 -mindepth 1 -type d -exec $(KUBE_LINTER) lint {} \; ; \
+		if [ -d ./app/kumactl/cmd/install/testdata ]; then \
+			find ./app/kumactl/cmd/install/testdata -maxdepth 1 -type f -name 'install-control-plane*.golden.yaml' -exec $(KUBE_LINTER) lint {} + ; \
+		fi ; \
+		if [ -d ./app/kumactl/cmd/install/testdata/install-cp-helm ]; then \
+			find ./app/kumactl/cmd/install/testdata/install-cp-helm -maxdepth 1 -type f -name '*.golden.yaml' -exec $(KUBE_LINTER) lint {} + ; \
+		fi ; \
+	else \
+		echo "Warning: kube-linter not found, skipping kubernetes linting" ; \
 	fi
 
 .PHONY: hadolint
