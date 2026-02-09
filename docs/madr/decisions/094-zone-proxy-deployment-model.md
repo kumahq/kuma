@@ -38,6 +38,7 @@ Note: Whether zone ingress and egress share a single deployment is addressed in 
 | Per-mesh Services | **Yes** - each mesh gets its own Service/LoadBalancer for mTLS isolation |
 | Namespace placement | **kuma-system** |
 | Deployment mechanism | **Helm-managed** (current pattern extended for mesh-scoped zone proxies) |
+| Helm release structure | **Single release** (CP + zone proxy in one chart) |
 
 | Question | Decision |
 |----------|----------|
@@ -204,20 +205,22 @@ kuma:
 
 1. **CP auto-creation**: When `skipMeshCreation: false` (the default), the CP creates the `default` mesh at startup (`EnsureDefaultMeshExists` in `pkg/defaults/mesh.go`). This only creates a mesh named `default` — non-default mesh names are not auto-created.
 
-2. **Helm template**: For non-default mesh names, or when `skipMeshCreation: true`, Helm can create the Mesh resource:
+2. **Helm template**: For non-default mesh names, or when `skipMeshCreation: true`, Helm creates the Mesh resource (the CP only auto-creates the `default` mesh):
 
 ```yaml
 {{- if and .Values.zoneProxy.enabled (not .Values.controlPlane.kdsGlobalAddress) }}
+  {{- if or .Values.controlPlane.defaults.skipMeshCreation (ne .Values.zoneProxy.mesh "default") }}
   {{- /* Unfederated zone - create mesh locally */}}
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: {{ .Values.zoneProxy.mesh }}
 ---
+  {{- end }}
 {{- end }}
 ```
 
-For the common case (`zoneProxy.mesh: default` + `skipMeshCreation: false`), both mechanisms produce the same result — the Helm template is a no-op since the mesh already exists.
+For the common case (`zoneProxy.mesh: default` + `skipMeshCreation: false`), the inner condition is false so the Helm template does not render the Mesh resource — the CP handles it.
 
 #### Flow 4: Terraform
 
@@ -445,11 +448,15 @@ replicas: 1
 
 **Best for**: Production environments wanting CP stability isolation.
 
+##### Recommendation
+
+**Option 1 (single release)** for single-mesh deployments. Option 2 when CP stability isolation is required or for multi-mesh scenarios.
+
 ##### Helm Chart Structure: Pod Spec Passthrough
 
 **Problem**: Current Helm charts enumerate Kubernetes fields one by one — the ingress chart alone is 292 lines for ~15 fields. Users are blocked when they need an unsupported field (e.g., `shareProcessNamespace`, `initContainers`, `topologySpreadConstraints`), creating a cat-and-mouse problem where the chart never fully covers the Kubernetes API surface.
 
-**Solution**: The zone proxy chart accepts raw `podSpec` and `containers` sections. Helm's `merge` overlays user values onto sensible defaults. Adding any PodSpec or container field requires zero template changes.
+**Solution**: The zone proxy chart accepts raw `podSpec`, `containers`, and `serviceSpec` sections. Helm's `merge` overlays user values onto sensible defaults. Adding any PodSpec, container, or Service field requires zero template changes.
 
 ```yaml
 # values.yaml — open-ended passthrough
@@ -458,7 +465,10 @@ zoneProxy:
   mesh: default
   podSpec: {}        # ANY valid PodSpec field (nodeSelector, tolerations, initContainers, etc.)
   containers: {}     # ANY container field (resources, lifecycle, securityContext, env, etc.)
+  serviceSpec: {}    # ANY Service spec field (externalTrafficPolicy, loadBalancerSourceRanges, etc.)
 ```
+
+HPA and PDB settings use dedicated fields (`autoscaling.*`, `pdb.*`) since they have few, well-defined options.
 
 This reduces template code from 292 lines to 71 lines while providing unlimited field coverage. See the [POC repo](https://github.com/slonka/poc-094-helm-zone-proxy) for a working demonstration.
 
