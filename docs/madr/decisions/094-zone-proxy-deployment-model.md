@@ -338,13 +338,21 @@ For single-mesh, cleanup is straightforward: `helm uninstall <release-name>`.
 **Service naming**: Follows the existing pattern from [`deployments/charts/kuma/templates/egress-service.yaml`](https://github.com/kumahq/kuma/blob/master/deployments/charts/kuma/templates/egress-service.yaml) but with per-mesh naming: `<release>-<mesh>-zoneproxy` (e.g., `kuma-payments-mesh-zoneproxy`).
 This prevents name collisions when multiple meshes are deployed.
 
-**Name length validation**: Helm templates should validate that the combined name fits within the 63-character Kubernetes limit:
+**Name length**: The 63-character limit only applies to **Service names** (DNS label, RFC 1123). Deployments, HPAs, PDBs, and ServiceAccounts use DNS subdomain names (253 chars) so they are not a concern. The zone proxy naming pattern `<release>-<mesh>-zoneproxy` should validate the Service name at install time:
 
 ```
-{{ if gt (add (len .Values.zoneProxy.mesh) (len $prefix)) 63 }} {{ fail "zone proxy service name exceeds 63 characters; use a shorter mesh name" }} {{ end }}
+{{ if gt (len (include "kuma.zoneProxy.serviceName" .)) 63 }} {{ fail "zone proxy service name exceeds 63 characters; use zoneProxy.service.name to set a shorter name" }} {{ end }}
 ```
 
-This catches the issue at install time rather than silently truncating.
+To handle long mesh names, expose `zoneProxy.service.name` as an optional override (matching the existing `ingress.service.name` pattern in `_helpers.tpl:65-68`):
+
+```yaml
+zoneProxy:
+  enabled: true
+  mesh: my-very-long-mesh-name-that-exceeds-limits
+  service:
+    name: zp-long-mesh  # Override when auto-generated name is too long
+```
 
 **Cost implication**: More LoadBalancers = higher cloud cost.
 Users can use NodePort or Ingress controllers to reduce LB count if needed.
@@ -454,9 +462,7 @@ This reduces template code from 292 lines to 71 lines while providing unlimited 
 
 #### Namespace Placement Options
 
-**K8s Naming Constraint**: Kubernetes resource names (Deployments, Services) are limited to 63 characters.
-With the naming pattern `zone-proxy-<mesh-name>`, mesh names should be kept under ~50 characters to avoid truncation.
-Helm templates truncate at 63 chars (see [`deployments/charts/kuma/templates/_helpers.tpl#L31-L46`](https://github.com/kumahq/kuma/blob/master/deployments/charts/kuma/templates/_helpers.tpl#L31-L46)) which may cause unexpected name collisions with very long mesh names.
+**K8s Naming Constraint**: Service names are limited to 63 characters (DNS label, RFC 1123). Other resources (Deployments, HPAs, PDBs) use DNS subdomain names (253 chars) and are not a concern. With the naming pattern `<release>-<mesh>-zoneproxy`, long mesh names may exceed the Service name limit. Users can override via `zoneProxy.service.name` (see Per-Mesh Services above).
 
 ##### Option A: kuma-system Namespace (Centralized) — Recommended for Single-Mesh
 
