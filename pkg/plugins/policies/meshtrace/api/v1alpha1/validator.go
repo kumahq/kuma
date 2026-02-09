@@ -5,6 +5,7 @@ import (
 	"math"
 	net_url "net/url"
 	"strconv"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/shopspring/decimal"
@@ -17,6 +18,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
+
+func isHTTPURL(endpoint string) bool {
+	return strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://")
+}
 
 func (r *MeshTraceResource) validate() error {
 	var verr validators.ValidationError
@@ -169,6 +174,44 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 		if otelBackend == nil {
 			verr.AddViolationAt(otelPath, validators.MustBeDefined)
 			break
+		}
+
+		if otelBackend.Endpoint == "" {
+			verr.AddViolationAt(otelPath.Field("endpoint"), validators.MustNotBeEmpty)
+			break
+		}
+
+		// For HTTP/HTTPS endpoints, validate as URL
+		if isHTTPURL(otelBackend.Endpoint) {
+			url, err := net_url.ParseRequestURI(otelBackend.Endpoint)
+			if err != nil {
+				verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
+				break
+			}
+
+			if url.Scheme != "http" && url.Scheme != "https" {
+				verr.AddViolationAt(otelPath.Field("endpoint"), "URL scheme must be http or https")
+			}
+
+			// Validate port if present
+			if portStr := url.Port(); portStr != "" {
+				port, err := strconv.Atoi(portStr)
+				if err != nil || port < 1 || port > math.MaxUint16 {
+					verr.AddViolationAt(otelPath.Field("endpoint"), "port must be valid (1-65535)")
+				}
+			}
+
+			if url.Hostname() == "" {
+				verr.AddViolationAt(otelPath.Field("endpoint"), "hostname must be defined")
+			}
+		} else if strings.Contains(otelBackend.Endpoint, "://") {
+			// If it contains :// but isn't http/https, validate to reject invalid schemes
+			url, err := net_url.ParseRequestURI(otelBackend.Endpoint)
+			if err != nil {
+				verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
+			} else if url.Scheme != "http" && url.Scheme != "https" {
+				verr.AddViolationAt(otelPath.Field("endpoint"), "URL scheme must be http or https")
+			}
 		}
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
