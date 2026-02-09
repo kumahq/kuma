@@ -20,7 +20,7 @@ To resolve these limitations, zone proxies are being changed to **mesh-scoped** 
 This architectural change requires revisiting the deployment model for zone proxies.
 
 **Scope of this document**: This MADR focuses on **deployment tooling** — how users deploy zone proxies via Helm, Konnect UI, and Terraform.
-The resource model (Dataplane representation, labels, tokens, workload identity) is covered in a separate MADR[^1].
+The resource model (Dataplane representation, labels, tokens, workload identity) is covered in a separate MADR. [^1]
 
 **Single-mesh focus**: This document assumes **single-mesh-per-zone as the default** deployment pattern.
 For multi-mesh scenarios, deploy additional zone proxies using separate Helm releases with a dedicated zone-proxy chart. This can be packaged either as an independent `kuma-zone-proxy` chart (separate release cycle, full independence) or as a subchart of the main kuma chart (single repo, tighter coupling). See the multi-mesh deployment guide for details.
@@ -30,7 +30,7 @@ This document addresses the following questions:
 1. Should we continue supporting `kuma.io/ingress-public-address` annotation?
 2. What should be the default Helm installation behavior for zone proxies?
 
-Note: Whether zone ingress and egress should be unified into a single zone proxy deployment is addressed in a separate MADR[^2].
+Note: Whether zone ingress and egress share a single deployment is addressed in a separate MADR. [^2]
 
 ### Decision Summary
 
@@ -43,10 +43,10 @@ Note: Whether zone ingress and egress should be unified into a single zone proxy
 | Question | Decision |
 |----------|----------|
 | 1. Support ingress-public-address? | **Yes** - keep as escape hatch |
-| 2. Default Helm behavior? | Single mesh, zone proxy with `role: all` |
+| 2. Default Helm behavior? | Single mesh, zone proxy enabled by default |
 
-Note: Resource model (Dataplane representation, labels, tokens, workload identity) is in a separate MADR[^1].
-Note: Unified vs Separate zone proxies is addressed in a separate MADR[^2].
+Note: Resource model (Dataplane representation, labels, tokens, workload identity) is in a separate MADR. [^1]
+Note: Zone proxy deployment topology (shared vs separate ingress/egress) is addressed in a separate MADR. [^2]
 
 ### Document Structure
 
@@ -109,12 +109,9 @@ For single-mesh deployments (the common case):
 │ Connect zone                                            │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│ Deployment mode:                                        │
-│   ● Unified (recommended) - single proxy, all roles    │
-│   ○ Separate - independent ingress/egress proxies      │
-│                                                         │
 │ Mesh: [default ▼]                                       │
-│                                                         │
+│ (if multiple meshes detected there will be info here on │
+│ how to handle that)                                     │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -194,7 +191,6 @@ kuma:
 
   zoneProxy:
     mesh: default
-    role: all
     replicas: 1
 ```
 
@@ -256,7 +252,6 @@ kuma:
 
   zoneProxy:
     mesh: ${mesh}
-    role: all
     replicas: 1
 ```
 
@@ -304,7 +299,7 @@ resource "helm_release" "zone_proxy" {
 The mesh validator returns an error: `"unable to delete mesh, there are still some dataplanes attached"`.
 See [`pkg/core/managers/apis/mesh/mesh_validator.go#L70-L88`](https://github.com/kumahq/kuma/blob/master/pkg/core/managers/apis/mesh/mesh_validator.go#L70-L88).
 
-**Unified Zone Proxy Benefit**: With zone proxies represented as Dataplane resources, this protection applies automatically.
+**Mesh-Scoped Zone Proxy Benefit**: With zone proxies represented as Dataplane resources, this protection applies automatically.
 No additional implementation is needed for mesh deletion handling - the existing safeguard covers the new deployment model.
 
 **Note**: Current ZoneIngress/ZoneEgress resources are NOT covered by this protection (they're global-scoped).
@@ -368,7 +363,6 @@ egress:
 
 zoneProxy:
   mesh: default
-  role: all
 ```
 
 #### Helm Release Structure Options
@@ -413,7 +407,6 @@ controlPlane:
 
 # zone-proxy-values.yaml (new chart)
 # mesh defaults to "default"
-role: all
 replicas: 1
 ```
 
@@ -426,6 +419,22 @@ replicas: 1
 | **GitOps** | ✅ Clear separation of concerns |
 
 **Best for**: Production environments wanting CP stability isolation.
+
+##### Helm Chart Structure: Pod Spec Passthrough
+
+**Problem**: Current Helm charts enumerate Kubernetes fields one by one — the ingress chart alone is 292 lines for ~15 fields. Users are blocked when they need an unsupported field (e.g., `shareProcessNamespace`, `initContainers`, `topologySpreadConstraints`), creating a cat-and-mouse problem where the chart never fully covers the Kubernetes API surface.
+
+**Solution**: The zone proxy chart accepts raw `podSpec` and `containers` sections. Helm's `merge` overlays user values onto sensible defaults. Adding any PodSpec or container field requires zero template changes.
+
+```yaml
+# values.yaml — open-ended passthrough
+zoneProxy:
+  mesh: default
+  podSpec: {}        # ANY valid PodSpec field (nodeSelector, tolerations, initContainers, etc.)
+  containers: {}     # ANY container field (resources, lifecycle, securityContext, env, etc.)
+```
+
+This reduces template code from 292 lines to 71 lines while providing unlimited field coverage. See the POC at [`docs/madr/decisions/pocs/094/`](pocs/094/README.md) for a working demonstration.
 
 #### Namespace Placement Options
 
@@ -458,9 +467,9 @@ metadata:
 
 Deploy zone proxies in `kuma-system` namespace.
 
-### Unified vs Separate Zone Proxies
+### Zone Proxy Deployment Topology
 
-Left to a separate MADR[^2].
+Whether zone ingress and egress share a single deployment is addressed in a separate MADR. [^2]
 
 ### Question 1: Support kuma.io/ingress-public-address
 
@@ -514,7 +523,7 @@ Use cases for annotation override:
 
 #### Recommendation
 
-**Single-mesh with unified zone proxy** - Deploy a single zone proxy for the default mesh:
+**Single-mesh zone proxy** - Deploy a single zone proxy for the default mesh:
 
 ```yaml
 controlPlane:
@@ -526,13 +535,7 @@ controlPlane:
 # zoneProxy.mesh defaults to "default", no need to specify explicitly
 ```
 
-The `role` setting controls deployment topology:
-- `all` (default): Single Deployment handling both ingress and egress
-- `ingress`: Single Deployment handling only ingress
-- `egress`: Single Deployment handling only egress
-
 This provides single-mesh readiness while requiring explicit mesh creation.
-The unified default reduces resource usage and operational complexity.
 
 ## Decision
 
@@ -550,10 +553,10 @@ The unified default reduces resource usage and operational complexity.
 
 1. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
-2. **Helm defaults**: Single-mesh zone proxy deployment with `role: all`.
+2. **Helm defaults**: Single-mesh zone proxy deployment.
    No default mesh created (`skipMeshCreation: true`).
 
-Note: Unified vs Separate zone proxies is addressed in a separate MADR[^2].
+Note: Zone proxy deployment topology (shared vs separate ingress/egress) is addressed in a separate MADR. [^2]
 
 ### Out of Scope (Deferred to Resource Model MADR)
 
@@ -591,4 +594,4 @@ The following topics are covered in a separate MADR:
 | Annotations | `pkg/plugins/runtime/k8s/metadata/annotations.go` |
 
 [^1]: Resource model MADR link will be backfilled when created.
-[^2]: Unified vs Separate zone proxies MADR link will be backfilled when created.
+[^2]: Zone proxy deployment topology MADR link will be backfilled when created.
