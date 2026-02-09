@@ -359,6 +359,8 @@ Users can use NodePort or Ingress controllers to reduce LB count if needed.
 
 ##### 3. Migration Path from Global Zone Proxies
 
+**No automatic changes on upgrade**: Since `zoneProxy.enabled` defaults to `false`, running `helm upgrade` with existing values will not deploy mesh-scoped zone proxies or modify the current ingress/egress setup. Migration is entirely opt-in.
+
 **Phased migration**:
 
 1. **Phase 1**: Deploy mesh-scoped zone proxies alongside global ones
