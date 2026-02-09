@@ -434,7 +434,7 @@ zoneProxy:
   containers: {}     # ANY container field (resources, lifecycle, securityContext, env, etc.)
 ```
 
-This reduces template code from 292 lines to 71 lines while providing unlimited field coverage. See the [POC gist](https://gist.github.com/slonka/1e46b1a64036ed9eef9b2840cc1aa399) for a working demonstration.
+This reduces template code from 292 lines to 71 lines while providing unlimited field coverage. See the [POC repo](https://github.com/slonka/poc-094-helm-zone-proxy) for a working demonstration.
 
 #### Namespace Placement Options
 
