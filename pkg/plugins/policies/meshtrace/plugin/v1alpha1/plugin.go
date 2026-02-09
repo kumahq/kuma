@@ -218,7 +218,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		)
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
-	if backend.OpenTelemetry != nil {
+	if backend.OpenTelemetry != nil && endpoint.ExternalService == nil {
 		builder.Configure(clusters.Http2())
 	}
 
@@ -252,6 +252,35 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 }
 
 func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
+	if strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://") {
+		url, err := net_url.ParseRequestURI(cfg.Endpoint)
+		if err != nil {
+			return &xds.Endpoint{
+				Target: cfg.Endpoint,
+				Port:   0,
+			}
+		}
+
+		var port uint32
+		if portStr := url.Port(); portStr != "" {
+			val, _ := strconv.ParseInt(portStr, 10, 32)
+			port = uint32(val)
+		} else if url.Scheme == "https" {
+			port = 443
+		} else {
+			port = 80
+		}
+
+		return &xds.Endpoint{
+			Target: url.Hostname(),
+			Port:   port,
+			ExternalService: &xds.ExternalService{
+				TLSEnabled:         url.Scheme == "https",
+				AllowRenegotiation: true,
+			},
+		}
+	}
+
 	target := strings.Split(cfg.Endpoint, ":")
 	port := uint32(4317) // default gRPC port
 	if len(target) > 1 {
