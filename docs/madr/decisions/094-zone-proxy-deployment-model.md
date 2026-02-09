@@ -20,7 +20,6 @@ To resolve these limitations, zone proxies are being changed to **mesh-scoped** 
 This architectural change requires revisiting the deployment model for zone proxies.
 
 **Scope of this document**: This MADR focuses on **deployment tooling** — how users deploy zone proxies via Helm, Konnect UI, and Terraform.
-The resource model (Dataplane representation, labels, tokens, workload identity) is covered in a separate MADR. [^1]
 
 **Single-mesh focus**: This document assumes **single-mesh-per-zone as the default** deployment pattern.
 For multi-mesh scenarios, deploy additional zone proxies using separate Helm releases with a dedicated zone-proxy chart. This can be packaged either as an independent `kuma-zone-proxy` chart (separate release cycle, full independence) or as a subchart of the main kuma chart (single repo, tighter coupling). See the multi-mesh deployment guide for details.
