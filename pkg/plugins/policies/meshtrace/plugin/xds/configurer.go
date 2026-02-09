@@ -3,6 +3,7 @@ package xds
 import (
 	net_url "net/url"
 	"strings"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -11,6 +12,7 @@ import (
 	tracingv3 "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -155,16 +157,35 @@ func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Htt
 }
 
 func (c *Configurer) opentelemetryConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
-	otelConfig := envoy_trace.OpenTelemetryConfig{
-		ServiceName: c.Service,
-		GrpcService: &envoy_core.GrpcService{
-			TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
-				EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
-					ClusterName: clusterName,
+	otelBackend := pointer.Deref(c.Conf.Backends)[0].OpenTelemetry
+	var otelConfig envoy_trace.OpenTelemetryConfig
+
+	if strings.HasPrefix(otelBackend.Endpoint, "http://") || strings.HasPrefix(otelBackend.Endpoint, "https://") {
+		otelConfig = envoy_trace.OpenTelemetryConfig{
+			ServiceName: c.Service,
+			HttpService: &envoy_core.HttpService{
+				HttpUri: &envoy_core.HttpUri{
+					Uri: otelBackend.Endpoint,
+					HttpUpstreamType: &envoy_core.HttpUri_Cluster{
+						Cluster: clusterName,
+					},
+					Timeout: durationpb.New(10 * time.Second),
 				},
 			},
-		},
+		}
+	} else {
+		otelConfig = envoy_trace.OpenTelemetryConfig{
+			ServiceName: c.Service,
+			GrpcService: &envoy_core.GrpcService{
+				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+						ClusterName: clusterName,
+					},
+				},
+			},
+		}
 	}
+
 	otelConfigAny, err := proto.MarshalAnyDeterministic(&otelConfig)
 	if err != nil {
 		return nil, err

@@ -9,6 +9,7 @@ import (
 
 type Observability interface {
 	ZipkinCollectorURL() string
+	OpenTelemetryCollectorHTTPURL() string
 	TracedServices() ([]string, error)
 	Name() string
 }
