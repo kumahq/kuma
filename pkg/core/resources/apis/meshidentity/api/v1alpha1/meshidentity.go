@@ -31,12 +31,13 @@ type SpiffeID struct {
 	Path        *string `json:"path,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Bundled;Spire
+// +kubebuilder:validation:Enum=Bundled;Spire;Extension
 type ProviderType string
 
 const (
-	BundledType ProviderType = "Bundled"
-	SpireType   ProviderType = "Spire"
+	BundledType   ProviderType = "Bundled"
+	ExtensionType ProviderType = "Extension"
+	SpireType     ProviderType = "Spire"
 )
 
 type Provider struct {

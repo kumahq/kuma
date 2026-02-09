@@ -311,6 +311,7 @@ components:
                   enum:
                     - Bundled
                     - Spire
+                    - Extension
                   type: string
               required:
                 - type

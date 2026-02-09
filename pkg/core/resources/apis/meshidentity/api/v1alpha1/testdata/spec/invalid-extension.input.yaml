@@ -1,0 +1,8 @@
+spiffeID:
+  trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  path: "/ns/.Namespace/sa/{{ .ServiceAccount }}"
+provider:
+  type: Extension
+  extension:
+    type: ""
+    config:
