@@ -182,6 +182,47 @@ status: {}
 
 Zone ingress related section of MeshService should be computed on the zone where zone ingress is running.
 
+### Zone Egress Address in MeshExternalService
+
+When configuring outbounds to external services, we need to know the zone egress address and port.
+Rather than scanning through all Dataplanes to find the one with `networking.zoneEgress`,
+we store this information directly in the MeshExternalService status for efficient lookup.
+
+#### Proposed Approach: MeshExternalService Status
+
+Unlike MeshService (where `zoneIngress` is in `spec` for cross-zone syncing),
+the `zoneEgress` section belongs in `status` because:
+- MeshExternalService is typically created on Global and synced to zones
+- Each zone has its own zone egress with different addresses
+- Status is computed locally per zone and not synced back to Global
+
+```
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: external-api
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  match:
+    type: HostnameGenerator
+    port: 443
+    protocol: http2
+  endpoints:
+    - address: api.external.com
+      port: 443
+  tls:
+    enabled: true
+status:
+  zoneEgress:
+    address: 192.168.0.2 # address of local zone egress
+    port: 10003 # port of local zone egress
+    sni: "ae10a8071b8a8eeb8.backend.8080.demo.mes"
+```
+
+Zone egress section should be computed by the Zone CP based on local Dataplanes with `networking.zoneEgress`.
+
 ## Deprecation of ZoneIngress and ZoneEgress Resources
 
 TBD
