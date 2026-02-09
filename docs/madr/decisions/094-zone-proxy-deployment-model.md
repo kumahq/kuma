@@ -327,7 +327,6 @@ For single-mesh, cleanup is straightforward: `helm uninstall <release-name>`.
 
 **Rationale**: With mesh-scoped zone proxies:
 - Each mesh has **different mTLS CA certificates**
-- Zone ingress must present the correct mesh's certificate
 - Zone egress must verify the correct mesh's CA
 - Sharing a LoadBalancer would require SNI-based cert selection (complex)
 
