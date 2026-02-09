@@ -422,8 +422,6 @@ zoneProxy:
 | **Failure blast radius** | ⚠️ Bad values.yaml can break entire zone |
 | **GitOps** | ✅ Single source of truth for zone configuration |
 
-**Best for**: Single-mesh deployments (the default), teams preferring simplicity, GitOps workflows.
-
 ##### Standalone Release (Multi-Mesh)
 
 For additional meshes, install the same `kuma-zone-proxy` chart as a separate Helm release:
@@ -497,8 +495,6 @@ metadata:
 | **Monitoring** | ✅ Single namespace to scrape metrics |
 | **Isolation** | ✅ Single-mesh = no isolation concern |
 | **Resource quotas** | ✅ Single-mesh = simple quota management |
-
-**Best for**: Single-mesh deployments (the default), simpler environments.
 
 ##### Recommendation
 
