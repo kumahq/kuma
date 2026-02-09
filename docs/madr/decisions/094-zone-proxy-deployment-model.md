@@ -201,7 +201,11 @@ kuma:
     replicas: 1
 ```
 
-For unfederated zones, Helm can also create the Mesh resource:
+**Mesh creation in unfederated zones**: Unlike federated zones (where the mesh is synced from the Global CP), unfederated zones will create the mesh locally. There are two mechanisms:
+
+1. **CP auto-creation**: When `skipMeshCreation: false` (the default), the CP creates the `default` mesh at startup (`EnsureDefaultMeshExists` in `pkg/defaults/mesh.go`). This only creates a mesh named `default` — non-default mesh names are not auto-created.
+
+2. **Helm template**: For non-default mesh names, or when `skipMeshCreation: true`, Helm can create the Mesh resource:
 
 ```yaml
 {{- if and .Values.zoneProxy.enabled (not .Values.controlPlane.kdsGlobalAddress) }}
@@ -213,6 +217,8 @@ metadata:
 ---
 {{- end }}
 ```
+
+For the common case (`zoneProxy.mesh: default` + `skipMeshCreation: false`), both mechanisms produce the same result — the Helm template is a no-op since the mesh already exists.
 
 #### Flow 4: Terraform
 
