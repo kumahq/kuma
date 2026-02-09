@@ -22,7 +22,7 @@ This architectural change requires revisiting the deployment model for zone prox
 **Scope of this document**: This MADR focuses on **deployment tooling** — how users deploy zone proxies via Helm, Konnect UI, and Terraform.
 
 **Single-mesh focus**: This document assumes **single-mesh-per-zone as the default** deployment pattern.
-For multi-mesh scenarios, deploy additional zone proxies using separate Helm releases with a dedicated zone-proxy chart. This can be packaged either as an independent `kuma-zone-proxy` chart (separate release cycle, full independence) or as a subchart of the main kuma chart (single repo, tighter coupling). See the multi-mesh deployment guide for details.
+For multi-mesh scenarios, deploy additional zone proxies using separate Helm releases with a dedicated `kuma-zone-proxy` chart. A multi-mesh deployment guide will be provided separately.
 
 This document addresses the following questions:
 
@@ -38,7 +38,7 @@ Note: Whether zone ingress and egress share a single deployment is addressed in 
 | Per-mesh Services | **Yes** - each mesh gets its own Service/LoadBalancer for mTLS isolation |
 | Namespace placement | **kuma-system** |
 | Deployment mechanism | **Helm-managed** (current pattern extended for mesh-scoped zone proxies) |
-| Helm release structure | **Single release** (CP + zone proxy in one chart) |
+| Helm release structure | **Subchart** — single release for default mesh; standalone release for additional meshes |
 
 | Question | Decision |
 |----------|----------|
@@ -355,6 +355,7 @@ zoneProxy:
   mesh: my-very-long-mesh-name-that-exceeds-limits
   service:
     name: zp-long-mesh  # Override when auto-generated name is too long
+    spec: {}             # Additional Service spec fields if needed
 ```
 
 **Cost implication**: More LoadBalancers = higher cloud cost.
@@ -390,9 +391,13 @@ zoneProxy:
   mesh: default
 ```
 
-#### Helm Release Structure Options
+#### Helm Release Structure: Subchart Approach
 
-##### Option 1: Single Release (CP + Zone Proxy) — Recommended for Single-Mesh
+The zone proxy is packaged as a `kuma-zone-proxy` subchart of the main `kuma` chart. This single packaging naturally supports both single-mesh and multi-mesh deployment modes.
+
+##### Single Release (Default — Single-Mesh)
+
+The `kuma-zone-proxy` subchart is a dependency of the main `kuma` chart. A single `helm install` deploys everything:
 
 ```bash
 helm install kuma kuma/kuma -f values.yaml
@@ -419,53 +424,53 @@ zoneProxy:
 
 **Best for**: Single-mesh deployments (the default), teams preferring simplicity, GitOps workflows.
 
-##### Option 2: Two Releases (CP separate from Zone Proxy)
+##### Standalone Release (Multi-Mesh)
+
+For additional meshes, install the same `kuma-zone-proxy` chart as a separate Helm release:
 
 ```bash
-helm install kuma-cp kuma/kuma -f cp-values.yaml
-helm install kuma-zone-proxy kuma/kuma-zone-proxy -f zone-proxy-values.yaml
+helm install kuma-zone-proxy-payments kuma/kuma-zone-proxy -f zone-proxy-values.yaml
 ```
 
 ```yaml
-# cp-values.yaml
-controlPlane:
-  mode: zone
-  zone: zone-1
-
-# zone-proxy-values.yaml (new chart)
+# zone-proxy-values.yaml
 enabled: true
-# mesh defaults to "default"
+mesh: payments-mesh
 replicas: 1
 ```
 
 | Aspect | Analysis |
 |--------|----------|
-| **Simplicity** | ⚠️ Two charts to manage |
+| **Simplicity** | ⚠️ Separate release per additional mesh |
 | **Upgrades** | ✅ Can upgrade CP independently of zone proxy |
 | **Lifecycle coupling** | ✅ Zone proxy changes don't affect CP stability |
 | **Failure blast radius** | ✅ Bad zone proxy config doesn't break CP |
 | **GitOps** | ✅ Clear separation of concerns |
 
-**Best for**: Production environments wanting CP stability isolation.
+**Best for**: Multi-mesh deployments, production environments wanting CP stability isolation.
 
 ##### Recommendation
 
-**Option 1 (single release)** for single-mesh deployments. Option 2 when CP stability isolation is required or for multi-mesh scenarios.
+**Subchart approach**: single release for the default mesh (simple, one `helm install`); standalone release of the same `kuma-zone-proxy` chart for additional meshes.
 
-##### Helm Chart Structure: Pod Spec Passthrough
+##### Helm Chart Structure: Passthrough Values
 
 **Problem**: Current Helm charts enumerate Kubernetes fields one by one — the ingress chart alone is 292 lines for ~15 fields. Users are blocked when they need an unsupported field (e.g., `shareProcessNamespace`, `initContainers`, `topologySpreadConstraints`), creating a cat-and-mouse problem where the chart never fully covers the Kubernetes API surface.
 
-**Solution**: The zone proxy chart accepts raw `podSpec`, `containers`, and `serviceSpec` sections. Helm's `merge` overlays user values onto sensible defaults. Adding any PodSpec, container, or Service field requires zero template changes.
+**Solution**: The zone proxy chart groups passthrough values by Kubernetes resource. Helm's `merge` overlays user values onto sensible defaults. Adding any PodSpec, container, or Service field requires zero template changes.
 
 ```yaml
-# values.yaml — open-ended passthrough
+# values.yaml — resource-grouped passthrough
 zoneProxy:
   enabled: true
   mesh: default
-  podSpec: {}        # ANY valid PodSpec field (nodeSelector, tolerations, initContainers, etc.)
-  containers: {}     # ANY container field (resources, lifecycle, securityContext, env, etc.)
-  serviceSpec: {}    # ANY Service spec field (externalTrafficPolicy, loadBalancerSourceRanges, etc.)
+  service:
+    name: ""           # Override when auto-generated name exceeds 63 chars
+    spec: {}           # ANY Service spec field (externalTrafficPolicy, loadBalancerSourceRanges, etc.)
+  deployment:
+    name: ""           # Override when auto-generated name is needed
+    podSpec: {}        # ANY valid PodSpec field (nodeSelector, tolerations, initContainers, etc.)
+    containers: []     # Container overrides (resources, lifecycle, securityContext, env, etc.)
 ```
 
 HPA and PDB settings use dedicated fields (`autoscaling.*`, `pdb.*`) since they have few, well-defined options.
