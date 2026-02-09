@@ -43,7 +43,7 @@ Note: Whether zone ingress and egress share a single deployment is addressed in 
 | Question | Decision |
 |----------|----------|
 | 1. Support ingress-public-address? | **Yes** - keep as escape hatch |
-| 2. Default Helm behavior? | Single mesh, zone proxy enabled by default |
+| 2. Default Helm behavior? | `zoneProxy.enabled: false` — explicit opt-in, like `ingress.enabled` |
 
 Note: Resource model (Dataplane representation, labels, tokens, workload identity) is in a separate MADR. [^1]
 Note: Zone proxy deployment topology (shared vs separate ingress/egress) is addressed in a separate MADR. [^2]
@@ -96,7 +96,7 @@ Deployment contexts:
 └─────────────────────────────────────────────────────────┘
 ```
 
-Generates `values.yaml` with `ingress.enabled: true` / `egress.enabled: true`
+Generates `values.yaml` with `ingress.enabled: true` / `egress.enabled: true` (explicit opt-in)
 
 ##### Proposed Flow (Single-Mesh Default)
 
@@ -117,17 +117,7 @@ For single-mesh deployments (the common case):
 
 **Step 2: Generated values.yaml**
 
-For the default mesh, the generated values.yaml is minimal — `zoneProxy.mesh` defaults to `"default"` so no explicit zone proxy section is needed:
-
-```yaml
-kuma:
-  controlPlane:
-    mode: zone
-    zone: zone-1
-    kdsGlobalAddress: grpcs://us.mesh.sync.konghq.tech:443
-```
-
-If the user selected a non-default mesh name, the zone proxy section is included:
+For the default mesh, the generated values.yaml enables the zone proxy explicitly:
 
 ```yaml
 kuma:
@@ -137,6 +127,21 @@ kuma:
     kdsGlobalAddress: grpcs://us.mesh.sync.konghq.tech:443
 
   zoneProxy:
+    enabled: true
+    # mesh defaults to "default"
+```
+
+If the user selected a non-default mesh name:
+
+```yaml
+kuma:
+  controlPlane:
+    mode: zone
+    zone: zone-1
+    kdsGlobalAddress: grpcs://us.mesh.sync.konghq.tech:443
+
+  zoneProxy:
+    enabled: true
     mesh: payments-mesh
 ```
 
@@ -161,7 +166,9 @@ kuma:
     zone: zone-1
     kdsGlobalAddress: grpcs://global-cp:5685
 
-  # zoneProxy.mesh defaults to "default", explicit only if different
+  zoneProxy:
+    enabled: true
+    # mesh defaults to "default", explicit only if different
 ```
 
 - Helm deploys zone proxy Deployment
@@ -190,6 +197,7 @@ kuma:
     # No kdsGlobalAddress = unfederated
 
   zoneProxy:
+    enabled: true
     mesh: default
     replicas: 1
 ```
@@ -197,7 +205,7 @@ kuma:
 For unfederated zones, Helm can also create the Mesh resource:
 
 ```yaml
-{{- if not .Values.controlPlane.kdsGlobalAddress }}
+{{- if and .Values.zoneProxy.enabled (not .Values.controlPlane.kdsGlobalAddress) }}
   {{- /* Unfederated zone - create mesh locally */}}
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -251,6 +259,7 @@ kuma:
     kdsGlobalAddress: ${kds_global_address}
 
   zoneProxy:
+    enabled: true
     mesh: ${mesh}
     replicas: 1
 ```
@@ -362,6 +371,7 @@ egress:
   enabled: false
 
 zoneProxy:
+  enabled: true
   mesh: default
 ```
 
@@ -379,7 +389,9 @@ controlPlane:
   mode: zone
   zone: zone-1
 
-# zoneProxy.mesh defaults to "default"
+zoneProxy:
+  enabled: true
+  # mesh defaults to "default"
 ```
 
 | Aspect | Analysis |
@@ -406,6 +418,7 @@ controlPlane:
   zone: zone-1
 
 # zone-proxy-values.yaml (new chart)
+enabled: true
 # mesh defaults to "default"
 replicas: 1
 ```
@@ -429,6 +442,7 @@ replicas: 1
 ```yaml
 # values.yaml — open-ended passthrough
 zoneProxy:
+  enabled: true
   mesh: default
   podSpec: {}        # ANY valid PodSpec field (nodeSelector, tolerations, initContainers, etc.)
   containers: {}     # ANY container field (resources, lifecycle, securityContext, env, etc.)
@@ -523,19 +537,19 @@ Use cases for annotation override:
 
 #### Recommendation
 
-**Single-mesh zone proxy** - Deploy a single zone proxy for the default mesh:
+**`zoneProxy.enabled: false`** — zone proxy deployment requires explicit opt-in, consistent with the existing `ingress.enabled` / `egress.enabled` pattern:
 
 ```yaml
 controlPlane:
   mode: zone
   zone: zone-1
-  defaults:
-    skipMeshCreation: true  # No default mesh
 
-# zoneProxy.mesh defaults to "default", no need to specify explicitly
+zoneProxy:
+  enabled: true        # Explicit opt-in (default: false)
+  # mesh defaults to "default"
 ```
 
-This provides single-mesh readiness while requiring explicit mesh creation.
+This avoids a broken state where a zone proxy Deployment targets a mesh that doesn't exist. The `skipMeshCreation` flag is orthogonal — it controls whether the CP auto-creates the `default` Mesh at startup, and is independent of zone proxy deployment.
 
 ## Decision
 
@@ -553,8 +567,8 @@ This provides single-mesh readiness while requiring explicit mesh creation.
 
 1. **Keep kuma.io/ingress-public-address**: Support the annotation as an escape hatch for complex network topologies, but document Service-based configuration as the primary method.
 
-2. **Helm defaults**: Single-mesh zone proxy deployment.
-   No default mesh created (`skipMeshCreation: true`).
+2. **Helm defaults**: `zoneProxy.enabled: false` — explicit opt-in, consistent with `ingress.enabled` / `egress.enabled`.
+   The `skipMeshCreation` flag is orthogonal to zone proxy deployment.
 
 Note: Zone proxy deployment topology (shared vs separate ingress/egress) is addressed in a separate MADR. [^2]
 
