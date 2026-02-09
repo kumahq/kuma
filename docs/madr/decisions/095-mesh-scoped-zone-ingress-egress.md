@@ -223,10 +223,6 @@ status:
 
 Zone egress section should be computed by the Zone CP based on local Dataplanes with `networking.zoneEgress`.
 
-## Deprecation of ZoneIngress and ZoneEgress Resources
-
-TBD
-
 ## Implications for Kong Mesh
 
 None
