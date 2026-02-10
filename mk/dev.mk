@@ -69,18 +69,18 @@ PROTOC_BIN=$(shell $(MISE) which protoc)
 SHELLCHECK=$(MISE) exec -- shellcheck
 ACTIONLINT=$(MISE) exec -- actionlint
 CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
-# For Go-installed tools, use CI_TOOLS_BIN_DIR path where they're installed
-PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
-PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
+# Defensive tool resolution: try CI_TOOLS_BIN_DIR first, fall back to PATH
+PROTOC_GEN_GO=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-go && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-go || command -v protoc-gen-go)
+PROTOC_GEN_GO_GRPC=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc || command -v protoc-gen-go-grpc)
 PROTOC_GEN_VALIDATE=$(MISE) exec -- protoc-gen-validate
 PROTOC_GEN_KUMADOC=$(MISE) exec -- protoc-gen-kumadoc
-PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
+PROTOC_GEN_JSONSCHEMA=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema || command -v protoc-gen-jsonschema)
 GINKGO=$(shell $(MISE) which ginkgo)
 GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
 HELM_DOCS=$(shell $(MISE) which helm-docs 2>/dev/null || echo "")
 KUBE_LINTER=$(shell $(MISE) which kube-linter 2>/dev/null || echo "")
 HADOLINT=$(MISE) exec -- hadolint
-OAPI_CODEGEN=$(CI_TOOLS_BIN_DIR)/oapi-codegen
+OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
