@@ -12,11 +12,7 @@ docs: helm-docs docs/generated/raw docs/generated/openapi.yaml $(DOCS_EXTRA_TARG
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
-	@if [ -n "$(HELM_DOCS)" ]; then \
-		$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts ; \
-	else \
-		echo "Warning: helm-docs not found, skipping helm documentation generation" ; \
-	fi
+	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/generated/raw
 docs/generated/raw: docs/generated/raw/rbac.yaml

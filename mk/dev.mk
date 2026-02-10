@@ -78,8 +78,8 @@ PROTOC_GEN_KUMADOC=$(MISE) exec -- protoc-gen-kumadoc
 PROTOC_GEN_JSONSCHEMA=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema || command -v protoc-gen-jsonschema)
 GINKGO=$(shell $(MISE) which ginkgo)
 GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
-HELM_DOCS=$(shell $(MISE) which helm-docs 2>/dev/null || echo "")
-KUBE_LINTER=$(shell $(MISE) which kube-linter 2>/dev/null || echo "")
+HELM_DOCS=$(shell $(MISE) which helm-docs)
+KUBE_LINTER=$(shell $(MISE) which kube-linter)
 HADOLINT=$(shell $(MISE) which hadolint)
 OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
 
