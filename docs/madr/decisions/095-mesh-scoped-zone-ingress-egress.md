@@ -19,7 +19,7 @@ We need to rework the API to make Zone Ingress and Zone Egress mesh-scoped by le
 
 It doesn't seem possible to keep using ZoneIngress/ZoneEgress resources and change their scope from `global` to `mesh`.
 Main reason for that is migration. Migration requires CP to work with old and new resources at the same time,
-however resource in Kuma can't have 2 scopes:
+however a resource in Kuma can't have 2 scopes:
 
 ```go
 var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -40,11 +40,11 @@ name: zone-ingress-1
 spec:
   networking:
     zoneIngress:
-      address: 10.0.0.1 # required, address listener binds to 
+      address: 10.0.0.1 # required, address listener binds to
       port: 10001 # required, port listener binds to
       advertisedAddress: 192.168.1.100  # required, address visible to other zones
       advertisedPort: 30001  # required, port visible to other zones
-      name: zi-port # optional, user should be able to set name since `port` can be the same when `address` are different
+      name: zi-port # optional, user should be able to set name since `port` can be the same when `addresses` are different
     zoneEgress:
       address: 10.0.0.2 # required
       port: 10002 # required
