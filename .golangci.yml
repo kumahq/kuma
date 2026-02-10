@@ -57,8 +57,8 @@ linters:
               desc: pkg can't import app
     forbidigo:
       forbid:
-        - pattern: 'span\.End\('
-          msg: "Use core_tracing.SafeSpanEnd(span) instead of span.End() to prevent panics during OTel init/shutdown"
+        - pattern: '[a-zA-Z_]\w*\.End\('
+          msg: "Use tracing.SafeSpanEnd(span) instead of span.End() to prevent panics during OTel init/shutdown"
       exclude-godoc-examples: false
       analyze-types: true
     gocritic:
@@ -185,7 +185,11 @@ linters:
       - linters:
           - forbidigo
         path: pkg/core/tracing/span\.go
-        text: 'Use core_tracing.SafeSpanEnd'
+        text: 'Use tracing.SafeSpanEnd'
+      - linters:
+          - forbidigo
+        path: pkg/core/tracing/.*_test\.go
+        text: 'Use tracing.SafeSpanEnd'
     paths:
       - pkg/transparentproxy/iptables/builder
     warn-unused: true

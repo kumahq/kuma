@@ -13,7 +13,7 @@ var log = core.Log.WithName("tracing")
 //
 // This function should be used instead of calling span.End() directly to
 // handle race conditions where the OTel provider might be shutting down.
-func SafeSpanEnd(span trace.Span) {
+func SafeSpanEnd(span trace.Span, opts ...trace.SpanEndOption) {
 	if span == nil {
 		return
 	}
@@ -22,5 +22,5 @@ func SafeSpanEnd(span trace.Span) {
 			log.V(1).Info("recovered from panic in span.End()", "panic", r)
 		}
 	}()
-	span.End()
+	span.End(opts...)
 }
