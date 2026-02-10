@@ -66,10 +66,11 @@ KUBEBUILDER_ASSETS=$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --
 CONTROLLER_GEN=$(shell $(MISE) which controller-gen)
 KUBECTL=$(shell $(MISE) which kubectl)
 PROTOC_BIN=$(shell $(MISE) which protoc)
-SHELLCHECK=$(MISE) exec -- shellcheck
-ACTIONLINT=$(MISE) exec -- actionlint
+SHELLCHECK=$(shell $(MISE) which shellcheck)
+ACTIONLINT=$(shell $(MISE) which actionlint)
 CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
-# Defensive tool resolution: try CI_TOOLS_BIN_DIR first, fall back to PATH
+# Go-installed tools: mise which doesn't work (looks in mise paths, not GOBIN)
+# Use defensive fallback: check CI_TOOLS_BIN_DIR first, then PATH
 PROTOC_GEN_GO=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-go && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-go || command -v protoc-gen-go)
 PROTOC_GEN_GO_GRPC=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc || command -v protoc-gen-go-grpc)
 PROTOC_GEN_VALIDATE=$(MISE) exec -- protoc-gen-validate
@@ -79,7 +80,7 @@ GINKGO=$(shell $(MISE) which ginkgo)
 GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
 HELM_DOCS=$(shell $(MISE) which helm-docs 2>/dev/null || echo "")
 KUBE_LINTER=$(shell $(MISE) which kube-linter 2>/dev/null || echo "")
-HADOLINT=$(MISE) exec -- hadolint
+HADOLINT=$(shell $(MISE) which hadolint)
 OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
