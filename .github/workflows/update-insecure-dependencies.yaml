@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Set Swap Space
-        uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761
+        uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761 # master
         with:
           swap-size-gb: 10
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -35,7 +35,7 @@ jobs:
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |
-          SCAN_OUTPUT_BEFORE=$(osv-scanner "${OSV_SCANNER_ADDITIONAL_OPTS}" --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          SCAN_OUTPUT_BEFORE=$(osv-scanner ${OSV_SCANNER_ADDITIONAL_OPTS:+$OSV_SCANNER_ADDITIONAL_OPTS} --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
           {
             echo "SCAN_OUTPUT_BEFORE<<EOF"
             echo "$SCAN_OUTPUT_BEFORE"
@@ -48,7 +48,7 @@ jobs:
       - name: "Prepare commit body - after"
         id: prepare_commit_body_after
         run: |
-          SCAN_OUTPUT_AFTER=$(osv-scanner "${OSV_SCANNER_ADDITIONAL_OPTS}" --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          SCAN_OUTPUT_AFTER=$(osv-scanner ${OSV_SCANNER_ADDITIONAL_OPTS:+$OSV_SCANNER_ADDITIONAL_OPTS} --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
           {
             echo "SCAN_OUTPUT_AFTER<<EOF"
             echo "$SCAN_OUTPUT_AFTER"
