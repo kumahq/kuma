@@ -6,6 +6,7 @@ linters:
     - bodyclose
     - depguard
     - errcheck
+    - forbidigo
     - ginkgolinter
     - gocritic
     - gomodguard
@@ -54,6 +55,12 @@ linters:
           deny:
             - pkg: github.com/kumahq/kuma/v2/app
               desc: pkg can't import app
+    forbidigo:
+      forbid:
+        - pattern: 'span\.End\('
+          msg: "Use core_tracing.SafeSpanEnd(span) instead of span.End() to prevent panics during OTel init/shutdown"
+      exclude-godoc-examples: false
+      analyze-types: true
     gocritic:
       disabled-checks:
         - appendAssign
@@ -175,6 +182,10 @@ linters:
       - linters:
           - staticcheck
         text: 'ST1001: should not use dot imports'
+      - linters:
+          - forbidigo
+        path: pkg/core/tracing/span\.go
+        text: 'Use core_tracing.SafeSpanEnd'
     paths:
       - pkg/transparentproxy/iptables/builder
     warn-unused: true
