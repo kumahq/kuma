@@ -12,6 +12,10 @@ docs: helm-docs docs/generated/raw docs/generated/openapi.yaml $(DOCS_EXTRA_TARG
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
+	@if [ ! -x "$(HELM_DOCS)" ]; then \
+		echo "Error: helm-docs not found or not executable. Run 'make install' to install required tools."; \
+		exit 1; \
+	fi
 	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/generated/raw

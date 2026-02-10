@@ -42,6 +42,10 @@ format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
+	@if [ ! -x "$(KUBE_LINTER)" ]; then \
+		echo "Error: kube-linter not found or not executable. Run 'make install' to install required tools."; \
+		exit 1; \
+	fi
 	@find ./deployments/charts -maxdepth 1 -mindepth 1 -type d -exec $(KUBE_LINTER) lint {} \;
 	@if [ -d ./app/kumactl/cmd/install/testdata ]; then \
 		find ./app/kumactl/cmd/install/testdata -maxdepth 1 -type f -name 'install-control-plane*.golden.yaml' -exec $(KUBE_LINTER) lint {} +; \
