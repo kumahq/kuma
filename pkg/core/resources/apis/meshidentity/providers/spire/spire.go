@@ -67,8 +67,8 @@ func (s *spireIdentityProvider) GetRootCA(ctx context.Context, identity *meshide
 	return nil, nil
 }
 
-func (s *spireIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
-	return false
+func (s *spireIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) (bool, error) {
+	return false, nil
 }
 
 func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {

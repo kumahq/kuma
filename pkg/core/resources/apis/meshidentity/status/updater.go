@@ -177,7 +177,17 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 			Message: "Provider successfully initialized",
 		})
 	}
-	if !provider.ShouldCreateMeshTrust(mid) {
+	createTrust, err := provider.ShouldCreateMeshTrust(mid)
+	if err != nil {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.MeshTrustConditionType,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  "MeshTrustCreationError",
+			Message: err.Error(),
+		})
+		return conditions
+	}
+	if !createTrust {
 		return conditions
 	}
 	ca, err := i.loadCA(ctx, mid)

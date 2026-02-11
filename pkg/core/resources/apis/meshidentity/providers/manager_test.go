@@ -142,8 +142,8 @@ func (s *noIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.Me
 	return nil, nil
 }
 
-func (s *noIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
-	return false
+func (s *noIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) (bool, error) {
+	return false, nil
 }
 
 type staticIdentityProvider struct {
@@ -169,6 +169,6 @@ func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_ap
 	return nil, nil
 }
 
-func (s *staticIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
-	return false
+func (s *staticIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) (bool, error) {
+	return false, nil
 }

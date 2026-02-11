@@ -13,7 +13,7 @@ type IdentityProvider interface {
 	Initialize(context.Context, *meshidentity_api.MeshIdentityResource) error
 	CreateIdentity(context.Context, *meshidentity_api.MeshIdentityResource, *xds.Proxy) (*xds.WorkloadIdentity, error)
 	GetRootCA(context.Context, *meshidentity_api.MeshIdentityResource) ([]byte, error)
-	ShouldCreateMeshTrust(*meshidentity_api.MeshIdentityResource) bool
+	ShouldCreateMeshTrust(*meshidentity_api.MeshIdentityResource) (bool, error)
 }
 
 type IdentityProviders = map[string]IdentityProvider

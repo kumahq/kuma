@@ -164,8 +164,8 @@ func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshi
 	return cert, err
 }
 
-func (s *bundledIdentityProvider) ShouldCreateMeshTrust(mid *meshidentity_api.MeshIdentityResource) bool {
-	return pointer.DerefOr(mid.Spec.Provider.Bundled.MeshTrustCreation, meshidentity_api.MeshTrustCreationEnabled) == meshidentity_api.MeshTrustCreationEnabled
+func (s *bundledIdentityProvider) ShouldCreateMeshTrust(mid *meshidentity_api.MeshIdentityResource) (bool, error) {
+	return pointer.DerefOr(mid.Spec.Provider.Bundled.MeshTrustCreation, meshidentity_api.MeshTrustCreationEnabled) == meshidentity_api.MeshTrustCreationEnabled, nil
 }
 
 // Instead of loading the CA pair on each dataplane workload identity generation,
