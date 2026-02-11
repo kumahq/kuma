@@ -84,6 +84,10 @@ var _ = Describe("MeshExternalService", func() {
 				name: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 				file: "name-length-63",
 			}),
+			Entry("endpoints with valid priority", testCase{
+				name: "external-service",
+				file: "endpoints-with-priority-valid",
+			}),
 		)
 	})
 })

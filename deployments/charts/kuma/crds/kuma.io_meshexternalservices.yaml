@@ -69,6 +69,14 @@ spec:
                       maximum: 65535
                       minimum: 1
                       type: integer
+                    priority:
+                      description: |-
+                        Priority maps to Envoy's priority levels to enable endpoint failover.
+                        Lower values have higher priority (0 is the default/primary).
+                        When the primary endpoints become unhealthy, traffic fails over to the next priority level.
+                      format: int32
+                      minimum: 0
+                      type: integer
                   required:
                   - address
                   - port
