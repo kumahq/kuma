@@ -63,6 +63,7 @@ resources:
                 mesh: mesh-1
               envoy.transport_socket_match:
                 mesh: mesh-1
+        locality: {}
     name: mesh-1_meshexternalservice-1___extsvc_9090
     type: STRICT_DNS
     typedExtensionProtocolOptions:
