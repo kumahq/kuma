@@ -164,6 +164,10 @@ func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshi
 	return cert, err
 }
 
+func (s *bundledIdentityProvider) ShouldCreateMeshTrust(mid *meshidentity_api.MeshIdentityResource) bool {
+	return pointer.DerefOr(mid.Spec.Provider.Bundled.MeshTrustCreation, meshidentity_api.MeshTrustCreationEnabled) == meshidentity_api.MeshTrustCreationEnabled
+}
+
 // Instead of loading the CA pair on each dataplane workload identity generation,
 // we can cache it and refresh the cache periodically (e.g., every few seconds).
 // This reduces the load on the underlying store (e.g., OS, DB), as the CA pair doesn't change frequently.

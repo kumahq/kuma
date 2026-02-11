@@ -177,6 +177,9 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 			Message: "Provider successfully initialized",
 		})
 	}
+	if !provider.ShouldCreateMeshTrust(mid) {
+		return conditions
+	}
 	ca, err := i.loadCA(ctx, mid)
 	if err != nil {
 		conditions = append(conditions, common_api.Condition{

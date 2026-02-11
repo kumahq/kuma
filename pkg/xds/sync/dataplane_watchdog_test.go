@@ -64,6 +64,10 @@ func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_ap
 	return nil, nil
 }
 
+func (s *staticIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
+	return false
+}
+
 var _ sync.SnapshotReconciler = &staticSnapshotReconciler{}
 
 var _ = Describe("Dataplane Watchdog", func() {

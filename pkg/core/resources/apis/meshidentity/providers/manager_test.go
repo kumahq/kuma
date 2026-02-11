@@ -142,6 +142,10 @@ func (s *noIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.Me
 	return nil, nil
 }
 
+func (s *noIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
+	return false
+}
+
 type staticIdentityProvider struct {
 	_ *xds.Proxy
 }
@@ -163,4 +167,8 @@ func (s *staticIdentityProvider) CreateIdentity(_ context.Context, mid *meshiden
 
 func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
+}
+
+func (s *staticIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
+	return false
 }

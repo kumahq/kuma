@@ -67,6 +67,10 @@ func (s *spireIdentityProvider) GetRootCA(ctx context.Context, identity *meshide
 	return nil, nil
 }
 
+func (s *spireIdentityProvider) ShouldCreateMeshTrust(_ *meshidentity_api.MeshIdentityResource) bool {
+	return false
+}
+
 func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {
 	if s.environment == config_core.KubernetesEnvironment && !proxy.Metadata.HasFeature(types.FeatureSpire) {
 		s.logger.Info("dataplane doesn't have spire socket mounted, please redeploy your Pod", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "identity", model.MetaToResourceKey(identity.GetMeta()))
