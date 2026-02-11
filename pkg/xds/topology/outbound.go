@@ -594,7 +594,7 @@ func fillExternalServicesReachableFromZone(
 	}
 	for _, mes := range meshExternalServices {
 		if mes.IsReachableFromZone(zone) {
-			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
+			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader)
 			if err != nil {
 				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 				continue
@@ -622,7 +622,6 @@ func createMeshExternalServiceEndpoint(
 	mes *meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
-	zone string,
 ) error {
 	es := &core_xds.ExternalService{
 		Protocol:      mes.Spec.Match.Protocol,
@@ -646,13 +645,16 @@ func createMeshExternalServiceEndpoint(
 		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
 			es.ServerName = endpoint.Address
 		}
+		locality := &core_xds.Locality{
+			Priority: pointer.DerefOr(endpoint.Priority, 0),
+		}
 		outboundEndpoint := &core_xds.Endpoint{
 			Target:          endpoint.Address,
 			Port:            uint32(endpoint.Port),
 			Weight:          1,
 			ExternalService: es,
 			Tags:            tags,
-			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
+			Locality:        locality,
 		}
 		legacyName := destinationname.MustResolve(false, mes, mes.Spec.Match)
 		outbounds[legacyName] = append(outbounds[legacyName], *outboundEndpoint)

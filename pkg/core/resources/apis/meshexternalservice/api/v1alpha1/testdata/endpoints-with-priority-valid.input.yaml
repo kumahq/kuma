@@ -1,0 +1,14 @@
+match:
+  type: HostnameGenerator
+  port: 8080
+  protocol: http
+endpoints:
+  - address: 1.1.1.1
+    port: 443
+    priority: 0
+  - address: 2.2.2.2
+    port: 443
+    priority: 1
+  - address: 3.3.3.3
+    port: 443
+    priority: 255

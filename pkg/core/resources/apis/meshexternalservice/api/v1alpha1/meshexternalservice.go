@@ -69,6 +69,12 @@ type Endpoint struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	Port int32 `json:"port"`
+	// Priority maps to Envoy's priority levels to enable endpoint failover.
+	// Lower values have higher priority (0 is the default/primary).
+	// When the primary endpoints become unhealthy, traffic fails over to the next priority level.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	Priority *uint32 `json:"priority,omitempty"`
 }
 
 type Tls struct {
