@@ -645,8 +645,10 @@ func createMeshExternalServiceEndpoint(
 		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
 			es.ServerName = endpoint.Address
 		}
+		priority := pointer.DerefOr(endpoint.Priority, 0)
 		locality := &core_xds.Locality{
-			Priority: pointer.DerefOr(endpoint.Priority, 0),
+			Priority: priority,
+			SubZone:  "priority-" + strconv.Itoa(int(priority)),
 		}
 		outboundEndpoint := &core_xds.Endpoint{
 			Target:          endpoint.Address,

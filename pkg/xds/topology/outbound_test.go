@@ -1714,6 +1714,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								Locality: &core_xds.Locality{
 									Priority: 0,
+									SubZone:  "priority-0",
 								},
 								Weight: 1,
 								ExternalService: &core_xds.ExternalService{
@@ -1788,6 +1789,7 @@ var _ = Describe("TrafficRoute", func() {
 								Weight: 1,
 								Locality: &core_xds.Locality{
 									Priority: 0,
+									SubZone:  "priority-0",
 								},
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
@@ -1843,6 +1845,7 @@ var _ = Describe("TrafficRoute", func() {
 								Weight: 1,
 								Locality: &core_xds.Locality{
 									Priority: 0,
+									SubZone:  "priority-0",
 								},
 								ExternalService: &core_xds.ExternalService{
 									Protocol: core_meta.ProtocolTCP,
@@ -1862,6 +1865,7 @@ var _ = Describe("TrafficRoute", func() {
 								Weight: 1,
 								Locality: &core_xds.Locality{
 									Priority: 1,
+									SubZone:  "priority-1",
 								},
 								ExternalService: &core_xds.ExternalService{
 									Protocol: core_meta.ProtocolTCP,
@@ -1880,6 +1884,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								Locality: &core_xds.Locality{
 									Priority: 0,
+									SubZone:  "priority-0",
 								},
 								Weight: 1,
 								ExternalService: &core_xds.ExternalService{
