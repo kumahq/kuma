@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   pr_comments:
-    timeout-minutes: 45
+    timeout-minutes: 90
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
     runs-on: ubuntu-24.04
     steps:
