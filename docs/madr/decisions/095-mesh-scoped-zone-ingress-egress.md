@@ -210,8 +210,6 @@ spec:
       - type: ZoneIngress
         address: 10.0.0.1
         port: 10001
-        advertisedAddress: <zone-ingress-service-ip>
-        advertisedPort: 10001
       - type: ZoneEgress
         address: 10.0.0.1
         port: 10002
