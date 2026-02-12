@@ -16,13 +16,15 @@ This global nature creates fundamental limitations:
 2. **Cannot apply policies on zone proxies**: Kuma policies (MeshTrafficPermission, MeshTimeout, etc.) are mesh-scoped.
    A global zone proxy cannot be targeted by mesh-specific policies, limiting observability and traffic control for cross-zone communication.
 
+3. **Limited observability scoping**: With a global zone proxy, metrics, access logs, and traces cannot be scoped to a specific mesh — all mesh traffic is mixed. Mesh-scoped zone proxies enable per-mesh observability via policies like MeshAccessLog and MeshMetric.
+
 To resolve these limitations, zone proxies are being changed to **mesh-scoped** resources represented as Dataplane resources with specific tags.
 This architectural change requires revisiting the deployment model for zone proxies.
 
 **Scope of this document**: This MADR focuses on **deployment tooling** — how users deploy zone proxies via Helm, Konnect UI, and Terraform.
 
 **Single-mesh focus**: This document assumes **single-mesh-per-zone as the default** deployment pattern.
-For multi-mesh scenarios, deploy additional zone proxies using separate Helm releases with a dedicated `kuma-zone-proxy` chart. A multi-mesh deployment guide will be provided separately.
+Multi-mesh scenarios are out of scope for this document. Users who need multiple meshes per zone can write their own zone proxy deployment.
 
 This document addresses the following questions:
 
@@ -38,7 +40,7 @@ Note: Whether zone ingress and egress share a single deployment is addressed in 
 | Per-mesh Services | **Yes** - each mesh gets its own Service/LoadBalancer for mTLS isolation |
 | Namespace placement | **kuma-system** |
 | Deployment mechanism | **Helm-managed** (current pattern extended for mesh-scoped zone proxies) |
-| Helm release structure | **Subchart** — single release for default mesh; standalone release for additional meshes |
+| Helm release structure | **Single release** (CP + zone proxy in one chart) |
 
 | Question | Decision |
 |----------|----------|
@@ -110,14 +112,20 @@ For single-mesh deployments (the common case):
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │ Mesh: [default ▼]                                       │
-│ (if multiple meshes detected there will be info here on │
-│ how to handle that)                                     │
+│ If multiple meshes detected - there will be info here   │
+│ how to handle that                                      │
+│                                                         │
+│ If no meshes exist:                                     │
+│ "No meshes found — generate values to create the        │
+│  default mesh?"                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
+**Empty state**: If no mesh exists yet, the UI shows an empty state prompting the user to generate a `values.yaml` that creates a `default` mesh. The zone proxy can also be deployed targeting a mesh name that doesn't exist yet — it will wait and retry until the mesh is created.
+
 **Step 2: Generated values.yaml**
 
-For the default mesh, the generated values.yaml enables the zone proxy explicitly:
+The generated values.yaml always includes the `mesh` field explicitly:
 
 ```yaml
 kuma:
@@ -128,21 +136,7 @@ kuma:
 
   zoneProxy:
     enabled: true
-    # mesh defaults to "default"
-```
-
-If the user selected a non-default mesh name:
-
-```yaml
-kuma:
-  controlPlane:
-    mode: zone
-    zone: zone-1
-    kdsGlobalAddress: grpcs://us.mesh.sync.konghq.tech:443
-
-  zoneProxy:
-    enabled: true
-    mesh: payments-mesh
+    mesh: default
 ```
 
 Note: Zone proxy can be deployed before the mesh exists. It will wait and retry until the mesh is created on the Global CP.
@@ -152,7 +146,7 @@ Note: Zone proxy can be deployed before the mesh exists. It will wait and retry 
 - Konnect UI has API access to global CP
 - Can fetch mesh list via `GET /meshes`
 - Validation happens UI-side before generating values.yaml
-- If multiple meshes exist in the zone, the UI should inform the user that additional zone proxies must be configured manually (link to multi-mesh deployment docs)
+- If multiple meshes exist in the zone, the UI should inform the user that additional zone proxies must be configured manually
 
 #### Flow 2: Self-Hosted Global CP (Helm)
 
@@ -391,13 +385,9 @@ zoneProxy:
   mesh: default
 ```
 
-#### Helm Release Structure: Subchart Approach
+#### Helm Release Structure: Single Release
 
-The zone proxy is packaged as a `kuma-zone-proxy` subchart of the main `kuma` chart. This single packaging naturally supports both single-mesh and multi-mesh deployment modes.
-
-##### Single Release (Default — Single-Mesh)
-
-The `kuma-zone-proxy` subchart is a dependency of the main `kuma` chart. A single `helm install` deploys everything:
+The zone proxy is part of the main `kuma` chart. A single `helm install` deploys everything:
 
 ```bash
 helm install kuma kuma/kuma -f values.yaml
@@ -411,7 +401,7 @@ controlPlane:
 
 zoneProxy:
   enabled: true
-  # mesh defaults to "default"
+  mesh: default
 ```
 
 | Aspect | Analysis |
@@ -422,56 +412,7 @@ zoneProxy:
 | **Failure blast radius** | ⚠️ Bad values.yaml can break entire zone |
 | **GitOps** | ✅ Single source of truth for zone configuration |
 
-##### Standalone Release (Multi-Mesh)
-
-For additional meshes, install the same `kuma-zone-proxy` chart as a separate Helm release:
-
-```bash
-helm install kuma-zone-proxy-payments kuma/kuma-zone-proxy -f zone-proxy-values.yaml
-```
-
-```yaml
-# zone-proxy-values.yaml
-enabled: true
-mesh: payments-mesh
-replicas: 1
-```
-
-| Aspect | Analysis |
-|--------|----------|
-| **Simplicity** | ⚠️ Separate release per additional mesh |
-| **Upgrades** | ✅ Can upgrade CP independently of zone proxy |
-| **Lifecycle coupling** | ✅ Zone proxy changes don't affect CP stability |
-| **Failure blast radius** | ✅ Bad zone proxy config doesn't break CP |
-| **GitOps** | ✅ Clear separation of concerns |
-
-##### Recommendation
-
-**Subchart approach**: single release for the default mesh (simple, one `helm install`); standalone release of the same `kuma-zone-proxy` chart for additional meshes.
-
-##### Helm Chart Structure: Passthrough Values
-
-**Problem**: Current Helm charts enumerate Kubernetes fields one by one — the ingress chart alone is 292 lines for ~15 fields. Users are blocked when they need an unsupported field (e.g., `shareProcessNamespace`, `initContainers`, `topologySpreadConstraints`), creating a cat-and-mouse problem where the chart never fully covers the Kubernetes API surface.
-
-**Solution**: The zone proxy chart groups passthrough values by Kubernetes resource. Helm's `merge` overlays user values onto sensible defaults. Adding any PodSpec, container, or Service field requires zero template changes.
-
-```yaml
-# values.yaml — resource-grouped passthrough
-zoneProxy:
-  enabled: true
-  mesh: default
-  service:
-    name: ""           # Override when auto-generated name exceeds 63 chars
-    spec: {}           # ANY Service spec field (externalTrafficPolicy, loadBalancerSourceRanges, etc.)
-  deployment:
-    name: ""           # Override when auto-generated name is needed
-    podSpec: {}        # ANY valid PodSpec field (nodeSelector, tolerations, initContainers, etc.)
-    containers: []     # Container overrides (resources, lifecycle, securityContext, env, etc.)
-```
-
-HPA and PDB settings use dedicated fields (`autoscaling.*`, `pdb.*`) since they have few, well-defined options.
-
-This reduces template code from 292 lines to 71 lines while providing unlimited field coverage. See the [POC repo](https://github.com/slonka/poc-094-helm-zone-proxy) for a working demonstration.
+**Considered alternative — subchart**: A `kuma-zone-proxy` subchart was considered, allowing standalone releases for additional meshes in multi-mesh scenarios. This was ruled out because maintaining a separate Helm chart adds long-term maintenance burden for a deployment path we don't recommend. Users who need multi-mesh can write their own zone proxy deployment.
 
 #### Namespace Placement Options
 
@@ -499,6 +440,8 @@ metadata:
 ##### Recommendation
 
 Deploy zone proxies in `kuma-system` namespace.
+
+**Note on sidecar injection**: Zone proxies run `kuma-dp` directly as standalone Deployments (the same way current ZoneIngress/ZoneEgress work). They connect to the CP via bootstrap, not via sidecar injection. The `kuma-system` namespace does **not** need sidecar injection enabled for zone proxies to function.
 
 ### Zone Proxy Deployment Topology
 
