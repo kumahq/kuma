@@ -3082,6 +3082,18 @@ spec:
                         - Disabled
                         type: string
                     type: object
+                  extension:
+                    description: Extension indicates that custom provider is used.
+                    properties:
+                      config:
+                        description: Config freeform configuration for the extension.
+                        x-kubernetes-preserve-unknown-fields: true
+                      type:
+                        description: Type of the extension.
+                        type: string
+                    required:
+                    - type
+                    type: object
                   spire:
                     description: Spire indicates that SPIRE is used for certificate
                       delivery.
@@ -3101,6 +3113,7 @@ spec:
                     enum:
                     - Bundled
                     - Spire
+                    - Extension
                     type: string
                 required:
                 - type
