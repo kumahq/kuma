@@ -11,8 +11,11 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        ipv6: ["false", "true"]
     env:
-      IPV6: "true"
+      IPV6: ${{ matrix.ipv6 }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -22,6 +25,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
+        if: matrix.ipv6 == 'true'
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
