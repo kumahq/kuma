@@ -74,12 +74,8 @@ jobs:
     timeout-minutes: 45
     if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/tproxy_golden_files')
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        ipv6: ["false", "true"]
     env:
-      IPV6: ${{ matrix.ipv6 }}
+      IPV6: "true"
     steps:
       - name: Generate GitHub app token
         id: github-app-token
@@ -116,7 +112,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
-        if: matrix.ipv6 == 'true'
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
@@ -132,7 +127,6 @@ jobs:
       - name: "Update transparent proxy golden files"
         run: make test/transparentproxy UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes
-        if: matrix.ipv6 == 'true'
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
@@ -146,6 +140,5 @@ jobs:
             git push
           fi
       - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
-        if: matrix.ipv6 == 'true'
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
