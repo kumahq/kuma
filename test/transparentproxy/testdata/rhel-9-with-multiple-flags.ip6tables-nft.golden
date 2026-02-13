@@ -24,6 +24,7 @@ COMMIT
 -A OUTPUT -d fd00::/8 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -j RETURN
 -A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/return early for DNS traffic from kuma-dp" -m udp --dport 53 -m owner --uid-owner 5678 -j RETURN
 -A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect all DNS requests to the kuma-dp DNS proxy (listening on port 15053)" -m udp --dport 53 -j REDIRECT --to-ports 15053
+-A OUTPUT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/allow applications to perform DNS queries over TCP to port 53 without mesh redirection (only traffic not owned by UID 5678 (kuma-dp user))" -m tcp --dport 53 -m owner ! --uid-owner 5678 -j RETURN
 -A OUTPUT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic to our custom chain for processing" -j KUMA_MESH_OUTBOUND
 -A KUMA_MESH_INBOUND -s fe80::/10 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP address" -j RETURN
 -A KUMA_MESH_INBOUND -s a81b:a033:6399:73c7:72b6:aa8c:6f22:7098/128 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP address" -j RETURN
