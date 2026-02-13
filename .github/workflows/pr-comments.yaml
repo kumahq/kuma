@@ -10,69 +10,7 @@ permissions:
 jobs:
   pr_comments:
     timeout-minutes: 45
-    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Generate GitHub app token
-        id: github-app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-      - name: check-maintainer
-        run: |
-          # Ensure the commenter is a maintainer
-          if gh api '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep -q ${{ github.event.comment.user.login }}; then
-            gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
-          else
-            gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
-            echo "${{ github.event.comment.user.login }} is not a maintainer of the repo, can't run this action"
-            exit 1
-          fi
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - id: get-branch
-        run: |
-          echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> "$GITHUB_ENV"
-          echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> "$GITHUB_ENV"
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          repository: ${{ env.REPO }}
-          ref: ${{ env.BRANCH_NAME }}
-          token: ${{ steps.github-app-token.outputs.token }}
-      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3.6.1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
-      - name: "Auto-format code"
-        if: contains(github.event.comment.body, '/format')
-        run: make clean/generated check
-        continue-on-error: true
-      - name: "Update golden files (excluding transparent proxy)"
-        if: contains(github.event.comment.body, '/golden_files')
-        run: make test UPDATE_GOLDEN_FILES=true
-      - name: commit and push fixes
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-        run: |
-          if git diff --exit-code --stat; then
-            echo "No change detected, skipping git push"
-          else
-            git config user.name "${GH_USER}"
-            git config user.email "${GH_EMAIL}"
-            git commit -s -m "fix(ci): format files" .
-            git pull --rebase
-            git push
-          fi
-      - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-  pr_comments_tproxy:
-    timeout-minutes: 45
-    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/tproxy_golden_files')
+    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/tproxy_golden_files'))
     runs-on: ubuntu-24.04
     env:
       IPV6: "true"
@@ -111,7 +49,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+      # Automatically update code formatting if /format is in the comment
+      - name: "Auto-format code"
+        if: contains(github.event.comment.body, '/format')
+        run: make clean/generated check
+        continue-on-error: true
+
+      # Update all golden files except transparent proxy tests if /golden_files is in the comment
+      - name: "Update golden files (excluding transparent proxy)"
+        if: contains(github.event.comment.body, '/golden_files')
+        run: make test UPDATE_GOLDEN_FILES=true
+
+      # Enable IPv6 for transparent proxy tests
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
+        if: contains(github.event.comment.body, '/tproxy_golden_files')
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
@@ -124,8 +75,12 @@ jobs:
           sudo service docker restart
           sudo modprobe ip6table_nat
           sudo modprobe ip6table_raw
+
+      # Update only transparent proxy golden files if /tproxy_golden_files is in the comment
       - name: "Update transparent proxy golden files"
+        if: contains(github.event.comment.body, '/tproxy_golden_files')
         run: make test/transparentproxy UPDATE_GOLDEN_FILES=true
+
       - name: commit and push fixes
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
