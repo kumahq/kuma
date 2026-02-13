@@ -16,9 +16,9 @@ var _ = Describe("Workload", func() {
 			ResourceValidationCase{
 				Violations: []validators.Violation{{
 					Field:   `name`,
-					Message: `must not be longer than 253 characters`,
+					Message: `must not be longer than 63 characters`,
 				}},
-				Name:     "workload-" + string(make([]byte, 253)),
+				Name:     "workload-" + string(make([]byte, 63)),
 				Resource: "",
 			},
 		),
@@ -35,7 +35,7 @@ var _ = Describe("Workload", func() {
 		Entry(
 			"accepts max length name",
 			ResourceValidationCase{
-				Name:     string(make([]byte, 253)),
+				Name:     string(make([]byte, 63)),
 				Resource: "",
 			},
 		),

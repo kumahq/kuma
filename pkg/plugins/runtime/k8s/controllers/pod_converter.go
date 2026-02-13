@@ -62,6 +62,9 @@ func (p *PodConverter) PodToDataplane(
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
+	if len(workloadName) > 63 {
+		return fmt.Errorf("workload name extracted from serviceAccountName %q is too long", pod.Spec.ServiceAccountName)
+	}
 	labels, err := model.ComputeLabels(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,

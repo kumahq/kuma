@@ -8,7 +8,7 @@ kind: Dataplane
 metadata:
   name: dataplane-mesh1
   namespace: demo
-  annotations:
+  labels:
     kuma.io/workload: multi-mesh-workload
 mesh: mesh1
 ---
@@ -17,6 +17,6 @@ kind: Dataplane
 metadata:
   name: dataplane-mesh2
   namespace: demo
-  annotations:
+  labels:
     kuma.io/workload: multi-mesh-workload
 mesh: mesh2
