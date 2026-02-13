@@ -432,10 +432,6 @@ Deploy zone proxies in `kuma-system` namespace.
 
 **Note on sidecar injection**: Zone proxies run `kuma-dp` directly as standalone Deployments (the same way current ZoneIngress/ZoneEgress work). They connect to the CP via bootstrap, not via sidecar injection. The `kuma-system` namespace does **not** need sidecar injection enabled for zone proxies to function.
 
-### Zone Proxy Deployment Topology
-
-Whether zone ingress and egress share a single deployment is addressed in a separate MADR. [^2]
-
 ### Question 1: Support kuma.io/ingress-public-address
 
 #### Current Implementation
