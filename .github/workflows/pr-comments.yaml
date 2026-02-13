@@ -91,7 +91,6 @@ jobs:
             git config user.name "${GH_USER}"
             git config user.email "${GH_EMAIL}"
             git commit -s -m "fix(ci): format files" .
-            git pull --rebase
             git push
           fi
       - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
