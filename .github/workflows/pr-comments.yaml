@@ -10,9 +10,13 @@ permissions:
 jobs:
   pr_comments:
     timeout-minutes: 45
-    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/tproxy_golden_files'))
+    if: |
+      github.event.issue.pull_request != '' &&
+      (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/tproxy_golden_files')) &&
+      (matrix.ipv6 == 'false' || contains(github.event.comment.body, '/tproxy_golden_files'))
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         ipv6: ["false", "true"]
     env:
