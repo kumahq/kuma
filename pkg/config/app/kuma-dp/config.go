@@ -52,6 +52,7 @@ var DefaultConfig = func() Config {
 			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
 			PrometheusPort:            19153,
 			CoreDNSLogging:            false,
+			ProxyBindAddress:          "localhost",
 		},
 		ApplicationProbeProxyServer: ApplicationProbeProxyServer{
 			Port: 0,
@@ -422,6 +423,9 @@ type DNS struct {
 
 	// ProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
 	ProxyPort uint32 `json:"proxyPort,omitempty" envconfig:"kuma_dns_proxy_port"`
+	// ProxyBindAddress defines the address on which the embedded DNS proxy listens. Defaults to "localhost".
+	// Use "0.0.0.0" to listen on all interfaces (needed for VNet/Docker scenarios in Universal mode).
+	ProxyBindAddress string `json:"proxyBindAddress,omitempty" envconfig:"kuma_dns_proxy_bind_address"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
 	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.

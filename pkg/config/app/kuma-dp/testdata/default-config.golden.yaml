@@ -27,3 +27,4 @@ dns:
   enabled: true
   envoyDnsPort: 15054
   prometheusPort: 19153
+  proxyBindAddress: localhost
