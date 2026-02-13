@@ -113,6 +113,26 @@ to:
           - Internal
           - ResourceExhausted
           - Unavailable
+          - 5xx
+          - GatewayError
+          - Reset
+          - Retriable4xx
+          - ConnectFailure
+          - EnvoyRatelimited
+          - RefusedStream
+          - Http3PostConnectFailure
+          - HttpMethodConnect
+          - HttpMethodDelete
+          - HttpMethodGet
+          - HttpMethodHead
+          - HttpMethodOptions
+          - HttpMethodPatch
+          - HttpMethodPost
+          - HttpMethodPut
+          - HttpMethodTrace
+          - 500
+          - 409
+          - 503
 `),
 			Entry("minimalistic http retry", `
 targetRef:
@@ -178,6 +198,21 @@ to:
     default:
       http:
         retryOn: 
+          - 500
+          - 409
+`),
+			Entry("grpc.retryOn with http status codes", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      grpc:
+        retryOn: 
+          - 5xx
+          - GatewayError
+          - Reset
           - 500
           - 409
 `),
@@ -415,14 +450,14 @@ to:
     default:
       grpc: 
         retryOn: 
-          - 500
+          - 123
           - reset
           - wrong
 `,
 				expected: `
 violations:
   - field: spec.to[0].default.conf.grpc.retryOn[0]
-    message: unknown item '500'
+    message: unknown item '123'
   - field: spec.to[0].default.conf.grpc.retryOn[1]
     message: unknown item 'reset'
   - field: spec.to[0].default.conf.grpc.retryOn[2]
