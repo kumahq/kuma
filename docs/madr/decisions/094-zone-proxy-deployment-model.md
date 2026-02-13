@@ -58,17 +58,6 @@ This document is organized in two parts:
 
 2. **Questions 1-2** - Answers deployment-related design questions. Each question analyzes options and recommends a decision.
 
-### Out of Scope
-
-The following topics are deferred to the resource model MADR:
-
-- Dataplane representation (fields, labels, `kuma.io/proxy-type` tag)
-- `kuma.io/workload` annotation and auto-generation
-- Workload identity model
-- Token model (zone tokens → DP tokens transition)
-- Universal deployment specifics (VM/bare metal)
-- Sidecar vs standalone deployment question
-
 ## Design
 
 ### Tooling and User Flows
