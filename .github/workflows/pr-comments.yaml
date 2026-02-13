@@ -58,13 +58,13 @@ jobs:
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
-        if: contains(github.event.comment.body, '/format') && matrix.ipv6 == 'false'
+        if: contains(github.event.comment.body, '/format')
         run: make clean/generated check
         continue-on-error: true
 
       # Update all golden files except transparent proxy tests if /golden_files is in the comment
       - name: "Update golden files (excluding transparent proxy)"
-        if: contains(github.event.comment.body, '/golden_files') && matrix.ipv6 == 'false'
+        if: contains(github.event.comment.body, '/golden_files')
         run: make test UPDATE_GOLDEN_FILES=true
 
       # Enable IPv6 for transparent proxy tests
