@@ -1712,6 +1712,9 @@ var _ = Describe("TrafficRoute", func() {
 								Tags: map[string]string{
 									"mesh": "default",
 								},
+								Locality: &core_xds.Locality{
+									Priority: 0,
+								},
 								Weight: 1,
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
@@ -1783,6 +1786,9 @@ var _ = Describe("TrafficRoute", func() {
 									"mesh": "default",
 								},
 								Weight: 1,
+								Locality: &core_xds.Locality{
+									Priority: 0,
+								},
 								ExternalService: &core_xds.ExternalService{
 									TLSEnabled: false,
 									Protocol:   core_meta.ProtocolTCP,
@@ -1790,6 +1796,98 @@ var _ = Describe("TrafficRoute", func() {
 										ResourceType: "MeshExternalService",
 										Mesh:         "default",
 										Name:         "example",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Entry("MeshExternalService with endpoint priorities", testCase{
+					meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+						{
+							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "priority-mes"},
+							Spec: &meshexternalservice_api.MeshExternalService{
+								Match: meshexternalservice_api.Match{
+									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Port:     443,
+									Protocol: core_meta.ProtocolTCP,
+								},
+								Endpoints: &[]meshexternalservice_api.Endpoint{
+									{
+										Address:  "primary.example.com",
+										Port:     443,
+										Priority: pointer.To(uint32(0)),
+									},
+									{
+										Address:  "secondary.example.com",
+										Port:     443,
+										Priority: pointer.To(uint32(1)),
+									},
+									{
+										Address: "fallback.example.com",
+										Port:    443,
+									},
+								},
+							},
+						},
+					},
+					mesh: defaultMeshWithMTLSAndZoneEgress,
+					expected: core_xds.EndpointMap{
+						"default_priority-mes___extsvc_443": []core_xds.Endpoint{
+							{
+								Target: "primary.example.com",
+								Port:   443,
+								Tags: map[string]string{
+									"mesh": "default",
+								},
+								Weight: 1,
+								Locality: &core_xds.Locality{
+									Priority: 0,
+								},
+								ExternalService: &core_xds.ExternalService{
+									Protocol: core_meta.ProtocolTCP,
+									OwnerResource: kri.Identifier{
+										ResourceType: "MeshExternalService",
+										Mesh:         "default",
+										Name:         "priority-mes",
+									},
+								},
+							},
+							{
+								Target: "secondary.example.com",
+								Port:   443,
+								Tags: map[string]string{
+									"mesh": "default",
+								},
+								Weight: 1,
+								Locality: &core_xds.Locality{
+									Priority: 1,
+								},
+								ExternalService: &core_xds.ExternalService{
+									Protocol: core_meta.ProtocolTCP,
+									OwnerResource: kri.Identifier{
+										ResourceType: "MeshExternalService",
+										Mesh:         "default",
+										Name:         "priority-mes",
+									},
+								},
+							},
+							{
+								Target: "fallback.example.com",
+								Port:   443,
+								Tags: map[string]string{
+									"mesh": "default",
+								},
+								Locality: &core_xds.Locality{
+									Priority: 0,
+								},
+								Weight: 1,
+								ExternalService: &core_xds.ExternalService{
+									Protocol: core_meta.ProtocolTCP,
+									OwnerResource: kri.Identifier{
+										ResourceType: "MeshExternalService",
+										Mesh:         "default",
+										Name:         "priority-mes",
 									},
 								},
 							},
