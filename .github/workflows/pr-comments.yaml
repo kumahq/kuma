@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 45
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/tproxy_golden_files'))
     runs-on: ubuntu-24.04
+    env:
+      IPV6: "true"
     steps:
       - name: Generate GitHub app token
         id: github-app-token
@@ -57,6 +59,22 @@ jobs:
       - name: "Update golden files (excluding transparent proxy)"
         if: contains(github.event.comment.body, '/golden_files')
         run: make test UPDATE_GOLDEN_FILES=true
+
+      # Enable IPv6 for transparent proxy tests
+      - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
+        if: contains(github.event.comment.body, '/tproxy_golden_files')
+        run: |
+          cat <<'EOF' | sudo tee /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64",
+            "dns": ["8.8.8.8"],
+            "dns-search": ["."]
+          }
+          EOF
+          sudo service docker restart
+          sudo modprobe ip6table_nat
+          sudo modprobe ip6table_raw
 
       # Update only transparent proxy golden files if /tproxy_golden_files is in the comment
       - name: "Update transparent proxy golden files"
