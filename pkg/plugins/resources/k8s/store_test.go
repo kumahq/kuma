@@ -571,7 +571,7 @@ var _ = Describe("KubernetesStore", func() {
             kind: TrafficRoute
             mesh: default
             metadata:
-              annotations:
+              labels:
                 kuma.io/workload: my-workload
               name: %s
             spec:

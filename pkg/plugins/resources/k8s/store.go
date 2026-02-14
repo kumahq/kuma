@@ -259,12 +259,6 @@ func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations 
 		annotations[metadata.KumaServiceAccount] = v
 		delete(labels, metadata.KumaServiceAccount)
 	}
-	// Workload names can exceed 63 characters (up to 253), which exceeds label length limits.
-	// Store as annotation similar to kuma.io/display-name.
-	if v, ok := labels[metadata.KumaWorkload]; ok {
-		annotations[metadata.KumaWorkload] = v
-		delete(labels, metadata.KumaWorkload)
-	}
 	return labels, annotations
 }
 
@@ -314,9 +308,6 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 	}
 	if sa, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaServiceAccount]; ok {
 		labels[metadata.KumaServiceAccount] = sa
-	}
-	if workload, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaWorkload]; ok {
-		labels[metadata.KumaWorkload] = workload
 	}
 	return labels
 }

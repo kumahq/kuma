@@ -5,7 +5,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
 
-const maxNameLength = 253
+const maxNameLength = 63
 
 func (r *WorkloadResource) validate() error {
 	var verr validators.ValidationError
