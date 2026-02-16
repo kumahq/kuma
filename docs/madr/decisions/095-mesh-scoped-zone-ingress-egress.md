@@ -203,7 +203,7 @@ spec:
 #### Mixing inbound and zone proxy listeners
 
 Initially, we assumed zone proxy listeners would be incompatible with transparent proxying.
-However, testing proved otherwise. A [PoC](TODO-add-link) demonstrated this by modifying Kuma to add a "fake" zone egress listener, showing that zone proxy listeners can coexist with regular inbound listeners without conflicts.
+However, testing proved otherwise. A [PoC](https://github.com/kumahq/kuma/pull/15619/changes) demonstrated this by modifying Kuma to add a "fake" zone egress listener, showing that zone proxy listeners can coexist with regular inbound listeners without conflicts.
 
 **Decision:** We will not restrict this functionality.
 Since there are no technical limitations preventing zone proxy listeners from running alongside regular inbounds, imposing artificial constraints would add unnecessary complexity.
