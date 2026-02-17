@@ -114,7 +114,7 @@ func PluginTest() {
 
 	It("should emit traces to jaeger via OTLP HTTP", func() {
 		// given MeshTrace and with tracing backend
-		err := YamlK8s(traceAllK8sOtel(mesh, obsClient.OpenTelemetryCollectorHTTPURL()))(kubernetes.Cluster)
+		err := YamlK8s(traceAllK8sOtel(mesh, obsClient.OTelCollectorTraceURL()))(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {

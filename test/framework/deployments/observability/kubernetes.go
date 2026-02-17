@@ -22,7 +22,7 @@ func (t *k8SDeployment) ZipkinCollectorURL() string {
 	return fmt.Sprintf("http://jaeger-collector.%s:9411/api/v2/spans", t.namespace)
 }
 
-func (t *k8SDeployment) OpenTelemetryCollectorHTTPURL() string {
+func (t *k8SDeployment) OTelCollectorTraceURL() string {
 	return fmt.Sprintf("http://jaeger-collector.%s:4318/v1/traces", t.namespace)
 }
 
