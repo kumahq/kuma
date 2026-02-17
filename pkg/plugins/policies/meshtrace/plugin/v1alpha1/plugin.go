@@ -218,8 +218,12 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		)
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
-	// HTTP/2 is only needed for gRPC endpoints. HTTP endpoints (identified by
-	// having ExternalService set) use HTTP/1.1.
+	// OTLP/HTTP doesn't require HTTP/2 — the spec allows both HTTP/1.1 and HTTP/2
+	// (https://opentelemetry.io/docs/specs/otlp/#otlphttp) so we use Envoy's
+	// default (HTTP/1.1). We only force HTTP/2 for gRPC endpoints.
+	// endpointForOpenTelemetry sets endpoint.ExternalService (the xds.ExternalService
+	// TLS config struct, not the Kuma ExternalService resource) for HTTP/HTTPS
+	// URLs but leaves it nil for gRPC host:port endpoints.
 	if backend.OpenTelemetry != nil && endpoint.ExternalService == nil {
 		builder.Configure(clusters.Http2())
 	}
