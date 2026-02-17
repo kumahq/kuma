@@ -73,12 +73,14 @@ func CreateOutboundPassthroughListener(
 	listenerName string,
 	allIP string,
 	outboundPort uint32,
+	statPrefix string,
 ) (envoy_common.NamedResource, error) {
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, outboundPort, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
+		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
 			Configure(envoy_listeners.NetworkAccessLog(
@@ -129,9 +131,11 @@ func CreateInboundPassthroughListener(
 	allIP string,
 	inboundPort uint32,
 	useStrictInboundPorts bool,
+	statPrefix string,
 ) (envoy_common.NamedResource, error) {
 	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
+		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.OriginalDstForwarder())
 
 	if useStrictInboundPorts {
@@ -159,7 +163,15 @@ func CreateInboundPassthroughListener(
 	return listener, nil
 }
 
-func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName string, inboundName string, allIP string, inPassThroughIP string) (*model.ResourceSet, error) {
+func (TransparentProxyGenerator) generate(
+	ctx xds_context.Context,
+	proxy *model.Proxy,
+	outboundName string,
+	inboundName string,
+	allIP string,
+	inPassThroughIP string,
+	unifiedNaming bool,
+) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	tpCfg := proxy.GetTransparentProxy()
 
@@ -173,7 +185,14 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 		}
 	}
 
-	outboundListener, err := CreateOutboundPassthroughListener(proxy, ctx, outboundName, allIP, tpCfg.Redirect.Outbound.Port.Uint32())
+	outboundStatPrefix := ""
+	inboundStatPrefix := ""
+	if unifiedNaming {
+		outboundStatPrefix = outboundName
+		inboundStatPrefix = inboundName
+	}
+
+	outboundListener, err := CreateOutboundPassthroughListener(proxy, ctx, outboundName, allIP, tpCfg.Redirect.Outbound.Port.Uint32(), outboundStatPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +208,7 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 		ctx.Mesh.Resource.MTLSEnabled() &&
 		ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_STRICT
 
-	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts)
+	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts, inboundStatPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -230,6 +249,7 @@ func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy
 		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4),
 		metadata.TransparentAllIPv4,
 		metadata.TransparentInPassThroughIPv4,
+		unifiedNaming,
 	)
 }
 
@@ -243,5 +263,6 @@ func (tpg TransparentProxyGenerator) generateIPv6(ctx xds_context.Context, proxy
 		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6),
 		metadata.TransparentAllIPv6,
 		metadata.TransparentInPassThroughIPv6,
+		unifiedNaming,
 	)
 }

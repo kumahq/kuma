@@ -218,6 +218,12 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		)
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
+	// OTLP/HTTP doesn't require HTTP/2 — the spec allows both HTTP/1.1 and HTTP/2
+	// (https://opentelemetry.io/docs/specs/otlp/#otlphttp) so we use Envoy's
+	// default (HTTP/1.1). We only force HTTP/2 for gRPC endpoints.
+	// endpointForOpenTelemetry sets endpoint.ExternalService (the xds.ExternalService
+	// TLS config struct, not the Kuma ExternalService resource) for HTTP/HTTPS
+	// URLs but leaves it nil for gRPC host:port endpoints.
 	if backend.OpenTelemetry != nil && endpoint.ExternalService == nil {
 		builder.Configure(clusters.Http2())
 	}
@@ -253,67 +259,17 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 
 func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
 	if strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://") {
-		// URL is validated at API level, but be defensive in case validation is bypassed
-		url, err := net_url.ParseRequestURI(cfg.Endpoint)
-		if err != nil {
-			// Fallback: parse manually
-			scheme := "http"
-			if strings.HasPrefix(cfg.Endpoint, "https://") {
-				scheme = "https"
-			}
-
-			// Strip scheme and path
-			hostPort := strings.TrimPrefix(cfg.Endpoint, scheme+"://")
-			if idx := strings.Index(hostPort, "/"); idx != -1 {
-				hostPort = hostPort[:idx]
-			}
-
-			// Extract host and port
-			host := hostPort
-			var port uint32
-			if scheme == "https" {
-				port = 443
-			} else {
-				port = 80
-			}
-
-			if hpParts := strings.Split(hostPort, ":"); len(hpParts) > 1 {
-				host = hpParts[0]
-				if val, err := strconv.ParseInt(hpParts[1], 10, 32); err == nil && val > 0 && val <= 65535 {
-					port = uint32(val)
-				}
-			}
-
-			return &xds.Endpoint{
-				Target: host,
-				Port:   port,
-				ExternalService: &xds.ExternalService{
-					TLSEnabled:         scheme == "https",
-					AllowRenegotiation: true,
-				},
-			}
+		// Error is ignored because the endpoint was already validated by the validator.
+		url, _ := net_url.ParseRequestURI(cfg.Endpoint)
+		port := uint32(80)
+		if url.Scheme == "https" {
+			port = 443
 		}
-
-		// URL parsed successfully
-		var port uint32
 		if portStr := url.Port(); portStr != "" {
-			val, err := strconv.ParseInt(portStr, 10, 32)
-			if err != nil || val < 1 || val > 65535 {
-				// Use default port on error (should not happen due to API validation)
-				if url.Scheme == "https" {
-					port = 443
-				} else {
-					port = 80
-				}
-			} else {
+			if val, err := strconv.ParseInt(portStr, 10, 32); err == nil {
 				port = uint32(val)
 			}
-		} else if url.Scheme == "https" {
-			port = 443
-		} else {
-			port = 80
 		}
-
 		return &xds.Endpoint{
 			Target: url.Hostname(),
 			Port:   port,
