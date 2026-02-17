@@ -192,8 +192,11 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 			if url.Hostname() == "" {
 				verr.AddViolationAt(otelPath.Field("endpoint"), "hostname must be defined")
 			}
+		} else if strings.HasPrefix(otelBackend.Endpoint, "http://") || strings.HasPrefix(otelBackend.Endpoint, "https://") {
+			// Has http/https prefix but is not a valid URL (parse failed or missing host)
+			verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
 		} else if err != nil && strings.Contains(otelBackend.Endpoint, "://") {
-			// Has a scheme but failed to parse - invalid URL
+			// Has other scheme but failed to parse - invalid URL
 			verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
 		}
 		// Otherwise it's a gRPC host:port endpoint — no URL validation needed

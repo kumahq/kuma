@@ -487,6 +487,22 @@ violations:
   - field: spec.default.backends[0].openTelemetry.endpoint
     message: port must be valid (1-65535)`,
 			}),
+			Entry("openTelemetry HTTP endpoint missing host", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: http://
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry.endpoint
+    message: must be a valid URL`,
+			}),
 			Entry("openTelemetry HTTP endpoint non-numeric port", testCase{
 				inputYaml: `
 targetRef:
