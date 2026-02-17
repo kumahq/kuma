@@ -178,7 +178,8 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 		}
 
 		url, err := net_url.ParseRequestURI(otelBackend.Endpoint)
-		if err == nil && url.Host != "" {
+		switch {
+		case err == nil && url.Host != "":
 			// Parsed as URL - validate scheme and port
 			if url.Scheme != "http" && url.Scheme != "https" {
 				verr.AddViolationAt(otelPath.Field("endpoint"), "URL scheme must be http or https")
@@ -192,10 +193,10 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 			if url.Hostname() == "" {
 				verr.AddViolationAt(otelPath.Field("endpoint"), "hostname must be defined")
 			}
-		} else if strings.HasPrefix(otelBackend.Endpoint, "http://") || strings.HasPrefix(otelBackend.Endpoint, "https://") {
+		case strings.HasPrefix(otelBackend.Endpoint, "http://") || strings.HasPrefix(otelBackend.Endpoint, "https://"):
 			// Has http/https prefix but is not a valid URL (parse failed or missing host)
 			verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
-		} else if err != nil && strings.Contains(otelBackend.Endpoint, "://") {
+		case err != nil && strings.Contains(otelBackend.Endpoint, "://"):
 			// Has other scheme but failed to parse - invalid URL
 			verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
 		}
