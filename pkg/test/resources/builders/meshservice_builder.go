@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -75,6 +76,15 @@ func (m *MeshServiceBuilder) WithDataplaneTagsSelector(selector map[string]strin
 
 func (m *MeshServiceBuilder) WithDataplaneTagsSelectorKV(selectorKV ...string) *MeshServiceBuilder {
 	return m.WithDataplaneTagsSelector(TagsKVToMap(selectorKV))
+}
+
+func (m *MeshServiceBuilder) WithDataplaneLabelsSelector(selector map[string]string) *MeshServiceBuilder {
+	m.res.Spec.Selector = v1alpha1.Selector{
+		DataplaneLabels: &common_api.LabelSelector{
+			MatchLabels: &selector,
+		},
+	}
+	return m
 }
 
 func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_meta.Protocol) *MeshServiceBuilder {

@@ -8,7 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	kube_record "k8s.io/client-go/tools/record"
+	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +27,7 @@ import (
 // but only when Kuma isn't using the SidecarContainer feature
 type PodStatusReconciler struct {
 	kube_client.Client
-	kube_record.EventRecorder
+	kube_events.EventRecorder
 	Scheme            *kube_runtime.Scheme
 	ResourceManager   manager.ResourceManager
 	Log               logr.Logger

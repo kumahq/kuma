@@ -386,13 +386,15 @@ func (d *Dataplane_Networking_Inbound) GetService() string {
 	return d.Tags[ServiceTag]
 }
 
-// GetProtocol returns a protocol supported by this inbound interface.
-//
-// The purpose of this method is to encapsulate implementation detail
-// that protocol is modeled as a tag rather than a separate field.
-func (d *Dataplane_Networking_Inbound) GetProtocol() string {
+// GetProtocolFallback returns a protocol supported by this inbound interface.
+// It first checks the Protocol field, then falls back to the protocol tag
+// for backward compatibility.
+func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
 	if d == nil {
 		return ""
+	}
+	if d.Protocol != "" {
+		return d.Protocol
 	}
 	return d.Tags[ProtocolTag]
 }

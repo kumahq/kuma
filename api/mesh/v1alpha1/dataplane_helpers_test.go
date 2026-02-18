@@ -227,23 +227,29 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 		)
 	})
 
-	Describe("GetProtocol()", func() {
+	Describe("GetProtocolFallback()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
 		}
 
-		DescribeTable("should infer protocol from `protocol` tag",
+		DescribeTable("should return protocol from field or fall back to tag",
 			func(given testCase) {
-				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
+				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
 			},
 			Entry("inbound is `nil`", testCase{
 				inbound:  nil,
 				expected: "",
 			}),
-			Entry("inbound has no `protocol` tag", testCase{
+			Entry("inbound has no protocol field or tag", testCase{
 				inbound:  &Dataplane_Networking_Inbound{},
 				expected: "",
+			}),
+			Entry("inbound has protocol field set", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Protocol: "grpc",
+				},
+				expected: "grpc",
 			}),
 			Entry("inbound has `protocol` tag with a known value", testCase{
 				inbound: &Dataplane_Networking_Inbound{
@@ -252,6 +258,15 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 					},
 				},
 				expected: "http",
+			}),
+			Entry("inbound has both protocol field and tag - field takes precedence", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Protocol: "grpc",
+					Tags: map[string]string{
+						"kuma.io/protocol": "http",
+					},
+				},
+				expected: "grpc",
 			}),
 			Entry("inbound has `protocol` tag with an unknown value", testCase{
 				inbound: &Dataplane_Networking_Inbound{

@@ -188,6 +188,9 @@ components:
                       listening to. When transparent proxying is not used, Envoy will bind to
                       this port.
                     type: integer
+                  protocol:
+                    description: Protocol of the service (tcp, http, grpc, etc).
+                    type: string
                   serviceAddress:
                     description: |-
                       Address of the service that requests will be forwarded to.

@@ -12,7 +12,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_record "k8s.io/client-go/tools/record"
+	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -32,8 +32,9 @@ var _ = Describe("MeshServiceController", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	type testCase struct {
-		inputFile  string
-		outputFile string
+		inputFile                string
+		outputFile               string
+		skipInboundTagGeneration bool
 	}
 
 	DescribeTable("should reconcile service",
@@ -68,11 +69,12 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client:            kubeClient,
-				Log:               logr.Discard(),
-				Scheme:            k8sClientScheme,
-				EventRecorder:     kube_record.NewFakeRecorder(10),
-				ResourceConverter: k8s.NewSimpleConverter(),
+				Client:                   kubeClient,
+				Log:                      logr.Discard(),
+				Scheme:                   k8sClientScheme,
+				EventRecorder:            kube_events.NewFakeRecorder(10),
+				ResourceConverter:        k8s.NewSimpleConverter(),
+				SkipInboundTagGeneration: given.skipInboundTagGeneration,
 			}
 
 			key := kube_types.NamespacedName{
@@ -125,6 +127,11 @@ var _ = Describe("MeshServiceController", func() {
 		Entry("headless gateway service with mode Disabled", testCase{
 			inputFile:  "headless-gateway-disabled.resources.yaml",
 			outputFile: "headless-gateway-disabled.meshservice.yaml",
+		}),
+		Entry("with SkipInboundTagGeneration enabled", testCase{
+			inputFile:                "skip-inbound-tags.resources.yaml",
+			outputFile:               "skip-inbound-tags.meshservice.yaml",
+			skipInboundTagGeneration: true,
 		}),
 	)
 })

@@ -279,6 +279,7 @@
       "matchDepNames": ["go"],
       "matchManagers": ["gomod", "mise"],
       "groupName": "go version",
+      "rangeStrategy": "bump",
       "enabled": true
     },
     {

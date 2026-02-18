@@ -7,6 +7,7 @@
    "pluralDisplayName": "Circuit Breakers",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -53,6 +54,7 @@
    "pluralDisplayName": "Fault Injections",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -79,6 +81,7 @@
    "pluralDisplayName": "Health Checks",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -115,6 +118,7 @@
    "pluralDisplayName": "Mesh Access Logs",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": true,
     "isTargetRef": true
@@ -131,6 +135,7 @@
    "pluralDisplayName": "Mesh Circuit Breakers",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": true,
     "isTargetRef": true
@@ -157,6 +162,7 @@
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -183,6 +189,7 @@
    "pluralDisplayName": "Mesh Gateway Routes",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -199,6 +206,7 @@
    "pluralDisplayName": "Mesh HTTP Routes",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": true,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -215,6 +223,7 @@
    "pluralDisplayName": "Mesh Health Checks",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": true,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -251,6 +260,7 @@
    "pluralDisplayName": "Mesh Load Balancing Strategies",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": true,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -267,6 +277,7 @@
    "pluralDisplayName": "Mesh Metrics",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -293,6 +304,7 @@
    "pluralDisplayName": "Mesh Passthroughs",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -309,6 +321,7 @@
    "pluralDisplayName": "Mesh Proxy Patches",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -325,6 +338,7 @@
    "pluralDisplayName": "Mesh Rate Limits",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": true,
     "isTargetRef": true
@@ -341,6 +355,7 @@
    "pluralDisplayName": "Mesh Retries",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": true,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -367,6 +382,7 @@
    "pluralDisplayName": "Mesh TCP Routes",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": true,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -383,6 +399,7 @@
    "pluralDisplayName": "Mesh TLSes",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": false,
     "isFromAsRules": true,
     "isTargetRef": true
@@ -399,6 +416,7 @@
    "pluralDisplayName": "Mesh Timeouts",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": true,
     "isTargetRef": true
@@ -415,6 +433,7 @@
    "pluralDisplayName": "Mesh Traces",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -431,6 +450,7 @@
    "pluralDisplayName": "Mesh Traffic Permissions",
    "policy": {
     "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": true
@@ -457,6 +477,7 @@
    "pluralDisplayName": "Proxy Templates",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -473,6 +494,7 @@
    "pluralDisplayName": "Rate Limits",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -489,6 +511,7 @@
    "pluralDisplayName": "Retries",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -525,6 +548,7 @@
    "pluralDisplayName": "Timeouts",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -541,6 +565,7 @@
    "pluralDisplayName": "Traffic Logs",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -557,6 +582,7 @@
    "pluralDisplayName": "Traffic Permissions",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -573,6 +599,7 @@
    "pluralDisplayName": "Traffic Routes",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -589,6 +616,7 @@
    "pluralDisplayName": "Traffic Traces",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false
@@ -605,6 +633,7 @@
    "pluralDisplayName": "Virtual Outbounds",
    "policy": {
     "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
     "hasToTargetRef": false,
     "isFromAsRules": false,
     "isTargetRef": false

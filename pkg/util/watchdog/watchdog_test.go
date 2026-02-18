@@ -273,4 +273,59 @@ var _ = Describe("SimpleWatchdog", func() {
 		default:
 		}
 	})
+
+	It("should skip ticks when StreamCtx is closed", test.Within(5*time.Second, func() {
+		// given
+		streamCtx, streamCancel := context.WithCancel(context.Background())
+		onStopCalled := make(chan struct{})
+
+		watchdog := SimpleWatchdog{
+			NewTicker: func() *time.Ticker {
+				return &time.Ticker{
+					C: timeTicks,
+				}
+			},
+			OnTick: func(context.Context) error {
+				onTickCalls <- struct{}{}
+				return nil
+			},
+			OnError: func(err error) {
+				onErrorCalls <- err
+			},
+			OnStop: func() {
+				close(onStopCalled)
+			},
+			StreamCtx: streamCtx,
+		}
+
+		// setup
+		go func() {
+			watchdog.Start(ctx)
+			close(doneCh)
+		}()
+
+		// then first tick happens "immediately"
+		By("ticks on first call")
+		Eventually(onTickCalls).Should(Receive())
+
+		By("simulating 1st tick")
+		timeTicks <- time.Time{}
+		Eventually(onTickCalls).Should(Receive())
+
+		By("simulating stream closure (gRPC disconnect)")
+		streamCancel()
+
+		By("simulating ticker fires after stream closed")
+		timeTicks <- time.Time{}
+
+		// then no tick should happen because stream is closed
+		Consistently(onTickCalls, "100ms").ShouldNot(Receive())
+
+		By("canceling main context to stop watchdog")
+		cancel()
+
+		// then watchdog should stop and call OnStop
+		Eventually(onStopCalled).Should(BeClosed())
+		Eventually(doneCh).Should(BeClosed())
+	}))
 })

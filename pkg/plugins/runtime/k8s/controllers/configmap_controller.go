@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_record "k8s.io/client-go/tools/record"
+	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
@@ -30,7 +30,7 @@ import (
 // ConfigMapReconciler reconciles a ConfigMap object
 type ConfigMapReconciler struct {
 	kube_client.Client
-	kube_record.EventRecorder
+	kube_events.EventRecorder
 	Scheme              *kube_runtime.Scheme
 	Log                 logr.Logger
 	ResourceManager     manager.ResourceManager

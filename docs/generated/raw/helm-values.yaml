@@ -247,6 +247,13 @@ controlPlane:
         # This requires cert-manager to be installed in the cluster.
         # Note: When enabled, secretName and caBundle should be empty.
         enabled: false
+        # -- Reference to an existing issuer. If not specified, a self-signed issuer is created.
+        issuerRef:
+          # -- Name of an existing cert-manager Issuer or ClusterIssuer.
+          # If empty, a self-signed issuer will be created automatically.
+          name: ""
+          # -- Kind of the issuer: "Issuer" or "ClusterIssuer"
+          kind: "Issuer"
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
@@ -764,7 +771,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.35.0@sha256:0bb95b2a450875fc8ceaea2f9987a99fe27c228846e2e00b93b65ebb0d59034e
+    tag: v1.35.1@sha256:c93e4fb811b3217ef69ee7a79a9a15fb277887cd1c3002fbe154e676037a274a
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

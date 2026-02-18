@@ -33,6 +33,7 @@ func addInspectMeshServiceEndpoints(
 	ws *restful.WebService,
 	rm manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
+	isGlobal bool,
 ) {
 	ws.Route(
 		ws.GET("/meshes/{mesh}/meshservices/{name}/_resources/dataplanes").
@@ -43,7 +44,7 @@ func addInspectMeshServiceEndpoints(
 	)
 	ws.Route(
 		ws.GET("/meshes/{mesh}/{serviceType}/{name}/_hostnames").
-			To(matchingHostnames(rm)).
+			To(matchingHostnames(rm, isGlobal)).
 			Doc("inspect service hostnames").
 			Param(ws.PathParameter("name", "mesh service name").DataType("string")).
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")),
@@ -74,7 +75,7 @@ var availableServiceTypes = []string{
 	string(types.Meshmultizoneservices),
 }
 
-func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction {
+func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restful.RouteFunction {
 	generatorsForType := map[types.InspectHostnamesParamsServiceType]hostname.HostnameGenerator{
 		types.Meshservices:          meshservice_hostname.NewMeshServiceHostnameGenerator(resManager),
 		types.Meshexternalservices:  mes_hostname.NewMeshExternalServiceHostnameGenerator(resManager),
@@ -84,6 +85,20 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 		types.Meshservices:          meshservice_api.MeshServiceResourceTypeDescriptor,
 		types.Meshexternalservices:  meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 		types.Meshmultizoneservices: meshmultizoneservice_api.MeshMultiZoneServiceResourceTypeDescriptor,
+	}
+
+	generateAndRecord := func(svc model.Resource, svcType types.InspectHostnamesParamsServiceType, svcZone string, hg *hostnamegenerator_api.HostnameGeneratorResource, byHostname map[string]map[string]struct{}) error {
+		host, err := generatorsForType[svcType].GenerateHostname(svcZone, hg, svc)
+		if err != nil {
+			return err
+		}
+		if host != "" {
+			if byHostname[host] == nil {
+				byHostname[host] = map[string]struct{}{}
+			}
+			byHostname[host][svcZone] = struct{}{}
+		}
+		return nil
 	}
 
 	return func(request *restful.Request, response *restful.Response) {
@@ -118,35 +133,29 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 
 		for _, hg := range hostnameGenerators.Items {
 			svcZone := model.ZoneOfResource(svc)
-			hgZone := model.ZoneOfResource(hg)
-			hgOrigin, _ := model.ResourceOrigin(hg.GetMeta())
+			svcOrigin, _ := model.ResourceOrigin(svc.GetMeta())
+			origins := []mesh_proto.ResourceOrigin{svcOrigin}
+			// On Global control plane in multi-zone setup, hostname generators may use origin-based
+			// selectors (e.g., kuma.io/origin label) to match services. Resources synced across zones
+			// can appear with different origins, so we test both Global and Zone perspectives to capture
+			// all possible hostname matches. Zone control planes only need to check the actual origin.
+			if isGlobal {
+				origins = []mesh_proto.ResourceOrigin{mesh_proto.ZoneResourceOrigin, mesh_proto.GlobalResourceOrigin}
+			}
 
-			// rewrite origin to simulate matching from a perspective of a single zone
-			var origin mesh_proto.ResourceOrigin
-			if hgOrigin == mesh_proto.ZoneResourceOrigin && hgZone == svcZone {
-				origin = mesh_proto.ZoneResourceOrigin
-			} else {
-				origin = mesh_proto.GlobalResourceOrigin
-			}
-			overridden := ResourceMetaWithOverriddenOrigin{
-				ResourceMeta: svc.GetMeta(),
-				origin:       origin,
-			}
-			svc.SetMeta(overridden)
+			originalMeta := svc.GetMeta()
+			for _, origin := range origins {
+				overridden := ResourceMetaWithOverriddenOrigin{
+					ResourceMeta: originalMeta,
+					origin:       origin,
+				}
+				svc.SetMeta(overridden)
 
-			host, err := generatorsForType[svcType].GenerateHostname(svcZone, hg, svc)
-			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "could not generate hostname")
-				return
+				if err := generateAndRecord(svc, svcType, svcZone, hg, byHostname); err != nil {
+					rest_errors.HandleError(request.Request.Context(), response, err, "could not generate hostname")
+					return
+				}
 			}
-			if host == "" {
-				// hostname generator did not match the service
-				continue
-			}
-			if _, ok := byHostname[host]; !ok {
-				byHostname[host] = map[string]struct{}{}
-			}
-			byHostname[host][svcZone] = struct{}{}
 		}
 
 		resp := types.InspectHostnames{}

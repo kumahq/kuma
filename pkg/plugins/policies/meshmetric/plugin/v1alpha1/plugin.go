@@ -14,10 +14,13 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/mads"
@@ -125,6 +128,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 				systemName,
 				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
 			),
+			StatPrefix:  getNameOrDefault(systemName, ""),
 			StatsPath:   PrometheusDataplaneStatsPath,
 			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
 		}
@@ -176,6 +180,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		Endpoint:     endpoint,
 		ListenerName: getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
 		ClusterName:  getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
+		StatPrefix:   getNameOrDefault(systemName, ""),
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
 		IPv6Enabled:  proxy.Metadata.GetIPv6Enabled(),
@@ -269,8 +274,15 @@ func createDynamicConfig(
 	}
 
 	extraLabels := map[string]string{}
-	if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-		extraLabels[WorkloadAttributeKey] = workload
+	if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+		workloadKRI := kri.Identifier{
+			ResourceType: workload_api.WorkloadType,
+			Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
+			Zone:         proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.ZoneTag],
+			Namespace:    proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+			Name:         workloadName,
+		}
+		extraLabels[WorkloadAttributeKey] = workloadKRI.String()
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))

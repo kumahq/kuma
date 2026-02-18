@@ -155,11 +155,12 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, co
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client:            mgr.GetClient(),
-		Log:               core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme:            mgr.GetScheme(),
-		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
-		ResourceConverter: converter,
+		Client:                   mgr.GetClient(),
+		Log:                      core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:                   mgr.GetScheme(),
+		EventRecorder:            mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
+		ResourceConverter:        converter,
+		SkipInboundTagGeneration: rt.Config().Experimental.SkipInboundTagGeneration,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -189,7 +190,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 	}
 	reconciler := &k8s_controllers.PodReconciler{
 		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
+		EventRecorder: mgr.GetEventRecorder("k8s.kuma.io/dataplane-generator"),
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: k8s_controllers.PodConverter{
@@ -200,8 +201,9 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 					ReplicaSetGetter: mgr.GetClient(),
 					JobGetter:        mgr.GetClient(),
 				},
-				NodeGetter:       mgr.GetClient(),
-				NodeLabelsToCopy: rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
+				NodeGetter:               mgr.GetClient(),
+				NodeLabelsToCopy:         rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
+				SkipInboundTagGeneration: rt.Config().Experimental.SkipInboundTagGeneration,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
 			SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
@@ -223,7 +225,7 @@ func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conv
 	}
 	reconciler := &k8s_controllers.PodStatusReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
+		EventRecorder:     mgr.GetEventRecorder("k8s.kuma.io/dataplane-jobs-syncer"),
 		Scheme:            mgr.GetScheme(),
 		Log:               core.Log.WithName("controllers").WithName("Pod"),
 		ResourceConverter: converter,
@@ -238,7 +240,7 @@ func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error
 	}
 	reconciler := &k8s_controllers.WorkloadReconciler{
 		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor("kuma-workload-controller"),
+		EventRecorder: mgr.GetEventRecorder("kuma-workload-controller"),
 		Log:           core.Log.WithName("controllers").WithName("Workload"),
 	}
 	return reconciler.SetupWithManager(mgr)
@@ -265,7 +267,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 	}
 	reconciler := &k8s_controllers.ConfigMapReconciler{
 		Client:              mgr.GetClient(),
-		EventRecorder:       mgr.GetEventRecorderFor("k8s.kuma.io/vips-generator"),
+		EventRecorder:       mgr.GetEventRecorder("k8s.kuma.io/vips-generator"),
 		Scheme:              mgr.GetScheme(),
 		Log:                 core.Log.WithName("controllers").WithName("ConfigMap"),
 		ResourceManager:     rt.ResourceManager(),

@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_tracing "github.com/kumahq/kuma/v2/pkg/core/tracing"
 	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
 	"github.com/kumahq/kuma/v2/pkg/kds/service"
 	util_grpc "github.com/kumahq/kuma/v2/pkg/util/grpc"
@@ -89,7 +90,7 @@ func doRequest[T message]( //nolint:nonamedreturns
 		} else {
 			span.SetStatus(codes.Ok, "")
 		}
-		span.End()
+		core_tracing.SafeSpanEnd(span)
 	}()
 
 	zone := core_model.ZoneOfResource(proxy)

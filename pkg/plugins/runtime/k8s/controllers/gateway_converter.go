@@ -33,7 +33,7 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 
 	if !ok {
 		r.Eventf(
-			pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Missing %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
+			pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Missing %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
 		)
 		return nil
 	}
@@ -41,7 +41,7 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 	var tags map[string]string
 	if err := json.Unmarshal([]byte(tagsAnnotation), &tags); err != nil || tags == nil {
 		r.Eventf(
-			pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Invalid %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
+			pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Invalid %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
 		)
 		return nil
 	}
@@ -91,17 +91,17 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 	})
 	if err != nil {
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
-		r.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
+		r.Eventf(pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err
 	}
 
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
 		log.Info("Dataplane created")
-		r.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", dataplane.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Dataplane: %s", dataplane.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("Dataplane updated")
-		r.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Dataplane: %s", dataplane.Name)
 	}
 	return nil
 }

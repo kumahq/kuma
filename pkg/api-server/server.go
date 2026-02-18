@@ -159,7 +159,7 @@ func NewApiServer(
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
-	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
+	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess, cfg.Mode == config_core.Global)
 	guiUrl := ""
 	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
 		guiUrl = cfg.ApiServer.GUI.BasePath
@@ -368,6 +368,7 @@ func addResourcesEndpoints(
 	kriEndpoints := kriEndpoint{
 		k8sMapper:       k8sMapper,
 		resManager:      resManager,
+		resourceAccess:  resourceAccess,
 		cpMode:          cfg.Mode,
 		environment:     cfg.Environment,
 		cpZone:          cfg.Multizone.Zone.Name,

@@ -33,7 +33,7 @@ $(1)/mb_*: | $(1)
 	curl --progress-bar --location $(TARBALL_URL)/all-$(3).tar.gz | tar -C $$(@D) -xz
 
 $(2)/mb_*: | $(2) $(1)/mb_*
-	cp $(1)/mb_* $(2)
+	command cp $(1)/mb_* $(2)
 
 # Make $(2) $(1) directories if they don't
 # exist

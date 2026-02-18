@@ -229,4 +229,166 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Spec.Networking.Inbound[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_NotReady))
 	})
+
+	It("should not add zone tag when inbound tags empty and MeshServices mode is Exclusive", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
+		mesh := &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{
+				MeshServices: &mesh_proto.Mesh_MeshServices{
+					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+				},
+			},
+		}
+		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		input := core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:    3030,
+							Address: "10.0.0.1",
+						},
+					},
+				},
+			},
+		}
+
+		// when
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		actual := core_mesh.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(actual.Spec.Networking.Inbound[0].Tags).To(BeEmpty())
+	})
+
+	It("should add zone tag when inbound has tags even in Exclusive mode", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
+		mesh := &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{
+				MeshServices: &mesh_proto.Mesh_MeshServices{
+					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+				},
+			},
+		}
+		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		input := core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:    3030,
+							Address: "10.0.0.1",
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "service-1",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// when
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		actual := core_mesh.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
+	})
+
+	It("should add zone tag to empty inbound when not in Exclusive mode", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
+		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		input := core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:    3030,
+							Address: "10.0.0.1",
+						},
+					},
+				},
+			},
+		}
+
+		// when
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		actual := core_mesh.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
+	})
+
+	It("should not add zone tag on update when inbound tags empty and Exclusive mode", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
+		mesh := &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{
+				MeshServices: &mesh_proto.Mesh_MeshServices{
+					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+				},
+			},
+		}
+		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		input := core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:    3030,
+							Address: "10.0.0.1",
+						},
+					},
+				},
+			},
+		}
+		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		input.Spec.Networking.Address = "10.0.0.2"
+		err = manager.Update(context.Background(), &input)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		actual := core_mesh.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual.Spec.Networking.Inbound[0].Tags).To(BeEmpty())
+	})
 })

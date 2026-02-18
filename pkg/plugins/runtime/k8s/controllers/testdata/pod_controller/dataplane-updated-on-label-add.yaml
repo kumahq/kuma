@@ -26,6 +26,7 @@ spec:
     inbound:
     - health: {}
       port: 8080
+      protocol: http
       state: NotReady
       tags:
         app: sample

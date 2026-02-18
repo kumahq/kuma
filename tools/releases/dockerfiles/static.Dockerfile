@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/static-debian12:debug-nonroot@sha256:eb3506377f0d8b0e173bbe61f1f7f13066ee6a7f8a7fd637c4a7e13a2799d092
+FROM gcr.io/distroless/static-debian12:debug-nonroot@sha256:afead1275cad5ec9662cdc09ce7fe5961a41467555fc30cd46a60247bf8bbdfd
 
 COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \

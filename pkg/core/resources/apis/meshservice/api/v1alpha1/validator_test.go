@@ -22,6 +22,24 @@ var _ = Describe("MeshService", func() {
 				Resource: "",
 			},
 		),
+		Entry(
+			"multiple selectors specified",
+			ResourceValidationCase{
+				Violations: []validators.Violation{{
+					Field:   `spec.selector`,
+					Message: `must specify only one of: dataplaneTags, dataplaneRef, or dataplaneLabels`,
+				}},
+				Name: "meshservice",
+				Resource: `
+selector:
+  dataplaneTags:
+    app: redis
+  dataplaneLabels:
+    matchLabels:
+      app: redis
+`,
+			},
+		),
 	)
 	DescribeValidCases(
 		api.NewMeshServiceResource,
@@ -30,6 +48,40 @@ var _ = Describe("MeshService", func() {
 			ResourceValidationCase{
 				Name:     "meshservice",
 				Resource: "",
+			},
+		),
+		Entry(
+			"accepts dataplaneTags selector",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+selector:
+  dataplaneTags:
+    app: redis
+`,
+			},
+		),
+		Entry(
+			"accepts dataplaneRef selector",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+selector:
+  dataplaneRef:
+    name: redis-01
+`,
+			},
+		),
+		Entry(
+			"accepts dataplaneLabels selector",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+selector:
+  dataplaneLabels:
+    matchLabels:
+      app: redis
+`,
 			},
 		),
 	)

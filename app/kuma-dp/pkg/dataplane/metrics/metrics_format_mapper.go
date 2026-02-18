@@ -23,6 +23,10 @@ const (
 
 func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope][]metricdata.Metrics {
 	scopedMetrics := map[instrumentation.Scope][]metricdata.Metrics{}
+	if len(appMetrics) == 0 {
+		log.V(1).Info("FromPrometheusMetrics called with empty input")
+		return scopedMetrics
+	}
 	for _, prometheusMetric := range appMetrics {
 		var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
 		switch prometheusMetric.GetType() {

@@ -142,6 +142,9 @@ type PolicyDescription struct {
 	// HasFromTargetRef indicates that this policy can be used as an inbound policy
 	HasFromTargetRef bool `json:"hasFromTargetRef"`
 
+	// HasRulesTargetRef indicates that the policy has a rules targetRef field for matching
+	HasRulesTargetRef bool `json:"hasRulesTargetRef"`
+
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
 

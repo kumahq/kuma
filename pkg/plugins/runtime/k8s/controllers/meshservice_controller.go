@@ -16,7 +16,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_record "k8s.io/client-go/tools/record"
+	kube_event "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -56,10 +57,11 @@ const (
 // MeshServiceReconciler reconciles a MeshService object
 type MeshServiceReconciler struct {
 	kube_client.Client
-	kube_record.EventRecorder
-	Log               logr.Logger
-	Scheme            *kube_runtime.Scheme
-	ResourceConverter k8s_common.Converter
+	kube_event.EventRecorder
+	Log                      logr.Logger
+	Scheme                   *kube_runtime.Scheme
+	ResourceConverter        k8s_common.Converter
+	SkipInboundTagGeneration bool
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -185,9 +187,9 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 		switch op {
 		case kube_controllerutil.OperationResultCreated:
-			r.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created Kuma MeshService: %s", name.Name)
+			r.Eventf(svc, nil, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Create", "Created Kuma MeshService: %s", name.Name)
 		case kube_controllerutil.OperationResultUpdated:
-			r.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated Kuma MeshService: %s", name.Name)
+			r.Eventf(svc, nil, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Update", "Updated Kuma MeshService: %s", name.Name)
 		}
 
 		return kube_ctrl.Result{}, nil
@@ -295,10 +297,10 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 	}
 	if created > 0 {
-		r.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created %d MeshServices", created)
+		r.Eventf(svc, nil, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Create", "Created %d MeshServices", created)
 	}
 	if updated > 0 {
-		r.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated %d MeshServices", updated)
+		r.Eventf(svc, nil, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Update", "Updated %d MeshServices", updated)
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -355,19 +357,32 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 	if ms.GetGeneration() != 0 {
 		if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
 			r.Eventf(
-				svc, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "MeshService already exists and isn't owned by Service",
+				svc, nil, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "FailedToGenerate", "MeshService already exists and isn't owned by Service",
 			)
 			return errors.Errorf("MeshService already exists and isn't owned by Service")
 		}
 	}
 	ms.Labels[metadata.HeadlessService] = "false"
-	dpTags := maps.Clone(svc.Spec.Selector)
-	if dpTags == nil {
-		dpTags = map[string]string{}
-	}
-	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
-	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: &dpTags,
+	if r.SkipInboundTagGeneration {
+		matchLabels := maps.Clone(svc.Spec.Selector)
+		if matchLabels == nil {
+			matchLabels = map[string]string{}
+		}
+		matchLabels[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
+		ms.Spec.Selector = meshservice_api.Selector{
+			DataplaneLabels: &common_api.LabelSelector{
+				MatchLabels: &matchLabels,
+			},
+		}
+	} else {
+		dpTags := maps.Clone(svc.Spec.Selector)
+		if dpTags == nil {
+			dpTags = map[string]string{}
+		}
+		dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
+		ms.Spec.Selector = meshservice_api.Selector{
+			DataplaneTags: &dpTags,
+		}
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{
@@ -387,7 +402,7 @@ func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery
 		if ms.GetGeneration() != 0 {
 			if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != endpoint.TargetRef.UID {
 				r.Eventf(
-					svc, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "MeshService already exists and isn't owned by Pod",
+					svc, nil, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "FailedToGenerate", "MeshService already exists and isn't owned by Pod",
 				)
 				return errors.Errorf("MeshService already exists and isn't owned by Pod")
 			}
@@ -500,7 +515,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 
 	if result != kube_controllerutil.OperationResultNone && len(unsupportedPorts) > 0 {
 		ports := strings.Join(unsupportedPorts, ", ")
-		r.Eventf(svc, kube_core.EventTypeNormal, IgnoredUnsupportedPortReason, "Ignored unsupported ports: %s", ports)
+		r.Eventf(svc, nil, kube_core.EventTypeNormal, IgnoredUnsupportedPortReason, "IgnoredPorts", "Ignored unsupported ports: %s", ports)
 	}
 
 	return result, err

@@ -155,6 +155,9 @@ message Dataplane {
 
       // Name adds another way of referencing this port, usable with MeshService
       string name = 10;
+
+      // Protocol of the service (tcp, http, grpc, etc).
+      string protocol = 11;
     }
 
     // Outbound describes a service consumed by the data plane proxy.
