@@ -10,11 +10,11 @@ does not have any particular instructions.
 
 ### RBAC: Added `events.k8s.io` API group
 
-The control plane ClusterRole now includes the `events.k8s.io` API group alongside the core (`""`) API group for `events` resources. This aligns with the Kubernetes `events.k8s.io/v1` API which replaced the deprecated core `v1` Events API.
+The control plane ClusterRole and the namespaced Role used by the control plane for `events` now include the `events.k8s.io` API group alongside the core (`""`) API group for `events` resources. This aligns with the Kubernetes `events.k8s.io/v1` API which replaced the deprecated core `v1` Events API.
 
 **Action required:**
 
-If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifests), update your ClusterRole definitions to include the `events.k8s.io` API group for events resources.
+If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifests), update your RBAC rules for events in both ClusterRole and Role definitions to include the `events.k8s.io` API group for events resources.
 
 ## Upgrade to `2.13.x`
 
