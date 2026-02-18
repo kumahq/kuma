@@ -230,7 +230,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: my-app:latest
+          image: kuma-dp:latest
           ports:
             - containerPort: 8080
 ```
