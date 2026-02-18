@@ -42,16 +42,12 @@ spec:
     zoneIngress:
       address: 10.0.0.1 # required, address listener binds to
       port: 10001 # required, port listener binds to
-      name: zi-port # optional, user should be able to set name since `port` can be the same when `addresses` are different
+      name: zi-port # optional, used for policy targeting via sectionName
     zoneEgress:
       address: 10.0.0.2 # required
       port: 10002 # required
       name: ze-port # optional
 ```
-
-Note: There is also a `networking.advertisedAddress` field (but no `networking.advertisedPort`).
-It was a niche Universal-only field [contributed by the community](https://github.com/kumahq/kuma/pull/2116) that should be removed in v3.
-Otherwise, it may appear that `advertisedAddress` would be used for `zoneIngress`, which is not the case.
 
 ##### Pros and Cons
 
@@ -86,6 +82,17 @@ spec:
 #### Decision
 
 We choose **Option 2** (`listeners` array).
+
+### Mixing inbound and zone proxy listeners
+
+Initially, we assumed zone proxy listeners would be incompatible with transparent proxying.
+However, testing proved otherwise.
+A [PoC](https://github.com/kumahq/kuma/pull/15619/changes) demonstrated this by modifying Kuma to add a "fake" zone egress listener,
+showing that zone proxy listeners can coexist with regular inbound listeners without conflicts.
+
+**Decision:** We will not restrict this functionality.
+Since there are no technical limitations preventing zone proxy listeners from running alongside regular inbounds,
+imposing artificial constraints would add unnecessary complexity.
 
 ### Marking Pods and Services as zone proxies
 
@@ -150,8 +157,7 @@ users must set the `kuma.io/zone-proxy: enabled` label on the Pod.
 This applies both when mixing inbounds with zone proxy listeners
 and when running a dedicated Deployment with `kuma-dp` as the main container.
 
-If this label is not present, Services labeled with `k8s.kuma.io/zone-proxy-type` will be ignored
-and no zone proxy listeners will be generated.
+If this label is not present, Services labeled with `k8s.kuma.io/zone-proxy-type` will be ignored and no zone proxy listeners will be generated.
 
 #### Open Questions
 
@@ -252,14 +258,6 @@ spec:
         address: 10.0.0.1
         port: 10002
 ```
-
-#### Mixing inbound and zone proxy listeners
-
-Initially, we assumed zone proxy listeners would be incompatible with transparent proxying.
-However, testing proved otherwise. A [PoC](https://github.com/kumahq/kuma/pull/15619/changes) demonstrated this by modifying Kuma to add a "fake" zone egress listener, showing that zone proxy listeners can coexist with regular inbound listeners without conflicts.
-
-**Decision:** We will not restrict this functionality.
-Since there are no technical limitations preventing zone proxy listeners from running alongside regular inbounds, imposing artificial constraints would add unnecessary complexity.
 
 ### Policy Targeting for Zone Ingress and Zone Egress
 
