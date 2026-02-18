@@ -295,9 +295,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
-					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
+					dnsBindAddress := "localhost"
+					if cfg.DataplaneRuntime.TransparentProxy.HasVNet() {
+						dnsBindAddress = "0.0.0.0"
+					}
+					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort, "bindAddress", dnsBindAddress)
 					// Using embedded DNS
-					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("0.0.0.0", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
+					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort(dnsBindAddress, strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
 					if err != nil {
 						return err
 					}

@@ -3,6 +3,7 @@ package dataplane_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
@@ -87,6 +88,59 @@ var _ = Describe("DataplaneConfig functions", func() {
 
 			// then
 			Expect(cfg.EnabledIPv6()).To(BeTrue())
+		})
+	})
+
+	Describe("HasVNet", func() {
+		It("should return false for nil config", func() {
+			var cfg *tproxy_dp.DataplaneConfig
+			Expect(cfg.HasVNet()).To(BeFalse())
+		})
+
+		It("should return false when no VNet networks are configured", func() {
+			cfg := &tproxy_dp.DataplaneConfig{}
+			Expect(cfg.HasVNet()).To(BeFalse())
+		})
+
+		It("should return true when VNet networks are configured", func() {
+			cfg := &tproxy_dp.DataplaneConfig{
+				Redirect: tproxy_dp.DataplaneRedirect{
+					VNet: tproxy_dp.DataplaneVNet{
+						Networks: []string{"docker0:172.17.0.0/16"},
+					},
+				},
+			}
+			Expect(cfg.HasVNet()).To(BeTrue())
+		})
+	})
+
+	Describe("VNet deserialization", func() {
+		It("should deserialize VNet from full config YAML", func() {
+			// This simulates what happens when kuma-dp loads the transparent proxy
+			// config file written by `kumactl install transparent-proxy --store-config`.
+			// The full config YAML contains redirect.vnet.networks, and the
+			// non-strict YAML decoder populates matching fields in DataplaneConfig.
+			cfgYAML := `
+ipFamilyMode: dualstack
+redirect:
+  inbound:
+    enabled: true
+    port: 15006
+  outbound:
+    enabled: true
+    port: 15001
+  dns:
+    enabled: true
+    port: 15053
+  vnet:
+    networks:
+    - "docker0:172.17.0.0/16"
+`
+			cfg := tproxy_dp.DataplaneConfig{}
+			err := yaml.Unmarshal([]byte(cfgYAML), &cfg)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg.HasVNet()).To(BeTrue())
+			Expect(cfg.Redirect.VNet.Networks).To(Equal([]string{"docker0:172.17.0.0/16"}))
 		})
 	})
 

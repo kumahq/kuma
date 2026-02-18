@@ -3,12 +3,14 @@ package install
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"sigs.k8s.io/yaml"
 
 	core_config "github.com/kumahq/kuma/v2/pkg/config"
 	"github.com/kumahq/kuma/v2/pkg/transparentproxy"
@@ -25,6 +27,7 @@ const (
 	flagIptablesExecutables        = "iptables-executables"
 	flagRedirectDNS                = "redirect-dns"
 	flagRedirectAllDNSTraffic      = "redirect-all-dns-traffic"
+	flagStoreConfig                = "store-config"
 )
 
 const (
@@ -34,6 +37,7 @@ const (
 func newInstallTransparentProxy() *cobra.Command {
 	var configValues []string
 	var configFile string
+	var storeConfigPath string
 
 	cfg := config.DefaultConfig()
 	cfgLoader := core_config.NewLoader(&cfg).WithEnvVarsLoading("KUMA_TRANSPARENT_PROXY")
@@ -204,6 +208,21 @@ runuser -u kuma-dp -- \
 				}
 			}
 
+			if storeConfigPath != "" && !cfg.DryRun {
+				cfgBytes, err := yaml.Marshal(cfg)
+				if err != nil {
+					return errors.Wrap(err, "failed to marshal transparent proxy configuration")
+				}
+
+				if err := os.MkdirAll(filepath.Dir(storeConfigPath), 0o755); err != nil {
+					return errors.Wrapf(err, "failed to create directory for %s", storeConfigPath)
+				}
+
+				if err := os.WriteFile(storeConfigPath, cfgBytes, 0o644); err != nil {
+					return errors.Wrapf(err, "failed to write transparent proxy configuration to %s", storeConfigPath)
+				}
+			}
+
 			if !initializedConfig.DryRun {
 				initializedConfig.Logger.Info(
 					"transparent proxy setup completed successfully. You can now run kuma-dp with the transparent-proxy feature enabled",
@@ -228,6 +247,9 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, flagRedirectAllDNSTraffic, cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
+	cmd.Flags().StringVar(&storeConfigPath, flagStoreConfig, "",
+		"Path to write the transparent proxy configuration after successful setup. "+
+			"The file can be loaded by kuma-dp via --transparent-proxy-config.")
 	cmd.Flags().BoolVar(
 		&cfg.Redirect.DNS.SkipConntrackZoneSplit,
 		"skip-dns-conntrack-zone-split",
