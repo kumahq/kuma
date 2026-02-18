@@ -319,6 +319,18 @@ However, in v3 we are removing `gateway`.
 Listeners in the new `listeners` array have a `name` field and can be selected with `spec.targetRef.sectionName`.
 There is no reason to keep the `kuma.io/proxy-type` label and it should be removed in v3; see [#15567](https://github.com/kumahq/kuma/issues/15567).
 
+### Naming Envoy Resources for Zone Proxy Listeners
+
+Zone proxy listeners follow the contextual naming format from [MADR-089](089-naming-envoy-resources-and-stats-from-multiple-kuma-policies.md): `self_<category>_<scope>_<rest>`.
+
+Since zone ingress and zone egress are now listeners on a Dataplane resource, the scope is `dp` (dataplane).
+The category identifies the listener type, and the rest contains the port name.
+
+| Listener Type | Naming Format                        | Example                      |
+|:--------------|:-------------------------------------|:-----------------------------|
+| Zone Ingress  | `self_zoneingress_dp_<port-name>`    | `self_zoneingress_dp_zi-port` |
+| Zone Egress   | `self_zoneegress_dp_<port-name>`     | `self_zoneegress_dp_ze-port`  |
+
 ### Syncing Zone Ingress Addresses via MeshService
 
 Out of scope for this MADR. See https://github.com/Kong/kong-mesh/issues/9151.
