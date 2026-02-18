@@ -77,7 +77,6 @@ spec:
 * Good, because `name` semantics are clear—it is obviously unique within the `listeners` array
 * Good, because in the future if we want a cleaner DPP spec, we can deprecate `networking.inbound` and add listeners with `type: Inbound`
 * Good, because we can organically add more listener types in the future if needed (e.g. Passthrough inbound listener for gateway use case)
-* Bad, because items in `listeners` need to have the same schema so we'd have to validate `advertisedAddress` based on `type`
 
 #### Decision
 
