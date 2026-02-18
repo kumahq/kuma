@@ -18,12 +18,18 @@ KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
 
+# Docker 29+ enables provenance attestations by default, which turns pushed
+# single-platform images into manifest lists (image index). This breaks
+# `docker manifest create --amend` which expects plain image manifests.
+DOCKER_BUILD_OPTS ?= --provenance=false
+
 # add targets to build images for each arch
 # $(1) - GOARCH to build for
 
 define IMAGE_TARGETS_BY_ARCH
 .PHONY: image/static/$(1)
 image/static/$(1): ## Dev: Rebuild `kuma-static` Docker image
+<<<<<<< HEAD
 	docker build -t kumahq/static-debian11:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
 
 .PHONY: image/base/$(1)
@@ -33,34 +39,45 @@ image/base/$(1): ## Dev: Rebuild `kuma-base` Docker image
 .PHONY: image/base-root/$(1)
 image/base-root/$(1): ## Dev: Rebuild `kuma-base-root` Docker image
 	docker build -t kumahq/base-root-debian11:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
+=======
+	docker build $(DOCKER_BUILD_OPTS) -t kumahq/static-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
+
+.PHONY: image/base/$(1)
+image/base/$(1): ## Dev: Rebuild `kuma-base` Docker image
+	docker build $(DOCKER_BUILD_OPTS) -t kumahq/base-nossl-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
+
+.PHONY: image/base-root/$(1)
+image/base-root/$(1): ## Dev: Rebuild `kuma-base-root` Docker image
+	docker build $(DOCKER_BUILD_OPTS) -t kumahq/base-root-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
+>>>>>>> 71e5454084 (chore(ci): disable Docker 29 provenance to fix manifest creation (#15627))
 
 .PHONY: image/envoy/$(1)
 image/envoy/$(1): build/artifacts-linux-$(1)/envoy ## Dev: Rebuild `envoy` Docker image
-	docker build -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
 
 .PHONY: image/kuma-cp/$(1)
 image/kuma-cp/$(1): image/static/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
-	docker build -t $$(call build_image,kuma-cp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cp.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-cp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cp.Dockerfile .
 
 .PHONY: image/kuma-dp/$(1)
 image/kuma-dp/$(1): image/base/$(1) image/envoy/$(1) build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/coredns ## Dev: Rebuild `kuma-dp` Docker image
-	docker build -t $$(call build_image,kuma-dp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-dp.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-dp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-dp.Dockerfile .
 
 .PHONY: image/kumactl/$(1)
 image/kumactl/$(1): image/base/$(1) build/artifacts-linux-$(1)/kumactl ## Dev: Rebuild `kumactl` Docker image
-	docker build -t $$(call build_image,kumactl,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kumactl.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kumactl,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kumactl.Dockerfile .
 
 .PHONY: image/kuma-init/$(1)
 image/kuma-init/$(1): build/artifacts-linux-$(1)/kumactl ## Dev: Rebuild `kuma-init` Docker image
-	docker build -t $$(call build_image,kuma-init,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-init.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-init,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-init.Dockerfile .
 
 .PHONY: image/kuma-cni/$(1)
 image/kuma-cni/$(1): image/base-root/$(1) build/artifacts-linux-$(1)/kuma-cni build/artifacts-linux-$(1)/install-cni
-	docker build -t $$(call build_image,kuma-cni,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cni.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-cni,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cni.Dockerfile .
 
 .PHONY: image/kuma-universal/$(1)
 image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server build/artifacts-linux-$(1)/coredns
-	docker build -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/universal.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/universal.Dockerfile .
 endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goarch))))
 
