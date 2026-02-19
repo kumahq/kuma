@@ -99,6 +99,52 @@ Existing code that lists all `MeshService` resources and generates artifacts fro
 A new `MeshService` labeled with `kuma.io/zone-proxy-type: ingress` does not behave like a regular outbound service,
 but older logic will still treat it as one.
 
+## Address and port resolution
+
+Today, the `ZoneIngress` resource derives its `advertisedAddress` and `advertisedPort` from the Service
+using the following algorithm (see `pkg/plugins/runtime/k8s/controllers/ingress_converter.go`):
+
+1. **Pod annotations (highest priority)**: If the Pod has both `kuma.io/ingress-public-address` and
+   `kuma.io/ingress-public-port` annotations, use those values. Both must be present or neither.
+
+2. **Service-based resolution (fallback)**: If annotations are not present, derive from the Service based on its type:
+   - **LoadBalancer**: Use `status.loadBalancer.ingress[0]`. If both `ip` and `hostname` are present, `ip` takes precedence.
+     If the LoadBalancer is not yet ready (no ingress entries), skip setting advertised coordinates.
+   - **NodePort**: List all cluster Nodes and use the first Node's (`nodes.Items[0]`) address from `node.Status.Addresses`.
+     Address type priority: `NodeExternalIP` > `NodeInternalIP`.
+     Port is taken from `service.Spec.Ports[0].NodePort`.
+   - **Other types (ClusterIP, etc.)**: No advertised coordinates are set. A log message suggests using LoadBalancer,
+     NodePort, or annotation overrides.
+
+3. **Port resolution**: For LoadBalancer, use `service.Spec.Ports[0].Port`. For NodePort, use `service.Spec.Ports[0].NodePort`.
+
+Note that the current implementation always takes the first element (index 0) when multiple addresses or ports are available.
+
+For `MeshZoneAddress`, we have two options for handling Services with multiple addresses or ports:
+
+### Option 1: Take first address and port
+
+Follow the existing `ZoneIngress` behavior: always use index 0 for both `status.loadBalancer.ingress` and `service.Spec.Ports`.
+This is simple and consistent with existing behavior.
+
+* Good, because it maintains consistency with existing ZoneIngress behavior
+* Good, because it's simple to implement
+* Bad, because silently ignoring additional addresses/ports may be confusing to users
+
+### Option 2: Validate and reject multiple addresses/ports
+
+The `MeshZoneAddress` controller validates the Service and emits an error (via status condition or event)
+if the Service has more than one LoadBalancer ingress entry or more than one port.
+Users must ensure their Service has exactly one address and one port.
+
+* Good, because it forces explicit configuration and avoids ambiguity
+* Bad, because it's more restrictive and may require users to restructure their Services
+* Bad, because LoadBalancer services may temporarily have multiple ingress entries during cloud provider updates
+
+### Decision
+
+Choose Option 1: Take first address and port
+
 ## Migration
 
 Mesh-scoped zone proxies are an opt-in feature in Kuma 2.14.
