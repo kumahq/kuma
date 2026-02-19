@@ -143,7 +143,33 @@ Users must ensure their Service has exactly one address and one port.
 
 ### Decision
 
-Choose Option 1: Take first address and port
+Chosen option: Option 1 (take first address and port).
+
+The `MeshZoneAddress` controller derives address and port from the Service using the following algorithm:
+
+1. **`spec.externalIPs[0]`** (highest priority): If the Service has `externalIPs` defined, use the first one.
+   Port is taken from `service.Spec.Ports[0].Port`.
+
+2. **LoadBalancer**: If Service type is LoadBalancer, use `status.loadBalancer.ingress[0]`.
+   If both `ip` and `hostname` are present, `hostname` takes precedence (more stable, e.g., AWS ELB IPs can change).
+   If the LoadBalancer is not yet ready (no ingress entries), do not generate `MeshZoneAddress` yet.
+   Port is taken from `service.Spec.Ports[0].Port`.
+
+3. **NodePort**: If Service type is NodePort, list all cluster Nodes and use the first Node's (`nodes.Items[0]`)
+   address from `node.Status.Addresses`. Address type priority: `NodeExternalIP` > `NodeInternalIP`.
+   Port is taken from `service.Spec.Ports[0].NodePort`.
+
+4. **Other types (ClusterIP, etc.)**: Do not generate `MeshZoneAddress`. Emit a warning event on the Service
+   suggesting to use LoadBalancer, NodePort, or set `externalIPs`.
+
+If multiple addresses or ports exist, always use the first one (index 0).
+
+Note: Key differences from the legacy `ZoneIngress` address resolution:
+- **No Pod annotations**: `ZoneIngress` uses Pod annotations (`kuma.io/ingress-public-address` and
+  `kuma.io/ingress-public-port`) for overrides. `MeshZoneAddress` uses the native Kubernetes `spec.externalIPs`
+  field on the Service instead, since it watches Services directly.
+- **Hostname over IP**: `ZoneIngress` prefers `ip` over `hostname` for LoadBalancer ingress entries.
+  `MeshZoneAddress` prefers `hostname` over `ip` for better stability (e.g., AWS ELB IPs can change).
 
 ## Migration
 
