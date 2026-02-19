@@ -26,20 +26,20 @@ define make_distributions_target
 build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp build/artifacts-$(1)-$(2)/kuma-dp
 	rm -rf $$@
 	mkdir -p $$@/bin $$@/conf
-	cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
-	cp build/artifacts-$(1)-$(2)/kuma-cp/kuma-cp $$@/bin
-	cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
-	cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
-	cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
+	command cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
+	command cp build/artifacts-$(1)-$(2)/kuma-cp/kuma-cp $$@/bin
+	command cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
+	command cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
+	command cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
 # CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
 ifneq ($(3),skip)
 	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
-	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
+	command cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
 
 # Package envoy
 	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(4))
-	cp -r build/artifacts-$(1)-$(2)/envoy/* $$@/bin
+	command cp -r build/artifacts-$(1)-$(2)/envoy/* $$@/bin
 
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555

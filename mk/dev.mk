@@ -59,7 +59,7 @@ PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_C
 PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
-K3D_BIN=$(shell $(MISE) which k3d)
+K3D_BIN=$(MISE) exec -- k3d
 KIND=$(shell $(MISE) which kind)
 SETUP_ENVTEST=$(shell $(MISE) which setup-envtest)
 KUBEBUILDER_ASSETS=$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
@@ -69,17 +69,19 @@ PROTOC_BIN=$(shell $(MISE) which protoc)
 SHELLCHECK=$(shell $(MISE) which shellcheck)
 ACTIONLINT=$(shell $(MISE) which actionlint)
 CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
-PROTOC_GEN_GO=$(shell $(MISE) which protoc-gen-go)
-PROTOC_GEN_GO_GRPC=$(shell $(MISE) which protoc-gen-go-grpc)
-PROTOC_GEN_VALIDATE=$(shell $(MISE) which protoc-gen-validate)
-PROTOC_GEN_KUMADOC=$(shell $(MISE) which protoc-gen-kumadoc)
-PROTOC_GEN_JSONSCHEMA=$(shell $(MISE) which protoc-gen-jsonschema)
+# Go-installed tools: mise which doesn't work (looks in mise paths, not GOBIN)
+# Use defensive fallback: check CI_TOOLS_BIN_DIR first, then PATH
+PROTOC_GEN_GO=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-go && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-go || command -v protoc-gen-go)
+PROTOC_GEN_GO_GRPC=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc || command -v protoc-gen-go-grpc)
+PROTOC_GEN_VALIDATE=$(MISE) exec -- protoc-gen-validate
+PROTOC_GEN_KUMADOC=$(MISE) exec -- protoc-gen-kumadoc
+PROTOC_GEN_JSONSCHEMA=$(shell test -f $(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema && echo $(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema || command -v protoc-gen-jsonschema)
 GINKGO=$(shell $(MISE) which ginkgo)
 GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
 HELM_DOCS=$(shell $(MISE) which helm-docs)
 KUBE_LINTER=$(shell $(MISE) which kube-linter)
 HADOLINT=$(shell $(MISE) which hadolint)
-OAPI_CODEGEN=$(shell $(MISE) which oapi-codegen)
+OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock

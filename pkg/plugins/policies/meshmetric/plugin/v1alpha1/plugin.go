@@ -128,6 +128,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 				systemName,
 				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
 			),
+			StatPrefix:  getNameOrDefault(systemName, ""),
 			StatsPath:   PrometheusDataplaneStatsPath,
 			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
 		}
@@ -179,6 +180,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		Endpoint:     endpoint,
 		ListenerName: getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
 		ClusterName:  getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
+		StatPrefix:   getNameOrDefault(systemName, ""),
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
 		IPv6Enabled:  proxy.Metadata.GetIPv6Enabled(),

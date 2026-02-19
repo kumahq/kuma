@@ -26,10 +26,11 @@ import (
 )
 
 type pgxResourceStore struct {
-	pool                 *pgxpool.Pool
-	roPool               *pgxpool.Pool
-	roRatio              uint
-	maxListQueryElements uint32
+	pool                            *pgxpool.Pool
+	roPool                          *pgxpool.Pool
+	roRatio                         uint
+	maxListQueryElements            uint32
+	listQueryThresholdExceededTotal prometheus.Counter
 }
 
 type ResourceNamesByMesh map[string][]string
@@ -67,11 +68,20 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 		return nil, errors.Wrapf(err, "could not register DB metrics")
 	}
 
+	listQueryThresholdExceededTotal := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "store_postgres_list_query_threshold_exceeded_total",
+		Help: "Counter of list queries that exceeded maxListQueryElements threshold",
+	})
+	if err := metrics.BulkRegister(listQueryThresholdExceededTotal); err != nil {
+		return nil, errors.Wrapf(err, "could not register list query threshold metric")
+	}
+
 	return &pgxResourceStore{
-		pool:                 pool,
-		roPool:               roPool,
-		maxListQueryElements: config.MaxListQueryElements,
-		roRatio:              config.ReadReplica.Ratio,
+		pool:                            pool,
+		roPool:                          roPool,
+		maxListQueryElements:            config.MaxListQueryElements,
+		roRatio:                         config.ReadReplica.Ratio,
+		listQueryThresholdExceededTotal: listQueryThresholdExceededTotal,
 	}, nil
 }
 
@@ -313,6 +323,9 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
 	rkSize := len(opts.ResourceKeys)
+	if rkSize > 0 && rkSize >= int(r.maxListQueryElements) && r.maxListQueryElements > 0 {
+		r.listQueryThresholdExceededTotal.Inc()
+	}
 	if rkSize > 0 && rkSize < int(r.maxListQueryElements) {
 		statement += " AND ("
 		res := resourceNamesByMesh(opts.ResourceKeys)
