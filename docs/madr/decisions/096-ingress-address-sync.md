@@ -101,11 +101,13 @@ but older logic will still treat it as one.
 
 ## Migration
 
-TODO
+Mesh-scoped zone proxies are an opt-in feature in Kuma 2.14.
+Once enabled, both the legacy `ZoneIngress` and the new mesh-scoped zone proxy resources are supported during a transition period to ensure a smooth migration.
+
+When the CP detects both a legacy `ZoneIngress` and a new `MeshZoneAddress` for a given zone,
+it prioritizes `MeshZoneAddress` and shifts all traffic to the new zone proxies.
 
 ## Implications for Kong Mesh
 
 None
-
-
 
