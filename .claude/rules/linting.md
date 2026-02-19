@@ -26,7 +26,7 @@ Use `tracing.SafeSpanEnd(span)` instead of `span.End()`. The `forbidigo` linter 
 
 ## Blocked packages (depguard)
 
-- `github.com/golang/protobuf` → use `google.golang.org/protobuf`
+- `github.com/golang/protobuf` → use `google.golang.org/protobuf` (except for JSON, see next line)
 - `google.golang.org/protobuf/encoding/protojson` → use `github.com/golang/protobuf/jsonpb` (compatibility issues)
 - `sigs.k8s.io/controller-runtime/pkg/log` → use `sigs.k8s.io/controller-runtime` (data race in init containers, see #13299)
 - `io/ioutil` → use `io` and `os`
