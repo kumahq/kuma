@@ -281,6 +281,16 @@ The category identifies the listener type, and the rest contains the port name.
 
 Out of scope for this MADR. See https://github.com/Kong/kong-mesh/issues/9151.
 
+## Implementation
+
+### Avoiding excessive Envoy config for zone-proxy-only Dataplanes
+
+Dataplanes with only zone proxy listeners (no inbounds) should not have outbound listeners and clusters generated.
+This should be achieved using existing mechanisms rather than special-casing zone proxies in xDS generation.
+
+The `pod_controller` can set `reachableBackends` to an empty list when the Dataplane has only zone proxy listeners and no inbounds.
+This leverages the existing reachable backends mechanism to naturally produce a minimal Envoy configuration.
+
 ## Implications for Kong Mesh
 
 None
