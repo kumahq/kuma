@@ -1,6 +1,6 @@
 # Policy plugin system
 
-17 policies in `pkg/plugins/policies/` (MeshTrafficPermission, MeshHTTPRoute, MeshTimeout, etc.)
+Policies live in `pkg/plugins/policies/` (MeshTrafficPermission, MeshHTTPRoute, MeshTimeout, etc.).
 
 ## Directory structure per policy
 

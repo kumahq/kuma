@@ -1,7 +1,5 @@
 # Release process
 
-Detailed guide: `tmp/release-process-quick-ref.md`
-
 ## Branch/tag format
 
 - Branch: `release-X.Y`

@@ -101,8 +101,6 @@ kubectl patch mesh default --type merge \
 4. Inspect Envoy config to verify xDS changes (see Envoy admin API above)
 5. Clean up: `make k3d/stop KIND_CLUSTER_NAME=kuma-1`
 
-Full worked example: `tmp/meshmetric-otel-http-testing.md`.
-
 ## CPU limit workaround
 
 k3d init containers sometimes get throttled on local machines. Set `K3D_HELM_DEPLOY_NO_CNI=true` to reduce resource pressure. If still slow, comment out CPU limits in `pkg/plugins/runtime/k8s/webhooks/injector/injector.go` (search for `NewScaledQuantity(100, kube_api.Milli)`). Revert before committing.
