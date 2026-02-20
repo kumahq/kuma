@@ -19,7 +19,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/exaring/otelpgx v0.5.4
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -56,18 +56,18 @@ require (
 	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.50.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.58.0
-	go.opentelemetry.io/otel v1.33.0
+	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.32.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.33.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.54.0
-	go.opentelemetry.io/otel/sdk v1.33.0
-	go.opentelemetry.io/otel/sdk/metric v1.32.0
-	go.opentelemetry.io/otel/trace v1.33.0
+	go.opentelemetry.io/otel/sdk v1.40.0
+	go.opentelemetry.io/otel/sdk/metric v1.40.0
+	go.opentelemetry.io/otel/trace v1.40.0
 	go.opentelemetry.io/proto/otlp v1.4.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
-	golang.org/x/sys v0.38.0
+	golang.org/x/sys v0.40.0
 	golang.org/x/text v0.31.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576
@@ -199,7 +199,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
-	github.com/stretchr/testify v1.10.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -207,10 +207,10 @@ require (
 	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.58.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.33.0 // indirect
-	go.opentelemetry.io/otel/metric v1.33.0 // indirect
+	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.3 // indirect
