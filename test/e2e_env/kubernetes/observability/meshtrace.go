@@ -37,29 +37,6 @@ spec:
 `, meshName, url)
 }
 
-func traceAllK8sOtel(meshName string, url string) string {
-	return fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTrace
-metadata:
-  name: trace-all-otel
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: Mesh
-  default:
-    tags:
-      - name: team
-        literal: core
-    backends:
-      - type: OpenTelemetry
-        openTelemetry:
-          endpoint: %s
-`, meshName, url)
-}
-
 func PluginTest() {
 	ns := "meshtrace"
 	obsNs := "obs-meshtrace"
@@ -109,26 +86,6 @@ func PluginTest() {
 				"jaeger-all-in-one",
 				fmt.Sprintf("test-server_%s_svc_80", ns),
 			}))
-		}, "30s", "1s").Should(Succeed())
-	})
-
-	It("should emit traces to jaeger via OTLP HTTP", func() {
-		// given MeshTrace and with tracing backend
-		err := YamlK8s(traceAllK8sOtel(mesh, obsClient.OTelCollectorTraceURL()))(kubernetes.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
-				kubernetes.Cluster, "demo-client", "test-server",
-				client.FromKubernetesPod(ns, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			srvs, err := obsClient.TracedServices()
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(srvs).To(ContainElements(
-				fmt.Sprintf("demo-client_%s_svc", ns),
-				fmt.Sprintf("test-server_%s_svc_80", ns),
-			))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

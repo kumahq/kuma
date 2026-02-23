@@ -5,7 +5,6 @@ import (
 	"math"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/shopspring/decimal"
@@ -174,33 +173,7 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 
 		if otelBackend.Endpoint == "" {
 			verr.AddViolationAt(otelPath.Field("endpoint"), validators.MustNotBeEmpty)
-			break
 		}
-
-		url, err := net_url.ParseRequestURI(otelBackend.Endpoint)
-		switch {
-		case err == nil && url.Host != "":
-			// Parsed as URL - validate scheme and port
-			if url.Scheme != "http" && url.Scheme != "https" {
-				verr.AddViolationAt(otelPath.Field("endpoint"), "URL scheme must be http or https")
-			}
-			if portStr := url.Port(); portStr != "" {
-				port, err := strconv.Atoi(portStr)
-				if err != nil || port < 1 || port > math.MaxUint16 {
-					verr.AddViolationAt(otelPath.Field("endpoint"), "port must be valid (1-65535)")
-				}
-			}
-			if url.Hostname() == "" {
-				verr.AddViolationAt(otelPath.Field("endpoint"), "hostname must be defined")
-			}
-		case strings.HasPrefix(otelBackend.Endpoint, "http://") || strings.HasPrefix(otelBackend.Endpoint, "https://"):
-			// Has http/https prefix but is not a valid URL (parse failed or missing host)
-			verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
-		case err != nil && strings.Contains(otelBackend.Endpoint, "://"):
-			// Has other scheme but failed to parse - invalid URL
-			verr.AddViolationAt(otelPath.Field("endpoint"), "must be a valid URL")
-		}
-		// Otherwise it's a gRPC host:port endpoint — no URL validation needed
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
