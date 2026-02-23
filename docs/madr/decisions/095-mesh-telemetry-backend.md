@@ -35,6 +35,7 @@ These would need to be added to all three policies individually, tripling the wo
 - As a mesh operator using a managed OTel backend (Grafana Cloud, Datadog, etc.), I want to configure a bearer token for collector auth.
 - As a mesh operator running multi-zone, I want each zone to have its own collector config without duplicating endpoints across zone-scoped policies.
 - As a mesh operator, I want to roll out signals incrementally - start with metrics, verify it works, then add tracing and access logging against the same collector.
+- As a mesh operator, I want the data plane's OTel export configured from standard `OTEL_EXPORTER_OTLP_*` env vars injected into my pods so I don't duplicate collector config between application instrumentation and the mesh.
 
 ## Design
 
@@ -365,7 +366,7 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 
 Option A: New MeshTelemetryBackend resource.
 
-It's more work upfront but it's the right abstraction. The endpoint config is genuinely shared infrastructure that doesn't belong in any single policy or in the already-bloated Mesh resource. The Kuma tooling (`tools/policy-gen/bootstrap`, `make generate`) makes creating new resource types mechanical - most of the code is generated.
+It's more work upfront but it's the right abstraction. The endpoint config is shared infrastructure that doesn't belong in any single policy or in the already-bloated Mesh resource. The Kuma tooling (`tools/policy-gen/bootstrap`, `make generate`) makes creating new resource types mechanical - most of the code is generated.
 
 The resource uses a `type` discriminator, same as every other Kuma policy with multiple backend types. Only `type: OpenTelemetry` is supported, with OTel-specific connection info nested under `openTelemetry`.
 
@@ -404,6 +405,22 @@ Rejected alternatives:
 - `MeshCollectorBackend` - not all backends are "collectors" (e.g., managed SaaS endpoints)
 
 `MeshTelemetryBackend` follows Kuma's established naming: infrastructure resources describe what they manage (`MeshExternalService`, `MeshIdentity`, `MeshTrust`). This resource manages telemetry backend infrastructure.
+
+### Standard OTel environment variables
+
+The OTel specification defines environment variables (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`, `OTEL_EXPORTER_OTLP_HEADERS`, etc.) that configure where an OTel SDK sends telemetry. The OpenTelemetry Operator for Kubernetes injects these env vars into the first container in the pod spec by default (`Containers[0]`), which is typically the application container because mesh sidecar injectors append their containers. The Operator has no sidecar awareness - this targeting is a side effect of container ordering, not intentional filtering.
+
+These env vars configure the application's OTel SDK, not the sidecar proxy. Envoy doesn't use the OTel SDK and doesn't read `OTEL_EXPORTER_OTLP_*` env vars - its telemetry export is configured through xDS pushed by the control plane. No service mesh today (Istio, Linkerd, or Kuma) reads pod env vars to configure sidecar proxy telemetry. This is an architectural split, not an oversight:
+
+| | Application telemetry | Proxy telemetry |
+|---|---|---|
+| Config source | OTel env vars on app container | Control plane via xDS |
+| Who exports | OTel SDK in app code | Envoy sidecar |
+| What it captures | App-level spans, custom metrics | L4/L7 request metrics, access logs, mesh traces |
+
+A mesh operator might want both paths pointing at the same collector without configuring each separately. The kuma-dp process already has a `DynamicMetadata` transport (`map[string]string`) that carries key-value pairs from the data plane to the control plane during bootstrap. This transport could carry `OTEL_EXPORTER_OTLP_*` values from the pod environment to the CP, which would then generate matching xDS config.
+
+Env var auto-detection is out of scope for the MVP. MeshTelemetryBackend is the explicit configuration path for proxy telemetry. Env var integration would build on top of it as follow-up work - the resource is still the canonical config for a backend's connection settings, whether set manually or populated from env vars.
 
 ### Relationship to CP metrics export
 
