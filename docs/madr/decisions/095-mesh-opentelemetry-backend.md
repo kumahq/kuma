@@ -41,41 +41,49 @@ These would need to be added to all three policies individually, tripling the wo
 
 ### Option A: New shared telemetry backend resource (recommended)
 
-Introduce a new mesh-scoped resource `MeshTelemetryBackend` that defines an OTel collector endpoint with connection settings. Observability policies reference it via a `backendRef` field.
+Introduce a new mesh-scoped resource `MeshOpenTelemetryBackend` that defines an OTel collector endpoint with connection settings. Observability policies reference it via a `backendRef` field.
 
 #### Resource definition
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: MeshTelemetryBackend
+kind: MeshOpenTelemetryBackend
 metadata:
   name: main-collector
   namespace: kuma-system
   labels:
     kuma.io/mesh: default
 spec:
-  # Only OpenTelemetry is supported.
-  type: OpenTelemetry
-  openTelemetry:
-    # Collector endpoint - supports gRPC and HTTP/HTTPS
-    endpoint:
-      # Address of the collector (hostname or IP)
-      address: otel-collector.observability
-      # Port number
-      port: 4317
-      # Path for HTTP/HTTPS endpoints (e.g., /v1/traces, /v1/metrics, /v1/logs).
-      # Ignored for gRPC.
-      # +optional
-      path: ""
+  # Collector endpoint
+  endpoint:
+    # Address of the collector (hostname or IP)
+    address: otel-collector.observability
+    # Port number
+    port: 4317
+    # Base path prefix for HTTP endpoints. The CP appends the
+    # signal-specific suffix (/v1/traces, /v1/metrics, /v1/logs)
+    # automatically, matching OTEL_EXPORTER_OTLP_ENDPOINT semantics.
+    # Ignored for gRPC.
+    # +optional
+    path: ""
+  # Transport protocol. Drives whether Envoy uses GrpcService or
+  # HttpService in the generated xDS config.
+  # Values: grpc, http. Default: grpc.
+  # +optional
+  protocol: grpc
 ```
 
-The spec uses the same `type` discriminator + type-specific struct pattern as MeshMetric, MeshTrace, MeshAccessLog, and MeshLoadBalancingStrategy. Only `type: OpenTelemetry` is supported.
+No `type` discriminator - the resource name itself is the type. If other telemetry backend types are needed later (Zipkin, Datadog), they become separate resources (`MeshZipkinBackend`, etc.). The `backendRef.kind` field enforces type matching at the schema level - a policy's OTel backend can only reference a `MeshOpenTelemetryBackend`, not a hypothetical `MeshZipkinBackend`.
 
 The `endpoint` is structured (address + port + path) instead of a raw string so we validate each component separately. Today MeshMetric/MeshAccessLog split the endpoint string on `:`, and MeshTrace has an unreleased URL parser for HTTP endpoints that's being removed. A structured format avoids these inconsistencies.
 
+The `protocol` field selects gRPC or HTTP transport. Envoy's OTel extensions use separate `grpc_service` and `http_service` fields in their protobuf config - the CP needs to know which one to generate. Port-based inference (4317 = gRPC, 4318 = HTTP) would break for non-standard setups, so an explicit field is safer. Default is `grpc` for backward compatibility with existing Kuma behavior.
+
+When `protocol: http`, the `path` field is a base path prefix. The CP appends the signal-specific suffix (`/v1/traces`, `/v1/metrics`, `/v1/logs`) during xDS generation, matching how the OTel SDK handles `OTEL_EXPORTER_OTLP_ENDPOINT`. An empty path means the standard paths are used directly. For gRPC, paths are irrelevant - gRPC routes by protobuf service name.
+
 #### Policy reference
 
-Each policy's OTel backend gets an optional `backendRef` field. When set, the endpoint comes from the referenced MeshTelemetryBackend. Signal-specific fields remain inline.
+Each policy's OTel backend gets an optional `backendRef` field. When set, the endpoint comes from the referenced MeshOpenTelemetryBackend. Signal-specific fields remain inline.
 
 ##### MeshMetric
 
@@ -95,7 +103,7 @@ spec:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshTelemetryBackend
+          kind: MeshOpenTelemetryBackend
           name: main-collector
         refreshInterval: 30s      # signal-specific, stays inline
 ```
@@ -118,7 +126,7 @@ spec:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshTelemetryBackend
+          kind: MeshOpenTelemetryBackend
           name: main-collector
     sampling:
       overall: 80             # signal-specific, stays inline
@@ -142,7 +150,7 @@ spec:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshTelemetryBackend
+          kind: MeshOpenTelemetryBackend
           name: main-collector
         attributes:              # signal-specific, stays inline
         - key: mesh
@@ -157,7 +165,7 @@ None of the current policy OTel backend structs have a `backendRef` field. Today
 - MeshTrace `OpenTelemetryBackend`: `endpoint`
 - MeshAccessLog `OtelBackend`: `endpoint` + `attributes` + `body`
 
-Each struct needs a new optional `backendRef` field. The inline `endpoint` remains supported. Validation enforces mutual exclusivity: either `endpoint` or `backendRef`, not both.
+Each struct needs a new optional `backendRef` field. The inline `endpoint` remains supported but is deprecated starting in 2.14 and will be removed in 3.0. Validation enforces mutual exclusivity: either `endpoint` or `backendRef`, not both.
 
 ```go
 // In each policy's OTel backend struct
@@ -172,10 +180,10 @@ type OpenTelemetryBackend struct {
 
 #### Resolution during xDS generation
 
-1. CP loads all MeshTelemetryBackend resources into MeshContext (same as MeshService, MeshExternalService)
+1. CP loads all MeshOpenTelemetryBackend resources into MeshContext (same as MeshService, MeshExternalService)
 2. During policy plugin's `Apply()`:
-   - If `backendRef` is set: look up MeshTelemetryBackend by name from `ctx.Mesh.Resources.MeshLocalResources`
-   - Extract endpoint from the type-specific config (e.g., `spec.openTelemetry.endpoint`)
+   - If `backendRef` is set: look up MeshOpenTelemetryBackend by name from `ctx.Mesh.Resources.MeshLocalResources`
+   - Extract endpoint from `spec.endpoint`
    - Convert to the same `*core_xds.Endpoint` struct used today
 3. Proceed with existing cluster/listener creation - no changes downstream
 
@@ -189,10 +197,10 @@ This follows the same pattern as TargetRef resolution in policies (`pkg/plugins/
 | `Scope`         | Mesh                                                                                 |
 | `HasStatus`     | false                                                                                |
 | `KDSFlags`      | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> (same as MeshExternalService) |
-| `ShortName`     | `mtb`                                                                                |
+| `ShortName`     | `motb`                                                                               |
 | `IsDestination` | false                                                                                |
 
-Placed in `pkg/core/resources/apis/meshtelemetrybackend/` following the same directory structure as MeshExternalService.
+Placed in `pkg/core/resources/apis/meshopentelemetrybackend/` following the same directory structure as MeshExternalService.
 
 #### Advantages
 
@@ -328,10 +336,10 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 
 ## Security implications and review
 
-### Option A (MeshTelemetryBackend)
+### Option A (MeshOpenTelemetryBackend)
 
 - Secret references: When auth support is added (bearer tokens, client certs), the resource would reference Kubernetes Secrets or Kuma secrets. Standard secret handling patterns from MeshGateway TLS apply.
-- RBAC: Separate resource means separate RBAC rules. An operator can grant "create MeshTelemetryBackend" without granting "modify Mesh". This is better than Option B where Mesh modification is required.
+- RBAC: Separate resource means separate RBAC rules. An operator can grant "create MeshOpenTelemetryBackend" without granting "modify Mesh". This is better than Option B where Mesh modification is required.
 - Cross-mesh isolation: Mesh-scoped resource ensures one mesh's collector config can't affect another mesh.
 
 ### Option B (Mesh-level)
@@ -346,8 +354,8 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 
 ### Option A
 
-- Dangling references: If a MeshTelemetryBackend is deleted while policies reference it, policies lose their backend config. Mitigation: validation webhook that prevents deletion of in-use backends, or status field listing referencing policies.
-- Resource sync: MeshTelemetryBackend syncs via KDS. If sync is delayed, newly created policies in a zone may not find their backend. Same behavior as MeshExternalService references today.
+- Dangling references: If a MeshOpenTelemetryBackend is deleted while policies reference it, policies lose their backend config. This matches how Kuma handles all other dangling references today - when a `BackendRef` can't resolve, the reference is silently dropped and the policy proceeds without that backend. The CP should log at Info level when a referenced MeshOpenTelemetryBackend is not found during xDS generation. No cross-reference validation webhooks - Kuma's existing pattern is to not block deletion of referenced resources.
+- Resource sync: MeshOpenTelemetryBackend syncs via KDS. If sync is delayed, newly created policies in a zone may not find their backend. Same behavior as MeshExternalService references today.
 
 ### Option B
 
@@ -359,18 +367,18 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 
 ## Implications for Kong Mesh
 
-- Option A: Kong Mesh would need to include MeshTelemetryBackend in its resource list.
+- Option A: Kong Mesh would need to include MeshOpenTelemetryBackend in its resource list.
 - Options B/C/D: No Kong Mesh-specific implications.
 
 ## Decision
 
-Option A: New MeshTelemetryBackend resource.
+Option A: New MeshOpenTelemetryBackend resource.
 
 It's more work upfront but it's the right abstraction. The endpoint config is shared infrastructure that doesn't belong in any single policy or in the already-bloated Mesh resource. The Kuma tooling (`tools/policy-gen/bootstrap`, `make generate`) makes creating new resource types mechanical - most of the code is generated.
 
-The resource uses a `type` discriminator, same as every other Kuma policy with multiple backend types. Only `type: OpenTelemetry` is supported, with OTel-specific connection info nested under `openTelemetry`.
+The resource is named after its backend type (`MeshOpenTelemetryBackend`) rather than using a generic name with a type discriminator. If other backend types are needed later, they become separate resources - and `backendRef.kind` enforces type matching at the schema level.
 
-Start with a minimal spec (endpoint only, no TLS/auth). Add TLS, auth, and protocol fields as follow-up work. HTTP endpoint support will only exist in MeshTelemetryBackend - the unreleased HTTP support in MeshTrace is being removed, and it won't be added to MeshMetric or MeshAccessLog.
+Start with a minimal spec (endpoint only, no TLS/auth). Add TLS and auth fields as follow-up work. HTTP endpoint support will only exist in MeshOpenTelemetryBackend - the unreleased HTTP support in MeshTrace is being removed, and it won't be added to MeshMetric or MeshAccessLog.
 
 Signal-specific config (refreshInterval, attributes, body, sampling) stays in each policy. The shared resource only handles "where is the backend and how do I connect to it."
 
@@ -380,31 +388,32 @@ Signal-specific config (refreshInterval, attributes, body, sampling) stays in ea
 
 The first implementation should be minimal:
 
-1. MeshTelemetryBackend resource with `type: OpenTelemetry` and `endpoint` (address + port + path)
+1. MeshOpenTelemetryBackend resource with `endpoint` (address + port + path) and `protocol` (grpc/http)
 2. `backendRef` field added to all three policy OTel backends
 3. Validation: `endpoint` XOR `backendRef` (mutual exclusivity)
 4. Resolution in each policy's Apply()
-5. Inline `endpoint` remains fully supported
+5. Inline `endpoint` remains supported but deprecated (removed in 3.0)
 
-TLS, auth, and protocol fields are follow-up work.
-
-### Type mismatch between resource and policy
-
-Since OpenTelemetry is the only supported type, this MADR does not cover what happens when a MeshTelemetryBackend's type doesn't match the referencing policy's backend type (e.g., a MeshTrace with `type: Zipkin` pointing at a MeshTelemetryBackend with `type: OpenTelemetry`). That's a separate design decision for when additional types are introduced.
+TLS and auth fields are follow-up work.
 
 ### Naming
 
-`MeshTelemetryBackend` was chosen to avoid vendor-locking the resource name to OpenTelemetry. The `type` discriminator makes it clear that current config is OTel-specific (nested under `openTelemetry`), while the resource name stays generic.
+`MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced at the schema level - `backendRef.kind: MeshOpenTelemetryBackend` can only appear in an OTel backend block. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
 
 Rejected alternatives:
-- `MeshOTelBackend` - locks the name to OpenTelemetry; if we add Zipkin or Datadog backend support, the name becomes misleading
-- `MeshOpenTelemetryBackend` - same vendor-lock problem, plus too long
-- `MeshOTelCollector` - "collector" is one deployment model; the resource represents any telemetry-receiving endpoint
-- `MeshObservabilityBackend` - too abstract (24 chars), doesn't add clarity over "telemetry"
-- `MeshSignalBackend` - "signal" is OTel jargon, not widely understood outside the OTel community
+- `MeshTelemetryBackend` (with `type` discriminator) - a generic name + type discriminator can't enforce type matching at the schema level. A policy's OTel backend could reference a Zipkin-typed backend, and this mismatch would only be caught by runtime validation, not by the API structure.
+- `MeshOTelBackend` - abbreviation is less readable than the full name
+- `MeshOTelCollector` - "collector" is one deployment model, the resource is for any telemetry-receiving endpoint
+- `MeshObservabilityBackend` - too abstract, doesn't add clarity over the specific protocol name
 - `MeshCollectorBackend` - not all backends are "collectors" (e.g., managed SaaS endpoints)
 
-`MeshTelemetryBackend` follows Kuma's established naming: infrastructure resources describe what they manage (`MeshExternalService`, `MeshIdentity`, `MeshTrust`). This resource manages telemetry backend infrastructure.
+### Signal-specific fields stay in policies
+
+MeshAccessLog's `body` field is logs-only (OTel LogRecord body). It holds Envoy access log command operators (`%START_TIME%`, `%UPSTREAM_HOST%`) that control what each log record says. This is per-record content formatting, not connection config - it stays in MeshAccessLog.
+
+MeshAccessLog's `attributes` are also logs-only (mapped to OTel `KeyValueList` with command operator substitution). MeshTrace has `Tags` (mapped to Envoy `CustomTag` on the HCM tracing config). MeshMetric has no OTel attributes (uses kuma-dp `ExtraLabels`). Each signal uses a completely different Envoy mechanism for attributes, so there's no shared abstraction that works across all three.
+
+Shared resource attributes (mesh name, zone) in MeshOpenTelemetryBackend are conceptually sound but practically complex - Envoy handles resource attributes differently per signal (direct `KeyValueList` on access logger, `resource_detectors` extension on tracer, kuma-dp labels for metrics). This is follow-up work.
 
 ### Standard OTel environment variables
 
@@ -420,8 +429,8 @@ These env vars configure the application's OTel SDK, not the sidecar proxy. Envo
 
 A mesh operator might want both paths pointing at the same collector without configuring each separately. The kuma-dp process already has a `DynamicMetadata` transport (`map[string]string`) that carries key-value pairs from the data plane to the control plane during bootstrap. This transport could carry `OTEL_EXPORTER_OTLP_*` values from the pod environment to the CP, which would then generate matching xDS config.
 
-Env var auto-detection is out of scope for the MVP. MeshTelemetryBackend is the explicit configuration path for proxy telemetry. Env var integration would build on top of it as follow-up work - the resource is still the canonical config for a backend's connection settings, whether set manually or populated from env vars.
+Env var auto-detection is out of scope for the MVP. MeshOpenTelemetryBackend is the explicit configuration path for proxy telemetry. Env var integration would build on top of it as follow-up work - the resource is still the canonical config for a backend's connection settings, whether set manually or populated from env vars.
 
 ### Relationship to CP metrics export
 
-The control plane's own OTel metric export (via `KUMA_TRACING_OPENTELEMETRY_ENABLED` and standard `OTEL_EXPORTER_OTLP_*` env vars) is separate. MeshTelemetryBackend is for data plane telemetry policies only. CP observability config is environment-level, not mesh-scoped.
+The control plane's own OTel metric export (via `KUMA_TRACING_OPENTELEMETRY_ENABLED` and standard `OTEL_EXPORTER_OTLP_*` env vars) is separate. MeshOpenTelemetryBackend is for data plane telemetry policies only. CP observability config is environment-level, not mesh-scoped.
