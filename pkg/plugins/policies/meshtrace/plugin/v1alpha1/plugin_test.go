@@ -327,6 +327,32 @@ var _ = Describe("MeshTrace", func() {
 			},
 			goldenFile: "inbound-outbound-otel",
 		}),
+		Entry("inbound/outbound for opentelemetry with ipv6 endpoint", testCase{
+			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{
+									Endpoint: "[2001:db8::1]:4317",
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-otel-ipv6",
+		}),
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{

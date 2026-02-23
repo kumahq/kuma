@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
+	"net"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -252,15 +252,17 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 }
 
 func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
-	target := strings.Split(cfg.Endpoint, ":")
+	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	port := uint32(4317) // default gRPC port
-	if len(target) > 1 {
-		if val, err := strconv.ParseInt(target[1], 10, 32); err == nil && val > 0 && val <= 65535 {
+	if err == nil {
+		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
 			port = uint32(val)
 		}
+	} else {
+		host = cfg.Endpoint
 	}
 	return &xds.Endpoint{
-		Target: target[0],
+		Target: host,
 		Port:   port,
 	}
 }
