@@ -15,7 +15,7 @@ env:
   # on the runner).
   CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
-  GOLANGCI_LINT_VERSION: "v2.9.0"
+  GOLANGCI_LINT_VERSION: "v2.10.1"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
