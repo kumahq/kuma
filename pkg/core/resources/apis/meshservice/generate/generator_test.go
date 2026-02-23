@@ -70,13 +70,15 @@ var _ = Describe("MeshService generator", func() {
 			resManager,
 			meshCache,
 			"zone",
+			false,
 		)
 
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
+		ch := stopCh
 		go func() {
 			defer GinkgoRecover()
-			Expect(allocator.Start(stopCh)).To(Succeed())
+			Expect(allocator.Start(ch)).To(Succeed())
 		}()
 
 		Expect(
@@ -381,5 +383,68 @@ var _ = Describe("MeshService generator", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_meshservice_generator")).ToNot(BeNil())
 		}, "2s", "100ms").Should(Succeed())
+	})
+
+	Context("with InboundTagsDisabled", func() {
+		BeforeEach(func() {
+			close(stopCh)
+
+			m, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			metrics = m
+			s := memory.NewStore()
+			resManager = manager.NewResourceManager(s)
+			meshContextBuilder = xds_context.NewMeshContextBuilder(
+				resManager,
+				server.MeshResourceTypes(),
+				net.LookupIP,
+				"zone",
+				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
+				".mesh",
+				80,
+				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
+			)
+			meshCache, err := cache_mesh.NewCache(
+				100*time.Millisecond,
+				meshContextBuilder,
+				metrics,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			allocator, err := generate.New(
+				logr.Discard(),
+				50*time.Millisecond,
+				gracePeriodInterval,
+				metrics,
+				resManager,
+				meshCache,
+				"zone",
+				true,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			stopCh = make(chan struct{})
+			innerCh := stopCh
+			go func() {
+				defer GinkgoRecover()
+				Expect(allocator.Start(innerCh)).To(Succeed())
+			}()
+			Expect(
+				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+			).To(Succeed())
+		})
+
+		It("should not generate MeshService for Dataplane with empty inbound tags", func() {
+			err := builders.Dataplane().WithAddress("192.168.0.1").WithoutInbounds().
+				AddInbound(
+					builders.Inbound().WithPort(80).WithServicePort(8080),
+				).Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			Consistently(func(g Gomega) {
+				mss := &meshservice_api.MeshServiceResourceList{}
+				g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
+				g.Expect(mss.GetItems()).To(BeEmpty())
+			}, "1s", "100ms").Should(Succeed())
+		})
 	})
 })
