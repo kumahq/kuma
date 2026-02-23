@@ -155,11 +155,11 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, co
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client:                   mgr.GetClient(),
-		Log:                      core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme:                   mgr.GetScheme(),
-		EventRecorder:            mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
-		ResourceConverter:        converter,
+		Client:              mgr.GetClient(),
+		Log:                 core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:              mgr.GetScheme(),
+		EventRecorder:       mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
+		ResourceConverter:   converter,
 		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 	}
 	return reconciler.SetupWithManager(mgr)
@@ -201,8 +201,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 					ReplicaSetGetter: mgr.GetClient(),
 					JobGetter:        mgr.GetClient(),
 				},
-				NodeGetter:               mgr.GetClient(),
-				NodeLabelsToCopy:         rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
+				NodeGetter:          mgr.GetClient(),
+				NodeLabelsToCopy:    rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 				InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
