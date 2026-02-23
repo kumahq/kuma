@@ -58,9 +58,9 @@ const (
 type MeshServiceReconciler struct {
 	kube_client.Client
 	kube_event.EventRecorder
-	Log                      logr.Logger
-	Scheme                   *kube_runtime.Scheme
-	ResourceConverter        k8s_common.Converter
+	Log                 logr.Logger
+	Scheme              *kube_runtime.Scheme
+	ResourceConverter   k8s_common.Converter
 	InboundTagsDisabled bool
 }
 

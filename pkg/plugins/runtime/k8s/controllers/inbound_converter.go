@@ -19,9 +19,9 @@ import (
 )
 
 type InboundConverter struct {
-	NameExtractor            NameExtractor
-	NodeGetter               kube_client.Reader
-	NodeLabelsToCopy         []string
+	NameExtractor       NameExtractor
+	NodeGetter          kube_client.Reader
+	NodeLabelsToCopy    []string
 	InboundTagsDisabled bool
 }
 

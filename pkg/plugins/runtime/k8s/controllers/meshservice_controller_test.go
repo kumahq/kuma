@@ -32,8 +32,8 @@ var _ = Describe("MeshServiceController", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	type testCase struct {
-		inputFile                string
-		outputFile               string
+		inputFile           string
+		outputFile          string
 		inboundTagsDisabled bool
 	}
 
@@ -69,11 +69,11 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client:                   kubeClient,
-				Log:                      logr.Discard(),
-				Scheme:                   k8sClientScheme,
-				EventRecorder:            kube_events.NewFakeRecorder(10),
-				ResourceConverter:        k8s.NewSimpleConverter(),
+				Client:              kubeClient,
+				Log:                 logr.Discard(),
+				Scheme:              k8sClientScheme,
+				EventRecorder:       kube_events.NewFakeRecorder(10),
+				ResourceConverter:   k8s.NewSimpleConverter(),
 				InboundTagsDisabled: given.inboundTagsDisabled,
 			}
 
