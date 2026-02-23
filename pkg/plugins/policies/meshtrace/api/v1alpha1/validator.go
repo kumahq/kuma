@@ -174,7 +174,7 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 
 		if otelBackend.Endpoint == "" {
 			verr.AddViolationAt(otelPath.Field("endpoint"), validators.MustNotBeEmpty)
-		} else if strings.Contains(otelBackend.Endpoint, "://") {
+		} else if strings.ContainsAny(otelBackend.Endpoint, "/?#") {
 			verr.AddViolationAt(otelPath.Field("endpoint"), "must be in host:port format, not a URL")
 		}
 	default:

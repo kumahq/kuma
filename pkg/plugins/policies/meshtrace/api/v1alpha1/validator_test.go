@@ -424,6 +424,22 @@ violations:
   - field: spec.default.backends[0].openTelemetry.endpoint
     message: must be in host:port format, not a URL`,
 			}),
+			Entry("openTelemetry endpoint must not contain a path", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: "otel-collector:4318/v1/traces"
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry.endpoint
+    message: must be in host:port format, not a URL`,
+			}),
 			Entry("gateway listener tags not allowed", testCase{
 				inputYaml: `
 targetRef:

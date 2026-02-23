@@ -260,6 +260,9 @@ func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
 		}
 	} else {
 		host = cfg.Endpoint
+		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
+			host = host[1 : l-1]
+		}
 	}
 	return &xds.Endpoint{
 		Target: host,
