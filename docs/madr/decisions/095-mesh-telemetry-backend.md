@@ -210,9 +210,11 @@ Placed in `pkg/core/resources/apis/meshtelemetrybackend/` following the same dir
 - Users learn a new concept
 - More indirection (policy -> resource -> endpoint)
 
-### Option B: Named backends on the Mesh resource
+### Option B: Named backends on the Mesh resource (rejected)
 
 Add OTel collector configurations to the Mesh spec. Policies reference by name.
+
+This goes against the current direction. We're actively moving config OUT of Mesh (MeshMetric replaced `Mesh.spec.metrics`, MeshTrace replaced `Mesh.spec.tracing`, MeshAccessLog replaced `Mesh.spec.logging`). Adding more config to Mesh is not an option.
 
 ```yaml
 kind: Mesh
@@ -253,7 +255,7 @@ spec:
 - Can't apply separate RBAC (who can modify Mesh vs. who can configure collectors)
 - All collector configs in one Mesh object - doesn't scale for different teams owning different collectors
 - Mesh is proto-based (`api/mesh/v1alpha1/mesh.proto`), adding structured config there requires proto changes + regeneration
-- Adding the metrics.backends precedent was arguably a mistake - the whole point of MeshMetric policy was to move this OUT of Mesh
+- Adding `metrics.backends` to Mesh was a mistake - the whole point of MeshMetric was to move this OUT of Mesh. We should not repeat it.
 
 ### Option C: Reference MeshExternalService
 
