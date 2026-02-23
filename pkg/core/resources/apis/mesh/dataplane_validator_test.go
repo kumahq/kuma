@@ -357,6 +357,27 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/display-name: redis
                     port: 8080`,
 		),
+		Entry("no inbound with transparent proxy", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              transparentProxying:
+                redirectPortInbound: 15006
+                redirectPortOutbound: 15001`,
+		),
+		Entry("no inbound outbound-only", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: redis`,
+		),
 	)
 
 	type testCase struct {
@@ -415,22 +436,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.address
                   message: 'must not be 0.0.0.0 or ::'`,
 		}),
-		Entry("networking: not enough inbound interfaces and no gateway", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: networking
-                  message: has to contain at least one inbound interface or gateway`,
-		}),
 		Entry("missing networking", testCase{
 			dataplane: `
                 type: Dataplane
@@ -449,8 +454,6 @@ var _ = Describe("Dataplane", func() {
                 networking: {}`,
 			expected: `
                 violations:
-                - field: networking
-                  message: has to contain at least one inbound interface or gateway
                 - field: networking.address
                   message: address can't be empty`,
 		}),

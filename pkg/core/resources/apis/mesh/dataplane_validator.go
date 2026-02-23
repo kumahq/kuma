@@ -70,9 +70,6 @@ func (d *DataplaneResource) Validate() error {
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 
 	default:
-		if len(d.Spec.GetNetworking().GetInbound()) == 0 {
-			err.AddViolationAt(net, "has to contain at least one inbound interface or gateway")
-		}
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
 		if d.Spec.GetMetrics() != nil {
