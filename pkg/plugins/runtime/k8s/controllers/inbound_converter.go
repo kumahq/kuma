@@ -22,11 +22,11 @@ type InboundConverter struct {
 	NameExtractor            NameExtractor
 	NodeGetter               kube_client.Reader
 	NodeLabelsToCopy         []string
-	SkipInboundTagGeneration bool
+	InboundTagsDisabled bool
 }
 
 func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[string]string {
-	if ic.SkipInboundTagGeneration {
+	if ic.InboundTagsDisabled {
 		return map[string]string{}
 	}
 	return tagsFn()

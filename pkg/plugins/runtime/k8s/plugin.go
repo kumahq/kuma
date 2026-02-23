@@ -160,7 +160,7 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, co
 		Scheme:                   mgr.GetScheme(),
 		EventRecorder:            mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
 		ResourceConverter:        converter,
-		SkipInboundTagGeneration: rt.Config().Experimental.SkipInboundTagGeneration,
+		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -203,7 +203,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 				},
 				NodeGetter:               mgr.GetClient(),
 				NodeLabelsToCopy:         rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
-				SkipInboundTagGeneration: rt.Config().Experimental.SkipInboundTagGeneration,
+				InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
 			SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,

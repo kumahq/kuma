@@ -96,7 +96,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		result := validateInbound(inbound, networking.Address)
 		err.AddErrorAt(field, result)
 		// Require service tag only if inbound has any tags (old setup).
-		// With SkipInboundTagGeneration inbounds have no tags (new setup).
+		// With InboundTagsDisabled inbounds have no tags (new setup).
 		if len(inbound.Tags) > 0 {
 			if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
 				err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)

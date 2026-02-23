@@ -464,9 +464,8 @@ type ExperimentalConfig struct {
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
 	// If true uses Delta xDS to deliver changes to sidecars.
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
-	// If true, inbound tags are not generated for K8s dataplanes.
-	// Used with label-based MeshService matching. Deprecated: will be removed in 3.0
-	SkipInboundTagGeneration bool `json:"skipInboundTagGeneration" envconfig:"KUMA_EXPERIMENTAL_SKIP_INBOUND_TAG_GENERATION"`
+	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
+	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

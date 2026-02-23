@@ -53,7 +53,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		existingDataplane        string
 		nodeLabelsToCopy         []string
 		workloadLabels           []string
-		skipInboundTagGeneration bool
+		inboundTagsDisabled bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -135,7 +135,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					},
 					NodeGetter:               nodeGetter,
 					NodeLabelsToCopy:         given.nodeLabelsToCopy,
-					SkipInboundTagGeneration: given.skipInboundTagGeneration,
+					InboundTagsDisabled: given.inboundTagsDisabled,
 				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
@@ -356,12 +356,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:                      "34.pod.yaml",
 			servicesForPod:           "34.services-for-pod.yaml",
 			dataplane:                "34.dataplane.yaml",
-			skipInboundTagGeneration: true,
+			inboundTagsDisabled: true,
 		}),
 		Entry("35. Pod without service with skip inbound tag generation enabled", testCase{
 			pod:                      "35.pod.yaml",
 			dataplane:                "35.dataplane.yaml",
-			skipInboundTagGeneration: true,
+			inboundTagsDisabled: true,
 		}),
 	)
 
