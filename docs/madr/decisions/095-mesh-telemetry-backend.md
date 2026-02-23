@@ -178,7 +178,7 @@ type OpenTelemetryBackend struct {
    - Convert to the same `*core_xds.Endpoint` struct used today
 3. Proceed with existing cluster/listener creation - no changes downstream
 
-This follows the same pattern as BackendRef resolution in routing policies (`pkg/plugins/policies/core/rules/resolve/backendref.go`).
+This follows the same pattern as TargetRef resolution in policies (`pkg/plugins/policies/core/rules/resolve/targetref.go`).
 
 #### Resource characteristics
 
@@ -379,7 +379,7 @@ Signal-specific config (refreshInterval, attributes, body, sampling) stays in ea
 
 The first implementation should be minimal:
 
-1. MeshTelemetryBackend resource with `type: OpenTelemetry` and `endpoint` (address + port) only
+1. MeshTelemetryBackend resource with `type: OpenTelemetry` and `endpoint` (address + port + path)
 2. `backendRef` field added to all three policy OTel backends
 3. Validation: `endpoint` XOR `backendRef` (mutual exclusivity)
 4. Resolution in each policy's Apply()
