@@ -33,7 +33,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
   ALLOW_PUSH: ${{ inputs.ALLOW_PUSH }}
   GH_OWNER: ${{ github.repository_owner }}

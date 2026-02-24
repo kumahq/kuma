@@ -5,7 +5,7 @@ on:
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
-  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  CI_TOOLS_DIR: /home/runner/work/kuma/.ci_tools
 permissions:
   contents: read
 jobs:

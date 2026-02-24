@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: 0 2 * * *
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
   IPV6: "true"
 permissions:
   contents: read

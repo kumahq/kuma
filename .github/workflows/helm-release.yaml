@@ -19,7 +19,7 @@ env:
   HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
   GITHUB_APP: "true"
   KUMA_DIR: "."
-  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  CI_TOOLS_DIR: /home/runner/work/kuma/.ci_tools
 jobs:
   package:
     name: Package
