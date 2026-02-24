@@ -17,11 +17,14 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
@@ -57,12 +60,16 @@ func BaseAccessLogBuilder(
 				Configure(bldrs_accesslog.Path(fileBackend.Path)))
 		})).
 		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
+			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc.Resources)
+			if endpoint == nil {
+				return nil
+			}
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(&otelBackend, defaultFormat, values)).
 				Configure(OtelAttributes(&otelBackend, values)).
 				Configure(OtelResourceAttributes(values)).
 				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
-					EndpointForOtel(otelBackend.Endpoint), //nolint:staticcheck // inline endpoint still supported for backward compat
+					*endpoint,
 				)))))
 		}))
 }
@@ -71,6 +78,7 @@ type EndpointAccumulator struct {
 	endpoints             map[LoggingEndpoint]int
 	latest                int
 	UnifiedResourceNaming bool
+	Resources             xds_context.Resources
 }
 
 type endpointClusterName string
@@ -92,6 +100,26 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 		fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
 	)
 	return endpointClusterName(name)
+}
+
+func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_context.Resources) *LoggingEndpoint {
+	resolved := policies_xds.ResolveOtelBackend(
+		otelBackend.BackendRef,
+		otelBackend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
+		func(ep string) *xds.Endpoint {
+			le := EndpointForOtel(ep)
+			return &xds.Endpoint{Target: le.Address, Port: le.Port}
+		},
+		func(ep string) string { return ep },
+		resources,
+	)
+	if resolved == nil {
+		return nil
+	}
+	return &LoggingEndpoint{
+		Address: resolved.Endpoint.Target,
+		Port:    resolved.Endpoint.Port,
+	}
 }
 
 const defaultOpenTelemetryGRPCPort uint32 = 4317
