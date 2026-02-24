@@ -727,6 +727,10 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
 		}),
 		Entry("outbound otel backend with workload identity", sidecarTestCase{
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
@@ -766,6 +770,10 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedClusters:  []string{"outbound_otel_workload_identity.cluster.golden.yaml"},
 		}),
 		Entry("outbound file backend with workload variables", sidecarTestCase{
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
