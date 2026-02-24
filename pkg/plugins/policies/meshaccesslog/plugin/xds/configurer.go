@@ -62,7 +62,7 @@ func BaseAccessLogBuilder(
 				Configure(OtelAttributes(&otelBackend, values)).
 				Configure(OtelResourceAttributes(values)).
 				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
-					EndpointForOtel(otelBackend.Endpoint),
+					EndpointForOtel(otelBackend.Endpoint), //nolint:staticcheck // inline endpoint still supported for backward compat
 				)))))
 		}))
 }

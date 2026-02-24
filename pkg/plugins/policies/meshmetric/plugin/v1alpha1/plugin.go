@@ -176,8 +176,8 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		return nil
 	}
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
-	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
-	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
+	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint) //nolint:staticcheck // inline endpoint still supported for backward compat
+	backendName := backendNameFrom(openTelemetryBackend.Endpoint)       //nolint:staticcheck // inline endpoint still supported for backward compat
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
@@ -262,7 +262,7 @@ func createDynamicConfig(
 		})
 	}
 	for _, backend := range openTelemetryBackends {
-		backendName := backendNameFrom(backend.Endpoint)
+		backendName := backendNameFrom(backend.Endpoint) //nolint:staticcheck // inline endpoint still supported for backward compat
 		backends = append(backends, dpapi.Backend{
 			Type: string(api.OpenTelemetryBackendType),
 			Name: &backendName,

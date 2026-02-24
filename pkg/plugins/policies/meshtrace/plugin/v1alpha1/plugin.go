@@ -231,7 +231,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
 		provider = plugin_xds.OpenTelemetryProviderName
 		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))),
+			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))), //nolint:staticcheck // inline endpoint still supported for backward compat
 			plugin_xds.GetTracingClusterName(provider),
 		)
 	}
@@ -270,14 +270,14 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 }
 
 func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
-	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
-	port := uint32(4317) // default gRPC port
+	host, portStr, err := net.SplitHostPort(cfg.Endpoint) //nolint:staticcheck // inline endpoint still supported for backward compat
+	port := uint32(4317)                                  // default gRPC port
 	if err == nil {
 		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
 			port = uint32(val)
 		}
 	} else {
-		host = cfg.Endpoint
+		host = cfg.Endpoint //nolint:staticcheck // inline endpoint still supported for backward compat
 		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
 			host = host[1 : l-1]
 		}

@@ -136,7 +136,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		if backend.OpenTelemetry != nil {
 			name := getNameOrDefault(
-				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))),
+				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))), //nolint:staticcheck // inline endpoint still supported for backward compat
 				GetTracingClusterName(OpenTelemetryProviderName),
 			)
 			tracing, err := c.opentelemetryConfig(name)
