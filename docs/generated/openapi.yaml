@@ -3655,6 +3655,130 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshMultiZoneServiceList'
+  /meshes/{mesh}/meshopentelemetrybackends/{name}:
+    get:
+      operationId: getMeshOpenTelemetryBackend
+      summary: Returns MeshOpenTelemetryBackend entity
+      tags:
+        - MeshOpenTelemetryBackend
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshOpenTelemetryBackend
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshOpenTelemetryBackendItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshOpenTelemetryBackend
+      summary: Creates or Updates MeshOpenTelemetryBackend entity
+      tags:
+        - MeshOpenTelemetryBackend
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshOpenTelemetryBackend
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
+      responses:
+        '200':
+          $ref: >-
+            #/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse
+        '201':
+          $ref: >-
+            #/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse
+    delete:
+      operationId: deleteMeshOpenTelemetryBackend
+      summary: Deletes MeshOpenTelemetryBackend entity
+      tags:
+        - MeshOpenTelemetryBackend
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshOpenTelemetryBackend
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshOpenTelemetryBackendDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshopentelemetrybackends:
+    get:
+      operationId: getMeshOpenTelemetryBackendList
+      summary: Returns a list of MeshOpenTelemetryBackend in the mesh.
+      tags:
+        - MeshOpenTelemetryBackend
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshOpenTelemetryBackendList'
   /meshes/{mesh}/meshservices/{name}:
     get:
       operationId: getMeshService
@@ -18440,6 +18564,99 @@ components:
               type: array
           type: object
           readOnly: true
+    MeshOpenTelemetryBackendItem:
+      type: object
+      description: >-
+        MeshOpenTelemetryBackend defines a shared OTel collector endpoint for
+        observability policies.
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshOpenTelemetryBackend
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_motb_default_zone-east_kuma-system_myresource1_
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: >-
+            Spec is the specification of the Kuma MeshOpenTelemetryBackend
+            resource.
+          properties:
+            endpoint:
+              description: Endpoint defines the OTel collector address and port.
+              properties:
+                address:
+                  description: Address of the OTel collector (hostname or IP).
+                  minLength: 1
+                  type: string
+                path:
+                  description: >-
+                    Path is an optional base path prefix for HTTP endpoints.
+
+                    The CP appends signal-specific suffixes (/v1/traces,
+                    /v1/metrics, /v1/logs).
+
+                    Ignored for gRPC.
+                  type: string
+                port:
+                  description: Port of the OTel collector.
+                  format: int32
+                  maximum: 65535
+                  minimum: 1
+                  type: integer
+              required:
+                - address
+                - port
+              type: object
+            protocol:
+              allOf:
+                - enum:
+                    - grpc
+                    - http
+              default: grpc
+              description: >-
+                Protocol selects gRPC or HTTP transport for the collector
+                connection.
+              type: string
+          required:
+            - endpoint
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshServiceItem:
       type: object
       description: >-
@@ -20245,6 +20462,53 @@ components:
                 items:
                   type: string
     MeshMultiZoneServiceDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+    MeshOpenTelemetryBackendItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
+    MeshOpenTelemetryBackendList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshOpenTelemetryBackendDeleteSuccessResponse:
       description: Successful response
       content:
         application/json:

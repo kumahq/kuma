@@ -160,6 +160,7 @@ rules:
       - meshexternalservices
       - meshidentities
       - meshmultizoneservices
+      - meshopentelemetrybackends
       - meshservices
       - meshtrusts
       - workloads
@@ -483,7 +484,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: bc4ac5e9e4c7540da3b5d4cd0fcdac722f33e2d245f22486d4bd379e37b2ee43
+        checksum/tls-secrets: 75b868a33bfebee6e999ab1707839e108bb6c1ab8bb12191278c8bbb4e125eeb
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -705,6 +706,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - workloads
@@ -769,6 +771,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - workloads
@@ -852,6 +855,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - workloads

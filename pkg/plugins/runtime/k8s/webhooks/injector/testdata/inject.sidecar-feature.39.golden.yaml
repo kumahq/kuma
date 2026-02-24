@@ -67,6 +67,11 @@ spec:
     - --log-level=info
     - --concurrency=2
     env:
+    - name: HOST_IP
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: status.hostIP
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
@@ -102,6 +107,8 @@ spec:
       value: 31s
     - name: KUMA_DATAPLANE_MESH
       value: default
+    - name: KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED
+      value: "false"
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED

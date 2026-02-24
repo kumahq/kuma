@@ -299,6 +299,16 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshOpenTelemetryBackend",
+   "path": "meshopentelemetrybackends",
+   "pluralDisplayName": "Mesh OpenTelemetry Backends",
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "motb",
+   "singularDisplayName": "Mesh OpenTelemetry Backend"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshPassthrough",
    "path": "meshpassthroughs",
    "pluralDisplayName": "Mesh Passthroughs",
