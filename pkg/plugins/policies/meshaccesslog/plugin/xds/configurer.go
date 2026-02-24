@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -117,8 +118,9 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_cont
 		return nil
 	}
 	return &LoggingEndpoint{
-		Address: resolved.Endpoint.Target,
-		Port:    resolved.Endpoint.Port,
+		Address:  resolved.Endpoint.Target,
+		Port:     resolved.Endpoint.Port,
+		UseHTTP2: resolved.Protocol != motb_api.ProtocolHTTP,
 	}
 }
 
