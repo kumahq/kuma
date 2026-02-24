@@ -3,10 +3,6 @@ syntax = "proto3";
 package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
-<<<<<<< HEAD
-=======
-import "google/protobuf/struct.proto";
->>>>>>> efb80db2ce (ci(lint): clang-format with buf format for protobuf formatting (#14538))
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
