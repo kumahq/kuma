@@ -171,6 +171,7 @@ components:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                   type: string
                 labels:
@@ -549,6 +550,7 @@ components:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                         type: string
                       labels:

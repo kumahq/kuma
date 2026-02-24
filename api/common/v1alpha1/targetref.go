@@ -14,27 +14,29 @@ import (
 type TargetRefKind string
 
 var (
-	Mesh                 TargetRefKind = "Mesh"
-	Dataplane            TargetRefKind = "Dataplane"
-	MeshSubset           TargetRefKind = "MeshSubset"
-	MeshGateway          TargetRefKind = "MeshGateway"
-	MeshService          TargetRefKind = "MeshService"
-	MeshExternalService  TargetRefKind = "MeshExternalService"
-	MeshMultiZoneService TargetRefKind = "MeshMultiZoneService"
-	MeshServiceSubset    TargetRefKind = "MeshServiceSubset"
-	MeshHTTPRoute        TargetRefKind = "MeshHTTPRoute"
+	Mesh                     TargetRefKind = "Mesh"
+	Dataplane                TargetRefKind = "Dataplane"
+	MeshSubset               TargetRefKind = "MeshSubset"
+	MeshGateway              TargetRefKind = "MeshGateway"
+	MeshService              TargetRefKind = "MeshService"
+	MeshExternalService      TargetRefKind = "MeshExternalService"
+	MeshMultiZoneService     TargetRefKind = "MeshMultiZoneService"
+	MeshServiceSubset        TargetRefKind = "MeshServiceSubset"
+	MeshHTTPRoute            TargetRefKind = "MeshHTTPRoute"
+	MeshOpenTelemetryBackend TargetRefKind = "MeshOpenTelemetryBackend"
 )
 
 var order = map[TargetRefKind]int{
-	Mesh:                 1,
-	Dataplane:            2,
-	MeshSubset:           3,
-	MeshGateway:          4,
-	MeshService:          5,
-	MeshExternalService:  6,
-	MeshMultiZoneService: 7,
-	MeshServiceSubset:    8,
-	MeshHTTPRoute:        9,
+	Mesh:                     1,
+	Dataplane:                2,
+	MeshSubset:               3,
+	MeshGateway:              4,
+	MeshService:              5,
+	MeshExternalService:      6,
+	MeshMultiZoneService:     7,
+	MeshServiceSubset:        8,
+	MeshHTTPRoute:            9,
+	MeshOpenTelemetryBackend: 10,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway
@@ -88,7 +90,7 @@ type TargetRef struct {
 	UsesSyntacticSugar bool `json:"-"`
 
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;MeshOpenTelemetryBackend;Dataplane
 	Kind TargetRefKind `json:"kind"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
