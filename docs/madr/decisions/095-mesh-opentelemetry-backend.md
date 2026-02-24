@@ -221,6 +221,313 @@ Placed in `pkg/core/resources/apis/meshopentelemetrybackend/` following the same
 - Users learn a new concept
 - More indirection (policy -> resource -> endpoint)
 
+#### Configuration walkthroughs
+
+Concrete configurations for each user story, all using Option A.
+
+##### Story 1: Single collector, incremental rollout
+
+Deploy the shared backend once, then add policies one signal at a time.
+
+```yaml
+# 1. Create the backend
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: main-collector
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  endpoint:
+    address: otel-collector.observability
+    port: 4317
+  protocol: grpc
+---
+# 2. Start with metrics
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: all-metrics
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: main-collector
+        refreshInterval: 30s
+---
+# 3. Once metrics are verified, add tracing
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrace
+metadata:
+  name: all-traces
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: main-collector
+    sampling:
+      overall: 80
+---
+# 4. Then access logging
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+metadata:
+  name: all-access-logs
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: main-collector
+        attributes:
+        - key: mesh
+          value: "%KUMA_MESH%"
+```
+
+##### Story 2: Update collector address in one place
+
+The observability team moves the collector to a new namespace. Update only the backend resource - all three policies pick up the change automatically.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: main-collector
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  endpoint:
+    address: otel-collector.new-observability  # changed from otel-collector.observability
+    port: 4317
+  protocol: grpc
+# MeshMetric, MeshTrace, and MeshAccessLog are unchanged.
+```
+
+##### Story 3: Managed backend with connection settings
+
+Point at Grafana Cloud's OTLP gateway over HTTP. Initial scope covers endpoint and protocol. TLS and auth fields are follow-up work.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: grafana-cloud
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  endpoint:
+    address: otlp-gateway-prod-us-east-0.grafana.net
+    port: 443
+    path: /otlp    # CP appends /v1/metrics, /v1/traces, /v1/logs per signal
+  protocol: http
+  # Follow-up work:
+  # tls:
+  #   mode: STRICT
+  # auth:
+  #   type: Bearer
+  #   secretRef:
+  #     name: grafana-cloud-token
+---
+# Policies reference it the same way as story 1
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: all-metrics
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: grafana-cloud
+        refreshInterval: 30s
+```
+
+##### Story 4: Per-zone collectors in multi-zone
+
+When all zones run the same collector service name, create one backend on the Global CP. DNS resolves to the local collector in each zone.
+
+```yaml
+# Global CP - syncs to all zones via KDS
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: zone-collector
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  endpoint:
+    address: otel-collector.observability.svc.cluster.local
+    port: 4317
+  protocol: grpc
+# Policies also created on Global CP, synced to all zones.
+# Each zone's DNS resolves the address to its local collector.
+```
+
+When zones need different collector addresses (separate cloud regions, different infrastructure), use zone-specific backend names:
+
+```yaml
+# Global CP
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: collector-us-east
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  endpoint:
+    address: collector.us-east.internal
+    port: 4317
+  protocol: grpc
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: collector-eu-west
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  endpoint:
+    address: collector.eu-west.internal
+    port: 4317
+  protocol: grpc
+---
+# Zone-targeted policy
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: metrics-us-east
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/zone: us-east
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: collector-us-east
+        refreshInterval: 30s
+# Without MOTB, each zone's three policies would hardcode the endpoint.
+# With MOTB, changing a zone's collector means updating one resource
+# instead of three.
+```
+
+##### Story 5: Dangling reference detection
+
+An operator deletes a backend that policies still reference. The CP detects the broken reference during xDS generation.
+
+```yaml
+# The backend was deleted. The policy still references it:
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: all-metrics
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: main-collector    # no longer exists
+        refreshInterval: 30s
+```
+
+CP behavior when the referenced backend is missing:
+
+- Logs at Info level: `MeshOpenTelemetryBackend "main-collector" not found, referenced by MeshMetric "all-metrics"`
+- Skips OTel backend config in xDS for that signal (no telemetry export)
+- Status condition on the resource surfaces the unresolved reference so the operator can detect it via `kubectl` or the REST API
+
+Unlike routing, where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. This is why `HasStatus: true` matters here.
+
+##### Story 6: Env var auto-detection
+
+The OTel Operator or a pod annotation sets `OTEL_EXPORTER_OTLP_*` env vars on the sidecar. kuma-dp reads them at startup and sends them to the CP via DynamicMetadata. Policies without an explicit endpoint or backendRef use them as fallback.
+
+```yaml
+# Pod annotation injects env vars into kuma-sidecar
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kuma.io/sidecar-env-vars: >-
+      OTEL_EXPORTER_OTLP_ENDPOINT=http://collector.observability:4317;
+      OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+spec:
+  containers:
+  - name: my-app
+    image: my-app:latest
+---
+# Policy with no endpoint and no backendRef
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: all-metrics
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        # No backendRef, no endpoint.
+        # kuma-dp reads OTEL_EXPORTER_OTLP_ENDPOINT from its env,
+        # sends it to the CP via DynamicMetadata in the bootstrap
+        # request. The CP uses it as the fallback endpoint.
+        refreshInterval: 30s
+# Priority: backendRef > inline endpoint > env var auto-detection
+```
+
 #### Naming
 
 `MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced by the admission webhook - the validator rejects `backendRef.kind` values that don't match the enclosing backend type. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
