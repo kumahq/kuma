@@ -24,6 +24,13 @@ resources:
               prefixLen: 128
           statPrefix: "127_0_0_1_17777"
           tracing:
+            customTags:
+            - literal:
+                value: default
+              tag: kuma.mesh
+            - literal:
+                value: test-zone
+              tag: kuma.zone
             provider:
               name: envoy.tracers.datadog
               typedConfig:
@@ -59,6 +66,13 @@ resources:
               prefixLen: 128
           statPrefix: "127_0_0_1_27777"
           tracing:
+            customTags:
+            - literal:
+                value: default
+              tag: kuma.mesh
+            - literal:
+                value: test-zone
+              tag: kuma.zone
             provider:
               name: envoy.tracers.datadog
               typedConfig:

@@ -29,15 +29,18 @@ resources:
                 value: default
               tag: kuma.mesh
             - literal:
-                value: test-zone
+                value: zone-1
               tag: kuma.zone
+            - literal:
+                value: kri_wl_default_zone-1_kuma-demo_backend_
+              tag: kuma.workload
             provider:
               name: envoy.tracers.zipkin
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                 collectorCluster: meshtrace:zipkin
                 collectorEndpoint: /api/v2/spans
-                collectorEndpointVersion: HTTP_JSON
+                collectorEndpointVersion: HTTP_PROTO
                 collectorHostname: jaeger-collector.mesh-observability:9411
                 sharedSpanContext: true
                 traceId128bit: true
@@ -73,15 +76,18 @@ resources:
                 value: default
               tag: kuma.mesh
             - literal:
-                value: test-zone
+                value: zone-1
               tag: kuma.zone
+            - literal:
+                value: kri_wl_default_zone-1_kuma-demo_backend_
+              tag: kuma.workload
             provider:
               name: envoy.tracers.zipkin
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                 collectorCluster: meshtrace:zipkin
                 collectorEndpoint: /api/v2/spans
-                collectorEndpointVersion: HTTP_JSON
+                collectorEndpointVersion: HTTP_PROTO
                 collectorHostname: jaeger-collector.mesh-observability:9411
                 sharedSpanContext: true
                 traceId128bit: true

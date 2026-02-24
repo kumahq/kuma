@@ -35,6 +35,9 @@ type Configurer struct {
 	Destination           string
 	IsGateway             bool
 	UnifiedResourceNaming bool
+	Mesh                  string
+	Zone                  string
+	WorkloadKRI           string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -85,6 +88,20 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		if c.Conf.Tags != nil {
 			hcm.Tracing.CustomTags = mapTags(pointer.Deref(c.Conf.Tags))
+		}
+
+		existingNames := map[string]bool{}
+		for _, t := range hcm.Tracing.CustomTags {
+			existingNames[t.Tag] = true
+		}
+		for _, entry := range []struct{ key, val string }{
+			{"kuma.mesh", c.Mesh},
+			{"kuma.zone", c.Zone},
+			{"kuma.workload", c.WorkloadKRI},
+		} {
+			if entry.val != "" && !existingNames[entry.key] {
+				hcm.Tracing.CustomTags = append(hcm.Tracing.CustomTags, mapLiteralTag(entry.key, entry.val))
+			}
 		}
 
 		if backend.Zipkin != nil {
