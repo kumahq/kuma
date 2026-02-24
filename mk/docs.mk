@@ -42,7 +42,7 @@ docs/generated/openapi.yaml:
 	for i in $$( find $(RESOURCES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/resources/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
 
 ifdef BASE_API
-	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v0.12.0 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
+	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v1.1.6 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
 else
-	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v0.12.0 generate '/specs/**/*.yaml' > $@
+	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v1.1.6 generate '/specs/**/*.yaml' > $@
 endif
