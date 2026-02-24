@@ -482,6 +482,10 @@ dataPlane:
     # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
     # in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch
     unifiedResourceNaming: false
+    # -- Enables kuma-dp pipe mode for MeshTrace and MeshAccessLog OTel backends.
+    # When true (default), backendRef-based OTel traffic routes through kuma-dp Unix sockets.
+    # Set to false to fall back to direct Envoy clusters (2.13 behavior).
+    otelPipe: true
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
@@ -962,6 +966,7 @@ plugins:
     meshexternalservices: true
     meshidentities: true
     meshmultizoneservices: true
+    meshopentelemetrybackends: true
     meshservices: true
     meshtrusts: true
     meshzoneaddresses: true

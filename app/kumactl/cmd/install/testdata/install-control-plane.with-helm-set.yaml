@@ -774,6 +774,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -955,6 +956,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -1104,6 +1106,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -1918,6 +1921,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -2186,6 +2190,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -2317,6 +2322,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -2406,6 +2412,7 @@ spec:
                                       - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
+                                      - MeshOpenTelemetryBackend
                                       - Dataplane
                                       type: string
                                     labels:
@@ -2535,6 +2542,7 @@ spec:
                                               - MeshMultiZoneService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
+                                              - MeshOpenTelemetryBackend
                                               - Dataplane
                                               type: string
                                             labels:
@@ -2872,6 +2880,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -3389,6 +3398,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -3928,6 +3938,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -4075,15 +4086,82 @@ spec:
                         openTelemetry:
                           description: OpenTelemetry backend configuration
                           properties:
+                            backendRef:
+                              description: |-
+                                BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                defines the collector endpoint. Mutually exclusive with Endpoint.
+                              properties:
+                                kind:
+                                  description: Kind of the referenced resource
+                                  enum:
+                                  - Mesh
+                                  - MeshSubset
+                                  - MeshGateway
+                                  - MeshService
+                                  - MeshExternalService
+                                  - MeshMultiZoneService
+                                  - MeshServiceSubset
+                                  - MeshHTTPRoute
+                                  - MeshOpenTelemetryBackend
+                                  - Dataplane
+                                  type: string
+                                labels:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    Labels are used to select group of MeshServices that match labels. Either Labels or
+                                    Name and Namespace can be used.
+                                  type: object
+                                mesh:
+                                  description: Mesh is reserved for future use to
+                                    identify cross mesh resources.
+                                  type: string
+                                name:
+                                  description: |-
+                                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                                    `MeshServiceSubset` and `MeshGatewayRoute`
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                    will be targeted.
+                                  type: string
+                                proxyTypes:
+                                  description: |-
+                                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                    all data plane types are targeted by the policy.
+                                  items:
+                                    enum:
+                                    - Sidecar
+                                    - Gateway
+                                    type: string
+                                  type: array
+                                sectionName:
+                                  description: |-
+                                    SectionName is used to target specific section of resource.
+                                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                  type: string
+                                tags:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    Tags used to select a subset of proxies by tags. Can only be used with kinds
+                                    `MeshSubset` and `MeshServiceSubset`
+                                  type: object
+                              required:
+                              - kind
+                              type: object
                             endpoint:
-                              description: Endpoint for OpenTelemetry collector
+                              default: ""
+                              description: |-
+                                Endpoint for OpenTelemetry collector.
+
+                                Deprecated: use BackendRef instead.
                               type: string
                             refreshInterval:
                               description: RefreshInterval defines how frequent metrics
                                 should be pushed to collector
                               type: string
-                          required:
-                          - endpoint
                           type: object
                         prometheus:
                           description: Prometheus backend configuration.
@@ -4227,6 +4305,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -4527,6 +4606,160 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.1
+  name: meshopentelemetrybackends.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshOpenTelemetryBackend
+    listKind: MeshOpenTelemetryBackendList
+    plural: meshopentelemetrybackends
+    shortNames:
+    - motb
+    singular: meshopentelemetrybackend
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: MeshOpenTelemetryBackend defines a shared OTel collector endpoint
+          for observability policies.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshOpenTelemetryBackend
+              resource.
+            properties:
+              endpoint:
+                description: |-
+                  Endpoint defines the OTel collector address and port.
+                  Exactly one of endpoint or nodeEndpoint must be specified.
+                properties:
+                  address:
+                    description: Address of the OTel collector (hostname or IP).
+                    minLength: 1
+                    type: string
+                  path:
+                    description: |-
+                      Path is an optional base path prefix for HTTP endpoints.
+                      The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
+                      Non-empty value is rejected by validation when protocol is grpc.
+                    type: string
+                  port:
+                    description: Port of the OTel collector.
+                    format: int32
+                    maximum: 65535
+                    minimum: 1
+                    type: integer
+                required:
+                - address
+                - port
+                type: object
+              nodeEndpoint:
+                description: |-
+                  NodeEndpoint connects to an OTel collector running as a DaemonSet
+                  (hostPort mode) on the same node as the workload. The node's host IP
+                  is injected by the injector and used as the target address.
+                  Exactly one of endpoint or nodeEndpoint must be specified.
+                properties:
+                  path:
+                    description: |-
+                      Path is an optional base path prefix for HTTP endpoints.
+                      The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
+                      Non-empty value is rejected by validation when protocol is grpc.
+                    type: string
+                  port:
+                    description: Port of the OTel collector on the node.
+                    format: int32
+                    maximum: 65535
+                    minimum: 1
+                    type: integer
+                required:
+                - port
+                type: object
+              protocol:
+                allOf:
+                - enum:
+                  - grpc
+                  - http
+                - enum:
+                  - grpc
+                  - http
+                default: grpc
+                description: Protocol selects gRPC or HTTP transport for the collector
+                  connection.
+                type: string
+            type: object
+          status:
+            description: Status is the current status of the Kuma MeshOpenTelemetryBackend
+              resource.
+            properties:
+              conditions:
+                items:
+                  properties:
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4646,6 +4879,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -5200,6 +5434,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -5451,6 +5686,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -5647,6 +5883,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -5836,6 +6073,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -5965,6 +6203,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -6353,6 +6592,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -6650,6 +6890,78 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.1
+  name: dataplanes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: Dataplane
+    listKind: DataplaneList
+    plural: dataplanes
+    shortNames:
+    - dp
+    singular: dataplane
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Service tag of the first inbound
+      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the second inbound
+      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the third inbound
+      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
+      name: kuma.io/service
+      priority: 1
+      type: string
+    - description: Service tag of the fourth inbound
+      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
+      name: kuma.io/service
+      priority: 1
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Dataplane resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6718,6 +7030,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -6799,6 +7112,7 @@ spec:
                                       - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
+                                      - MeshOpenTelemetryBackend
                                       - Dataplane
                                       type: string
                                     labels:
@@ -6879,6 +7193,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -6934,78 +7249,6 @@ spec:
                 minItems: 1
                 type: array
             type: object
-        type: object
-    served: true
-    storage: true
-    subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
-  name: dataplanes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Dataplane
-    listKind: DataplaneList
-    plural: dataplanes
-    shortNames:
-    - dp
-    singular: dataplane
-  scope: Namespaced
-  versions:
-  - additionalPrinterColumns:
-    - description: Service tag of the first inbound
-      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the second inbound
-      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the third inbound
-      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    - description: Service tag of the fourth inbound
-      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Dataplane resource.
-            x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
     storage: true
@@ -7139,6 +7382,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7266,6 +7510,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -7387,6 +7632,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7571,6 +7817,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7697,6 +7944,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -7843,13 +8091,79 @@ spec:
                         openTelemetry:
                           description: OpenTelemetry backend configuration.
                           properties:
+                            backendRef:
+                              description: |-
+                                BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                defines the collector endpoint. Mutually exclusive with Endpoint.
+                              properties:
+                                kind:
+                                  description: Kind of the referenced resource
+                                  enum:
+                                  - Mesh
+                                  - MeshSubset
+                                  - MeshGateway
+                                  - MeshService
+                                  - MeshExternalService
+                                  - MeshMultiZoneService
+                                  - MeshServiceSubset
+                                  - MeshHTTPRoute
+                                  - MeshOpenTelemetryBackend
+                                  - Dataplane
+                                  type: string
+                                labels:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    Labels are used to select group of MeshServices that match labels. Either Labels or
+                                    Name and Namespace can be used.
+                                  type: object
+                                mesh:
+                                  description: Mesh is reserved for future use to
+                                    identify cross mesh resources.
+                                  type: string
+                                name:
+                                  description: |-
+                                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                                    `MeshServiceSubset` and `MeshGatewayRoute`
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                    will be targeted.
+                                  type: string
+                                proxyTypes:
+                                  description: |-
+                                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                    all data plane types are targeted by the policy.
+                                  items:
+                                    enum:
+                                    - Sidecar
+                                    - Gateway
+                                    type: string
+                                  type: array
+                                sectionName:
+                                  description: |-
+                                    SectionName is used to target specific section of resource.
+                                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                  type: string
+                                tags:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    Tags used to select a subset of proxies by tags. Can only be used with kinds
+                                    `MeshSubset` and `MeshServiceSubset`
+                                  type: object
+                              required:
+                              - kind
+                              type: object
                             endpoint:
-                              description: Address of OpenTelemetry collector.
+                              default: ""
+                              description: |-
+                                Address of OpenTelemetry collector.
+
+                                Deprecated: use BackendRef instead.
                               example: otel-collector:4317
-                              minLength: 1
                               type: string
-                          required:
-                          - endpoint
                           type: object
                         type:
                           enum:
@@ -7989,6 +8303,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -8134,6 +8449,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -8296,6 +8612,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -8456,70 +8773,6 @@ spec:
                     description: Resource identifier
                     type: string
                 type: object
-            type: object
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
-  name: meshzoneaddresses.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshZoneAddress
-    listKind: MeshZoneAddressList
-    plural: meshzoneaddresses
-    shortNames:
-    - mza
-    singular: meshzoneaddress
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: MeshZoneAddress holds the public address and port for a mesh-scoped
-          zone ingress proxy.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma MeshZoneAddress resource.
-            properties:
-              address:
-                description: Address is the publicly reachable address of the zone
-                  ingress.
-                minLength: 1
-                type: string
-              port:
-                description: Port is the publicly reachable port of the zone ingress.
-                format: int32
-                maximum: 65535
-                minimum: 1
-                type: integer
-            required:
-            - address
-            - port
             type: object
         type: object
     served: true
@@ -9803,6 +10056,71 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  backendRef:
+                                    description: |-
+                                      BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                      defines the collector endpoint. Mutually exclusive with Endpoint.
+                                    properties:
+                                      kind:
+                                        description: Kind of the referenced resource
+                                        enum:
+                                        - Mesh
+                                        - MeshSubset
+                                        - MeshGateway
+                                        - MeshService
+                                        - MeshExternalService
+                                        - MeshMultiZoneService
+                                        - MeshServiceSubset
+                                        - MeshHTTPRoute
+                                        - MeshOpenTelemetryBackend
+                                        - Dataplane
+                                        type: string
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Labels are used to select group of MeshServices that match labels. Either Labels or
+                                          Name and Namespace can be used.
+                                        type: object
+                                      mesh:
+                                        description: Mesh is reserved for future use
+                                          to identify cross mesh resources.
+                                        type: string
+                                      name:
+                                        description: |-
+                                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                                          `MeshServiceSubset` and `MeshGatewayRoute`
+                                        type: string
+                                      namespace:
+                                        description: |-
+                                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                          will be targeted.
+                                        type: string
+                                      proxyTypes:
+                                        description: |-
+                                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                          all data plane types are targeted by the policy.
+                                        items:
+                                          enum:
+                                          - Sidecar
+                                          - Gateway
+                                          type: string
+                                        type: array
+                                      sectionName:
+                                        description: |-
+                                          SectionName is used to target specific section of resource.
+                                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        type: string
+                                      tags:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Tags used to select a subset of proxies by tags. Can only be used with kinds
+                                          `MeshSubset` and `MeshServiceSubset`
+                                        type: object
+                                    required:
+                                    - kind
+                                    type: object
                                   body:
                                     description: |-
                                       Body is a raw string or an OTLP any value as described at
@@ -9817,13 +10135,13 @@ spec:
                                             stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
+                                    default: ""
+                                    description: |-
+                                      Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+
+                                      Deprecated: use BackendRef instead.
                                     example: otel-collector:4317
-                                    minLength: 1
                                     type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -9899,6 +10217,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -10035,6 +10354,71 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  backendRef:
+                                    description: |-
+                                      BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                      defines the collector endpoint. Mutually exclusive with Endpoint.
+                                    properties:
+                                      kind:
+                                        description: Kind of the referenced resource
+                                        enum:
+                                        - Mesh
+                                        - MeshSubset
+                                        - MeshGateway
+                                        - MeshService
+                                        - MeshExternalService
+                                        - MeshMultiZoneService
+                                        - MeshServiceSubset
+                                        - MeshHTTPRoute
+                                        - MeshOpenTelemetryBackend
+                                        - Dataplane
+                                        type: string
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Labels are used to select group of MeshServices that match labels. Either Labels or
+                                          Name and Namespace can be used.
+                                        type: object
+                                      mesh:
+                                        description: Mesh is reserved for future use
+                                          to identify cross mesh resources.
+                                        type: string
+                                      name:
+                                        description: |-
+                                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                                          `MeshServiceSubset` and `MeshGatewayRoute`
+                                        type: string
+                                      namespace:
+                                        description: |-
+                                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                          will be targeted.
+                                        type: string
+                                      proxyTypes:
+                                        description: |-
+                                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                          all data plane types are targeted by the policy.
+                                        items:
+                                          enum:
+                                          - Sidecar
+                                          - Gateway
+                                          type: string
+                                        type: array
+                                      sectionName:
+                                        description: |-
+                                          SectionName is used to target specific section of resource.
+                                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        type: string
+                                      tags:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Tags used to select a subset of proxies by tags. Can only be used with kinds
+                                          `MeshSubset` and `MeshServiceSubset`
+                                        type: object
+                                    required:
+                                    - kind
+                                    type: object
                                   body:
                                     description: |-
                                       Body is a raw string or an OTLP any value as described at
@@ -10049,13 +10433,13 @@ spec:
                                             stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
+                                    default: ""
+                                    description: |-
+                                      Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+
+                                      Deprecated: use BackendRef instead.
                                     example: otel-collector:4317
-                                    minLength: 1
                                     type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -10136,6 +10520,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -10267,6 +10652,71 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  backendRef:
+                                    description: |-
+                                      BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                      defines the collector endpoint. Mutually exclusive with Endpoint.
+                                    properties:
+                                      kind:
+                                        description: Kind of the referenced resource
+                                        enum:
+                                        - Mesh
+                                        - MeshSubset
+                                        - MeshGateway
+                                        - MeshService
+                                        - MeshExternalService
+                                        - MeshMultiZoneService
+                                        - MeshServiceSubset
+                                        - MeshHTTPRoute
+                                        - MeshOpenTelemetryBackend
+                                        - Dataplane
+                                        type: string
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Labels are used to select group of MeshServices that match labels. Either Labels or
+                                          Name and Namespace can be used.
+                                        type: object
+                                      mesh:
+                                        description: Mesh is reserved for future use
+                                          to identify cross mesh resources.
+                                        type: string
+                                      name:
+                                        description: |-
+                                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                                          `MeshServiceSubset` and `MeshGatewayRoute`
+                                        type: string
+                                      namespace:
+                                        description: |-
+                                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                          will be targeted.
+                                        type: string
+                                      proxyTypes:
+                                        description: |-
+                                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                          all data plane types are targeted by the policy.
+                                        items:
+                                          enum:
+                                          - Sidecar
+                                          - Gateway
+                                          type: string
+                                        type: array
+                                      sectionName:
+                                        description: |-
+                                          SectionName is used to target specific section of resource.
+                                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        type: string
+                                      tags:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Tags used to select a subset of proxies by tags. Can only be used with kinds
+                                          `MeshSubset` and `MeshServiceSubset`
+                                        type: object
+                                    required:
+                                    - kind
+                                    type: object
                                   body:
                                     description: |-
                                       Body is a raw string or an OTLP any value as described at
@@ -10281,13 +10731,13 @@ spec:
                                             stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
+                                    default: ""
+                                    description: |-
+                                      Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+
+                                      Deprecated: use BackendRef instead.
                                     example: otel-collector:4317
-                                    minLength: 1
                                     type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -10363,6 +10813,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -10746,6 +11197,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -11070,6 +11522,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -11388,6 +11841,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -11574,9 +12028,9 @@ rules:
       - meshexternalservices
       - meshidentities
       - meshmultizoneservices
+      - meshopentelemetrybackends
       - meshservices
       - meshtrusts
-      - meshzoneaddresses
       - workloads
     verbs:
       - get
@@ -11924,7 +12378,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 37761644dea087af23f9623ddf1a97e2b557659a1ca8054e8529e45df2e65f18
+        checksum/tls-secrets: 943b9d517075a11d56de9418231e49bdb1e06b92fd44cfad81d9d622d2be7c64
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -12417,9 +12871,9 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
-          - meshzoneaddresses
           - workloads
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -12482,9 +12936,9 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
-          - meshzoneaddresses
           - workloads
   
       
@@ -12628,9 +13082,9 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
-          - meshzoneaddresses
           - workloads
     
       

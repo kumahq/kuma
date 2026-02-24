@@ -8,6 +8,7 @@ var DefaultEnabled = []string{
 	"meshexternalservices",
 	"meshidentities",
 	"meshmultizoneservices",
+	"meshopentelemetrybackends",
 	"meshservices",
 	"meshtrusts",
 	"meshzoneaddresses",

@@ -97,6 +97,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:             []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 			UnifiedResourceNamingEnabled: false,
+			OtelPipeEnabled:              true,
 			Spire: Spire{
 				Enabled:        false,
 				MountPath:      "/run/spire/sockets",
@@ -248,6 +249,10 @@ type Injector struct {
 	// When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
 	// This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
 	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled" envconfig:"kuma_runtime_kubernetes_injector_unified_resource_naming_enabled"`
+	// OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
+	// When false, the injector sets KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED=false on injected
+	// containers; when true (default), no env var is injected and kuma-dp defaults to pipe mode on.
+	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_runtime_kubernetes_injector_otel_pipe_enabled"`
 	// Spire is used to specify spire integration configuration.
 	Spire Spire `json:"spire"`
 }
