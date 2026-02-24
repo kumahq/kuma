@@ -88,7 +88,12 @@ KDS metrics currently lack a `zone_name` label. The Multi-Zone dashboard require
 
 ## Implications for Kong Mesh
 
-None
+The same dashboard set applies to Kong Mesh without modifications. Enterprise-specific features don't add dashboard requirements:
+
+- **Multitenancy** — internal implementation detail, not exposed in default dashboards
+- **License** — not tracked via metrics, no dashboard panel needed
+- **OPA** — being removed
+- **FIPS** — build-time config, not a runtime metric
 
 ## Decision
 
