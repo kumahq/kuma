@@ -22,37 +22,18 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: self_inbound_dp_17777
+          statPrefix: "127_0_0_1_17777"
           tracing:
-            clientSampling:
-              value: 20
-            customTags:
-            - literal:
-                value: backend
-              tag: app
-            - requestHeader:
-                name: app_code
-              tag: app_code
-            - requestHeader:
-                defaultValue: none
-                name: client_id
-              tag: client_id
-            overallSampling:
-              value: 10
             provider:
               name: envoy.tracers.opentelemetry
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
-                httpService:
-                  httpUri:
-                    cluster: system_meshtrace_otel_http---jaeger-collector-mesh-observability-4318-v1-traces
-                    timeout: 10s
-                    uri: http://jaeger-collector.mesh-observability:4318/v1/traces
+                grpcService:
+                  envoyGrpc:
+                    clusterName: meshtrace:opentelemetry
                 serviceName: backend
-            randomSampling:
-              value: 50
             spawnUpstreamSpan: false
-    name: self_inbound_dp_17777
+    name: inbound:127.0.0.1:17777
     trafficDirection: INBOUND
 - name: outbound
   resource:
@@ -76,35 +57,16 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: kri_msvc_default_zone-1_backend-ns_backend_
+          statPrefix: "127_0_0_1_27777"
           tracing:
-            clientSampling:
-              value: 20
-            customTags:
-            - literal:
-                value: backend
-              tag: app
-            - requestHeader:
-                name: app_code
-              tag: app_code
-            - requestHeader:
-                defaultValue: none
-                name: client_id
-              tag: client_id
-            overallSampling:
-              value: 10
             provider:
               name: envoy.tracers.opentelemetry
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
-                httpService:
-                  httpUri:
-                    cluster: system_meshtrace_otel_http---jaeger-collector-mesh-observability-4318-v1-traces
-                    timeout: 10s
-                    uri: http://jaeger-collector.mesh-observability:4318/v1/traces
+                grpcService:
+                  envoyGrpc:
+                    clusterName: meshtrace:opentelemetry
                 serviceName: backend
-            randomSampling:
-              value: 50
             spawnUpstreamSpan: false
-    name: kri_msvc_default_zone-1_backend-ns_backend_
+    name: outbound:127.0.0.1:27777
     trafficDirection: OUTBOUND

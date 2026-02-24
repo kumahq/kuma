@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
+	"net"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -218,13 +218,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		)
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
-	// OTLP/HTTP doesn't require HTTP/2 — the spec allows both HTTP/1.1 and HTTP/2
-	// (https://opentelemetry.io/docs/specs/otlp/#otlphttp) so we use Envoy's
-	// default (HTTP/1.1). We only force HTTP/2 for gRPC endpoints.
-	// endpointForOpenTelemetry sets endpoint.ExternalService (the xds.ExternalService
-	// TLS config struct, not the Kuma ExternalService resource) for HTTP/HTTPS
-	// URLs but leaves it nil for gRPC host:port endpoints.
-	if backend.OpenTelemetry != nil && endpoint.ExternalService == nil {
+	if backend.OpenTelemetry != nil {
 		builder.Configure(clusters.Http2())
 	}
 
@@ -258,39 +252,34 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 }
 
 func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
-	if strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://") {
-		// Error is ignored because the endpoint was already validated by the validator.
-		url, _ := net_url.ParseRequestURI(cfg.Endpoint)
-		port := uint32(80)
-		if url.Scheme == "https" {
-			port = 443
-		}
-		if portStr := url.Port(); portStr != "" {
-			if val, err := strconv.ParseInt(portStr, 10, 32); err == nil {
-				port = uint32(val)
-			}
-		}
-		return &xds.Endpoint{
-			Target: url.Hostname(),
-			Port:   port,
-			ExternalService: &xds.ExternalService{
-				TLSEnabled:         url.Scheme == "https",
-				AllowRenegotiation: true,
-			},
-		}
-	}
-
-	// gRPC endpoint (host:port format)
-	target := strings.Split(cfg.Endpoint, ":")
+	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	port := uint32(4317) // default gRPC port
-	if len(target) > 1 {
-		if val, err := strconv.ParseInt(target[1], 10, 32); err == nil && val > 0 && val <= 65535 {
+	if err == nil {
+		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
 			port = uint32(val)
+		}
+	} else {
+		host = cfg.Endpoint
+		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
+			host = host[1 : l-1]
 		}
 	}
 	return &xds.Endpoint{
-		Target: target[0],
+		Target: host,
 		Port:   port,
+	}
+}
+
+// OTelHTTPEndpoint builds an xds.Endpoint for an HTTP/HTTPS OTel collector.
+// Used when resolving a MeshTelemetryBackend with HTTP protocol.
+func OTelHTTPEndpoint(address string, port uint32, tlsEnabled bool) *xds.Endpoint {
+	return &xds.Endpoint{
+		Target: address,
+		Port:   port,
+		ExternalService: &xds.ExternalService{
+			TLSEnabled:         tlsEnabled,
+			AllowRenegotiation: true,
+		},
 	}
 }
 

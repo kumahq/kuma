@@ -157,46 +157,53 @@ func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Htt
 }
 
 func (c *Configurer) opentelemetryConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
-	otelBackend := pointer.Deref(c.Conf.Backends)[0].OpenTelemetry
-	var otelConfig envoy_trace.OpenTelemetryConfig
-
-	if strings.HasPrefix(otelBackend.Endpoint, "http://") || strings.HasPrefix(otelBackend.Endpoint, "https://") {
-		otelConfig = envoy_trace.OpenTelemetryConfig{
-			ServiceName: c.Service,
-			HttpService: &envoy_core.HttpService{
-				HttpUri: &envoy_core.HttpUri{
-					Uri: otelBackend.Endpoint,
-					HttpUpstreamType: &envoy_core.HttpUri_Cluster{
-						Cluster: clusterName,
-					},
-					Timeout: durationpb.New(10 * time.Second),
+	otelConfig := envoy_trace.OpenTelemetryConfig{
+		ServiceName: c.Service,
+		GrpcService: &envoy_core.GrpcService{
+			TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
 				},
 			},
-		}
-	} else {
-		otelConfig = envoy_trace.OpenTelemetryConfig{
-			ServiceName: c.Service,
-			GrpcService: &envoy_core.GrpcService{
-				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
-						ClusterName: clusterName,
-					},
-				},
-			},
-		}
+		},
 	}
-
 	otelConfigAny, err := proto.MarshalAnyDeterministic(&otelConfig)
 	if err != nil {
 		return nil, err
 	}
-	tracingConfig := &envoy_trace.Tracing_Http{
+	return &envoy_trace.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: otelConfigAny,
 		},
+	}, nil
+}
+
+// OpenTelemetryHTTPConfig builds the Envoy OTel tracer config for an HTTP/HTTPS endpoint.
+// Used when resolving a MeshTelemetryBackend with HTTP protocol.
+func OpenTelemetryHTTPConfig(clusterName, serviceName, uri string) (*envoy_trace.Tracing_Http, error) {
+	otelConfig := envoy_trace.OpenTelemetryConfig{
+		ServiceName: serviceName,
+		HttpService: &envoy_core.HttpService{
+			HttpUri: &envoy_core.HttpUri{
+				Uri: uri,
+				HttpUpstreamType: &envoy_core.HttpUri_Cluster{
+					Cluster: clusterName,
+				},
+				Timeout: durationpb.New(10 * time.Second),
+			},
+		},
 	}
-	return tracingConfig, nil
+	otelConfigAny, err := proto.MarshalAnyDeterministic(&otelConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &envoy_trace.Tracing_Http{
+		Name: "envoy.tracers.opentelemetry",
+		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
+			TypedConfig: otelConfigAny,
+		},
+	}, nil
 }
 
 func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {

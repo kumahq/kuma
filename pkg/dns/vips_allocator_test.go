@@ -832,7 +832,7 @@ var _ = DescribeTable("outboundView",
 		thenHostnameEntries: []vips.HostnameEntry{},
 		thenOutbounds:       map[vips.HostnameEntry][]vips.OutboundEntry{},
 	}),
-	Entry("skip inbounds without tags (SkipInboundTagGeneration)", outboundViewTestCase{
+	Entry("skip inbounds without tags (InboundTagsDisabled)", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "dp-1"): &mesh.DataplaneResource{
 				Spec: dpWithTags(nil),

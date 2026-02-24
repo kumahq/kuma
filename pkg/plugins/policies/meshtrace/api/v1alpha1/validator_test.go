@@ -60,37 +60,6 @@ default:
       openTelemetry:
         endpoint: otel-collector:4317
 `),
-			Entry("with opentelemetry backend HTTP", `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: http://otel-collector:4318
-`),
-			Entry("with opentelemetry backend HTTPS", `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: https://otel-collector.example.com:4318/v1/traces
-`),
-			Entry("with opentelemetry backend HTTPS with default port", `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: https://otel-collector.example.com
-`),
-
 			Entry("with empty backends", `
 targetRef:
   kind: MeshService
@@ -439,7 +408,7 @@ violations:
   - field: spec.default.backends[0].openTelemetry.endpoint
     message: must not be empty`,
 			}),
-			Entry("openTelemetry HTTP endpoint invalid URL", testCase{
+			Entry("openTelemetry endpoint must not be a URL", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -448,14 +417,14 @@ default:
   backends:
     - type: OpenTelemetry
       openTelemetry:
-        endpoint: http://not a valid url
+        endpoint: "http://otel-collector:4318/v1/traces"
 `,
 				expected: `
 violations:
   - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be a valid URL`,
+    message: must be in host:port format, not a URL`,
 			}),
-			Entry("openTelemetry HTTP endpoint invalid scheme", testCase{
+			Entry("openTelemetry endpoint must not contain a path", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -464,60 +433,12 @@ default:
   backends:
     - type: OpenTelemetry
       openTelemetry:
-        endpoint: ftp://otel-collector:4318
+        endpoint: "otel-collector:4318/v1/traces"
 `,
 				expected: `
 violations:
   - field: spec.default.backends[0].openTelemetry.endpoint
-    message: URL scheme must be http or https`,
-			}),
-			Entry("openTelemetry HTTP endpoint invalid port", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: http://otel-collector:99999
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: port must be valid (1-65535)`,
-			}),
-			Entry("openTelemetry HTTP endpoint missing host", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: http://
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be a valid URL`,
-			}),
-			Entry("openTelemetry HTTP endpoint non-numeric port", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: http://otel-collector:abc
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be a valid URL`,
+    message: must be in host:port format, not a URL`,
 			}),
 			Entry("gateway listener tags not allowed", testCase{
 				inputYaml: `

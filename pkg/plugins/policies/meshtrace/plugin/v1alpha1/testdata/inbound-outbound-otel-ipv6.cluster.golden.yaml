@@ -4,7 +4,6 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshtrace_opentelemetry
     connectTimeout: 5s
-    dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: meshtrace:opentelemetry
       endpoints:
@@ -12,7 +11,12 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: jaeger-collector.mesh-observability
-                portValue: 4318
+                address: 2001:db8::1
+                portValue: 4317
     name: meshtrace:opentelemetry
-    type: STRICT_DNS
+    type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
