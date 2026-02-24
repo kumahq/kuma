@@ -2,8 +2,6 @@
 
 * Status: accepted
 
-Technical Story: https://github.com/Kong/kong-mesh/issues/9163
-
 ## Context and problem statement
 
 Kuma has three observability policies that can export telemetry to an OpenTelemetry collector: MeshMetric, MeshTrace, and MeshAccessLog. Each policy defines the OTel collector endpoint independently in its own spec.
@@ -30,11 +28,11 @@ These would need to be added to all three policies individually, tripling the wo
 
 ### User stories
 
-1. As a mesh operator, I want to deploy one OTel collector (DaemonSet or Deployment) and point MeshMetric, MeshTrace, and MeshAccessLog at it without duplicating the endpoint in three places.
+1. As a mesh operator, I want to deploy one OTel collector and point MeshMetric, MeshTrace, and MeshAccessLog at it without duplicating the endpoint in three places. I want to roll out signals incrementally - start with metrics, verify it works, then add tracing and access logging against the same backend.
 2. As a mesh operator, I want to update my collector address in one place when the observability team moves it to a different namespace or changes the port.
-3. As a mesh operator using a managed OTel backend (Grafana Cloud, Datadog, etc.), I want to configure a bearer token for collector auth.
+3. As a mesh operator using a managed OTel backend (Grafana Cloud, Datadog, etc.), I want to configure connection settings (TLS, auth, protocol) for my collector in one place rather than across three policies.
 4. As a mesh operator running multi-zone, I want each zone to have its own collector config without duplicating endpoints across zone-scoped policies.
-5. As a mesh operator, I want to roll out signals incrementally - start with metrics, verify it works, then add tracing and access logging against the same collector.
+5. As a mesh operator, I want to know when a policy references a backend that no longer exists so I don't silently lose telemetry.
 6. As a mesh operator, I want the data plane's OTel export configured from standard [`OTEL_EXPORTER_OTLP_*`](https://opentelemetry.io/docs/specs/otel/protocol/exporter/) env vars injected into my pods so I don't duplicate collector config between application instrumentation and the mesh.
 
 ## Design
@@ -73,7 +71,7 @@ spec:
   protocol: grpc
 ```
 
-No `type` discriminator - the resource name itself is the type. If other telemetry backend types are needed later (Zipkin, Datadog), they become separate resources (`MeshZipkinBackend`, etc.). The `backendRef.kind` field enforces type matching at the schema level - a policy's OTel backend can only reference a `MeshOpenTelemetryBackend`, not a hypothetical `MeshZipkinBackend`.
+No `type` discriminator - the resource name itself is the type. If other telemetry backend types are needed later (Zipkin, Datadog), they become separate resources (`MeshZipkinBackend`, etc.). The `backendRef.kind` field enforces type matching via the admission webhook - the validator rejects any `backendRef` where `kind` is not `MeshOpenTelemetryBackend` inside an OTel backend block.
 
 The `endpoint` is structured (address + port + path) instead of a raw string so we validate each component separately. Today MeshMetric/MeshAccessLog split the endpoint string on `:`, and MeshTrace has an unreleased URL parser for HTTP endpoints that's being removed. A structured format avoids these inconsistencies.
 
@@ -174,7 +172,9 @@ Each struct needs a new optional `backendRef` field. The inline `endpoint` remai
 type OpenTelemetryBackend struct {
     // Inline endpoint (existing, backward compatible)
     Endpoint string `json:"endpoint,omitempty"`
-    // OR reference to shared backend
+    // OR reference to shared backend.
+    // Uses TargetRef directly, not the routing BackendRef struct
+    // (weight/port don't apply here).
     BackendRef *common_api.TargetRef `json:"backendRef,omitempty"`
     // ... signal-specific fields unchanged
 }
@@ -197,7 +197,7 @@ This follows the same pattern as TargetRef resolution in policies (`pkg/plugins/
 |-----------------|--------------------------------------------------------------------------------------|
 | `IsPolicy`      | false (it's a resource, not a policy)                                                |
 | `Scope`         | Mesh                                                                                 |
-| `HasStatus`     | false                                                                                |
+| `HasStatus`     | true (surfaces unresolved backendRef conditions to referencing policies)              |
 | `KDSFlags`      | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> (same as MeshExternalService) |
 | `ShortName`     | `motb`                                                                               |
 | `IsDestination` | false                                                                                |
@@ -225,99 +225,15 @@ Placed in `pkg/core/resources/apis/meshopentelemetrybackend/` following the same
 
 Add OTel collector configurations to the Mesh spec. Policies reference by name.
 
-This goes against the current direction. We're actively moving config OUT of Mesh (MeshMetric replaced `Mesh.spec.metrics`, MeshTrace replaced `Mesh.spec.tracing`, MeshAccessLog replaced `Mesh.spec.logging`). Adding more config to Mesh is not an option.
+This goes against the current direction. We're actively moving config OUT of Mesh (MeshMetric replaced `Mesh.spec.metrics`, MeshTrace replaced `Mesh.spec.tracing`, MeshAccessLog replaced `Mesh.spec.logging`). Adding `metrics.backends` to Mesh was a mistake - the whole point of MeshMetric was to move this OUT of Mesh. We should not repeat it.
 
-```yaml
-kind: Mesh
-metadata:
-  name: default
-spec:
-  # Existing fields...
-  otelCollectors:
-  - name: main-collector
-    endpoint: otel-collector.observability:4317
-  - name: traces-only
-    endpoint: https://jaeger.observability:4318/v1/traces
-```
+The Mesh resource is already large (networking, mtls, metrics, tracing, logging, routing, meshServices). Adding collector config there means no separate RBAC, no per-team ownership, and proto changes for every new field. Faster to implement but wrong direction.
 
-Policy reference:
-
-```yaml
-kind: MeshMetric
-spec:
-  default:
-    backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        collectorRef: main-collector   # references Mesh.spec.otelCollectors[].name
-        refreshInterval: 30s
-```
-
-#### Advantages
-
-- No new resource type - simpler implementation
-- Mesh is already loaded in MeshContext, resolution is trivial
-- Precedent: `Mesh.spec.metrics.backends` uses a name-reference pattern (though this is legacy)
-- Faster to implement
-
-#### Disadvantages
-
-- Mesh resource is already large (networking, mtls, metrics, tracing, logging, routing, meshServices sections). Adding more config makes it harder to manage.
-- Can't apply separate RBAC (who can modify Mesh vs. who can configure collectors)
-- All collector configs in one Mesh object - doesn't scale for different teams owning different collectors
-- Mesh is proto-based (`api/mesh/v1alpha1/mesh.proto`), adding structured config there requires proto changes + regeneration
-- Adding `metrics.backends` to Mesh was a mistake - the whole point of MeshMetric was to move this OUT of Mesh. We should not repeat it.
-
-### Option C: Reference MeshExternalService
+### Option C: Reference MeshExternalService (rejected)
 
 Model the OTel collector as a MeshExternalService. Policies reference it as a destination.
 
-```yaml
-kind: MeshExternalService
-metadata:
-  name: otel-collector
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  match:
-    type: HostnameGenerator
-    port: 4317
-    protocol: grpc
-  endpoints:
-  - address: otel-collector.observability
-    port: 4317
-```
-
-Policy reference:
-
-```yaml
-kind: MeshMetric
-spec:
-  default:
-    backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshExternalService
-          name: otel-collector
-          port: 4317
-        refreshInterval: 30s
-```
-
-#### Advantages
-
-- No new resource type
-- Reuses existing TLS, hostname, and multi-zone infrastructure
-- MeshExternalService already syncs via KDS
-
-#### Disadvantages
-
-- Semantically wrong: an OTel collector is infrastructure, not an "external service" being called by application traffic. Users will be confused.
-- MeshExternalService is designed for traffic routing (VIP allocation, passthrough, etc.) - concepts that don't map to a telemetry backend
-- Doesn't capture OTel-specific semantics: protocol preference (gRPC vs HTTP on the same collector), path for HTTP endpoints, signal-specific routing
-- An OTel collector typically has multiple ports (4317 gRPC, 4318 HTTP). MeshExternalService.match.port is singular - you'd need multiple MeshExternalService resources for the same collector.
-- If the collector is NOT meshed (recommended - disable sidecar injection), having a MeshExternalService creates routing expectations that conflict with direct connectivity.
+Semantically wrong - an OTel collector is infrastructure config, not an external service in the traffic routing sense. MeshExternalService is built for traffic routing (VIP allocation, passthrough) and doesn't capture OTel-specific semantics (protocol preference, path for HTTP endpoints, signal-specific routing). An OTel collector has multiple ports (4317 gRPC, 4318 HTTP) but MeshExternalService.match.port is singular. If the collector isn't meshed (recommended), the MeshExternalService creates routing expectations that conflict with direct connectivity.
 
 ### Option D: Keep inline configuration (status quo)
 
@@ -356,7 +272,7 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 
 ### Option A
 
-- Dangling references: If a MeshOpenTelemetryBackend is deleted while policies reference it, policies lose their backend config. This matches how Kuma handles all other dangling references today - when a `BackendRef` can't resolve, the reference is silently dropped and the policy proceeds without that backend. The CP should log at Info level when a referenced MeshOpenTelemetryBackend is not found during xDS generation. No cross-reference validation webhooks - Kuma's existing pattern is to not block deletion of referenced resources.
+- Dangling references: If a MeshOpenTelemetryBackend is deleted while policies reference it, policies lose their backend config. Unlike routing where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The CP logs at Info level when a referenced backend is not found during xDS generation. With `HasStatus: true`, the resource surfaces unresolved backendRef conditions so operators can detect missing backends (user story 5) rather than silently losing telemetry. No cross-reference validation webhooks - Kuma's existing pattern is to not block deletion of referenced resources.
 - Resource sync: MeshOpenTelemetryBackend syncs via KDS. If sync is delayed, newly created policies in a zone may not find their backend. Same behavior as MeshExternalService references today.
 
 ### Option B
@@ -378,7 +294,7 @@ Option A: New MeshOpenTelemetryBackend resource.
 
 It's more work upfront but it's the right abstraction. The endpoint config is shared infrastructure that doesn't belong in any single policy or in the already-bloated Mesh resource. The Kuma tooling (`tools/policy-gen/bootstrap`, `make generate`) makes creating new resource types mechanical - most of the code is generated.
 
-The resource is named after its backend type (`MeshOpenTelemetryBackend`) rather than using a generic name with a type discriminator. If other backend types are needed later, they become separate resources - and `backendRef.kind` enforces type matching at the schema level.
+The resource is named after its backend type (`MeshOpenTelemetryBackend`) rather than using a generic name with a type discriminator. If other backend types are needed later, they become separate resources - and `backendRef.kind` enforces type matching via webhook validation.
 
 Start with a minimal spec (endpoint only, no TLS/auth). Add TLS and auth fields as follow-up work. HTTP endpoint support will only exist in MeshOpenTelemetryBackend - the unreleased HTTP support in MeshTrace is being removed, and it won't be added to MeshMetric or MeshAccessLog.
 
@@ -390,21 +306,22 @@ Signal-specific config (refreshInterval, attributes, body, sampling) stays in ea
 
 The first implementation covers:
 
-1. MeshOpenTelemetryBackend resource with `endpoint` (address + port + path) and `protocol` (grpc/http)
+1. MeshOpenTelemetryBackend resource with `endpoint` (address + port + path), `protocol` (grpc/http), and `HasStatus: true`
 2. `backendRef` field added to all three policy OTel backends
 3. Validation: `endpoint` XOR `backendRef` (mutual exclusivity)
 4. Resolution in each policy's Apply()
-5. Inline `endpoint` remains supported but deprecated (removed in 3.0)
-6. `OTEL_EXPORTER_OTLP_*` env var auto-detection via DynamicMetadata transport (user story 6)
+5. Status conditions on the resource to surface unresolved backendRefs (user story 5)
+6. Inline `endpoint` remains supported but deprecated (removed in 3.0)
+7. `OTEL_EXPORTER_OTLP_*` env var auto-detection via DynamicMetadata transport (user story 6)
 
 TLS and auth fields are follow-up work.
 
 ### Naming
 
-`MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced at the schema level - `backendRef.kind: MeshOpenTelemetryBackend` can only appear in an OTel backend block. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
+`MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced by the admission webhook - the validator rejects `backendRef.kind` values that don't match the enclosing backend type. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
 
 Rejected alternatives:
-- `MeshTelemetryBackend` (with `type` discriminator) - a generic name + type discriminator can't enforce type matching at the schema level. A policy's OTel backend could reference a Zipkin-typed backend, and this mismatch would only be caught by runtime validation, not by the API structure.
+- `MeshTelemetryBackend` (with `type` discriminator) - a generic name + type discriminator can't enforce type matching via the API structure. A policy's OTel backend could reference a Zipkin-typed backend, and this mismatch would only be caught by runtime validation.
 - `MeshOTelBackend` - abbreviation is less readable than the full name
 - `MeshOTelCollector` - "collector" is one deployment model, the resource is for any telemetry-receiving endpoint
 - `MeshObservabilityBackend` - too abstract, doesn't add clarity over the specific protocol name
