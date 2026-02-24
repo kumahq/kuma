@@ -17,6 +17,7 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
@@ -34,6 +35,7 @@ import (
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
@@ -58,6 +60,22 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources, opts...)
 }
 
+func workloadIdentity(proxy *core_xds.Proxy) (string, string) {
+	labels := proxy.Dataplane.GetMeta().GetLabels()
+	zone := labels[mesh_proto.ZoneTag]
+	workloadKRI := ""
+	if wl := labels[k8s_metadata.KumaWorkload]; wl != "" {
+		workloadKRI = kri.Identifier{
+			ResourceType: workload_api.WorkloadType,
+			Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
+			Zone:         zone,
+			Namespace:    labels[mesh_proto.KubeNamespaceTag],
+			Name:         wl,
+		}.String()
+	}
+	return zone, workloadKRI
+}
+
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
 	if !ok {
@@ -72,19 +90,21 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	accessLogSocketPath := core_xds.AccessLogSocketName(proxy.Metadata.WorkDir, proxy.Id.ToResourceKey().Name, proxy.Id.ToResourceKey().Mesh)
 
-	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath); err != nil {
+	zone, workloadKRI := workloadIdentity(proxy)
+
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath); err != nil {
+	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath); err != nil {
+	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, endpoints, accessLogSocketPath); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
 
@@ -93,7 +113,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(r.ResourceOrigin)).
 			WithID(r.ResourceOrigin)
-		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath); err != nil {
+		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 			return err
 		}
 	}
@@ -111,6 +131,8 @@ func applyToInbounds(
 	dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator,
 	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
 ) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
@@ -130,6 +152,8 @@ func applyToInbounds(
 			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
 			DestinationService: dataplane.Spec.GetIdentifyingService(),
 			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
 		if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
@@ -147,6 +171,8 @@ func applyToOutbounds(
 	backendsAcc *EndpointAccumulator,
 	accessLogSocketPath string,
 	meshCtx xds_context.MeshContext,
+	zone string,
+	workloadKRI string,
 ) error {
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
@@ -163,6 +189,8 @@ func applyToOutbounds(
 			SourceIP:           dataplane.GetIP(),
 			DestinationService: outbound.LegacyOutbound.GetService(),
 			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
 
@@ -182,7 +210,7 @@ func applyToOutbounds(
 
 func applyToTransparentProxyListeners(
 	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *EndpointAccumulator, path string,
+	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
 	if conf == nil {
@@ -194,6 +222,8 @@ func applyToTransparentProxyListeners(
 		SourceIP:           dataplane.GetIP(),
 		DestinationService: "external",
 		Mesh:               dataplane.GetMeta().GetMesh(),
+		Zone:               zone,
+		WorkloadKRI:        workloadKRI,
 		TrafficDirection:   envoy.TrafficDirectionOutbound,
 	}
 
@@ -212,7 +242,7 @@ func applyToTransparentProxyListeners(
 
 func applyToDirectAccess(
 	rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *EndpointAccumulator, path string,
+	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
 	if conf == nil {
@@ -225,6 +255,8 @@ func applyToDirectAccess(
 			SourceIP:           dataplane.GetIP(),
 			DestinationService: generator.DirectAccessEndpointName(endpoint),
 			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
 		return configureListener(*conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
@@ -240,6 +272,8 @@ func applyToGateway(
 	proxy *core_xds.Proxy,
 	backends *EndpointAccumulator,
 	path string,
+	zone string,
+	workloadKRI string,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -278,6 +312,8 @@ func applyToGateway(
 					SourceIP:           proxy.Dataplane.GetIP(),
 					DestinationService: mesh_proto.MatchAllTag,
 					Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
+					Zone:               zone,
+					WorkloadKRI:        workloadKRI,
 					TrafficDirection:   envoy.TrafficDirectionOutbound,
 				}
 
@@ -294,6 +330,8 @@ func applyToGateway(
 				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
 				DestinationService: proxy.Dataplane.Spec.GetIdentifyingService(),
 				Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
+				Zone:               zone,
+				WorkloadKRI:        workloadKRI,
 				TrafficDirection:   envoy.TrafficDirectionInbound,
 			}
 			if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
@@ -329,6 +367,8 @@ func applyToRealResource(
 	proxy *core_xds.Proxy,
 	backendsAcc *EndpointAccumulator,
 	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
 ) error {
 	listener, ok := r.Resource.(*envoy_listener.Listener)
 	if !ok {
@@ -342,6 +382,8 @@ func applyToRealResource(
 		SourceIP:           proxy.Dataplane.GetIP(),
 		DestinationService: r.ResourceOrigin.Name,
 		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
+		Zone:               zone,
+		WorkloadKRI:        workloadKRI,
 		TrafficDirection:   envoy.TrafficDirectionOutbound,
 	}
 

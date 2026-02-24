@@ -60,6 +60,7 @@ func BaseAccessLogBuilder(
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(&otelBackend, defaultFormat, values)).
 				Configure(OtelAttributes(&otelBackend)).
+				Configure(OtelResourceAttributes(values)).
 				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
 					EndpointForOtel(otelBackend.Endpoint),
 				)))))
@@ -269,6 +270,29 @@ func OtelAttributes(backend *api.OtelBackend) Configurer[access_loggers_otel.Ope
 			})
 		}
 		a.Attributes = attributes
+		return nil
+	}
+}
+
+func OtelResourceAttributes(values listeners_v3.KumaValues) Configurer[access_loggers_otel.OpenTelemetryAccessLogConfig] {
+	return func(a *access_loggers_otel.OpenTelemetryAccessLogConfig) error {
+		kvs := []*otlp.KeyValue{{
+			Key:   "kuma.mesh",
+			Value: &otlp.AnyValue{Value: &otlp.AnyValue_StringValue{StringValue: values.Mesh}},
+		}}
+		if values.Zone != "" {
+			kvs = append(kvs, &otlp.KeyValue{
+				Key:   "kuma.zone",
+				Value: &otlp.AnyValue{Value: &otlp.AnyValue_StringValue{StringValue: values.Zone}},
+			})
+		}
+		if values.WorkloadKRI != "" {
+			kvs = append(kvs, &otlp.KeyValue{
+				Key:   "kuma.workload",
+				Value: &otlp.AnyValue{Value: &otlp.AnyValue_StringValue{StringValue: values.WorkloadKRI}},
+			})
+		}
+		a.ResourceAttributes = &otlp.KeyValueList{Values: kvs}
 		return nil
 	}
 }
