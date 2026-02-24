@@ -52,23 +52,11 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  # Collector endpoint
   endpoint:
-    # Address of the collector (hostname or IP)
     address: otel-collector.observability
-    # Port number
     port: 4317
-    # Base path prefix for HTTP endpoints. The CP appends the
-    # signal-specific suffix (/v1/traces, /v1/metrics, /v1/logs)
-    # automatically, matching OTEL_EXPORTER_OTLP_ENDPOINT semantics.
-    # Ignored for gRPC.
-    # +optional
-    path: ""
-  # Transport protocol. Drives whether Envoy uses GrpcService or
-  # HttpService in the generated xDS config.
-  # Values: grpc, http. Default: grpc.
-  # +optional
-  protocol: grpc
+    path: ""        # +optional, base path prefix for HTTP (ignored for gRPC)
+  protocol: grpc    # +optional, grpc (default) or http
 ```
 
 No `type` discriminator - the resource name itself is the type. If other telemetry backend types are needed later (Zipkin, Datadog), they become separate resources (`MeshZipkinBackend`, etc.). The `backendRef.kind` field enforces type matching via the admission webhook - the validator rejects any `backendRef` where `kind` is not `MeshOpenTelemetryBackend` inside an OTel backend block.
@@ -227,86 +215,14 @@ Concrete configurations for each user story, all using Option A.
 
 ##### Story 1: Single collector, incremental rollout
 
-Deploy the shared backend once, then add policies one signal at a time.
+Deploy the `main-collector` backend from the resource definition above, then add policies one signal at a time. Full policy YAML is in the policy reference section above. The rollout sequence:
 
-```yaml
-# 1. Create the backend
-apiVersion: kuma.io/v1alpha1
-kind: MeshOpenTelemetryBackend
-metadata:
-  name: main-collector
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  endpoint:
-    address: otel-collector.observability
-    port: 4317
-  protocol: grpc
----
-# 2. Start with metrics
-apiVersion: kuma.io/v1alpha1
-kind: MeshMetric
-metadata:
-  name: all-metrics
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: Mesh
-  default:
-    backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector
-        refreshInterval: 30s
----
-# 3. Once metrics are verified, add tracing
-apiVersion: kuma.io/v1alpha1
-kind: MeshTrace
-metadata:
-  name: all-traces
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: Mesh
-  default:
-    backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector
-    sampling:
-      overall: 80
----
-# 4. Then access logging
-apiVersion: kuma.io/v1alpha1
-kind: MeshAccessLog
-metadata:
-  name: all-access-logs
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: Mesh
-  default:
-    backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector
-        attributes:
-        - key: mesh
-          value: "%KUMA_MESH%"
-```
+1. Apply MeshOpenTelemetryBackend `main-collector`
+2. Apply MeshMetric with `backendRef: main-collector` - verify metrics flow
+3. Apply MeshTrace with `backendRef: main-collector` - verify traces
+4. Apply MeshAccessLog with `backendRef: main-collector` - verify access logs
+
+Each step is independently reversible. Removing a policy stops that signal without affecting the others.
 
 ##### Story 2: Update collector address in one place
 
@@ -353,27 +269,9 @@ spec:
   #   type: Bearer
   #   secretRef:
   #     name: grafana-cloud-token
----
-# Policies reference it the same way as story 1
-apiVersion: kuma.io/v1alpha1
-kind: MeshMetric
-metadata:
-  name: all-metrics
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: Mesh
-  default:
-    backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: grafana-cloud
-        refreshInterval: 30s
 ```
+
+Policies reference `grafana-cloud` the same way as story 1.
 
 ##### Story 4: Per-zone collectors in multi-zone
 
@@ -415,19 +313,7 @@ spec:
     address: collector.us-east.internal
     port: 4317
   protocol: grpc
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshOpenTelemetryBackend
-metadata:
-  name: collector-eu-west
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  endpoint:
-    address: collector.eu-west.internal
-    port: 4317
-  protocol: grpc
+# collector-eu-west follows the same pattern with its own address.
 ---
 # Zone-targeted policy
 apiVersion: kuma.io/v1alpha1
@@ -546,8 +432,6 @@ Rejected alternatives:
 MeshAccessLog's `body` field is logs-only (OTel LogRecord body). It holds Envoy access log command operators (`%START_TIME%`, `%UPSTREAM_HOST%`) that control what each log record says. This is per-record content formatting, not connection config - it stays in MeshAccessLog.
 
 MeshAccessLog's `attributes` are also logs-only (mapped to OTel `KeyValueList` with command operator substitution). MeshTrace has `Tags` (mapped to Envoy `CustomTag` on the HCM tracing config). MeshMetric has no OTel attributes (uses kuma-dp `ExtraLabels`). Each signal uses a completely different Envoy mechanism for attributes, so there's no shared abstraction that works across all three.
-
-Shared resource attributes (mesh name, zone) in MeshOpenTelemetryBackend are conceptually sound but practically complex - Envoy handles resource attributes differently per signal (direct `KeyValueList` on access logger, `resource_detectors` extension on tracer, kuma-dp labels for metrics). This is follow-up work.
 
 #### OTel environment variable auto-detection
 
