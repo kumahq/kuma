@@ -1,10 +1,14 @@
 // +kubebuilder:object:generate=true
 package v1alpha1
 
+import (
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+)
+
 // MeshOpenTelemetryBackend defines a shared OTel collector endpoint for observability policies.
 // +kuma:policy:is_policy=false
 // +kuma:policy:allowed_on_system_namespace_only=true
-// +kuma:policy:has_status=false
+// +kuma:policy:has_status=true
 // +kuma:policy:short_name=motb
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 // +kuma:policy:singular_display_name=Mesh OpenTelemetry Backend
@@ -38,4 +42,8 @@ type Endpoint struct {
 	// The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
 	// Ignored for gRPC.
 	Path *string `json:"path,omitempty"`
+}
+
+type MeshOpenTelemetryBackendStatus struct {
+	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }

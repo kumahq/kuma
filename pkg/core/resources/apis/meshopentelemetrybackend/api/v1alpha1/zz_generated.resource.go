@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -80,13 +79,15 @@ const (
 var _ model.Resource = &MeshOpenTelemetryBackendResource{}
 
 type MeshOpenTelemetryBackendResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshOpenTelemetryBackend
+	Meta   model.ResourceMeta
+	Spec   *MeshOpenTelemetryBackend
+	Status *MeshOpenTelemetryBackendStatus
 }
 
 func NewMeshOpenTelemetryBackendResource() *MeshOpenTelemetryBackendResource {
 	return &MeshOpenTelemetryBackendResource{
-		Spec: &MeshOpenTelemetryBackend{},
+		Spec:   &MeshOpenTelemetryBackend{},
+		Status: &MeshOpenTelemetryBackendStatus{},
 	}
 }
 
@@ -117,11 +118,21 @@ func (t *MeshOpenTelemetryBackendResource) SetSpec(spec model.ResourceSpec) erro
 }
 
 func (t *MeshOpenTelemetryBackendResource) GetStatus() model.ResourceStatus {
-	return nil
+	return t.Status
 }
 
-func (t *MeshOpenTelemetryBackendResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
+func (t *MeshOpenTelemetryBackendResource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*MeshOpenTelemetryBackendStatus)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", status)
+	} else {
+		if protoType == nil {
+			t.Status = &MeshOpenTelemetryBackendStatus{}
+		} else {
+			t.Status = protoType
+		}
+		return nil
+	}
 }
 
 func (t *MeshOpenTelemetryBackendResource) Descriptor() model.ResourceTypeDescriptor {
@@ -196,7 +207,7 @@ var MeshOpenTelemetryBackendResourceTypeDescriptor = model.ResourceTypeDescripto
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
-	HasStatus:                    false,
+	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: true,
 	ShortName:                    "motb",
 	IsFromAsRules:                false,
