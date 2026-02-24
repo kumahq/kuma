@@ -20,7 +20,17 @@ filterChains:
         name: envoy.access_loggers.open_telemetry
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
-          attributes: {}
+          attributes:
+            values:
+            - key: mesh
+              value:
+                stringValue: default
+            - key: zone
+              value:
+                stringValue: zone-1
+            - key: workload
+              value:
+                stringValue: kri_wl_default_zone-1_kuma-demo_backend_
           body:
             stringValue: default zone-1 kri_wl_default_zone-1_kuma-demo_backend_
           commonConfig:

@@ -59,7 +59,7 @@ func BaseAccessLogBuilder(
 		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(&otelBackend, defaultFormat, values)).
-				Configure(OtelAttributes(&otelBackend)).
+				Configure(OtelAttributes(&otelBackend, values)).
 				Configure(OtelResourceAttributes(values)).
 				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
 					EndpointForOtel(otelBackend.Endpoint),
@@ -258,14 +258,14 @@ func OtelBody(
 	}
 }
 
-func OtelAttributes(backend *api.OtelBackend) Configurer[access_loggers_otel.OpenTelemetryAccessLogConfig] {
+func OtelAttributes(backend *api.OtelBackend, values listeners_v3.KumaValues) Configurer[access_loggers_otel.OpenTelemetryAccessLogConfig] {
 	return func(a *access_loggers_otel.OpenTelemetryAccessLogConfig) error {
 		attributes := &otlp.KeyValueList{}
 		for _, kv := range pointer.Deref(backend.Attributes) {
 			attributes.Values = append(attributes.Values, &otlp.KeyValue{
-				Key: kv.Key,
+				Key: listeners_v3.InterpolateKumaValues(kv.Key, values),
 				Value: &otlp.AnyValue{
-					Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
+					Value: &otlp.AnyValue_StringValue{StringValue: listeners_v3.InterpolateKumaValues(kv.Value, values)},
 				},
 			})
 		}
