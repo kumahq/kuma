@@ -47,3 +47,17 @@ type Endpoint struct {
 type MeshOpenTelemetryBackendStatus struct {
 	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
+
+// Condition types
+const (
+	// ReferencedByPoliciesCondition indicates whether any observability policies reference this backend
+	ReferencedByPoliciesCondition string = "ReferencedByPolicies"
+)
+
+// Condition reasons
+const (
+	// ReferencedReason indicates that one or more policies reference this backend
+	ReferencedReason string = "Referenced"
+	// NotReferencedReason indicates that no policies reference this backend
+	NotReferencedReason string = "NotReferenced"
+)

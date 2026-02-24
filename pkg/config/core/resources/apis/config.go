@@ -22,16 +22,19 @@ type ConfigStatus struct {
 	MeshIdentityInterval config_types.Duration `json:"meshIdentityInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL"`
 	// How often we compute status of Workload
 	WorkloadInterval config_types.Duration `json:"workloadInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_WORKLOAD_INTERVAL"`
+	// How often we compute status of MeshOpenTelemetryBackend
+	MeshOpenTelemetryBackendInterval config_types.Duration `json:"meshOpenTelemetryBackendInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_MESH_OPEN_TELEMETRY_BACKEND_INTERVAL"`
 }
 
 func Default() *Config {
 	return &Config{
 		Enabled: DefaultEnabled,
 		Status: ConfigStatus{
-			MeshMultiZoneServiceInterval: config_types.Duration{Duration: 5 * time.Second},
-			MeshServiceInterval:          config_types.Duration{Duration: 5 * time.Second},
-			MeshIdentityInterval:         config_types.Duration{Duration: 5 * time.Second},
-			WorkloadInterval:             config_types.Duration{Duration: 5 * time.Second},
+			MeshMultiZoneServiceInterval:     config_types.Duration{Duration: 5 * time.Second},
+			MeshServiceInterval:              config_types.Duration{Duration: 5 * time.Second},
+			MeshIdentityInterval:             config_types.Duration{Duration: 5 * time.Second},
+			WorkloadInterval:                 config_types.Duration{Duration: 5 * time.Second},
+			MeshOpenTelemetryBackendInterval: config_types.Duration{Duration: 5 * time.Second},
 		},
 	}
 }
