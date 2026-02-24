@@ -397,10 +397,12 @@ spec:
 # Each zone's DNS resolves the address to its local collector.
 ```
 
+Backends can also be created directly on a zone CP instead of the Global CP. KDS syncs them (`ZoneToGlobalFlag`), so the zone operator manages their own collector config without Global CP involvement.
+
 When zones need different collector addresses (separate cloud regions, different infrastructure), use zone-specific backend names:
 
 ```yaml
-# Global CP
+# Created on each zone's CP, or on Global CP - either works
 apiVersion: kuma.io/v1alpha1
 kind: MeshOpenTelemetryBackend
 metadata:
@@ -483,9 +485,9 @@ CP behavior when the referenced backend is missing:
 
 - Logs at Info level: `MeshOpenTelemetryBackend "main-collector" not found, referenced by MeshMetric "all-metrics"`
 - Skips OTel backend config in xDS for that signal (no telemetry export)
-- Status condition on the resource surfaces the unresolved reference so the operator can detect it via `kubectl` or the REST API
+- Status condition on the referencing policy (MeshMetric, MeshTrace, or MeshAccessLog) surfaces the unresolved backendRef so the operator can detect it via `kubectl` or the REST API
 
-Unlike routing, where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. This is why `HasStatus: true` matters here.
+Unlike routing, where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The MeshOpenTelemetryBackend's `HasStatus: true` lets the CP track which policies reference it while it exists. When it's deleted, the referencing policies' own status conditions report the broken reference.
 
 ##### Story 6: Env var auto-detection
 
@@ -653,7 +655,7 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 
 ### Option A
 
-- Dangling references: If a MeshOpenTelemetryBackend is deleted while policies reference it, policies lose their backend config. Unlike routing where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The CP logs at Info level when a referenced backend is not found during xDS generation. With `HasStatus: true`, the resource surfaces unresolved backendRef conditions so operators can detect missing backends (user story 5) rather than silently losing telemetry. No cross-reference validation webhooks - Kuma's existing pattern is to not block deletion of referenced resources.
+- Dangling references: If a MeshOpenTelemetryBackend is deleted while policies reference it, policies lose their backend config. Unlike routing where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The CP logs at Info level when a referenced backend is not found during xDS generation. The referencing policies' status conditions surface the unresolved backendRef so operators can detect missing backends (user story 5) rather than silently losing telemetry. The MeshOpenTelemetryBackend's `HasStatus: true` lets the CP track references while the resource exists. No cross-reference validation webhooks - Kuma's existing pattern is to not block deletion of referenced resources.
 - Resource sync: MeshOpenTelemetryBackend syncs via KDS. If sync is delayed, newly created policies in a zone may not find their backend. Same behavior as MeshExternalService references today.
 
 ### Option B
