@@ -58,9 +58,13 @@ type Backend struct {
 // OpenTelemetry tracing backend configuration.
 type OpenTelemetryBackend struct {
 	// Address of OpenTelemetry collector.
+	//
+	// Deprecated: use BackendRef instead.
 	// +kubebuilder:example="otel-collector:4317"
-	// +kubebuilder:validation:MinLength=1
 	Endpoint string `json:"endpoint"`
+	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	BackendRef *common_api.TargetRef `json:"backendRef,omitempty"`
 }
 
 // Zipkin tracing backend configuration.

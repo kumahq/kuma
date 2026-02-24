@@ -146,18 +146,40 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 			if backend.OpenTelemetry == nil {
 				verr.AddViolationAt(path.Field("openTelemetry"), validators.MustBeDefined)
 			} else {
-				endpoint := backend.OpenTelemetry.Endpoint
-				if !govalidator.IsURL(endpoint) {
-					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must be a valid url")
-				}
-				if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
-					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must not use schema")
-				}
+				verr.AddErrorAt(path.Field("openTelemetry"), validateOtelBackendRef(backend.OpenTelemetry.Endpoint, backend.OpenTelemetry.BackendRef))
 			}
 		default:
 			verr.AddViolationAt(path, "unrecognized type")
 		}
 	}
 
+	return verr
+}
+
+func validateOtelBackendRef(endpoint string, backendRef *common_api.TargetRef) validators.ValidationError {
+	var verr validators.ValidationError
+	if endpoint != "" && backendRef != nil {
+		verr.AddViolation("", "endpoint and backendRef are mutually exclusive")
+		return verr
+	}
+	if endpoint == "" && backendRef == nil {
+		verr.AddViolation("", "either endpoint or backendRef must be set")
+		return verr
+	}
+	if backendRef != nil {
+		if backendRef.Kind != "MeshOpenTelemetryBackend" {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"), "kind must be MeshOpenTelemetryBackend")
+		}
+		if backendRef.Name == nil || *backendRef.Name == "" {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("name"), validators.MustNotBeEmpty)
+		}
+	} else {
+		if !govalidator.IsURL(endpoint) {
+			verr.AddViolationAt(validators.RootedAt("endpoint"), "must be a valid url")
+		}
+		if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+			verr.AddViolationAt(validators.RootedAt("endpoint"), "must not use schema")
+		}
+	}
 	return verr
 }

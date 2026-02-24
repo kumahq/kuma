@@ -90,9 +90,13 @@ type OtelBackend struct {
 	// +kubebuilder:example={kvlistValue: {values: {{key: "mesh", value: {stringValue: "%KUMA_MESH%"}}}}}
 	Body *apiextensionsv1.JSON `json:"body,omitempty"`
 	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+	//
+	// Deprecated: use BackendRef instead.
 	// +kubebuilder:example="otel-collector:4317"
-	// +kubebuilder:validation:MinLength=1
 	Endpoint string `json:"endpoint"`
+	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	BackendRef *common_api.TargetRef `json:"backendRef,omitempty"`
 }
 
 // FileBackend defines configuration for file based access logs
