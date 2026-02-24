@@ -87,7 +87,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming)
+	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming, ctx.Mesh.Resources)
 	if err != nil {
 		return err
 	}
@@ -161,9 +161,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming, resources)
 		if err != nil {
 			return err
 		}
@@ -171,13 +171,25 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
+
+	resolved := policies_xds.ResolveOtelBackend(
+		openTelemetryBackend.BackendRef,
+		openTelemetryBackend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
+		endpointForOpenTelemetry,
+		backendNameFrom,
+		resources,
+	)
+	if resolved == nil {
+		return nil
+	}
+
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
-	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint) //nolint:staticcheck // inline endpoint still supported for backward compat
-	backendName := backendNameFrom(openTelemetryBackend.Endpoint)       //nolint:staticcheck // inline endpoint still supported for backward compat
+	endpoint := resolved.Endpoint
+	backendName := resolved.Name
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
@@ -214,7 +226,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 }
 
 func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend, inboundTagsDisabled bool) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend, inboundTagsDisabled)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources, prometheusBackends, openTelemetryBackend, inboundTagsDisabled)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -240,7 +252,7 @@ func createDynamicConfig(
 	conf api.Conf,
 	proxy *core_xds.Proxy,
 	mesh *core_mesh.MeshResource,
-	resources xds_context.ResourceMap,
+	resources xds_context.Resources,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
@@ -262,7 +274,17 @@ func createDynamicConfig(
 		})
 	}
 	for _, backend := range openTelemetryBackends {
-		backendName := backendNameFrom(backend.Endpoint) //nolint:staticcheck // inline endpoint still supported for backward compat
+		resolved := policies_xds.ResolveOtelBackend(
+			backend.BackendRef,
+			backend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
+			endpointForOpenTelemetry,
+			backendNameFrom,
+			resources,
+		)
+		if resolved == nil {
+			continue
+		}
+		backendName := resolved.Name
 		backends = append(backends, dpapi.Backend{
 			Type: string(api.OpenTelemetryBackendType),
 			Name: &backendName,
@@ -274,7 +296,7 @@ func createDynamicConfig(
 	}
 
 	var gateways []*core_mesh.MeshGatewayResource
-	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
+	if rawList := resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
 

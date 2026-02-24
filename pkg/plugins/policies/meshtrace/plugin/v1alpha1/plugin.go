@@ -14,6 +14,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -173,6 +174,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		}
 		workloadKRI = id.String()
 	}
+	resolvedOtelName := resolveOtelName(conf, ctx.Mesh.Resources)
 
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
@@ -184,6 +186,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:                  proxy.Zone,
 		WorkloadKRI:           workloadKRI,
+		ResolvedOtelName:      resolvedOtelName,
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -209,6 +212,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 
 	var endpoint *xds.Endpoint
 	var provider string
+	useHTTP2 := false
 
 	getNameOrDefault := core_system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
 	name := ""
@@ -228,15 +232,26 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			plugin_xds.GetTracingClusterName(provider),
 		)
 	case backend.OpenTelemetry != nil:
-		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
+		resolved := policies_xds.ResolveOtelBackend(
+			backend.OpenTelemetry.BackendRef,
+			backend.OpenTelemetry.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
+			parseOtelEndpointString,
+			func(ep string) string { return ep },
+			ctx.Mesh.Resources,
+		)
+		if resolved == nil {
+			return nil
+		}
+		endpoint = resolved.Endpoint
+		useHTTP2 = resolved.Protocol != motb_api.ProtocolHTTP
 		provider = plugin_xds.OpenTelemetryProviderName
 		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))), //nolint:staticcheck // inline endpoint still supported for backward compat
+			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(resolved.Name))),
 			plugin_xds.GetTracingClusterName(provider),
 		)
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
-	if backend.OpenTelemetry != nil {
+	if backend.OpenTelemetry != nil && useHTTP2 {
 		builder.Configure(clusters.Http2())
 	}
 
@@ -269,15 +284,15 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 	}
 }
 
-func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
-	host, portStr, err := net.SplitHostPort(cfg.Endpoint) //nolint:staticcheck // inline endpoint still supported for backward compat
-	port := uint32(4317)                                  // default gRPC port
+func parseOtelEndpointString(endpoint string) *xds.Endpoint {
+	host, portStr, err := net.SplitHostPort(endpoint)
+	port := uint32(4317)
 	if err == nil {
 		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
 			port = uint32(val)
 		}
 	} else {
-		host = cfg.Endpoint //nolint:staticcheck // inline endpoint still supported for backward compat
+		host = endpoint
 		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
 			host = host[1 : l-1]
 		}
@@ -289,7 +304,7 @@ func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
 }
 
 // OTelHTTPEndpoint builds an xds.Endpoint for an HTTP/HTTPS OTel collector.
-// Used when resolving a MeshTelemetryBackend with HTTP protocol.
+// Used when resolving a MeshOpenTelemetryBackend with HTTP protocol.
 func OTelHTTPEndpoint(address string, port uint32, tlsEnabled bool) *xds.Endpoint {
 	return &xds.Endpoint{
 		Target: address,
@@ -299,6 +314,28 @@ func OTelHTTPEndpoint(address string, port uint32, tlsEnabled bool) *xds.Endpoin
 			AllowRenegotiation: true,
 		},
 	}
+}
+
+func resolveOtelName(conf api.Conf, resources xds_context.Resources) string {
+	backends := pointer.Deref(conf.Backends)
+	if len(backends) == 0 {
+		return ""
+	}
+	backend := backends[0]
+	if backend.OpenTelemetry == nil {
+		return ""
+	}
+	resolved := policies_xds.ResolveOtelBackend(
+		backend.OpenTelemetry.BackendRef,
+		backend.OpenTelemetry.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
+		parseOtelEndpointString,
+		func(ep string) string { return ep },
+		resources,
+	)
+	if resolved == nil {
+		return ""
+	}
+	return resolved.Name
 }
 
 func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {

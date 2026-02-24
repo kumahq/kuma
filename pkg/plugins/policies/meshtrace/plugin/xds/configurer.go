@@ -38,6 +38,9 @@ type Configurer struct {
 	Mesh                  string
 	Zone                  string
 	WorkloadKRI           string
+	// ResolvedOtelName is the resolved backend name for OTel (from backendRef or inline endpoint).
+	// When empty, falls back to backend.OpenTelemetry.Endpoint for naming.
+	ResolvedOtelName string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -135,8 +138,12 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.OpenTelemetry != nil {
+			otelName := c.ResolvedOtelName
+			if otelName == "" {
+				otelName = backend.OpenTelemetry.Endpoint //nolint:staticcheck // inline endpoint still supported for backward compat
+			}
 			name := getNameOrDefault(
-				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(backend.OpenTelemetry.Endpoint))), //nolint:staticcheck // inline endpoint still supported for backward compat
+				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(otelName))),
 				GetTracingClusterName(OpenTelemetryProviderName),
 			)
 			tracing, err := c.opentelemetryConfig(name)
