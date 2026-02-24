@@ -303,19 +303,6 @@ func parseOtelEndpointString(endpoint string) *xds.Endpoint {
 	}
 }
 
-// OTelHTTPEndpoint builds an xds.Endpoint for an HTTP/HTTPS OTel collector.
-// Used when resolving a MeshOpenTelemetryBackend with HTTP protocol.
-func OTelHTTPEndpoint(address string, port uint32, tlsEnabled bool) *xds.Endpoint {
-	return &xds.Endpoint{
-		Target: address,
-		Port:   port,
-		ExternalService: &xds.ExternalService{
-			TLSEnabled:         tlsEnabled,
-			AllowRenegotiation: true,
-		},
-	}
-}
-
 func resolveOtelName(conf api.Conf, resources xds_context.Resources) string {
 	backends := pointer.Deref(conf.Backends)
 	if len(backends) == 0 {

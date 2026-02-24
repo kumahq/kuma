@@ -7,8 +7,9 @@ import (
 )
 
 type LoggingEndpoint struct {
-	Address string
-	Port    uint32
+	Address  string
+	Port     uint32
+	UseHTTP2 bool
 }
 
 func xdsEndpoint(endpoint LoggingEndpoint) core_xds.Endpoint {
@@ -23,12 +24,14 @@ func AddLogBackendConf(backendEndpoints EndpointAccumulator, rs *core_xds.Resour
 		endpoint := xdsEndpoint(backendEndpoint)
 
 		clusterName := backendEndpoints.ClusterForEndpoint(backendEndpoint)
-		res, err := clusters.NewClusterBuilder(proxy.APIVersion, string(clusterName)).
+		builder := clusters.NewClusterBuilder(proxy.APIVersion, string(clusterName)).
 			Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), endpoint)).
 			Configure(clusters.ClientSideTLS([]core_xds.Endpoint{endpoint})).
-			Configure(clusters.DefaultTimeout()).
-			Configure(clusters.Http2()).
-			Build()
+			Configure(clusters.DefaultTimeout())
+		if backendEndpoint.UseHTTP2 {
+			builder.Configure(clusters.Http2())
+		}
+		res, err := builder.Build()
 		if err != nil {
 			return err
 		}
