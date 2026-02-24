@@ -30,12 +30,12 @@ These would need to be added to all three policies individually, tripling the wo
 
 ### User stories
 
-- As a mesh operator, I want to deploy one OTel collector (DaemonSet or Deployment) and point MeshMetric, MeshTrace, and MeshAccessLog at it without duplicating the endpoint in three places.
-- As a mesh operator, I want to update my collector address in one place when the observability team moves it to a different namespace or changes the port.
-- As a mesh operator using a managed OTel backend (Grafana Cloud, Datadog, etc.), I want to configure a bearer token for collector auth.
-- As a mesh operator running multi-zone, I want each zone to have its own collector config without duplicating endpoints across zone-scoped policies.
-- As a mesh operator, I want to roll out signals incrementally - start with metrics, verify it works, then add tracing and access logging against the same collector.
-- As a mesh operator, I want the data plane's OTel export configured from standard `OTEL_EXPORTER_OTLP_*` env vars injected into my pods so I don't duplicate collector config between application instrumentation and the mesh.
+1. As a mesh operator, I want to deploy one OTel collector (DaemonSet or Deployment) and point MeshMetric, MeshTrace, and MeshAccessLog at it without duplicating the endpoint in three places.
+2. As a mesh operator, I want to update my collector address in one place when the observability team moves it to a different namespace or changes the port.
+3. As a mesh operator using a managed OTel backend (Grafana Cloud, Datadog, etc.), I want to configure a bearer token for collector auth.
+4. As a mesh operator running multi-zone, I want each zone to have its own collector config without duplicating endpoints across zone-scoped policies.
+5. As a mesh operator, I want to roll out signals incrementally - start with metrics, verify it works, then add tracing and access logging against the same collector.
+6. As a mesh operator, I want the data plane's OTel export configured from standard [`OTEL_EXPORTER_OTLP_*`](https://opentelemetry.io/docs/specs/otel/protocol/exporter/) env vars injected into my pods so I don't duplicate collector config between application instrumentation and the mesh.
 
 ## Design
 
@@ -78,6 +78,8 @@ No `type` discriminator - the resource name itself is the type. If other telemet
 The `endpoint` is structured (address + port + path) instead of a raw string so we validate each component separately. Today MeshMetric/MeshAccessLog split the endpoint string on `:`, and MeshTrace has an unreleased URL parser for HTTP endpoints that's being removed. A structured format avoids these inconsistencies.
 
 The `protocol` field selects gRPC or HTTP transport. Envoy's OTel extensions use separate `grpc_service` and `http_service` fields in their protobuf config - the CP needs to know which one to generate. Port-based inference (4317 = gRPC, 4318 = HTTP) would break for non-standard setups, so an explicit field is safer. Default is `grpc` for backward compatibility with existing Kuma behavior.
+
+The OTLP/HTTP spec defines two content encodings: binary protobuf (`application/x-protobuf`) and JSON (`application/json`). Envoy's built-in OTel extensions (stats sink, access logger, tracer) only support protobuf encoding over HTTP. JSON encoding is not available in Envoy without a custom filter. So `protocol: http` means OTLP/HTTP with protobuf encoding. If JSON encoding support is needed later, a separate `encoding` field can be added to the spec.
 
 When `protocol: http`, the `path` field is a base path prefix. The CP appends the signal-specific suffix (`/v1/traces`, `/v1/metrics`, `/v1/logs`) during xDS generation, matching how the OTel SDK handles `OTEL_EXPORTER_OTLP_ENDPOINT`. An empty path means the standard paths are used directly. For gRPC, paths are irrelevant - gRPC routes by protobuf service name.
 
@@ -384,15 +386,16 @@ Signal-specific config (refreshInterval, attributes, body, sampling) stays in ea
 
 ## Notes
 
-### Initial scope (MVP)
+### Initial scope
 
-The first implementation should be minimal:
+The first implementation covers:
 
 1. MeshOpenTelemetryBackend resource with `endpoint` (address + port + path) and `protocol` (grpc/http)
 2. `backendRef` field added to all three policy OTel backends
 3. Validation: `endpoint` XOR `backendRef` (mutual exclusivity)
 4. Resolution in each policy's Apply()
 5. Inline `endpoint` remains supported but deprecated (removed in 3.0)
+6. `OTEL_EXPORTER_OTLP_*` env var auto-detection via DynamicMetadata transport (user story 6)
 
 TLS and auth fields are follow-up work.
 
@@ -427,9 +430,48 @@ These env vars configure the application's OTel SDK, not the sidecar proxy. Envo
 | Who exports | OTel SDK in app code | Envoy sidecar |
 | What it captures | App-level spans, custom metrics | L4/L7 request metrics, access logs, mesh traces |
 
-A mesh operator might want both paths pointing at the same collector without configuring each separately. The kuma-dp process already has a `DynamicMetadata` transport (`map[string]string`) that carries key-value pairs from the data plane to the control plane during bootstrap. This transport could carry `OTEL_EXPORTER_OTLP_*` values from the pod environment to the CP, which would then generate matching xDS config.
+A mesh operator might want both paths pointing at the same collector without configuring each separately. This is user story 6, and the implementation is straightforward because the transport already exists.
 
-Env var auto-detection is out of scope for the MVP. MeshOpenTelemetryBackend is the explicit configuration path for proxy telemetry. Env var integration would build on top of it as follow-up work - the resource is still the canonical config for a backend's connection settings, whether set manually or populated from env vars.
+#### DynamicMetadata transport
+
+kuma-dp has a `DynamicMetadata` field (`map[string]string`) in the bootstrap request. During startup, kuma-dp collects key-value pairs and sends them to the CP via `POST /bootstrap`. The CP embeds them in Envoy's `node.metadata.dynamicMetadata`, which Envoy includes in every xDS discovery request back to the CP. Policy plugins can then read these values when generating xDS config.
+
+Today this transport only carries the CoreDNS version. Adding `OTEL_*` env vars means reading them during kuma-dp startup and adding them to the same map. The rest of the pipeline handles arbitrary metadata already.
+
+#### Getting env vars into kuma-dp
+
+On Kubernetes, the sidecar injector does not copy env vars from the application container. Three paths exist today without code changes:
+
+1. Pod annotation `kuma.io/sidecar-env-vars`: semicolon-separated key=value pairs added to the kuma-sidecar container. Example: `OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317;OTEL_EXPORTER_OTLP_PROTOCOL=grpc`
+2. `ContainerPatch` CRD: JSON patch that adds env vars to the sidecar container, applied via `kuma.io/container-patches` annotation.
+3. Helm `containerConfig.envVars` on the sidecar injector config.
+
+Auto-copying `OTEL_*` vars from the app container is possible but depends on container ordering and creates an implicit coupling between app and sidecar config. The annotation or ContainerPatch paths are explicit and less surprising. Having kuma-dp read its own process env vars is the cleaner approach since it works the same way on both Kubernetes and Universal.
+
+On Universal, set `OTEL_*` env vars in the process environment (systemd unit, Docker run, shell) before starting kuma-dp. kuma-dp only processes `KUMA_*` vars for its own config, so `OTEL_*` vars sit in the environment until the startup code reads them.
+
+#### Priority and override semantics
+
+Explicit config wins. If a policy references a MeshOpenTelemetryBackend via `backendRef`, that's the endpoint - env vars are ignored. This matches how the OTel SDK itself works: programmatic config overrides env vars.
+
+The inline `endpoint` field (deprecated) also takes precedence over env vars. Priority order: `backendRef` > inline `endpoint` > env var auto-detection. Operators can adopt env vars as a default and override specific policies with explicit config when needed.
+
+#### Which env vars to capture
+
+Supported:
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - where to send telemetry
+- `OTEL_EXPORTER_OTLP_PROTOCOL` - grpc or http/protobuf
+- `OTEL_EXPORTER_OTLP_COMPRESSION` - gzip or none
+- `OTEL_EXPORTER_OTLP_TIMEOUT` - export timeout in milliseconds
+
+Signal-specific endpoint vars (`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`) are deferred - MeshOpenTelemetryBackend already handles per-signal routing via path suffixes.
+
+`OTEL_EXPORTER_OTLP_HEADERS` is deferred until auth support lands (user story 3) because it may contain bearer tokens and needs redaction work - see security section below.
+
+#### Security considerations for env var forwarding
+
+`OTEL_EXPORTER_OTLP_HEADERS` may contain bearer tokens. The bootstrap request travels over HTTPS (same trust boundary as the DP token), so transport is encrypted. But the values end up in Envoy's `node.metadata`, which shows up in config dumps and could leak into CP debug logs. Sensitive header values should be redacted from config dump output and CP log messages, similar to how DP tokens are handled today.
 
 ### Relationship to CP metrics export
 
