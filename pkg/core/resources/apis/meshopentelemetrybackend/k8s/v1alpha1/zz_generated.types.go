@@ -4,7 +4,6 @@
 package v1alpha1
 
 import (
-	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +25,9 @@ type MeshOpenTelemetryBackend struct {
 	// Spec is the specification of the Kuma MeshOpenTelemetryBackend resource.
 	// +kubebuilder:validation:Optional
 	Spec *policy.MeshOpenTelemetryBackend `json:"spec,omitempty"`
+	// Status is the current status of the Kuma MeshOpenTelemetryBackend resource.
+	// +kubebuilder:validation:Optional
+	Status *policy.MeshOpenTelemetryBackendStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -77,11 +79,21 @@ func (cb *MeshOpenTelemetryBackend) SetSpec(spec core_model.ResourceSpec) {
 }
 
 func (cb *MeshOpenTelemetryBackend) GetStatus() (core_model.ResourceStatus, error) {
-	return nil, nil
+	return cb.Status, nil
 }
 
 func (cb *MeshOpenTelemetryBackend) SetStatus(status core_model.ResourceStatus) error {
-	return errors.New("status not supported")
+	if status == nil {
+		cb.Status = nil
+		return nil
+	}
+
+	if _, ok := status.(*policy.MeshOpenTelemetryBackendStatus); !ok {
+		panic(fmt.Sprintf("unexpected message type %T", status))
+	}
+
+	cb.Status = status.(*policy.MeshOpenTelemetryBackendStatus)
+	return nil
 }
 
 func (cb *MeshOpenTelemetryBackend) Scope() model.Scope {
