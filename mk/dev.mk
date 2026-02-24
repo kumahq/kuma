@@ -57,7 +57,7 @@ PROTO_PGV=$(shell $(GO) mod download github.com/envoyproxy/protoc-gen-validate@$
 PROTO_GOOGLE_APIS=$(shell $(GO) mod download github.com/googleapis/googleapis@master && $(GO) list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
 PROTO_ENVOY=$(shell $(GO) mod download github.com/envoyproxy/data-plane-api@main && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
-CLANG_FORMAT=$(shell $(MISE) which clang-format)
+BUF=$(shell $(MISE) which buf)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
 K3D_BIN=$(shell $(MISE) which k3d)

@@ -2,14 +2,13 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
-
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
 
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
 // ProxyTemplate defines the desired state of ProxyTemplate
 message ProxyTemplate {
-
   option (kuma.mesh.resource).name = "ProxyTemplateResource";
   option (kuma.mesh.resource).type = "ProxyTemplate";
   option (kuma.mesh.resource).package = "mesh";
@@ -167,13 +166,11 @@ message ProxyTemplate {
 }
 
 message ProxyTemplateSource {
-
   // Name of a configuration source.
   // +optional
   string name = 1;
 
   oneof type {
-
     // Profile, e.g. `default-proxy`.
     // +optional
     ProxyTemplateProfileSource profile = 2;
@@ -185,7 +182,6 @@ message ProxyTemplateSource {
 }
 
 message ProxyTemplateProfileSource {
-
   // Profile name.
   string name = 1;
 
@@ -195,14 +191,12 @@ message ProxyTemplateProfileSource {
 }
 
 message ProxyTemplateRawSource {
-
   // List of raw xDS resources.
   // +optional
   repeated ProxyTemplateRawResource resources = 1;
 }
 
 message ProxyTemplateRawResource {
-
   // The resource's name, to distinguish it from others of the same type of
   // resource.
   string name = 1;

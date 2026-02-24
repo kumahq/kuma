@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package kuma.plugins.ca;
 
-option go_package = "github.com/kumahq/kuma/plugins/ca/config";
-
 import "api/system/v1alpha1/datasource.proto";
+
+option go_package = "github.com/kumahq/kuma/plugins/ca/config";
 
 // ProvidedCertificateAuthorityConfig defines configuration for Provided CA
 // plugin
