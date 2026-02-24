@@ -197,7 +197,7 @@ This follows the same pattern as TargetRef resolution in policies (`pkg/plugins/
 |-----------------|--------------------------------------------------------------------------------------|
 | `IsPolicy`      | false (it's a resource, not a policy)                                                |
 | `Scope`         | Mesh                                                                                 |
-| `HasStatus`     | true (surfaces unresolved backendRef conditions to referencing policies)              |
+| `HasStatus`     | true (surfaces unresolved backendRef conditions to referencing policies)             |
 | `KDSFlags`      | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> (same as MeshExternalService) |
 | `ShortName`     | `motb`                                                                               |
 | `IsDestination` | false                                                                                |
@@ -341,10 +341,10 @@ The OTel specification defines environment variables (`OTEL_EXPORTER_OTLP_ENDPOI
 
 These env vars configure the application's OTel SDK, not the sidecar proxy. Envoy doesn't use the OTel SDK and doesn't read `OTEL_EXPORTER_OTLP_*` env vars - its telemetry export is configured through xDS pushed by the control plane. No service mesh today (Istio, Linkerd, or Kuma) reads pod env vars to configure sidecar proxy telemetry. This is an architectural split, not an oversight:
 
-| | Application telemetry | Proxy telemetry |
-|---|---|---|
-| Config source | OTel env vars on app container | Control plane via xDS |
-| Who exports | OTel SDK in app code | Envoy sidecar |
+|                  | Application telemetry           | Proxy telemetry                                 |
+|------------------|---------------------------------|-------------------------------------------------|
+| Config source    | OTel env vars on app container  | Control plane via xDS                           |
+| Who exports      | OTel SDK in app code            | Envoy sidecar                                   |
 | What it captures | App-level spans, custom metrics | L4/L7 request metrics, access logs, mesh traces |
 
 A mesh operator might want both paths pointing at the same collector without configuring each separately. This is user story 6, and the implementation is straightforward because the transport already exists.
