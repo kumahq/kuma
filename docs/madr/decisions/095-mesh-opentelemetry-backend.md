@@ -221,6 +221,80 @@ Placed in `pkg/core/resources/apis/meshopentelemetrybackend/` following the same
 - Users learn a new concept
 - More indirection (policy -> resource -> endpoint)
 
+#### Naming
+
+`MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced by the admission webhook - the validator rejects `backendRef.kind` values that don't match the enclosing backend type. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
+
+Rejected alternatives:
+- `MeshTelemetryBackend` (with `type` discriminator) - a generic name + type discriminator can't enforce type matching via the API structure. A policy's OTel backend could reference a Zipkin-typed backend, and this mismatch would only be caught by runtime validation.
+- `MeshOTelBackend` - abbreviation is less readable than the full name
+- `MeshOTelCollector` - "collector" is one deployment model, the resource is for any telemetry-receiving endpoint
+- `MeshObservabilityBackend` - too abstract, doesn't add clarity over the specific protocol name
+- `MeshCollectorBackend` - not all backends are "collectors" (e.g., managed SaaS endpoints)
+
+#### Signal-specific fields stay in policies
+
+MeshAccessLog's `body` field is logs-only (OTel LogRecord body). It holds Envoy access log command operators (`%START_TIME%`, `%UPSTREAM_HOST%`) that control what each log record says. This is per-record content formatting, not connection config - it stays in MeshAccessLog.
+
+MeshAccessLog's `attributes` are also logs-only (mapped to OTel `KeyValueList` with command operator substitution). MeshTrace has `Tags` (mapped to Envoy `CustomTag` on the HCM tracing config). MeshMetric has no OTel attributes (uses kuma-dp `ExtraLabels`). Each signal uses a completely different Envoy mechanism for attributes, so there's no shared abstraction that works across all three.
+
+Shared resource attributes (mesh name, zone) in MeshOpenTelemetryBackend are conceptually sound but practically complex - Envoy handles resource attributes differently per signal (direct `KeyValueList` on access logger, `resource_detectors` extension on tracer, kuma-dp labels for metrics). This is follow-up work.
+
+#### OTel environment variable auto-detection
+
+The OTel specification defines environment variables (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`, `OTEL_EXPORTER_OTLP_HEADERS`, etc.) that configure where an OTel SDK sends telemetry. The OpenTelemetry Operator for Kubernetes injects these env vars into the first container in the pod spec by default (`Containers[0]`), which is typically the application container because mesh sidecar injectors append their containers. The Operator has no sidecar awareness - this targeting is a side effect of container ordering, not intentional filtering.
+
+These env vars configure the application's OTel SDK, not the sidecar proxy. Envoy doesn't use the OTel SDK and doesn't read `OTEL_EXPORTER_OTLP_*` env vars - its telemetry export is configured through xDS pushed by the control plane. No service mesh today (Istio, Linkerd, or Kuma) reads pod env vars to configure sidecar proxy telemetry. This is an architectural split, not an oversight:
+
+|                  | Application telemetry           | Proxy telemetry                                 |
+|------------------|---------------------------------|-------------------------------------------------|
+| Config source    | OTel env vars on app container  | Control plane via xDS                           |
+| Who exports      | OTel SDK in app code            | Envoy sidecar                                   |
+| What it captures | App-level spans, custom metrics | L4/L7 request metrics, access logs, mesh traces |
+
+A mesh operator might want both paths pointing at the same collector without configuring each separately. This is user story 6, and the implementation is straightforward because the transport already exists.
+
+##### DynamicMetadata transport
+
+kuma-dp has a `DynamicMetadata` field (`map[string]string`) in the bootstrap request. During startup, kuma-dp collects key-value pairs and sends them to the CP via `POST /bootstrap`. The CP embeds them in Envoy's `node.metadata.dynamicMetadata`, which Envoy includes in every xDS discovery request back to the CP. Policy plugins can then read these values when generating xDS config.
+
+Today this transport only carries the CoreDNS version. Adding `OTEL_*` env vars means reading them during kuma-dp startup and adding them to the same map. The rest of the pipeline handles arbitrary metadata already.
+
+##### Getting env vars into kuma-dp
+
+On Kubernetes, the sidecar injector does not copy env vars from the application container. Three paths exist today without code changes:
+
+1. Pod annotation `kuma.io/sidecar-env-vars`: semicolon-separated key=value pairs added to the kuma-sidecar container. Example: `OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317;OTEL_EXPORTER_OTLP_PROTOCOL=grpc`
+2. `ContainerPatch` CRD: JSON patch that adds env vars to the sidecar container, applied via `kuma.io/container-patches` annotation.
+3. Helm `containerConfig.envVars` on the sidecar injector config.
+
+Auto-copying `OTEL_*` vars from the app container is possible but depends on container ordering and creates an implicit coupling between app and sidecar config. The annotation or ContainerPatch paths are explicit and less surprising. Having kuma-dp read its own process env vars is the cleaner approach since it works the same way on both Kubernetes and Universal.
+
+On Universal, set `OTEL_*` env vars in the process environment (systemd unit, Docker run, shell) before starting kuma-dp. kuma-dp only processes `KUMA_*` vars for its own config, so `OTEL_*` vars sit in the environment until the startup code reads them.
+
+##### Priority and override semantics
+
+Explicit config wins. If a policy references a MeshOpenTelemetryBackend via `backendRef`, that's the endpoint - env vars are ignored. This matches how the OTel SDK itself works: programmatic config overrides env vars.
+
+The inline `endpoint` field (deprecated) also takes precedence over env vars. Priority order: `backendRef` > inline `endpoint` > env var auto-detection. Operators can adopt env vars as a default and override specific policies with explicit config when needed.
+
+##### Which env vars to capture
+
+Supported:
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - where to send telemetry
+- `OTEL_EXPORTER_OTLP_PROTOCOL` - grpc or http/protobuf
+- `OTEL_EXPORTER_OTLP_COMPRESSION` - gzip or none
+- `OTEL_EXPORTER_OTLP_TIMEOUT` - export timeout in milliseconds
+
+Signal-specific endpoint vars (`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`) are deferred - MeshOpenTelemetryBackend already handles per-signal routing via path suffixes.
+
+`OTEL_EXPORTER_OTLP_HEADERS` is deferred until auth support lands (user story 3) because it may contain bearer tokens and needs redaction work - see security section below.
+
+##### Security considerations for env var forwarding
+
+`OTEL_EXPORTER_OTLP_HEADERS` may contain bearer tokens. The bootstrap request travels over HTTPS (same trust boundary as the DP token), so transport is encrypted. But the values end up in Envoy's `node.metadata`, which shows up in config dumps and could leak into CP debug logs. Sensitive header values should be redacted from config dump output and CP log messages, similar to how DP tokens are handled today.
+
 ### Option B: Named backends on the Mesh resource (rejected)
 
 Add OTel collector configurations to the Mesh spec. Policies reference by name.
@@ -300,9 +374,7 @@ Start with a minimal spec (endpoint only, no TLS/auth). Add TLS and auth fields 
 
 Signal-specific config (refreshInterval, attributes, body, sampling) stays in each policy. The shared resource only handles "where is the backend and how do I connect to it."
 
-## Notes
-
-### Initial scope
+### Scope
 
 The first implementation covers:
 
@@ -316,80 +388,6 @@ The first implementation covers:
 
 TLS and auth fields are follow-up work.
 
-### Naming
-
-`MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced by the admission webhook - the validator rejects `backendRef.kind` values that don't match the enclosing backend type. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
-
-Rejected alternatives:
-- `MeshTelemetryBackend` (with `type` discriminator) - a generic name + type discriminator can't enforce type matching via the API structure. A policy's OTel backend could reference a Zipkin-typed backend, and this mismatch would only be caught by runtime validation.
-- `MeshOTelBackend` - abbreviation is less readable than the full name
-- `MeshOTelCollector` - "collector" is one deployment model, the resource is for any telemetry-receiving endpoint
-- `MeshObservabilityBackend` - too abstract, doesn't add clarity over the specific protocol name
-- `MeshCollectorBackend` - not all backends are "collectors" (e.g., managed SaaS endpoints)
-
-### Signal-specific fields stay in policies
-
-MeshAccessLog's `body` field is logs-only (OTel LogRecord body). It holds Envoy access log command operators (`%START_TIME%`, `%UPSTREAM_HOST%`) that control what each log record says. This is per-record content formatting, not connection config - it stays in MeshAccessLog.
-
-MeshAccessLog's `attributes` are also logs-only (mapped to OTel `KeyValueList` with command operator substitution). MeshTrace has `Tags` (mapped to Envoy `CustomTag` on the HCM tracing config). MeshMetric has no OTel attributes (uses kuma-dp `ExtraLabels`). Each signal uses a completely different Envoy mechanism for attributes, so there's no shared abstraction that works across all three.
-
-Shared resource attributes (mesh name, zone) in MeshOpenTelemetryBackend are conceptually sound but practically complex - Envoy handles resource attributes differently per signal (direct `KeyValueList` on access logger, `resource_detectors` extension on tracer, kuma-dp labels for metrics). This is follow-up work.
-
-### Standard OTel environment variables
-
-The OTel specification defines environment variables (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`, `OTEL_EXPORTER_OTLP_HEADERS`, etc.) that configure where an OTel SDK sends telemetry. The OpenTelemetry Operator for Kubernetes injects these env vars into the first container in the pod spec by default (`Containers[0]`), which is typically the application container because mesh sidecar injectors append their containers. The Operator has no sidecar awareness - this targeting is a side effect of container ordering, not intentional filtering.
-
-These env vars configure the application's OTel SDK, not the sidecar proxy. Envoy doesn't use the OTel SDK and doesn't read `OTEL_EXPORTER_OTLP_*` env vars - its telemetry export is configured through xDS pushed by the control plane. No service mesh today (Istio, Linkerd, or Kuma) reads pod env vars to configure sidecar proxy telemetry. This is an architectural split, not an oversight:
-
-|                  | Application telemetry           | Proxy telemetry                                 |
-|------------------|---------------------------------|-------------------------------------------------|
-| Config source    | OTel env vars on app container  | Control plane via xDS                           |
-| Who exports      | OTel SDK in app code            | Envoy sidecar                                   |
-| What it captures | App-level spans, custom metrics | L4/L7 request metrics, access logs, mesh traces |
-
-A mesh operator might want both paths pointing at the same collector without configuring each separately. This is user story 6, and the implementation is straightforward because the transport already exists.
-
-#### DynamicMetadata transport
-
-kuma-dp has a `DynamicMetadata` field (`map[string]string`) in the bootstrap request. During startup, kuma-dp collects key-value pairs and sends them to the CP via `POST /bootstrap`. The CP embeds them in Envoy's `node.metadata.dynamicMetadata`, which Envoy includes in every xDS discovery request back to the CP. Policy plugins can then read these values when generating xDS config.
-
-Today this transport only carries the CoreDNS version. Adding `OTEL_*` env vars means reading them during kuma-dp startup and adding them to the same map. The rest of the pipeline handles arbitrary metadata already.
-
-#### Getting env vars into kuma-dp
-
-On Kubernetes, the sidecar injector does not copy env vars from the application container. Three paths exist today without code changes:
-
-1. Pod annotation `kuma.io/sidecar-env-vars`: semicolon-separated key=value pairs added to the kuma-sidecar container. Example: `OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317;OTEL_EXPORTER_OTLP_PROTOCOL=grpc`
-2. `ContainerPatch` CRD: JSON patch that adds env vars to the sidecar container, applied via `kuma.io/container-patches` annotation.
-3. Helm `containerConfig.envVars` on the sidecar injector config.
-
-Auto-copying `OTEL_*` vars from the app container is possible but depends on container ordering and creates an implicit coupling between app and sidecar config. The annotation or ContainerPatch paths are explicit and less surprising. Having kuma-dp read its own process env vars is the cleaner approach since it works the same way on both Kubernetes and Universal.
-
-On Universal, set `OTEL_*` env vars in the process environment (systemd unit, Docker run, shell) before starting kuma-dp. kuma-dp only processes `KUMA_*` vars for its own config, so `OTEL_*` vars sit in the environment until the startup code reads them.
-
-#### Priority and override semantics
-
-Explicit config wins. If a policy references a MeshOpenTelemetryBackend via `backendRef`, that's the endpoint - env vars are ignored. This matches how the OTel SDK itself works: programmatic config overrides env vars.
-
-The inline `endpoint` field (deprecated) also takes precedence over env vars. Priority order: `backendRef` > inline `endpoint` > env var auto-detection. Operators can adopt env vars as a default and override specific policies with explicit config when needed.
-
-#### Which env vars to capture
-
-Supported:
-
-- `OTEL_EXPORTER_OTLP_ENDPOINT` - where to send telemetry
-- `OTEL_EXPORTER_OTLP_PROTOCOL` - grpc or http/protobuf
-- `OTEL_EXPORTER_OTLP_COMPRESSION` - gzip or none
-- `OTEL_EXPORTER_OTLP_TIMEOUT` - export timeout in milliseconds
-
-Signal-specific endpoint vars (`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`) are deferred - MeshOpenTelemetryBackend already handles per-signal routing via path suffixes.
-
-`OTEL_EXPORTER_OTLP_HEADERS` is deferred until auth support lands (user story 3) because it may contain bearer tokens and needs redaction work - see security section below.
-
-#### Security considerations for env var forwarding
-
-`OTEL_EXPORTER_OTLP_HEADERS` may contain bearer tokens. The bootstrap request travels over HTTPS (same trust boundary as the DP token), so transport is encrypted. But the values end up in Envoy's `node.metadata`, which shows up in config dumps and could leak into CP debug logs. Sensitive header values should be redacted from config dump output and CP log messages, similar to how DP tokens are handled today.
-
-### Relationship to CP metrics export
+## Notes
 
 The control plane's own OTel metric export (via `KUMA_TRACING_OPENTELEMETRY_ENABLED` and standard `OTEL_EXPORTER_OTLP_*` env vars) is separate. MeshOpenTelemetryBackend is for data plane telemetry policies only. CP observability config is environment-level, not mesh-scoped.
