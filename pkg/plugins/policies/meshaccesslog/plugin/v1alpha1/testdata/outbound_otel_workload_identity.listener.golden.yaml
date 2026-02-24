@@ -31,6 +31,9 @@ filterChains:
             - key: workload
               value:
                 stringValue: kri_wl_default_zone-1_kuma-demo_backend_
+            - key: zone-1
+              value:
+                stringValue: static-zone-value
           body:
             stringValue: default zone-1 kri_wl_default_zone-1_kuma-demo_backend_
           commonConfig:

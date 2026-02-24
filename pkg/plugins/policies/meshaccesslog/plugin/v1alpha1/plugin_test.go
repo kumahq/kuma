@@ -34,6 +34,7 @@ import (
 	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
 	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
@@ -741,7 +742,7 @@ var _ = Describe("MeshAccessLog", func() {
 			dataplaneLabels: map[string]string{
 				mesh_proto.ZoneTag:          "zone-1",
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
-				"kuma.io/workload":          "backend",
+				k8s_metadata.KumaWorkload:   "backend",
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
@@ -758,6 +759,7 @@ var _ = Describe("MeshAccessLog", func() {
 											{Key: "mesh", Value: "%KUMA_MESH%"},
 											{Key: "zone", Value: "%KUMA_ZONE%"},
 											{Key: "workload", Value: "%KUMA_WORKLOAD%"},
+											{Key: "%KUMA_ZONE%", Value: "static-zone-value"},
 										},
 									},
 								}},
@@ -784,7 +786,7 @@ var _ = Describe("MeshAccessLog", func() {
 			dataplaneLabels: map[string]string{
 				mesh_proto.ZoneTag:          "zone-1",
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
-				"kuma.io/workload":          "backend",
+				k8s_metadata.KumaWorkload:   "backend",
 			},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
