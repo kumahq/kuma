@@ -3,6 +3,7 @@ package xds
 import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -26,7 +27,7 @@ type ResolvedOtelBackend struct {
 
 // ResolveOtelBackend resolves a backendRef to a MeshOpenTelemetryBackend resource,
 // falling back to the inline endpoint if backendRef is nil.
-// Returns nil when the backendRef is dangling (resource not found).
+// Returns nil when the backendRef is dangling (resource not found) or no config exists.
 func ResolveOtelBackend(
 	backendRef *common_api.TargetRef,
 	inlineEndpoint string,
@@ -50,7 +51,8 @@ func ResolveOtelBackend(
 func resolveFromBackendRef(ref *common_api.TargetRef, resources xds_context.Resources) *ResolvedOtelBackend {
 	name := pointer.Deref(ref.Name)
 	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
-		if backend.GetMeta().GetName() == name {
+		displayName := backend.GetMeta().GetLabels()[mesh_proto.DisplayName]
+		if displayName == name || backend.GetMeta().GetName() == name {
 			spec := backend.Spec
 			return &ResolvedOtelBackend{
 				Endpoint: &core_xds.Endpoint{

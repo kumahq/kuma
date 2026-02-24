@@ -499,6 +499,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:

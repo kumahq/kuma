@@ -167,7 +167,7 @@ func validateOtelBackendRef(endpoint string, backendRef *common_api.TargetRef) v
 		return verr
 	}
 	if backendRef != nil {
-		if backendRef.Kind != "MeshOpenTelemetryBackend" {
+		if backendRef.Kind != common_api.MeshOpenTelemetryBackend {
 			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"), "kind must be MeshOpenTelemetryBackend")
 		}
 		if backendRef.Name == nil || *backendRef.Name == "" {

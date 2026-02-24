@@ -11,6 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -98,8 +99,15 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	}
 
 	for _, motb := range motbList.Items {
+		displayName := motb.GetMeta().GetLabels()[mesh_proto.DisplayName]
 		name := motb.GetMeta().GetName()
-		count := refCounts[name]
+		// backendRef.name uses the display name (e.g. "main-collector"),
+		// but GetName() includes the K8s namespace suffix (e.g. "main-collector.kuma-system").
+		// Check both to handle all environments correctly.
+		count := refCounts[displayName] + refCounts[name]
+		if displayName == name {
+			count = refCounts[name] // avoid double counting when they're the same
+		}
 		condition := buildReferencedByCondition(count)
 
 		if !conditionEquals(motb.Status.Conditions, condition) {

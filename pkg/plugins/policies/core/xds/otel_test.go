@@ -1,0 +1,61 @@
+package xds_test
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+)
+
+var _ = Describe("ResolveOtelBackend", func() {
+	dummyParser := func(ep string) *core_xds.Endpoint {
+		return &core_xds.Endpoint{Target: ep, Port: 4317}
+	}
+	dummyNamer := func(ep string) string { return ep }
+	emptyResources := xds_context.Resources{}
+
+	It("should return nil when no config sources exist", func() {
+		result := policies_xds.ResolveOtelBackend(
+			nil, "", dummyParser, dummyNamer, emptyResources,
+		)
+		Expect(result).To(BeNil())
+	})
+
+	Describe("priority order", func() {
+		backendRef := &common_api.TargetRef{
+			Kind: "MeshOpenTelemetryBackend",
+			Name: pointer.To("my-backend"),
+		}
+		motbList := &motb_api.MeshOpenTelemetryBackendResourceList{}
+
+		It("should prefer backendRef over inline endpoint", func() {
+			// backendRef will be dangling (no MOTBs in resources), but it should
+			// NOT fall through to inline endpoint
+			resources := xds_context.Resources{
+				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					motb_api.MeshOpenTelemetryBackendType: motbList,
+				},
+			}
+			result := policies_xds.ResolveOtelBackend(
+				backendRef, "inline-collector:4317", dummyParser, dummyNamer, resources,
+			)
+			// Dangling backendRef returns nil, does NOT fall through
+			Expect(result).To(BeNil())
+		})
+
+		It("should resolve inline endpoint when no backendRef", func() {
+			result := policies_xds.ResolveOtelBackend(
+				nil, "inline-collector:4317", dummyParser, dummyNamer, emptyResources,
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.Endpoint.Target).To(Equal("inline-collector:4317"))
+			Expect(result.Protocol).To(Equal(motb_api.ProtocolGRPC))
+		})
+	})
+})
