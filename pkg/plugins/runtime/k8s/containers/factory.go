@@ -259,6 +259,15 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 				},
 			},
 		},
+		"HOST_IP": {
+			Name: "HOST_IP",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.hostIP",
+				},
+			},
+		},
 		"KUMA_CONTROL_PLANE_URL": {
 			Name:  "KUMA_CONTROL_PLANE_URL",
 			Value: i.ControlPlaneURL,
