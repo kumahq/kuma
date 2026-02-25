@@ -14,7 +14,7 @@ func (c InitializedExecutable) Exec(
 ) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	// #nosec G204
+	// #nosec G204 G702 -- path and args are operator-configured, not user input
 	cmd := exec.CommandContext(ctx, c.Path, append(c.args, args...)...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

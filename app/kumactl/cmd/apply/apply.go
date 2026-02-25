@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -71,6 +72,9 @@ $ kumactl apply -f https://example.com/resource.yaml
 				}
 			} else {
 				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
+					if _, err := url.ParseRequestURI(ctx.args.file); err != nil {
+						return errors.Wrap(err, "invalid URL for --file")
+					}
 					client := &http.Client{
 						Timeout: timeout,
 					}
@@ -78,7 +82,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					if err != nil {
 						return errors.Wrap(err, "error creating new http request")
 					}
-					resp, err := client.Do(req)
+					resp, err := client.Do(req) // #nosec G704 -- URL validated with ParseRequestURI above
 					if err != nil {
 						return errors.Wrap(err, "error with GET http request")
 					}

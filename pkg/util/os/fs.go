@@ -19,7 +19,7 @@ func TryWriteToDir(dir string) error {
 			return errors.Wrapf(err, "unable to create temporary files in directory %q", dir)
 		}
 	}
-	if err := os.Remove(file.Name()); err != nil {
+	if err := os.Remove(file.Name()); err != nil { // #nosec G703 -- path from os.CreateTemp, not user input
 		return errors.Wrapf(err, "unable to remove temporary files in directory %q", dir)
 	}
 	return nil
