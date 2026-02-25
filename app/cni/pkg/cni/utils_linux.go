@@ -67,7 +67,7 @@ func getPids(name string) []int {
 				continue
 			}
 
-			cmdline, err := os.ReadFile(filepath.Join("/proc", entry.Name(), "cmdline"))
+			cmdline, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "cmdline"))
 			if err != nil {
 				continue
 			}

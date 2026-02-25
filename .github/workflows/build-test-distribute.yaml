@@ -108,7 +108,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          only-new-issues: ${{ github.event_name == 'pull_request' }}
+          only-new-issues: false
 
       - run: |
           make clean
