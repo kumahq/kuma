@@ -312,14 +312,13 @@ components:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
+                                  default: ""
                                   description: |-
                                     Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
 
                                     Deprecated: use BackendRef instead.
                                   example: otel-collector:4317
                                   type: string
-                              required:
-                                - endpoint
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -606,14 +605,13 @@ components:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
+                                  default: ""
                                   description: |-
                                     Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
 
                                     Deprecated: use BackendRef instead.
                                   example: otel-collector:4317
                                   type: string
-                              required:
-                                - endpoint
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -900,14 +898,13 @@ components:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
+                                  default: ""
                                   description: |-
                                     Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
 
                                     Deprecated: use BackendRef instead.
                                   example: otel-collector:4317
                                   type: string
-                              required:
-                                - endpoint
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.

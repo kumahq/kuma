@@ -6562,6 +6562,7 @@ components:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
+                                  default: ''
                                   description: >-
                                     Endpoint of OpenTelemetry collector. An
                                     empty port defaults to 4317.
@@ -6570,8 +6571,6 @@ components:
                                     Deprecated: use BackendRef instead.
                                   example: otel-collector:4317
                                   type: string
-                              required:
-                                - endpoint
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -6921,6 +6920,7 @@ components:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
+                                  default: ''
                                   description: >-
                                     Endpoint of OpenTelemetry collector. An
                                     empty port defaults to 4317.
@@ -6929,8 +6929,6 @@ components:
                                     Deprecated: use BackendRef instead.
                                   example: otel-collector:4317
                                   type: string
-                              required:
-                                - endpoint
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -7279,6 +7277,7 @@ components:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
+                                  default: ''
                                   description: >-
                                     Endpoint of OpenTelemetry collector. An
                                     empty port defaults to 4317.
@@ -7287,8 +7286,6 @@ components:
                                     Deprecated: use BackendRef instead.
                                   example: otel-collector:4317
                                   type: string
-                              required:
-                                - endpoint
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -12411,6 +12408,7 @@ components:
                               - kind
                             type: object
                           endpoint:
+                            default: ''
                             description: |-
                               Endpoint for OpenTelemetry collector.
 
@@ -12421,8 +12419,6 @@ components:
                               RefreshInterval defines how frequent metrics
                               should be pushed to collector
                             type: string
-                        required:
-                          - endpoint
                         type: object
                       prometheus:
                         description: Prometheus backend configuration.
@@ -16466,14 +16462,13 @@ components:
                               - kind
                             type: object
                           endpoint:
+                            default: ''
                             description: |-
                               Address of OpenTelemetry collector.
 
                               Deprecated: use BackendRef instead.
                             example: otel-collector:4317
                             type: string
-                        required:
-                          - endpoint
                         type: object
                       type:
                         enum:

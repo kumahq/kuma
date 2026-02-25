@@ -134,6 +134,8 @@ type OpenTelemetryBackend struct {
 	// Endpoint for OpenTelemetry collector.
 	//
 	// Deprecated: use BackendRef instead.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=""
 	Endpoint string `json:"endpoint"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
 	// defines the collector endpoint. Mutually exclusive with Endpoint.

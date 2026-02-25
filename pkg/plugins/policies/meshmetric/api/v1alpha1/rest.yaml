@@ -251,6 +251,7 @@ components:
                               - kind
                             type: object
                           endpoint:
+                            default: ""
                             description: |-
                               Endpoint for OpenTelemetry collector.
 
@@ -259,8 +260,6 @@ components:
                           refreshInterval:
                             description: RefreshInterval defines how frequent metrics should be pushed to collector
                             type: string
-                        required:
-                          - endpoint
                         type: object
                       prometheus:
                         description: Prometheus backend configuration.
