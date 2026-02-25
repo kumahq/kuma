@@ -90,16 +90,22 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 			hcm.Tracing.CustomTags = mapTags(pointer.Deref(c.Conf.Tags))
 		}
 
-		existingNames := map[string]bool{}
-		for _, t := range hcm.Tracing.CustomTags {
-			existingNames[t.Tag] = true
-		}
 		for _, entry := range []struct{ key, val string }{
 			{"kuma.mesh", c.Mesh},
 			{"kuma.zone", c.Zone},
 			{"kuma.workload", c.WorkloadKRI},
 		} {
-			if entry.val != "" && !existingNames[entry.key] {
+			if entry.val == "" {
+				continue
+			}
+			found := false
+			for _, t := range hcm.Tracing.CustomTags {
+				if t.Tag == entry.key {
+					found = true
+					break
+				}
+			}
+			if !found {
 				hcm.Tracing.CustomTags = append(hcm.Tracing.CustomTags, mapLiteralTag(entry.key, entry.val))
 			}
 		}
