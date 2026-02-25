@@ -13,6 +13,20 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
+var _ = Describe("FullPath", func() {
+	DescribeTable("should build correct path",
+		func(basePath *string, suffix string, expected string) {
+			r := &policies_xds.ResolvedOtelBackend{Path: basePath}
+			Expect(r.FullPath(suffix)).To(Equal(expected))
+		},
+		Entry("nil base path", nil, policies_xds.OtelTracesPathSuffix, "/v1/traces"),
+		Entry("root base path", pointer.To("/"), policies_xds.OtelTracesPathSuffix, "/v1/traces"),
+		Entry("custom base path", pointer.To("/custom"), policies_xds.OtelTracesPathSuffix, "/custom/v1/traces"),
+		Entry("trailing slash base path", pointer.To("/custom/"), policies_xds.OtelMetricsPathSuffix, "/custom/v1/metrics"),
+		Entry("logs suffix", pointer.To("/otel"), policies_xds.OtelLogsPathSuffix, "/otel/v1/logs"),
+	)
+})
+
 var _ = Describe("ResolveOtelBackend", func() {
 	dummyParser := func(ep string) *core_xds.Endpoint {
 		return &core_xds.Endpoint{Target: ep, Port: 4317}

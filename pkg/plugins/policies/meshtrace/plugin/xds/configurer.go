@@ -41,6 +41,10 @@ type Configurer struct {
 	// ResolvedOtelName is the resolved backend name for OTel (from backendRef or inline endpoint).
 	// When empty, falls back to backend.OpenTelemetry.Endpoint for naming.
 	ResolvedOtelName string
+	// ResolvedOtelUseHTTP is true when the resolved backend uses HTTP protocol.
+	ResolvedOtelUseHTTP bool
+	// ResolvedOtelURI is the full HTTP URI for the OTel collector (only used when ResolvedOtelUseHTTP is true).
+	ResolvedOtelURI string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -146,7 +150,13 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(otelName))),
 				GetTracingClusterName(OpenTelemetryProviderName),
 			)
-			tracing, err := c.opentelemetryConfig(name)
+			var tracing *envoy_trace.Tracing_Http
+			var err error
+			if c.ResolvedOtelUseHTTP {
+				tracing, err = openTelemetryHTTPConfig(name, c.Service, c.ResolvedOtelURI)
+			} else {
+				tracing, err = c.opentelemetryConfig(name)
+			}
 			if err != nil {
 				return err
 			}
@@ -209,9 +219,9 @@ func (c *Configurer) opentelemetryConfig(clusterName string) (*envoy_trace.Traci
 	}, nil
 }
 
-// OpenTelemetryHTTPConfig builds the Envoy OTel tracer config for an HTTP/HTTPS endpoint.
-// Used when resolving a MeshTelemetryBackend with HTTP protocol.
-func OpenTelemetryHTTPConfig(clusterName, serviceName, uri string) (*envoy_trace.Tracing_Http, error) {
+// openTelemetryHTTPConfig builds the Envoy OTel tracer config for an HTTP/HTTPS endpoint.
+// Used when resolving a MeshOpenTelemetryBackend with HTTP protocol.
+func openTelemetryHTTPConfig(clusterName, serviceName, uri string) (*envoy_trace.Tracing_Http, error) {
 	otelConfig := envoy_trace.OpenTelemetryConfig{
 		ServiceName: serviceName,
 		HttpService: &envoy_core.HttpService{
