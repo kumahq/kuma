@@ -97,7 +97,7 @@ The same dashboard set applies to Kong Mesh without modifications. Enterprise-sp
 
 ## Decision
 
-Rebuild Grafana dashboards authored as raw JSON, shipped in the Kuma release tarball. Users import them manually into their existing Grafana instance.
+Rebuild Grafana dashboards authored as raw JSON. Dashboards are stored under `dashboards/grafana/` at the repository root and included in the release tarball at `kuma-{VERSION}/dashboards/grafana/*.json`. Users download the tarball and import the JSON files manually into their existing Grafana instance.
 
 ## Notes <!-- optional -->
 
