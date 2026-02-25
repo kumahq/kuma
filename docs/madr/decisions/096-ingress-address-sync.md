@@ -13,7 +13,7 @@ we need to find another way to share `advertisedAddress` and `advertisedPort` wi
 ## Decision Drivers
 
 - reduce duplication of `advertisedAddress`,
-changing the public zone address should not trigger a mesh wide reconciliation storm
+changing the public zone address should not trigger a mesh-wide reconciliation storm
 
 ## Design
 
@@ -179,6 +179,17 @@ Once enabled, both the legacy `ZoneIngress` and the new mesh-scoped zone proxy r
 When the CP detects both a legacy `ZoneIngress` and a new `MeshZoneAddress` for a given zone,
 it prioritizes `MeshZoneAddress` and shifts all traffic to the new zone proxies.
 
+## Security implications and review
+
+Synchronizing zone ingress addresses via `MeshZoneAddress` does not introduce new exposure beyond the existing requirement for other zones to reach zone ingress endpoints.
+Addresses are derived from Kubernetes Service configuration (`externalIPs`, LoadBalancer, or NodePort) managed by cluster operators, and no additional external input is trusted.
+No new security mechanisms are removed or weakened as part of this design.
+
+## Reliability implications
+
+Reliability implications are minimal.
+If a Service does not yet have a usable external address (e.g., LoadBalancer not ready), `MeshZoneAddress` is not generated and cross-zone traffic will behave as today until the address becomes available.
+No additional single points of failure or long-lived background processes are introduced by this decision.
 ## Implications for Kong Mesh
 
 None
