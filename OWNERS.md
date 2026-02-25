@@ -14,6 +14,10 @@ Renews 2025/07/01:
 - Michael Beaumont @michaelbeaumont (mjboamail@gmail.com)
 - Charly Molter @lahabana (charly@molter.io)
 
+Renews 2028/02/25:
+
+- Bart Smykla @bartsmykla (bartek@smykla.com)
+
 # Maintainers
 
 kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers 
