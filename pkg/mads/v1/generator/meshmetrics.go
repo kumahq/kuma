@@ -4,17 +4,19 @@ import (
 	"net"
 	"strconv"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/v2/api/observability/v1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/mads"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const DefaultKumaClientId = "_kuma-default-client"
 
-func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string, inboundTagsDisabled bool) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
 	for meshMetricConf, dataplane := range meshMetricToDataplane {
@@ -33,9 +35,17 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 				schema = "https"
 			}
 
+			service := dataplane.Spec.GetIdentifyingService()
+			if inboundTagsDisabled {
+				if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+					service = workload
+				} else {
+					service = mesh_proto.ServiceUnknown
+				}
+			}
 			assignment := &observability_v1.MonitoringAssignment{
 				Mesh:    dataplane.Meta.GetMesh(),
-				Service: dataplane.Spec.GetIdentifyingService(),
+				Service: service,
 				Targets: []*observability_v1.MonitoringAssignment_Target{{
 					Scheme:      schema,
 					Name:        dataplane.GetMeta().GetName(),

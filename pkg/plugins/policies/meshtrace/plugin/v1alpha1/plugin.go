@@ -24,6 +24,7 @@ import (
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/metadata"
 	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -156,6 +157,13 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
 	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
+	if ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled {
+		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+			serviceName = workload
+		} else {
+			serviceName = mesh_proto.ServiceUnknown
+		}
+	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 

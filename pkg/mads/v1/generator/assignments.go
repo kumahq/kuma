@@ -7,13 +7,16 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/mads"
 	"github.com/kumahq/kuma/v2/pkg/mads/generator"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("generator")
 
 // MonitoringAssignmentsGenerator knows how to generate MonitoringAssignment
 // resources for a given set of Dataplanes.
-type MonitoringAssignmentsGenerator struct{}
+type MonitoringAssignmentsGenerator struct {
+	InboundTagsDisabled bool
+}
 
 // Generate implements mads.ResourceGenerator
 func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_xds.Resource, error) {
@@ -45,9 +48,17 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		// TODO: could also group by service, and have one assignment per service
+		service := dataplane.Spec.GetIdentifyingService()
+		if g.InboundTagsDisabled {
+			if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+				service = workload
+			} else {
+				service = v1alpha1.ServiceUnknown
+			}
+		}
 		assignment := &observability_v1.MonitoringAssignment{
 			Mesh:    dataplane.Meta.GetMesh(),
-			Service: dataplane.Spec.GetIdentifyingService(),
+			Service: service,
 			Targets: []*observability_v1.MonitoringAssignment_Target{{
 				Scheme:      schema,
 				Name:        dataplane.GetMeta().GetName(),

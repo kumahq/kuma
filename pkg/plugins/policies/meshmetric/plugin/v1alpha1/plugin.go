@@ -91,7 +91,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends)
+	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends, ctx.ControlPlane.InboundTagsDisabled)
 	if err != nil {
 		return err
 	}
@@ -209,8 +209,8 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	return nil
 }
 
-func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend)
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend, inboundTagsDisabled bool) error {
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend, inboundTagsDisabled)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -239,6 +239,7 @@ func createDynamicConfig(
 	resources xds_context.ResourceMap,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
+	inboundTagsDisabled bool,
 ) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
 	for _, app := range pointer.Deref(conf.Applications) {
@@ -288,7 +289,15 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["mesh"] = mesh.GetMeta().GetName()
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
-		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
+		if inboundTagsDisabled {
+			if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+				extraLabels["service"] = workload
+			} else {
+				extraLabels["service"] = mesh_proto.ServiceUnknown
+			}
+		} else {
+			extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
+		}
 	}
 
 	return dpapi.MeshMetricDpConfig{

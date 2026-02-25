@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
@@ -40,6 +41,7 @@ func NewDefaultBootstrapGenerator(
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
+	inboundTagsDisabled bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -59,6 +61,7 @@ func NewDefaultBootstrapGenerator(
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
+		inboundTagsDisabled:     inboundTagsDisabled,
 	}, nil
 }
 
@@ -73,6 +76,7 @@ type bootstrapGenerator struct {
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
+	inboundTagsDisabled     bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -172,6 +176,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
 		}
 		params.Service = dataplane.Spec.GetIdentifyingService()
+		if b.inboundTagsDisabled {
+			if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+				params.Service = workload
+			} else {
+				params.Service = mesh_proto.ServiceUnknown
+			}
+		}
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
