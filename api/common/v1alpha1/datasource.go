@@ -11,7 +11,7 @@ import (
 // DataSource defines the source of bytes to use.
 type DataSource struct {
 	// Data source is a secret with given Secret key.
-	Secret *string `json:"secret,omitempty"`
+	Secret *string `json:"secret,omitempty"` // #nosec G117 -- stores reference name, not secret value
 	// Data source is inline bytes.
 	Inline *[]byte `json:"inline,omitempty"`
 	// Data source is inline string`

@@ -117,7 +117,7 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 	}
 
 	// Envoy will not send back any response, so do we not check the response
-	response, err := httpClient.Do(request)
+	response, err := httpClient.Do(request) // #nosec G704 -- localhost Envoy admin API
 	if errors.Is(err, io.EOF) {
 		return nil // Envoy may not respond correctly for this request because it already started the shut-down process.
 	}
@@ -204,7 +204,7 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 		return nil, err
 	}
 
-	response, err := httpClient.Do(request)
+	response, err := httpClient.Do(request) // #nosec G704 -- localhost Envoy admin API
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to send GET to %s", "config_dump")
 	}

@@ -73,7 +73,7 @@ type (
 		FallbackToSystemCa       bool
 		CaCert                   []byte
 		ClientCert               []byte
-		ClientKey                []byte
+		ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
 		AllowRenegotiation       bool
 		SkipHostnameVerification bool
 		ServerName               string

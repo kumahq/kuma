@@ -132,7 +132,7 @@ func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 	if h.lastEtag != "" {
 		r.Header.Set("If-None-Match", h.lastEtag)
 	}
-	response, err := cf.httpClient.Do(r)
+	response, err := cf.httpClient.Do(r) // #nosec G704 -- localhost socket communication, not user-controlled URL
 	if err != nil {
 		var opErr *net.OpError
 		if errors.As(err, &opErr) && os.IsNotExist(opErr.Err) {

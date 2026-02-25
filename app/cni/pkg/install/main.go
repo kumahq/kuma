@@ -217,7 +217,7 @@ func tryWritingToDir(dir string) error {
 		return errors.Wrap(err, "unable to atomically write CNI binary file")
 	}
 
-	if err := os.Chmod(destination, stat.Mode()|0o111); err != nil {
+	if err := os.Chmod(destination, stat.Mode()|0o111); err != nil { // #nosec G703 -- destination built from controlled dir and hardcoded binary name
 		return errors.Wrap(err, "unable to chmod CNI binary file")
 	}
 
