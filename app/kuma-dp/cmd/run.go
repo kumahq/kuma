@@ -229,6 +229,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
 
+			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
+				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP
+			}
+
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
