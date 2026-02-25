@@ -34,6 +34,7 @@ import (
 	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
 	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
@@ -75,6 +76,7 @@ var _ = Describe("MeshAccessLog", func() {
 		expectedClusters  []string
 		features          xds_types.Features
 		meshServicesMode  mesh_proto.Mesh_MeshServices_Mode
+		dataplaneLabels   map[string]string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -99,25 +101,28 @@ var _ = Describe("MeshAccessLog", func() {
 				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 				Build()
 
+			dpBuilder := builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				AddInbound(builders.Inbound().
+					WithService("backend").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+				)
+			if given.dataplaneLabels != nil {
+				dpBuilder = dpBuilder.WithLabels(given.dataplaneLabels)
+			}
+
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir:  "/tmp",
 					Features: given.features,
 				}).
-				WithDataplane(
-					builders.Dataplane().
-						WithName("backend").
-						WithMesh("default").
-						AddInbound(builders.Inbound().
-							WithService("backend").
-							WithAddress("127.0.0.1").
-							WithPort(17777).
-							WithTags(map[string]string{
-								mesh_proto.ProtocolTag: "http",
-							}),
-						),
-				).
+				WithDataplane(dpBuilder).
 				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
 					LegacyOutbound: builders.Outbound().
 						WithService("other-service-http").
@@ -721,6 +726,87 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
+		}),
+		Entry("outbound otel backend with workload identity", sidecarTestCase{
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
+					Split: []envoy_common.Split{
+						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+					},
+				}}),
+			},
+			dataplaneLabels: map[string]string{
+				mesh_proto.ZoneTag:          "zone-1",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				k8s_metadata.KumaWorkload:   "backend",
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceHTTP: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									OpenTelemetry: &api.OtelBackend{
+										Endpoint: "otel-collector",
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
+										},
+										Attributes: &[]api.JsonValue{
+											{Key: "mesh", Value: "%KUMA_MESH%"},
+											{Key: "zone", Value: "%KUMA_ZONE%"},
+											{Key: "workload", Value: "%KUMA_WORKLOAD%"},
+											{Key: "%KUMA_ZONE%", Value: "static-zone-value"},
+										},
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"outbound_otel_workload_identity.listener.golden.yaml"},
+			expectedClusters:  []string{"outbound_otel_workload_identity.cluster.golden.yaml"},
+		}),
+		Entry("outbound file backend with workload variables", sidecarTestCase{
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+			},
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
+					Split: []envoy_common.Split{
+						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+					},
+				}}),
+			},
+			dataplaneLabels: map[string]string{
+				mesh_proto.ZoneTag:          "zone-1",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				k8s_metadata.KumaWorkload:   "backend",
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceHTTP: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+										Format: &api.Format{
+											Plain: pointer.To("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
+										},
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"outbound_file_workload_identity.listener.golden.yaml"},
 		}),
 	)
 	type gatewayTestCase struct {

@@ -138,7 +138,7 @@ func CreateInboundPassthroughListener(
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.OriginalDstForwarder())
 
-	if useStrictInboundPorts {
+	if useStrictInboundPorts && len(proxy.Dataplane.Spec.Networking.Inbound) > 0 {
 		for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
 			// if service doesn't have any port we don't need to expose listener
 			if inbound.Port == mesh_proto.TCPPortReserved {
