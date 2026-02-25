@@ -1,0 +1,4 @@
+nodeEndpoint:
+  port: 4317
+  path: /some/path
+protocol: grpc

@@ -22,9 +22,9 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 	case !hasEndpoint && !hasNodeEndpoint:
 		verr.AddViolationAt(path, "exactly one of endpoint or nodeEndpoint must be set")
 	case hasEndpoint:
-		verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(*r.Spec.Endpoint))
+		verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(*r.Spec.Endpoint, r.Spec.Protocol))
 	case hasNodeEndpoint:
-		verr.AddErrorAt(path.Field("nodeEndpoint"), validateNodeEndpoint(*r.Spec.NodeEndpoint))
+		verr.AddErrorAt(path.Field("nodeEndpoint"), validateNodeEndpoint(*r.Spec.NodeEndpoint, r.Spec.Protocol))
 	}
 
 	verr.AddErrorAt(path, validateProtocol(r.Spec.Protocol))
@@ -32,7 +32,7 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateEndpoint(endpoint Endpoint) validators.ValidationError {
+func validateEndpoint(endpoint Endpoint, protocol Protocol) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if endpoint.Address == "" {
@@ -42,15 +42,15 @@ func validateEndpoint(endpoint Endpoint) validators.ValidationError {
 	}
 
 	verr.Add(validatePort(endpoint.Port))
-	verr.Add(validatePath(endpoint.Path))
+	verr.Add(validatePath(endpoint.Path, protocol))
 
 	return verr
 }
 
-func validateNodeEndpoint(endpoint NodeEndpoint) validators.ValidationError {
+func validateNodeEndpoint(endpoint NodeEndpoint, protocol Protocol) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.Add(validatePort(endpoint.Port))
-	verr.Add(validatePath(endpoint.Path))
+	verr.Add(validatePath(endpoint.Path, protocol))
 	return verr
 }
 
@@ -62,10 +62,14 @@ func validatePort(port int32) validators.ValidationError {
 	return verr
 }
 
-func validatePath(path *string) validators.ValidationError {
+func validatePath(path *string, protocol Protocol) validators.ValidationError {
 	var verr validators.ValidationError
 	if path != nil && *path != "" {
 		pathField := validators.RootedAt("path")
+		if protocol == ProtocolGRPC || protocol == "" {
+			verr.AddViolationAt(pathField, "must not be set when protocol is grpc")
+			return verr
+		}
 		if !strings.HasPrefix(*path, "/") {
 			verr.AddViolationAt(pathField, "must start with /")
 		}

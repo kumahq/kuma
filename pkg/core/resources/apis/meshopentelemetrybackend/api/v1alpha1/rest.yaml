@@ -167,7 +167,7 @@ components:
                   description: |-
                     Path is an optional base path prefix for HTTP endpoints.
                     The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
-                    Ignored for gRPC.
+                    Non-empty value is rejected by validation when protocol is grpc.
                   type: string
                 port:
                   description: Port of the OTel collector.
@@ -190,7 +190,7 @@ components:
                   description: |-
                     Path is an optional base path prefix for HTTP endpoints.
                     The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
-                    Ignored for gRPC.
+                    Non-empty value is rejected by validation when protocol is grpc.
                   type: string
                 port:
                   description: Port of the OTel collector on the node.

@@ -1,0 +1,3 @@
+violations:
+- field: spec.nodeEndpoint.path
+  message: must not be set when protocol is grpc

@@ -49,8 +49,11 @@ var _ = Describe("MeshOpenTelemetryBackend", func() {
 			Entry("full valid HTTP with path", testCase{
 				file: "full-valid-http",
 			}),
-			Entry("gRPC with path is valid (path silently ignored)", testCase{
-				file: "grpc-with-path-valid",
+			Entry("gRPC with path is invalid", testCase{
+				file: "grpc-with-path-invalid",
+			}),
+			Entry("nodeEndpoint gRPC with path is invalid", testCase{
+				file: "node-endpoint-grpc-with-path-invalid",
 			}),
 			Entry("missing address", testCase{
 				file: "missing-address-invalid",
