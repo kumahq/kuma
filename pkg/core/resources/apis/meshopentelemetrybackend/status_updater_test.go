@@ -10,6 +10,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -260,6 +261,49 @@ var _ = Describe("StatusUpdater", func() {
 
 		// condition should change to NotReferenced
 		Eventually(getConditions("main-collector"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    motb_api.ReferencedByPoliciesCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  motb_api.NotReferencedReason,
+			Message: "Not referenced by any observability policy",
+		}))
+	})
+
+	It("should not count refs from a different mesh", func() {
+		// MOTB is in default mesh; policy is in other-mesh with same backendRef name.
+		// The status updater must not count the cross-mesh ref.
+		createMOTB("main-collector")
+		Expect(samples.MeshDefaultBuilder().WithName("other-mesh").Create(resManager)).To(Succeed())
+		mmOtherMesh := meshmetric_api.NewMeshMetricResource()
+		mmOtherMesh.Spec = &meshmetric_api.MeshMetric{
+			Default: meshmetric_api.Conf{
+				Backends: &[]meshmetric_api.Backend{
+					{
+						Type: meshmetric_api.OpenTelemetryBackendType,
+						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
+							BackendRef: &common_api.TargetRef{
+								Kind: "MeshOpenTelemetryBackend",
+								Name: pointer.To("main-collector"),
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(
+			context.Background(),
+			mmOtherMesh,
+			store.CreateByKey("mm-other-mesh", "other-mesh"),
+			store.CreateWithLabels(map[string]string{mesh_proto.MeshTag: "other-mesh"}),
+		)).To(Succeed())
+
+		// MOTB in default mesh should stay NotReferenced
+		Eventually(getConditions("main-collector"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    motb_api.ReferencedByPoliciesCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  motb_api.NotReferencedReason,
+			Message: "Not referenced by any observability policy",
+		}))
+		Consistently(getConditions("main-collector"), "1s", "100ms").Should(ContainElement(common_api.Condition{
 			Type:    motb_api.ReferencedByPoliciesCondition,
 			Status:  kube_meta.ConditionFalse,
 			Reason:  motb_api.NotReferencedReason,

@@ -101,12 +101,14 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	for _, motb := range motbList.Items {
 		displayName := motb.GetMeta().GetLabels()[mesh_proto.DisplayName]
 		name := motb.GetMeta().GetName()
+		mesh := motb.GetMeta().GetLabels()[mesh_proto.MeshTag]
 		// backendRef.name uses the display name (e.g. "main-collector"),
 		// but GetName() includes the K8s namespace suffix (e.g. "main-collector.kuma-system").
 		// Check both to handle all environments correctly.
-		count := refCounts[displayName] + refCounts[name]
+		// Keys are "<mesh>/<name>" to avoid counting refs from other meshes.
+		count := refCounts[mesh+"/"+displayName] + refCounts[mesh+"/"+name]
 		if displayName == name {
-			count = refCounts[name] // avoid double counting when they're the same
+			count = refCounts[mesh+"/"+name] // avoid double counting when they're the same
 		}
 		condition := buildReferencedByCondition(count)
 
@@ -127,7 +129,8 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 }
 
 // countBackendRefs scans all three observability policy types and counts how many
-// OTel backends reference each MeshOpenTelemetryBackend by name.
+// OTel backends reference each MeshOpenTelemetryBackend by name, keyed by "<mesh>/<name>"
+// to avoid counting refs from a different mesh.
 func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, error) {
 	counts := map[string]int{}
 
@@ -137,9 +140,10 @@ func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, e
 		return nil, errors.Wrap(err, "could not list MeshMetrics")
 	}
 	for _, mm := range meshMetrics.Items {
+		mesh := mm.GetMeta().GetLabels()[mesh_proto.MeshTag]
 		for _, backend := range pointer.Deref(mm.Spec.Default.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
+				counts[mesh+"/"+pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
 			}
 		}
 	}
@@ -150,9 +154,10 @@ func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, e
 		return nil, errors.Wrap(err, "could not list MeshTraces")
 	}
 	for _, mt := range meshTraces.Items {
+		mesh := mt.GetMeta().GetLabels()[mesh_proto.MeshTag]
 		for _, backend := range pointer.Deref(mt.Spec.Default.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
+				counts[mesh+"/"+pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
 			}
 		}
 	}
@@ -163,18 +168,20 @@ func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, e
 		return nil, errors.Wrap(err, "could not list MeshAccessLogs")
 	}
 	for _, mal := range meshAccessLogs.Items {
-		collectAccessLogBackendRefs(mal.Spec, counts)
+		mesh := mal.GetMeta().GetLabels()[mesh_proto.MeshTag]
+		collectAccessLogBackendRefs(mesh, mal.Spec, counts)
 	}
 
 	return counts, nil
 }
 
 // collectAccessLogBackendRefs extracts backendRef names from all MeshAccessLog conf locations.
-func collectAccessLogBackendRefs(spec *meshaccesslog_api.MeshAccessLog, counts map[string]int) {
+// Keys written into counts use "<mesh>/<name>" format.
+func collectAccessLogBackendRefs(mesh string, spec *meshaccesslog_api.MeshAccessLog, counts map[string]int) {
 	collectFromConf := func(conf meshaccesslog_api.Conf) {
 		for _, backend := range pointer.Deref(conf.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
+				counts[mesh+"/"+pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
 			}
 		}
 	}
