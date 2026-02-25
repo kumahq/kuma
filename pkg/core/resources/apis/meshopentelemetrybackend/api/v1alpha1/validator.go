@@ -13,7 +13,20 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 
-	verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(r.Spec.Endpoint))
+	hasEndpoint := r.Spec.Endpoint != nil
+	hasNodeEndpoint := r.Spec.NodeEndpoint != nil
+
+	switch {
+	case hasEndpoint && hasNodeEndpoint:
+		verr.AddViolationAt(path, "exactly one of endpoint or nodeEndpoint must be set, not both")
+	case !hasEndpoint && !hasNodeEndpoint:
+		verr.AddViolationAt(path, "exactly one of endpoint or nodeEndpoint must be set")
+	case hasEndpoint:
+		verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(*r.Spec.Endpoint))
+	case hasNodeEndpoint:
+		verr.AddErrorAt(path.Field("nodeEndpoint"), validateNodeEndpoint(*r.Spec.NodeEndpoint))
+	}
+
 	verr.AddErrorAt(path, validateProtocol(r.Spec.Protocol))
 
 	return verr.OrNil()
@@ -28,20 +41,38 @@ func validateEndpoint(endpoint Endpoint) validators.ValidationError {
 		verr.AddViolationAt(validators.RootedAt("address"), "address has to be a valid IP or hostname")
 	}
 
-	if endpoint.Port == 0 || endpoint.Port > math.MaxUint16 {
+	verr.Add(validatePort(endpoint.Port))
+	verr.Add(validatePath(endpoint.Path))
+
+	return verr
+}
+
+func validateNodeEndpoint(endpoint NodeEndpoint) validators.ValidationError {
+	var verr validators.ValidationError
+	verr.Add(validatePort(endpoint.Port))
+	verr.Add(validatePath(endpoint.Path))
+	return verr
+}
+
+func validatePort(port int32) validators.ValidationError {
+	var verr validators.ValidationError
+	if port == 0 || port > math.MaxUint16 {
 		verr.AddViolationAt(validators.RootedAt("port"), "port must be a valid (1-65535)")
 	}
+	return verr
+}
 
-	if endpoint.Path != nil && *endpoint.Path != "" {
+func validatePath(path *string) validators.ValidationError {
+	var verr validators.ValidationError
+	if path != nil && *path != "" {
 		pathField := validators.RootedAt("path")
-		if !strings.HasPrefix(*endpoint.Path, "/") {
+		if !strings.HasPrefix(*path, "/") {
 			verr.AddViolationAt(pathField, "must start with /")
 		}
-		if strings.ContainsAny(*endpoint.Path, "?#") {
+		if strings.ContainsAny(*path, "?#") {
 			verr.AddViolationAt(pathField, "must not contain query or fragment")
 		}
 	}
-
 	return verr
 }
 

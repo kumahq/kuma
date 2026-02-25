@@ -1,0 +1,3 @@
+violations:
+- field: spec
+  message: exactly one of endpoint or nodeEndpoint must be set, not both
