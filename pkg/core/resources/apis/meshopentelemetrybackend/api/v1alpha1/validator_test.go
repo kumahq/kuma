@@ -73,6 +73,21 @@ var _ = Describe("MeshOpenTelemetryBackend", func() {
 			Entry("path with query string", testCase{
 				file: "path-with-query-invalid",
 			}),
+			Entry("nodeEndpoint valid", testCase{
+				file: "node-endpoint-valid",
+			}),
+			Entry("nodeEndpoint with path valid", testCase{
+				file: "node-endpoint-with-path-valid",
+			}),
+			Entry("nodeEndpoint port out of range", testCase{
+				file: "node-endpoint-port-invalid",
+			}),
+			Entry("both endpoint and nodeEndpoint set", testCase{
+				file: "both-endpoints-invalid",
+			}),
+			Entry("neither endpoint nor nodeEndpoint set", testCase{
+				file: "no-endpoint-invalid",
+			}),
 		)
 	})
 })

@@ -14,7 +14,15 @@ import (
 // +kuma:policy:singular_display_name=Mesh OpenTelemetry Backend
 type MeshOpenTelemetryBackend struct {
 	// Endpoint defines the OTel collector address and port.
-	Endpoint Endpoint `json:"endpoint"`
+	// Exactly one of endpoint or nodeEndpoint must be specified.
+	// +kubebuilder:validation:Optional
+	Endpoint *Endpoint `json:"endpoint,omitempty"`
+	// NodeEndpoint connects to an OTel collector running as a DaemonSet
+	// (hostPort mode) on the same node as the workload. The node's host IP
+	// is injected by the injector and used as the target address.
+	// Exactly one of endpoint or nodeEndpoint must be specified.
+	// +kubebuilder:validation:Optional
+	NodeEndpoint *NodeEndpoint `json:"nodeEndpoint,omitempty"`
 	// Protocol selects gRPC or HTTP transport for the collector connection.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=grpc
@@ -29,6 +37,19 @@ const (
 	ProtocolGRPC Protocol = "grpc"
 	ProtocolHTTP Protocol = "http"
 )
+
+// NodeEndpoint connects to an OTel collector running as a DaemonSet
+// (hostPort mode). The node's host IP is used as the target address.
+type NodeEndpoint struct {
+	// Port of the OTel collector on the node.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
+	// Path is an optional base path prefix for HTTP endpoints.
+	// The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
+	// Ignored for gRPC.
+	Path *string `json:"path,omitempty"`
+}
 
 type Endpoint struct {
 	// Address of the OTel collector (hostname or IP).

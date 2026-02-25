@@ -55,7 +55,7 @@ var _ = Describe("StatusUpdater", func() {
 	createMOTB := func(name string) {
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
 		motb.Spec = &motb_api.MeshOpenTelemetryBackend{
-			Endpoint: motb_api.Endpoint{
+			Endpoint: &motb_api.Endpoint{
 				Address: "otel-collector.observability",
 				Port:    4317,
 			},
