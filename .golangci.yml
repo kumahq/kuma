@@ -183,6 +183,13 @@ linters:
           - staticcheck
         text: 'ST1001: should not use dot imports'
       - linters:
+          - staticcheck
+        path: 'api/common/v1alpha1/targetref\.go'
+        text: 'SA5008'
+      - linters:
+          - gosec
+        path: '(_test\.go$|^test/)'
+      - linters:
           - forbidigo
         path: pkg/core/tracing/span\.go
         text: 'Use tracing.SafeSpanEnd'
