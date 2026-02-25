@@ -9,6 +9,7 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
@@ -36,7 +37,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 	It("should return nil when no config sources exist", func() {
 		result := policies_xds.ResolveOtelBackend(
-			nil, "", dummyParser, dummyNamer, emptyResources,
+			nil, "", dummyParser, dummyNamer, emptyResources, "",
 		)
 		Expect(result).To(BeNil())
 	})
@@ -57,7 +58,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 				},
 			}
 			result := policies_xds.ResolveOtelBackend(
-				backendRef, "inline-collector:4317", dummyParser, dummyNamer, resources,
+				backendRef, "inline-collector:4317", dummyParser, dummyNamer, resources, "",
 			)
 			// Dangling backendRef returns nil, does NOT fall through
 			Expect(result).To(BeNil())
@@ -65,11 +66,54 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 		It("should resolve inline endpoint when no backendRef", func() {
 			result := policies_xds.ResolveOtelBackend(
-				nil, "inline-collector:4317", dummyParser, dummyNamer, emptyResources,
+				nil, "inline-collector:4317", dummyParser, dummyNamer, emptyResources, "",
 			)
 			Expect(result).ToNot(BeNil())
 			Expect(result.Endpoint.Target).To(Equal("inline-collector:4317"))
 			Expect(result.Protocol).To(Equal(motb_api.ProtocolGRPC))
+		})
+	})
+
+	Describe("nodeEndpoint resolution", func() {
+		makeResources := func(backend *motb_api.MeshOpenTelemetryBackendResource) xds_context.Resources {
+			list := &motb_api.MeshOpenTelemetryBackendResourceList{Items: []*motb_api.MeshOpenTelemetryBackendResource{backend}}
+			return xds_context.Resources{
+				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					motb_api.MeshOpenTelemetryBackendType: list,
+				},
+			}
+		}
+		backendRef := &common_api.TargetRef{
+			Kind: "MeshOpenTelemetryBackend",
+			Name: pointer.To("daemonset-collector"),
+		}
+
+		It("should use nodeHostIP when nodeEndpoint is set", func() {
+			backend := motb_api.NewMeshOpenTelemetryBackendResource()
+			backend.SetMeta(&test_model.ResourceMeta{Name: "daemonset-collector", Mesh: "default"})
+			backend.Spec.NodeEndpoint = &motb_api.NodeEndpoint{Port: 4317}
+			backend.Spec.Protocol = motb_api.ProtocolGRPC
+
+			result := policies_xds.ResolveOtelBackend(
+				backendRef, "", dummyParser, dummyNamer, makeResources(backend), "192.168.1.5",
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.Endpoint.Target).To(Equal("192.168.1.5"))
+			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
+		})
+
+		It("should fall back to 127.0.0.1 when nodeHostIP is empty", func() {
+			backend := motb_api.NewMeshOpenTelemetryBackendResource()
+			backend.SetMeta(&test_model.ResourceMeta{Name: "daemonset-collector", Mesh: "default"})
+			backend.Spec.NodeEndpoint = &motb_api.NodeEndpoint{Port: 4317}
+			backend.Spec.Protocol = motb_api.ProtocolGRPC
+
+			result := policies_xds.ResolveOtelBackend(
+				backendRef, "", dummyParser, dummyNamer, makeResources(backend), "",
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.Endpoint.Target).To(Equal("127.0.0.1"))
+			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
 		})
 	})
 })

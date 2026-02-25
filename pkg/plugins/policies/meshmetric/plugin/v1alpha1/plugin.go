@@ -182,6 +182,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		endpointForOpenTelemetry,
 		backendNameFrom,
 		resources,
+		proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 	)
 	if resolved == nil {
 		return nil
@@ -280,6 +281,7 @@ func createDynamicConfig(
 			endpointForOpenTelemetry,
 			backendNameFrom,
 			resources,
+			proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 		)
 		if resolved == nil {
 			continue

@@ -85,6 +85,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := &EndpointAccumulator{
 		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
 		Resources:             ctx.Mesh.Resources,
+		NodeHostIP:            proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 	}
 
 	listeners := policies_xds.GatherListeners(rs)

@@ -61,7 +61,7 @@ func BaseAccessLogBuilder(
 				Configure(bldrs_accesslog.Path(fileBackend.Path)))
 		})).
 		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
-			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc.Resources)
+			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc.Resources, backendsAcc.NodeHostIP)
 			if endpoint == nil {
 				return nil
 			}
@@ -80,6 +80,7 @@ type EndpointAccumulator struct {
 	latest                int
 	UnifiedResourceNaming bool
 	Resources             xds_context.Resources
+	NodeHostIP            string
 }
 
 type endpointClusterName string
@@ -103,7 +104,7 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 	return endpointClusterName(name)
 }
 
-func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_context.Resources) *LoggingEndpoint {
+func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_context.Resources, nodeHostIP string) *LoggingEndpoint {
 	resolved := policies_xds.ResolveOtelBackend(
 		otelBackend.BackendRef,
 		otelBackend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
@@ -113,6 +114,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_cont
 		},
 		func(ep string) string { return ep },
 		resources,
+		nodeHostIP,
 	)
 	if resolved == nil {
 		return nil
