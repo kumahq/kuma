@@ -67,7 +67,7 @@ func getPids(name string) []int {
 				continue
 			}
 
-			cmdline, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "cmdline"))
+			cmdline, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "cmdline")) // #nosec G703 -- pid is validated integer, path is safe
 			if err != nil {
 				continue
 			}
