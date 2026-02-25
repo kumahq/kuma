@@ -47,15 +47,18 @@ func (r *ResolvedOtelBackend) FullPath(signalSuffix string) string {
 // ResolveOtelBackend resolves a backendRef to a MeshOpenTelemetryBackend resource,
 // falling back to the inline endpoint if backendRef is nil.
 // Returns nil when the backendRef is dangling (resource not found) or no config exists.
+// nodeHostIP is the host IP of the node running the workload, used when the backend
+// specifies nodeEndpoint. Falls back to 127.0.0.1 when empty (Universal mode).
 func ResolveOtelBackend(
 	backendRef *common_api.TargetRef,
 	inlineEndpoint string,
 	inlineEndpointParser func(string) *core_xds.Endpoint,
 	inlineNameDeriver func(string) string,
 	resources xds_context.Resources,
+	nodeHostIP string,
 ) *ResolvedOtelBackend {
 	if backendRef != nil {
-		return resolveFromBackendRef(backendRef, resources)
+		return resolveFromBackendRef(backendRef, resources, nodeHostIP)
 	}
 	if inlineEndpoint != "" {
 		return &ResolvedOtelBackend{
@@ -67,12 +70,27 @@ func ResolveOtelBackend(
 	return nil
 }
 
-func resolveFromBackendRef(ref *common_api.TargetRef, resources xds_context.Resources) *ResolvedOtelBackend {
+func resolveFromBackendRef(ref *common_api.TargetRef, resources xds_context.Resources, nodeHostIP string) *ResolvedOtelBackend {
 	name := pointer.Deref(ref.Name)
 	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
 		displayName := backend.GetMeta().GetLabels()[mesh_proto.DisplayName]
 		if displayName == name || backend.GetMeta().GetName() == name {
 			spec := backend.Spec
+			if spec.NodeEndpoint != nil {
+				addr := nodeHostIP
+				if addr == "" {
+					addr = "127.0.0.1"
+				}
+				return &ResolvedOtelBackend{
+					Endpoint: &core_xds.Endpoint{
+						Target: addr,
+						Port:   uint32(spec.NodeEndpoint.Port),
+					},
+					Protocol: spec.Protocol,
+					Path:     spec.NodeEndpoint.Path,
+					Name:     name,
+				}
+			}
 			return &ResolvedOtelBackend{
 				Endpoint: &core_xds.Endpoint{
 					Target: spec.Endpoint.Address,

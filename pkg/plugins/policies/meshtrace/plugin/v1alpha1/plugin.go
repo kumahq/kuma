@@ -175,7 +175,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		}
 		workloadKRI = id.String()
 	}
-	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
+	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
 
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
@@ -246,6 +246,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			parseOtelEndpointString,
 			func(ep string) string { return ep },
 			ctx.Mesh.Resources,
+			proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP),
 		)
 		if resolved == nil {
 			return nil
@@ -311,7 +312,7 @@ func parseOtelEndpointString(endpoint string) *xds.Endpoint {
 	}
 }
 
-func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *policies_xds.ResolvedOtelBackend {
+func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources, nodeHostIP string) *policies_xds.ResolvedOtelBackend {
 	backends := pointer.Deref(conf.Backends)
 	if len(backends) == 0 {
 		return nil
@@ -326,6 +327,7 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *pol
 		parseOtelEndpointString,
 		func(ep string) string { return ep },
 		resources,
+		nodeHostIP,
 	)
 }
 
