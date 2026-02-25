@@ -255,14 +255,13 @@ components:
                               - kind
                             type: object
                           endpoint:
+                            default: ""
                             description: |-
                               Address of OpenTelemetry collector.
 
                               Deprecated: use BackendRef instead.
                             example: otel-collector:4317
                             type: string
-                        required:
-                          - endpoint
                         type: object
                       type:
                         enum:
