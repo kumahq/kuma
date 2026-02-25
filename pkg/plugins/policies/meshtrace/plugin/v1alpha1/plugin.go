@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"net"
 	net_url "net/url"
 	"strconv"
@@ -174,7 +175,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		}
 		workloadKRI = id.String()
 	}
-	resolvedOtelName := resolveOtelName(conf, ctx.Mesh.Resources)
+	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
 
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
@@ -186,7 +187,14 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:                  proxy.Zone,
 		WorkloadKRI:           workloadKRI,
-		ResolvedOtelName:      resolvedOtelName,
+	}
+	if resolved != nil {
+		configurer.ResolvedOtelName = resolved.Name
+		if resolved.Protocol == motb_api.ProtocolHTTP {
+			configurer.ResolvedOtelUseHTTP = true
+			host := net.JoinHostPort(resolved.Endpoint.Target, strconv.Itoa(int(resolved.Endpoint.Port)))
+			configurer.ResolvedOtelURI = fmt.Sprintf("http://%s%s", host, resolved.FullPath(policies_xds.OtelTracesPathSuffix))
+		}
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -303,26 +311,22 @@ func parseOtelEndpointString(endpoint string) *xds.Endpoint {
 	}
 }
 
-func resolveOtelName(conf api.Conf, resources xds_context.Resources) string {
+func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *policies_xds.ResolvedOtelBackend {
 	backends := pointer.Deref(conf.Backends)
 	if len(backends) == 0 {
-		return ""
+		return nil
 	}
 	backend := backends[0]
 	if backend.OpenTelemetry == nil {
-		return ""
+		return nil
 	}
-	resolved := policies_xds.ResolveOtelBackend(
+	return policies_xds.ResolveOtelBackend(
 		backend.OpenTelemetry.BackendRef,
 		backend.OpenTelemetry.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
 		parseOtelEndpointString,
 		func(ep string) string { return ep },
 		resources,
 	)
-	if resolved == nil {
-		return ""
-	}
-	return resolved.Name
 }
 
 func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {

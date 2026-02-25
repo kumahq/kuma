@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"path"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -9,6 +10,13 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+)
+
+// OTLP/HTTP signal path suffixes per the OpenTelemetry Protocol specification.
+const (
+	OtelTracesPathSuffix  = "v1/traces"
+	OtelMetricsPathSuffix = "v1/metrics"
+	OtelLogsPathSuffix    = "v1/logs"
 )
 
 var otelLog = core.Log.WithName("otel-backend-resolution")
@@ -23,6 +31,17 @@ type ResolvedOtelBackend struct {
 	// Name is used for naming clusters/listeners. For backendRef it's the resource name,
 	// for inline endpoint it's derived from the endpoint string.
 	Name string
+}
+
+// FullPath joins the base path from MeshOpenTelemetryBackend with the given
+// OTLP signal suffix (e.g. OtelTracesPathSuffix). Returns "/" + suffix when
+// no base path is set.
+func (r *ResolvedOtelBackend) FullPath(signalSuffix string) string {
+	base := "/"
+	if r.Path != nil {
+		base = *r.Path
+	}
+	return path.Join(base, signalSuffix)
 }
 
 // ResolveOtelBackend resolves a backendRef to a MeshOpenTelemetryBackend resource,
