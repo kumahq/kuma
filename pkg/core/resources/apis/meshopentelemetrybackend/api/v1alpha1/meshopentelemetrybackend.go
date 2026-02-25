@@ -47,7 +47,7 @@ type NodeEndpoint struct {
 	Port int32 `json:"port"`
 	// Path is an optional base path prefix for HTTP endpoints.
 	// The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
-	// Ignored for gRPC.
+	// Non-empty value is rejected by validation when protocol is grpc.
 	Path *string `json:"path,omitempty"`
 }
 
@@ -61,7 +61,7 @@ type Endpoint struct {
 	Port int32 `json:"port"`
 	// Path is an optional base path prefix for HTTP endpoints.
 	// The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
-	// Ignored for gRPC.
+	// Non-empty value is rejected by validation when protocol is grpc.
 	Path *string `json:"path,omitempty"`
 }
 
