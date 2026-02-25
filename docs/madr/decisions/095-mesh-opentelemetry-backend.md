@@ -54,7 +54,7 @@ spec:
   endpoint:             # +optional, mutually exclusive with nodeEndpoint
     address: otel-collector.observability
     port: 4317
-    path: ""            # +optional, base path prefix for HTTP (ignored for gRPC)
+    path: ""            # +optional, base path prefix for HTTP; non-empty value is rejected by validation when protocol: grpc
   # nodeEndpoint:       # +optional, mutually exclusive with endpoint
   #   port: 4317        # required, 1-65535
   #   path: ""          # +optional, base path prefix for HTTP (ignored for gRPC)
@@ -192,8 +192,6 @@ type OpenTelemetryBackend struct {
    - Convert to the same `*core_xds.Endpoint` struct used today
 3. Proceed with existing cluster/listener creation - no changes downstream
 
-This follows the same pattern as TargetRef resolution in policies (`pkg/plugins/policies/core/rules/resolve/targetref.go`).
-
 #### Resource characteristics
 
 | Property        | Value                                                                                |
@@ -204,8 +202,6 @@ This follows the same pattern as TargetRef resolution in policies (`pkg/plugins/
 | `KDSFlags`      | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> (same as MeshExternalService) |
 | `ShortName`     | `motb`                                                                               |
 | `IsDestination` | false                                                                                |
-
-Placed in `pkg/core/resources/apis/meshopentelemetrybackend/` following the same directory structure as MeshExternalService.
 
 #### Advantages
 
@@ -525,7 +521,7 @@ The first implementation covers:
 
 1. MeshOpenTelemetryBackend resource with `endpoint` (address + port + path) or `nodeEndpoint` (port + path), `protocol` (grpc/http), and `HasStatus: true`
 2. `backendRef` field added to all three policy OTel backends
-3. Validation: exactly one of `endpoint` or `nodeEndpoint` on the resource; exactly one of `endpoint` or `backendRef` on each policy backend (mutual exclusivity enforced at admission)
+3. Validation: exactly one of `endpoint` or `nodeEndpoint` on the resource; exactly one of `endpoint` or `backendRef` on each policy backend (mutual exclusivity enforced at admission); non-empty `path` rejected when `protocol: grpc`
 4. Resolution in each policy's Apply(): `endpoint` uses address directly; `nodeEndpoint` resolves host IP from `BootstrapDynamicMetadata["HOST_IP"]`, falls back to `127.0.0.1` on Universal
 5. Sidecar injector injects `HOST_IP` env var (Downward API `status.hostIP`) into the kuma-dp container to support `nodeEndpoint`
 6. Status conditions on the resource to surface unresolved backendRefs (user story 5)
