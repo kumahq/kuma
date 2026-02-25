@@ -57,7 +57,7 @@ spec:
     path: ""            # +optional, base path prefix for HTTP; non-empty value is rejected by validation when protocol: grpc
   # nodeEndpoint:       # +optional, mutually exclusive with endpoint
   #   port: 4317        # required, 1-65535
-  #   path: ""          # +optional, base path prefix for HTTP (ignored for gRPC)
+  #   path: ""          # +optional, base path prefix for HTTP; non-empty value is rejected by validation when protocol: grpc
   protocol: grpc        # +optional, grpc (default) or http
 ```
 
@@ -221,8 +221,6 @@ type OpenTelemetryBackend struct {
 - More indirection (policy -> resource -> endpoint)
 
 #### Configuration walkthroughs
-
-Concrete configurations for each user story, all using Option A.
 
 ##### Story 1: Single collector, incremental rollout
 
