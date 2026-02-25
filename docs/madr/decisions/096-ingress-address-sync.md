@@ -12,8 +12,7 @@ we need to find another way to share `advertisedAddress` and `advertisedPort` wi
 
 ## Decision Drivers
 
-- reduce duplication of `advertisedAddress`,
-changing the public zone address should not trigger a mesh-wide reconciliation storm
+- reduce duplication of `advertisedAddress`, changing the public zone address should not trigger a mesh wide reconciliation storm
 
 ## Design
 
@@ -24,6 +23,35 @@ Chosen option: Option 1.
 The downside of introducing a new resource is mitigated by the fact that creation of new resource type is already automated in Kuma.
 
 ### Option 1: Create new MeshZoneAddress resource
+
+Resource descriptor
+```golang
+var MeshZoneAddressResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                         MeshZoneAddressType,
+	Resource:                     NewMeshZoneAddressResource(),
+	ResourceList:                 &MeshZoneAddressResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	WsPath:                       "meshzoneaddresses",
+	KumactlArg:                   "meshzoneaddress",
+	KumactlListArg:               "meshzoneaddresses",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Zone Address",
+	PluralDisplayName:            "Mesh Zone Addresses",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasRulesTargetRef:            false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
+	IsReferenceableInTo:          false,
+	ShortName:                    "mza",
+	IsFromAsRules:                false,
+}
+```
 
 We can run a controller on the Zone CP that watches Service resources labeled `k8s.kuma.io/zone-proxy-type: ingress`
 and creates a corresponding MeshZoneAddress resource.
@@ -38,7 +66,7 @@ metadata:
     kuma.io/mesh: default
     kuma.io/zone: zone-name
 spec:
-  address: 192.168.0.1
+  address: 192.168.0.1 # string field, can support either IPv4 or IPv6
   port: 10001
 ```
 
@@ -168,6 +196,8 @@ Note: Key differences from the legacy `ZoneIngress` address resolution:
 - **No Pod annotations**: `ZoneIngress` uses Pod annotations (`kuma.io/ingress-public-address` and
   `kuma.io/ingress-public-port`) for overrides. `MeshZoneAddress` uses the native Kubernetes `spec.externalIPs`
   field on the Service instead, since it watches Services directly.
+  **Migration requirement**: Users currently relying on Pod annotation overrides must switch to setting
+  `spec.externalIPs` on the Kubernetes Service when adopting `MeshZoneAddress`.
 - **Hostname over IP**: `ZoneIngress` prefers `ip` over `hostname` for LoadBalancer ingress entries.
   `MeshZoneAddress` prefers `hostname` over `ip` for better stability (e.g., AWS ELB IPs can change).
 
@@ -179,17 +209,14 @@ Once enabled, both the legacy `ZoneIngress` and the new mesh-scoped zone proxy r
 When the CP detects both a legacy `ZoneIngress` and a new `MeshZoneAddress` for a given zone,
 it prioritizes `MeshZoneAddress` and shifts all traffic to the new zone proxies.
 
-## Security implications and review
+### Rollback
 
-Synchronizing zone ingress addresses via `MeshZoneAddress` does not introduce new exposure beyond the existing requirement for other zones to reach zone ingress endpoints.
-Addresses are derived from Kubernetes Service configuration (`externalIPs`, LoadBalancer, or NodePort) managed by cluster operators, and no additional external input is trusted.
-No new security mechanisms are removed or weakened as part of this design.
+Because `ZoneIngress` resources persist throughout the transition period, rollback is supported:
+1. Delete the `MeshZoneAddress` resources (or disable the mesh-scoped zone proxy feature).
+2. The CP stops finding `MeshZoneAddress` for the zone and reverts to propagating the legacy `ZoneIngress` addresses.
 
-## Reliability implications
+Note: this requires `ZoneIngress` to still be present. If the user has already removed `ZoneIngress` as part of a completed migration, it must be redeployed before rollback is possible.
 
-Reliability implications are minimal.
-If a Service does not yet have a usable external address (e.g., LoadBalancer not ready), `MeshZoneAddress` is not generated and cross-zone traffic will behave as today until the address becomes available.
-No additional single points of failure or long-lived background processes are introduced by this decision.
 ## Implications for Kong Mesh
 
 None
