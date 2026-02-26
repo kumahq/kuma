@@ -26,7 +26,7 @@ var _ = Context("kumactl install observability", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.String()).To(BeEmpty())
+			Expect(stderr.String()).To(ContainSubstring("Warning: 'kumactl install observability' is deprecated and will be removed in Kuma 3.0."))
 
 			// and output matches golden files
 			actual := stdout.Bytes()
