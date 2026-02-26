@@ -22,7 +22,7 @@ import (
 var logger = core.Log.WithName("otel-receiver")
 
 // registerFn is the function used to register a gRPC service on a server.
-type registerFn func(s *grpc.Server, endpoint string) (func(), error)
+type registerFn func(s *grpc.Server, backend mt_dpapi.OtelBackendConfig) (func(), error)
 
 // Manager listens on Unix sockets for OTel gRPC signals from Envoy and forwards them to the real collector.
 // One instance handles one signal type (traces OR logs).
@@ -43,8 +43,8 @@ var _ component.GracefulComponent = &Manager{}
 // NewTraceManager creates a Manager for MeshTrace OTel backends.
 func NewTraceManager() *Manager {
 	return &Manager{
-		registerService: func(s *grpc.Server, endpoint string) (func(), error) {
-			recv, closeClient, err := newTraceReceiver(endpoint)
+		registerService: func(s *grpc.Server, backend mt_dpapi.OtelBackendConfig) (func(), error) {
+			recv, closeClient, err := newTraceReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -60,8 +60,8 @@ func NewTraceManager() *Manager {
 // NewLogManager creates a Manager for MeshAccessLog OTel backends.
 func NewLogManager() *Manager {
 	return &Manager{
-		registerService: func(s *grpc.Server, endpoint string) (func(), error) {
-			recv, closeClient, err := newLogsReceiver(endpoint)
+		registerService: func(s *grpc.Server, backend mt_dpapi.OtelBackendConfig) (func(), error) {
+			recv, closeClient, err := newLogsReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -142,7 +142,7 @@ func (m *Manager) reconcile(backends []mt_dpapi.OtelBackendConfig) error {
 		if _, ok := m.running[socketPath]; ok {
 			continue // already running; reconfiguration not yet supported
 		}
-		rs, err := m.startBackend(socketPath, b.Endpoint)
+		rs, err := m.startBackend(socketPath, b)
 		if err != nil {
 			return errors.Wrapf(err, "failed to start OTel receiver on %s", socketPath)
 		}
@@ -151,7 +151,7 @@ func (m *Manager) reconcile(backends []mt_dpapi.OtelBackendConfig) error {
 	return nil
 }
 
-func (m *Manager) startBackend(socketPath, endpoint string) (*runningServer, error) {
+func (m *Manager) startBackend(socketPath string, backend mt_dpapi.OtelBackendConfig) (*runningServer, error) {
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrapf(err, "removing existing socket %s", socketPath)
 	}
@@ -161,7 +161,7 @@ func (m *Manager) startBackend(socketPath, endpoint string) (*runningServer, err
 	}
 
 	s := grpc.NewServer()
-	closeClient, err := m.registerService(s, endpoint)
+	closeClient, err := m.registerService(s, backend)
 	if err != nil {
 		_ = lis.Close()
 		return nil, err
@@ -173,7 +173,7 @@ func (m *Manager) startBackend(socketPath, endpoint string) (*runningServer, err
 		}
 	}()
 
-	logger.Info("started OTel receiver", "socketPath", socketPath, "endpoint", endpoint)
+	logger.Info("started OTel receiver", "socketPath", socketPath, "endpoint", backend.Endpoint, "useHTTP", backend.UseHTTP, "path", backend.Path)
 	return &runningServer{server: s, closeClient: closeClient}, nil
 }
 

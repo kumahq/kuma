@@ -1,46 +1,144 @@
 package otelreceiver
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"path"
 
 	logspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
 )
 
 // traceReceiver proxies ExportTraceServiceRequest from Envoy directly to the collector.
 type traceReceiver struct {
 	tracepb.UnimplementedTraceServiceServer
-	client tracepb.TraceServiceClient
+	exportFn func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error)
 }
 
-func newTraceReceiver(endpoint string) (*traceReceiver, func(), error) {
+func newTraceReceiver(
+	endpoint string,
+	useHTTP bool,
+	basePath string,
+) (*traceReceiver, func(), error) {
+	if useHTTP {
+		targetURL := otlpHTTPURL(endpoint, basePath, "traces")
+		client := &http.Client{}
+		return &traceReceiver{
+			exportFn: func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
+				body, err := proto.Marshal(req)
+				if err != nil {
+					return nil, err
+				}
+				if err := postOTLPHTTP(ctx, client, targetURL, body); err != nil {
+					return nil, err
+				}
+				return &tracepb.ExportTraceServiceResponse{}, nil
+			},
+		}, func() {}, nil
+	}
+
 	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}
-	return &traceReceiver{client: tracepb.NewTraceServiceClient(conn)}, func() { _ = conn.Close() }, nil
+	client := tracepb.NewTraceServiceClient(conn)
+	return &traceReceiver{
+		exportFn: func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
+			return client.Export(ctx, req)
+		},
+	}, func() { _ = conn.Close() }, nil
 }
 
 func (r *traceReceiver) Export(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
-	return r.client.Export(ctx, req)
+	return r.exportFn(ctx, req)
 }
 
 // logsReceiver proxies ExportLogsServiceRequest from Envoy directly to the collector.
 type logsReceiver struct {
 	logspb.UnimplementedLogsServiceServer
-	client logspb.LogsServiceClient
+	exportFn func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error)
 }
 
-func newLogsReceiver(endpoint string) (*logsReceiver, func(), error) {
+func newLogsReceiver(
+	endpoint string,
+	useHTTP bool,
+	basePath string,
+) (*logsReceiver, func(), error) {
+	if useHTTP {
+		targetURL := otlpHTTPURL(endpoint, basePath, "logs")
+		client := &http.Client{}
+		return &logsReceiver{
+			exportFn: func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
+				body, err := proto.Marshal(req)
+				if err != nil {
+					return nil, err
+				}
+				if err := postOTLPHTTP(ctx, client, targetURL, body); err != nil {
+					return nil, err
+				}
+				return &logspb.ExportLogsServiceResponse{}, nil
+			},
+		}, func() {}, nil
+	}
+
 	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}
-	return &logsReceiver{client: logspb.NewLogsServiceClient(conn)}, func() { _ = conn.Close() }, nil
+	client := logspb.NewLogsServiceClient(conn)
+	return &logsReceiver{
+		exportFn: func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
+			return client.Export(ctx, req)
+		},
+	}, func() { _ = conn.Close() }, nil
 }
 
 func (r *logsReceiver) Export(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
-	return r.client.Export(ctx, req)
+	return r.exportFn(ctx, req)
+}
+
+func otlpHTTPURL(endpoint, basePath, signal string) string {
+	targetURL := url.URL{
+		Scheme: "http",
+		Host:   endpoint,
+		Path:   path.Join("/", basePath, "v1", signal),
+	}
+	return targetURL.String()
+}
+
+func postOTLPHTTP(
+	ctx context.Context,
+	client *http.Client,
+	targetURL string,
+	body []byte,
+) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
+	resp, err := client.Do(req) //nolint:gosec // URL is built from internal config, not user input
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return nil
+	}
+
+	responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	if len(responseBody) == 0 {
+		return fmt.Errorf("collector returned status %d", resp.StatusCode)
+	}
+	return fmt.Errorf("collector returned status %d: %s", resp.StatusCode, string(responseBody))
 }
