@@ -945,7 +945,7 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
-				Rules: []*core_rules.Rule{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
 					{
 						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
