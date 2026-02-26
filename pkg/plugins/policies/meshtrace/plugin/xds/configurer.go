@@ -45,6 +45,8 @@ type Configurer struct {
 	ResolvedOtelUseHTTP bool
 	// ResolvedOtelURI is the full HTTP URI for the OTel collector (only used when ResolvedOtelUseHTTP is true).
 	ResolvedOtelURI string
+	// SkipOpenTelemetry prevents injecting an OTel tracing provider when backend resolution fails.
+	SkipOpenTelemetry bool
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -141,7 +143,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 			hcm.Tracing.Provider = tracing
 		}
 
-		if backend.OpenTelemetry != nil {
+		if backend.OpenTelemetry != nil && !c.SkipOpenTelemetry {
 			otelName := c.ResolvedOtelName
 			if otelName == "" {
 				otelName = backend.OpenTelemetry.Endpoint //nolint:staticcheck // inline endpoint still supported for backward compat

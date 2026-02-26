@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
@@ -514,6 +515,71 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "empty-backend-list",
 		}),
 	)
+
+	It("should skip opentelemetry provider for dangling backendRef", func() {
+		resources := core_xds.NewResourceSet()
+		for _, resource := range inboundAndOutbound() {
+			r := resource
+			resources.Add(&r)
+		}
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
+			Items: []*v1alpha1.MeshServiceResource{samples.MeshServiceBackendBuilder().
+				WithZone("zone-1").
+				WithNamespace("backend-ns").
+				Build()},
+		}
+
+		context := *xds_samples.SampleContextWith(meshResources).Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777)),
+			).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{
+									BackendRef: &common_api.TargetRef{
+										Kind: "MeshOpenTelemetryBackend",
+										Name: pointer.To("non-existent-backend"),
+									},
+								},
+							}},
+						},
+					},
+				},
+			})).
+			Build()
+
+		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshTracePlugin.Apply(resources, context, proxy)).To(Succeed())
+
+		listenerResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerResources).ToNot(ContainSubstring("envoy.tracers.opentelemetry"))
+
+		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
+	})
+
 	type gatewayTestCase struct {
 		rules           core_rules.SingleItemRules
 		features        xds_types.Features

@@ -195,6 +195,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:                  proxy.Zone,
 		WorkloadKRI:           workloadKRI,
+		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackendRef(conf, resolved),
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
@@ -214,6 +215,23 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	}
 
 	return nil
+}
+
+func shouldSkipUnresolvedOpenTelemetryBackendRef(
+	conf api.Conf,
+	resolved *policies_xds.ResolvedOtelBackend,
+) bool {
+	if resolved != nil {
+		return false
+	}
+
+	backends := pointer.Deref(conf.Backends)
+	if len(backends) == 0 {
+		return false
+	}
+
+	otelBackend := backends[0].OpenTelemetry
+	return otelBackend != nil && otelBackend.BackendRef != nil
 }
 
 func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
