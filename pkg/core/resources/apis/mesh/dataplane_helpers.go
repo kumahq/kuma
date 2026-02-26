@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
@@ -175,6 +176,18 @@ func (d *DataplaneResource) Hash() []byte {
 	return hasher.Sum(nil)
 }
 
+// InboundIdentifyingName returns a dataplane KRI with portName as section name
+// when inbound tags are disabled, falling back to IdentifyingName otherwise.
+func (d *DataplaneResource) InboundIdentifyingName(inboundTagsDisabled bool, portName string) string {
+	if inboundTagsDisabled && portName != "" {
+		id := kri.WithSectionName(kri.FromResourceMeta(d.GetMeta(), DataplaneType), portName)
+		if !id.IsEmpty() {
+			return id.String()
+		}
+	}
+	return d.IdentifyingName(inboundTagsDisabled)
+}
+
 // IdentifyingName returns the workload label when inbound tags are disabled,
 // falling back to the identifying service name.
 func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
@@ -189,6 +202,8 @@ func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
 	}
 	return mesh_proto.ServiceUnknown
 }
+
+
 
 // SortDataplanes sorts dataplanes by creation time, then by name.
 // Used by generators to ensure consistent processing order.
