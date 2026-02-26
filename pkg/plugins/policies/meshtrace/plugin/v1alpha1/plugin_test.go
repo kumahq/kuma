@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -578,6 +579,94 @@ var _ = Describe("MeshTrace", func() {
 		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
+	})
+
+	It("should route opentelemetry via kuma-dp when feature is enabled", func() {
+		const (
+			workDir     = "/tmp"
+			backendName = "otel-backend"
+		)
+
+		resources := core_xds.NewResourceSet()
+		for _, resource := range inboundAndOutbound() {
+			r := resource
+			resources.Add(&r)
+		}
+
+		motb := motb_api.NewMeshOpenTelemetryBackendResource()
+		motb.SetMeta(&test_model.ResourceMeta{
+			Mesh: "default",
+			Name: backendName,
+		})
+		motb.Spec.Endpoint = &motb_api.Endpoint{
+			Address: "collector.mesh",
+			Port:    4317,
+		}
+		motb.Spec.Protocol = motb_api.ProtocolGRPC
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+			Items: []*motb_api.MeshOpenTelemetryBackendResource{motb},
+		}
+
+		context := *xds_samples.SampleContextWith(meshResources).Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777)),
+			).
+			WithMetadata(&core_xds.DataplaneMetadata{
+				WorkDir: workDir,
+				Features: xds_types.Features{
+					xds_types.FeatureOtelViaKumaDp: true,
+				},
+			}).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{
+									BackendRef: &common_api.TargetRef{
+										Kind: "MeshOpenTelemetryBackend",
+										Name: pointer.To(backendName),
+									},
+								},
+							}},
+						},
+					},
+				},
+			})).
+			Build()
+
+		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshTracePlugin.Apply(resources, context, proxy)).To(Succeed())
+
+		expectedSocket := core_xds.OtelTraceSocketName(workDir, backendName)
+
+		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(clusterResources)).To(ContainSubstring(expectedSocket))
+		Expect(string(clusterResources)).ToNot(ContainSubstring("collector.mesh"))
+
+		listenerResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(listenerResources)).To(ContainSubstring("/meshtrace"))
+		Expect(string(listenerResources)).To(ContainSubstring(expectedSocket))
+		Expect(string(listenerResources)).To(ContainSubstring(`"endpoint":"collector.mesh:4317"`))
 	})
 
 	type gatewayTestCase struct {
