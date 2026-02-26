@@ -365,10 +365,7 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 		return nil
 	}
 
-	endpoint := resolved.Endpoint.Target
-	if resolved.Endpoint.Port != 0 {
-		endpoint = fmt.Sprintf("%s:%d", resolved.Endpoint.Target, resolved.Endpoint.Port)
-	}
+	endpoint := collectorEndpointString(resolved.Endpoint)
 
 	dpConfig := dpapi.MeshTraceDpConfig{
 		Backends: []dpapi.OtelBackendConfig{
@@ -388,4 +385,11 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshtrace", dpapi.PATH), dpapi.PATH, marshal)
+}
+
+func collectorEndpointString(endpoint *xds.Endpoint) string {
+	if endpoint.Port == 0 {
+		return endpoint.Target
+	}
+	return net.JoinHostPort(endpoint.Target, strconv.Itoa(int(endpoint.Port)))
 }
