@@ -13,7 +13,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
 	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -92,12 +91,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		rateLimits = append(rateLimits, rateLimit)
 	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
-	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	if ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled {
-		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-			sourceService = workload
-		}
-	}
+	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]

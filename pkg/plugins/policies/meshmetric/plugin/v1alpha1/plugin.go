@@ -91,7 +91,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends, ctx.ControlPlane.InboundTagsDisabled)
+	inboundTagsDisabled := false
+	if ctx.ControlPlane != nil {
+		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
+	}
+	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends, inboundTagsDisabled)
 	if err != nil {
 		return err
 	}
@@ -289,12 +293,7 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["mesh"] = mesh.GetMeta().GetName()
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
-		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
-		if inboundTagsDisabled {
-			if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-				extraLabels["service"] = workload
-			}
-		}
+		extraLabels["service"] = proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
 	}
 
 	return dpapi.MeshMetricDpConfig{

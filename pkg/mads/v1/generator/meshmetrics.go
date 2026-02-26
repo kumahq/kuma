@@ -9,7 +9,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/mads"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
@@ -34,12 +33,7 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 				schema = "https"
 			}
 
-			service := dataplane.Spec.GetIdentifyingService()
-			if inboundTagsDisabled {
-				if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-					service = workload
-				}
-			}
+			service := dataplane.IdentifyingName(inboundTagsDisabled)
 			assignment := &observability_v1.MonitoringAssignment{
 				Mesh:    dataplane.Meta.GetMesh(),
 				Service: service,

@@ -12,7 +12,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -42,12 +41,7 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 		return rs, nil
 	}
 
-	svc := proxy.Dataplane.Spec.GetIdentifyingService()
-	if xdsCtx.ControlPlane != nil && xdsCtx.ControlPlane.InboundTagsDisabled {
-		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-			svc = workload
-		}
-	}
+	svc := proxy.Dataplane.IdentifyingName(xdsCtx.ControlPlane != nil && xdsCtx.ControlPlane.InboundTagsDisabled)
 	mesh := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
 	endpoints, err := directAccessEndpoints(proxy.Dataplane, xdsCtx.Mesh.Resources.Dataplanes(), xdsCtx.Mesh.Resource)

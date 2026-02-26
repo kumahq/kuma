@@ -7,7 +7,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/mads"
 	"github.com/kumahq/kuma/v2/pkg/mads/generator"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("generator")
@@ -48,12 +47,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		// TODO: could also group by service, and have one assignment per service
-		service := dataplane.Spec.GetIdentifyingService()
-		if g.InboundTagsDisabled {
-			if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-				service = workload
-			}
-		}
+		service := dataplane.IdentifyingName(g.InboundTagsDisabled)
 		assignment := &observability_v1.MonitoringAssignment{
 			Mesh:    dataplane.Meta.GetMesh(),
 			Service: service,

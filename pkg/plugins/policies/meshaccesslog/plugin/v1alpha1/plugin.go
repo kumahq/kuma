@@ -92,7 +92,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	zone, workloadKRI := workloadIdentity(proxy)
 
-	inboundTagsDisabled := ctx.ControlPlane.InboundTagsDisabled
+	inboundTagsDisabled := false
+	if ctx.ControlPlane != nil {
+		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
+	}
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
 		return err
 	}
@@ -152,7 +155,7 @@ func applyToInbounds(
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-			DestinationService: dataplaneServiceName(dataplane, inboundTagsDisabled),
+			DestinationService: dataplane.IdentifyingName(inboundTagsDisabled),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
 			WorkloadKRI:        workloadKRI,
@@ -188,7 +191,7 @@ func applyToOutbounds(
 		serviceName := outbound.LegacyOutbound.GetService()
 
 		kumaValues := listeners_v3.KumaValues{
-			SourceService:      dataplaneServiceName(dataplane, inboundTagsDisabled),
+			SourceService:      dataplane.IdentifyingName(inboundTagsDisabled),
 			SourceIP:           dataplane.GetIP(),
 			DestinationService: outbound.LegacyOutbound.GetService(),
 			Mesh:               dataplane.GetMeta().GetMesh(),
@@ -221,7 +224,7 @@ func applyToTransparentProxyListeners(
 	}
 
 	kumaValues := listeners_v3.KumaValues{
-		SourceService:      dataplaneServiceName(dataplane, inboundTagsDisabled),
+		SourceService:      dataplane.IdentifyingName(inboundTagsDisabled),
 		SourceIP:           dataplane.GetIP(),
 		DestinationService: "external",
 		Mesh:               dataplane.GetMeta().GetMesh(),
@@ -254,7 +257,7 @@ func applyToDirectAccess(
 
 	for endpoint, listener := range directAccess {
 		kumaValues := listeners_v3.KumaValues{
-			SourceService:      dataplaneServiceName(dataplane, inboundTagsDisabled),
+			SourceService:      dataplane.IdentifyingName(inboundTagsDisabled),
 			SourceIP:           dataplane.GetIP(),
 			DestinationService: generator.DirectAccessEndpointName(endpoint),
 			Mesh:               dataplane.GetMeta().GetMesh(),
@@ -312,7 +315,7 @@ func applyToGateway(
 		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
 			if conf := core_rules.ComputeConf[api.Conf](toListenerRules.Rules, subsetutils.MeshElement()); conf != nil {
 				kumaValues := listeners_v3.KumaValues{
-					SourceService:      dataplaneServiceName(proxy.Dataplane, inboundTagsDisabled),
+					SourceService:      proxy.Dataplane.IdentifyingName(inboundTagsDisabled),
 					SourceIP:           proxy.Dataplane.GetIP(),
 					DestinationService: mesh_proto.MatchAllTag,
 					Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
@@ -332,7 +335,7 @@ func applyToGateway(
 			kumaValues := listeners_v3.KumaValues{
 				SourceService:      mesh_proto.ServiceUnknown,
 				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-				DestinationService: dataplaneServiceName(proxy.Dataplane, inboundTagsDisabled),
+				DestinationService: proxy.Dataplane.IdentifyingName(inboundTagsDisabled),
 				Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
 				Zone:               zone,
 				WorkloadKRI:        workloadKRI,
@@ -383,7 +386,7 @@ func applyToRealResource(
 	defaultFormat := DefaultFormat(r.Protocol)
 
 	kumaValues := listeners_v3.KumaValues{
-		SourceService:      dataplaneServiceName(proxy.Dataplane, inboundTagsDisabled),
+		SourceService:      proxy.Dataplane.IdentifyingName(inboundTagsDisabled),
 		SourceIP:           proxy.Dataplane.GetIP(),
 		DestinationService: r.ResourceOrigin.Name,
 		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
@@ -463,15 +466,6 @@ func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext
 		return nil, err
 	}
 	return routes, nil
-}
-
-func dataplaneServiceName(dp *core_mesh.DataplaneResource, inboundTagsDisabled bool) string {
-	if inboundTagsDisabled {
-		if workload := dp.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-			return workload
-		}
-	}
-	return dp.Spec.GetIdentifyingService()
 }
 
 const (

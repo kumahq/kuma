@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
@@ -172,6 +173,17 @@ func (d *DataplaneResource) Hash() []byte {
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
+}
+
+// IdentifyingName returns the workload label when inbound tags are disabled,
+// falling back to the identifying service name.
+func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
+	if inboundTagsDisabled {
+		if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+			return workload
+		}
+	}
+	return d.Spec.GetIdentifyingService()
 }
 
 // SortDataplanes sorts dataplanes by creation time, then by name.

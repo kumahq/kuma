@@ -11,7 +11,6 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -76,12 +75,7 @@ func CreateOutboundPassthroughListener(
 	outboundPort uint32,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	if ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled {
-		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-			sourceService = workload
-		}
-	}
+	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, outboundPort, model.SocketAddressProtocolTCP).
