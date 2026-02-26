@@ -36,6 +36,7 @@ type Manager struct {
 type runningServer struct {
 	server      *grpc.Server
 	closeClient func()
+	backend     mt_dpapi.OtelBackendConfig
 }
 
 var _ component.GracefulComponent = &Manager{}
@@ -131,17 +132,21 @@ func (m *Manager) reconcile(backends []mt_dpapi.OtelBackendConfig) error {
 	// stop removed backends
 	for socketPath, rs := range m.running {
 		if _, ok := desired[socketPath]; !ok {
-			rs.server.GracefulStop()
-			rs.closeClient()
+			stopRunningServer(rs)
 			delete(m.running, socketPath)
 		}
 	}
 
-	// start new backends
+	// start new backends and restart updated backends
 	for socketPath, b := range desired {
-		if _, ok := m.running[socketPath]; ok {
-			continue // already running; reconfiguration not yet supported
+		if rs, ok := m.running[socketPath]; ok {
+			if sameBackendConfig(rs.backend, b) {
+				continue
+			}
+			stopRunningServer(rs)
+			delete(m.running, socketPath)
 		}
+
 		rs, err := m.startBackend(socketPath, b)
 		if err != nil {
 			return errors.Wrapf(err, "failed to start OTel receiver on %s", socketPath)
@@ -174,15 +179,25 @@ func (m *Manager) startBackend(socketPath string, backend mt_dpapi.OtelBackendCo
 	}()
 
 	logger.Info("started OTel receiver", "socketPath", socketPath, "endpoint", backend.Endpoint, "useHTTP", backend.UseHTTP, "path", backend.Path)
-	return &runningServer{server: s, closeClient: closeClient}, nil
+	return &runningServer{server: s, closeClient: closeClient, backend: backend}, nil
 }
 
 func (m *Manager) stopAll() {
-	for socketPath, rs := range m.running {
-		rs.server.GracefulStop()
-		rs.closeClient()
+	for socketPath, runningServer := range m.running {
+		stopRunningServer(runningServer)
 		delete(m.running, socketPath)
 	}
+}
+
+func stopRunningServer(runningServer *runningServer) {
+	runningServer.server.GracefulStop()
+	runningServer.closeClient()
+}
+
+func sameBackendConfig(a, b mt_dpapi.OtelBackendConfig) bool {
+	return a.Endpoint == b.Endpoint &&
+		a.UseHTTP == b.UseHTTP &&
+		a.Path == b.Path
 }
 
 // toGenericBackends converts meshtrace dpapi backends to the internal format.
