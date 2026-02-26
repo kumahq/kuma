@@ -9,10 +9,9 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-
 	logspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
+	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
@@ -45,12 +44,12 @@ var _ component.GracefulComponent = &Manager{}
 func NewTraceManager() *Manager {
 	return &Manager{
 		registerService: func(s *grpc.Server, endpoint string) (func(), error) {
-			recv, close, err := newTraceReceiver(endpoint)
+			recv, closeClient, err := newTraceReceiver(endpoint)
 			if err != nil {
 				return nil, err
 			}
 			tracepb.RegisterTraceServiceServer(s, recv)
-			return close, nil
+			return closeClient, nil
 		},
 		newConfig: make(chan []mt_dpapi.OtelBackendConfig, 1),
 		running:   map[string]*runningServer{},
@@ -62,12 +61,12 @@ func NewTraceManager() *Manager {
 func NewLogManager() *Manager {
 	return &Manager{
 		registerService: func(s *grpc.Server, endpoint string) (func(), error) {
-			recv, close, err := newLogsReceiver(endpoint)
+			recv, closeClient, err := newLogsReceiver(endpoint)
 			if err != nil {
 				return nil, err
 			}
 			logspb.RegisterLogsServiceServer(s, recv)
-			return close, nil
+			return closeClient, nil
 		},
 		newConfig: make(chan []mt_dpapi.OtelBackendConfig, 1),
 		running:   map[string]*runningServer{},
