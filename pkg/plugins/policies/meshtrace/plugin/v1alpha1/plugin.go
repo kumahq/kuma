@@ -376,7 +376,7 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 				SocketPath: xds.OtelTraceSocketName(proxy.Metadata.WorkDir, resolved.Name),
 				Endpoint:   endpoint,
 				UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
-				Path:       func() string { if resolved.Path != nil { return *resolved.Path }; return "" }(),
+				Path:       pointer.Deref(resolved.Path),
 			},
 		},
 	}

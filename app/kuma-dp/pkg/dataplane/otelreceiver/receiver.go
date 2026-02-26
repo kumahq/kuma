@@ -3,11 +3,10 @@ package otelreceiver
 import (
 	"context"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	logspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // traceReceiver proxies ExportTraceServiceRequest from Envoy directly to the collector.
