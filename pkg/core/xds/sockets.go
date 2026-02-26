@@ -24,6 +24,14 @@ func OpenTelemetrySocketName(workdir string, backendName string) string {
 	return socketName(filepath.Join(workdir, "kuma-otel-"+backendName))
 }
 
+func OtelTraceSocketName(workdir string, backendName string) string {
+	return socketName(filepath.Join(workdir, "kuma-otel-trace-"+backendName))
+}
+
+func OtelLogSocketName(workdir string, backendName string) string {
+	return socketName(filepath.Join(workdir, "kuma-otel-log-"+backendName))
+}
+
 // ReadinessReporterSocketName generates a socket path that will fit the Unix socket path limitation of 104 chars
 func ReadinessReporterSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-readiness-reporter"))
