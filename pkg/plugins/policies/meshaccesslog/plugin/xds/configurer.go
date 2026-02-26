@@ -148,7 +148,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	if resolved == nil {
 		return nil
 	}
-	if acc.UseKumaDpPipe {
+	if otelBackend.BackendRef != nil && acc.UseKumaDpPipe {
 		socketPath := xds.OtelLogSocketName(acc.WorkDir, resolved.Name)
 		realEndpoint := collectorEndpointString(resolved.Endpoint)
 		path := ""
