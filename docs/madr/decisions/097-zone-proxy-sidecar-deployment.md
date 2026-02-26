@@ -41,10 +41,10 @@ is injected into regular workload pods.
 ```yaml
 containers:
   - name: pause          # dummy main container, never changes
-    image: gcr.io/google_containers/pause:latest
+    image: registry.k8s.io/pause:3.10
   # kuma-dp injected here by webhook:
   - name: kuma-sidecar
-    image: kuma-dp:latest
+    image: kumahq/kuma-dp:v2.13.2
     args: ["run", "--cp-address=..."]
 ```
 
@@ -59,18 +59,28 @@ metadata:
     k8s.kuma.io/zone-proxy-type: ingress  # or: egress
 ```
 
+**Webhook namespace constraint**: The default Helm installation configures the sidecar injector
+webhook with a `namespaceSelector` that excludes the control-plane release namespace
+(`kubernetes.io/metadata.name NotIn [{{ .Release.Namespace }}]`, see
+`deployments/charts/kuma/templates/cp-webhooks-and-secrets.yaml`). Because zone proxies currently
+run in `kuma-system`, sidecar injection will not trigger for them unless the webhook is adjusted
+to include that namespace. The implementation must update the webhook `namespaceSelector` to
+allow injection in `kuma-system`.
+
 The webhook detects the `k8s.kuma.io/zone-proxy-type` label and configures `kuma-dp` with the
-appropriate `listeners` (per MADR 095) instead of the regular inbound/outbound configuration.
+appropriate zone proxy arguments instead of the regular inbound/outbound configuration.
 
 * Good, because Helm upgrades no longer restart zone proxies
 * Good, because consistent deployment model with regular Dataplanes
 * Good, because reuses existing sidecar injection and bootstrap machinery
-* Good, because aligns with MADR 095 (zone proxies as Dataplanes with `listeners`)
+* Good, because aligns with the mesh-scoped zone proxy model (Dataplanes with `listeners`)
 * Bad, because requires a dummy container, which is non-obvious to users inspecting the pod
 * Bad, because zone proxy update cadence decouples from Kuma upgrade cadence
   (operators must trigger restarts explicitly to pick up new `kuma-dp`)
 * Bad, because configuring sidecar resources requires `ContainerPatch` or CP injector config
   rather than a direct `resources:` field in the pod spec (see "Configuring sidecar resources" below)
+* Bad, because the default webhook excludes `kuma-system`; the webhook `namespaceSelector` must
+  be adjusted to enable injection in the control-plane namespace
 
 #### Waiting container image
 
@@ -79,7 +89,7 @@ The following candidates are evaluated against three criteria: **image size**, *
 
 | Image | Compressed size | Pull overhead | Shell | Notes |
 |---|---|---|---|---|
-| `registry.k8s.io/pause:3.10` | ~300 KB | Mostly none since it's used but sometimes might be required | No | Purpose-built for this use case; used by K8s itself for pod sandboxes |
+| `registry.k8s.io/pause:3.10` | ~300 KB | Usually none (pre-pulled by kubelet for pod sandboxes) | No | Purpose-built for this use case; used by K8s itself for pod sandboxes |
 | `gcr.io/distroless/static-debian12:nonroot` | ~2 MB | Pull required | No | No package manager, no shell; well-maintained by Google |
 | `cgr.dev/chainguard/static:latest` | ~1.5 MB | Pull required | No | Minimal, signed images; depends on third-party registry availability |
 | `busybox` | ~4 MB | Pull required | Yes | Shell increases attack surface; unnecessary for a no-op container |
@@ -94,14 +104,16 @@ The following candidates are evaluated against three criteria: **image size**, *
 - The tag is pinned and updated alongside the supported K8s version matrix:
   `pause:3.10` ships with K8s 1.31+.
 
-The Helm chart exposes the image as a configurable value:
+The Helm chart exposes the image as a configurable value. This introduces a new
+`meshes[].ingress.image` field relative to the Helm schema defined in MADR 094; MADR 094 will be
+amended to document this field alongside the existing `podSpec`, `resources`, etc.
 
 ```yaml
 meshes:
   - name: default
     ingress:
       ...
-      image: registry.k8s.io/pause:3.10 # user can override
+      image: registry.k8s.io/pause:3.10 # user can override the pause container image
 ```
 
 #### Configuring sidecar resources
@@ -153,7 +165,7 @@ This acts as the fallback when no `ContainerPatch` is applied to a specific zone
 Chosen option: **Option 2** (sidecar injection with a dummy main container).
 
 This eliminates zone proxy restarts on Helm upgrades without requiring a minimum K8s version.
-It also aligns zone proxy deployment with the standard Kuma Dataplane model established by MADR 095.
+It also aligns zone proxy deployment with the standard Kuma Dataplane model (mesh-scoped zone proxies with Dataplane `listeners`).
 
 The dummy container uses the `pause` image, which is usually present on every Kubernetes node
 (used by Kubernetes itself for pod sandboxes), adding zero pull overhead.
@@ -174,8 +186,11 @@ This gives operators control over the update window and avoids unplanned cross-z
 
 ## Security implications and review
 
-No new security surface. The sidecar injection webhook already handles authentication and RBAC.
-The `pause` container runs with no capabilities and no network ports.
+No new security surface beyond the existing mutating webhook, which operates within Kubernetes API
+server authentication and RBAC; the webhook only mutates objects that have already been admitted
+by the API server.
+The `pause` container is configured with a minimal-privilege `securityContext` (dropping all Linux
+capabilities and exposing no network ports).
 
 ## Reliability implications
 
@@ -191,5 +206,5 @@ None.
 ## Notes
 
 - MADR 094: Zone Proxy Deployment Model (Helm schema, per-mesh templates)
-- MADR 095: Mesh-Scoped Zone Proxies (Dataplane `listeners` array)
-- MADR 096: Syncing Zone Ingress Address Across Zones
+- Mesh-scoped zone proxies (Dataplane `listeners` array)
+- Syncing zone ingress address across zones
