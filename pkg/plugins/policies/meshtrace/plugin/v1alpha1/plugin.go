@@ -199,9 +199,11 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
-		// When kuma-dp acts as intermediary, Envoy always speaks gRPC to the pipe cluster.
-		// Only fall back to HTTP config when the feature is absent (direct-to-collector mode).
-		if !proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && resolved.Protocol == motb_api.ProtocolHTTP {
+		// When kuma-dp acts as intermediary for a backendRef backend, Envoy
+		// always speaks gRPC to the pipe cluster. Only fall back to HTTP config
+		// when using direct-to-collector mode (inline endpoint or no feature).
+		usePipe := hasOtelBackendRef(conf) && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp)
+		if !usePipe && resolved.Protocol == motb_api.ProtocolHTTP {
 			configurer.ResolvedOtelUseHTTP = true
 			host := net.JoinHostPort(resolved.Endpoint.Target, strconv.Itoa(int(resolved.Endpoint.Port)))
 			configurer.ResolvedOtelURI = fmt.Sprintf("http://%s%s", host, resolved.FullPath(policies_xds.OtelTracesPathSuffix))
@@ -217,6 +219,15 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	return nil
 }
 
+func hasOtelBackendRef(conf api.Conf) bool {
+	backends := pointer.Deref(conf.Backends)
+	if len(backends) == 0 {
+		return false
+	}
+	otel := backends[0].OpenTelemetry
+	return otel != nil && otel.BackendRef != nil
+}
+
 func shouldSkipUnresolvedOpenTelemetryBackendRef(
 	conf api.Conf,
 	resolved *policies_xds.ResolvedOtelBackend,
@@ -224,14 +235,7 @@ func shouldSkipUnresolvedOpenTelemetryBackendRef(
 	if resolved != nil {
 		return false
 	}
-
-	backends := pointer.Deref(conf.Backends)
-	if len(backends) == 0 {
-		return false
-	}
-
-	otelBackend := backends[0].OpenTelemetry
-	return otelBackend != nil && otelBackend.BackendRef != nil
+	return hasOtelBackendRef(conf)
 }
 
 func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
@@ -279,7 +283,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		if resolved == nil {
 			return nil
 		}
-		if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
+		if backend.OpenTelemetry.BackendRef != nil && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
 			// Route through kuma-dp Unix socket; kuma-dp forwards to the real collector.
 			socketPath := xds.OtelTraceSocketName(proxy.Metadata.WorkDir, resolved.Name)
 			endpoint = &xds.Endpoint{UnixDomainPath: socketPath}
@@ -378,6 +382,9 @@ func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {
 
 func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	conf := rules.Rules[0].Conf.(api.Conf)
+	if !hasOtelBackendRef(conf) {
+		return nil
+	}
 	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
 	if resolved == nil {
 		return nil
