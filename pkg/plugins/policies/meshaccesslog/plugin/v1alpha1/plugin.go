@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"bytes"
+	"encoding/json"
 	"maps"
 	"slices"
 	"text/template"
@@ -19,6 +20,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
@@ -33,6 +35,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/dpapi"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
 	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
@@ -40,6 +43,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
@@ -86,6 +90,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
 		Resources:             ctx.Mesh.Resources,
 		NodeHostIP:            proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
+		UseKumaDpPipe:         proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp),
+		WorkDir:               proxy.Metadata.WorkDir,
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
@@ -128,7 +134,36 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return errors.Wrap(err, "unable to add configuration for MeshAccessLog backends")
 	}
 
+	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
+		if err := configureDynamicDPConfig(endpoints, ctx, rs, proxy); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func configureDynamicDPConfig(endpoints *EndpointAccumulator, ctx xds_context.Context, rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	pipeBackends := endpoints.PipeBackends()
+	if len(pipeBackends) == 0 {
+		return nil
+	}
+	dpConfig := dpapi.MeshAccessLogDpConfig{}
+	for _, info := range pipeBackends {
+		dpConfig.Backends = append(dpConfig.Backends, dpapi.OtelBackendConfig{
+			SocketPath: info.SocketPath,
+			Endpoint:   info.Endpoint,
+			UseHTTP:    info.UseHTTP,
+			Path:       info.Path,
+		})
+	}
+	marshal, err := json.Marshal(dpConfig)
+	if err != nil {
+		return err
+	}
+	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
+	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshaccesslog", dpapi.PATH), dpapi.PATH, marshal)
 }
 
 func applyToInbounds(
