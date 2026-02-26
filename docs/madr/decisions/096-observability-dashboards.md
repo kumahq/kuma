@@ -55,6 +55,8 @@ Five dashboards replace the previous set. The Service Map dashboard is dropped; 
 
 Raw JSON is the right choice for the initial set of five dashboards. Revisit if the count grows past ten or bulk cross-dashboard changes become routine.
 
+Datasource and namespace selection are handled via Grafana's native variable system (`$datasource`, `$namespace`) defined inside the JSON. No build-time preprocessing is needed.
+
 ### Shipping
 
 Three approaches for distributing dashboards to users.
