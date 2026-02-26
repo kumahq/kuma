@@ -293,7 +293,9 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["mesh"] = mesh.GetMeta().GetName()
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
-		extraLabels["service"] = proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
+		if extraLabels[WorkloadAttributeKey] == "" {
+			extraLabels["service"] = proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
+		}
 	}
 
 	return dpapi.MeshMetricDpConfig{
