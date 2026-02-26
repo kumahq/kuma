@@ -102,7 +102,7 @@ func (m *Manager) OnTraceChange(ctx context.Context, r io.Reader) error {
 	if err := json.NewDecoder(r).Decode(&cfg); err != nil {
 		return fmt.Errorf("meshtrace dp config decode error: %w", err)
 	}
-	return m.sendConfig(ctx, toGenericBackends(cfg.Backends))
+	return m.sendConfig(ctx, cfg.Backends)
 }
 
 // OnLogChange is the configFetcher handler for the /meshaccesslog path.
@@ -111,7 +111,7 @@ func (m *Manager) OnLogChange(ctx context.Context, r io.Reader) error {
 	if err := json.NewDecoder(r).Decode(&cfg); err != nil {
 		return fmt.Errorf("meshaccesslog dp config decode error: %w", err)
 	}
-	return m.sendConfig(ctx, toGenericBackendsFromMAL(cfg.Backends))
+	return m.sendConfig(ctx, cfg.Backends)
 }
 
 func (m *Manager) sendConfig(ctx context.Context, backends []mt_dpapi.OtelBackendConfig) error {
@@ -200,21 +200,3 @@ func sameBackendConfig(a, b mt_dpapi.OtelBackendConfig) bool {
 		a.Path == b.Path
 }
 
-// toGenericBackends converts meshtrace dpapi backends to the internal format.
-func toGenericBackends(in []mt_dpapi.OtelBackendConfig) []mt_dpapi.OtelBackendConfig {
-	return in
-}
-
-// toGenericBackendsFromMAL converts meshaccesslog dpapi backends to the same internal format.
-func toGenericBackendsFromMAL(in []mal_dpapi.OtelBackendConfig) []mt_dpapi.OtelBackendConfig {
-	out := make([]mt_dpapi.OtelBackendConfig, len(in))
-	for i, b := range in {
-		out[i] = mt_dpapi.OtelBackendConfig{
-			SocketPath: b.SocketPath,
-			Endpoint:   b.Endpoint,
-			UseHTTP:    b.UseHTTP,
-			Path:       b.Path,
-		}
-	}
-	return out
-}

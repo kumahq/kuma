@@ -275,7 +275,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.OpenTelemetry.BackendRef,
 			backend.OpenTelemetry.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
-			parseOtelEndpointString,
+			policies_xds.ParseOtelEndpoint,
 			func(ep string) string { return ep },
 			ctx.Mesh.Resources,
 			proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP),
@@ -332,25 +332,6 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 	}
 }
 
-func parseOtelEndpointString(endpoint string) *xds.Endpoint {
-	host, portStr, err := net.SplitHostPort(endpoint)
-	port := uint32(4317)
-	if err == nil {
-		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
-			port = uint32(val)
-		}
-	} else {
-		host = endpoint
-		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
-			host = host[1 : l-1]
-		}
-	}
-	return &xds.Endpoint{
-		Target: host,
-		Port:   port,
-	}
-}
-
 func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources, nodeHostIP string) *policies_xds.ResolvedOtelBackend {
 	backends := pointer.Deref(conf.Backends)
 	if len(backends) == 0 {
@@ -363,7 +344,7 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources, node
 	return policies_xds.ResolveOtelBackend(
 		backend.OpenTelemetry.BackendRef,
 		backend.OpenTelemetry.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
-		parseOtelEndpointString,
+		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		resources,
 		nodeHostIP,
@@ -390,7 +371,7 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 		return nil
 	}
 
-	endpoint := collectorEndpointString(resolved.Endpoint)
+	endpoint := policies_xds.CollectorEndpointString(resolved.Endpoint)
 
 	dpConfig := dpapi.MeshTraceDpConfig{
 		Backends: []dpapi.OtelBackendConfig{
@@ -412,9 +393,3 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshtrace", dpapi.PATH), dpapi.PATH, marshal)
 }
 
-func collectorEndpointString(endpoint *xds.Endpoint) string {
-	if endpoint.Port == 0 {
-		return endpoint.Target
-	}
-	return net.JoinHostPort(endpoint.Target, strconv.Itoa(int(endpoint.Port)))
-}
