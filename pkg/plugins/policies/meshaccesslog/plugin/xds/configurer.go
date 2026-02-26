@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -149,7 +150,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	}
 	if acc.UseKumaDpPipe {
 		socketPath := xds.OtelLogSocketName(acc.WorkDir, resolved.Name)
-		realEndpoint := fmt.Sprintf("%s:%d", resolved.Endpoint.Target, resolved.Endpoint.Port)
+		realEndpoint := collectorEndpointString(resolved.Endpoint)
 		path := ""
 		if resolved.Path != nil {
 			path = *resolved.Path
@@ -174,6 +175,13 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 		Port:     resolved.Endpoint.Port,
 		UseHTTP2: resolved.Protocol != motb_api.ProtocolHTTP,
 	}
+}
+
+func collectorEndpointString(endpoint *xds.Endpoint) string {
+	if endpoint.Port == 0 {
+		return endpoint.Target
+	}
+	return net.JoinHostPort(endpoint.Target, strconv.Itoa(int(endpoint.Port)))
 }
 
 const defaultOpenTelemetryGRPCPort uint32 = 4317

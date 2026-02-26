@@ -148,14 +148,8 @@ func configureDynamicDPConfig(endpoints *EndpointAccumulator, ctx xds_context.Co
 	if len(pipeBackends) == 0 {
 		return nil
 	}
-	dpConfig := dpapi.MeshAccessLogDpConfig{}
-	for _, info := range pipeBackends {
-		dpConfig.Backends = append(dpConfig.Backends, dpapi.OtelBackendConfig{
-			SocketPath: info.SocketPath,
-			Endpoint:   info.Endpoint,
-			UseHTTP:    info.UseHTTP,
-			Path:       info.Path,
-		})
+	dpConfig := dpapi.MeshAccessLogDpConfig{
+		Backends: toOrderedDpBackends(pipeBackends),
 	}
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
@@ -164,6 +158,20 @@ func configureDynamicDPConfig(endpoints *EndpointAccumulator, ctx xds_context.Co
 	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshaccesslog", dpapi.PATH), dpapi.PATH, marshal)
+}
+
+func toOrderedDpBackends(pipeBackends map[string]OtelPipeBackendInfo) []dpapi.OtelBackendConfig {
+	var backends []dpapi.OtelBackendConfig
+	for _, backendName := range slices.Sorted(maps.Keys(pipeBackends)) {
+		info := pipeBackends[backendName]
+		backends = append(backends, dpapi.OtelBackendConfig{
+			SocketPath: info.SocketPath,
+			Endpoint:   info.Endpoint,
+			UseHTTP:    info.UseHTTP,
+			Path:       info.Path,
+		})
+	}
+	return backends
 }
 
 func applyToInbounds(
