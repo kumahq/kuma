@@ -74,6 +74,17 @@ var _ = Describe("ResolveOtelBackend", func() {
 		})
 	})
 
+	Describe("inline endpoint uses ParseOtelEndpoint", func() {
+		It("should resolve via ParseOtelEndpoint when no backendRef", func() {
+			result := policies_xds.ResolveOtelBackend(
+				nil, "collector:4317", policies_xds.ParseOtelEndpoint, func(ep string) string { return ep }, emptyResources, "",
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.Endpoint.Target).To(Equal("collector"))
+			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
+		})
+	})
+
 	Describe("nodeEndpoint resolution", func() {
 		makeResources := func(backend *motb_api.MeshOpenTelemetryBackendResource) xds_context.Resources {
 			list := &motb_api.MeshOpenTelemetryBackendResourceList{Items: []*motb_api.MeshOpenTelemetryBackendResource{backend}}
@@ -116,4 +127,31 @@ var _ = Describe("ResolveOtelBackend", func() {
 			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
 		})
 	})
+})
+
+var _ = Describe("CollectorEndpointString", func() {
+	DescribeTable("should format endpoint correctly",
+		func(endpoint *core_xds.Endpoint, expected string) {
+			Expect(policies_xds.CollectorEndpointString(endpoint)).To(Equal(expected))
+		},
+		Entry("ipv4 host and port", &core_xds.Endpoint{Target: "10.0.0.1", Port: 4317}, "10.0.0.1:4317"),
+		Entry("ipv6 host and port", &core_xds.Endpoint{Target: "2001:db8::1", Port: 4318}, "[2001:db8::1]:4318"),
+		Entry("host without port", &core_xds.Endpoint{Target: "collector.mesh"}, "collector.mesh"),
+	)
+})
+
+var _ = Describe("ParseOtelEndpoint", func() {
+	DescribeTable("should parse endpoint correctly",
+		func(input string, expectedTarget string, expectedPort uint32) {
+			ep := policies_xds.ParseOtelEndpoint(input)
+			Expect(ep.Target).To(Equal(expectedTarget))
+			Expect(ep.Port).To(Equal(expectedPort))
+		},
+		Entry("host:port", "collector:4317", "collector", uint32(4317)),
+		Entry("host only", "collector", "collector", uint32(4317)),
+		Entry("ipv4:port", "10.0.0.1:4318", "10.0.0.1", uint32(4318)),
+		Entry("bracketed ipv6:port", "[2001:db8::1]:4317", "2001:db8::1", uint32(4317)),
+		Entry("bare ipv6", "[2001:db8::1]", "2001:db8::1", uint32(4317)),
+		Entry("bare ipv6 no brackets", "2001:db8::1", "2001:db8::1", uint32(4317)),
+	)
 })

@@ -2,9 +2,7 @@ package xds
 
 import (
 	"fmt"
-	"net"
 	"strconv"
-	"strings"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -137,10 +135,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	resolved := policies_xds.ResolveOtelBackend(
 		otelBackend.BackendRef,
 		otelBackend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
-		func(ep string) *xds.Endpoint {
-			le := EndpointForOtel(ep)
-			return &xds.Endpoint{Target: le.Address, Port: le.Port}
-		},
+		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		acc.Resources,
 		acc.NodeHostIP,
@@ -150,7 +145,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	}
 	if otelBackend.BackendRef != nil && acc.UseKumaDpPipe {
 		socketPath := xds.OtelLogSocketName(acc.WorkDir, resolved.Name)
-		realEndpoint := collectorEndpointString(resolved.Endpoint)
+		realEndpoint := policies_xds.CollectorEndpointString(resolved.Endpoint)
 		path := ""
 		if resolved.Path != nil {
 			path = *resolved.Path
@@ -177,28 +172,6 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	}
 }
 
-func collectorEndpointString(endpoint *xds.Endpoint) string {
-	if endpoint.Port == 0 {
-		return endpoint.Target
-	}
-	return net.JoinHostPort(endpoint.Target, strconv.Itoa(int(endpoint.Port)))
-}
-
-const defaultOpenTelemetryGRPCPort uint32 = 4317
-
-func EndpointForOtel(endpoint string) LoggingEndpoint {
-	target := strings.Split(endpoint, ":")
-	port := defaultOpenTelemetryGRPCPort
-	if len(target) > 1 {
-		val, _ := strconv.ParseInt(target[1], 10, 32)
-		port = uint32(val)
-	}
-
-	return LoggingEndpoint{
-		Address: target[0],
-		Port:    port,
-	}
-}
 
 func TCPBackendSFS(
 	backend *api.TCPBackend,

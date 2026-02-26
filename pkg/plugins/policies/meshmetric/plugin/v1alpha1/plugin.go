@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +46,6 @@ const (
 	PrometheusListenerName       = "_kuma:metrics:prometheus"
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
-	OpenTelemetryGrpcPort        = 4317
 	WorkloadAttributeKey         = "kuma.workload"
 )
 
@@ -179,7 +177,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	resolved := policies_xds.ResolveOtelBackend(
 		openTelemetryBackend.BackendRef,
 		openTelemetryBackend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
-		endpointForOpenTelemetry,
+		policies_xds.ParseOtelEndpoint,
 		backendNameFrom,
 		resources,
 		proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
@@ -278,7 +276,7 @@ func createDynamicConfig(
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.BackendRef,
 			backend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
-			endpointForOpenTelemetry,
+			policies_xds.ParseOtelEndpoint,
 			backendNameFrom,
 			resources,
 			proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
@@ -331,19 +329,6 @@ func createDynamicConfig(
 				ExtraLabels:  extraLabels,
 			},
 		},
-	}
-}
-
-func endpointForOpenTelemetry(endpoint string) *core_xds.Endpoint {
-	target := strings.Split(endpoint, ":")
-	port := uint32(OpenTelemetryGrpcPort) // default gRPC port
-	if len(target) > 1 {
-		val, _ := strconv.ParseInt(target[1], 10, 32)
-		port = uint32(val)
-	}
-	return &core_xds.Endpoint{
-		Target: target[0],
-		Port:   port,
 	}
 }
 

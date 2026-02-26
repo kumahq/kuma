@@ -1,7 +1,9 @@
 package xds
 
 import (
+	"net"
 	"path"
+	"strconv"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -104,4 +106,48 @@ func resolveFromBackendRef(ref *common_api.TargetRef, resources xds_context.Reso
 	}
 	otelLog.Info("MeshOpenTelemetryBackend not found, skipping backend", "name", name)
 	return nil
+}
+
+// OtelBackendConfig is the configuration sent from CP to DP via dynconf
+// for a single OTel backend (trace or log signal).
+type OtelBackendConfig struct {
+	// SocketPath is the Unix socket kuma-dp listens on.
+	SocketPath string `json:"socketPath"`
+	// Endpoint is the host:port of the real OTel collector.
+	Endpoint string `json:"endpoint"`
+	// UseHTTP controls whether kuma-dp forwards via HTTP instead of gRPC.
+	UseHTTP bool `json:"useHTTP"`
+	// Path is the base path for HTTP forwarding (HTTP only).
+	Path string `json:"path,omitempty"`
+}
+
+// CollectorEndpointString formats an Endpoint as a "host:port" string suitable
+// for dialing. IPv6 addresses are bracketed by net.JoinHostPort.
+func CollectorEndpointString(endpoint *core_xds.Endpoint) string {
+	if endpoint.Port == 0 {
+		return endpoint.Target
+	}
+	return net.JoinHostPort(endpoint.Target, strconv.Itoa(int(endpoint.Port)))
+}
+
+// ParseOtelEndpoint parses a "host:port" endpoint string into an Endpoint.
+// Handles IPv6 addresses (bracketed and bare) via net.SplitHostPort.
+// Defaults to gRPC port 4317 when no port is present or parsing fails.
+func ParseOtelEndpoint(endpoint string) *core_xds.Endpoint {
+	host, portStr, err := net.SplitHostPort(endpoint)
+	port := uint32(4317)
+	if err == nil {
+		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
+			port = uint32(val)
+		}
+	} else {
+		host = endpoint
+		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
+			host = host[1 : l-1]
+		}
+	}
+	return &core_xds.Endpoint{
+		Target: host,
+		Port:   port,
+	}
 }
