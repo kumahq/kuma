@@ -183,7 +183,11 @@ func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
 			return workload
 		}
 	}
-	return d.Spec.GetIdentifyingService()
+	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
+	if len(services) > 0 {
+		return services[0]
+	}
+	return mesh_proto.ServiceUnknown
 }
 
 // SortDataplanes sorts dataplanes by creation time, then by name.
