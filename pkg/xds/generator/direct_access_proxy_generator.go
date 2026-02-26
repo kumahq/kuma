@@ -46,8 +46,6 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 	if xdsCtx.ControlPlane != nil && xdsCtx.ControlPlane.InboundTagsDisabled {
 		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 			svc = workload
-		} else {
-			svc = mesh_proto.ServiceUnknown
 		}
 	}
 	mesh := xdsCtx.Mesh.Resource.GetMeta().GetName()

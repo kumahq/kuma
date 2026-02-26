@@ -179,8 +179,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if b.inboundTagsDisabled {
 			if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 				params.Service = workload
-			} else {
-				params.Service = mesh_proto.ServiceUnknown
 			}
 		}
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())

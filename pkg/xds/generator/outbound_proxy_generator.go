@@ -96,8 +96,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	if ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled {
 		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 			sourceService = workload
-		} else {
-			sourceService = mesh_proto.ServiceUnknown
 		}
 	}
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]

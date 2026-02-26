@@ -52,8 +52,6 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		if g.InboundTagsDisabled {
 			if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 				service = workload
-			} else {
-				service = v1alpha1.ServiceUnknown
 			}
 		}
 		assignment := &observability_v1.MonitoringAssignment{

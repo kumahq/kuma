@@ -4,7 +4,6 @@ import (
 	"net"
 	"strconv"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/v2/api/observability/v1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -39,8 +38,6 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 			if inboundTagsDisabled {
 				if workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 					service = workload
-				} else {
-					service = mesh_proto.ServiceUnknown
 				}
 			}
 			assignment := &observability_v1.MonitoringAssignment{

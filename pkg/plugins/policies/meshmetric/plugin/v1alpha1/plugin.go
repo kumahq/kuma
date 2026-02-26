@@ -289,14 +289,11 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["mesh"] = mesh.GetMeta().GetName()
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
+		extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
 		if inboundTagsDisabled {
 			if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 				extraLabels["service"] = workload
-			} else {
-				extraLabels["service"] = mesh_proto.ServiceUnknown
 			}
-		} else {
-			extraLabels["service"] = proxy.Dataplane.Spec.GetIdentifyingService()
 		}
 	}
 

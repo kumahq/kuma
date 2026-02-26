@@ -470,7 +470,6 @@ func dataplaneServiceName(dp *core_mesh.DataplaneResource, inboundTagsDisabled b
 		if workload := dp.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 			return workload
 		}
-		return mesh_proto.ServiceUnknown
 	}
 	return dp.Spec.GetIdentifyingService()
 }

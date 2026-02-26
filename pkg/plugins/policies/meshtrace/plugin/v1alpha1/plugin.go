@@ -160,8 +160,6 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	if ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled {
 		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 			serviceName = workload
-		} else {
-			serviceName = mesh_proto.ServiceUnknown
 		}
 	}
 	rawConf := rules.Rules[0].Conf

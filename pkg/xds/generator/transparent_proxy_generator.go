@@ -80,8 +80,6 @@ func CreateOutboundPassthroughListener(
 	if ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled {
 		if workload := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 			sourceService = workload
-		} else {
-			sourceService = mesh_proto.ServiceUnknown
 		}
 	}
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
