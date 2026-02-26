@@ -61,7 +61,7 @@ func BaseAccessLogBuilder(
 				Configure(bldrs_accesslog.Path(fileBackend.Path)))
 		})).
 		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
-			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc.Resources, backendsAcc.NodeHostIP)
+			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc)
 			if endpoint == nil {
 				return nil
 			}
@@ -75,12 +75,32 @@ func BaseAccessLogBuilder(
 		}))
 }
 
+// OtelPipeBackendInfo holds the real-collector info for a backend being proxied via kuma-dp.
+// Used to build MeshAccessLogDpConfig for dynconf.
+type OtelPipeBackendInfo struct {
+	SocketPath string
+	Endpoint   string // host:port of the real OTel collector
+	UseHTTP    bool
+	Path       string
+}
+
 type EndpointAccumulator struct {
 	endpoints             map[LoggingEndpoint]int
 	latest                int
 	UnifiedResourceNaming bool
 	Resources             xds_context.Resources
 	NodeHostIP            string
+	// UseKumaDpPipe enables routing OTel logs through a kuma-dp Unix socket.
+	UseKumaDpPipe bool
+	// WorkDir is the kuma-dp working directory for socket paths.
+	WorkDir string
+	// pipeBackends accumulates per-backend info for dynconf (populated when UseKumaDpPipe is set).
+	pipeBackends map[string]OtelPipeBackendInfo // key: BackendName
+}
+
+// PipeBackends returns the accumulated pipe backend info for dynconf emission.
+func (acc *EndpointAccumulator) PipeBackends() map[string]OtelPipeBackendInfo {
+	return acc.pipeBackends
 }
 
 type endpointClusterName string
@@ -97,14 +117,22 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 	}
 
 	getNameOrDefault := core_system_names.GetNameOrDefault(acc.UnifiedResourceNaming)
-	name := getNameOrDefault(
-		core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
-		fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
-	)
+	var name string
+	if endpoint.SocketPath != "" {
+		name = getNameOrDefault(
+			core_system_names.AsSystemName("meshaccesslog_otel_"+core_system_names.CleanName(endpoint.BackendName)),
+			fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+		)
+	} else {
+		name = getNameOrDefault(
+			core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
+			fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+		)
+	}
 	return endpointClusterName(name)
 }
 
-func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_context.Resources, nodeHostIP string) *LoggingEndpoint {
+func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccumulator) *LoggingEndpoint {
 	resolved := policies_xds.ResolveOtelBackend(
 		otelBackend.BackendRef,
 		otelBackend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
@@ -113,11 +141,33 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, resources xds_cont
 			return &xds.Endpoint{Target: le.Address, Port: le.Port}
 		},
 		func(ep string) string { return ep },
-		resources,
-		nodeHostIP,
+		acc.Resources,
+		acc.NodeHostIP,
 	)
 	if resolved == nil {
 		return nil
+	}
+	if acc.UseKumaDpPipe {
+		socketPath := xds.OtelLogSocketName(acc.WorkDir, resolved.Name)
+		realEndpoint := fmt.Sprintf("%s:%d", resolved.Endpoint.Target, resolved.Endpoint.Port)
+		path := ""
+		if resolved.Path != nil {
+			path = *resolved.Path
+		}
+		if acc.pipeBackends == nil {
+			acc.pipeBackends = map[string]OtelPipeBackendInfo{}
+		}
+		acc.pipeBackends[resolved.Name] = OtelPipeBackendInfo{
+			SocketPath: socketPath,
+			Endpoint:   realEndpoint,
+			UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
+			Path:       path,
+		}
+		return &LoggingEndpoint{
+			SocketPath:  socketPath,
+			BackendName: resolved.Name,
+			UseHTTP2:    true, // Envoy→kuma-dp leg is always gRPC
+		}
 	}
 	return &LoggingEndpoint{
 		Address:  resolved.Endpoint.Target,

@@ -10,9 +10,16 @@ type LoggingEndpoint struct {
 	Address  string
 	Port     uint32
 	UseHTTP2 bool
+	// SocketPath is non-empty when routing through a kuma-dp Unix socket.
+	SocketPath string
+	// BackendName is the resolved OTel backend name, used for cluster naming when SocketPath is set.
+	BackendName string
 }
 
 func xdsEndpoint(endpoint LoggingEndpoint) core_xds.Endpoint {
+	if endpoint.SocketPath != "" {
+		return core_xds.Endpoint{UnixDomainPath: endpoint.SocketPath}
+	}
 	return core_xds.Endpoint{
 		Target: endpoint.Address,
 		Port:   endpoint.Port,
