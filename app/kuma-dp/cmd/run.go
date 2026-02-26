@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelreceiver"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
 	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
@@ -34,7 +35,9 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	dns_dpapi "github.com/kumahq/kuma/v2/pkg/dns/dpapi"
+	meshaccesslog_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/dpapi"
 	meshmetric_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
+	meshtrace_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/dpapi"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	kuma_net "github.com/kumahq/kuma/v2/pkg/util/net"
@@ -549,5 +552,16 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 	if err != nil {
 		return nil, err
 	}
-	return []component.Component{accessLogStreamer, metricsServer, mm}, nil
+
+	traceManager := otelreceiver.NewTraceManager()
+	if err := fetcher.AddHandler(meshtrace_dpapi.PATH, traceManager.OnTraceChange); err != nil {
+		return nil, err
+	}
+
+	logManager := otelreceiver.NewLogManager()
+	if err := fetcher.AddHandler(meshaccesslog_dpapi.PATH, logManager.OnLogChange); err != nil {
+		return nil, err
+	}
+
+	return []component.Component{accessLogStreamer, metricsServer, mm, traceManager, logManager}, nil
 }
