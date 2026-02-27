@@ -21,7 +21,7 @@ import (
 
 type ZoneAvailableServicesTracker struct {
 	logger            logr.Logger
-	metric            prometheus.Summary
+	metric            prometheus.Histogram
 	resManager        manager.ResourceManager
 	meshCache         *mesh.Cache
 	interval          time.Duration
@@ -38,10 +38,9 @@ func NewZoneAvailableServicesTracker(
 	ingressTagFilters []string,
 	zone string,
 ) (*ZoneAvailableServicesTracker, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_zone_available_services",
-		Help:       "Summary of available services tracker component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_zone_available_services",
+		Help: "Summary of available services tracker component interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

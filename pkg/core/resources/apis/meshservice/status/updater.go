@@ -31,7 +31,7 @@ type StatusUpdater struct {
 	roResManager manager.ReadOnlyResourceManager
 	resManager   manager.ResourceManager
 	logger       logr.Logger
-	metric       prometheus.Summary
+	metric       prometheus.Histogram
 	interval     time.Duration
 	localZone    string
 	environment  config_core.EnvironmentType
@@ -48,10 +48,9 @@ func NewStatusUpdater(
 	localZone string,
 	environment config_core.EnvironmentType,
 ) (component.Component, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_ms_status_updater",
-		Help:       "Summary of Inter CP Heartbeat component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_ms_status_updater",
+		Help: "Summary of Inter CP Heartbeat component interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

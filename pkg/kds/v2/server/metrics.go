@@ -14,15 +14,14 @@ const (
 )
 
 type Metrics struct {
-	KdsGenerations      *prometheus.SummaryVec
+	KdsGenerations      *prometheus.HistogramVec
 	KdsGenerationErrors prometheus.Counter
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
-	kdsGenerations := prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name:       "kds_delta_generation",
-		Help:       "Summary of KDS Snapshot generation",
-		Objectives: core_metrics.DefaultObjectives,
+	kdsGenerations := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "kds_delta_generation",
+		Help: "Summary of KDS Snapshot generation",
 	}, []string{"reason", "result"})
 
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{

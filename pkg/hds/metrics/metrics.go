@@ -9,7 +9,7 @@ import (
 )
 
 type Metrics struct {
-	HdsGenerations          prometheus.Summary
+	HdsGenerations          prometheus.Histogram
 	HdsGenerationsErrors    prometheus.Counter
 	ResponsesReceivedMetric prometheus.Counter
 	RequestsReceivedMetric  prometheus.Counter
@@ -21,10 +21,9 @@ type Metrics struct {
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	m := &Metrics{}
 
-	m.HdsGenerations = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "hds_generation",
-		Help:       "Summary of HDS Snapshot generation",
-		Objectives: core_metrics.DefaultObjectives,
+	m.HdsGenerations = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "hds_generation",
+		Help: "Summary of HDS Snapshot generation",
 	})
 	if err := metrics.Register(m.HdsGenerations); err != nil {
 		return nil, err

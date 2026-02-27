@@ -20,7 +20,7 @@ type catalogWriter struct {
 	heartbeats *Heartbeats
 	instance   Instance
 	interval   time.Duration
-	metric     prometheus.Summary
+	metric     prometheus.Histogram
 }
 
 var _ component.Component = &catalogWriter{}
@@ -32,10 +32,9 @@ func NewWriter(
 	interval time.Duration,
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_catalog_writer",
-		Help:       "Summary of Inter CP Catalog Writer component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_catalog_writer",
+		Help: "Summary of Inter CP Catalog Writer component interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

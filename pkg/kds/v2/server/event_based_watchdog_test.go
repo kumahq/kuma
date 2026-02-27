@@ -107,7 +107,7 @@ var _ = Describe("Event Based Watchdog", func() {
 		Eventually(func(g Gomega) {
 			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonResync)
 			g.Expect(metric).ToNot(BeNil())
-			g.Expect(*metric.Summary.SampleCount).To(BeEquivalentTo(1))
+			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(1))
 		}, "10s", "50ms").Should(Succeed())
 	})
 
@@ -132,7 +132,7 @@ var _ = Describe("Event Based Watchdog", func() {
 		Eventually(func(g Gomega) {
 			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonEvent)
 			g.Expect(metric).ToNot(BeNil())
-			g.Expect(*metric.Summary.SampleCount).To(BeEquivalentTo(1))
+			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(1))
 		}, "10s", "50ms").Should(Succeed())
 	})
 
@@ -147,7 +147,7 @@ var _ = Describe("Event Based Watchdog", func() {
 		Eventually(func(g Gomega) {
 			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonResync)
 			g.Expect(metric).ToNot(BeNil())
-			g.Expect(*metric.Summary.SampleCount).To(BeEquivalentTo(2))
+			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(2))
 		}, "10s", "50ms").Should(Succeed())
 	})
 }, Ordered)

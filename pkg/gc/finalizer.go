@@ -52,7 +52,7 @@ type subscriptionFinalizer struct {
 	types          []core_model.ResourceType
 	onlineInsights tenantInsights
 	tenants        multitenant.Tenants
-	metric         prometheus.Summary
+	metric         prometheus.Histogram
 	extensions     context.Context
 	upsert         store.UpsertConfig
 }
@@ -64,10 +64,9 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Te
 		}
 	}
 
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_sub_finalizer",
-		Help:       "Summary of Subscription finalizer component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_sub_finalizer",
+		Help: "Summary of Subscription finalizer component interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
