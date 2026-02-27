@@ -548,7 +548,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:3.6.5@sha256:6140a3158fddd7ef2276908bd321ad5265ee6ad2abd9fb3c937394827df3ea4d"
+          image: "grafana/promtail:3.6.7@sha256:51346af8682f7a664affaca4f34a62f5a4f0f83ace9931df94590375a94ff8f1"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -648,7 +648,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:3.6.5@sha256:847c287ada0e12603910589f42038c5cdaaad04e248bd1dc6c6e0920a235f427"
+          image: "grafana/loki:3.6.7@sha256:3c8fd3570dd9219951a60d3f919c7f31923d10baee578b77bc26c4a0b32d092d"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
