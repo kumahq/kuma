@@ -22,7 +22,7 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	kdsGenerations := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "kds_delta_generation",
 		Help: "Summary of KDS Snapshot generation",
-	}, []string{"reason", "result"})
+	}, []string{"reason", "result", "zone_name"})
 
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during KDS generation",
