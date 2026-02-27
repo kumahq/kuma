@@ -103,9 +103,9 @@ type Spire struct {
 }
 
 type Extension struct {
-	// Type of the extension.
-	Type string `json:"type"`
-	// Config freeform configuration for the extension.
+	// Name is the name of the extension provider.
+	Name string `json:"name"`
+	// Config is a freeform configuration for the extension.
 	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 

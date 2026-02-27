@@ -12,8 +12,9 @@ type IdentityProvider interface {
 	Validate(context.Context, *meshidentity_api.MeshIdentityResource) error
 	Initialize(context.Context, *meshidentity_api.MeshIdentityResource) error
 	CreateIdentity(context.Context, *meshidentity_api.MeshIdentityResource, *xds.Proxy) (*xds.WorkloadIdentity, error)
-	GetRootCA(context.Context, *meshidentity_api.MeshIdentityResource) ([]byte, error)
-	ShouldCreateMeshTrust(*meshidentity_api.MeshIdentityResource) (bool, error)
+	// GetMeshTrustCA returns the CA bytes for MeshTrust creation.
+	// Returning (nil, nil) means no MeshTrust should be created.
+	GetMeshTrustCA(context.Context, *meshidentity_api.MeshIdentityResource) ([]byte, error)
 }
 
 type IdentityProviders = map[string]IdentityProvider

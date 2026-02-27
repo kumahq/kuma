@@ -1,5 +1,3 @@
 violations:
-- field: spec.provider.extension.type
-  message: extension type needs to be defined
-- field: spec.provider.extension.config
-  message: configuration needs to be defined
+- field: spec.provider.extension.name
+  message: extension name needs to be defined

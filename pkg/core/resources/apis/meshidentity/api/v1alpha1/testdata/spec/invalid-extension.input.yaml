@@ -4,5 +4,4 @@ spiffeID:
 provider:
   type: Extension
   extension:
-    type: ""
-    config:
+    name: ""

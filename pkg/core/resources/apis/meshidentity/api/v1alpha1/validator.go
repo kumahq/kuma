@@ -50,7 +50,7 @@ func validateProvider(provider Provider) validators.ValidationError {
 	case ExtensionType:
 		verr.Add(validateExtension(validators.RootedAt("extension"), provider.Extension))
 	default:
-		verr.AddError("type", validators.MakeFieldMustBeOneOfErr(string(provider.Type), string(BundledType), string(SpireType)))
+		verr.AddError("type", validators.MakeFieldMustBeOneOfErr(string(provider.Type), string(BundledType), string(SpireType), string(ExtensionType)))
 	}
 	return verr
 }
@@ -118,11 +118,8 @@ func validateExtension(path validators.PathBuilder, b *Extension) validators.Val
 		verr.AddViolationAt(path, "configuration needs to be defined")
 		return verr
 	}
-	if b.Type == "" {
-		verr.AddViolationAt(path.Field("type"), "extension type needs to be defined")
-	}
-	if b.Config == nil {
-		verr.AddViolationAt(path.Field("config"), "configuration needs to be defined")
+	if b.Name == "" {
+		verr.AddViolationAt(path.Field("name"), "extension name needs to be defined")
 	}
 	return verr
 }

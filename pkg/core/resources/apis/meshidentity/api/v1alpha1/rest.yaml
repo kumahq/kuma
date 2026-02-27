@@ -285,13 +285,13 @@ components:
                   description: Extension indicates that custom provider is used.
                   properties:
                     config:
-                      description: Config freeform configuration for the extension.
+                      description: Config is a freeform configuration for the extension.
                       x-kubernetes-preserve-unknown-fields: true
-                    type:
-                      description: Type of the extension.
+                    name:
+                      description: Name is the name of the extension provider.
                       type: string
                   required:
-                    - type
+                    - name
                   type: object
                 spire:
                   description: Spire indicates that SPIRE is used for certificate delivery.
