@@ -203,8 +203,6 @@ func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
 	return mesh_proto.ServiceUnknown
 }
 
-
-
 // SortDataplanes sorts dataplanes by creation time, then by name.
 // Used by generators to ensure consistent processing order.
 func SortDataplanes(dps []*DataplaneResource) []*DataplaneResource {

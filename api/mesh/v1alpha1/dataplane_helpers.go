@@ -628,7 +628,6 @@ func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
 	return sets
 }
 
-
 func (d *Dataplane) IsDelegatedGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
