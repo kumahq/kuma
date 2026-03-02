@@ -28,7 +28,7 @@ The Helm chart manages the full pod spec, including the `kuma-dp` image and argu
 
 * Good, because no changes required
 * Good, because simple - no injection machinery involved
-* Good, because it's easier to adjust resources for a ZoneProxy.
+* Good, because it's easier to adjust resources for a ZoneProxy
 * Bad, because any Helm upgrade that touches the Deployment spec triggers a zone proxy restart
 * Bad, because inconsistent with the regular Dataplane deployment model
 
@@ -41,7 +41,8 @@ is injected into regular workload pods.
 ```yaml
 containers:
   - name: pause          # dummy main container, never changes
-    image: registry.k8s.io/pause:3.10
+    image: kumahq/kuma-dp:v2.13.2
+    args: ["pause"]      # dedicated subcommand — sleeps forever, no-op
   # kuma-dp injected here by webhook:
   - name: kuma-sidecar
     image: kumahq/kuma-dp:v2.13.2
@@ -51,13 +52,19 @@ containers:
 The Deployment spec is owned by Helm and contains only the dummy container.
 When Kuma is upgraded (new `kuma-dp` image), the Deployment spec is unchanged → **no rollout**.
 
-The Deployment is labeled to opt into sidecar injection:
+The pod template is labeled to opt into sidecar injection:
 ```yaml
-metadata:
-  labels:
-    kuma.io/sidecar-injection: enabled
-    k8s.kuma.io/zone-proxy-type: ingress  # or: egress
+spec:
+  template:
+    metadata:
+      labels:
+        kuma.io/sidecar-injection: enabled
 ```
+
+For the `combinedProxies` Deployment (which runs both ingress and egress roles), the same
+`kuma.io/sidecar-injection: enabled` label applies. The zone proxy type (ingress, egress, or
+combined) is determined by the `k8s.kuma.io/zone-proxy-type` label on the **Service**, not the
+Deployment pod template (per MADR 095).
 
 **Webhook namespace constraint**: The default Helm installation configures the sidecar injector
 webhook with a `namespaceSelector` that excludes the control-plane release namespace
@@ -67,65 +74,68 @@ run in `kuma-system`, sidecar injection will not trigger for them unless the web
 to include that namespace. The implementation must update the webhook `namespaceSelector` to
 allow injection in `kuma-system`.
 
-The webhook detects the `k8s.kuma.io/zone-proxy-type` label and configures `kuma-dp` with the
-appropriate zone proxy arguments instead of the regular inbound/outbound configuration.
+The webhook detects the zone proxy type from the `k8s.kuma.io/zone-proxy-type` label on the
+associated Service and configures `kuma-dp` with the appropriate zone proxy arguments instead of
+the regular inbound/outbound configuration.
 
 * Good, because Helm upgrades no longer restart zone proxies
 * Good, because consistent deployment model with regular Dataplanes
 * Good, because reuses existing sidecar injection and bootstrap machinery
 * Good, because aligns with the mesh-scoped zone proxy model (Dataplanes with `listeners`)
+* Good, because resource requests/limits use pod-level resources (`spec.resources`, alpha in
+  K8s 1.32, beta and enabled by default from K8s 1.34); `ContainerPatch` is available as
+  fallback on K8s 1.32–1.33 or clusters with the feature gate disabled
 * Bad, because requires a dummy container, which is non-obvious to users inspecting the pod
 * Bad, because zone proxy update cadence decouples from Kuma upgrade cadence
-  (operators must trigger restarts explicitly to pick up new `kuma-dp`)
-* Bad, because configuring sidecar resources requires `ContainerPatch` or CP injector config
-  rather than a direct `resources:` field in the pod spec (see "Configuring sidecar resources" below)
+  (operators must trigger restarts explicitly to pick up new `kuma-dp`);
+  this is the same behavior as regular Dataplanes — operators already restart workload pods
+  after upgrades to pick up new injected `kuma-dp` versions
 * Bad, because the default webhook excludes `kuma-system`; the webhook `namespaceSelector` must
   be adjusted to enable injection in the control-plane namespace
 
 #### Waiting container image
 
-The dummy main container must run indefinitely without consuming resources.
-The following candidates are evaluated against three criteria: **image size**, **pull overhead**, and **security surface**.
+The dummy main container uses `kumahq/kuma-dp` with a dedicated `pause` subcommand added to the
+binary. The subcommand sleeps indefinitely and exits cleanly on SIGTERM.
 
-| Image | Compressed size | Pull overhead | Shell | Notes |
-|---|---|---|---|---|
-| `registry.k8s.io/pause:3.10` | ~300 KB | Usually none (pre-pulled by kubelet for pod sandboxes) | No | Purpose-built for this use case; used by K8s itself for pod sandboxes |
-| `gcr.io/distroless/static-debian12:nonroot` | ~2 MB | Pull required | No | No package manager, no shell; well-maintained by Google |
-| `cgr.dev/chainguard/static:latest` | ~1.5 MB | Pull required | No | Minimal, signed images; depends on third-party registry availability |
-| `busybox` | ~4 MB | Pull required | Yes | Shell increases attack surface; unnecessary for a no-op container |
-| `alpine` | ~8 MB | Pull required | Yes | Package manager + shell; overkill |
+**Decision: `kumahq/kuma-dp pause`**
 
-**Decision: `registry.k8s.io/pause:3.10`**
+- Operators already pull and mirror this image — no new image to manage or push to a private registry
+- No dependency on `registry.k8s.io` or any third-party registry
+- Maintained and released on the same cadence as Kuma itself
+- The `pause` subcommand adds negligible binary size (~a few KB of Go code)
 
-- Usually present on every Kubernetes node — the kubelet pre-pulls it to create pod network namespaces. No registry round-trip at zone proxy pod startup.
-- Smallest possible binary (~300 KB static ELF that calls `pause(2)` in a loop).
-- No shell, no tools, no package manager — minimal CVE surface.
-- Maintained by the Kubernetes project with the same release cadence as K8s itself.
-- The tag is pinned and updated alongside the supported K8s version matrix:
-  `pause:3.10` ships with K8s 1.31+.
+The Helm chart uses the same `kuma-dp` image reference already configured for the zone
+(e.g., via `global.image.tag`). No new Helm value is needed for the waiting container image.
 
-The Helm chart exposes the image as a configurable value. This introduces a new
-`meshes[].ingress.image` field relative to the Helm schema defined in MADR 094; MADR 094 will be
-amended to document this field alongside the existing `podSpec`, `resources`, etc.
+#### Configuring sidecar resources
+
+Because `kuma-dp` is injected by the webhook rather than defined in the Deployment spec,
+resource requests and limits cannot be set directly on a named container in the Deployment spec.
+**Primary: pod-level resources** — Use the `resources` field inside each proxy section
+(`ingress`, `egress`, `combinedProxies`) — already defined in MADR 094. These map to
+[pod-level resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#example-2)
+(`spec.resources`) on the pod template, applying to all containers in the pod.
+Pod-level resources were alpha in K8s 1.32 and graduated to beta (enabled by default) in K8s 1.34.
+Note: K8s 1.31 is already end-of-life; the oldest actively supported K8s version is 1.32.
 
 ```yaml
 meshes:
   - name: default
     ingress:
-      ...
-      image: registry.k8s.io/pause:3.10 # user can override the pause container image
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
 ```
 
-#### Configuring sidecar resources
-
-Because `kuma-dp` is injected by the webhook rather than defined in the Deployment spec,
-resource requests and limits cannot be set directly on the pod template's container list.
-Two mechanisms are available, in order of precedence (highest first):
-
-##### 1. Per-zone-proxy: ContainerPatch + annotation
-
-Create a `ContainerPatch` in `kuma-system` with a JSON patch targeting the sidecar container,
-then reference it via the `kuma.io/container-patches` annotation on the Deployment pod template:
+**Fallback: `ContainerPatch`** — Operators who require per-container resource control, or who
+run on clusters with the `PodLevelResources` feature gate explicitly disabled, can manually
+create a `ContainerPatch` targeting the injected sidecar:
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -140,38 +150,30 @@ spec:
       value: '{"requests":{"cpu":"100m","memory":"128Mi"},"limits":{"cpu":"500m","memory":"256Mi"}}'
 ```
 
+Reference it via the `kuma.io/container-patches` annotation on the Deployment pod template:
+
 ```yaml
-# Deployment pod template annotation
 annotations:
   kuma.io/container-patches: zone-ingress-resources
 ```
-
-##### 2. Zone-wide default: CP injector configuration
-
-The CP injector applies a default resource spec to all injected sidecar containers in the zone,
-including zone proxy sidecars. Configure via environment variables on the CP:
-
-```shell
-KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU=50m
-KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY=64Mi
-KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
-KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY=512Mi
-```
-
-This acts as the fallback when no `ContainerPatch` is applied to a specific zone proxy Deployment.
 
 ## Decision
 
 Chosen option: **Option 2** (sidecar injection with a dummy main container).
 
-This eliminates zone proxy restarts on Helm upgrades without requiring a minimum K8s version.
-It also aligns zone proxy deployment with the standard Kuma Dataplane model (mesh-scoped zone proxies with Dataplane `listeners`).
+This eliminates zone proxy restarts on Helm upgrades and aligns zone proxy deployment with the
+standard Kuma Dataplane model (mesh-scoped zone proxies with Dataplane `listeners`).
+Resource requests/limits use pod-level resources (`spec.resources`), alpha in K8s 1.32 and
+beta (enabled by default) from K8s 1.34. For K8s 1.32–1.33 or clusters with the feature gate
+disabled, `ContainerPatch` is the fallback mechanism.
 
-The dummy container uses the `pause` image, which is usually present on every Kubernetes node
-(used by Kubernetes itself for pod sandboxes), adding zero pull overhead.
+The dummy container runs `kumahq/kuma-dp pause` — the same image operators already manage,
+with a new `pause` subcommand that sleeps indefinitely. No additional images or registry
+dependencies are introduced.
 
-The sidecar injection webhook is extended to recognize the `k8s.kuma.io/zone-proxy-type` label and
-generate the appropriate `kuma-dp` arguments for zone proxy mode instead of regular sidecar mode.
+The sidecar injection webhook is extended to look up the `k8s.kuma.io/zone-proxy-type` label on
+the associated Service and generate the appropriate `kuma-dp` arguments for zone proxy mode
+instead of regular sidecar mode.
 
 ### Update behavior
 
@@ -198,10 +200,6 @@ capabilities and exposing no network ports).
 - Operators must explicitly restart zone proxy pods to pick up new `kuma-dp` images;
   running an old `kuma-dp` version after a Kuma upgrade is supported for the duration of
   the same compatibility window as regular Dataplanes
-
-## Implications for Kong Mesh
-
-None.
 
 ## Notes
 
