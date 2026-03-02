@@ -184,13 +184,18 @@ type OpenTelemetryBackend struct {
 
 #### Resolution during xDS generation
 
-1. CP loads all MeshOpenTelemetryBackend resources into MeshContext (same as MeshService, MeshExternalService)
+1. CP loads all MeshOpenTelemetryBackend resources into MeshContext (same as MeshService, MeshExternalService).
 2. During policy plugin's `Apply()`:
-   - If `backendRef` is set: look up MeshOpenTelemetryBackend by name from `ctx.Mesh.Resources.MeshLocalResources`
-   - If `spec.endpoint` is set: use its address and port directly
-   - If `spec.nodeEndpoint` is set: resolve the node IP from `proxy.Metadata.DynamicMetadata["HOST_IP"]`; fall back to `127.0.0.1` when empty (Universal/VM)
-   - Convert to the same `*core_xds.Endpoint` struct used today
-3. Proceed with existing cluster/listener creation - no changes downstream
+   - If `backendRef` is set: look up the resource by name from `ctx.Mesh.Resources.MeshLocalResources`.
+   - If `spec.endpoint` is set: use its address and port directly.
+   - If `spec.nodeEndpoint` is set: resolve node IP from `proxy.Metadata.DynamicMetadata["HOST_IP"]`; fall back to `127.0.0.1` on Universal/VM.
+3. Inline `endpoint` path: CP generates a standard static Envoy cluster pointing directly at the collector. MeshTrace and MeshAccessLog use Envoy's built-in OTel exporters (`envoy.tracers.opentelemetry`, `envoy.access_loggers.open_telemetry`) over gRPC. Unchanged from current behavior.
+4. `backendRef` path - kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, MeshTrace and MeshAccessLog route through kuma-dp via Unix sockets:
+   ```
+   Envoy --gRPC--> Unix socket --> kuma-dp otelreceiver --> gRPC or HTTP --> OTel Collector
+   ```
+   CP configures a `pipe`-type Envoy cluster per signal (socket paths from `OtelTraceSocketName()` / `OtelLogSocketName()`). kuma-dp runs gRPC receivers on those sockets and forwards to the collector using the protocol and address from the MOTB spec. kuma-dp reads backend config from dynconf routes (`/meshtrace`, `/meshaccesslog`), which return JSON with `socketPath`, `endpoint`, `useHTTP`, and `path`. ETag caching avoids reconnects on unchanged config.
+5. MeshMetric path: unchanged - kuma-dp reads Envoy stats via its own Unix socket and exports via OTel SDK. Not affected by `FeatureOtelViaKumaDp`.
 
 #### Resource characteristics
 
@@ -426,13 +431,13 @@ We considered having kuma-dp read `OTEL_EXPORTER_OTLP_*` env vars and forward th
 - `OTEL_EXPORTER_OTLP_*` env vars are designed for application OTel SDKs, not infrastructure proxies. The OTel spec places them under "Language APIs & SDKs." The OTel Collector itself doesn't read them for its own export config.
 - No service mesh reads these env vars for proxy telemetry. Istio uses `MeshConfig.extensionProviders` + the `Telemetry` CRD. Linkerd uses Helm values. Both treat app SDK telemetry and proxy telemetry as separate concerns.
 - The OpenTelemetry Operator injects into `Containers[0]` by default ([README](https://github.com/open-telemetry/opentelemetry-operator/blob/main/README.md): "instrumentation is performed on the first container available in the pod spec"). Kuma's webhook appends the sidecar, so kuma-sidecar won't receive the env vars. The `container-names` annotation accepts a comma-separated list and could include kuma-sidecar, but setting it automatically during injection requires Kuma's webhook to run after OTel's (webhook ordering is not guaranteed) and to know the app container name (which varies per workload). Either way, it requires explicit configuration - the same effort as creating a MeshOpenTelemetryBackend resource.
-- Only MeshMetric runs its OTel exporter in kuma-dp. MeshTrace and MeshAccessLog use Envoy's built-in exporters (`envoy.tracers.opentelemetry`, `envoy.access_loggers.open_telemetry`), which are configured through xDS, not env vars. So even with DynamicMetadata transport, the CP would still need to generate xDS config for 2 out of 3 signals.
+- For inline endpoints, MeshTrace and MeshAccessLog still use Envoy's built-in exporters (`envoy.tracers.opentelemetry`, `envoy.access_loggers.open_telemetry`) configured through xDS. Even with DynamicMetadata transport, the CP would still need to generate xDS config for those signals. MeshMetric and `backendRef`-based MeshTrace/MeshAccessLog route through kuma-dp (see pipe mode in scope), but getting env vars there still requires explicit sidecar configuration.
 - Getting the env vars onto the sidecar container requires explicit steps (pod annotation, ContainerPatch, or Helm). If an operator is already doing explicit configuration, creating a MeshOpenTelemetryBackend resource is simpler and works the same way across all three signals.
 - `OTEL_EXPORTER_OTLP_HEADERS` may contain bearer tokens. Forwarding them through DynamicMetadata puts them in Envoy's `node.metadata`, which shows up in config dumps and CP debug logs.
 
 MeshOpenTelemetryBackend already provides a single place to configure the collector endpoint. Env var auto-detection would add implementation complexity (DynamicMetadata wiring, priority ordering, security redaction) for a convenience feature that conflicts with how the OTel ecosystem actually works.
 
-A variant is possible where MeshTrace and MeshAccessLog are also routed through kuma-dp via Unix sockets (as MeshMetric already does), which would let kuma-dp read the env vars for all three signals without the DynamicMetadata transport. Envoy clusters support `pipe` addresses and the required OTLP gRPC server interfaces are already in `go.opentelemetry.io/proto/otlp` (already a dependency). This would solve the multi-signal problem and improve token security, but the remaining issues (OTel Operator not injecting into sidecars, partial pod coverage within a policy target, override semantics) would still need to be addressed before env var detection is a complete feature. That work is deferred.
+The pipe mode for MeshTrace and MeshAccessLog (routing through kuma-dp via Unix sockets, as MeshMetric already does) was implemented as part of `backendRef` support - scope item 8. The OTLP gRPC server interfaces in `go.opentelemetry.io/proto/otlp` are already in use. However, env var detection on top of pipe mode is still deferred: the remaining issues (OTel Operator not injecting into sidecars, partial pod coverage within a policy target, override semantics) still apply.
 
 ### Option B: Named backends on the Mesh resource (rejected)
 
@@ -524,6 +529,15 @@ The first implementation covers:
 5. Sidecar injector always injects `HOST_IP` env var (Downward API `status.hostIP`) into every kuma-dp container, unconditionally - same approach as `INSTANCE_IP`. No need for the injector to watch MOTB resources.
 6. Status conditions on the resource to surface unresolved backendRefs (user story 5)
 7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
+8. kuma-dp pipe mode for MeshTrace and MeshAccessLog: when `backendRef` is set and the proxy has `FeatureOtelViaKumaDp`, CP configures a `pipe`-type Envoy cluster per signal; kuma-dp runs gRPC receivers on the corresponding Unix sockets and forwards to the collector using the MOTB protocol and address. Inline `endpoint` backends use direct Envoy clusters, bypassing pipe mode.
+
+#### kuma-dp pipe mode versioning
+
+Pipe mode is on by default in 2.14.0. The CP uses it whenever `backendRef` is set and the data plane proxy advertises `FeatureOtelViaKumaDp`.
+
+To opt out, set `dataPlane.features.otelPipe: false` in the Helm chart. This maps to `DataplaneRuntime.OtelPipeEnabled` in kuma-dp config. When disabled, kuma-dp omits `FeatureOtelViaKumaDp` from its bootstrap feature list; the CP then generates direct static Envoy clusters for all backends, including `backendRef` ones. The behavior is identical to 2.13 and earlier.
+
+In 3.0.0 the opt-out flag is removed. Pipe mode becomes the only supported path for `backendRef` backends, and inline `endpoint` is removed along with the direct cluster path.
 
 TLS and auth fields are follow-up work.
 
