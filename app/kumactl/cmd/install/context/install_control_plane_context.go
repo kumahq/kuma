@@ -69,7 +69,7 @@ type InstallControlPlaneArgs struct {
 
 type ImageEnvSecret struct {
 	Env    string
-	Secret string
+	Secret string // #nosec G117 -- install context field, not stored credential
 	Key    string
 }
 

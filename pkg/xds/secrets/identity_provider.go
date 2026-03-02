@@ -26,10 +26,9 @@ type IdentityProvider interface {
 }
 
 func NewIdentityProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (IdentityProvider, error) {
-	latencyMetrics := prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name:       "ca_manager_get_cert",
-		Help:       "Summary of CA manager get certificate latencies",
-		Objectives: core_metrics.DefaultObjectives,
+	latencyMetrics := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "ca_manager_get_cert",
+		Help: "Summary of CA manager get certificate latencies",
 	}, []string{"backend_name"})
 	if err := metrics.Register(latencyMetrics); err != nil {
 		return nil, err
@@ -42,7 +41,7 @@ func NewIdentityProvider(caManagers core_ca.Managers, metrics core_metrics.Metri
 
 type identityCertProvider struct {
 	caManagers     core_ca.Managers
-	latencyMetrics *prometheus.SummaryVec
+	latencyMetrics *prometheus.HistogramVec
 }
 
 func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, string, error) {

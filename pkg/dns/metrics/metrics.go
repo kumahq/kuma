@@ -7,15 +7,14 @@ import (
 )
 
 type Metrics struct {
-	VipGenerations       prometheus.Summary
+	VipGenerations       prometheus.Histogram
 	VipGenerationsErrors prometheus.Counter
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
-	vipGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "vip_generation",
-		Help:       "Summary of VIP generation",
-		Objectives: core_metrics.DefaultObjectives,
+	vipGenerations := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "vip_generation",
+		Help: "Summary of VIP generation",
 	})
 	vipGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "vip_generation_errors",

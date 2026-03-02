@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 var statsLogger = core.Log.WithName("stats-callbacks")
@@ -46,7 +45,7 @@ type statsCallbacks struct {
 	responsesSentMetric    *prometheus.CounterVec
 	requestsReceivedMetric *prometheus.CounterVec
 	versionsMetric         *prometheus.GaugeVec
-	deliveryMetric         prometheus.Summary
+	deliveryMetric         prometheus.Histogram
 	deliveryMetricName     string
 	streamsActive          int
 	configsQueue           map[string]time.Time
@@ -114,10 +113,9 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 	}
 
 	stats.deliveryMetricName = dsType + "_delivery"
-	stats.deliveryMetric = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       stats.deliveryMetricName,
-		Help:       "Summary of config delivery including a response (ACK/NACK) from the client",
-		Objectives: core_metrics.DefaultObjectives,
+	stats.deliveryMetric = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: stats.deliveryMetricName,
+		Help: "Summary of config delivery including a response (ACK/NACK) from the client",
 	})
 	if err := metrics.Register(stats.deliveryMetric); err != nil {
 		return nil, err

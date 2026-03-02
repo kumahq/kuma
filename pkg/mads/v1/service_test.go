@@ -58,7 +58,7 @@ var _ = Describe("MADS http service", func() {
 		cfg.AssignmentRefreshInterval = config_types.Duration{Duration: refreshInterval}
 		cfg.DefaultFetchTimeout = config_types.Duration{Duration: defaultFetchTimeout}
 
-		svc := service.NewService(cfg, resManager, logr.Discard(), nil)
+		svc := service.NewService(cfg, resManager, logr.Discard(), nil, false)
 		ctx, cancel := context.WithCancel(context.Background())
 		svc.Start(ctx)
 

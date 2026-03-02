@@ -323,6 +323,7 @@ func configureInboundPassthroughListener(
 		inboundName = nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6)
 		address = metadata.TransparentAllIPv6
 	}
+	statPrefix := nameOrDefault(inboundName, "")
 	switch tlsMode {
 	case api.ModeStrict:
 		return generator.CreateInboundPassthroughListener(
@@ -331,6 +332,7 @@ func configureInboundPassthroughListener(
 			address,
 			tpCfg.Redirect.Inbound.Port.Uint32(),
 			true,
+			statPrefix,
 		)
 	case api.ModePermissive:
 		return generator.CreateInboundPassthroughListener(
@@ -339,6 +341,7 @@ func configureInboundPassthroughListener(
 			address,
 			tpCfg.Redirect.Inbound.Port.Uint32(),
 			false,
+			statPrefix,
 		)
 	}
 	return nil, nil

@@ -50,7 +50,7 @@ default:
     random: "60.1"
     client: 40
 `),
-			Entry("with opentelemetry backend", `
+			Entry("with opentelemetry backend gRPC", `
 targetRef:
   kind: MeshService
   name: backend
@@ -60,7 +60,6 @@ default:
       openTelemetry:
         endpoint: otel-collector:4317
 `),
-
 			Entry("with empty backends", `
 targetRef:
   kind: MeshService
@@ -392,6 +391,54 @@ default:
 violations:
   - field: spec.default.backends[0].openTelemetry
     message: must be defined`,
+			}),
+			Entry("openTelemetry endpoint must not be empty", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: ""
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry.endpoint
+    message: must not be empty`,
+			}),
+			Entry("openTelemetry endpoint must not be a URL", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: "http://otel-collector:4318/v1/traces"
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry.endpoint
+    message: must be in host:port format, not a URL`,
+			}),
+			Entry("openTelemetry endpoint must not contain a path", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: "otel-collector:4318/v1/traces"
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry.endpoint
+    message: must be in host:port format, not a URL`,
 			}),
 			Entry("gateway listener tags not allowed", testCase{
 				inputYaml: `

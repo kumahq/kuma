@@ -628,14 +628,6 @@ func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
 	return sets
 }
 
-func (d *Dataplane) GetIdentifyingService() string {
-	services := d.TagSet().Values(ServiceTag)
-	if len(services) > 0 {
-		return services[0]
-	}
-	return ServiceUnknown
-}
-
 func (d *Dataplane) IsDelegatedGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED

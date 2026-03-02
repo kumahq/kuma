@@ -38,6 +38,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNami
 	if listener == nil {
 		nr, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 			Configure(envoy_listeners.PipeListener(core_xds.MeshMetricsDynamicConfigurationSocketName(proxy.Metadata.WorkDir))).
+			Configure(envoy_listeners.StatPrefix(getNameOrDefault(system_names.SystemResourceNameDynamicConfigListener, ""))).
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 					Configure(

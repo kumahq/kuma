@@ -113,7 +113,7 @@ func debugExport(cluster Cluster, kumactlOpts *kumactl.KumactlOptions) error {
 }
 
 func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
-	Logf("Kube state of cluster: " + cluster.Name())
+	Logf("%s", "Kube state of cluster: "+cluster.Name())
 	if !slices.Contains(namespaces, Config.KumaNamespace) {
 		namespaces = append(namespaces, Config.KumaNamespace)
 	}

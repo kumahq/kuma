@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/events"
 	"github.com/kumahq/kuma/v2/pkg/kds/service"
 	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/multitenant"
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
@@ -34,7 +33,7 @@ type ZoneWatch struct {
 	bus            events.EventBus
 	extensions     context.Context
 	rm             manager.ReadOnlyResourceManager
-	summary        prometheus.Summary
+	summary        prometheus.Histogram
 	zones          map[zoneTenant]time.Time
 	zoneStreams    map[zoneTenant]map[service.StreamType]time.Time
 	closeStaleConn bool
@@ -48,10 +47,9 @@ func NewZoneWatch(
 	rm manager.ReadOnlyResourceManager,
 	extensions context.Context,
 ) (*ZoneWatch, error) {
-	summary := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_zone_watch",
-		Help:       "Summary of ZoneWatch component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	summary := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_zone_watch",
+		Help: "Summary of ZoneWatch component interval",
 	})
 	if err := metrics.Register(summary); err != nil {
 		return nil, err

@@ -31,7 +31,7 @@ const (
 type Generator struct {
 	logger           logr.Logger
 	generateInterval time.Duration
-	metric           prometheus.Summary
+	metric           prometheus.Histogram
 	resManager       manager.ResourceManager
 	meshCache        *mesh_cache.Cache
 	zone             string
@@ -47,10 +47,9 @@ func New(
 	meshCache *mesh_cache.Cache,
 	zone string,
 ) (*Generator, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_workload_generator",
-		Help:       "Summary of Workload generation duration",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_workload_generator",
+		Help: "Summary of Workload generation duration",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

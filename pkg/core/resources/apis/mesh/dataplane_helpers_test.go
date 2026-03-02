@@ -9,11 +9,83 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
+
+var _ = Describe("InboundIdentifyingName", func() {
+	type testCase struct {
+		meta                test_model.ResourceMeta
+		serviceTag          string
+		inboundTagsDisabled bool
+		portName            string
+		expected            string
+	}
+
+	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
+		dp := NewDataplaneResource()
+		dp.Meta = &meta
+		dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
+			Address: "127.0.0.1",
+			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+				Port: 8080,
+				Tags: map[string]string{mesh_proto.ServiceTag: serviceTag},
+			}},
+		}
+		return dp
+	}
+
+	DescribeTable("should return correct inbound identifying name",
+		func(given testCase) {
+			dp := newDP(given.meta, given.serviceTag)
+			Expect(dp.InboundIdentifyingName(given.inboundTagsDisabled, given.portName)).To(Equal(given.expected))
+		},
+		Entry("returns dataplane KRI with sectionName when tags disabled and port named", testCase{
+			meta: test_model.ResourceMeta{
+				Name: "backend-abc",
+				Mesh: "default",
+				Labels: map[string]string{
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "kuma-demo",
+				},
+			},
+			serviceTag:          "backend",
+			inboundTagsDisabled: true,
+			portName:            "http",
+			expected:            "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
+		}),
+		Entry("falls back to workload label when tags disabled and port empty", testCase{
+			meta: test_model.ResourceMeta{
+				Name: "backend-abc",
+				Mesh: "default",
+				Labels: map[string]string{
+					k8s_metadata.KumaWorkload: "backend",
+				},
+			},
+			serviceTag:          "backend",
+			inboundTagsDisabled: true,
+			portName:            "",
+			expected:            "backend",
+		}),
+		Entry("falls back to service tag when tags not disabled", testCase{
+			meta: test_model.ResourceMeta{
+				Name: "backend-abc",
+				Mesh: "default",
+				Labels: map[string]string{
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "kuma-demo",
+				},
+			},
+			serviceTag:          "backend",
+			inboundTagsDisabled: false,
+			portName:            "http",
+			expected:            "backend",
+		}),
+	)
+})
 
 var _ = Describe("Dataplane", func() {
 	Describe("UsesInterface()", func() {

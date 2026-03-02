@@ -1,0 +1,22 @@
+resources:
+- name: meshtrace:opentelemetry
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshtrace_opentelemetry
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: meshtrace:opentelemetry
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 2001:db8::1
+                portValue: 4317
+    name: meshtrace:opentelemetry
+    type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}

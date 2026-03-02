@@ -448,7 +448,7 @@ func buildGrpcService(params configParameters, useTokenPath bool, clusterName st
 	if useTokenPath && params.DataplaneTokenPath != "" {
 		googleGrpcService := &envoy_core_v3.GrpcService{
 			TargetSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_{
-				GoogleGrpc: &envoy_core_v3.GrpcService_GoogleGrpc{
+				GoogleGrpc: &envoy_core_v3.GrpcService_GoogleGrpc{ // #nosec G101 -- CredentialsFactoryName is an Envoy plugin identifier, not a credential
 					TargetUri:              net.JoinHostPort(params.XdsHost, strconv.FormatUint(uint64(params.XdsPort), 10)),
 					StatPrefix:             "ads",
 					CredentialsFactoryName: "envoy.grpc_credentials.file_based_metadata",

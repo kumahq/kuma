@@ -168,11 +168,10 @@ func getUpstreamHTTPPath(downstreamPath string) string {
 }
 
 func getScheme(req *http.Request) kube_core.URIScheme {
-	schemeParam := req.Header.Get(probes.HeaderNameScheme)
-	if schemeParam == "" {
-		return kube_core.URISchemeHTTP
+	if req.Header.Get(probes.HeaderNameScheme) == string(kube_core.URISchemeHTTPS) {
+		return kube_core.URISchemeHTTPS
 	}
-	return kube_core.URIScheme(schemeParam)
+	return kube_core.URISchemeHTTP
 }
 
 func getGRPCService(req *http.Request) string {

@@ -99,7 +99,7 @@ func (l Logger) ErrorTry(err error, a ...any) {
 // logln writes a line of output to the specified writer. It directly passes the
 // provided arguments to the writer without any formatting or prefix.
 func logln(w io.Writer, a []any) {
-	fmt.Fprintln(w, a...)
+	fmt.Fprintln(w, a...) // #nosec G705 -- logging output, not user-facing HTML
 }
 
 // loglnWithPrefixes writes a formatted line to the specified writer,

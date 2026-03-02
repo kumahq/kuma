@@ -32,9 +32,9 @@ var _ = Describe("MeshServiceController", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	type testCase struct {
-		inputFile                string
-		outputFile               string
-		skipInboundTagGeneration bool
+		inputFile           string
+		outputFile          string
+		inboundTagsDisabled bool
 	}
 
 	DescribeTable("should reconcile service",
@@ -69,12 +69,12 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client:                   kubeClient,
-				Log:                      logr.Discard(),
-				Scheme:                   k8sClientScheme,
-				EventRecorder:            kube_events.NewFakeRecorder(10),
-				ResourceConverter:        k8s.NewSimpleConverter(),
-				SkipInboundTagGeneration: given.skipInboundTagGeneration,
+				Client:              kubeClient,
+				Log:                 logr.Discard(),
+				Scheme:              k8sClientScheme,
+				EventRecorder:       kube_events.NewFakeRecorder(10),
+				ResourceConverter:   k8s.NewSimpleConverter(),
+				InboundTagsDisabled: given.inboundTagsDisabled,
 			}
 
 			key := kube_types.NamespacedName{
@@ -128,10 +128,10 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "headless-gateway-disabled.resources.yaml",
 			outputFile: "headless-gateway-disabled.meshservice.yaml",
 		}),
-		Entry("with SkipInboundTagGeneration enabled", testCase{
-			inputFile:                "skip-inbound-tags.resources.yaml",
-			outputFile:               "skip-inbound-tags.meshservice.yaml",
-			skipInboundTagGeneration: true,
+		Entry("with InboundTagsDisabled enabled", testCase{
+			inputFile:           "skip-inbound-tags.resources.yaml",
+			outputFile:          "skip-inbound-tags.meshservice.yaml",
+			inboundTagsDisabled: true,
 		}),
 	)
 })
