@@ -392,4 +392,3 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
 	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshtrace", dpapi.PATH), dpapi.PATH, marshal)
 }
-

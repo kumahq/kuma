@@ -199,4 +199,3 @@ func sameBackendConfig(a, b mt_dpapi.OtelBackendConfig) bool {
 		a.UseHTTP == b.UseHTTP &&
 		a.Path == b.Path
 }
-
