@@ -74,6 +74,7 @@ type Endpoint struct {
 	// When the primary endpoints become unhealthy, traffic fails over to the next priority level.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=128
 	Priority *uint32 `json:"priority,omitempty"`
 }
 

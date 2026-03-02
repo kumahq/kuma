@@ -17555,6 +17555,7 @@ components:
                       When the primary endpoints become unhealthy, traffic fails
                       over to the next priority level.
                     format: int32
+                    maximum: 128
                     minimum: 0
                     type: integer
                 required:

@@ -236,6 +236,52 @@ endpoints:
         zone: west
 `,
 			}),
+			Entry("MeshExternalService endpoints with different priorities are in separate groups", testCase{
+				cluster: "mes-cluster",
+				endpoints: []core_xds.Endpoint{
+					{
+						Target: "primary.example.com",
+						Port:   5432,
+						Weight: 1,
+						Locality: &core_xds.Locality{
+							Priority: 0,
+							SubZone:  "priority-0",
+						},
+					},
+					{
+						Target: "secondary.example.com",
+						Port:   5432,
+						Weight: 1,
+						Locality: &core_xds.Locality{
+							Priority: 1,
+							SubZone:  "priority-1",
+						},
+					},
+				},
+				expected: `
+clusterName: mes-cluster
+endpoints:
+    - lbEndpoints:
+        - endpoint:
+            address:
+                socketAddress:
+                    address: primary.example.com
+                    portValue: 5432
+          loadBalancingWeight: 1
+      locality:
+        subZone: priority-0
+    - lbEndpoints:
+        - endpoint:
+            address:
+                socketAddress:
+                    address: secondary.example.com
+                    portValue: 5432
+          loadBalancingWeight: 1
+      locality:
+        subZone: priority-1
+      priority: 1
+`,
+			}),
 			Entry("mixed locality with locality weights", testCase{
 				cluster: "127.0.0.1:8080",
 				endpoints: []core_xds.Endpoint{
