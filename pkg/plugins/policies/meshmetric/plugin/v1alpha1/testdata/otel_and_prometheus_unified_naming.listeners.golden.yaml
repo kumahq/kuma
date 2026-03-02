@@ -47,6 +47,7 @@ resources:
                     value: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
+    statPrefix: system_dynamicconfig
 - name: system_meshmetric_otel_otel-collector-observability-svc-4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -83,6 +84,7 @@ resources:
                   cluster: system_meshmetric_otel_otel-collector-observability-svc-4317
           statPrefix: system_meshmetric_otel_otel-collector-observability-svc-4317
     name: system_meshmetric_otel_otel-collector-observability-svc-4317
+    statPrefix: system_meshmetric_otel_otel-collector-observability-svc-4317
 - name: system_meshmetric_prometheus_default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -118,4 +120,5 @@ resources:
                   prefixRewrite: /meshmetric
           statPrefix: system_meshmetric_prometheus_default-backend
     name: system_meshmetric_prometheus_default-backend
+    statPrefix: system_meshmetric_prometheus_default-backend
     trafficDirection: INBOUND

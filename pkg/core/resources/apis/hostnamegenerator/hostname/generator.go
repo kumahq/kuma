@@ -36,7 +36,7 @@ type HostnameGenerator interface {
 type Generator struct {
 	logger     logr.Logger
 	interval   time.Duration
-	metric     prometheus.Summary
+	metric     prometheus.Histogram
 	resManager manager.ResourceManager
 	zone       string
 	generators []HostnameGenerator
@@ -52,10 +52,9 @@ func NewGenerator(
 	interval time.Duration,
 	generators []HostnameGenerator,
 ) (*Generator, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_hostname_generator",
-		Help:       "Summary of hostname generator interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_hostname_generator",
+		Help: "Summary of hostname generator interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

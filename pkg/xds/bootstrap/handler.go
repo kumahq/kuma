@@ -79,7 +79,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	resp.WriteHeader(http.StatusOK)
-	_, err = resp.Write(responseBytes)
+	_, err = resp.Write(responseBytes) // #nosec G705 -- binary bootstrap config, not HTML
 	if err != nil {
 		logger.Error(err, "Error while writing the response")
 		return
@@ -89,7 +89,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	if err == DpTokenRequired || validators.IsValidationError(err) {
 		resp.WriteHeader(http.StatusUnprocessableEntity)
-		_, err = resp.Write([]byte(err.Error()))
+		_, err = resp.Write([]byte(err.Error())) // #nosec G705 -- internal error message, not user HTML
 		if err != nil {
 			logger.Error(err, "Error while writing the response")
 		}
@@ -97,7 +97,7 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	}
 	if ISSANMismatchErr(err) || err == NotCA {
 		resp.WriteHeader(http.StatusBadRequest)
-		if _, err := resp.Write([]byte(err.Error())); err != nil {
+		if _, err := resp.Write([]byte(err.Error())); err != nil { // #nosec G705 -- internal error message, not user HTML
 			logger.Error(err, "Error while writing the response")
 		}
 		return

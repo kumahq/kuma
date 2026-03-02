@@ -23,7 +23,7 @@ type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
 	counts     *prometheus.GaugeVec
 	tenants    multitenant.Tenants
-	metric     prometheus.Summary
+	metric     prometheus.Histogram
 }
 
 var _ component.Component = &storeCounter{}
@@ -33,10 +33,9 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics core_me
 		Name: "resources_count",
 	}, []string{"resource_type", "tenant"})
 
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_store_counter",
-		Help:       "Summary of Store Counter component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_store_counter",
+		Help: "Summary of Store Counter component interval",
 	})
 	if err := metrics.BulkRegister(counts, metric); err != nil {
 		return nil, err

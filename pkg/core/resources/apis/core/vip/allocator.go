@@ -41,7 +41,7 @@ type Allocator struct {
 	interval          time.Duration
 	cidrToDescriptors map[string]model.ResourceTypeDescriptor
 	resManager        manager.ResourceManager
-	metric            prometheus.Summary
+	metric            prometheus.Histogram
 }
 
 var _ component.Component = &Allocator{}
@@ -53,10 +53,9 @@ func NewAllocator(
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
 ) (*Allocator, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_vip_allocator",
-		Help:       "Summary of VIP allocation duration",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_vip_allocator",
+		Help: "Summary of VIP allocation duration",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

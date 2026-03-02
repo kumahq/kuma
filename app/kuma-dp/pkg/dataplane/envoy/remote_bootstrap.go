@@ -50,6 +50,9 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 	if err != nil {
 		return nil, nil, err
 	}
+	if bootstrapUrl.Scheme != "http" && bootstrapUrl.Scheme != "https" {
+		return nil, nil, errors.Errorf("unsupported URL scheme %q, must be http or https", bootstrapUrl.Scheme)
+	}
 	client := &http.Client{Timeout: time.Second * 10}
 
 	if bootstrapUrl.Scheme == "https" {
@@ -239,7 +242,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 	}
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("content-type", "application/json")
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- scheme validated to http/https above
 	if err != nil {
 		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}

@@ -1,0 +1,99 @@
+#/meshes/default/dataplanes/dp-1/_rules 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: MeshService
+name: backend-1
+mesh: default
+labels:
+  kuma.io/display-name: backend
+  kuma.io/origin: zone
+  kuma.io/zone: zone1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - port: 5050
+      targetPort: 5050
+      appProtocol: http
+      name: http
+---
+type: MeshService
+name: kv
+mesh: default
+labels:
+  kuma.io/display-name: kv
+  kuma.io/origin: zone
+  kuma.io/zone: zone1
+spec:
+  selector:
+    dataplaneTags:
+      app: kv
+  ports:
+    - port: 5050
+      targetPort: 5050
+      appProtocol: http
+      name: http
+---
+type: MeshHTTPRoute
+name: http-route-mmzs
+mesh: default
+labels:
+  kuma.io/origin: global
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: backend
+  to:
+    - targetRef:
+        kind: MeshMultiZoneService
+        labels:
+          kuma.io/display-name: kv
+        sectionName: '5050'
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshMultiZoneService
+                labels:
+                  kuma.io/display-name: kv
+                weight: 1
+                port: 5050
+---
+type: MeshMultiZoneService
+name: kv
+mesh: default
+labels:
+  kuma.io/display-name: kv
+  kuma.io/origin: global
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: kv
+  ports:
+    - port: 5050
+      appProtocol: http
+---
+type: Dataplane
+name: dp-1
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone1
+  app: backend
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 5050
+      protocol: http
+      tags:
+        app: backend
+        kuma.io/service: foo

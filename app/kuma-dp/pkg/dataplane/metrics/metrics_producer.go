@@ -141,8 +141,8 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {
 	req = req.WithContext(ctx)
 	if isIPv6 {
-		return ap.httpClientIPv6.Do(req)
+		return ap.httpClientIPv6.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
 	} else {
-		return ap.httpClientIPv4.Do(req)
+		return ap.httpClientIPv4.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
 	}
 }

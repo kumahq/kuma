@@ -24,12 +24,12 @@ type service struct {
 	watchdog *util_watchdog.SimpleWatchdog
 }
 
-func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache) *service {
+func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache, inboundTagsDisabled bool) *service {
 	hasher := &util_xds_v3.FallBackNodeHash{DefaultId: mads_generator.DefaultKumaClientId}
 	cache := envoy_cache.NewSnapshotCache(false, hasher, util_xds.NewLogger(log))
 	reconciler := mads_reconcile.NewReconciler(
 		cache,
-		mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{}, meshCache),
+		mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{InboundTagsDisabled: inboundTagsDisabled}, meshCache, inboundTagsDisabled),
 	)
 	// We use the clientIds from the reconciler from the node hasher
 	hasher.GetIds = reconciler.KnownClientIds

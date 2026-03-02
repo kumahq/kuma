@@ -80,9 +80,9 @@ type resyncer struct {
 	metrics             core_metrics.Metrics
 	now                 func() time.Time
 
-	idleTime           prometheus.Summary
-	timeToProcessItem  prometheus.Summary
-	itemProcessingTime *prometheus.SummaryVec
+	idleTime           prometheus.Histogram
+	timeToProcessItem  prometheus.Histogram
+	itemProcessingTime *prometheus.HistogramVec
 
 	allResourceTypes []model.ResourceType
 	extensions       context.Context
@@ -97,20 +97,17 @@ type resyncer struct {
 // by RateLimiter. FullResyncInterval is provided by goroutine with Ticker, it runs
 // resync every t = FullResyncInterval - MinResyncInterval.
 func NewResyncer(config *Config) component.Component {
-	idleTime := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "insights_resyncer_processor_idle_time",
-		Help:       "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
-		Objectives: core_metrics.DefaultObjectives,
+	idleTime := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "insights_resyncer_processor_idle_time",
+		Help: "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
 	})
-	timeToProcessItem := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "insights_resyncer_event_time_to_process",
-		Help:       "Summary of the time between an event being added to a batch and it being processed, in a well behaving system this should be less of equal to the MinResyncInterval",
-		Objectives: core_metrics.DefaultObjectives,
+	timeToProcessItem := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "insights_resyncer_event_time_to_process",
+		Help: "Summary of the time between an event being added to a batch and it being processed, in a well behaving system this should be less of equal to the MinResyncInterval",
 	})
-	itemProcessingTime := prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name:       "insights_resyncer_event_time_processing",
-		Help:       "Summary of the time spent to process an event",
-		Objectives: core_metrics.DefaultObjectives,
+	itemProcessingTime := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "insights_resyncer_event_time_processing",
+		Help: "Summary of the time spent to process an event",
 	}, []string{"reason", "result"})
 	config.Metrics.MustRegister(idleTime, timeToProcessItem, itemProcessingTime)
 

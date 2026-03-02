@@ -195,7 +195,7 @@ func newDownstreamTypedConfig(alpnProtocols []string) *envoy_extensions_transpor
 
 func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
-	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
+	service := info.Proxy.Dataplane.IdentifyingName(false)
 
 	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 		// Note that even for HTTPS cases, we don't enable client certificate
@@ -388,7 +388,7 @@ func (g *TCPFilterChainGenerator) Generate(
 	}
 	sort.Slice(allClusters, func(i, j int) bool { return allClusters[i].Name() < allClusters[j].Name() })
 
-	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
+	service := info.Proxy.Dataplane.IdentifyingName(false)
 
 	// We can only specify retries for the entire filter chain, not per cluster
 	var retryPolicy *core_mesh.RetryResource

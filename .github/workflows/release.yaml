@@ -29,7 +29,7 @@ env:
   EDITION: kuma
   MIN_VERSION: "2.2.0"
   # renovate: datasource=go depName=ci-tools/release-tool packageName=github.com/kumahq/ci-tools versioning=semver
-  RELEASE_TOOL_VERSION: "v1.4.3"
+  RELEASE_TOOL_VERSION: "v1.4.4"
 permissions:
   contents: read
 jobs:

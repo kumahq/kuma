@@ -1,18 +1,20 @@
 package v1alpha1
 
 import (
+	"net"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -24,6 +26,7 @@ import (
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/metadata"
 	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -155,9 +158,21 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 }
 
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
-	serviceName := proxy.Dataplane.Spec.GetIdentifyingService()
+	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
+
+	var workloadKRI string
+	if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+		id := kri.Identifier{
+			ResourceType: workload_api.WorkloadType,
+			Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
+			Zone:         proxy.Zone,
+			Namespace:    proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+			Name:         workloadName,
+		}
+		workloadKRI = id.String()
+	}
 
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
@@ -166,6 +181,9 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		Destination:           destination,
 		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
 		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
+		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
+		Zone:                  proxy.Zone,
+		WorkloadKRI:           workloadKRI,
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -218,7 +236,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		)
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
-	if backend.OpenTelemetry != nil && endpoint.ExternalService == nil {
+	if backend.OpenTelemetry != nil {
 		builder.Configure(clusters.Http2())
 	}
 
@@ -252,89 +270,34 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 }
 
 func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
-	if strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://") {
-		// URL is validated at API level, but be defensive in case validation is bypassed
-		url, err := net_url.ParseRequestURI(cfg.Endpoint)
-		if err != nil {
-			// Fallback: parse manually
-			scheme := "http"
-			if strings.HasPrefix(cfg.Endpoint, "https://") {
-				scheme = "https"
-			}
-
-			// Strip scheme and path
-			hostPort := strings.TrimPrefix(cfg.Endpoint, scheme+"://")
-			if idx := strings.Index(hostPort, "/"); idx != -1 {
-				hostPort = hostPort[:idx]
-			}
-
-			// Extract host and port
-			host := hostPort
-			var port uint32
-			if scheme == "https" {
-				port = 443
-			} else {
-				port = 80
-			}
-
-			if hpParts := strings.Split(hostPort, ":"); len(hpParts) > 1 {
-				host = hpParts[0]
-				if val, err := strconv.ParseInt(hpParts[1], 10, 32); err == nil && val > 0 && val <= 65535 {
-					port = uint32(val)
-				}
-			}
-
-			return &xds.Endpoint{
-				Target: host,
-				Port:   port,
-				ExternalService: &xds.ExternalService{
-					TLSEnabled:         scheme == "https",
-					AllowRenegotiation: true,
-				},
-			}
-		}
-
-		// URL parsed successfully
-		var port uint32
-		if portStr := url.Port(); portStr != "" {
-			val, err := strconv.ParseInt(portStr, 10, 32)
-			if err != nil || val < 1 || val > 65535 {
-				// Use default port on error (should not happen due to API validation)
-				if url.Scheme == "https" {
-					port = 443
-				} else {
-					port = 80
-				}
-			} else {
-				port = uint32(val)
-			}
-		} else if url.Scheme == "https" {
-			port = 443
-		} else {
-			port = 80
-		}
-
-		return &xds.Endpoint{
-			Target: url.Hostname(),
-			Port:   port,
-			ExternalService: &xds.ExternalService{
-				TLSEnabled:         url.Scheme == "https",
-				AllowRenegotiation: true,
-			},
-		}
-	}
-
-	// gRPC endpoint (host:port format)
-	target := strings.Split(cfg.Endpoint, ":")
+	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	port := uint32(4317) // default gRPC port
-	if len(target) > 1 {
-		if val, err := strconv.ParseInt(target[1], 10, 32); err == nil && val > 0 && val <= 65535 {
+	if err == nil {
+		if val, err := strconv.ParseInt(portStr, 10, 32); err == nil && val > 0 && val <= 65535 {
 			port = uint32(val)
+		}
+	} else {
+		host = cfg.Endpoint
+		if l := len(host); l > 1 && host[0] == '[' && host[l-1] == ']' {
+			host = host[1 : l-1]
 		}
 	}
 	return &xds.Endpoint{
-		Target: target[0],
+		Target: host,
 		Port:   port,
+	}
+}
+
+// OTelHTTPEndpoint builds an xds.Endpoint for an HTTP/HTTPS OTel collector.
+// Used when resolving a MeshTelemetryBackend with HTTP protocol.
+func OTelHTTPEndpoint(address string, port uint32, tlsEnabled bool) *xds.Endpoint {
+	return &xds.Endpoint{
+		Target: address,
+		Port:   port,
+		ExternalService: &xds.ExternalService{
+			TLSEnabled:         tlsEnabled,
+			AllowRenegotiation: true,
+		},
 	}
 }
 

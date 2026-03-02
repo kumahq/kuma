@@ -88,10 +88,9 @@ func (t Tags) WithTags(keysAndValues ...string) Tags {
 	for tagName, tagValue := range t {
 		result[tagName] = tagValue
 	}
-	for i := 0; i < len(keysAndValues); {
+	for i := 0; i+1 < len(keysAndValues); i += 2 {
 		key, value := keysAndValues[i], keysAndValues[i+1]
 		result[key] = value
-		i += 2
 	}
 	return result
 }

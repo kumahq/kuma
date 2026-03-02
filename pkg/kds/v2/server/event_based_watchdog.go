@@ -79,7 +79,7 @@ func (e *EventBasedWatchdog) Start(ctx context.Context) {
 				// we want to combine reason. One of the reasons we introduce this metric is to check if we need full resync
 				// If we just keep a single reason, we might get into races where full resync ticker runs,
 				// then listener, and we would lose information what triggered flush.
-				e.Metrics.KdsGenerations.WithLabelValues(reason, result).Observe(float64(core.Now().Sub(start).Milliseconds()))
+				e.Metrics.KdsGenerations.WithLabelValues(reason, result, e.Node.Id).Observe(float64(core.Now().Sub(start).Milliseconds()))
 				changedTypes = map[model.ResourceType]struct{}{}
 				reasons = map[string]struct{}{}
 			}
