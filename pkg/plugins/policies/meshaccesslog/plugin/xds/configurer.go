@@ -172,7 +172,6 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	}
 }
 
-
 func TCPBackendSFS(
 	backend *api.TCPBackend,
 	defaultFormat string,
