@@ -25,7 +25,7 @@ node = "24"
 "aqua:protocolbuffers/protobuf-go/protoc-gen-go" = "1.36.11"
 "aqua:stackrox/kube-linter" = "0.7.6"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
-"go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.5.1"
+"go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.6.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.20.1"
 "go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20260215011159-80d56e741406"
 # === tools excluded from GitHub Actions installs ===
