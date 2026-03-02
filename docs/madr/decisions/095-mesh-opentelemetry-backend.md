@@ -521,7 +521,7 @@ The first implementation covers:
 2. `backendRef` field added to all three policy OTel backends
 3. Validation: exactly one of `endpoint` or `nodeEndpoint` on the resource; exactly one of `endpoint` or `backendRef` on each policy backend (mutual exclusivity enforced at admission); non-empty `path` rejected when `protocol: grpc`
 4. Resolution in each policy's Apply(): `endpoint` uses address directly; `nodeEndpoint` resolves host IP from `BootstrapDynamicMetadata["HOST_IP"]`, falls back to `127.0.0.1` on Universal
-5. Sidecar injector injects `HOST_IP` env var (Downward API `status.hostIP`) into the kuma-dp container to support `nodeEndpoint`
+5. Sidecar injector always injects `HOST_IP` env var (Downward API `status.hostIP`) into every kuma-dp container, unconditionally - same approach as `INSTANCE_IP`. No need for the injector to watch MOTB resources.
 6. Status conditions on the resource to surface unresolved backendRefs (user story 5)
 7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
 
