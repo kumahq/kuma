@@ -137,7 +137,7 @@ func newSyncTracker(
 					if changed {
 						result = ResultChanged
 					}
-					kdsMetrics.KdsGenerations.WithLabelValues(ReasonResync, result).
+					kdsMetrics.KdsGenerations.WithLabelValues(ReasonResync, result, node.Id).
 						Observe(float64(core.Now().Sub(start).Milliseconds()))
 				}
 				return err
