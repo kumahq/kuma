@@ -40,6 +40,7 @@ func NewDefaultBootstrapGenerator(
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
+	inboundTagsDisabled bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -59,6 +60,7 @@ func NewDefaultBootstrapGenerator(
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
+		inboundTagsDisabled:     inboundTagsDisabled,
 	}, nil
 }
 
@@ -73,6 +75,7 @@ type bootstrapGenerator struct {
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
+	inboundTagsDisabled     bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -171,7 +174,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			}
 			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
 		}
-		params.Service = dataplane.Spec.GetIdentifyingService()
+		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))

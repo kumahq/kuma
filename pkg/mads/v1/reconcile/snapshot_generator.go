@@ -23,18 +23,20 @@ import (
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) *SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
 	return &SnapshotGenerator{
-		resourceManager:   resourceManager,
-		resourceGenerator: resourceGenerator,
-		meshCache:         meshCache,
+		resourceManager:     resourceManager,
+		resourceGenerator:   resourceGenerator,
+		meshCache:           meshCache,
+		inboundTagsDisabled: inboundTagsDisabled,
 	}
 }
 
 type SnapshotGenerator struct {
-	resourceManager   core_manager.ReadOnlyResourceManager
-	resourceGenerator generator.ResourceGenerator
-	meshCache         *mesh.Cache
+	resourceManager     core_manager.ReadOnlyResourceManager
+	resourceGenerator   generator.ResourceGenerator
+	meshCache           *mesh.Cache
+	inboundTagsDisabled bool
 }
 
 func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]envoy_cache.ResourceSnapshot, error) {
@@ -83,7 +85,7 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 				return nil, err
 			}
 
-			resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId)
+			resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId, s.inboundTagsDisabled)
 			if err != nil {
 				return nil, err
 			}

@@ -32,11 +32,11 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.55.0
+	github.com/gruntwork-io/terratest v0.56.0
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/invopop/jsonschema v0.13.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/josephburnett/jd/v2 v2.4.0
+	github.com/josephburnett/jd/v2 v2.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/miekg/dns v1.1.72
 	github.com/moby/sys/mountinfo v0.7.2
@@ -77,19 +77,19 @@ require (
 	golang.org/x/text v0.34.0
 	golang.org/x/tools v0.42.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57
+	google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171
 	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v4 v4.1.1
-	k8s.io/api v0.35.1
-	k8s.io/apiextensions-apiserver v0.35.1
-	k8s.io/apimachinery v0.35.1
-	k8s.io/client-go v0.35.1
+	k8s.io/api v0.35.2
+	k8s.io/apiextensions-apiserver v0.35.2
+	k8s.io/apimachinery v0.35.2
+	k8s.io/client-go v0.35.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
-	k8s.io/kubectl v0.35.1
+	k8s.io/kubectl v0.35.2
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/controller-runtime v0.23.1
 	sigs.k8s.io/controller-tools v0.20.1
@@ -274,9 +274,9 @@ require (
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a
+	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
 	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/time v0.13.0 // indirect
@@ -286,9 +286,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
-	k8s.io/apiserver v0.35.1 // indirect
-	k8s.io/code-generator v0.35.1 // indirect
-	k8s.io/component-base v0.35.1 // indirect
+	k8s.io/apiserver v0.35.2 // indirect
+	k8s.io/code-generator v0.35.2 // indirect
+	k8s.io/component-base v0.35.2 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect

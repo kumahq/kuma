@@ -49,6 +49,8 @@ var _ = Describe("MeshTrace", func() {
 		goldenFile      string
 		features        xds_types.Features
 		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		proxyLabels     map[string]string
+		zone            string
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -139,21 +141,26 @@ var _ = Describe("MeshTrace", func() {
 			}
 			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
 			context.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
-			proxy := xds_builders.Proxy().
-				WithDataplane(
-					builders.Dataplane().
-						WithName("backend").
-						AddInbound(builders.Inbound().
-							WithService("backend").
-							WithAddress("127.0.0.1").
-							WithPort(17777)),
-				).
+			dpBuilder := builders.Dataplane().
+				WithName("backend").
+				AddInbound(builders.Inbound().
+					WithService("backend").
+					WithAddress("127.0.0.1").
+					WithPort(17777))
+			if given.proxyLabels != nil {
+				dpBuilder = dpBuilder.WithLabels(given.proxyLabels)
+			}
+			proxyBuilder := xds_builders.Proxy().
+				WithDataplane(dpBuilder).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					Features: given.features,
 				}).
 				WithOutbounds(given.outbounds).
-				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
-				Build()
+				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules))
+			if given.zone != "" {
+				proxyBuilder = proxyBuilder.WithZone(given.zone)
+			}
+			proxy := proxyBuilder.Build()
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -410,6 +417,79 @@ var _ = Describe("MeshTrace", func() {
 				},
 			},
 			goldenFile: "empty-sampling",
+		}),
+		Entry("inbound/outbound for zipkin with workload identity", testCase{
+			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-zipkin-workload-identity",
+			proxyLabels: map[string]string{
+				"kuma.io/workload":      "backend",
+				mesh_proto.ZoneTag:      "zone-1",
+				"k8s.kuma.io/namespace": "kuma-demo",
+			},
+			zone: "zone-1",
+		}),
+		Entry("inbound/outbound for zipkin, user-defined kuma.mesh tag not overridden", testCase{
+			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Tags: &[]api.Tag{
+								{Name: "kuma.mesh", Literal: pointer.To("user-mesh")},
+							},
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-zipkin-user-tag-no-override",
+			proxyLabels: map[string]string{
+				"kuma.io/workload":      "backend",
+				mesh_proto.ZoneTag:      "zone-1",
+				"k8s.kuma.io/namespace": "kuma-demo",
+			},
+			zone: "zone-1",
 		}),
 		Entry("backends list is empty", testCase{
 			resources: inboundAndOutbound(),

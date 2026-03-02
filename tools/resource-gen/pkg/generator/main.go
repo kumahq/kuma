@@ -538,7 +538,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 
 		// Read the generated rest.yaml
-		restContent, err := os.ReadFile(tmpRestPath)
+		restContent, err := os.ReadFile(tmpRestPath) // #nosec G703 -- path from template execution, not user input
 		if err != nil {
 			return fmt.Errorf("failed to read temp rest.yaml: %w", err)
 		}

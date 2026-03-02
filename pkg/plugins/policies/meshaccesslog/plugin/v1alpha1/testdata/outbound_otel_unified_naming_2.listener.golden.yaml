@@ -24,6 +24,11 @@ filterChains:
                 clusterName: system_meshaccesslog_other-otel-collector-5317
             logName: MeshAccessLog
             transportApiVersion: V3
+          resourceAttributes:
+            values:
+            - key: kuma.mesh
+              value:
+                stringValue: default
       cluster: bar-service
       statPrefix: bar-service
 metadata:

@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### Observability: Prometheus metrics migration from Summary to Histogram
+
+Internal Kuma Prometheus metrics changed from `Summary` to `Histogram` types to fix stale values that accumulated over long windows.
+
+**What changed:**
+- All metrics previously exported as `prometheus.Summary` or `prometheus.SummaryVec` are now `prometheus.Histogram` or `prometheus.HistogramVec`.
+- Metrics that previously exposed quantiles (`0.5`, `0.9`, `0.99`) now use histogram buckets (`_bucket` with `le` labels).
+- `DefaultObjectives` is replaced by `DefaultBuckets`.
+
+**Action required:**
+- Update any dashboards, alerts, or queries that use the old quantile representations to use histogram buckets and the `histogram_quantile` function.
+
 ### RBAC: Added `events.k8s.io` API group
 
 The control plane ClusterRole and the namespaced Role used by the control plane for `events` now include the `events.k8s.io` API group alongside the core (`""`) API group for `events` resources. This aligns with the Kubernetes `events.k8s.io/v1` API which replaced the deprecated core `v1` Events API.

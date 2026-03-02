@@ -15,7 +15,7 @@ env:
   # on the runner).
   CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
-  GOLANGCI_LINT_VERSION: "v2.9.0"
+  GOLANGCI_LINT_VERSION: "v2.10.1"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
@@ -108,7 +108,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          only-new-issues: ${{ github.event_name == 'pull_request' }}
+          only-new-issues: false
 
       - run: |
           make clean
@@ -204,7 +204,7 @@ jobs:
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: "*sbom.{cyclonedx,spdx}.json"
@@ -212,7 +212,7 @@ jobs:
       - name: "Download binary artifact provenance"
         if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
         id: collect_provenance
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: ${{ github.event.repository.name }}.intoto.jsonl

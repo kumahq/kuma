@@ -5,8 +5,8 @@ import (
 )
 
 type metrics struct {
-	RequestDuration             prometheus.Summary
-	UpstreamRequestDuration     prometheus.Summary
+	RequestDuration             prometheus.Histogram
+	UpstreamRequestDuration     prometheus.Histogram
 	UpstreamRequestFailureCount prometheus.Counter
 }
 
@@ -16,12 +16,12 @@ func newMetrics() *metrics {
 	if m != nil {
 		return m
 	}
-	upstreamRequestDuration := prometheus.NewSummary(prometheus.SummaryOpts{
+	upstreamRequestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name: "kuma_dp_dns_upstream_request_duration_seconds",
 		Help: "The duration of the proxied requests.",
 	})
 	prometheus.MustRegister(upstreamRequestDuration)
-	requestDuration := prometheus.NewSummary(prometheus.SummaryOpts{
+	requestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name: "kuma_dp_dns_request_duration_seconds",
 		Help: "The duration of the request (inclusive of request that use internal DNS map).",
 	})

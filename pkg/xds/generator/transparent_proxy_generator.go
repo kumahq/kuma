@@ -75,7 +75,7 @@ func CreateOutboundPassthroughListener(
 	outboundPort uint32,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, outboundPort, model.SocketAddressProtocolTCP).
@@ -138,7 +138,7 @@ func CreateInboundPassthroughListener(
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.OriginalDstForwarder())
 
-	if useStrictInboundPorts {
+	if useStrictInboundPorts && len(proxy.Dataplane.Spec.Networking.Inbound) > 0 {
 		for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
 			// if service doesn't have any port we don't need to expose listener
 			if inbound.Port == mesh_proto.TCPPortReserved {

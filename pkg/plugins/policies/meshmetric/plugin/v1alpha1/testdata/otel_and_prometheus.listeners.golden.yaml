@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 550
+            maxDirectResponseBodySizeBytes: 530
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: b12587e0d320f4c2d6d5e526d372db30c1aa176c61d359f134bcfef6ad462954
+                      exact: 986f1aabd51758bd851e6816620efa89acfb4f03d115611583979c0d50a52377
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","service":"backend"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,7 +43,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: b12587e0d320f4c2d6d5e526d372db30c1aa176c61d359f134bcfef6ad462954
+                    value: 986f1aabd51758bd851e6816620efa89acfb4f03d115611583979c0d50a52377
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
 - name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317

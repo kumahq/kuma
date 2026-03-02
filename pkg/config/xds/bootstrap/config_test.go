@@ -17,7 +17,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 	It("should be loadable from configuration file", func() {
 		// given
 		cfg := BootstrapServerConfig{}
-		//nolint:gosec
+
 		fileError := os.WriteFile("/tmp/corefile", []byte("abc"), 0o600)
 		Expect(fileError).ToNot(HaveOccurred())
 

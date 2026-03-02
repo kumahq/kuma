@@ -7,6 +7,12 @@
 * chore(deps): security update [#15577](https://github.com/kumahq/kuma/pull/15577) [#15641](https://github.com/kumahq/kuma/pull/15641) [#15657](https://github.com/kumahq/kuma/pull/15657) @kumahq
 
 
+## 2.9.12
+> Released on 2026/02/25
+
+* chore(deps): security update [#15683](https://github.com/kumahq/kuma/pull/15683) @lukidzi
+
+
 ## 2.7.22
 > Released on 2026/02/24
 

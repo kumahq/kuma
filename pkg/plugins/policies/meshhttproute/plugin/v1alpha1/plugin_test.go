@@ -2784,7 +2784,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 	)
 })
 
-//nolint:gosec
 const secureSecret = `
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEA60QMsTAL8jPI+XzWlVv4e7Gc8C5Y5q5SHDMuXGEog2eyA+UB
@@ -2834,7 +2833,6 @@ Jw==
 -----END CERTIFICATE-----
 `
 
-//nolint:gosec
 const superSecureSecret = `
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAy2J1y0ehmGKvF9m1zooZr9UUgg3Y/xrhYXT47BLtKNfok5sI

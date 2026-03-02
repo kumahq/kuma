@@ -14,7 +14,7 @@ import (
 
 const DefaultKumaClientId = "_kuma-default-client"
 
-func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string, inboundTagsDisabled bool) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
 	for meshMetricConf, dataplane := range meshMetricToDataplane {
@@ -33,9 +33,10 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 				schema = "https"
 			}
 
+			service := dataplane.IdentifyingName(inboundTagsDisabled)
 			assignment := &observability_v1.MonitoringAssignment{
 				Mesh:    dataplane.Meta.GetMesh(),
-				Service: dataplane.Spec.GetIdentifyingService(),
+				Service: service,
 				Targets: []*observability_v1.MonitoringAssignment_Target{{
 					Scheme:      schema,
 					Name:        dataplane.GetMeta().GetName(),

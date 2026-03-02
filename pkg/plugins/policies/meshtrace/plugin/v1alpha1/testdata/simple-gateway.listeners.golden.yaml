@@ -50,6 +50,13 @@ filterChains:
       statPrefix: sample-gateway
       streamIdleTimeout: 5s
       tracing:
+        customTags:
+        - literal:
+            value: default
+          tag: kuma.mesh
+        - literal:
+            value: test-zone
+          tag: kuma.zone
         provider:
           name: envoy.tracers.zipkin
           typedConfig:
