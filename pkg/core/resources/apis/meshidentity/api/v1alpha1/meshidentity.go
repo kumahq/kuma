@@ -36,8 +36,8 @@ type ProviderType string
 
 const (
 	BundledType   ProviderType = "Bundled"
-	ExtensionType ProviderType = "Extension"
 	SpireType     ProviderType = "Spire"
+	ExtensionType ProviderType = "Extension"
 )
 
 type Provider struct {

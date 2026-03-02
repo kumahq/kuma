@@ -112,6 +112,9 @@ func validateSpire(path validators.PathBuilder, b *Spire) validators.ValidationE
 	return verr
 }
 
+// validateExtension performs base validation for the Extension provider type.
+// Extension-specific config validation (e.g. parsing config fields) is delegated to the
+// extension implementation via registry.RegisterTypeValidator.
 func validateExtension(path validators.PathBuilder, b *Extension) validators.ValidationError {
 	var verr validators.ValidationError
 	if b == nil {
