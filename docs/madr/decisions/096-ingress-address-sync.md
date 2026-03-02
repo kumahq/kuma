@@ -53,7 +53,7 @@ var MeshZoneAddressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 }
 ```
 
-We can run a controller on the Zone CP that watches Service resources labeled `k8s.kuma.io/zone-proxy-type: ingress`
+We can run a controller on the Kubernetes Zone CP deployment that watches Service resources labeled `k8s.kuma.io/zone-proxy-type: ingress`
 and creates a corresponding MeshZoneAddress resource.
 
 ```yaml
@@ -75,6 +75,18 @@ we guarantee there are no naming collisions within the Kubernetes cluster.
 
 This means if a user has multiple Kubernetes Services labeled with `k8s.kuma.io/zone-proxy-type: ingress`,
 the CP is going to generate multiple `MeshZoneAddress` for that zone.
+
+`MeshZoneAddress` resource must be generated only when there is at least one **ready** endpoint in the `EndpointSlice`.
+This guarantees:
+
+1. Safe startup. `MeshZoneAddress` is synced to other zones only when at least one zone ingress is up and running.
+
+2. Safe shutdown. The user must follow a graceful shutdown sequence: first scale down zone ingress replicas, then remove the service and deployment.
+`MeshZoneAddress` resource is removed once the `EndpointSlice` has no ready endpoints, 
+leaving a time window for KDS to propagate the changes to other zones.
+
+On Universal, `MeshZoneAddress` resource is managed manually by the user.
+They need to create it providing the LB address and port.
 
 #### Outbound configuration
 
