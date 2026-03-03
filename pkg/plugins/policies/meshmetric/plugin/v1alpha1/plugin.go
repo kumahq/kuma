@@ -19,9 +19,11 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/mads"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
@@ -85,9 +87,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming, ctx.Mesh.Resources)
-	if err != nil {
-		return err
+	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
+		addOtelToAccumulator(proxy, openTelemetryBackends, ctx.Mesh.Resources)
+	} else {
+		err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming, ctx.Mesh.Resources)
+		if err != nil {
+			return err
+		}
 	}
 	inboundTagsDisabled := false
 	if ctx.ControlPlane != nil {
@@ -350,6 +356,31 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 		}
 	}
 	return prometheusBackends
+}
+
+func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, resources xds_context.Resources) {
+	for _, backend := range openTelemetryBackends {
+		if backend == nil {
+			continue
+		}
+		resolved := policies_xds.ResolveOtelBackend(
+			backend.BackendRef,
+			backend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
+			policies_xds.ParseOtelEndpoint,
+			backendNameFrom,
+			resources,
+			proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
+		)
+		if resolved == nil {
+			continue
+		}
+		proxy.OtelPipeBackends.Add(resolved.Name, core_xds.OtelPipeBackend{
+			SocketPath: core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name),
+			Endpoint:   policies_xds.CollectorEndpointString(resolved.Endpoint),
+			UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
+			Path:       pointer.Deref(resolved.Path),
+		})
+	}
 }
 
 func backendNameFrom(endpoint string) string {
