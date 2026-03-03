@@ -93,11 +93,17 @@ spec:
                                 BackendRef is a reference to a MeshOpenTelemetryBackend resource that
                                 defines the collector endpoint. Mutually exclusive with Endpoint.
                               properties:
+                                kind:
+                                  description: Kind of the backend resource.
+                                  enum:
+                                  - MeshOpenTelemetryBackend
+                                  type: string
                                 name:
                                   description: Name of the referenced resource.
                                   minLength: 1
                                   type: string
                               required:
+                              - kind
                               - name
                               type: object
                             endpoint:

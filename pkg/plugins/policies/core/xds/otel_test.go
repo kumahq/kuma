@@ -44,6 +44,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 	Describe("priority order", func() {
 		backendRef := &common_api.BackendResourceRef{
+			Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 			Name: "my-backend",
 		}
 		motbList := &motb_api.MeshOpenTelemetryBackendResourceList{}
@@ -94,6 +95,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			}
 		}
 		backendRef := &common_api.BackendResourceRef{
+			Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 			Name: "daemonset-collector",
 		}
 

@@ -58,6 +58,7 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
+          kind: MeshOpenTelemetryBackend
           name: my-otel
 `),
 	)
@@ -251,6 +252,7 @@ default:
       openTelemetry:
         endpoint: otel-collector:4778
         backendRef:
+          kind: MeshOpenTelemetryBackend
           name: my-otel
 `),
 		ErrorCase(
@@ -271,6 +273,7 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
+          kind: MeshOpenTelemetryBackend
           name: ""
 `),
 		ErrorCase(
