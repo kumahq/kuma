@@ -18,6 +18,7 @@ import (
 	logsv1 "go.opentelemetry.io/proto/otlp/logs/v1"
 	tracev1 "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -84,9 +85,11 @@ var _ = Describe("Trace receiver", func() {
 		go func() { defer GinkgoRecover(); _ = server.Serve(listener) }()
 		defer server.Stop()
 
-		receiver, closeClient, err := newTraceReceiver(listener.Addr().String(), false, "")
+		conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
-		defer closeClient()
+		defer func() { _ = conn.Close() }()
+
+		receiver := newTraceReceiver(conn, nil, listener.Addr().String(), "", false)
 
 		req := &tracepb.ExportTraceServiceRequest{
 			ResourceSpans: []*tracev1.ResourceSpans{
@@ -120,9 +123,8 @@ var _ = Describe("Trace receiver", func() {
 			defer server.Close()
 
 			endpoint := strings.TrimPrefix(server.URL, "http://")
-			receiver, closeClient, err := newTraceReceiver(endpoint, true, basePath)
-			Expect(err).NotTo(HaveOccurred())
-			defer closeClient()
+			httpClient := &http.Client{}
+			receiver := newTraceReceiver(nil, httpClient, endpoint, basePath, true)
 
 			req := &tracepb.ExportTraceServiceRequest{
 				ResourceSpans: []*tracev1.ResourceSpans{
@@ -131,7 +133,7 @@ var _ = Describe("Trace receiver", func() {
 					}},
 				},
 			}
-			_, err = receiver.Export(context.Background(), req)
+			_, err := receiver.Export(context.Background(), req)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(gotPath).To(Equal(expectedPath))
@@ -154,11 +156,10 @@ var _ = Describe("Trace receiver", func() {
 		defer server.Close()
 
 		endpoint := strings.TrimPrefix(server.URL, "http://")
-		receiver, closeClient, err := newTraceReceiver(endpoint, true, "")
-		Expect(err).NotTo(HaveOccurred())
-		defer closeClient()
+		httpClient := &http.Client{}
+		receiver := newTraceReceiver(nil, httpClient, endpoint, "", true)
 
-		_, err = receiver.Export(context.Background(), &tracepb.ExportTraceServiceRequest{})
+		_, err := receiver.Export(context.Background(), &tracepb.ExportTraceServiceRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("502"))
 		Expect(err.Error()).To(ContainSubstring("collector failed"))
@@ -171,14 +172,13 @@ var _ = Describe("Trace receiver", func() {
 		defer server.Close()
 
 		endpoint := strings.TrimPrefix(server.URL, "http://")
-		receiver, closeClient, err := newTraceReceiver(endpoint, true, "")
-		Expect(err).NotTo(HaveOccurred())
-		defer closeClient()
+		httpClient := &http.Client{}
+		receiver := newTraceReceiver(nil, httpClient, endpoint, "", true)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		_, err = receiver.Export(ctx, &tracepb.ExportTraceServiceRequest{})
+		_, err := receiver.Export(ctx, &tracepb.ExportTraceServiceRequest{})
 		Expect(errors.Is(err, context.Canceled)).To(BeTrue())
 	})
 })
@@ -196,9 +196,11 @@ var _ = Describe("Logs receiver", func() {
 		go func() { defer GinkgoRecover(); _ = server.Serve(listener) }()
 		defer server.Stop()
 
-		receiver, closeClient, err := newLogsReceiver(listener.Addr().String(), false, "")
+		conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		Expect(err).NotTo(HaveOccurred())
-		defer closeClient()
+		defer func() { _ = conn.Close() }()
+
+		receiver := newLogsReceiver(conn, nil, listener.Addr().String(), "", false)
 
 		req := &logspb.ExportLogsServiceRequest{
 			ResourceLogs: []*logsv1.ResourceLogs{
@@ -228,9 +230,8 @@ var _ = Describe("Logs receiver", func() {
 		defer server.Close()
 
 		endpoint := strings.TrimPrefix(server.URL, "http://")
-		receiver, closeClient, err := newLogsReceiver(endpoint, true, "/otel")
-		Expect(err).NotTo(HaveOccurred())
-		defer closeClient()
+		httpClient := &http.Client{}
+		receiver := newLogsReceiver(nil, httpClient, endpoint, "/otel", true)
 
 		req := &logspb.ExportLogsServiceRequest{
 			ResourceLogs: []*logsv1.ResourceLogs{
@@ -241,7 +242,7 @@ var _ = Describe("Logs receiver", func() {
 				}},
 			},
 		}
-		_, err = receiver.Export(context.Background(), req)
+		_, err := receiver.Export(context.Background(), req)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(gotPath).To(Equal("/otel/v1/logs"))
@@ -256,11 +257,10 @@ var _ = Describe("Logs receiver", func() {
 		defer server.Close()
 
 		endpoint := strings.TrimPrefix(server.URL, "http://")
-		receiver, closeClient, err := newLogsReceiver(endpoint, true, "")
-		Expect(err).NotTo(HaveOccurred())
-		defer closeClient()
+		httpClient := &http.Client{}
+		receiver := newLogsReceiver(nil, httpClient, endpoint, "", true)
 
-		_, err = receiver.Export(context.Background(), &logspb.ExportLogsServiceRequest{})
+		_, err := receiver.Export(context.Background(), &logspb.ExportLogsServiceRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("502"))
 		Expect(err.Error()).To(ContainSubstring("collector failed"))

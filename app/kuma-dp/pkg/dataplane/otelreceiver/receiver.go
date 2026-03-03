@@ -13,7 +13,6 @@ import (
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -23,38 +22,28 @@ type traceReceiver struct {
 	exportFn func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error)
 }
 
-func newTraceReceiver(
-	endpoint string,
-	useHTTP bool,
-	basePath string,
-) (*traceReceiver, func(), error) {
+func newTraceReceiver(conn *grpc.ClientConn, httpClient *http.Client, endpoint, basePath string, useHTTP bool) *traceReceiver {
 	if useHTTP {
 		targetURL := otlpHTTPURL(endpoint, basePath, "traces")
-		client := &http.Client{}
 		return &traceReceiver{
 			exportFn: func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
 				body, err := proto.Marshal(req)
 				if err != nil {
 					return nil, err
 				}
-				if err := postOTLPHTTP(ctx, client, targetURL, body); err != nil {
+				if err := postOTLPHTTP(ctx, httpClient, targetURL, body); err != nil {
 					return nil, err
 				}
 				return &tracepb.ExportTraceServiceResponse{}, nil
 			},
-		}, func() {}, nil
-	}
-
-	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, nil, err
+		}
 	}
 	client := tracepb.NewTraceServiceClient(conn)
 	return &traceReceiver{
 		exportFn: func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
 			return client.Export(ctx, req)
 		},
-	}, func() { _ = conn.Close() }, nil
+	}
 }
 
 func (r *traceReceiver) Export(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
@@ -67,38 +56,28 @@ type logsReceiver struct {
 	exportFn func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error)
 }
 
-func newLogsReceiver(
-	endpoint string,
-	useHTTP bool,
-	basePath string,
-) (*logsReceiver, func(), error) {
+func newLogsReceiver(conn *grpc.ClientConn, httpClient *http.Client, endpoint, basePath string, useHTTP bool) *logsReceiver {
 	if useHTTP {
 		targetURL := otlpHTTPURL(endpoint, basePath, "logs")
-		client := &http.Client{}
 		return &logsReceiver{
 			exportFn: func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
 				body, err := proto.Marshal(req)
 				if err != nil {
 					return nil, err
 				}
-				if err := postOTLPHTTP(ctx, client, targetURL, body); err != nil {
+				if err := postOTLPHTTP(ctx, httpClient, targetURL, body); err != nil {
 					return nil, err
 				}
 				return &logspb.ExportLogsServiceResponse{}, nil
 			},
-		}, func() {}, nil
-	}
-
-	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, nil, err
+		}
 	}
 	client := logspb.NewLogsServiceClient(conn)
 	return &logsReceiver{
 		exportFn: func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
 			return client.Export(ctx, req)
 		},
-	}, func() { _ = conn.Close() }, nil
+	}
 }
 
 func (r *logsReceiver) Export(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
@@ -111,38 +90,28 @@ type metricsReceiver struct {
 	exportFn func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error)
 }
 
-func newMetricsReceiver(
-	endpoint string,
-	useHTTP bool,
-	basePath string,
-) (*metricsReceiver, func(), error) {
+func newMetricsReceiver(conn *grpc.ClientConn, httpClient *http.Client, endpoint, basePath string, useHTTP bool) *metricsReceiver {
 	if useHTTP {
 		targetURL := otlpHTTPURL(endpoint, basePath, "metrics")
-		client := &http.Client{}
 		return &metricsReceiver{
 			exportFn: func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {
 				body, err := proto.Marshal(req)
 				if err != nil {
 					return nil, err
 				}
-				if err := postOTLPHTTP(ctx, client, targetURL, body); err != nil {
+				if err := postOTLPHTTP(ctx, httpClient, targetURL, body); err != nil {
 					return nil, err
 				}
 				return &metricspb.ExportMetricsServiceResponse{}, nil
 			},
-		}, func() {}, nil
-	}
-
-	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, nil, err
+		}
 	}
 	client := metricspb.NewMetricsServiceClient(conn)
 	return &metricsReceiver{
 		exportFn: func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {
 			return client.Export(ctx, req)
 		},
-	}, func() { _ = conn.Close() }, nil
+	}
 }
 
 func (r *metricsReceiver) Export(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {

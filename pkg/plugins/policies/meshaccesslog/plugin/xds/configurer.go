@@ -74,14 +74,8 @@ func BaseAccessLogBuilder(
 		}))
 }
 
-// OtelPipeBackendInfo holds the real-collector info for a backend being proxied via kuma-dp.
-// Used to build MeshAccessLogDpConfig for dynconf.
-type OtelPipeBackendInfo struct {
-	SocketPath string
-	Endpoint   string // host:port of the real OTel collector
-	UseHTTP    bool
-	Path       string
-}
+// OtelPipeBackendInfo is the per-backend info for a backend being proxied via kuma-dp.
+type OtelPipeBackendInfo = xds.OtelPipeBackend
 
 type EndpointAccumulator struct {
 	endpoints             map[LoggingEndpoint]int

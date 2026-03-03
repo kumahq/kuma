@@ -139,12 +139,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 func addToOtelPipeBackends(endpoints *EndpointAccumulator, proxy *core_xds.Proxy) {
 	for name, info := range endpoints.PipeBackends() {
-		proxy.OtelPipeBackends.Add(name, core_xds.OtelPipeBackend{
-			SocketPath: info.SocketPath,
-			Endpoint:   info.Endpoint,
-			UseHTTP:    info.UseHTTP,
-			Path:       info.Path,
-		})
+		proxy.OtelPipeBackends.Add(name, info)
 	}
 }
 
