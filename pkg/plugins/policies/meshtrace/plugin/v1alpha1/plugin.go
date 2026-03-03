@@ -365,10 +365,5 @@ func addToOtelPipeBackends(ctx xds_context.Context, rules core_rules.SingleItemR
 	if resolved == nil {
 		return
 	}
-	proxy.OtelPipeBackends.Add(resolved.Name, xds.OtelPipeBackend{
-		SocketPath: xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name),
-		Endpoint:   policies_xds.CollectorEndpointString(resolved.Endpoint),
-		UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
-		Path:       pointer.Deref(resolved.Path),
-	})
+	policies_xds.AddResolvedToBackends(proxy, resolved)
 }

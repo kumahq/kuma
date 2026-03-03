@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
@@ -110,6 +111,17 @@ func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_con
 // OtelBackendConfig is an alias for the unified OtelPipeBackend type.
 // Kept for backward compatibility with per-signal dpapi packages.
 type OtelBackendConfig = core_xds.OtelPipeBackend
+
+// AddResolvedToBackends adds a resolved OTel backend to the proxy accumulator.
+// Shared by MeshTrace, MeshAccessLog, and MeshMetric plugins.
+func AddResolvedToBackends(proxy *core_xds.Proxy, resolved *ResolvedOtelBackend) {
+	proxy.OtelPipeBackends.Add(resolved.Name, core_xds.OtelPipeBackend{
+		SocketPath: core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name),
+		Endpoint:   CollectorEndpointString(resolved.Endpoint),
+		UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
+		Path:       pointer.Deref(resolved.Path),
+	})
+}
 
 // CollectorEndpointString formats an Endpoint as a "host:port" string suitable
 // for dialing. IPv6 addresses are bracketed by net.JoinHostPort.

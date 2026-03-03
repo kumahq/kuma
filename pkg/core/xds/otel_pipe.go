@@ -1,8 +1,7 @@
 package xds
 
 import (
-	"maps"
-	"slices"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
 const OtelDynconfPath = "/otel"
@@ -39,7 +38,7 @@ func (a *OtelPipeBackends) All() []OtelPipeBackend {
 		return nil
 	}
 	var result []OtelPipeBackend
-	for _, name := range slices.Sorted(maps.Keys(a.backends)) {
+	for _, name := range util_maps.SortedKeys(a.backends) {
 		result = append(result, a.backends[name])
 	}
 	return result
