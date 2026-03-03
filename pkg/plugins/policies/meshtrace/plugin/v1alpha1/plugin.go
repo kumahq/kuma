@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	net_url "net/url"
@@ -27,13 +26,11 @@ import (
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/dpapi"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/metadata"
 	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/plugin/xds"
 	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
@@ -72,10 +69,8 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
-		if err := configureDynamicDPConfig(ctx, policies.SingleItemRules, rs, proxy); err != nil {
-			return err
-		}
+	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
+		addToOtelPipeBackends(ctx, policies.SingleItemRules, proxy)
 	}
 
 	return nil
@@ -361,34 +356,19 @@ func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {
 	}
 }
 
-func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func addToOtelPipeBackends(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy) {
 	conf := rules.Rules[0].Conf.(api.Conf)
 	if !hasOtelBackendRef(conf) {
-		return nil
+		return
 	}
 	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
 	if resolved == nil {
-		return nil
+		return
 	}
-
-	endpoint := policies_xds.CollectorEndpointString(resolved.Endpoint)
-
-	dpConfig := dpapi.MeshTraceDpConfig{
-		Backends: []dpapi.OtelBackendConfig{
-			{
-				SocketPath: xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name),
-				Endpoint:   endpoint,
-				UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
-				Path:       pointer.Deref(resolved.Path),
-			},
-		},
-	}
-
-	marshal, err := json.Marshal(dpConfig)
-	if err != nil {
-		return err
-	}
-	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
-	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshtrace", dpapi.PATH), dpapi.PATH, marshal)
+	proxy.OtelPipeBackends.Add(resolved.Name, xds.OtelPipeBackend{
+		SocketPath: xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name),
+		Endpoint:   policies_xds.CollectorEndpointString(resolved.Endpoint),
+		UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
+		Path:       pointer.Deref(resolved.Path),
+	})
 }
