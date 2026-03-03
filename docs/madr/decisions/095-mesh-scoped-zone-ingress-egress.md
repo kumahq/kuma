@@ -82,6 +82,67 @@ The `pod_controller` sets `state` to `NotReady` when:
 - The `kuma-sidecar` container is not ready
 - The pod is terminating (`DeletionTimestamp` is set)
 
+##### Should we move inbounds to the `listeners` array as well?
+
+This came up several times during the discussions.
+The motivation is clear: once we introduce a generic listeners array, it’s natural to ask why we wouldn't move _all_ listener types there,
+including inbounds.
+
+With the current implementation of inbounds, we're missing 3 more fields in the current `listeners` structure:
+
+* `serviceAddress`
+* `servicePort`
+* `serviceProbes`
+
+These fields are only relevant for inbound listeners, and only on Universal when transparent proxying is disabled.
+
+Supporting `type: Inbound` means answering the question, where do we place these fields?
+
+One option is to add them as optional fields on the listener, and validate that they are only set for `type: Inbound`:
+```
+listeners:
+  - type: Inbound
+    address: 10.0.0.1
+    port: 8080
+    serviceAddress: 127.0.0.1
+    servicePort: 80
+    name: my-http-inbound
+```
+
+Alternatively, we can introduce a proper `oneOf` with discriminator:
+
+```yaml
+listeners:
+  - type: Inbound
+    inbound:
+      address: 10.0.0.1
+      port: 8080
+      serviceAddress: 127.0.0.1
+      servicePort: 80
+  - type: ZoneIngress
+    zoneIngress: {}
+```
+
+A third angle is to question whether `serviceAddress` and `servicePort` belong on a listener at all.
+They configure the upstream Envoy cluster rather than the listener itself,
+so maybe they should live elsewhere.
+For example, we could model them via a route resource (`MeshHTTPRoute` or `MeshTCPRoute`)
+that targets the inbound and forwards traffic to localhost.
+
+One thing is clear about `type: Inbound` is that it's not obvious how to implement it.
+
+Sure, by introducing `type: Inbound` we're gaining 2 things:
+
+* a more consistent API
+* a clearer rule that name must be unique within the `listeners` array, rather than across both `listeners` and `inbounds`.
+
+But at the same time, we would force users to go through another migration.
+This would primarily impact Universal users, for example those running on ECS,
+who keep Dataplane templates in a repository.
+I find it hard to justify that migration cost given the limited practical value.
+
+To sum up, I don’t think moving inbounds under the `listeners` structure is worth it.
+
 ##### Pros and Cons
 
 * Good, because `name` semantics are clear—it is obviously unique within the `listeners` array
