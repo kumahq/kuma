@@ -66,11 +66,21 @@ spec:
         address: 10.0.0.1 # required
         port: 10001 # required
         name: zi-port
+        state: Ready
       - type: ZoneEgress
         address: 10.0.0.2
         port: 10002
         name: ze-port
+        state: Ready
 ```
+
+The `state` field (`Ready` or `NotReady`) tracks listener health, consistent with `networking.inbound[].state`.
+Zone proxy listeners are excluded from endpoint discovery when not ready.
+
+The `pod_controller` sets `state` to `NotReady` when:
+- The application container is not ready
+- The `kuma-sidecar` container is not ready
+- The pod is terminating (`DeletionTimestamp` is set)
 
 ##### Pros and Cons
 
@@ -199,9 +209,13 @@ spec:
       - type: ZoneIngress
         address: 10.0.0.1
         port: 10001
+        name: zi-port
+        state: Ready
       - type: ZoneEgress
         address: 10.0.0.1
         port: 10002
+        name: ze-port
+        state: Ready
 ```
 
 ### Policy Targeting for Zone Ingress and Zone Egress
