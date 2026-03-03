@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
@@ -151,38 +153,27 @@ func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBacke
 		return nil, errors.Wrapf(err, "listening on %s", socketPath)
 	}
 
-	s := grpc.NewServer()
+	// One shared gRPC connection (or HTTP client) for all three signal receivers.
+	var conn *grpc.ClientConn
+	var httpClient *http.Client
 	var closeFns []func()
-	cleanup := func() {
-		_ = lis.Close()
-		for _, fn := range closeFns {
-			fn()
+	if backend.UseHTTP {
+		httpClient = &http.Client{}
+	} else {
+		conn, err = grpc.NewClient(backend.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			_ = lis.Close()
+			return nil, errors.Wrap(err, "creating gRPC client")
 		}
+		closeFns = append(closeFns, func() { _ = conn.Close() })
 	}
 
-	traceRecv, traceClose, err := newTraceReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
-	if err != nil {
-		cleanup()
-		return nil, errors.Wrap(err, "creating trace receiver")
-	}
-	tracepb.RegisterTraceServiceServer(s, traceRecv)
-	closeFns = append(closeFns, traceClose)
+	s := grpc.NewServer()
+	tracepb.RegisterTraceServiceServer(s, newTraceReceiver(conn, httpClient, backend.Endpoint, backend.Path, backend.UseHTTP))
+	logspb.RegisterLogsServiceServer(s, newLogsReceiver(conn, httpClient, backend.Endpoint, backend.Path, backend.UseHTTP))
+	metricspb.RegisterMetricsServiceServer(s, newMetricsReceiver(conn, httpClient, backend.Endpoint, backend.Path, backend.UseHTTP))
 
-	logsRecv, logsClose, err := newLogsReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
-	if err != nil {
-		cleanup()
-		return nil, errors.Wrap(err, "creating logs receiver")
-	}
-	logspb.RegisterLogsServiceServer(s, logsRecv)
-	closeFns = append(closeFns, logsClose)
-
-	metricsRecv, metricsClose, err := newMetricsReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
-	if err != nil {
-		cleanup()
-		return nil, errors.Wrap(err, "creating metrics receiver")
-	}
-	metricspb.RegisterMetricsServiceServer(s, metricsRecv)
-	closeFns = append(closeFns, metricsClose)
+	closeFns = append(closeFns, func() { _ = lis.Close() })
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
