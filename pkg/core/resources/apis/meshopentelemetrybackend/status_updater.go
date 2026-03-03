@@ -143,7 +143,7 @@ func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, e
 		mesh := mm.GetMeta().GetLabels()[mesh_proto.MeshTag]
 		for _, backend := range pointer.Deref(mm.Spec.Default.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[mesh+"/"+pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
+				counts[mesh+"/"+backend.OpenTelemetry.BackendRef.Name]++
 			}
 		}
 	}
@@ -157,7 +157,7 @@ func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, e
 		mesh := mt.GetMeta().GetLabels()[mesh_proto.MeshTag]
 		for _, backend := range pointer.Deref(mt.Spec.Default.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[mesh+"/"+pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
+				counts[mesh+"/"+backend.OpenTelemetry.BackendRef.Name]++
 			}
 		}
 	}
@@ -181,7 +181,7 @@ func collectAccessLogBackendRefs(mesh string, spec *meshaccesslog_api.MeshAccess
 	collectFromConf := func(conf meshaccesslog_api.Conf) {
 		for _, backend := range pointer.Deref(conf.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[mesh+"/"+pointer.Deref(backend.OpenTelemetry.BackendRef.Name)]++
+				counts[mesh+"/"+backend.OpenTelemetry.BackendRef.Name]++
 			}
 		}
 	}

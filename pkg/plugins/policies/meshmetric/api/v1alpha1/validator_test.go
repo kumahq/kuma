@@ -58,7 +58,6 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshOpenTelemetryBackend
           name: my-otel
 `),
 	)
@@ -252,28 +251,6 @@ default:
       openTelemetry:
         endpoint: otel-collector:4778
         backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: my-otel
-`),
-		ErrorCase(
-			"openTelemetry backendRef wrong kind",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef.kind",
-				Message: "kind must be MeshOpenTelemetryBackend",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshService
           name: my-otel
 `),
 		ErrorCase(
@@ -294,7 +271,6 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshOpenTelemetryBackend
           name: ""
 `),
 		ErrorCase(

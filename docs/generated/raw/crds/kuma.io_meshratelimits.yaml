@@ -194,7 +194,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -391,7 +390,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -581,7 +579,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:

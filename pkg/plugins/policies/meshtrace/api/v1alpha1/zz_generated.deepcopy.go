@@ -142,8 +142,8 @@ func (in *OpenTelemetryBackend) DeepCopyInto(out *OpenTelemetryBackend) {
 	*out = *in
 	if in.BackendRef != nil {
 		in, out := &in.BackendRef, &out.BackendRef
-		*out = new(commonv1alpha1.TargetRef)
-		(*in).DeepCopyInto(*out)
+		*out = new(commonv1alpha1.BackendResourceRef)
+		**out = **in
 	}
 }
 
