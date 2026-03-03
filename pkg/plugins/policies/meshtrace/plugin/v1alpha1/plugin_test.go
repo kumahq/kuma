@@ -655,7 +655,7 @@ var _ = Describe("MeshTrace", func() {
 		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(meshTracePlugin.Apply(resources, context, proxy)).To(Succeed())
 
-		expectedSocket := core_xds.OtelTraceSocketName(workDir, backendName)
+		expectedSocket := core_xds.OpenTelemetrySocketName(workDir, backendName)
 
 		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
 		Expect(err).ToNot(HaveOccurred())
