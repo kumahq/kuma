@@ -152,11 +152,17 @@ func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBacke
 	}
 
 	s := grpc.NewServer()
-	var closeFns []func{}
+	var closeFns []func()
+	cleanup := func() {
+		_ = lis.Close()
+		for _, fn := range closeFns {
+			fn()
+		}
+	}
 
 	traceRecv, traceClose, err := newTraceReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
 	if err != nil {
-		_ = lis.Close()
+		cleanup()
 		return nil, errors.Wrap(err, "creating trace receiver")
 	}
 	tracepb.RegisterTraceServiceServer(s, traceRecv)
@@ -164,8 +170,7 @@ func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBacke
 
 	logsRecv, logsClose, err := newLogsReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
 	if err != nil {
-		_ = lis.Close()
-		traceClose()
+		cleanup()
 		return nil, errors.Wrap(err, "creating logs receiver")
 	}
 	logspb.RegisterLogsServiceServer(s, logsRecv)
@@ -173,9 +178,7 @@ func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBacke
 
 	metricsRecv, metricsClose, err := newMetricsReceiver(backend.Endpoint, backend.UseHTTP, backend.Path)
 	if err != nil {
-		_ = lis.Close()
-		traceClose()
-		logsClose()
+		cleanup()
 		return nil, errors.Wrap(err, "creating metrics receiver")
 	}
 	metricspb.RegisterMetricsServiceServer(s, metricsRecv)
