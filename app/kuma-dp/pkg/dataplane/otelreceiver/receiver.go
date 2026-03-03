@@ -10,6 +10,7 @@ import (
 	"path"
 
 	logspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
+	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -101,6 +102,50 @@ func newLogsReceiver(
 }
 
 func (r *logsReceiver) Export(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
+	return r.exportFn(ctx, req)
+}
+
+// metricsReceiver proxies ExportMetricsServiceRequest from kuma-dp SDK exporter to the collector.
+type metricsReceiver struct {
+	metricspb.UnimplementedMetricsServiceServer
+	exportFn func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error)
+}
+
+func newMetricsReceiver(
+	endpoint string,
+	useHTTP bool,
+	basePath string,
+) (*metricsReceiver, func(), error) {
+	if useHTTP {
+		targetURL := otlpHTTPURL(endpoint, basePath, "metrics")
+		client := &http.Client{}
+		return &metricsReceiver{
+			exportFn: func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {
+				body, err := proto.Marshal(req)
+				if err != nil {
+					return nil, err
+				}
+				if err := postOTLPHTTP(ctx, client, targetURL, body); err != nil {
+					return nil, err
+				}
+				return &metricspb.ExportMetricsServiceResponse{}, nil
+			},
+		}, func() {}, nil
+	}
+
+	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, nil, err
+	}
+	client := metricspb.NewMetricsServiceClient(conn)
+	return &metricsReceiver{
+		exportFn: func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {
+			return client.Export(ctx, req)
+		},
+	}, func() { _ = conn.Close() }, nil
+}
+
+func (r *metricsReceiver) Export(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {
 	return r.exportFn(ctx, req)
 }
 

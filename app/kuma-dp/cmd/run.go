@@ -553,15 +553,17 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		return nil, err
 	}
 
-	traceManager := otelreceiver.NewTraceManager()
-	if err := fetcher.AddHandler(meshtrace_dpapi.PATH, traceManager.OnTraceChange); err != nil {
+	otelManager := otelreceiver.NewManager()
+	if err := fetcher.AddHandler(core_xds.OtelDynconfPath, otelManager.OnOtelChange); err != nil {
+		return nil, err
+	}
+	// Legacy handlers for backward compat with older CPs sending per-signal dynconf.
+	if err := fetcher.AddHandler(meshtrace_dpapi.PATH, otelManager.OnTraceChange); err != nil {
+		return nil, err
+	}
+	if err := fetcher.AddHandler(meshaccesslog_dpapi.PATH, otelManager.OnLogChange); err != nil {
 		return nil, err
 	}
 
-	logManager := otelreceiver.NewLogManager()
-	if err := fetcher.AddHandler(meshaccesslog_dpapi.PATH, logManager.OnLogChange); err != nil {
-		return nil, err
-	}
-
-	return []component.Component{accessLogStreamer, metricsServer, mm, traceManager, logManager}, nil
+	return []component.Component{accessLogStreamer, metricsServer, mm, otelManager}, nil
 }
