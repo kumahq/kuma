@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	mal_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/dpapi"
 	mt_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/dpapi"
 )
@@ -33,9 +33,9 @@ type Manager struct {
 }
 
 type runningServer struct {
-	server       *grpc.Server
-	closeFns     []func()
-	backend      core_xds.OtelPipeBackend
+	server   *grpc.Server
+	closeFns []func()
+	backend  core_xds.OtelPipeBackend
 }
 
 var _ component.GracefulComponent = &Manager{}
