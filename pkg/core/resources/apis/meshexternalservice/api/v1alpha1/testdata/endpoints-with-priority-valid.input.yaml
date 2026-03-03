@@ -11,4 +11,4 @@ endpoints:
     priority: 1
   - address: 3.3.3.3
     port: 443
-    priority: 255
+    priority: 2
