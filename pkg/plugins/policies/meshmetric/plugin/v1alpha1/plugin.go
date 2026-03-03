@@ -94,7 +94,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	// skips them so we filter here to avoid duplicating Envoy resources for
 	// backendRef backends that go through the unified pipe.
 	envoyBackends := filterOtelBackendsForEnvoy(proxy, openTelemetryBackends)
-	if err = configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
+	if err := configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 	inboundTagsDisabled := false
