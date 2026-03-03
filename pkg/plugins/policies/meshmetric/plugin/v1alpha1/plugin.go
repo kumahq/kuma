@@ -88,11 +88,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
 		addOtelToAccumulator(proxy, openTelemetryBackends, ctx.Mesh.Resources)
-	} else {
-		err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming, ctx.Mesh.Resources)
-		if err != nil {
-			return err
-		}
+	}
+	// configureOpenTelemetry creates Envoy-side OTel resources (listener + cluster).
+	// In pipe mode only inline backends need this; addOtelToAccumulator already
+	// skips them so we filter here to avoid duplicating Envoy resources for
+	// backendRef backends that go through the unified pipe.
+	envoyBackends := filterOtelBackendsForEnvoy(proxy, openTelemetryBackends)
+	if err = configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
+		return err
 	}
 	inboundTagsDisabled := false
 	if ctx.ControlPlane != nil {
@@ -357,9 +360,25 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 	return prometheusBackends
 }
 
+// filterOtelBackendsForEnvoy returns backends that need Envoy-side OTel resources.
+// In pipe mode, backendRef backends go through the unified pipe so only inline
+// backends need Envoy config. Without pipe mode, all backends need it.
+func filterOtelBackendsForEnvoy(proxy *core_xds.Proxy, backends []*api.OpenTelemetryBackend) []*api.OpenTelemetryBackend {
+	if !proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) || proxy.OtelPipeBackends == nil {
+		return backends
+	}
+	var inline []*api.OpenTelemetryBackend
+	for _, b := range backends {
+		if b != nil && b.BackendRef == nil {
+			inline = append(inline, b)
+		}
+	}
+	return inline
+}
+
 func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, resources xds_context.Resources) {
 	for _, backend := range openTelemetryBackends {
-		if backend == nil {
+		if backend == nil || backend.BackendRef == nil {
 			continue
 		}
 		resolved := policies_xds.ResolveOtelBackend(
