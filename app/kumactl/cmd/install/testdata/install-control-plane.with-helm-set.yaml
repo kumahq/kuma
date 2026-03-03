@@ -774,7 +774,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -956,7 +955,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -1106,7 +1104,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -1921,7 +1918,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -2190,7 +2186,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -2322,7 +2317,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -2412,7 +2406,6 @@ spec:
                                       - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
-                                      - MeshOpenTelemetryBackend
                                       - Dataplane
                                       type: string
                                     labels:
@@ -2542,7 +2535,6 @@ spec:
                                               - MeshMultiZoneService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
-                                              - MeshOpenTelemetryBackend
                                               - Dataplane
                                               type: string
                                             labels:
@@ -2880,7 +2872,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -3398,7 +3389,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -3938,7 +3928,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -4091,65 +4080,12 @@ spec:
                                 BackendRef is a reference to a MeshOpenTelemetryBackend resource that
                                 defines the collector endpoint. Mutually exclusive with Endpoint.
                               properties:
-                                kind:
-                                  description: Kind of the referenced resource
-                                  enum:
-                                  - Mesh
-                                  - MeshSubset
-                                  - MeshGateway
-                                  - MeshService
-                                  - MeshExternalService
-                                  - MeshMultiZoneService
-                                  - MeshServiceSubset
-                                  - MeshHTTPRoute
-                                  - MeshOpenTelemetryBackend
-                                  - Dataplane
-                                  type: string
-                                labels:
-                                  additionalProperties:
-                                    type: string
-                                  description: |-
-                                    Labels are used to select group of MeshServices that match labels. Either Labels or
-                                    Name and Namespace can be used.
-                                  type: object
-                                mesh:
-                                  description: Mesh is reserved for future use to
-                                    identify cross mesh resources.
-                                  type: string
                                 name:
-                                  description: |-
-                                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                    `MeshServiceSubset` and `MeshGatewayRoute`
+                                  description: Name of the referenced resource.
+                                  minLength: 1
                                   type: string
-                                namespace:
-                                  description: |-
-                                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                    will be targeted.
-                                  type: string
-                                proxyTypes:
-                                  description: |-
-                                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                    all data plane types are targeted by the policy.
-                                  items:
-                                    enum:
-                                    - Sidecar
-                                    - Gateway
-                                    type: string
-                                  type: array
-                                sectionName:
-                                  description: |-
-                                    SectionName is used to target specific section of resource.
-                                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                                  type: string
-                                tags:
-                                  additionalProperties:
-                                    type: string
-                                  description: |-
-                                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                    `MeshSubset` and `MeshServiceSubset`
-                                  type: object
                               required:
-                              - kind
+                              - name
                               type: object
                             endpoint:
                               default: ""
@@ -4305,7 +4241,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -4879,7 +4814,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -5434,7 +5368,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -5686,7 +5619,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -5883,7 +5815,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -6073,7 +6004,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -6203,7 +6133,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -6592,7 +6521,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7030,7 +6958,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -7112,7 +7039,6 @@ spec:
                                       - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
-                                      - MeshOpenTelemetryBackend
                                       - Dataplane
                                       type: string
                                     labels:
@@ -7193,7 +7119,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7382,7 +7307,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7510,7 +7434,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -7632,7 +7555,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7817,7 +7739,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -7944,7 +7865,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -8096,65 +8016,12 @@ spec:
                                 BackendRef is a reference to a MeshOpenTelemetryBackend resource that
                                 defines the collector endpoint. Mutually exclusive with Endpoint.
                               properties:
-                                kind:
-                                  description: Kind of the referenced resource
-                                  enum:
-                                  - Mesh
-                                  - MeshSubset
-                                  - MeshGateway
-                                  - MeshService
-                                  - MeshExternalService
-                                  - MeshMultiZoneService
-                                  - MeshServiceSubset
-                                  - MeshHTTPRoute
-                                  - MeshOpenTelemetryBackend
-                                  - Dataplane
-                                  type: string
-                                labels:
-                                  additionalProperties:
-                                    type: string
-                                  description: |-
-                                    Labels are used to select group of MeshServices that match labels. Either Labels or
-                                    Name and Namespace can be used.
-                                  type: object
-                                mesh:
-                                  description: Mesh is reserved for future use to
-                                    identify cross mesh resources.
-                                  type: string
                                 name:
-                                  description: |-
-                                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                    `MeshServiceSubset` and `MeshGatewayRoute`
+                                  description: Name of the referenced resource.
+                                  minLength: 1
                                   type: string
-                                namespace:
-                                  description: |-
-                                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                    will be targeted.
-                                  type: string
-                                proxyTypes:
-                                  description: |-
-                                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                    all data plane types are targeted by the policy.
-                                  items:
-                                    enum:
-                                    - Sidecar
-                                    - Gateway
-                                    type: string
-                                  type: array
-                                sectionName:
-                                  description: |-
-                                    SectionName is used to target specific section of resource.
-                                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                                  type: string
-                                tags:
-                                  additionalProperties:
-                                    type: string
-                                  description: |-
-                                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                    `MeshSubset` and `MeshServiceSubset`
-                                  type: object
                               required:
-                              - kind
+                              - name
                               type: object
                             endpoint:
                               default: ""
@@ -8303,7 +8170,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -8449,7 +8315,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -8612,7 +8477,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -10061,65 +9925,12 @@ spec:
                                       BackendRef is a reference to a MeshOpenTelemetryBackend resource that
                                       defines the collector endpoint. Mutually exclusive with Endpoint.
                                     properties:
-                                      kind:
-                                        description: Kind of the referenced resource
-                                        enum:
-                                        - Mesh
-                                        - MeshSubset
-                                        - MeshGateway
-                                        - MeshService
-                                        - MeshExternalService
-                                        - MeshMultiZoneService
-                                        - MeshServiceSubset
-                                        - MeshHTTPRoute
-                                        - MeshOpenTelemetryBackend
-                                        - Dataplane
-                                        type: string
-                                      labels:
-                                        additionalProperties:
-                                          type: string
-                                        description: |-
-                                          Labels are used to select group of MeshServices that match labels. Either Labels or
-                                          Name and Namespace can be used.
-                                        type: object
-                                      mesh:
-                                        description: Mesh is reserved for future use
-                                          to identify cross mesh resources.
-                                        type: string
                                       name:
-                                        description: |-
-                                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                          `MeshServiceSubset` and `MeshGatewayRoute`
+                                        description: Name of the referenced resource.
+                                        minLength: 1
                                         type: string
-                                      namespace:
-                                        description: |-
-                                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                          will be targeted.
-                                        type: string
-                                      proxyTypes:
-                                        description: |-
-                                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                          all data plane types are targeted by the policy.
-                                        items:
-                                          enum:
-                                          - Sidecar
-                                          - Gateway
-                                          type: string
-                                        type: array
-                                      sectionName:
-                                        description: |-
-                                          SectionName is used to target specific section of resource.
-                                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                                        type: string
-                                      tags:
-                                        additionalProperties:
-                                          type: string
-                                        description: |-
-                                          Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                          `MeshSubset` and `MeshServiceSubset`
-                                        type: object
                                     required:
-                                    - kind
+                                    - name
                                     type: object
                                   body:
                                     description: |-
@@ -10217,7 +10028,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -10359,65 +10169,12 @@ spec:
                                       BackendRef is a reference to a MeshOpenTelemetryBackend resource that
                                       defines the collector endpoint. Mutually exclusive with Endpoint.
                                     properties:
-                                      kind:
-                                        description: Kind of the referenced resource
-                                        enum:
-                                        - Mesh
-                                        - MeshSubset
-                                        - MeshGateway
-                                        - MeshService
-                                        - MeshExternalService
-                                        - MeshMultiZoneService
-                                        - MeshServiceSubset
-                                        - MeshHTTPRoute
-                                        - MeshOpenTelemetryBackend
-                                        - Dataplane
-                                        type: string
-                                      labels:
-                                        additionalProperties:
-                                          type: string
-                                        description: |-
-                                          Labels are used to select group of MeshServices that match labels. Either Labels or
-                                          Name and Namespace can be used.
-                                        type: object
-                                      mesh:
-                                        description: Mesh is reserved for future use
-                                          to identify cross mesh resources.
-                                        type: string
                                       name:
-                                        description: |-
-                                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                          `MeshServiceSubset` and `MeshGatewayRoute`
+                                        description: Name of the referenced resource.
+                                        minLength: 1
                                         type: string
-                                      namespace:
-                                        description: |-
-                                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                          will be targeted.
-                                        type: string
-                                      proxyTypes:
-                                        description: |-
-                                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                          all data plane types are targeted by the policy.
-                                        items:
-                                          enum:
-                                          - Sidecar
-                                          - Gateway
-                                          type: string
-                                        type: array
-                                      sectionName:
-                                        description: |-
-                                          SectionName is used to target specific section of resource.
-                                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                                        type: string
-                                      tags:
-                                        additionalProperties:
-                                          type: string
-                                        description: |-
-                                          Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                          `MeshSubset` and `MeshServiceSubset`
-                                        type: object
                                     required:
-                                    - kind
+                                    - name
                                     type: object
                                   body:
                                     description: |-
@@ -10520,7 +10277,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -10657,65 +10413,12 @@ spec:
                                       BackendRef is a reference to a MeshOpenTelemetryBackend resource that
                                       defines the collector endpoint. Mutually exclusive with Endpoint.
                                     properties:
-                                      kind:
-                                        description: Kind of the referenced resource
-                                        enum:
-                                        - Mesh
-                                        - MeshSubset
-                                        - MeshGateway
-                                        - MeshService
-                                        - MeshExternalService
-                                        - MeshMultiZoneService
-                                        - MeshServiceSubset
-                                        - MeshHTTPRoute
-                                        - MeshOpenTelemetryBackend
-                                        - Dataplane
-                                        type: string
-                                      labels:
-                                        additionalProperties:
-                                          type: string
-                                        description: |-
-                                          Labels are used to select group of MeshServices that match labels. Either Labels or
-                                          Name and Namespace can be used.
-                                        type: object
-                                      mesh:
-                                        description: Mesh is reserved for future use
-                                          to identify cross mesh resources.
-                                        type: string
                                       name:
-                                        description: |-
-                                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                          `MeshServiceSubset` and `MeshGatewayRoute`
+                                        description: Name of the referenced resource.
+                                        minLength: 1
                                         type: string
-                                      namespace:
-                                        description: |-
-                                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                          will be targeted.
-                                        type: string
-                                      proxyTypes:
-                                        description: |-
-                                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                          all data plane types are targeted by the policy.
-                                        items:
-                                          enum:
-                                          - Sidecar
-                                          - Gateway
-                                          type: string
-                                        type: array
-                                      sectionName:
-                                        description: |-
-                                          SectionName is used to target specific section of resource.
-                                          For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                                        type: string
-                                      tags:
-                                        additionalProperties:
-                                          type: string
-                                        description: |-
-                                          Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                          `MeshSubset` and `MeshServiceSubset`
-                                        type: object
                                     required:
-                                    - kind
+                                    - name
                                     type: object
                                   body:
                                     description: |-
@@ -10813,7 +10516,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -11197,7 +10899,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:
@@ -11522,7 +11223,6 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
-                    - MeshOpenTelemetryBackend
                     - Dataplane
                     type: string
                   labels:
@@ -11841,7 +11541,6 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
-                          - MeshOpenTelemetryBackend
                           - Dataplane
                           type: string
                         labels:

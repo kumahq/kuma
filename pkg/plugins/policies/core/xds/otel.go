@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
@@ -52,7 +51,7 @@ func (r *ResolvedOtelBackend) FullPath(signalSuffix string) string {
 // nodeHostIP is the host IP of the node running the workload, used when the backend
 // specifies nodeEndpoint. Falls back to 127.0.0.1 when empty (Universal mode).
 func ResolveOtelBackend(
-	backendRef *common_api.TargetRef,
+	backendRef *common_api.BackendResourceRef,
 	inlineEndpoint string,
 	inlineEndpointParser func(string) *core_xds.Endpoint,
 	inlineNameDeriver func(string) string,
@@ -72,8 +71,8 @@ func ResolveOtelBackend(
 	return nil
 }
 
-func resolveFromBackendRef(ref *common_api.TargetRef, resources xds_context.Resources, nodeHostIP string) *ResolvedOtelBackend {
-	name := pointer.Deref(ref.Name)
+func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources, nodeHostIP string) *ResolvedOtelBackend {
+	name := ref.Name
 	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
 		displayName := backend.GetMeta().GetLabels()[mesh_proto.DisplayName]
 		if displayName == name || backend.GetMeta().GetName() == name {

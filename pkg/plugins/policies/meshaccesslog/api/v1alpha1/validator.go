@@ -205,7 +205,7 @@ func validateFormat(format Format) validators.ValidationError {
 	return verr
 }
 
-func validateOtelBackendRef(endpoint string, backendRef *common_api.TargetRef) validators.ValidationError {
+func validateOtelBackendRef(endpoint string, backendRef *common_api.BackendResourceRef) validators.ValidationError {
 	var verr validators.ValidationError
 	if endpoint != "" && backendRef != nil {
 		verr.AddViolation("", "endpoint and backendRef are mutually exclusive")
@@ -216,10 +216,7 @@ func validateOtelBackendRef(endpoint string, backendRef *common_api.TargetRef) v
 		return verr
 	}
 	if backendRef != nil {
-		if backendRef.Kind != "MeshOpenTelemetryBackend" {
-			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"), "kind must be MeshOpenTelemetryBackend")
-		}
-		if backendRef.Name == nil || *backendRef.Name == "" {
+		if backendRef.Name == "" {
 			verr.AddViolationAt(validators.RootedAt("backendRef").Field("name"), validators.MustNotBeEmpty)
 		}
 	} else if strings.ContainsAny(endpoint, "/?#") {

@@ -43,9 +43,8 @@ var _ = Describe("ResolveOtelBackend", func() {
 	})
 
 	Describe("priority order", func() {
-		backendRef := &common_api.TargetRef{
-			Kind: "MeshOpenTelemetryBackend",
-			Name: pointer.To("my-backend"),
+		backendRef := &common_api.BackendResourceRef{
+			Name: "my-backend",
 		}
 		motbList := &motb_api.MeshOpenTelemetryBackendResourceList{}
 
@@ -94,9 +93,8 @@ var _ = Describe("ResolveOtelBackend", func() {
 				},
 			}
 		}
-		backendRef := &common_api.TargetRef{
-			Kind: "MeshOpenTelemetryBackend",
-			Name: pointer.To("daemonset-collector"),
+		backendRef := &common_api.BackendResourceRef{
+			Name: "daemonset-collector",
 		}
 
 		It("should use nodeHostIP when nodeEndpoint is set", func() {

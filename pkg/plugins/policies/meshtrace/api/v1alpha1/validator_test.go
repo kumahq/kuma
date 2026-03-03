@@ -112,7 +112,6 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshOpenTelemetryBackend
           name: my-otel
 `),
 		)
@@ -463,31 +462,12 @@ default:
       openTelemetry:
         endpoint: otel-collector:4317
         backendRef:
-          kind: MeshOpenTelemetryBackend
           name: my-otel
 `,
 				expected: `
 violations:
   - field: spec.default.backends[0].openTelemetry
     message: endpoint and backendRef are mutually exclusive`,
-			}),
-			Entry("openTelemetry backendRef wrong kind", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshService
-          name: my-otel
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.backendRef.kind
-    message: kind must be MeshOpenTelemetryBackend`,
 			}),
 			Entry("openTelemetry backendRef empty name", testCase{
 				inputYaml: `
@@ -499,7 +479,6 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
-          kind: MeshOpenTelemetryBackend
           name: ""
 `,
 				expected: `

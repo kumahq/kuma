@@ -954,9 +954,8 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
-									BackendRef: &common_api.TargetRef{
-										Kind: "MeshOpenTelemetryBackend",
-										Name: pointer.To(backendName),
+									BackendRef: &common_api.BackendResourceRef{
+										Name: backendName,
 									},
 								},
 							}},

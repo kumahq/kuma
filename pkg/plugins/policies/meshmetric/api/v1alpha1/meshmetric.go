@@ -139,7 +139,7 @@ type OpenTelemetryBackend struct {
 	Endpoint string `json:"endpoint"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
 	// defines the collector endpoint. Mutually exclusive with Endpoint.
-	BackendRef *common_api.TargetRef `json:"backendRef,omitempty"`
+	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 	// RefreshInterval defines how frequent metrics should be pushed to collector
 	RefreshInterval *k8s.Duration `json:"refreshInterval,omitempty"`
 }
