@@ -96,6 +96,7 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 								Name: "main-collector",
 							},
 						},
@@ -124,6 +125,7 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshtrace_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshtrace_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 								Name: "trace-collector",
 							},
 						},
@@ -155,6 +157,7 @@ var _ = Describe("StatusUpdater", func() {
 								Type: meshaccesslog_api.OtelTelemetryBackendType,
 								OpenTelemetry: &meshaccesslog_api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 										Name: "log-collector",
 									},
 								},
@@ -186,6 +189,7 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 								Name: "shared-collector",
 							},
 						},
@@ -204,6 +208,7 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshtrace_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshtrace_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 								Name: "shared-collector",
 							},
 						},
@@ -232,6 +237,7 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 								Name: "main-collector",
 							},
 						},
@@ -274,6 +280,7 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 								Name: "main-collector",
 							},
 						},

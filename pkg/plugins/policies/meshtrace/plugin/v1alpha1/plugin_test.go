@@ -558,6 +558,7 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
 									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 										Name: "non-existent-backend",
 									},
 								},
@@ -640,6 +641,7 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
 									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
 										Name: backendName,
 									},
 								},

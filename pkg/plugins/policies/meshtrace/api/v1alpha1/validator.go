@@ -206,6 +206,10 @@ func validateOtelBackendRef(endpoint string, backendRef *common_api.BackendResou
 		return verr
 	}
 	if backendRef != nil {
+		if backendRef.Kind != common_api.BackendResourceMeshOpenTelemetryBackend {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"),
+				validators.MustBeOneOf(string(backendRef.Kind), string(common_api.BackendResourceMeshOpenTelemetryBackend)))
+		}
 		if backendRef.Name == "" {
 			verr.AddViolationAt(validators.RootedAt("backendRef").Field("name"), validators.MustNotBeEmpty)
 		}

@@ -103,6 +103,7 @@ from:
         - type: OpenTelemetry
           openTelemetry:
             backendRef:
+              kind: MeshOpenTelemetryBackend
               name: my-otel
 `),
 		)
@@ -487,6 +488,7 @@ from:
           openTelemetry:
             endpoint: otel-collector:4317
             backendRef:
+              kind: MeshOpenTelemetryBackend
               name: my-otel
 `,
 				expected: `
@@ -507,6 +509,7 @@ from:
         - type: OpenTelemetry
           openTelemetry:
             backendRef:
+              kind: MeshOpenTelemetryBackend
               name: ""
 `,
 				expected: `

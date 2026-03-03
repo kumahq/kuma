@@ -6586,11 +6586,17 @@ components:
                                     defines the collector endpoint. Mutually
                                     exclusive with Endpoint.
                                   properties:
+                                    kind:
+                                      description: Kind of the backend resource.
+                                      enum:
+                                        - MeshOpenTelemetryBackend
+                                      type: string
                                     name:
                                       description: Name of the referenced resource.
                                       minLength: 1
                                       type: string
                                   required:
+                                    - kind
                                     - name
                                   type: object
                                 body:
@@ -6870,11 +6876,17 @@ components:
                                     defines the collector endpoint. Mutually
                                     exclusive with Endpoint.
                                   properties:
+                                    kind:
+                                      description: Kind of the backend resource.
+                                      enum:
+                                        - MeshOpenTelemetryBackend
+                                      type: string
                                     name:
                                       description: Name of the referenced resource.
                                       minLength: 1
                                       type: string
                                   required:
+                                    - kind
                                     - name
                                   type: object
                                 body:
@@ -7153,11 +7165,17 @@ components:
                                     defines the collector endpoint. Mutually
                                     exclusive with Endpoint.
                                   properties:
+                                    kind:
+                                      description: Kind of the backend resource.
+                                      enum:
+                                        - MeshOpenTelemetryBackend
+                                      type: string
                                     name:
                                       description: Name of the referenced resource.
                                       minLength: 1
                                       type: string
                                   required:
+                                    - kind
                                     - name
                                   type: object
                                 body:
@@ -12215,11 +12233,17 @@ components:
                               defines the collector endpoint. Mutually exclusive
                               with Endpoint.
                             properties:
+                              kind:
+                                description: Kind of the backend resource.
+                                enum:
+                                  - MeshOpenTelemetryBackend
+                                type: string
                               name:
                                 description: Name of the referenced resource.
                                 minLength: 1
                                 type: string
                             required:
+                              - kind
                               - name
                             type: object
                           endpoint:
@@ -16182,11 +16206,17 @@ components:
                               defines the collector endpoint. Mutually exclusive
                               with Endpoint.
                             properties:
+                              kind:
+                                description: Kind of the backend resource.
+                                enum:
+                                  - MeshOpenTelemetryBackend
+                                type: string
                               name:
                                 description: Name of the referenced resource.
                                 minLength: 1
                                 type: string
                             required:
+                              - kind
                               - name
                             type: object
                           endpoint:
