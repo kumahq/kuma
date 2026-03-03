@@ -358,6 +358,12 @@ Out of scope for this MADR. See https://github.com/Kong/kong-mesh/issues/9151.
 
 ## Implementation
 
+### Prerequisites
+
+New zone proxy listeners require unified resource naming and `meshServices.mode: Exclusive`.
+Legacy `kuma.io/service` labels and `ExternalService` resources are not supported.
+This constraint enables a cleaner implementation without legacy compatibility code.
+
 ### Avoiding excessive Envoy config for zone-proxy-only Dataplanes
 
 Dataplanes with only zone proxy listeners (no inbounds) should not have outbound listeners and clusters generated.
