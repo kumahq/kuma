@@ -40,9 +40,8 @@ is injected into regular workload pods.
 
 ```yaml
 containers:
-  - name: pause          # dummy main container, never changes
-    image: kumahq/kuma-dp:v2.13.2
-    args: ["pause"]      # dedicated subcommand — sleeps forever, no-op
+  - name: pause          # dummy main container; image rarely changes across Kuma upgrades
+    image: registry.k8s.io/pause:3.10  # override via Helm if image is not available
   # kuma-dp injected here by webhook:
   - name: kuma-sidecar
     image: kumahq/kuma-dp:v2.13.2
@@ -95,18 +94,42 @@ the regular inbound/outbound configuration.
 
 #### Waiting container image
 
-The dummy main container uses `kumahq/kuma-dp` with a dedicated `pause` subcommand added to the
-binary. The subcommand sleeps indefinitely and exits cleanly on SIGTERM.
+**Decision: `registry.k8s.io/pause:3.10`**
 
-**Decision: `kumahq/kuma-dp pause`**
+The `pause` container is bundled with every Kubernetes cluster
+([kubeadm defaults to `registry.k8s.io` as `DefaultImageRepository`](https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/apis/kubeadm/v1beta4/defaults.go#L44)):
+- Very small (514 kB) and purpose-built for doing nothing
+- Version (`3.10`) is pinned and changes independently of Kuma upgrades → the Deployment spec is
+  stable between Kuma releases → no unwanted rollouts on `helm upgrade`
+- Already present on every node (Kubernetes uses it for pod sandboxes)
 
-- Operators already pull and mirror this image — no new image to manage or push to a private registry
-- No dependency on `registry.k8s.io` or any third-party registry
-- Maintained and released on the same cadence as Kuma itself
-- The `pause` subcommand adds negligible binary size (~a few KB of Go code)
+Using `kumahq/kuma-dp:<version>` with a `pause` subcommand was considered but **rejected**:
+because that image is version-tagged, any Kuma upgrade would change the Deployment spec and
+trigger a rollout, negating the main benefit of this design.
 
-The Helm chart uses the same `kuma-dp` image reference already configured for the zone
-(e.g., via `global.image.tag`). No new Helm value is needed for the waiting container image.
+A dedicated `kumahq/pause` image was also considered but rejected — it would be functionally
+identical to `registry.k8s.io/pause` with extra maintenance overhead (separate pipeline, release
+cadence, operators still need to mirror it).
+
+The default registry (`registry.k8s.io`) varies per distribution:
+
+| Distribution | Image reference |
+|:-------------|:----------------|
+| GKE | `gke.gcr.io/pause:3.8` |
+| k3d / Rancher | `docker.io/rancher/mirrored-pause:3.6` |
+| upstream kubeadm | `registry.k8s.io/pause:3.10` |
+| others | ... |
+
+The Helm chart exposes an image override per mesh proxy for environments where
+`registry.k8s.io` is not reachable or images are mirrored under a different path
+
+```yaml
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      image: registry.k8s.io/pause:3.10  # override if image is mirrored elsewhere
+```
 
 #### Configuring sidecar resources
 
@@ -167,13 +190,31 @@ Resource requests/limits use pod-level resources (`spec.resources`), alpha in K8
 beta (enabled by default) from K8s 1.34. For K8s 1.32–1.33 or clusters with the feature gate
 disabled, `ContainerPatch` is the fallback mechanism.
 
-The dummy container runs `kumahq/kuma-dp pause` — the same image operators already manage,
-with a new `pause` subcommand that sleeps indefinitely. No additional images or registry
-dependencies are introduced.
+The dummy container runs `registry.k8s.io/pause:3.10` — bundled with every Kubernetes cluster,
+with a version that changes independently of Kuma releases. Operators can override the image via
+the `image` Helm value per mesh proxy when `registry.k8s.io` is not reachable. No additional images or registry dependencies are introduced beyond what Kubernetes already uses internally.
 
 The sidecar injection webhook is extended to look up the `k8s.kuma.io/zone-proxy-type` label on
 the associated Service and generate the appropriate `kuma-dp` arguments for zone proxy mode
 instead of regular sidecar mode.
+
+#### reachableBackends
+
+Because the injected `kuma-dp` sidecar is a regular Dataplane, it would by default receive
+outbound configuration for all backends in the mesh. Zone proxies must not get populated
+outbounds. The Deployment is annotated with an empty `reachableBackends` list so the webhook
+instructs `kuma-dp` to request no outbound routes:
+
+```yaml
+spec:
+  template:
+    metadata:
+      annotations:
+        kuma.io/reachable-backends: '{"refs":[]}'
+```
+
+This is the same mechanism available to regular workloads. Using an empty list is
+intentional, zone proxies route via the zone ingress/egress path, not direct mesh outbounds.
 
 ### Update behavior
 
@@ -204,5 +245,5 @@ capabilities and exposing no network ports).
 ## Notes
 
 - MADR 094: Zone Proxy Deployment Model (Helm schema, per-mesh templates)
-- Mesh-scoped zone proxies (Dataplane `listeners` array)
-- Syncing zone ingress address across zones
+- MADR 095: Mesh-scoped zone proxies (Dataplane `listeners` array, `k8s.kuma.io/zone-proxy-type` Service label)
+- MADR 096: Syncing zone ingress address across zones
