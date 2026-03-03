@@ -592,5 +592,66 @@ spec:
 		})
 	})
 
+	Context("MeshExternalService with endpoint priority", Ordered, func() {
+		mesPrimaryName := "mes-priority-primary"
+		mesPrimaryPort := 83
+		var mesPrimaryContainerName string
+
+		BeforeAll(func() {
+			mesPrimaryContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), mesPrimaryName)
+			err := NewClusterSetup().
+				Install(TestServerExternalServiceUniversal(mesPrimaryName, mesPrimaryPort, false, WithDockerContainerName(mesPrimaryContainerName))).
+				Setup(universal.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should shift traffic to priority 1 when priority 0 endpoint is removed", func() {
+			DeferCleanup(func() {
+				_ = universal.Cluster.DeleteApp(mesPrimaryName)
+			})
+
+			By("Creating MES with only priority 0 endpoint")
+			mesYAML := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-priority
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: %d
+      priority: 0
+    - address: %s
+      port: 80
+      priority: 1
+`, meshNameNoDefaults, mesPrimaryContainerName, mesPrimaryPort, esHttpContainerName)
+			Expect(universal.Cluster.Install(YamlUniversal(mesYAML))).To(Succeed())
+
+			By("Verifying traffic goes to priority endpoint (priority 1)")
+			Eventually(func(g Gomega) {
+				stdout, _, err := client.CollectResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-priority.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring(mesPrimaryName))
+			}, "30s", "1s").Should(Succeed())
+
+			By("Removing primary endpoint to trigger failover")
+			Expect(universal.Cluster.DeleteApp(mesPrimaryName)).To(Succeed())
+
+			By("Verifying traffic shifts to secondary endpoint (priority 1)")
+			Eventually(func(g Gomega) {
+				stdout, _, err := client.CollectResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-priority.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring(esHttpName))
+			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		})
+	})
+
 	contextFor("without default policies", meshNameNoDefaults, "mes-demo-client-no-defaults")
 }

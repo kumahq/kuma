@@ -416,7 +416,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s:%s", e.Locality.Zone, e.Locality.SubZone)
+	return fmt.Sprintf("%s:%s:%d", e.Locality.Zone, e.Locality.SubZone, e.Locality.Priority)
 }
 
 func (e Endpoint) HasLocality() bool {
