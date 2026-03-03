@@ -295,9 +295,19 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
-					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
+					// Bind to 127.0.0.1 by default - iptables REDIRECT sends DNS
+					// to 127.0.0.1, so IPv4 loopback is sufficient. Using "localhost"
+					// would be ambiguous on dual-stack systems (may resolve to ::1).
+					// IPv6 DNS is not supported by the embedded DNS proxy.
+					// With VNet (PREROUTING chain), traffic arrives on the interface
+					// IP, so we need to bind to all interfaces.
+					dnsBindAddress := "127.0.0.1"
+					if cfg.DataplaneRuntime.TransparentProxy.HasVNet() {
+						dnsBindAddress = "0.0.0.0"
+					}
+					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort, "bindAddress", dnsBindAddress)
 					// Using embedded DNS
-					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("0.0.0.0", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
+					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort(dnsBindAddress, strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
 					if err != nil {
 						return err
 					}
