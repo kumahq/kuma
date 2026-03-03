@@ -967,6 +967,8 @@ var _ = Describe("MeshAccessLog", func() {
 			WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
 			Build()
 
+		proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
+
 		meshAccessLogPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(meshAccessLogPlugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
 
@@ -977,11 +979,14 @@ var _ = Describe("MeshAccessLog", func() {
 		Expect(string(clusterResources)).To(ContainSubstring(expectedSocket))
 		Expect(string(clusterResources)).ToNot(ContainSubstring("collector.mesh"))
 
-		listenerResources, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(string(listenerResources)).To(ContainSubstring("/meshaccesslog"))
-		Expect(string(listenerResources)).To(ContainSubstring(expectedSocket))
-		Expect(string(listenerResources)).To(ContainSubstring(`"endpoint":"collector.mesh:4317"`))
+		// Plugin adds to OtelPipeBackends accumulator instead of writing dynconf directly.
+		// The generator writes the /otel route after all plugins run.
+		Expect(proxy.OtelPipeBackends.Empty()).To(BeFalse())
+		backends := proxy.OtelPipeBackends.All()
+		Expect(backends).To(HaveLen(1))
+		Expect(backends[0].SocketPath).To(Equal(expectedSocket))
+		Expect(backends[0].Endpoint).To(Equal("collector.mesh:4317"))
+		Expect(backends[0].UseHTTP).To(BeFalse())
 	})
 
 	type gatewayTestCase struct {
