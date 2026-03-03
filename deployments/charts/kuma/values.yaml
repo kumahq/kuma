@@ -760,8 +760,6 @@ egress:
 # -- List of meshes to deploy zone proxies for.
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
 # Optionally renders a Mesh resource and default policies (unfederated zones only).
-# Default: [] (no mesh-scoped zone proxies deployed).
-# @default -- []
 meshes: []
 # Example single-mesh configuration:
 # meshes:
@@ -774,6 +772,7 @@ meshes: []
 #
 #     # Choose either ingress/egress (separate Deployments) OR combinedProxies (single Deployment).
 #     # combinedProxies is mutually exclusive with ingress and egress.
+#     # NOTE: combinedProxies is NOT YET SUPPORTED; enabling it will fail chart rendering.
 #
 #     ingress:
 #       # -- Deploy a zone ingress for this mesh.
@@ -824,7 +823,8 @@ meshes: []
 #         maxUnavailable: 1
 #
 #     combinedProxies:
-#       # -- Deploy a single Deployment running both ingress and egress roles.
+#       # NOT YET SUPPORTED: enabling this will fail chart rendering.
+#       # Deploy a single Deployment running both ingress and egress roles.
 #       # Mutually exclusive with ingress and egress above.
 #       enabled: false
 #       replicas: 1
