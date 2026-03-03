@@ -15,6 +15,10 @@ metadata:
 
 {{- range $policy := $meshEntry.createPolicies }}
 
+{{- if and (ne $policy "MeshTimeout") (ne $policy "MeshCircuitBreaker") (ne $policy "MeshRetry") }}
+{{- fail (printf "meshes[%s]: unsupported createPolicies entry %q; supported values: MeshTimeout, MeshCircuitBreaker, MeshRetry" $meshName $policy) }}
+{{- end }}
+
 {{- if eq $policy "MeshTimeout" }}
 ---
 apiVersion: kuma.io/v1alpha1

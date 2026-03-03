@@ -384,6 +384,9 @@ spec:
               value: "30s"
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            # TODO: KUMA_DATAPLANE_PROXY_TYPE for combined ingress+egress is pending
+            # the deployment topology MADR (referenced as [^2] in MADR 094).
+            # kuma-dp only supports dataplane|ingress|egress today.
             - name: KUMA_DATAPLANE_MESH
               value: {{ $meshName | quote }}
           args:
