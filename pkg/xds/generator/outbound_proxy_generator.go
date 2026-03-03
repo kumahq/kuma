@@ -91,7 +91,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		rateLimits = append(rateLimits, rateLimit)
 	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
-	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]

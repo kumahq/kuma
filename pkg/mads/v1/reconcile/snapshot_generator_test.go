@@ -145,7 +145,7 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 
 				// given
-				snapshotter := NewSnapshotGenerator(resourceManager, meshmetrics_generator.MonitoringAssignmentsGenerator{}, cache)
+				snapshotter := NewSnapshotGenerator(resourceManager, meshmetrics_generator.MonitoringAssignmentsGenerator{}, cache, false)
 				// when
 				snapshotPerClient, err := snapshotter.GenerateSnapshot(context.Background())
 				// then

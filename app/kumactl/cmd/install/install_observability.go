@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -22,6 +23,9 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin)",
 		Long:  `Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if _, err := fmt.Fprintf(cmd.ErrOrStderr(), "Warning: 'kumactl install observability' is deprecated and will be removed in Kuma 3.0.\n"); err != nil {
+				return err
+			}
 			componentsMap := map[string]bool{}
 			for _, component := range args.Components {
 				componentsMap[component] = true

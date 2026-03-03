@@ -37,6 +37,12 @@ resources:
                 defaultValue: none
                 name: client_id
               tag: client_id
+            - literal:
+                value: default
+              tag: kuma.mesh
+            - literal:
+                value: test-zone
+              tag: kuma.zone
             overallSampling:
               value: 10
             provider:
@@ -89,6 +95,12 @@ resources:
                 defaultValue: none
                 name: client_id
               tag: client_id
+            - literal:
+                value: default
+              tag: kuma.mesh
+            - literal:
+                value: test-zone
+              tag: kuma.zone
             overallSampling:
               value: 10
             provider:

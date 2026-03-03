@@ -29,7 +29,7 @@ type StatusUpdater struct {
 	roResManager manager.ReadOnlyResourceManager
 	resManager   manager.ResourceManager
 	logger       logr.Logger
-	metric       prometheus.Summary
+	metric       prometheus.Histogram
 	interval     time.Duration
 }
 
@@ -42,10 +42,9 @@ func NewStatusUpdater(
 	interval time.Duration,
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_mzms_status_updater",
-		Help:       "Summary of MeshMultizoneService Updater component",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_mzms_status_updater",
+		Help: "Summary of MeshMultizoneService Updater component",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

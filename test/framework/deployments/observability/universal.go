@@ -106,7 +106,7 @@ func (u *universalDeployment) ZipkinCollectorURL() string {
 	return fmt.Sprintf("http://%s/api/v2/spans", net.JoinHostPort(u.ip, "9411"))
 }
 
-func (u *universalDeployment) OpenTelemetryCollectorHTTPURL() string {
+func (u *universalDeployment) OTelCollectorTraceURL() string {
 	return fmt.Sprintf("http://%s/v1/traces", net.JoinHostPort(u.ip, "4318"))
 }
 

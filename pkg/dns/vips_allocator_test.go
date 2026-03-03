@@ -127,7 +127,7 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(test_metrics.FindMetric(metrics, "vip_generation").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+		Expect(test_metrics.FindMetric(metrics, "vip_generation").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
@@ -832,7 +832,7 @@ var _ = DescribeTable("outboundView",
 		thenHostnameEntries: []vips.HostnameEntry{},
 		thenOutbounds:       map[vips.HostnameEntry][]vips.OutboundEntry{},
 	}),
-	Entry("skip inbounds without tags (SkipInboundTagGeneration)", outboundViewTestCase{
+	Entry("skip inbounds without tags (InboundTagsDisabled)", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "dp-1"): &mesh.DataplaneResource{
 				Spec: dpWithTags(nil),

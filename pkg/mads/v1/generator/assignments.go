@@ -13,7 +13,9 @@ var log = core.Log.WithName("mads").WithName("v1").WithName("generator")
 
 // MonitoringAssignmentsGenerator knows how to generate MonitoringAssignment
 // resources for a given set of Dataplanes.
-type MonitoringAssignmentsGenerator struct{}
+type MonitoringAssignmentsGenerator struct {
+	InboundTagsDisabled bool
+}
 
 // Generate implements mads.ResourceGenerator
 func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_xds.Resource, error) {
@@ -45,9 +47,10 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		// TODO: could also group by service, and have one assignment per service
+		service := dataplane.IdentifyingName(g.InboundTagsDisabled)
 		assignment := &observability_v1.MonitoringAssignment{
 			Mesh:    dataplane.Meta.GetMesh(),
-			Service: dataplane.Spec.GetIdentifyingService(),
+			Service: service,
 			Targets: []*observability_v1.MonitoringAssignment_Target{{
 				Scheme:      schema,
 				Name:        dataplane.GetMeta().GetName(),

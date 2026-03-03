@@ -167,8 +167,8 @@ var _ = Describe("Stats callbacks", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
-			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetHistogram().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
 		})
 
 		It("should not track delivery of configs that were not ready to being delivered", func() {
@@ -181,7 +181,7 @@ var _ = Describe("Stats callbacks", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(0)))
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetHistogram().GetSampleCount()).To(Equal(uint64(0)))
 		})
 
 		It("should not track discarded configs", func() {
@@ -198,7 +198,7 @@ var _ = Describe("Stats callbacks", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(0)))
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetHistogram().GetSampleCount()).To(Equal(uint64(0)))
 		})
 	})
 
@@ -343,8 +343,8 @@ var _ = Describe("Stats callbacks", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(test_metrics.FindMetric(metrics, "delta_xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
-			Expect(test_metrics.FindMetric(metrics, "delta_xds_delivery").GetSummary().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_delivery").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_delivery").GetHistogram().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
 		})
 	})
 })

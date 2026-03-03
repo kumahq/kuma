@@ -5,7 +5,7 @@ import (
 )
 
 type handlerMetrics struct {
-	HandlerTickDuration prometheus.Summary
+	HandlerTickDuration prometheus.Histogram
 	HandlerErrorCount   prometheus.Counter
 	HandlerTickCount    prometheus.Counter
 }
@@ -18,7 +18,7 @@ func newHandlerMetrics(path string) *handlerMetrics {
 		ConstLabels: labels,
 	})
 	prometheus.MustRegister(handlerTickCount)
-	handlerTickDuration := prometheus.NewSummary(prometheus.SummaryOpts{
+	handlerTickDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:        "kuma_dp_envoyconfigfetcher_handler_call_duration_seconds",
 		Help:        "The duration for the envoy configuration to be fetched and processed by the handler. This is not computed when no change happened",
 		ConstLabels: labels,

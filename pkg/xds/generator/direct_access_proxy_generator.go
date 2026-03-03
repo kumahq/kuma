@@ -41,7 +41,7 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 		return rs, nil
 	}
 
-	svc := proxy.Dataplane.Spec.GetIdentifyingService()
+	svc := proxy.Dataplane.IdentifyingName(xdsCtx.ControlPlane != nil && xdsCtx.ControlPlane.InboundTagsDisabled)
 	mesh := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
 	endpoints, err := directAccessEndpoints(proxy.Dataplane, xdsCtx.Mesh.Resources.Dataplanes(), xdsCtx.Mesh.Resource)

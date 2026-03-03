@@ -76,11 +76,12 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		systemNamespace = rt.Config().Store.Kubernetes.SystemNamespace
 	}
 	envoyCpCtx := &xds_context.ControlPlaneContext{
-		CLACache:        claCache,
-		Secrets:         secrets,
-		IdentityManager: providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus()),
-		Zone:            rt.Config().Multizone.Zone.Name,
-		SystemNamespace: systemNamespace,
+		CLACache:            claCache,
+		Secrets:             secrets,
+		IdentityManager:     providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus()),
+		Zone:                rt.Config().Multizone.Zone.Name,
+		SystemNamespace:     systemNamespace,
+		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {

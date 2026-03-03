@@ -14,6 +14,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -48,6 +49,8 @@ var _ = Describe("MeshTrace", func() {
 		goldenFile      string
 		features        xds_types.Features
 		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		proxyLabels     map[string]string
+		zone            string
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -96,6 +99,31 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}
 	}
+	// Unified naming listeners use contextual names matching what real proxy generators produce.
+	inboundUnifiedName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
+	outboundUnifiedName := backendMeshServiceIdentifier.String()
+	inboundAndOutboundUnifiedNaming := func() []core_xds.Resource {
+		return []core_xds.Resource{
+			{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundUnifiedName).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager(inboundUnifiedName, false, nil, true)),
+					)).MustBuild(),
+			}, {
+				Name:   "outbound",
+				Origin: metadata.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3, outboundUnifiedName).
+					Configure(OutboundListener("127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager(outboundUnifiedName, false, nil, true)),
+					)).MustBuild(),
+				ResourceOrigin: backendMeshServiceIdentifier,
+			},
+		}
+	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			resources := core_xds.NewResourceSet()
@@ -113,21 +141,26 @@ var _ = Describe("MeshTrace", func() {
 			}
 			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
 			context.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
-			proxy := xds_builders.Proxy().
-				WithDataplane(
-					builders.Dataplane().
-						WithName("backend").
-						AddInbound(builders.Inbound().
-							WithService("backend").
-							WithAddress("127.0.0.1").
-							WithPort(17777)),
-				).
+			dpBuilder := builders.Dataplane().
+				WithName("backend").
+				AddInbound(builders.Inbound().
+					WithService("backend").
+					WithAddress("127.0.0.1").
+					WithPort(17777))
+			if given.proxyLabels != nil {
+				dpBuilder = dpBuilder.WithLabels(given.proxyLabels)
+			}
+			proxyBuilder := xds_builders.Proxy().
+				WithDataplane(dpBuilder).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					Features: given.features,
 				}).
 				WithOutbounds(given.outbounds).
-				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
-				Build()
+				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules))
+			if given.zone != "" {
+				proxyBuilder = proxyBuilder.WithZone(given.zone)
+			}
+			proxy := proxyBuilder.Build()
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -179,7 +212,7 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
 		}),
 		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources:       inboundAndOutboundRealMeshService(),
+			resources:       inboundAndOutboundUnifiedNaming(),
 			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
@@ -301,7 +334,7 @@ var _ = Describe("MeshTrace", func() {
 			},
 			goldenFile: "inbound-outbound-otel",
 		}),
-		Entry("inbound/outbound for opentelemetry http", testCase{
+		Entry("inbound/outbound for opentelemetry with ipv6 endpoint", testCase{
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{
 				{
@@ -316,26 +349,16 @@ var _ = Describe("MeshTrace", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
-									Endpoint: "http://jaeger-collector.mesh-observability:4318/v1/traces",
+									Endpoint: "[2001:db8::1]:4317",
 								},
 							}},
 						},
 					},
 				},
 			},
-			goldenFile: "inbound-outbound-otel-http",
+			goldenFile: "inbound-outbound-otel-ipv6",
 		}),
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
@@ -394,6 +417,79 @@ var _ = Describe("MeshTrace", func() {
 				},
 			},
 			goldenFile: "empty-sampling",
+		}),
+		Entry("inbound/outbound for zipkin with workload identity", testCase{
+			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-zipkin-workload-identity",
+			proxyLabels: map[string]string{
+				"kuma.io/workload":      "backend",
+				mesh_proto.ZoneTag:      "zone-1",
+				"k8s.kuma.io/namespace": "kuma-demo",
+			},
+			zone: "zone-1",
+		}),
+		Entry("inbound/outbound for zipkin, user-defined kuma.mesh tag not overridden", testCase{
+			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Tags: &[]api.Tag{
+								{Name: "kuma.mesh", Literal: pointer.To("user-mesh")},
+							},
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-zipkin-user-tag-no-override",
+			proxyLabels: map[string]string{
+				"kuma.io/workload":      "backend",
+				mesh_proto.ZoneTag:      "zone-1",
+				"k8s.kuma.io/namespace": "kuma-demo",
+			},
+			zone: "zone-1",
 		}),
 		Entry("backends list is empty", testCase{
 			resources: inboundAndOutbound(),

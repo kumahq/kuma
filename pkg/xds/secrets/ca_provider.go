@@ -19,10 +19,9 @@ type CaProvider interface {
 }
 
 func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (CaProvider, error) {
-	latencyMetrics := prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name:       "ca_manager_get_root_cert_chain",
-		Help:       "Summary of CA manager get CA root certificate chain latencies",
-		Objectives: core_metrics.DefaultObjectives,
+	latencyMetrics := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "ca_manager_get_root_cert_chain",
+		Help: "Summary of CA manager get CA root certificate chain latencies",
 	}, []string{"backend_name"})
 	if err := metrics.Register(latencyMetrics); err != nil {
 		return nil, err
@@ -35,7 +34,7 @@ func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (C
 
 type meshCaProvider struct {
 	caManagers     core_ca.Managers
-	latencyMetrics *prometheus.SummaryVec
+	latencyMetrics *prometheus.HistogramVec
 }
 
 // Get retrieves the root CA for a given backend with a default timeout of 10

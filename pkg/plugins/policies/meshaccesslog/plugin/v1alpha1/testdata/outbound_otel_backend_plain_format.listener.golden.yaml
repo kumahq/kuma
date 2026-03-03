@@ -22,6 +22,11 @@ filterChains:
                 clusterName: meshaccesslog:opentelemetry:0
             logName: MeshAccessLog
             transportApiVersion: V3
+          resourceAttributes:
+            values:
+            - key: kuma.mesh
+              value:
+                stringValue: default
       cluster: other-service-tcp
       statPrefix: other-service-tcp
 metadata:

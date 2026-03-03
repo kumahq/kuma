@@ -179,7 +179,7 @@ var _ = Describe("Secrets", Ordered, func() {
 
 			// and metric is published
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		It("should not regenerate certs if nothing has changed", func() {
@@ -197,7 +197,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(newCa).To(HaveLen(1))
 			Expect(cas["default"]).To(Equal(newCa["default"]))
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		Context("should regenerate certificate", func() {
@@ -241,7 +241,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 			})
 
 			It("when dp tags has changed", func() {
@@ -255,7 +255,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
 			})
 
 			It("when cert is expiring", func() {
@@ -268,7 +268,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
 			})
 
 			It("when cert was cleaned up", func() {
@@ -281,7 +281,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
 			})
 		})
 
@@ -322,7 +322,7 @@ var _ = Describe("Secrets", Ordered, func() {
 
 			// and metric is published
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		It("should not regenerate certs if nothing has changed", func() {
@@ -338,7 +338,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(identity).To(Equal(newIdentity))
 			Expect(ca).To(Equal(newCa))
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		Context("should regenerate certificate", func() {
@@ -358,7 +358,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 			})
 
 			It("when cert is expiring", func() {
@@ -371,7 +371,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
 			})
 
 			It("when cert was cleaned up", func() {
@@ -384,7 +384,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
 			})
 		})
 
