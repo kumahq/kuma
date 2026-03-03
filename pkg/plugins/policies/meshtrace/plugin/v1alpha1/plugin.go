@@ -285,7 +285,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		}
 		if backend.OpenTelemetry.BackendRef != nil && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
 			// Route through kuma-dp Unix socket; kuma-dp forwards to the real collector.
-			socketPath := xds.OtelTraceSocketName(proxy.Metadata.WorkDir, resolved.Name)
+			socketPath := xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name)
 			endpoint = &xds.Endpoint{UnixDomainPath: socketPath}
 			useHTTP2 = true // Envoy→kuma-dp leg is always gRPC
 		} else {
@@ -376,7 +376,7 @@ func configureDynamicDPConfig(ctx xds_context.Context, rules core_rules.SingleIt
 	dpConfig := dpapi.MeshTraceDpConfig{
 		Backends: []dpapi.OtelBackendConfig{
 			{
-				SocketPath: xds.OtelTraceSocketName(proxy.Metadata.WorkDir, resolved.Name),
+				SocketPath: xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name),
 				Endpoint:   endpoint,
 				UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
 				Path:       pointer.Deref(resolved.Path),

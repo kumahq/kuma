@@ -970,7 +970,7 @@ var _ = Describe("MeshAccessLog", func() {
 		meshAccessLogPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(meshAccessLogPlugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
 
-		expectedSocket := core_xds.OtelLogSocketName(workDir, backendName)
+		expectedSocket := core_xds.OpenTelemetrySocketName(workDir, backendName)
 
 		clusterResources, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
 		Expect(err).ToNot(HaveOccurred())
