@@ -53,7 +53,7 @@ type DataplaneRedirect struct {
 	Inbound  DatalpaneTrafficFlow `json:"inbound"`
 	Outbound DatalpaneTrafficFlow `json:"outbound"`
 	DNS      DatalpaneTrafficFlow `json:"dns"`
-	VNet     DataplaneVNet        `json:"vnet,omitempty"`
+	VNet     *DataplaneVNet       `json:"vnet,omitempty"`
 }
 
 type DataplaneConfig struct {
@@ -85,7 +85,7 @@ func (c *DataplaneConfig) HasVNet() bool {
 	if c == nil {
 		return false
 	}
-	return len(c.Redirect.VNet.Networks) > 0
+	return c.Redirect.VNet != nil && len(c.Redirect.VNet.Networks) > 0
 }
 
 func (c *DataplaneConfig) Enabled() bool {

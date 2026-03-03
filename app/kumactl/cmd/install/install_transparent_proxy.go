@@ -218,7 +218,7 @@ runuser -u kuma-dp -- \
 					return errors.Wrapf(err, "failed to create directory for %s", storeConfigPath)
 				}
 
-				if err := os.WriteFile(storeConfigPath, cfgBytes, 0o600); err != nil {
+				if err := os.WriteFile(storeConfigPath, cfgBytes, 0o644); err != nil { //nolint:gosec // G306: config must be readable by non-root kuma-dp user
 					return errors.Wrapf(err, "failed to write transparent proxy configuration to %s", storeConfigPath)
 				}
 			}

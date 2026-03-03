@@ -105,7 +105,7 @@ var _ = Describe("DataplaneConfig functions", func() {
 		It("should return true when VNet networks are configured", func() {
 			cfg := &tproxy_dp.DataplaneConfig{
 				Redirect: tproxy_dp.DataplaneRedirect{
-					VNet: tproxy_dp.DataplaneVNet{
+					VNet: &tproxy_dp.DataplaneVNet{
 						Networks: []string{"docker0:172.17.0.0/16"},
 					},
 				},
