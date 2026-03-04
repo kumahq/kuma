@@ -47,8 +47,10 @@ func validateProvider(provider Provider) validators.ValidationError {
 		verr.Add(validateBundled(validators.RootedAt("bundled"), provider.Bundled))
 	case SpireType:
 		verr.Add(validateSpire(validators.RootedAt("spire"), provider.Spire))
+	case ExtensionType:
+		verr.Add(validateExtension(validators.RootedAt("extension"), provider.Extension))
 	default:
-		verr.AddError("type", validators.MakeFieldMustBeOneOfErr(string(provider.Type), string(BundledType), string(SpireType)))
+		verr.AddError("type", validators.MakeFieldMustBeOneOfErr(string(provider.Type), string(BundledType), string(SpireType), string(ExtensionType)))
 	}
 	return verr
 }
@@ -106,6 +108,21 @@ func validateSpire(path validators.PathBuilder, b *Spire) validators.ValidationE
 	}
 	if b.Agent != nil {
 		verr.AddErrorAt(path.Field("agent"), validateSpireAgent(path.Field("agent"), b.Agent))
+	}
+	return verr
+}
+
+// validateExtension performs base validation for the Extension provider type.
+// Extension-specific config validation (e.g. parsing config fields) is delegated to the
+// extension implementation via registry.RegisterTypeValidator.
+func validateExtension(path validators.PathBuilder, b *Extension) validators.ValidationError {
+	var verr validators.ValidationError
+	if b == nil {
+		verr.AddViolationAt(path, "configuration needs to be defined")
+		return verr
+	}
+	if b.Name == "" {
+		verr.AddViolationAt(path.Field("name"), "extension name needs to be defined")
 	}
 	return verr
 }
