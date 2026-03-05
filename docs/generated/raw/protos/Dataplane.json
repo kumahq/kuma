@@ -69,7 +69,7 @@
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Listener"
                     },
                     "type": "array",
-                    "description": "Listeners describes zone proxy listeners (ZoneIngress/ZoneEgress) embedded in this Dataplane. When present, the data plane proxy acts as both a regular sidecar and a zone proxy."
+                    "description": "Listeners describes zone proxy listeners (ZoneIngress/ZoneEgress) embedded in this Dataplane."
                 }
             },
             "additionalProperties": true,

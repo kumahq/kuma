@@ -336,39 +336,6 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	return iface
 }
 
-// GetReadyZoneIngressListeners returns listeners of type ZoneIngress that are in Ready state.
-func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
-	var result []*Dataplane_Networking_Listener
-	for _, l := range n.GetListeners() {
-		if l.GetType() == Dataplane_Networking_Listener_ZoneIngress && l.GetState() == Dataplane_Networking_Listener_Ready {
-			result = append(result, l)
-		}
-	}
-	return result
-}
-
-// GetReadyZoneEgressListeners returns listeners of type ZoneEgress that are in Ready state.
-func (n *Dataplane_Networking) GetReadyZoneEgressListeners() []*Dataplane_Networking_Listener {
-	var result []*Dataplane_Networking_Listener
-	for _, l := range n.GetListeners() {
-		if l.GetType() == Dataplane_Networking_Listener_ZoneEgress && l.GetState() == Dataplane_Networking_Listener_Ready {
-			result = append(result, l)
-		}
-	}
-	return result
-}
-
-// HasZoneProxyListeners reports whether the networking has any zone proxy listeners.
-func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
-	return len(n.GetListeners()) > 0
-}
-
-// IsZoneProxyOnly reports whether the networking has only zone proxy listeners
-// (no inbounds and no gateway configured).
-func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
-	return len(n.GetInbound()) == 0 && n.GetGateway() == nil && n.HasZoneProxyListeners()
-}
-
 func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbound {
 	var inbounds []*Dataplane_Networking_Inbound
 	for _, inbound := range n.GetInbound() {

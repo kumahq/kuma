@@ -216,8 +216,7 @@ components:
                 listeners:
                   description: |-
                     Listeners describes zone proxy listeners (ZoneIngress/ZoneEgress)
-                    embedded in this Dataplane. When present, the data plane proxy acts as
-                    both a regular sidecar and a zone proxy.
+                    embedded in this Dataplane.
                   items:
                     description: Listener describes a zone proxy listener (ZoneIngress
                       or ZoneEgress) embedded in a regular Dataplane.

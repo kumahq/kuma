@@ -378,6 +378,51 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     kuma.io/service: redis`,
 		),
+		Entry("dataplane with a single zone-ingress listener", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  name: http
+                  tags:
+                    kuma.io/service: backend
+              listeners:
+                - type: ZoneIngress
+                  address: 192.168.0.1
+                  port: 10001
+                  name: zi-main`,
+		),
+		Entry("dataplane with a zone-egress listener only (zone-proxy-only)", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              listeners:
+                - type: ZoneEgress
+                  address: 192.168.0.1
+                  port: 10002
+                  name: ze-main`,
+		),
+		Entry("dataplane with multiple listeners of the same type on distinct ports", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              listeners:
+                - type: ZoneIngress
+                  address: 192.168.0.1
+                  port: 10001
+                  name: zi-a
+                - type: ZoneIngress
+                  address: 192.168.0.1
+                  port: 10003
+                  name: zi-b`,
+		),
 	)
 
 	type testCase struct {
@@ -1354,6 +1399,156 @@ var _ = Describe("Dataplane", func() {
                   message: name or labels are required
                 - field: networking.transparentProxing.reachableBackends.refs[5].name
                   message: name is required, when namespace is defined`,
+		}),
+		Entry("listener missing address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      tags:
+                        kuma.io/service: backend
+                  listeners:
+                    - type: ZoneIngress
+                      port: 10001
+                      name: zi-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].address
+                  message: address can't be empty`,
+		}),
+		Entry("listener with port 0", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      tags:
+                        kuma.io/service: backend
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 0
+                      name: zi-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].port
+                  message: port must be greater than 0`,
+		}),
+		Entry("listener missing name", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      tags:
+                        kuma.io/service: backend
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].name
+                  message: name can't be empty`,
+		}),
+		Entry("listener name collides with inbound name", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      tags:
+                        kuma.io/service: backend
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: http`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].name
+                  message: 'name "http" must be unique across inbounds and listeners'`,
+		}),
+		Entry("two listeners with same name", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: zi-main
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10002
+                      name: zi-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[1].name
+                  message: 'name "zi-main" must be unique across inbounds and listeners'`,
+		}),
+		Entry("two listeners on same address:port with different types", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: zi-main
+                    - type: ZoneEgress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: ze-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[1]
+                  message: 'address:port 192.168.0.1:10001 is used by listeners of different types'`,
+		}),
+		Entry("listener address:port collides with inbound", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      tags:
+                        kuma.io/service: backend
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 8080
+                      name: zi-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[0]
+                  message: 'address:port 192.168.0.1:8080 collides with an inbound listener'`,
 		}),
 	)
 
