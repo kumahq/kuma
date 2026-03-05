@@ -56,7 +56,7 @@ They may need to call a meeting once it's ready to iron out the final points.
 
 #### When is a MADR accepted
 
-MADR must receive at least 3 approvals and no veto to be accepted.
+MADR must receive at least 2 approvals and no veto to be accepted.
 
 Only votes from committers do count.
 Pull Request reviews are used to submit approvals or vetos.
