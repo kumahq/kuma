@@ -5514,10 +5514,15 @@ components:
               type: array
             listeners:
               description: >-
-                Listeners describes zone proxy listeners
-                (ZoneIngress/ZoneEgress)
+                Listeners describes zone proxy listeners embedded in this
+                Dataplane.
 
-                embedded in this Dataplane.
+                When listeners are present and no inbound or gateway is defined
+
+                (zone-proxy-only mode), the data plane proxy acts exclusively as
+                a
+
+                zone ingress, egress, or both instead of a regular sidecar.
               items:
                 description: >-
                   Listener describes a zone proxy listener (ZoneIngress or
@@ -5528,19 +5533,32 @@ components:
                     type: string
                   name:
                     description: >-
-                      Name is used to reference this listener, e.g. via
-                      sectionName in policies.
+                      Name uniquely identifies this listener within the
+                      Dataplane and is
+
+                      used to reference it via sectionName in policies.
                     type: string
                   port:
                     description: Port on which the listener will be exposed.
                     type: integer
                   state:
-                    description: State describes the current state of the listener.
+                    description: >-
+                      State describes the current health state of the listener.
+
+                      The control plane sets this based on the readiness of the
+                      underlying
+
+                      pod and sidecar container.
                     oneOf:
                       - type: string
                       - type: integer
                   type:
-                    description: Type of the zone proxy listener.
+                    description: >-
+                      Type determines the role of this listener: ZoneIngress for
+                      inbound
+
+                      cross-zone traffic or ZoneEgress for outbound external
+                      traffic.
                     oneOf:
                       - type: string
                       - type: integer
@@ -16961,10 +16979,16 @@ components:
                   type: array
                 listeners:
                   description: >-
-                    Listeners describes zone proxy listeners
-                    (ZoneIngress/ZoneEgress)
+                    Listeners describes zone proxy listeners embedded in this
+                    Dataplane.
 
-                    embedded in this Dataplane.
+                    When listeners are present and no inbound or gateway is
+                    defined
+
+                    (zone-proxy-only mode), the data plane proxy acts
+                    exclusively as a
+
+                    zone ingress, egress, or both instead of a regular sidecar.
                   items:
                     description: >-
                       Listener describes a zone proxy listener (ZoneIngress or
@@ -16975,19 +16999,33 @@ components:
                         type: string
                       name:
                         description: >-
-                          Name is used to reference this listener, e.g. via
-                          sectionName in policies.
+                          Name uniquely identifies this listener within the
+                          Dataplane and is
+
+                          used to reference it via sectionName in policies.
                         type: string
                       port:
                         description: Port on which the listener will be exposed.
                         type: integer
                       state:
-                        description: State describes the current state of the listener.
+                        description: >-
+                          State describes the current health state of the
+                          listener.
+
+                          The control plane sets this based on the readiness of
+                          the underlying
+
+                          pod and sidecar container.
                         oneOf:
                           - type: string
                           - type: integer
                       type:
-                        description: Type of the zone proxy listener.
+                        description: >-
+                          Type determines the role of this listener: ZoneIngress
+                          for inbound
+
+                          cross-zone traffic or ZoneEgress for outbound external
+                          traffic.
                         oneOf:
                           - type: string
                           - type: integer

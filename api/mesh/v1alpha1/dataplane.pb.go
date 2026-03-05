@@ -192,8 +192,12 @@ func (Dataplane_Networking_TransparentProxying_IpFamilyMode) EnumDescriptor() ([
 type Dataplane_Networking_Listener_Type int32
 
 const (
+	// ZoneIngress configures this listener to act as a zone ingress,
+	// accepting cross-zone traffic destined for services in this zone.
 	Dataplane_Networking_Listener_ZoneIngress Dataplane_Networking_Listener_Type = 0
-	Dataplane_Networking_Listener_ZoneEgress  Dataplane_Networking_Listener_Type = 1
+	// ZoneEgress configures this listener to act as a zone egress,
+	// forwarding outbound traffic to external services.
+	Dataplane_Networking_Listener_ZoneEgress Dataplane_Networking_Listener_Type = 1
 )
 
 // Enum value maps for Dataplane_Networking_Listener_Type.
@@ -399,8 +403,10 @@ type Dataplane_Networking struct {
 	// are always protected by mTLS and only meant to be consumed internally by
 	// the control plane.
 	Admin *EnvoyAdmin `protobuf:"bytes,8,opt,name=admin,proto3" json:"admin,omitempty"`
-	// Listeners describes zone proxy listeners (ZoneIngress/ZoneEgress)
-	// embedded in this Dataplane.
+	// Listeners describes zone proxy listeners embedded in this Dataplane.
+	// When listeners are present and no inbound or gateway is defined
+	// (zone-proxy-only mode), the data plane proxy acts exclusively as a
+	// zone ingress, egress, or both instead of a regular sidecar.
 	Listeners     []*Dataplane_Networking_Listener `protobuf:"bytes,9,rep,name=listeners,proto3" json:"listeners,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -959,19 +965,22 @@ func (x *Dataplane_Networking_TransparentProxying) GetReachableBackends() *Datap
 }
 
 // Listener describes a zone proxy listener (ZoneIngress or ZoneEgress)
-// embedded in a regular Dataplane. This allows mesh-scoped identity and
-// policy application for zone proxy traffic.
+// embedded in a regular Dataplane.
 type Dataplane_Networking_Listener struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Type of the zone proxy listener.
+	// Type determines the role of this listener: ZoneIngress for inbound
+	// cross-zone traffic or ZoneEgress for outbound external traffic.
 	Type Dataplane_Networking_Listener_Type `protobuf:"varint,1,opt,name=type,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_Listener_Type" json:"type,omitempty"`
 	// Address on which the listener will be exposed.
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	// Port on which the listener will be exposed.
 	Port uint32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
-	// Name is used to reference this listener, e.g. via sectionName in policies.
+	// Name uniquely identifies this listener within the Dataplane and is
+	// used to reference it via sectionName in policies.
 	Name string `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	// State describes the current state of the listener.
+	// State describes the current health state of the listener.
+	// The control plane sets this based on the readiness of the underlying
+	// pod and sidecar container.
 	State         Dataplane_Networking_Listener_State `protobuf:"varint,5,opt,name=state,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_Listener_State" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
