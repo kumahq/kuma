@@ -186,6 +186,14 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
+		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager, g.createZoneOnFirstConnect); err != nil {
+			if errors.Is(err, context.Canceled) {
+				processingErrorsCh <- nil
+				return
+			}
+			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
+			return
+		}
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
 		sink := kds_client_v2.NewKDSSyncClient(
 			logger,
