@@ -48,14 +48,7 @@ message Dataplane {
 
     reserved 6; // Formerly ingress mode message, see #3435
 
-    // In some situations, a data plane proxy resides in a private network (e.g.
-    // Docker) and is not reachable via `address` to other data plane proxies.
-    // `advertisedAddress` is configured with a routable address for such data
-    // plane proxy so that other proxies in the mesh can connect to it over
-    // `advertisedAddress` and not via address.
-    //
-    // Envoy still binds to the `address`, not `advertisedAddress`.
-    string advertisedAddress = 7;
+    reserved 7; // Formerly advertisedAddress, see #15629
 
     // Inbound describes a service implemented by the data plane proxy.
     // All incoming traffic to a data plane proxy are going through inbound

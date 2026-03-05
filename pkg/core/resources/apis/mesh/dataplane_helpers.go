@@ -112,11 +112,7 @@ func (d *DataplaneResource) GetIP() string {
 	if d == nil {
 		return ""
 	}
-	if d.Spec.Networking.AdvertisedAddress != "" {
-		return d.Spec.Networking.AdvertisedAddress
-	} else {
-		return d.Spec.Networking.Address
-	}
+	return d.Spec.Networking.Address
 }
 
 func (d *DataplaneResource) IsIPv6() bool {
@@ -172,7 +168,6 @@ func (d *DataplaneResource) Hash() []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(core_model.HashMeta(d))
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
 }
 
