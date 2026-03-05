@@ -84,7 +84,7 @@ spec:
 Pros:
 - Good, because it preserves the existing operational model operators are familiar with.
 - Good, because each role scales independently — a zone that primarily serves traffic can scale ingress without scaling egress.
-- Good, because ingress and egress are in separate failure domains; a crash in one does not affect the other (e.g.: incorrect xDS configuration, identity providing error).
+- Good, because ingress and egress are in separate failure domains; a crash in one does not affect the other (e.g.: incorrect xDS configuration, identity provisioning error).
 - Good, because different resource limits and Kubernetes security contexts can be applied per role.
 
 Cons:
@@ -171,5 +171,5 @@ None.
 
 ## Notes
 
-- MADR 094 introduced the `meshes` Helm schema and referenced this document for the topology recommendation (backfill footnote `[^2]`).
+- MADR 094 introduced the `meshes` Helm schema and defers the detailed topology recommendation to this document (footnote `[^2]` will be backfilled there).
 - MADR 095 confirmed a single Dataplane can carry both zone proxy listener types, which is what makes `combinedProxies` technically feasible.
