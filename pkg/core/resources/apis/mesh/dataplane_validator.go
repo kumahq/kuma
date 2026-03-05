@@ -75,6 +75,7 @@ func (d *DataplaneResource) Validate() error {
 		if d.Spec.GetMetrics() != nil {
 			err.Add(validateMetricsBackend(d.Spec.GetMetrics()))
 		}
+		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
 	}
 
 	return err.OrNil()
@@ -290,6 +291,67 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 			}
 		}
 	}
+	return result
+}
+
+func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
+	var result validators.ValidationError
+	path := validators.RootedAt("")
+
+	nameSet := map[string]struct{}{}
+	// collect inbound names for collision detection
+	for _, inbound := range networking.GetInbound() {
+		if n := inbound.GetSectionName(); n != "" {
+			nameSet[n] = struct{}{}
+		}
+	}
+
+	addrPortType := map[string]mesh_proto.Dataplane_Networking_Listener_Type{}
+
+	for i, l := range networking.GetListeners() {
+		indexPath := path.Index(i)
+
+		if l.GetAddress() == "" {
+			result.AddViolationAt(indexPath.Field("address"), "address can't be empty")
+		}
+		if l.GetPort() == 0 {
+			result.AddViolationAt(indexPath.Field("port"), "port must be greater than 0")
+		}
+		if l.GetName() == "" {
+			result.AddViolationAt(indexPath.Field("name"), "name can't be empty")
+		}
+
+		// name uniqueness across inbounds and listeners
+		if l.GetName() != "" {
+			if _, exists := nameSet[l.GetName()]; exists {
+				result.AddViolationAt(indexPath.Field("name"), fmt.Sprintf("name %q must be unique across inbounds and listeners", l.GetName()))
+			}
+			nameSet[l.GetName()] = struct{}{}
+		}
+
+		// address:port must not have mixed types
+		key := fmt.Sprintf("%s:%d", l.GetAddress(), l.GetPort())
+		if existingType, exists := addrPortType[key]; exists {
+			if existingType != l.GetType() {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is used by listeners of different types", key))
+			}
+		} else {
+			addrPortType[key] = l.GetType()
+		}
+
+		// address:port must not collide with inbound ports
+		for _, inbound := range networking.GetInbound() {
+			inboundAddr := inbound.GetAddress()
+			if inboundAddr == "" {
+				inboundAddr = networking.GetAddress()
+			}
+			if fmt.Sprintf("%s:%d", inboundAddr, inbound.GetPort()) == key {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s collides with an inbound listener", key))
+				break
+			}
+		}
+	}
+
 	return result
 }
 

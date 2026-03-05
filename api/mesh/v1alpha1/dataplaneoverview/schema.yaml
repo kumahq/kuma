@@ -213,6 +213,37 @@ components:
                         type: object
                     type: object
                   type: array
+                listeners:
+                  description: |-
+                    Listeners describes zone proxy listeners (ZoneIngress/ZoneEgress)
+                    embedded in this Dataplane. When present, the data plane proxy acts as
+                    both a regular sidecar and a zone proxy.
+                  items:
+                    description: Listener describes a zone proxy listener (ZoneIngress
+                      or ZoneEgress) embedded in a regular Dataplane.
+                    properties:
+                      address:
+                        description: Address on which the listener will be exposed.
+                        type: string
+                      name:
+                        description: Name is used to reference this listener, e.g.
+                          via sectionName in policies.
+                        type: string
+                      port:
+                        description: Port on which the listener will be exposed.
+                        type: integer
+                      state:
+                        description: State describes the current state of the listener.
+                        oneOf:
+                        - type: string
+                        - type: integer
+                      type:
+                        description: Type of the zone proxy listener.
+                        oneOf:
+                        - type: string
+                        - type: integer
+                    type: object
+                  type: array
                 outbound:
                   description: |-
                     Outbound describes a list of services consumed by the data plane proxy.

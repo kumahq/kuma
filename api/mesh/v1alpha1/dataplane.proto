@@ -328,6 +328,43 @@ message Dataplane {
     // are always protected by mTLS and only meant to be consumed internally by
     // the control plane.
     EnvoyAdmin admin = 8;
+
+    // Listener describes a zone proxy listener (ZoneIngress or ZoneEgress)
+    // embedded in a regular Dataplane. This allows mesh-scoped identity and
+    // policy application for zone proxy traffic.
+    message Listener {
+      enum Type {
+        ZoneIngress = 0;
+        ZoneEgress = 1;
+      }
+
+      enum State {
+        // Listener is ready to serve traffic.
+        Ready = 0;
+        // Listener is not ready to serve traffic.
+        NotReady = 1;
+      }
+
+      // Type of the zone proxy listener.
+      Type type = 1;
+
+      // Address on which the listener will be exposed.
+      string address = 2;
+
+      // Port on which the listener will be exposed.
+      uint32 port = 3 [(validate.rules).uint32 = {lte: 65535}];
+
+      // Name is used to reference this listener, e.g. via sectionName in policies.
+      string name = 4;
+
+      // State describes the current state of the listener.
+      State state = 5;
+    }
+
+    // Listeners describes zone proxy listeners (ZoneIngress/ZoneEgress)
+    // embedded in this Dataplane. When present, the data plane proxy acts as
+    // both a regular sidecar and a zone proxy.
+    repeated Listener listeners = 9;
   }
 
   // Networking describes inbound and outbound interfaces of the data plane
