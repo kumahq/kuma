@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# List MADRs with their status. Optionally filter by status.
+# List MADRs with their status.
 #
 # Usage:
-#   ./list.sh              # list all MADRs
+#   ./list.sh                              # list all MADRs
+#   ./list.sh | grep '\[accepted\]'        # example: filter by status using grep
 
 set -euo pipefail
 
