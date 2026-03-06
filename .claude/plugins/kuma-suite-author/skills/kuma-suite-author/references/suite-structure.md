@@ -1,22 +1,35 @@
 # Contents
 
-1. [Suite directory layout](#suite-directory-layout)
-2. [suite.md structure](#suitemd-structure)
-3. [Baseline directory](#baseline-directory)
-4. [Groups directory](#groups-directory)
-5. [Group file structure](#group-file-structure)
-6. [Standard group structure](#standard-group-structure)
-7. [Manifest conventions](#manifest-conventions)
-8. [Validation step patterns](#validation-step-patterns)
-9. [Artifact capture patterns](#artifact-capture-patterns)
-10. [Execution contract](#execution-contract)
-11. [Reference](#reference)
+1. [Suite naming](#suite-naming)
+2. [Suite directory layout](#suite-directory-layout)
+3. [suite.md structure](#suitemd-structure)
+4. [Baseline directory](#baseline-directory)
+5. [Groups directory](#groups-directory)
+6. [Group file structure](#group-file-structure)
+7. [Standard group structure](#standard-group-structure)
+8. [Manifest conventions](#manifest-conventions)
+9. [Validation step patterns](#validation-step-patterns)
+10. [Artifact capture patterns](#artifact-capture-patterns)
+11. [Execution contract](#execution-contract)
+12. [Reference](#reference)
 
 ---
 
 # Suite structure
 
 Format spec for test suites consumed by `kuma-manual-test`.
+
+## Suite naming
+
+Suite names follow the pattern `{feature}-{scope}` in kebab-case:
+
+- `{feature}`: the primary resource or feature being tested (e.g., `meshmetric`, `meshtrace`, `motb`)
+- `{scope}`: what aspect is covered (e.g., `core`, `pipe-mode`, `multizone`, `backendref-validation`)
+
+Good: `meshmetric-core`, `motb-pipe-mode`, `meshtrace-otel-backends`, `delegated-gw-dataplane-targetref`
+Bad: `test-suite-1`, `full`, `feature-branch`, `my-test`
+
+For single-feature suites testing the full surface, use `{feature}-core`. For focused suites testing a specific aspect, name the aspect explicitly.
 
 ## Suite directory layout
 
@@ -51,6 +64,7 @@ Links to each section within suite.md.
 - target environments: single-zone / multi-zone / universal
 - required dependencies: <workloads, collectors, etc.>
 - skipped groups: <group IDs not included, with reason>
+- keep_clusters: false (set true to skip cluster teardown after the run)
 ```
 
 ### Baseline manifests table

@@ -23,7 +23,7 @@ Parse from `$ARGUMENTS`:
 | `--mode`        | `generate`           | `generate` (full AI) or `wizard` (interactive step-by-step) |
 | `--from-pr`     | -                    | GitHub PR URL to scope the feature from                     |
 | `--from-branch` | -                    | Git branch to diff against master for scope                 |
-| `--suite-name`  | derived from feature | Override output filename                                    |
+| `--suite-name`  | derived from feature | Override suite name (must follow `{feature}-{scope}` pattern) |
 
 ## Workflow - generate mode (default)
 
@@ -117,7 +117,7 @@ Read `references/suite-structure.md` for the format spec.
 
 Build the suite with base groups (skip groups that don't apply, document why):
 
-| Group              | Source                             | Contents                                                  |
+| Category           | Source                             | Contents                                                  |
 | :----------------- | :--------------------------------- | :-------------------------------------------------------- |
 | G1 CRUD            | API spec struct                    | create/read/update/delete manifests with realistic values |
 | G2 Validation      | validator.go                       | invalid manifests that trigger each rejection path        |
@@ -167,8 +167,17 @@ If user picks add/remove/edit: handle the change, then present the summary again
 
 ### Step 8: Save suite
 
+Derive the suite name following the `{feature}-{scope}` pattern from `references/suite-structure.md`:
+
+- Single-feature full-surface suite: `{feature}-core` (e.g., `meshmetric-core`, `meshtrace-core`)
+- Focused aspect suite: `{feature}-{aspect}` (e.g., `motb-pipe-mode`, `meshtrace-otel-backends`)
+- Bug fix or narrow scope: use the specific area (e.g., `delegated-gw-dataplane-targetref`)
+- From PR/branch: derive from the feature area, not the branch name
+
+Reject generic names like `test-suite-1`, `full`, `feature-branch`, `my-test`. The `--suite-name` flag overrides derivation.
+
 ```bash
-SUITE_NAME="${SUITE_NAME:-<derived-from-feature>}"
+SUITE_NAME="${SUITE_NAME:-<derived-per-rules-above>}"
 SUITE_DIR="${DATA_DIR}/suites/${SUITE_NAME}"
 mkdir -p "${SUITE_DIR}/baseline" "${SUITE_DIR}/groups"
 ```

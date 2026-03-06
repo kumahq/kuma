@@ -196,10 +196,14 @@ Read `references/troubleshooting.md` for known failure modes.
 
 **Gate**: command log complete (every command has an entry), manifest index complete, all tests have pass/fail, every artifact path in the report resolves to an existing file, `run-status.yaml` has correct final counts, state captures exist for preflight + each completed group + postrun, compactness check passes.
 
-Cluster teardown is optional. Leave clusters running if another run follows. Otherwise:
+After all gates pass, tear down the clusters. This is the default - always clean up unless the user explicitly asks to keep clusters running or the suite metadata includes `keep_clusters: true`.
 
 ```bash
-KIND_CLUSTER_NAME=kuma-1 make k3d/stop
+# Single-zone
+"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-down kuma-1
+
+# Multi-zone (global + 2 zones)
+"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-down kuma-1 kuma-2 kuma-3
 ```
 
 ## Performance toggles
