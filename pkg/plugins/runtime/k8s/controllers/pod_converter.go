@@ -299,20 +299,54 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
-		var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-		var err error
-		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
-			ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, services)
-			if err != nil {
-				return nil, err
+		var regularServices, zoneProxyServices []*kube_core.Service
+		for _, svc := range services {
+			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
+				zoneProxyServices = append(zoneProxyServices, svc)
+			} else {
+				regularServices = append(regularServices, svc)
 			}
 		}
-		dataplane.Networking.Inbound = ifaces
+
+		// Skip inbound generation entirely when the pod is zone-proxy-only
+		// (has zone proxy services but no regular services) to avoid the
+		// serviceless inbound fallback in InboundInterfacesFor.
+		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
+			var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+			var err error
+			if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
+				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, regularServices)
+				if err != nil {
+					return nil, err
+				}
+			}
+			dataplane.Networking.Inbound = ifaces
+		}
+
+		for _, zpsvc := range zoneProxyServices {
+			listeners, lErr := ListenersForService(pod, zpsvc)
+			if lErr != nil {
+				return nil, lErr
+			}
+			dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, listeners...)
+		}
+
+		// Zone-proxy-only dataplane: no inbounds, no gateway, but has listeners.
+		// Set empty reachable_backends so Envoy generates no outbound cluster config.
+		if len(dataplane.Networking.Inbound) == 0 && dataplane.Networking.Gateway == nil &&
+			len(dataplane.Networking.Listeners) > 0 {
+			if dataplane.Networking.TransparentProxying == nil {
+				dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
+			}
+			if dataplane.Networking.TransparentProxying.ReachableBackends == nil {
+				dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
+			}
+		}
 	}
 
 	if !p.KubeOutboundsAsVIPs {

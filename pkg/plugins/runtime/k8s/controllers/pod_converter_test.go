@@ -363,6 +363,21 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:           "35.dataplane.yaml",
 			inboundTagsDisabled: true,
 		}),
+		Entry("36. Zone-proxy-only Pod with ZoneIngress listener", testCase{
+			pod:            "36.pod.yaml",
+			servicesForPod: "36.services-for-pod.yaml",
+			dataplane:      "36.dataplane.yaml",
+		}),
+		Entry("37. Pod with regular inbound and ZoneEgress listener", testCase{
+			pod:            "37.pod.yaml",
+			servicesForPod: "37.services-for-pod.yaml",
+			dataplane:      "37.dataplane.yaml",
+		}),
+		Entry("38. Zone-proxy-only Pod with ZoneIngress listener, sidecar not ready", testCase{
+			pod:            "38.pod.yaml",
+			servicesForPod: "38.services-for-pod.yaml",
+			dataplane:      "38.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
