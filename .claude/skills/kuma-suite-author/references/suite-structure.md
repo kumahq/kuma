@@ -204,6 +204,8 @@ Amendments are permanent fixes to the suite. Future runs use the corrected manif
 
 - Use realistic but minimal manifests - enough to trigger the behavior, no extras
 - Every manifest field must be verified against the CRD or Go API spec before inclusion. See `references/code-reading-guide.md` (Schema verification sources) for the full checklist.
+- Check the policy spec nesting pattern (from/to/rules) before writing manifests. Config like `action` lives at `spec.from[].default.action`, NOT `spec.default.action`. See `references/code-reading-guide.md` (Policy spec nesting patterns) for the full pattern table and correct/incorrect examples.
+- `targetRef.name` and `targetRef.labels` are mutually exclusive - never use both in the same targetRef. Use `name` to target a specific resource, `labels` to target a group.
 
 ## Domain knowledge
 

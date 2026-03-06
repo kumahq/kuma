@@ -1,6 +1,8 @@
 # Contents
 
 1. [Authoring model](#1-authoring-model)
+1b. [Policy spec nesting](#1b-policy-spec-nesting)
+1c. [targetRef constraints](#1c-targetref-constraints)
 2. [Policy role checks](#2-policy-role-checks)
 3. [targetRef guardrails](#3-targetref-guardrails)
 4. [Safe apply flow](#4-safe-apply-flow)
@@ -32,6 +34,24 @@ This file is based on Kuma docs `2.13.x` pages (check kuma.io/docs/ for newer ve
 - On Kubernetes, use `apiVersion: kuma.io/v1alpha1`.
 - Namespace is part of policy behavior.
 - Always set `metadata.labels["kuma.io/mesh"]` explicitly.
+
+## 1b) Policy spec nesting
+
+`Mesh*` policies use three nesting patterns. The pattern determines where config fields live:
+
+| Pattern | Config location | Example policies |
+| :------ | :-------------- | :--------------- |
+| from-based | `spec.from[].default.<conf>` | MeshTrafficPermission, MeshAccessLog, MeshTrace |
+| to-based | `spec.to[].default.<conf>` | MeshRetry, MeshTimeout, MeshCircuitBreaker |
+| rules-based | `spec.rules[].default.<conf>` | MeshProxyPatch |
+
+There is NO `spec.default` at the top level for from/to policies. Each `from[]` or `to[]` entry has its own `targetRef` and `default`.
+
+## 1c) targetRef constraints
+
+- `targetRef.name` and `targetRef.labels` are mutually exclusive. Use `name` to target one resource, `labels` to target a group. Never combine both.
+- `targetRef.kind: Dataplane` with labels targets sidecars and delegated gateways.
+- `targetRef.kind: MeshGateway` targets builtin gateways only.
 
 ## 2) Policy role checks
 

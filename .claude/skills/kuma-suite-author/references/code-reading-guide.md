@@ -4,8 +4,9 @@
 2. [Non-policy features](#non-policy-features)
 3. [What to read for each group type](#what-to-read-for-each-group-type)
 4. [Variant detection signals](#variant-detection-signals)
-5. [Schema verification sources](#schema-verification-sources)
-6. [Tips](#tips)
+5. [Policy spec nesting patterns](#policy-spec-nesting-patterns)
+6. [Schema verification sources](#schema-verification-sources)
+7. [Tips](#tips)
 
 ---
 
@@ -69,6 +70,45 @@ While reading code for G1-G7, also scan for patterns that indicate feature varia
 
 See `references/variant-detection.md` for the full methodology, signal strength classification, and a worked MOTB example.
 
+## Policy spec nesting patterns
+
+Kuma `Mesh*` policies use three structural patterns for their spec. The nesting determines where config fields like `action`, `default`, or `conf` live. Getting this wrong produces manifests that pass YAML parsing but are silently ignored at runtime.
+
+| Pattern | Spec fields | Config location | Example policies |
+| :------ | :---------- | :-------------- | :--------------- |
+| from-based | `targetRef` + `from[]` | `spec.from[].default.<conf>` | MeshTrafficPermission, MeshAccessLog, MeshTrace |
+| to-based | `targetRef` + `to[]` | `spec.to[].default.<conf>` | MeshRetry, MeshTimeout, MeshCircuitBreaker |
+| rules-based | `targetRef` + `rules[]` | `spec.rules[].default.<conf>` | MeshProxyPatch |
+
+Each `from[]` or `to[]` entry has its own `targetRef` (matching clients or destinations) and `default` (the config for that match). There is NO `spec.default` at the top level for from/to policies.
+
+**Wrong** (common mistake):
+```yaml
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: my-app
+  default:
+    action: Allow
+```
+
+**Correct** (MeshTrafficPermission):
+```yaml
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: my-app
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+```
+
+To determine the pattern for a policy, read its Go spec struct. Look for `From *[]From`, `To *[]To`, or `Rules *[]Rule` fields.
+
 ## Schema verification sources
 
 Every generated manifest (Kubernetes or Universal) must be verified against the actual schema before inclusion in the suite. Common mistakes: wrong field names, wrong namespace, wrong enum values, missing required fields.
@@ -101,6 +141,8 @@ Every generated manifest (Kubernetes or Universal) must be verified against the 
 - `kuma.io/mesh` label goes in `metadata.labels` for Kubernetes, `mesh` field at top level for Universal
 - Policy scope is NOT the same as CRD scope - a policy can be Mesh-scoped (conceptually) but Namespaced (in K8s CRD scope)
 - `targetRef.kind: Dataplane` with labels targets individual dataplanes; `targetRef.kind: MeshGateway` targets builtin gateways only
+- `targetRef.name` and `targetRef.labels` are mutually exclusive - use one or the other, never both. The TargetRef struct doc says: "Either Labels or Name and Namespace can be used."
+- from/to nesting: config lives at `spec.from[].default` or `spec.to[].default`, NOT `spec.default`. There is no top-level `default` field on from/to policies. See [Policy spec nesting patterns](#policy-spec-nesting-patterns) above.
 
 ### Verification workflow
 

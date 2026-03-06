@@ -161,6 +161,7 @@ For each group entry include: one-line description, source file path, and whethe
 
 - CRD scope: Namespaced or Cluster (from `deployments/charts/kuma/crds/`)
 - Policy scope: Mesh or Global (from `+kuma:policy:scope=` marker)
+- Spec nesting pattern: from-based (`spec.from[].default`), to-based (`spec.to[].default`), or rules-based (`spec.rules[].default`). Identify by checking which top-level fields exist in the Go spec struct (`From *[]From`, `To *[]To`, `Rules *[]Rule`). See [references/code-reading-guide.md](references/code-reading-guide.md) (Policy spec nesting patterns).
 - Spec field tree: JSON field names at each nesting level (from Go struct JSON tags)
 - Enum fields: field path and allowed values (from `+kubebuilder:validation:Enum=` markers)
 - Required fields: non-pointer fields without `omitempty`
@@ -220,7 +221,9 @@ For each group (base and variant):
   3. Confirm namespace placement: Namespaced CRDs need `metadata.namespace`; mesh-scoped resources need `kuma.io/mesh` label (K8s) or `mesh` field (Universal).
   4. Confirm required fields are present (non-pointer Go fields without `omitempty`).
   5. Confirm `targetRef.kind` is valid for the policy type.
-  6. If unsure about a field, read the CRD file (`deployments/charts/kuma/crds/kuma.io_<plural>.yaml`) to verify.
+  6. Confirm `targetRef.name` and `targetRef.labels` are not used together (mutually exclusive).
+  7. Confirm spec nesting matches the policy pattern: `from[].default` for from-based, `to[].default` for to-based, `rules[].default` for rules-based. Never use `spec.default` on from/to policies.
+  8. If unsure about a field, read the CRD file (`deployments/charts/kuma/crds/kuma.io_<plural>.yaml`) to verify.
 - Include specific validation commands (kubectl, kumactl, config_dump).
 - State expected outcomes clearly.
 - List artifacts to capture.
