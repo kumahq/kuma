@@ -106,33 +106,57 @@ Select a suite that matches the feature area, or copy `examples/suite-template.m
 
 For directory suites (`SUITE_DIR` is set):
 
-1. Read `${SUITE_DIR}/suite.md` for overview, group table, and execution contract.
-2. Before G1, apply each baseline manifest listed in the baseline table from `${SUITE_DIR}/baseline/`.
-3. Before each group, read the group file from `${SUITE_DIR}/groups/` using the path from the group table.
-4. After completing a group, the group file content can be dropped from context.
+1. Read `${SUITE_DIR}/suite.md` for overview, group table, baseline table, and execution contract.
+2. Before G1, apply each baseline manifest from `${SUITE_DIR}/baseline/` using the baseline table. Copy each to `${RUN_DIR}/manifests/` and apply from there.
+3. Before each group, read the group file from `${SUITE_DIR}/groups/` using the file path in the group table. The group file is the **authoritative source** for that group's manifests, validation commands, and expected outcomes. Extract inline YAML manifests from fenced code blocks, write them to `${RUN_DIR}/manifests/`, and apply from there. Do not improvise, modify, or rewrite manifests from group files.
+4. Follow the group file's validation commands and expected outcomes exactly. If something doesn't match, report it as a finding - do not silently adjust expectations.
+5. After completing a group, the group file content can be dropped from context.
 
 For legacy single-file suites: read the entire suite file as before.
 
+**Deviation rule**: if any step requires diverging from the suite definition (different values, skipped step, reordered steps, extra steps, changed expected outcome), use AskUserQuestion for approval BEFORE making the change. Record every deviation in the report with what changed, why, and whether user-approved or suite-allowed.
+
 For each test step:
 
-1. Create or copy manifest to a working file.
-2. Apply through the tracked script only.
-3. Collect runtime artifacts (log ad-hoc commands with `"$SKILL_DIR/scripts/record-command.sh"`).
-4. Write result into the report.
+1. Write manifest to `${RUN_DIR}/manifests/` (copy from suite baseline/groups, or write inline YAML there - never to `/tmp`). When the suite group provides inline YAML, use it verbatim. If you think a manifest needs changes, ask the user first.
+2. Validate and apply through the tracked scripts.
+3. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.). Record **each one** via `"$SKILL_DIR/scripts/record-command.sh"`, saving output to `artifacts/`.
+4. Run cleanup commands (`kubectl delete`) if the suite step requires it. Record each one.
+5. Write result into the report. Every artifact path you reference must point to an existing file.
 
 ```bash
+# Write manifest to run dir first
 "$SKILL_DIR/scripts/apply-tracked-manifest.sh" \
   --run-dir "${RUN_DIR}" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
-  --manifest "<manifest-path>" \
+  --manifest "${RUN_DIR}/manifests/<file>" \
   --step "<step-name>"
+
+# Record every verification/cleanup command
+"$SKILL_DIR/scripts/record-command.sh" \
+  --run-dir "${RUN_DIR}" \
+  --phase "test" \
+  --output "artifacts/<artifact-file>.log" \
+  -- <command>
 ```
 
-After each test group, update `run-status.yaml` with `last_completed_group`, `next_planned_group`, and pass/fail counts.
+After completing each group (hard gate - do not skip any of these):
+
+1. Capture state:
+
+```bash
+"$SKILL_DIR/scripts/capture-state.sh" \
+  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
+  --run-dir "${RUN_DIR}" \
+  --label "after-<group-id>"
+```
+
+2. Update `run-status.yaml` with `last_completed_group`, `next_planned_group`, pass/fail/skipped counts, and `last_updated_utc`.
+3. Verify `run-status.yaml` was written correctly before starting the next group.
 
 On first unexpected failure, go to Phase 5.
 
-**Gate**: all planned tests have pass/fail entries in the report.
+**Gate**: all planned tests have pass/fail entries in the report. Every artifact path in the report resolves to an existing file. `run-status.yaml` reflects final counts.
 
 ## Phase 5 - failure handling
 
@@ -165,10 +189,13 @@ Read `references/troubleshooting.md` for known failure modes.
 
 **Gate**: all of these are true before marking the run complete:
 
-- Command log is complete
+- Command log is complete (every command executed has an entry)
 - Manifest index includes every apply
 - Report has pass or fail for all planned tests
 - Failures include triage details and artifact paths
+- Every artifact path referenced in the report resolves to an existing file in the run directory
+- `run-status.yaml` has correct final counts matching the report
+- State captures exist for preflight, each completed group, and postrun
 - Report compactness check passes
 
 Cluster teardown is optional. Leave clusters running if another run follows immediately. Otherwise:

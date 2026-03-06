@@ -20,11 +20,16 @@ Rules for any AI agent executing manual tests with this harness.
 
 1. Use locally built `kumactl` from `build/` only. Never the system binary.
 2. Apply every manifest through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`.
-3. Record every state-changing command in the run command log via `"$SKILL_DIR/scripts/record-command.sh"`.
+3. Record **every** command executed against the cluster or kumactl via `"$SKILL_DIR/scripts/record-command.sh"`. This means: `kumactl inspect`, `curl`, `kubectl exec`, `kubectl get`, `kubectl logs`, `kubectl delete`, and any other command that touches the cluster or produces test evidence. If you ran it, record it. Unrecorded commands make the run non-reproducible.
 4. Run server-side dry-run validation before every apply.
-5. Capture cluster state snapshots before and after each test group.
+5. Capture cluster state snapshots before and after each test group. This is a hard gate - do not start the next group until the state capture for the completed group is saved.
 6. Stop and triage on first unexpected failure.
 7. Keep reports concise - store raw output in `artifacts/`, reference file paths.
+8. Never create manifests in `/tmp` or any location outside `${RUN_DIR}/manifests/`. All manifests must be written to the run directory before apply.
+9. When a suite group provides inline manifest YAML, use it verbatim. Do not change names, namespaces, labels, or any fields. If the suite manifest is wrong, note it in the report and SKIP the step - do not silently modify it.
+10. Every artifact path written in the report must resolve to an existing file in the run directory. Before closeout, verify every path. A report that references missing files is a broken run.
+11. Update `run-status.yaml` after every completed group with `last_completed_group`, `next_planned_group`, counts, and timestamp. This is a hard gate - do not start the next group without updating status first.
+12. **No autonomous deviations.** Any divergence from the suite definition - different manifest values, skipped steps, reordered steps, extra steps, modified expected outcomes - requires explicit user approval via AskUserQuestion BEFORE the change is made. The only exception is when the suite definition itself explicitly marks a decision as agent-discretionary (e.g., "agent may choose" or "optional"). Even suite-allowed deviations must be recorded. Record every deviation in the report as a "Deviation" entry with: (a) what was changed, (b) why, (c) whether it was user-approved or suite-allowed, and (d) the exact user response if user-approved.
 
 ## Operating mode
 
@@ -78,9 +83,12 @@ This enables resuming partial runs. See `references/workflow.md` (resuming a par
 ## Artifacts to collect per test case
 
 - Manifest file copy in `runs/<run-id>/manifests/*.yaml`
-- Command output logs in `runs/<run-id>/artifacts/*.log`
-- Command log entry in `runs/<run-id>/commands/command-log.md`
+- Command output logs in `runs/<run-id>/artifacts/*.log` for every command (apply, inspect, curl, delete, etc.)
+- Command log entry in `runs/<run-id>/commands/command-log.md` for every command executed
+- State capture in `runs/<run-id>/state/` after each group completion
 - Result and interpretation in `runs/<run-id>/reports/manual-test-report.md`
+
+Every verification command (`kumactl inspect`, `curl`, `kubectl get`) must produce an artifact file. Every cleanup command (`kubectl delete`) must have a command log entry. If a command was worth running, it was worth recording.
 
 ## Failure policy
 

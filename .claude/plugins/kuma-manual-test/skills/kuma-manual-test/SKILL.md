@@ -29,9 +29,14 @@ Parse from `$ARGUMENTS`:
 
 1. Use locally built `kumactl` from `build/` only.
 2. Apply every manifest through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`.
-3. Record every state-changing command via `"$SKILL_DIR/scripts/record-command.sh"`.
+3. Record **every** command executed against the cluster or kumactl via `"$SKILL_DIR/scripts/record-command.sh"`. This includes `kumactl inspect`, `curl`, `kubectl delete`, `kubectl exec`, `kubectl get`, `kubectl logs` - not just applies. If it touches the cluster or produces test evidence, record it.
 4. Stop and triage on first unexpected failure.
 5. Never use `--validate=false` on any kubectl command. Validation errors mean the manifest or CRD is wrong - fix the root cause.
+6. Never create manifests in `/tmp`. Write all manifests to `${RUN_DIR}/manifests/` before applying.
+7. When a suite group provides inline manifest YAML, use it verbatim. Do not improvise names, namespaces, or fields unless the user explicitly requests it.
+8. After completing each test group, you MUST (a) capture state with `capture-state.sh`, (b) update `run-status.yaml`, and (c) verify these files before starting the next group. This is a hard gate - do not proceed without it.
+9. Every artifact path written in the report must resolve to an existing file. Verify before closeout.
+10. **No autonomous deviations.** If a test step needs to diverge from the suite definition (different manifest values, skipped steps, changed order, extra steps, modified expected outcomes), you MUST use AskUserQuestion to get explicit approval BEFORE making the change. The only exception is when the suite definition itself explicitly marks something as agent-discretionary. Record every deviation decision in the report with: what changed, why, and whether it was user-approved or suite-allowed.
 
 Read `references/agent-contract.md` for full agent behavior rules and artifact requirements.
 
@@ -124,27 +129,48 @@ Read `references/mesh-policies.md` when the suite tests any `Mesh*` policy.
 
 Select a suite from the positional argument, or use AskUserQuestion if none was provided. Copy `examples/suite-template.md` for new features.
 
-For directory suites (`SUITE_DIR` is set): read `${SUITE_DIR}/suite.md` for the group table and execution contract. Before G1, apply all manifests listed in the baseline table from `${SUITE_DIR}/baseline/`. For each group, read the group file from `${SUITE_DIR}/groups/` on demand using the file path from the group table. For legacy single-file suites: read the entire file as before.
+For directory suites (`SUITE_DIR` is set):
+
+1. Read `${SUITE_DIR}/suite.md` for the group table, baseline table, and execution contract.
+2. Before G1, apply all baseline manifests from `${SUITE_DIR}/baseline/` using the baseline table.
+3. Before each group, read the group file from `${SUITE_DIR}/groups/` using the file path in the group table. The group file is the **authoritative source** for that group's manifests, commands, and expected outcomes. Use its inline YAML manifests verbatim - copy them to `${RUN_DIR}/manifests/` and apply from there. Do not improvise or rewrite manifests.
+4. After completing a group, the group file content can be dropped from context.
+
+For legacy single-file suites: read the entire file as before.
 
 For each test step:
 
-1. Validate the manifest.
-2. Apply through the tracked script.
-3. Collect runtime artifacts with `"$SKILL_DIR/scripts/record-command.sh"`.
-4. Write result into the report.
-5. Update `run-status.yaml` with pass/fail counts after each group.
+1. Write manifest to `${RUN_DIR}/manifests/` (copy from suite or create there - never `/tmp`).
+2. Validate the manifest.
+3. Apply through the tracked script.
+4. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.) and record each one via `record-command.sh`, saving output to `artifacts/`.
+5. Run any cleanup commands (`kubectl delete`) and record each one via `record-command.sh`.
+6. Write result into the report. Every artifact path you reference must point to a real file.
 
 ```bash
 "$SKILL_DIR/scripts/apply-tracked-manifest.sh" \
   --run-dir "${RUN_DIR}" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
-  --manifest "<path>" \
+  --manifest "${RUN_DIR}/manifests/<manifest-file>" \
   --step "<step-name>"
+```
+
+After completing each group (hard gate - do not skip):
+
+```bash
+# 1. Capture state
+"$SKILL_DIR/scripts/capture-state.sh" \
+  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
+  --run-dir "${RUN_DIR}" \
+  --label "after-<group-id>"
+
+# 2. Update run-status.yaml with last_completed_group, next_planned_group, counts
+# 3. Verify run-status.yaml was written correctly before proceeding
 ```
 
 On first unexpected failure, go to Phase 5.
 
-**Gate**: all planned tests have pass/fail entries in the report.
+**Gate**: all planned tests have pass/fail entries in the report. Every artifact path in the report resolves to an existing file. `run-status.yaml` reflects final counts.
 
 ### Phase 5: Failure handling
 
@@ -168,7 +194,7 @@ Read `references/troubleshooting.md` for known failure modes.
   --report "${RUN_DIR}/reports/manual-test-report.md"
 ```
 
-**Gate**: command log complete, manifest index complete, all tests have pass/fail, compactness check passes.
+**Gate**: command log complete (every command has an entry), manifest index complete, all tests have pass/fail, every artifact path in the report resolves to an existing file, `run-status.yaml` has correct final counts, state captures exist for preflight + each completed group + postrun, compactness check passes.
 
 Cluster teardown is optional. Leave clusters running if another run follows. Otherwise:
 

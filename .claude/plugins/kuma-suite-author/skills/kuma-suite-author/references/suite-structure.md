@@ -117,9 +117,10 @@ Any setup specific to this group beyond the baseline manifests.
 
 Each step includes:
 
-- Inline YAML manifests in fenced code blocks
-- Validation commands to run
+- Inline YAML manifests in fenced code blocks. These are **authoritative** - `kuma-manual-test` will use them verbatim without modification. Make sure every field is correct (name, namespace, labels, spec) because the test runner is not allowed to silently fix them.
+- Validation commands to run (kumactl inspect, curl, kubectl get, etc.)
 - Expected results stated clearly
+- Cleanup commands if the step requires deleting resources before the next step
 
 ### Artifacts
 
@@ -184,8 +185,13 @@ kubectl logs -n kuma-system deploy/kuma-control-plane --tail=50
 Every suite must include this checklist in suite.md:
 
 - all manifests applied through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`
+- all commands (inspect, curl, delete, kubectl get, etc.) recorded via `"$SKILL_DIR/scripts/record-command.sh"`
+- cluster state captured after each completed group via `"$SKILL_DIR/scripts/capture-state.sh"`
+- `run-status.yaml` updated after each group with counts and last_completed_group
 - all failures trigger immediate triage before next group
-- all pass/fail decisions include artifact pointers
+- all pass/fail decisions include artifact pointers to existing files
+- deviations from suite definitions require user approval and are recorded in the report
+- inline manifests in group files are authoritative - the test runner must use them verbatim
 - edge cases from `references/mesh-policies.md` included when suite tests Mesh\* policies
 
 ## Reference
