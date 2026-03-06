@@ -5,9 +5,53 @@ description: >-
   Use when running manual verification, testing policy changes on real clusters, validating xDS
   config generation, or doing k3d manual test runs for any Kuma feature area.
 argument-hint: "[suite-path] [--profile single-zone|multi-zone] [--repo /path/to/kuma] [--run-id ID] [--resume RUN_ID]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
+allowed-tools: AskUserQuestion, Bash, Edit, Glob, Grep, Read, Task, Write
 user-invocable: true
 disable-model-invocation: true
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/guard-bash.sh"
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/guard-write.sh"
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/verify-bash.sh"
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/audit.sh"
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/verify-write.sh"
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/audit.sh"
+  PostToolUseFailure:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/enrich-failure.sh"
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/audit.sh"
+  SubagentStart:
+    - matcher: "general-purpose"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/context-preflight.sh"
+  SubagentStop:
+    - matcher: "general-purpose"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/validate-preflight.sh"
+  Stop:
+    - hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-manual-test/scripts/hooks/guard-incomplete-stop.sh"
 ---
 
 # Kuma manual test
@@ -26,6 +70,19 @@ Parse from `$ARGUMENTS`:
 | `--run-id`   | timestamp-based | Override run identifier                                                                                                           |
 | `--resume`   | -               | Resume a partial run by its run ID                                                                                                |
 
+## Preprocessed context
+
+- Data directory: !`echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test"`
+- Home: !`echo "$HOME"`
+- Timestamp: !`date +%Y%m%d-%H%M%S`
+- Session ID: ${CLAUDE_SESSION_ID}
+- Docker: !`docker info >/dev/null 2>&1 && echo "running" || echo "not running"`
+- k3d: !`command -v k3d >/dev/null 2>&1 && echo "installed" || echo "MISSING"`
+- kubectl: !`command -v kubectl >/dev/null 2>&1 && echo "installed" || echo "MISSING"`
+- helm: !`command -v helm >/dev/null 2>&1 && echo "installed" || echo "MISSING"`
+
+Use these pre-resolved values throughout the run. `DATA_DIR` is the data directory above. `HOME` is the home path above. The timestamp above becomes the default `RUN_ID` suffix. The session ID tracks which Claude Code session produced this run. If the session ID is empty or contains literal `${`, use `standalone` instead. If Docker shows "not running" or any tool shows "MISSING", stop immediately and report the problem.
+
 ## Non-negotiable rules
 
 1. Use locally built `kumactl` from `build/` only.
@@ -43,17 +100,19 @@ Read [references/agent-contract.md](references/agent-contract.md) for full agent
 
 ## Workflow
 
+Read [references/workflow.md](references/workflow.md) for supplementary phase details and verification gates.
+
 ### Phase 0: Environment check
 
-1. Resolve persistent data directory:
+1. Set `DATA_DIR` to the pre-resolved data directory from "Preprocessed context". Create the subdirectories:
 
 ```bash
-DATA_DIR="$(echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test")"
+DATA_DIR="<data directory from Preprocessed context>"
 mkdir -p "${DATA_DIR}/suites" "${DATA_DIR}/runs"
 ```
 
 2. Resolve `REPO_ROOT`: use `--repo` flag if provided, otherwise check if cwd has `go.mod` containing `kumahq/kuma`. Fail with a message if neither works.
-3. Confirm Docker is running: `docker info >/dev/null 2>&1`.
+3. Docker status and tool availability are pre-resolved in "Preprocessed context". If Docker is "not running" or any tool is "MISSING", stop and report the problem. No need to re-check.
 4. Build local kumactl:
 
 ```bash
@@ -68,8 +127,9 @@ KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh" --repo-root "${RE
 
 ```bash
 RUNS_DIR="${DATA_DIR}/runs"
-RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-manual}"
-"${CLAUDE_SKILL_DIR}/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" "${RUN_ID}"
+RUN_ID="${RUN_ID:-<timestamp from Preprocessed context>-manual}"  # override with --run-id flag
+SESSION_ID="<session ID from Preprocessed context, or 'standalone' if empty/unreplaced>"
+"${CLAUDE_SKILL_DIR}/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" --session-id "${SESSION_ID}" "${RUN_ID}"
 RUN_DIR="${RUNS_DIR}/${RUN_ID}"
 ```
 
@@ -91,11 +151,13 @@ Fill `run-metadata.yaml` with profile, feature scope, and kumactl version before
 
 Read [references/cluster-setup.md](references/cluster-setup.md) before starting this phase.
 
+Select the cluster topology based on the `--profile` flag (default: `single-zone`):
+
 ```bash
-# Single-zone:
+# Single-zone (--profile single-zone):
 "${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
 
-# Or multi-zone:
+# Multi-zone (--profile multi-zone):
 "${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
 ```
 
@@ -109,28 +171,33 @@ kubectl --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
 
 **Gate**: `kubectl get pods -n kuma-system` shows all pods Running/Ready.
 
-### Phase 3: Preflight
+### Phase 3: Preflight (spawned agent)
 
-```bash
-"${CLAUDE_SKILL_DIR}/scripts/preflight.sh" \
-  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
-  --run-dir "${RUN_DIR}" \
-  --repo-root "${REPO_ROOT}"
+Spawn a `general-purpose` preflight agent to run cluster readiness checks and capture initial state. This isolates verbose cluster introspection (kubectl describe, logs, events) from the main context.
 
-"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
-  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
-  --run-dir "${RUN_DIR}" \
-  --label "preflight"
-```
+Create the agent with a prompt that includes:
 
-Do not start tests until preflight exits 0.
+- Kubeconfig path: `<Home from Preprocessed context>/.kube/kind-kuma-1-config`
+- Run directory: `${RUN_DIR}`
+- Repo root: `${REPO_ROOT}`
+- Preflight script path: `${CLAUDE_SKILL_DIR}/scripts/preflight.sh`
+- Capture script path: `${CLAUDE_SKILL_DIR}/scripts/capture-state.sh`
+- Reference files to read: the cluster-setup and validation references from Phase 4 (pass their absolute paths)
+
+The agent must:
+
+1. Run `preflight.sh` with the kubeconfig, run-dir, and repo-root flags.
+2. Run `capture-state.sh` with kubeconfig, run-dir, and label `preflight`.
+3. Return ONLY: pass/fail result, state capture directory path, and any warnings or blockers.
+
+Poll the agent task until complete. Do not start tests until the agent reports pass.
 
 ### Phase 4: Execute tests
 
-Read [references/validation.md](references/validation.md) before applying manifests.
-Read [references/mesh-policies.md](references/mesh-policies.md) when the suite tests any `Mesh*` policy.
+Read [references/validation.md](references/validation.md) for the pre-apply checklist and safe apply flow before applying manifests.
+Read [references/mesh-policies.md](references/mesh-policies.md) for policy authoring rules when the suite tests any `Mesh*` policy.
 
-Select a suite from the positional argument, or use AskUserQuestion if none was provided. Copy [examples/suite-template.md](examples/suite-template.md) for new features.
+Select a suite from the positional argument, or use AskUserQuestion if none was provided. Read [examples/suite-template.md](examples/suite-template.md) as the starting point when creating a new suite for an untested feature. Read [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) for a worked example of the expected suite format.
 
 For directory suites (`SUITE_DIR` is set):
 
@@ -251,7 +318,7 @@ Store raw output in `artifacts/` and reference file paths from the report.
 - `assets/manifest-index.template.md` - manifest index template
 - `assets/manual-test-report.template.md` - test report template
 - [examples/suite-template.md](examples/suite-template.md) - generic test suite template
-- [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) - worked example for MOTB testing
+- [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) - worked example for MOTB testing (read when authoring new suites to see the expected format)
 
 ## Example invocations
 

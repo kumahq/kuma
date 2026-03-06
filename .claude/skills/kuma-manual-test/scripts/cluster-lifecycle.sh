@@ -29,7 +29,6 @@ Performance toggles (optional env vars):
 EOF
 }
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root=""
 generated_metallb_manifests=()
 loaded_image_clusters=()
@@ -61,7 +60,7 @@ fi
 cleanup_generated_manifests() {
   local manifest
 
-  for manifest in "${generated_metallb_manifests[@]}"; do
+  for manifest in ${generated_metallb_manifests[@]+"${generated_metallb_manifests[@]}"}; do
     rm -f "${manifest}"
   done
 }
@@ -82,7 +81,7 @@ is_cluster_image_loaded() {
   local cluster_name="$1"
   local loaded
 
-  for loaded in "${loaded_image_clusters[@]}"; do
+  for loaded in ${loaded_image_clusters[@]+"${loaded_image_clusters[@]}"}; do
     if [[ "${loaded}" == "${cluster_name}" ]]; then
       return 0
     fi
@@ -144,7 +143,7 @@ ensure_metallb_manifest() {
     exit 1
   fi
 
-  cat >"${manifest_path}" <<EOF
+  OCTET="${octet}" envsubst '$OCTET' >"${manifest_path}" <<'EOF'
 ---
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
@@ -153,7 +152,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-    - 172.18.${octet}.0/24
+    - 172.18.${OCTET}.0/24
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -214,7 +213,7 @@ deploy_helm() {
     env_cmd+=("K3D_DEPLOY_HELM_DONT_CLEAN=1")
   fi
 
-  "${env_cmd[@]}" make --directory "${repo_root}" k3d/deploy/helm
+  ${env_cmd[@]+"${env_cmd[@]}"} make --directory "${repo_root}" k3d/deploy/helm
 }
 
 resolve_global_kds_address() {
@@ -252,11 +251,8 @@ single_up() {
   load_images_into_cluster_once "${cluster_name}"
   deploy_helm "${cluster_name}" "${kubeconfig_path}" zone
 
-  cat <<EOF
-Single-zone cluster is ready.
-Use kubeconfig:
-  export KUBECONFIG="${kubeconfig_path}"
-EOF
+  printf 'Single-zone cluster is ready.\nUse kubeconfig:\n  export KUBECONFIG="%s"\n' \
+    "${kubeconfig_path}"
 }
 
 single_down() {
@@ -268,15 +264,15 @@ deploy_global() {
   local global_cluster="$1"
   local global_kubeconfig="$2"
   local extra_settings="${K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS:-}"
-  local global_settings="controlPlane.mode=global controlPlane.globalZoneSyncService.type=NodePort"
+  local -a global_settings=(controlPlane.mode=global controlPlane.globalZoneSyncService.type=NodePort)
 
   if [[ -n "${extra_settings}" ]]; then
-    global_settings="${global_settings} ${extra_settings}"
+    global_settings+=("${extra_settings}")
   fi
 
   ensure_cluster_started "${global_cluster}"
   load_images_into_cluster_once "${global_cluster}"
-  deploy_helm "${global_cluster}" "${global_kubeconfig}" global "${global_settings}"
+  deploy_helm "${global_cluster}" "${global_kubeconfig}" global "${global_settings[*]}"
 }
 
 deploy_zone() {
@@ -285,15 +281,15 @@ deploy_zone() {
   local zone_name="$3"
   local global_kds_address="$4"
   local extra_settings="${K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS:-}"
-  local zone_settings="controlPlane.mode=zone controlPlane.zone=${zone_name} controlPlane.kdsGlobalAddress=${global_kds_address} controlPlane.tls.kdsZoneClient.skipVerify=true"
+  local -a zone_settings=("controlPlane.mode=zone" "controlPlane.zone=${zone_name}" "controlPlane.kdsGlobalAddress=${global_kds_address}" "controlPlane.tls.kdsZoneClient.skipVerify=true")
 
   if [[ -n "${extra_settings}" ]]; then
-    zone_settings="${zone_settings} ${extra_settings}"
+    zone_settings+=("${extra_settings}")
   fi
 
   ensure_cluster_started "${zone_cluster}"
   load_images_into_cluster_once "${zone_cluster}"
-  deploy_helm "${zone_cluster}" "${zone_kubeconfig}" zone "${zone_settings}"
+  deploy_helm "${zone_cluster}" "${zone_kubeconfig}" zone "${zone_settings[*]}"
 }
 
 global_zone_up() {
@@ -316,15 +312,8 @@ global_zone_up() {
 
   deploy_zone "${zone_cluster}" "${zone_kubeconfig}" "${zone_name}" "${global_kds_address}"
 
-  cat <<EOF
-Multi-zone clusters are ready.
-Global KDS address:
-  ${global_kds_address}
-Global kubeconfig:
-  export KUBECONFIG_GLOBAL="${global_kubeconfig}"
-Zone kubeconfig:
-  export KUBECONFIG_ZONE="${zone_kubeconfig}"
-EOF
+  printf 'Multi-zone clusters are ready.\nGlobal KDS address:\n  %s\nGlobal kubeconfig:\n  export KUBECONFIG_GLOBAL="%s"\nZone kubeconfig:\n  export KUBECONFIG_ZONE="%s"\n' \
+    "${global_kds_address}" "${global_kubeconfig}" "${zone_kubeconfig}"
 }
 
 global_zone_down() {
@@ -361,17 +350,8 @@ global_two_zones_up() {
   deploy_zone "${zone1_cluster}" "${zone1_kubeconfig}" "${zone1_name}" "${global_kds_address}"
   deploy_zone "${zone2_cluster}" "${zone2_kubeconfig}" "${zone2_name}" "${global_kds_address}"
 
-  cat <<EOF
-Three-cluster multi-zone setup is ready.
-Global KDS address:
-  ${global_kds_address}
-Global kubeconfig:
-  export KUBECONFIG_GLOBAL="${global_kubeconfig}"
-Zone-1 kubeconfig:
-  export KUBECONFIG_ZONE1="${zone1_kubeconfig}"
-Zone-2 kubeconfig:
-  export KUBECONFIG_ZONE2="${zone2_kubeconfig}"
-EOF
+  printf 'Three-cluster multi-zone setup is ready.\nGlobal KDS address:\n  %s\nGlobal kubeconfig:\n  export KUBECONFIG_GLOBAL="%s"\nZone-1 kubeconfig:\n  export KUBECONFIG_ZONE1="%s"\nZone-2 kubeconfig:\n  export KUBECONFIG_ZONE2="%s"\n' \
+    "${global_kds_address}" "${global_kubeconfig}" "${zone1_kubeconfig}" "${zone2_kubeconfig}"
 }
 
 global_two_zones_down() {
@@ -407,7 +387,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "${repo_root}" ]]; then
-  repo_root="$(cd "${script_dir}/../../../.." && pwd)"
+  repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    printf 'Error: --repo-root not specified and git rev-parse failed\n' >&2
+    exit 1
+  }
   printf 'Warning: --repo-root not specified, falling back to %s\n' "${repo_root}" >&2
 fi
 

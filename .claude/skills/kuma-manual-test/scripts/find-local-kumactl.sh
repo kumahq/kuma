@@ -34,8 +34,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "${repo_root}" ]]; then
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  repo_root="$(cd "${script_dir}/../../../.." && pwd)"
+  echo "Error: --repo-root is required" >&2
+  usage
+  exit 1
 fi
 
 candidate_1="${repo_root}/build/kumactl"

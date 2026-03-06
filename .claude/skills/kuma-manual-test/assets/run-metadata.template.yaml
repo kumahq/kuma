@@ -1,5 +1,6 @@
 run:
   id: "__RUN_ID__"
+  session_id: "__SESSION_ID__"
   created_at_utc: "__CREATED_AT__"
   harness_version: "__HARNESS_VERSION__"
   owner: ""

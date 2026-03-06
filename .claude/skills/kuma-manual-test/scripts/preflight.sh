@@ -65,7 +65,7 @@ fi
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ -z "${repo_root}" ]]; then
-  repo_root="$(cd "${script_dir}/../../../.." && pwd)"
+  repo_root="$(git -C "${script_dir}" rev-parse --show-toplevel)"
   printf 'Warning: --repo-root not specified, falling back to %s\n' "${repo_root}" >&2
 fi
 
@@ -111,11 +111,11 @@ run_check() {
   local now
   local exit_code
 
-  cmd_string="$(printf '%q ' "${cmd[@]}")"
+  cmd_string="$(printf '%q ' ${cmd[@]+"${cmd[@]}"})"
   now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
   set +e
-  "${cmd[@]}" >"${output_file}" 2>&1
+  ${cmd[@]+"${cmd[@]}"} >"${output_file}" 2>&1
   exit_code=$?
   set -e
 
@@ -129,12 +129,11 @@ run_check() {
 
 for tool in docker k3d kubectl helm make; do
   tool_log="${run_dir}/artifacts/preflight-tool-${tool}.log"
-  now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
   if command -v "${tool}" >"${tool_log}" 2>&1; then
-    append_command_log "${now}" "preflight" "command -v ${tool}" "0" "artifacts/preflight-tool-${tool}.log"
+    append_command_log "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "preflight" "command -v ${tool}" "0" "artifacts/preflight-tool-${tool}.log"
   else
-    append_command_log "${now}" "preflight" "command -v ${tool}" "1" "artifacts/preflight-tool-${tool}.log"
+    append_command_log "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "preflight" "command -v ${tool}" "1" "artifacts/preflight-tool-${tool}.log"
     failure_count=$((failure_count + 1))
     printf 'Preflight tool check failed: %s\n' "${tool}" >&2
   fi
@@ -147,7 +146,7 @@ run_check "kuma-system-pods" kubectl --kubeconfig "${kubeconfig_path}" get pods 
 run_check "kuma-control-plane-deployment" kubectl --kubeconfig "${kubeconfig_path}" get deployment --namespace kuma-system kuma-control-plane
 run_check "kuma-control-plane-ready" kubectl --kubeconfig "${kubeconfig_path}" wait --for=condition=available deployment/kuma-control-plane --namespace kuma-system --timeout=180s
 
-if local_kumactl="$(${find_local_kumactl} --repo-root "${repo_root}" 2>/dev/null)"; then
+if local_kumactl="$("${find_local_kumactl}" --repo-root "${repo_root}" 2>/dev/null)"; then
   run_check "local-kumactl-version" "${local_kumactl}" version
 else
   kumactl_log="${run_dir}/artifacts/preflight-local-kumactl.log"

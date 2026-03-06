@@ -80,7 +80,7 @@ if [[ -z "${safe_label}" ]]; then
 fi
 
 timestamp="$(date -u +"%Y%m%dT%H%M%SZ")"
-output_rel="artifacts/${timestamp}-${safe_label}.log"
+output_rel="artifacts/${timestamp}-$$-${safe_label}.log"
 output_file="${run_dir}/${output_rel}"
 
 cmd_string="$(printf '%q ' "$@")"
@@ -98,11 +98,7 @@ printf "| %s | %s | \`%s\` | %s | \`%s\` |\\n" \
   "${output_rel}" \
   >>"${commands_log}"
 
-cat <<EOF
-Command recorded:
-  command: ${cmd_string}
-  output:  ${output_file}
-  exit:    ${exit_code}
-EOF
+printf 'Command recorded:\n  command: %s\n  output:  %s\n  exit:    %s\n' \
+  "${cmd_string}" "${output_file}" "${exit_code}"
 
 exit "${exit_code}"

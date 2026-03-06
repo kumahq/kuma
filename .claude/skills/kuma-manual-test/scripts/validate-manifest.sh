@@ -76,13 +76,13 @@ log() {
 run_logged() {
   local -a cmd=("$@")
   local cmd_string
-  cmd_string="$(printf '%q ' "${cmd[@]}")"
+  cmd_string="$(printf '%q ' ${cmd[@]+"${cmd[@]}"})"
   log "\$ ${cmd_string}"
 
   if [[ -n "${output_file}" ]]; then
-    "${cmd[@]}" 2>&1 | tee -a "${output_file}"
+    ${cmd[@]+"${cmd[@]}"} 2>&1 | tee -a "${output_file}"
   else
-    "${cmd[@]}"
+    ${cmd[@]+"${cmd[@]}"}
   fi
 }
 
@@ -98,7 +98,7 @@ if [[ ${#kinds[@]} -eq 0 ]]; then
   exit 1
 fi
 
-for kind in "${kinds[@]}"; do
+for kind in ${kinds[@]+"${kinds[@]}"}; do
   if [[ -z "${kind}" || "${kind}" == "List" ]]; then
     continue
   fi

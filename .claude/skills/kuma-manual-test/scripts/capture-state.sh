@@ -82,7 +82,7 @@ if [[ ! -f "${commands_log}" ]]; then
 EOF
 fi
 
-timestamp="$(date -u +"%Y%m%dT%H%M%SZ")"
+timestamp="$(date -u +"%Y%m%dT%H%M%SZ")-$$"
 
 append_command_log() {
   local now="$1"
@@ -106,11 +106,11 @@ capture() {
   local now
   local exit_code
 
-  cmd_string="$(printf '%q ' "${cmd[@]}")"
+  cmd_string="$(printf '%q ' ${cmd[@]+"${cmd[@]}"})"
   now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
   set +e
-  "${cmd[@]}" >"${output_file}" 2>&1
+  ${cmd[@]+"${cmd[@]}"} >"${output_file}" 2>&1
   exit_code=$?
   set -e
 
@@ -136,7 +136,7 @@ capture "zoneinsights" kubectl --kubeconfig "${kubeconfig_path}" get zoneinsight
 capture "zoneingresses" kubectl --kubeconfig "${kubeconfig_path}" get zoneingresses --all-namespaces --output=yaml
 capture "zoneegresses" kubectl --kubeconfig "${kubeconfig_path}" get zoneegresses --all-namespaces --output=yaml
 
-for resource in "${extra_resources[@]}"; do
+for resource in ${extra_resources[@]+"${extra_resources[@]}"}; do
   safe_name="$(printf "%s" "${resource}" | tr '/.' '--')"
   capture "resource-${safe_name}" kubectl --kubeconfig "${kubeconfig_path}" get "${resource}" --all-namespaces --output=yaml
 done

@@ -4,18 +4,20 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  init-run.sh [--runs-dir <path>] <run-id>
+  init-run.sh [--runs-dir <path>] [--session-id <id>] <run-id>
 
 Options:
-  --runs-dir <path>   Base directory for runs (default: tmp/manual-test-runs)
+  --runs-dir <path>      Base directory for runs (default: tmp/manual-test-runs)
+  --session-id <id>      Claude Code session ID for provenance tracking (default: standalone)
 
 Example:
   init-run.sh 20260304-154500-manual
-  init-run.sh --runs-dir tmp/my-runs 20260304-154500-manual
+  init-run.sh --runs-dir tmp/my-runs --session-id abc-123 20260304-154500-manual
 EOF
 }
 
 runs_dir_override=""
+session_id="standalone"
 run_id=""
 
 while [[ $# -gt 0 ]]; do
@@ -26,6 +28,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --runs-dir)
       runs_dir_override="$2"
+      shift 2
+      ;;
+    --session-id)
+      session_id="$2"
       shift 2
       ;;
     -*)
@@ -92,6 +98,7 @@ render_template() {
 
   sed \
     -e "s/__RUN_ID__/${run_id}/g" \
+    -e "s/__SESSION_ID__/${session_id}/g" \
     -e "s/__CREATED_AT__/${created_at}/g" \
     -e "s/__HARNESS_VERSION__/${harness_version}/g" \
     "${template_file}" >"${output_file}"
@@ -117,14 +124,8 @@ render_template \
   "${assets_dir}/run-status.template.yaml" \
   "${run_dir}/run-status.yaml"
 
-cat <<EOF
-Created run directory:
-  ${run_dir}
+# Write .current-run pointer for stop hook (M14)
+echo "${run_id}" > "${runs_dir}/.current-run"
 
-Next steps:
-  1) Start cluster with scripts/cluster-lifecycle.sh
-  2) Run preflight with scripts/preflight.sh
-  3) Apply manifests with scripts/apply-tracked-manifest.sh
-  4) Capture state snapshots with scripts/capture-state.sh
-  5) Run scripts/report-compactness-check.sh before closing report
-EOF
+printf 'Created run directory:\n  %s\n\nNext steps:\n  1) Start cluster with scripts/cluster-lifecycle.sh\n  2) Run preflight with scripts/preflight.sh\n  3) Apply manifests with scripts/apply-tracked-manifest.sh\n  4) Capture state snapshots with scripts/capture-state.sh\n  5) Run scripts/report-compactness-check.sh before closing report\n' \
+  "${run_dir}"

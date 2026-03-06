@@ -3,9 +3,51 @@ name: kuma-suite-author
 description: >-
   Generate test suites for kuma-manual-test by reading Kuma source code.
   Produces ready-to-run suites with manifests, validation steps, and expected outcomes.
-argument-hint: "<feature-name> [--repo /path/to/kuma] [--mode generate|wizard] [--from-pr PR_URL] [--from-branch BRANCH]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
+  Use when creating a new test suite for a Kuma feature, converting a PR into a test plan,
+  or building regression tests from source code.
+argument-hint: "<feature-name> [--repo /path/to/kuma] [--mode generate|wizard] [--from-pr PR_URL] [--from-branch BRANCH] [--suite-name NAME]"
+allowed-tools: AskUserQuestion, Bash, Edit, Glob, Grep, Read, Task, Write
 user-invocable: true
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/guard-bash.sh"
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/guard-write.sh"
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/audit.sh"
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/verify-write.sh"
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/audit.sh"
+  PostToolUseFailure:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/audit.sh"
+  SubagentStart:
+    - matcher: "Explore"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/context-code-reader.sh"
+  SubagentStop:
+    - matcher: "Explore"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/validate-code-reader.sh"
+  Stop:
+    - hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/skills/kuma-suite-author/scripts/hooks/guard-incomplete-stop.sh"
 ---
 
 # Kuma suite author
@@ -25,16 +67,26 @@ Parse from `$ARGUMENTS`:
 | `--from-branch` | -                    | Git branch to diff against master for scope                 |
 | `--suite-name`  | derived from feature | Override suite name (must follow `{feature}-{scope}` pattern) |
 
-## Workflow - generate mode (default)
+## Preprocessed context
+
+- Data directory: !`echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test"`
+- Current repo root: !`git rev-parse --show-toplevel 2>/dev/null || echo "not in a git repo"`
+- Session ID: ${CLAUDE_SESSION_ID}
+- Existing suites: !`ls -1 "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test/suites" 2>/dev/null | head -20 || echo "none yet"`
+
+The session ID tracks which Claude Code session generated the suite. If the session ID is empty or contains literal `${`, use `standalone` instead.
+
+## Workflow - generate mode (default, `--mode generate`)
 
 ### Step 1: Resolve paths
 
+Use the pre-resolved data directory and repo root from the preprocessed context above. Ensure directories exist:
+
 ```bash
-DATA_DIR="$(echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test")"
 mkdir -p "${DATA_DIR}/suites" "${DATA_DIR}/runs"
 ```
 
-Resolve `REPO_ROOT`: `--repo` flag > check if cwd has `go.mod` with `kumahq/kuma` > fail with message.
+Resolve `REPO_ROOT`: `--repo` flag > pre-resolved repo root (if in a git repo) > check if cwd has `go.mod` with `kumahq/kuma` > fail with message.
 
 ### Step 2: Check worktree and branch
 
@@ -62,9 +114,9 @@ If user confirms, continue to step 3.
 
 Identify what code to read based on the input:
 
-- **From feature name**: find policy dir in `pkg/plugins/policies/`, API spec, plugin.go, tests.
-- **From PR URL**: run `gh pr diff <number> --repo kumahq/kuma` to identify changed files.
-- **From branch**: run `git diff master...<branch> --name-only` to identify changed files.
+- **From feature name** (default): find policy dir in `pkg/plugins/policies/`, API spec, plugin.go, tests.
+- **From PR URL** (`--from-pr`): run `gh pr diff <number> --repo kumahq/kuma` to identify changed files.
+- **From branch** (`--from-branch`): run `git diff master...<branch> --name-only` to identify changed files.
 
 Handle ambiguity with AskUserQuestion:
 
@@ -72,32 +124,42 @@ Handle ambiguity with AskUserQuestion:
 - Feature type unclear (policy vs non-policy) - ask the user.
 - PR diff touches files outside the expected scope - ask whether to include them.
 
-### Step 4: Read code
+### Step 4: Read code (spawned agent)
 
-Read [references/code-reading-guide.md](references/code-reading-guide.md) for where to look in the Kuma repo.
-Read [references/variant-detection.md](references/variant-detection.md) for variant signal patterns.
+Spawn an `Explore` agent to read the Kuma source code. The agent's intermediate file reads (Go source, test fixtures, golden files) stay isolated from the main context.
 
-For each identified file, read and extract two kinds of data:
+Pass the agent:
 
-**Group material** (feeds G1-G7):
+- `REPO_ROOT` path
+- Feature name and scoped file list from step 3
+- Contents of [references/code-reading-guide.md](references/code-reading-guide.md) (where to find policy specs, xDS generators, tests)
+- Contents of [references/variant-detection.md](references/variant-detection.md) (variant signal catalog and strength classification)
 
-- **Policy API spec** (`api/v1alpha1/<policy>.go`): struct fields, markers, validation constraints.
-- **Plugin implementation** (`plugin/v1alpha1/plugin.go`): xDS generation logic, which resource types are affected.
-- **Existing tests** (`plugin/v1alpha1/testdata/`): golden files show expected Envoy configs.
-- **Validator** (`api/v1alpha1/validator.go`): what inputs are rejected and why.
-- **Non-policy features**: read relevant `pkg/` code based on changed files list.
+Instruct the agent to read each identified file and return ONLY a structured summary with two sections:
 
-**Variant signals** (patterns from variant-detection.md):
+**Group material** (one entry per applicable group G1-G7):
 
-- S1: KDS markers, resource registration for deployment topology
-- S2: Enum/string fields, switch/case blocks for feature modes
-- S3: Multiple backend types, backendRef kinds for backend variants
-- S4: Conditional Apply() branches for feature flags
-- S5: targetRef section, producer/consumer markers for policy roles
-- S6: HTTP/TCP/gRPC branching for protocol variants
-- S7: deprecated.go, old field names for backward compat paths
+- G1 CRUD: struct fields, markers, validation constraints from API spec
+- G2 Validation: rejection paths from validator.go
+- G3 Runtime config: xDS resource types and Apply() logic from plugin.go
+- G4 E2E flow: expected Envoy configs from golden files
+- G5 Edge cases: nil handling, boundary values, dangling refs
+- G6 Multi-zone: KDS markers, sync config presence
+- G7 Backward compat: deprecated fields, legacy paths
 
-Collect each signal with its source file, evidence, and estimated strength (strong/moderate/weak).
+For each group entry include: one-line description, source file path, and whether enough material was found to generate the group (yes/no).
+
+**Variant signals** (one entry per detected signal):
+
+- id: S1-S7
+- type: deployment-topology / feature-mode / backend-variant / feature-flag / policy-role / protocol-variant / backward-compat
+- source: file path and line range
+- evidence: one-line description of what was found
+- strength: strong / moderate / weak
+
+The agent must NOT return raw file contents, full code blocks, or golden file text. Only the structured summary above.
+
+Wait for the agent to return before proceeding to step 5.
 
 ### Step 5: Detect and confirm variants
 
@@ -114,6 +176,7 @@ If no variants detected, note it and continue to step 6 with G1-G7 only.
 ### Step 6: Generate suite
 
 Read [references/suite-structure.md](references/suite-structure.md) for the format spec.
+Read [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) for a worked example of the suite format.
 
 Build the suite with base groups (skip groups that don't apply, document why):
 
@@ -180,11 +243,13 @@ Reject generic names like `test-suite-1`, `full`, `feature-branch`, `my-test`. T
 SUITE_NAME="${SUITE_NAME:-<derived-per-rules-above>}"
 SUITE_DIR="${DATA_DIR}/suites/${SUITE_NAME}"
 mkdir -p "${SUITE_DIR}/baseline" "${SUITE_DIR}/groups"
+# Write .current-suite pointer for stop hook (S8)
+echo "${SUITE_NAME}" > "${DATA_DIR}/suites/.current-suite"
 ```
 
 Write each part separately:
 
-- `${SUITE_DIR}/suite.md` - metadata, baseline table, group table, execution contract
+- `${SUITE_DIR}/suite.md` - metadata (include `session_id` from Preprocessed context), baseline table, group table, execution contract
 - `${SUITE_DIR}/baseline/*.yaml` - one file per shared manifest (namespace, otel collector, demo workloads)
 - `${SUITE_DIR}/groups/g{NN}-{slug}.md` - one file per group (or per range, e.g., `g17-g26-pipe-mode.md`)
 
@@ -204,9 +269,9 @@ Interactive step-by-step suite generation:
 1. Same path resolution as generate mode (step 1).
 2. Check worktree and branch (step 2) - same verification flow.
 3. Ask feature name, target environment, scope using AskUserQuestion.
-4. Read code and collect variant signals (step 4).
+4. Read code and collect variant signals (step 4). Read [references/code-reading-guide.md](references/code-reading-guide.md) for where to find policy specs. Read [references/variant-detection.md](references/variant-detection.md) for the variant signal catalog.
 5. Detect and confirm variants (step 5) - present each signal individually for review.
-6. Show the group structure from [references/suite-structure.md](references/suite-structure.md), ask which base groups (G1-G7) to include.
+6. Read [references/suite-structure.md](references/suite-structure.md) for the format spec. Read [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) for the worked example. Show the group structure, ask which base groups (G1-G7) to include.
 7. For each selected group: ask what to test, generate manifests, show for review.
 8. User edits/approves each group before moving to next.
 9. Confirmation wizard (step 7) - same full summary review before saving.

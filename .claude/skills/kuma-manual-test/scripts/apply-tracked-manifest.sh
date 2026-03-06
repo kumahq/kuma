@@ -178,10 +178,10 @@ if [[ ${validate_exit} -ne 0 ]]; then
 fi
 
 apply_cmd=(kubectl --kubeconfig "${kubeconfig_path}" apply --filename "${tracked_manifest}")
-apply_cmd_string="$(printf '%q ' "${apply_cmd[@]}")"
+apply_cmd_string="$(printf '%q ' ${apply_cmd[@]+"${apply_cmd[@]}"})"
 
 set +e
-"${apply_cmd[@]}" >"${apply_log}" 2>&1
+${apply_cmd[@]+"${apply_cmd[@]}"} >"${apply_log}" 2>&1
 apply_exit=$?
 set -e
 
@@ -202,9 +202,5 @@ if [[ ${apply_exit} -ne 0 ]]; then
   exit "${apply_exit}"
 fi
 
-cat <<EOF
-Manifest applied and tracked:
-  tracked manifest: ${tracked_manifest}
-  validation log:   ${validate_log}
-  apply log:        ${apply_log}
-EOF
+printf 'Manifest applied and tracked:\n  tracked manifest: %s\n  validation log:   %s\n  apply log:        %s\n' \
+  "${tracked_manifest}" "${validate_log}" "${apply_log}"
