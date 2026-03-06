@@ -328,8 +328,8 @@ func (p *PodConverter) dataplaneFor(
 			dataplane.Networking.Inbound = ifaces
 		}
 
-		for _, zpsvc := range zoneProxyServices {
-			listeners, lErr := ListenersForService(pod, zpsvc)
+		for _, zpSvc := range zoneProxyServices {
+			listeners, lErr := ListenersForService(pod, zpSvc)
 			if lErr != nil {
 				return nil, lErr
 			}

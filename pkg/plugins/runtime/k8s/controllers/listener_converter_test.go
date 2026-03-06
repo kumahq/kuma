@@ -69,96 +69,72 @@ var _ = Describe("ListenersForService", func() {
 		{Name: "kuma-sidecar", Ready: false},
 	}
 
-	DescribeTable("should return nil for services without the zone-proxy-type label",
-		func() {
-			listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), svc("backend", "", 8080))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(BeNil())
-		},
-		Entry("no label"),
-	)
+	It("should return nil for services without the zone-proxy-type label", func() {
+		listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), svc("backend", "", 8080))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(BeNil())
+	})
 
-	DescribeTable("should return an error for an invalid label value",
-		func() {
-			_, err := ListenersForService(pod("192.168.0.1", readyStatuses), svc("bad", "invalid", 10001))
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("invalid"))
-		},
-		Entry("unknown zone-proxy-type"),
-	)
+	It("should return an error for an invalid label value", func() {
+		_, err := ListenersForService(pod("192.168.0.1", readyStatuses), svc("bad", "invalid", 10001))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("invalid"))
+	})
 
-	DescribeTable("should generate a ZoneIngress listener",
-		func() {
-			listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), svc("zi", KumaZoneProxyTypeIngress, 10001))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(HaveLen(1))
-			l := listeners[0]
-			Expect(l.Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneIngress))
-			Expect(l.Address).To(Equal("192.168.0.1"))
-			Expect(l.Port).To(Equal(uint32(10001)))
-			Expect(l.Name).To(Equal("main"))
-			Expect(l.State).To(Equal(mesh_proto.Dataplane_Networking_Listener_Ready))
-		},
-		Entry("ZoneIngress ready"),
-	)
+	It("should generate a ZoneIngress listener", func() {
+		listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), svc("zi", KumaZoneProxyTypeIngress, 10001))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(HaveLen(1))
+		l := listeners[0]
+		Expect(l.Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneIngress))
+		Expect(l.Address).To(Equal("192.168.0.1"))
+		Expect(l.Port).To(Equal(uint32(10001)))
+		Expect(l.Name).To(Equal("main"))
+		Expect(l.State).To(Equal(mesh_proto.Dataplane_Networking_Listener_Ready))
+	})
 
-	DescribeTable("should generate a ZoneEgress listener",
-		func() {
-			listeners, err := ListenersForService(pod("10.0.0.5", readyStatuses), svc("ze", KumaZoneProxyTypeEgress, 10002))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(HaveLen(1))
-			l := listeners[0]
-			Expect(l.Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneEgress))
-			Expect(l.Address).To(Equal("10.0.0.5"))
-			Expect(l.Port).To(Equal(uint32(10002)))
-			Expect(l.State).To(Equal(mesh_proto.Dataplane_Networking_Listener_Ready))
-		},
-		Entry("ZoneEgress ready"),
-	)
+	It("should generate a ZoneEgress listener", func() {
+		listeners, err := ListenersForService(pod("10.0.0.5", readyStatuses), svc("ze", KumaZoneProxyTypeEgress, 10002))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(HaveLen(1))
+		l := listeners[0]
+		Expect(l.Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneEgress))
+		Expect(l.Address).To(Equal("10.0.0.5"))
+		Expect(l.Port).To(Equal(uint32(10002)))
+		Expect(l.State).To(Equal(mesh_proto.Dataplane_Networking_Listener_Ready))
+	})
 
-	DescribeTable("should set NotReady when kuma-sidecar is not ready",
-		func() {
-			listeners, err := ListenersForService(pod("192.168.0.1", notReadySidecar), svc("zi", KumaZoneProxyTypeIngress, 10001))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(HaveLen(1))
-			Expect(listeners[0].State).To(Equal(mesh_proto.Dataplane_Networking_Listener_NotReady))
-		},
-		Entry("sidecar not ready"),
-	)
+	It("should set NotReady when kuma-sidecar is not ready", func() {
+		listeners, err := ListenersForService(pod("192.168.0.1", notReadySidecar), svc("zi", KumaZoneProxyTypeIngress, 10001))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(HaveLen(1))
+		Expect(listeners[0].State).To(Equal(mesh_proto.Dataplane_Networking_Listener_NotReady))
+	})
 
-	DescribeTable("should set NotReady when pod is terminating",
-		func() {
-			p := pod("192.168.0.1", readyStatuses)
-			now := kube_meta.Now()
-			p.DeletionTimestamp = &now
-			listeners, err := ListenersForService(p, svc("zi", KumaZoneProxyTypeIngress, 10001))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(HaveLen(1))
-			Expect(listeners[0].State).To(Equal(mesh_proto.Dataplane_Networking_Listener_NotReady))
-		},
-		Entry("pod terminating"),
-	)
+	It("should set NotReady when pod is terminating", func() {
+		p := pod("192.168.0.1", readyStatuses)
+		now := kube_meta.Now()
+		p.DeletionTimestamp = &now
+		listeners, err := ListenersForService(p, svc("zi", KumaZoneProxyTypeIngress, 10001))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(HaveLen(1))
+		Expect(listeners[0].State).To(Equal(mesh_proto.Dataplane_Networking_Listener_NotReady))
+	})
 
-	DescribeTable("should skip non-TCP ports",
-		func() {
-			s := svc("zi", KumaZoneProxyTypeIngress, 10001)
-			s.Spec.Ports[0].Protocol = kube_core.ProtocolUDP
-			listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), s)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(BeEmpty())
-		},
-		Entry("UDP port skipped"),
-	)
+	It("should skip non-TCP ports", func() {
+		s := svc("zi", KumaZoneProxyTypeIngress, 10001)
+		s.Spec.Ports[0].Protocol = kube_core.ProtocolUDP
+		listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), s)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(BeEmpty())
+	})
 
-	DescribeTable("should use svcName-port fallback name when port has no name",
-		func() {
-			s := svc("zone-ingress", KumaZoneProxyTypeIngress, 10001)
-			s.Spec.Ports[0].Name = ""
-			listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), s)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(listeners).To(HaveLen(1))
-			Expect(listeners[0].Name).To(Equal("zone-ingress-10001"))
-		},
-		Entry("fallback name"),
-	)
+	It("should use svcName-port fallback name when port has no name", func() {
+		s := svc("zone-ingress", KumaZoneProxyTypeIngress, 10001)
+		s.Spec.Ports[0].Name = ""
+		listeners, err := ListenersForService(pod("192.168.0.1", readyStatuses), s)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(HaveLen(1))
+		Expect(listeners[0].Name).To(Equal("zone-ingress-10001"))
+	})
 })
