@@ -6,7 +6,7 @@ description: >-
   Use when creating a new test suite for a Kuma feature, converting a PR into a test plan,
   or building regression tests from source code.
 argument-hint: "<feature-name> [--repo /path/to/kuma] [--mode generate|wizard] [--from-pr PR_URL] [--from-branch BRANCH] [--suite-name NAME]"
-allowed-tools: AskUserQuestion, Bash, Edit, Glob, Grep, Read, Task, Write
+allowed-tools: AskUserQuestion, Bash, Read, Task, Write
 user-invocable: true
 hooks:
   PreToolUse:

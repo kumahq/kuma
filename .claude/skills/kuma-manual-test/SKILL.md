@@ -5,7 +5,7 @@ description: >-
   Use when running manual verification, testing policy changes on real clusters, validating xDS
   config generation, or doing k3d manual test runs for any Kuma feature area.
 argument-hint: "[suite-path] [--profile single-zone|multi-zone] [--repo /path/to/kuma] [--run-id ID] [--resume RUN_ID]"
-allowed-tools: AskUserQuestion, Bash, Edit, Glob, Grep, Read, Task, Write
+allowed-tools: AskUserQuestion, Bash, Read, Task, Write
 user-invocable: true
 disable-model-invocation: true
 hooks:
@@ -92,9 +92,9 @@ Use these pre-resolved values throughout the run. `DATA_DIR` is the data directo
 5. Never use `--validate=false` on any kubectl command. Validation errors mean the manifest or CRD is wrong - fix the root cause.
 6. Never create manifests in `/tmp`. Write all manifests to `${RUN_DIR}/manifests/` before applying.
 7. When a suite group provides inline manifest YAML, use it verbatim. Do not improvise names, namespaces, or fields unless the user explicitly requests it.
-8. After completing each test group, you MUST (a) capture state with `capture-state.sh`, (b) update `run-status.yaml`, and (c) verify these files before starting the next group. This is a hard gate - do not proceed without it.
+8. After completing each test group, capture state with `capture-state.sh`, update `run-status.yaml`, and verify these files before starting the next group. This is a hard gate - do not proceed without it.
 9. Every artifact path written in the report must resolve to an existing file. Verify before closeout.
-10. **No autonomous deviations.** If a test step needs to diverge from the suite definition (different manifest values, skipped steps, changed order, extra steps, modified expected outcomes), you MUST use AskUserQuestion to get explicit approval BEFORE making the change. The only exception is when the suite definition itself explicitly marks something as agent-discretionary. Record every deviation decision in the report with: what changed, why, and whether it was user-approved or suite-allowed.
+10. **No autonomous deviations.** If a test step needs to diverge from the suite definition (different manifest values, skipped steps, changed order, extra steps, modified expected outcomes), use AskUserQuestion to get explicit approval BEFORE making the change. The only exception is when the suite definition itself explicitly marks something as agent-discretionary. Record every deviation decision in the report with: what changed, why, and whether it was user-approved or suite-allowed.
 
 Read [references/agent-contract.md](references/agent-contract.md) for full agent behavior rules and artifact requirements.
 
@@ -215,7 +215,7 @@ For each test step:
 3. Apply through the tracked script.
 4. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.) and record each one via `record-command.sh`, saving output to `artifacts/`.
 5. Run any cleanup commands (`kubectl delete`) and record each one via `record-command.sh`.
-6. Write result into the report. Every artifact path you reference must point to a real file.
+6. Write result into the report. Every artifact path referenced must point to a real file.
 
 ```bash
 "${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh" \
@@ -319,6 +319,7 @@ Store raw output in `artifacts/` and reference file paths from the report.
 - `assets/manual-test-report.template.md` - test report template
 - [examples/suite-template.md](examples/suite-template.md) - generic test suite template
 - [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) - worked example for MOTB testing (read when authoring new suites to see the expected format)
+- `scripts/hooks/` - runtime guardrails (guard-bash.sh, guard-write.sh, verify-bash.sh, verify-write.sh, audit.sh, enrich-failure.sh, context-preflight.sh, validate-preflight.sh, guard-incomplete-stop.sh, _lib.sh)
 
 ## Example invocations
 
