@@ -35,6 +35,7 @@
   endOfLifeDate: "2026-10-19"
   branch: release-2.7
   lts: true
+  extensionMonths: 6
 - edition: kuma
   version: 2.8.8
   release: 2.8.x
@@ -71,7 +72,7 @@
   release: 2.13.x
   latest: true
   releaseDate: "2025-12-22"
-  endOfLifeDate: "2028-06-22"
+  endOfLifeDate: "2027-12-22"
   branch: release-2.13
   lts: true
 - edition: kuma
