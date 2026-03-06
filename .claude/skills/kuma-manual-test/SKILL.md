@@ -72,7 +72,7 @@ Parse from `$ARGUMENTS`:
 
 ## Preprocessed context
 
-- Data directory: !`echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test"`
+- Data directory: !`echo "${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test"`
 - Home: !`echo "$HOME"`
 - Timestamp: !`date +%Y%m%d-%H%M%S`
 - Session ID: ${CLAUDE_SESSION_ID}

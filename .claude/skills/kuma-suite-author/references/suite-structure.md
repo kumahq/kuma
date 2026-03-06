@@ -163,6 +163,30 @@ Not all groups apply to every feature. Skip groups that don't make sense, but do
 - `metadata.annotations`: include `kuma.io/mesh: <mesh-name>` for universal resources
 - Use realistic but minimal manifests - enough to trigger the behavior, no extras
 
+## Domain knowledge
+
+### Delegated gateways
+
+A "delegated gateway" in Kuma is a standalone gateway proxy (not managed by Kuma's builtin gateway) that Kuma treats as a gateway dataplane. In practice this means Kong Gateway. When generating test suites that involve delegated gateways:
+
+- Use Kong Gateway (image `kong:3.9` or similar) as the delegated gateway workload, not nginx or a generic proxy
+- Deploy Kong in its own namespace (`kong`) with `kuma.io/sidecar-injection: enabled`
+- Annotate the pod with `kuma.io/gateway: enabled` so the injector treats it as a delegated gateway
+- Label the pod `app: kong-gateway` to match the convention used in unit test fixtures
+- Configure Kong in DB-less mode (`KONG_DATABASE=off`) with declarative config routing to backend services
+- The resulting Dataplane resource will have `networking.gateway.type: DELEGATED`
+- Policies target delegated gateways via `kind: Dataplane` with label selectors (not `kind: MeshGateway` which is for builtin gateways)
+
+### Builtin vs delegated
+
+| Aspect | Builtin gateway | Delegated gateway (Kong) |
+| :--- | :--- | :--- |
+| Managed by | Kuma (MeshGateway + GatewayClass) | External (Kong, deployed by user) |
+| Dataplane type | `BUILTIN` | `DELEGATED` |
+| Policy targeting | `kind: MeshGateway` | `kind: Dataplane` with labels |
+| Pod annotation | none (auto-created) | `kuma.io/gateway: enabled` |
+| Transparent proxy | disabled | disabled |
+
 ## Validation step patterns
 
 Commands to verify expected state after applying manifests:

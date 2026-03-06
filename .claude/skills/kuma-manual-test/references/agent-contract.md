@@ -43,7 +43,7 @@ Rules for any AI agent executing manual tests with this harness.
 All run artifacts and authored suites are stored in a persistent data directory outside the repo:
 
 ```
-${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test/
+${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test/
 ├── suites/                  # Authored test suites (by kuma-suite-author)
 │   ├── motb-core/           # Directory-format suite (v2)
 │   │   ├── suite.md

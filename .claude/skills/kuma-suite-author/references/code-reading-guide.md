@@ -64,3 +64,4 @@ See `references/variant-detection.md` for the full methodology, signal strength 
 - The `+kuma:policy` markers on the spec struct indicate scope (Mesh vs Global), display name, etc.
 - `validator.go` returns `admission.Warnings` for deprecations - these become G7 test cases.
 - `plugin.go`'s `Apply()` method reveals which xDS resource types are affected (listeners, clusters, routes, endpoints).
+- When the code references delegated gateways (`IsDelegatedGateway()`, `gateway.type: DELEGATED`), the test workload should be Kong Gateway - not nginx or a generic proxy. See `references/suite-structure.md` (Domain knowledge) for setup details.

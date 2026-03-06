@@ -25,7 +25,7 @@ If a previous run was interrupted, check `runs/<run-id>/run-status.yaml` for `la
 Resolve persistent storage and repo root first:
 
 ```bash
-DATA_DIR="$(echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test")"
+DATA_DIR="$(echo "${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test")"
 mkdir -p "${DATA_DIR}/suites" "${DATA_DIR}/runs"
 ```
 

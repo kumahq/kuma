@@ -12,7 +12,7 @@ if [[ "${stop_active}" == "true" ]]; then
   exit 0
 fi
 
-data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test"
+data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test"
 runs_dir="${data_dir}/runs"
 current_run_file="${runs_dir}/.current-run"
 

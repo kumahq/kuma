@@ -69,10 +69,10 @@ Parse from `$ARGUMENTS`:
 
 ## Preprocessed context
 
-- Data directory: !`echo "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test"`
+- Data directory: !`echo "${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test"`
 - Current repo root: !`git rev-parse --show-toplevel 2>/dev/null || echo "not in a git repo"`
 - Session ID: ${CLAUDE_SESSION_ID}
-- Existing suites: !`ls -1 "${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test/suites" 2>/dev/null | head -20 || echo "none yet"`
+- Existing suites: !`ls -1 "${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test/suites" 2>/dev/null | head -20 || echo "none yet"`
 
 The session ID tracks which Claude Code session generated the suite. If the session ID is empty or contains literal `${`, use `standalone` instead.
 

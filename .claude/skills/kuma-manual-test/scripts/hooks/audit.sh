@@ -10,7 +10,7 @@ event="$(printf '%s' "${input}" | jq -r '.hook_event_name // ""')"
 tool="$(printf '%s' "${input}" | jq -r '.tool_name // ""')"
 session="$(printf '%s' "${input}" | jq -r '.session_id // "unknown"')"
 
-audit_dir="${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test"
+audit_dir="${XDG_DATA_HOME:-$HOME/.local/share}/kuma/kuma-manual-test"
 mkdir -p "${audit_dir}"
 audit_file="${audit_dir}/.audit.jsonl"
 
