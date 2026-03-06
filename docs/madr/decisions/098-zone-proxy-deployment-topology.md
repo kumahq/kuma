@@ -88,7 +88,7 @@ Pros:
 - Good, because different resource limits and Kubernetes security contexts can be applied per role.
 
 Cons:
-- Bad, because it requires managing two Deployments per mesh instead of one, which also increases cost.
+- Bad, because it requires managing two Deployments per mesh instead of one, which also increases cost and complexity.
 
 ### Option 2: Combined Deployment (`combinedProxies`)
 
@@ -123,7 +123,7 @@ spec:
 
 `combinedProxies` is mutually exclusive with `ingress`/`egress` — Helm validates and fails if both are set.
 
-Even in combined mode, a Service is created only for the zone ingress port so its address can be advertised to other zones for cross-zone routing.
+Even in combined mode, a Service type load balancer is created only for the zone ingress port so its address can be advertised to other zones for cross-zone routing.
 
 When using an HPA, scale-up is triggered by either ingress or egress load — a spike on one side scales the other. This is acceptable when traffic patterns are symmetric but wasteful for asymmetric zones.
 
