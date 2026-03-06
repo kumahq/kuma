@@ -101,10 +101,6 @@ install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/g
 	$(MISE) install
 	$(BUF) dep update
 
-.PHONY: dev/install-claude-plugins
-dev/install-claude-plugins: ## Dev: Install Kuma Claude Code plugins as a local marketplace
-	ln -sf $(shell pwd)/.claude/plugins ~/.claude/plugins/marketplaces/kuma
-	@echo "Kuma Claude plugins installed. Enable them in Claude Code settings under the kuma marketplace."
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)
