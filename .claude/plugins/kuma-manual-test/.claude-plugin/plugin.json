@@ -1,0 +1,10 @@
+{
+  "name": "kuma-manual-test",
+  "description": "Reproducible manual test harness for Kuma service mesh on local k3d clusters. Tracks manifests, commands, and artifacts for full run reproducibility.",
+  "version": "1.2.2",
+  "author": {
+    "name": "Kuma Authors"
+  },
+  "repository": "https://github.com/kumahq/kuma",
+  "license": "Apache-2.0"
+}

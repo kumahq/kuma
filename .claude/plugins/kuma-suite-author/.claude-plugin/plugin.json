@@ -1,0 +1,10 @@
+{
+  "name": "kuma-suite-author",
+  "description": "Generate and manage test suites for kuma-manual-test. Reads Kuma source code to produce ready-to-run test suites with manifests.",
+  "version": "2.0.2",
+  "author": {
+    "name": "Kuma Authors"
+  },
+  "repository": "https://github.com/kumahq/kuma",
+  "license": "Apache-2.0"
+}

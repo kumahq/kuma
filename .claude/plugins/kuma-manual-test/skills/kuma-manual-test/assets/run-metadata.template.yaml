@@ -1,0 +1,30 @@
+run:
+  id: "__RUN_ID__"
+  created_at_utc: "__CREATED_AT__"
+  harness_version: "__HARNESS_VERSION__"
+  owner: ""
+  objective: ""
+  feature_scope: ""
+
+environment:
+  profile: "single-zone | multi-zone | universal"
+  kubeconfigs:
+    - cluster: "kuma-1"
+      file: ""
+  docker_context: ""
+
+build:
+  repo_revision: ""
+  build_commands:
+    - "make build"
+    - "make build/kumactl"
+  local_kumactl_path: ""
+  local_kumactl_version: ""
+
+cluster_deploy:
+  commands:
+    - ""
+  crds_refreshed: false
+
+notes:
+  - ""
