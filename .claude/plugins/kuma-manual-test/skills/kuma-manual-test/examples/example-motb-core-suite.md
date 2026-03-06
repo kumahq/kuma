@@ -53,7 +53,7 @@ suites/motb-core/
 
 ## Execution contract
 
-- All manifests applied through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`
+- All manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
 - All failures trigger immediate triage before next group
 - All pass/fail decisions include artifact pointers
 ```

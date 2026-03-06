@@ -19,8 +19,8 @@ Rules for any AI agent executing manual tests with this harness.
 ## Non-negotiable rules
 
 1. Use locally built `kumactl` from `build/` only. Never the system binary.
-2. Apply every manifest through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`.
-3. Record **every** command executed against the cluster or kumactl via `"$SKILL_DIR/scripts/record-command.sh"`. This means: `kumactl inspect`, `curl`, `kubectl exec`, `kubectl get`, `kubectl logs`, `kubectl delete`, and any other command that touches the cluster or produces test evidence. If you ran it, record it. Unrecorded commands make the run non-reproducible.
+2. Apply every manifest through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`.
+3. Record **every** command executed against the cluster or kumactl via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. This means: `kumactl inspect`, `curl`, `kubectl exec`, `kubectl get`, `kubectl logs`, `kubectl delete`, and any other command that touches the cluster or produces test evidence. If you ran it, record it. Unrecorded commands make the run non-reproducible.
 4. Run server-side dry-run validation before every apply.
 5. Capture cluster state snapshots before and after each test group. This is a hard gate - do not start the next group until the state capture for the completed group is saved.
 6. Stop and triage on first unexpected failure.
@@ -60,7 +60,7 @@ ${XDG_DATA_HOME:-$HOME/.local/share}/sai/kuma-manual-test/
 
 ```bash
 make --directory "${REPO_ROOT}" build/kumactl
-KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}")"
+KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}")"
 "${KUMACTL}" version
 ```
 

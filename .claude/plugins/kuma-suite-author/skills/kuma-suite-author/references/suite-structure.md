@@ -198,9 +198,9 @@ kubectl logs -n kuma-system deploy/kuma-control-plane --tail=50
 
 Every suite must include this checklist in suite.md:
 
-- all manifests applied through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`
-- all commands (inspect, curl, delete, kubectl get, etc.) recorded via `"$SKILL_DIR/scripts/record-command.sh"`
-- cluster state captured after each completed group via `"$SKILL_DIR/scripts/capture-state.sh"`
+- all manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
+- all commands (inspect, curl, delete, kubectl get, etc.) recorded via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`
+- cluster state captured after each completed group via `"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh"`
 - `run-status.yaml` updated after each group with counts and last_completed_group
 - all failures trigger immediate triage before next group
 - all pass/fail decisions include artifact pointers to existing files

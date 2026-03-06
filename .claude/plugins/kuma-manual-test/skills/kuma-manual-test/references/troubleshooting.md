@@ -36,7 +36,7 @@ Symptoms: `kubectl apply` fails with CRD required-field or enum errors.
 
 Fix:
 
-1. Run server-side dry-run with `"$SKILL_DIR/scripts/validate-manifest.sh"`.
+1. Run server-side dry-run with `"${CLAUDE_SKILL_DIR}/scripts/validate-manifest.sh"`.
 2. Confirm CRDs are current:
 
 ```bash
@@ -54,7 +54,7 @@ Fix:
 
 ```bash
 make build/kumactl
-KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh")"
+KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh")"
 "${KUMACTL}" version
 ```
 
@@ -106,7 +106,7 @@ Fix:
 
 ```bash
 HARNESS_HELM_CLEAN=1 \
-  "$SKILL_DIR/scripts/cluster-lifecycle.sh" single-up kuma-1
+  "${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" single-up kuma-1
 ```
 
 Then rerun preflight and continue tests.
@@ -123,13 +123,13 @@ Fix: expose global sync service as NodePort and use `grpcs://<global-node-ip>:<n
 
 Symptoms: error references missing `mk/metallb-k3d-kuma-3.yaml`.
 
-Fix: use `"$SKILL_DIR/scripts/cluster-lifecycle.sh"`, which auto-generates a temporary manifest for numeric names `kuma-<n>`.
+Fix: use `"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh"`, which auto-generates a temporary manifest for numeric names `kuma-<n>`.
 
 ## Failure triage checklist
 
 When a test fails:
 
-1. Run `"$SKILL_DIR/scripts/capture-state.sh"` immediately with label `failure-<test-id>`.
+1. Run `"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh"` immediately with label `failure-<test-id>`.
 2. Record exact failing command in command log.
 3. Record expected vs observed behavior.
 4. Classify root cause: manifest issue, cluster/infrastructure issue, or product bug.

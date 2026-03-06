@@ -16,7 +16,7 @@ For `Mesh*` policy specifics (roles, `targetRef` rules, inspect flow), read
 ## Validate
 
 ```bash
-"$SKILL_DIR/scripts/validate-manifest.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/validate-manifest.sh" \
   --kubeconfig "${KUBECONFIG}" \
   --manifest "<manifest-file>"
 ```
@@ -26,15 +26,15 @@ Validation is not optional. Never pass `--validate=false` to kubectl - validatio
 ## Safe apply flow
 
 1. Write manifest to `${RUN_DIR}/manifests/` - never to `/tmp` or anywhere else. Copy from suite baseline/groups or write inline YAML directly to the run manifests dir. When a suite group provides inline YAML, use it verbatim without modifications.
-2. Validate with `"$SKILL_DIR/scripts/validate-manifest.sh"`.
-3. Apply with `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`.
+2. Validate with `"${CLAUDE_SKILL_DIR}/scripts/validate-manifest.sh"`.
+3. Apply with `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`.
 4. Run verification commands and record each one via `record-command.sh`, saving output to `artifacts/`.
 5. Record artifacts in report. Every artifact path must resolve to a real file.
 
 ## Tracked apply example
 
 ```bash
-"$SKILL_DIR/scripts/apply-tracked-manifest.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh" \
   --run-dir "${RUN_DIR}" \
   --kubeconfig "${KUBECONFIG}" \
   --manifest "<manifest-file>" \

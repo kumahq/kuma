@@ -28,8 +28,8 @@ Parse from `$ARGUMENTS`:
 ## Non-negotiable rules
 
 1. Use locally built `kumactl` from `build/` only.
-2. Apply every manifest through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`.
-3. Record **every** command executed against the cluster or kumactl via `"$SKILL_DIR/scripts/record-command.sh"`. This includes `kumactl inspect`, `curl`, `kubectl delete`, `kubectl exec`, `kubectl get`, `kubectl logs` - not just applies. If it touches the cluster or produces test evidence, record it.
+2. Apply every manifest through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`.
+3. Record **every** command executed against the cluster or kumactl via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. This includes `kumactl inspect`, `curl`, `kubectl delete`, `kubectl exec`, `kubectl get`, `kubectl logs` - not just applies. If it touches the cluster or produces test evidence, record it.
 4. Stop and triage on first unexpected failure.
 5. Never use `--validate=false` on any kubectl command. Validation errors mean the manifest or CRD is wrong - fix the root cause.
 6. Never create manifests in `/tmp`. Write all manifests to `${RUN_DIR}/manifests/` before applying.
@@ -57,7 +57,7 @@ mkdir -p "${DATA_DIR}/suites" "${DATA_DIR}/runs"
 
 ```bash
 make --directory "${REPO_ROOT}" build/kumactl
-KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}")"
+KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}")"
 "${KUMACTL}" version
 ```
 
@@ -68,7 +68,7 @@ KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}"
 ```bash
 RUNS_DIR="${DATA_DIR}/runs"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-manual}"
-"$SKILL_DIR/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" "${RUN_ID}"
+"${CLAUDE_SKILL_DIR}/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" "${RUN_ID}"
 RUN_DIR="${RUNS_DIR}/${RUN_ID}"
 ```
 
@@ -91,9 +91,11 @@ Fill `run-metadata.yaml` with profile, feature scope, and kumactl version before
 Read `references/cluster-setup.md` before starting this phase.
 
 ```bash
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
-# or for multi-zone:
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
+# Single-zone:
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
+
+# Or multi-zone:
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
 ```
 
 If changes modify CRDs, refresh them after deploy:
@@ -109,12 +111,12 @@ kubectl --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
 ### Phase 3: Preflight
 
 ```bash
-"$SKILL_DIR/scripts/preflight.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/preflight.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --repo-root "${REPO_ROOT}"
 
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "preflight"
@@ -148,7 +150,7 @@ For each test step:
 6. Write result into the report. Every artifact path you reference must point to a real file.
 
 ```bash
-"$SKILL_DIR/scripts/apply-tracked-manifest.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh" \
   --run-dir "${RUN_DIR}" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --manifest "${RUN_DIR}/manifests/<manifest-file>" \
@@ -159,7 +161,7 @@ After completing each group (hard gate - do not skip):
 
 ```bash
 # 1. Capture state
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "after-<group-id>"
@@ -178,19 +180,19 @@ Read `references/troubleshooting.md` for known failure modes.
 
 1. Stop progression.
 2. Re-run the failing step once to check determinism.
-3. Capture state snapshot with `"$SKILL_DIR/scripts/capture-state.sh"`.
+3. Capture state snapshot with `"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh"`.
 4. Classify: manifest issue, environment issue, or product bug.
 5. Continue only when classification is explicit in the report.
 
 ### Phase 6: Closeout
 
 ```bash
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "postrun"
 
-"$SKILL_DIR/scripts/report-compactness-check.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/report-compactness-check.sh" \
   --report "${RUN_DIR}/reports/manual-test-report.md"
 ```
 
@@ -200,10 +202,10 @@ After all gates pass, tear down the clusters. This is the default - always clean
 
 ```bash
 # Single-zone
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-down kuma-1
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-down kuma-1
 
 # Multi-zone (global + 2 zones)
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-down kuma-1 kuma-2 kuma-3
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-down kuma-1 kuma-2 kuma-3
 ```
 
 ## Performance toggles
@@ -233,15 +235,15 @@ Store raw output in `artifacts/` and reference file paths from the report.
 - `references/mesh-policies.md` - Mesh\* policy authoring, targeting, and debug flow
 - `references/validation.md` - pre-apply checklist and safe apply flow
 - `references/troubleshooting.md` - 10 known failure modes with fixes
-- `$SKILL_DIR/scripts/init-run.sh` - create run directory from templates
-- `$SKILL_DIR/scripts/preflight.sh` - verify cluster readiness
-- `$SKILL_DIR/scripts/cluster-lifecycle.sh` - start/stop/deploy k3d clusters by profile
-- `$SKILL_DIR/scripts/validate-manifest.sh` - server-side dry-run and diff before apply
-- `$SKILL_DIR/scripts/apply-tracked-manifest.sh` - apply with validation, copy, and logging
-- `$SKILL_DIR/scripts/capture-state.sh` - snapshot cluster state
-- `$SKILL_DIR/scripts/record-command.sh` - log ad-hoc command to command log
-- `$SKILL_DIR/scripts/find-local-kumactl.sh` - locate locally built kumactl
-- `$SKILL_DIR/scripts/report-compactness-check.sh` - verify report size limits
+- `${CLAUDE_SKILL_DIR}/scripts/init-run.sh` - create run directory from templates
+- `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` - verify cluster readiness
+- `${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh` - start/stop/deploy k3d clusters by profile
+- `${CLAUDE_SKILL_DIR}/scripts/validate-manifest.sh` - server-side dry-run and diff before apply
+- `${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh` - apply with validation, copy, and logging
+- `${CLAUDE_SKILL_DIR}/scripts/capture-state.sh` - snapshot cluster state
+- `${CLAUDE_SKILL_DIR}/scripts/record-command.sh` - log ad-hoc command to command log
+- `${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh` - locate locally built kumactl
+- `${CLAUDE_SKILL_DIR}/scripts/report-compactness-check.sh` - verify report size limits
 - `assets/run-metadata.template.yaml` - run metadata template
 - `assets/run-status.template.yaml` - run progress tracking template
 - `assets/command-log.template.md` - command log template

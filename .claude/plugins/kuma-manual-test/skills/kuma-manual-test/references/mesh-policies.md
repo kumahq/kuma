@@ -66,11 +66,11 @@ Before writing test manifests, confirm supported kinds on the policy page in doc
 ## 4) Safe apply flow
 
 ```bash
-"$SKILL_DIR/scripts/validate-manifest.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/validate-manifest.sh" \
   --kubeconfig "${KUBECONFIG}" \
   --manifest "<manifest-file>"
 
-"$SKILL_DIR/scripts/apply-tracked-manifest.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh" \
   --run-dir "${RUN_DIR}" \
   --kubeconfig "${KUBECONFIG}" \
   --manifest "<manifest-file>" \
@@ -90,7 +90,7 @@ kubectl get <policy-kind> <name> -n <namespace> -o yaml
 2. Check impacted dataplanes from policy side.
 
 ```bash
-KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh")"
+KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh")"
 "${KUMACTL}" inspect <policy-resource-name> <name> --mesh <mesh>
 ```
 
@@ -160,7 +160,7 @@ Add these groups to the suite unless out of scope:
 ## 7) Common command set for policy-focused runs
 
 ```bash
-KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh")"
+KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh")"
 
 kubectl api-resources --api-group kuma.io
 kubectl get mesh -A
@@ -171,4 +171,4 @@ kubectl get dataplanes -A
 "${KUMACTL}" inspect <policy-resource-name> <policy-name> --mesh <mesh>
 ```
 
-Record each command with `"$SKILL_DIR/scripts/record-command.sh"` when it is used as test artifacts.
+Record each command with `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"` when it is used as test artifacts.

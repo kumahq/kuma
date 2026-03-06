@@ -34,7 +34,7 @@ Use explicit absolute paths. Do not rely on implicit context switching.
 ### Single-zone
 
 ```bash
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
 ```
 
 Manual equivalent:
@@ -53,7 +53,7 @@ KIND_CLUSTER_NAME=kuma-1 make k3d/stop
 ### Global + one zone
 
 ```bash
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-zone-up kuma-1 kuma-2 zone-1
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-zone-up kuma-1 kuma-2 zone-1
 ```
 
 Manual equivalent for global:
@@ -92,7 +92,7 @@ KUBECONFIG="${HOME}/.kube/kind-kuma-2-config" \
 ### Global + two zones
 
 ```bash
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
 ```
 
 Stop all:

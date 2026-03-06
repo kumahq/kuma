@@ -88,7 +88,7 @@ motb-core/
 
 ## Execution contract
 
-- all manifests applied through `"$SKILL_DIR/scripts/apply-tracked-manifest.sh"`
+- all manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
 - all failures trigger immediate triage before next group
 - all pass/fail decisions include artifact pointers
 - edge cases from `references/mesh-policies.md` included

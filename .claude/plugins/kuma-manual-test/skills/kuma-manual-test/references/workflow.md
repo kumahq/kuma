@@ -35,7 +35,7 @@ Build and verify kumactl:
 
 ```bash
 make --directory "${REPO_ROOT}" build/kumactl
-KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}")"
+KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}")"
 "${KUMACTL}" version
 ```
 
@@ -46,8 +46,7 @@ KUMACTL="$("$SKILL_DIR/scripts/find-local-kumactl.sh" --repo-root "${REPO_ROOT}"
 ```bash
 RUNS_DIR="${DATA_DIR}/runs"
 RUN_ID="$(date +%Y%m%d-%H%M%S)-manual"
-
-"$SKILL_DIR/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" "${RUN_ID}"
+"${CLAUDE_SKILL_DIR}/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" "${RUN_ID}"
 RUN_DIR="${RUNS_DIR}/${RUN_ID}"
 ```
 
@@ -64,9 +63,11 @@ Read `references/cluster-setup.md` before starting this phase.
 Pick a profile and start the cluster:
 
 ```bash
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
-# or
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
+# Single-zone:
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
+
+# Or multi-zone:
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-up kuma-1 kuma-2 kuma-3 zone-1 zone-2
 ```
 
 If changes modify CRDs, refresh them after deploy:
@@ -82,12 +83,12 @@ kubectl --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
 ## Phase 3 - preflight
 
 ```bash
-"$SKILL_DIR/scripts/preflight.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/preflight.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --repo-root "${REPO_ROOT}"
 
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "preflight"
@@ -120,20 +121,20 @@ For each test step:
 
 1. Write manifest to `${RUN_DIR}/manifests/` (copy from suite baseline/groups, or write inline YAML there - never to `/tmp`). When the suite group provides inline YAML, use it verbatim. If you think a manifest needs changes, ask the user first.
 2. Validate and apply through the tracked scripts.
-3. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.). Record **each one** via `"$SKILL_DIR/scripts/record-command.sh"`, saving output to `artifacts/`.
+3. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.). Record **each one** via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`, saving output to `artifacts/`.
 4. Run cleanup commands (`kubectl delete`) if the suite step requires it. Record each one.
 5. Write result into the report. Every artifact path you reference must point to an existing file.
 
 ```bash
 # Write manifest to run dir first
-"$SKILL_DIR/scripts/apply-tracked-manifest.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh" \
   --run-dir "${RUN_DIR}" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --manifest "${RUN_DIR}/manifests/<file>" \
   --step "<step-name>"
 
 # Record every verification/cleanup command
-"$SKILL_DIR/scripts/record-command.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/record-command.sh" \
   --run-dir "${RUN_DIR}" \
   --phase "test" \
   --output "artifacts/<artifact-file>.log" \
@@ -145,7 +146,7 @@ After completing each group (hard gate - do not skip any of these):
 1. Capture state:
 
 ```bash
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "after-<group-id>"
@@ -169,7 +170,7 @@ Read `references/troubleshooting.md` for known failure modes.
 5. Continue only when classification is explicit.
 
 ```bash
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "failure-<test-id>"
@@ -178,12 +179,12 @@ Read `references/troubleshooting.md` for known failure modes.
 ## Phase 6 - closeout
 
 ```bash
-"$SKILL_DIR/scripts/capture-state.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh" \
   --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   --run-dir "${RUN_DIR}" \
   --label "postrun"
 
-"$SKILL_DIR/scripts/report-compactness-check.sh" \
+"${CLAUDE_SKILL_DIR}/scripts/report-compactness-check.sh" \
   --report "${RUN_DIR}/reports/manual-test-report.md"
 ```
 
@@ -202,10 +203,10 @@ After all gates pass, tear down the clusters. This is the default - always clean
 
 ```bash
 # Single-zone
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-down kuma-1
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-down kuma-1
 
 # Multi-zone (global + 2 zones)
-"$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-down kuma-1 kuma-2 kuma-3
+"${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" global-two-zones-down kuma-1 kuma-2 kuma-3
 ```
 
 ## Performance toggles
@@ -220,5 +221,5 @@ Example:
 
 ```bash
 HARNESS_BUILD_IMAGES=0 HARNESS_LOAD_IMAGES=0 \
-  "$SKILL_DIR/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
+  "${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh" --repo-root "${REPO_ROOT}" single-up kuma-1
 ```
