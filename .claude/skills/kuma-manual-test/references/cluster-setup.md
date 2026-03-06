@@ -124,6 +124,29 @@ kubectl --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   -f "${REPO_ROOT}/deployments/charts/kuma/crds/"
 ```
 
+## Gateway API CRDs
+
+Suites that test builtin gateways (MeshGateway, GatewayClass, HTTPRoute) or compare builtin vs delegated gateways need the Kubernetes Gateway API CRDs installed. These are NOT included in Kuma's CRD bundle - they come from the upstream `gateway-api` project.
+
+Check and install:
+
+```bash
+# Check if installed
+"${CLAUDE_SKILL_DIR}/scripts/install-gateway-api-crds.sh" \
+  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
+  --repo-root "${REPO_ROOT}" \
+  --check-only
+
+# Install (idempotent - skips if already present)
+"${CLAUDE_SKILL_DIR}/scripts/install-gateway-api-crds.sh" \
+  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
+  --repo-root "${REPO_ROOT}"
+```
+
+The script extracts the version from `go.mod` (`sigs.k8s.io/gateway-api`) to stay in sync with the Kuma codebase. It installs the standard CRDs: GatewayClass, Gateway, HTTPRoute, ReferenceGrant.
+
+Install on every cluster that needs it (in multi-zone setups, zones running builtin gateways need the CRDs).
+
 ## Baseline readiness validation
 
 Before test execution:

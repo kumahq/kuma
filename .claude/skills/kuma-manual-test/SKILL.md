@@ -83,15 +83,17 @@ Parse from `$ARGUMENTS`:
 
 Use these pre-resolved values throughout the run. `DATA_DIR` is the data directory above. `HOME` is the home path above. The timestamp above becomes the default `RUN_ID` suffix. The session ID tracks which Claude Code session produced this run. If the session ID is empty or contains literal `${`, use `standalone` instead. If Docker shows "not running" or any tool shows "MISSING", stop immediately and report the problem.
 
+Read [references/validation.md](references/validation.md) for the pre-apply checklist, safe apply flow, and manifest error handling procedure.
+
 ## Non-negotiable rules
 
 1. Use locally built `kumactl` from `build/` only.
 2. Apply every manifest through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`.
-3. Record **every** command executed against the cluster or kumactl via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. This includes `kumactl inspect`, `curl`, `kubectl delete`, `kubectl exec`, `kubectl get`, `kubectl logs` - not just applies. If it touches the cluster or produces test evidence, record it.
+3. **NEVER run bare kubectl, kumactl, or curl commands against the cluster.** Every cluster-interacting command MUST be executed through `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. This is not optional logging - record-command.sh is the ONLY permitted way to run cluster commands. Bare commands will be blocked by hooks. This includes `kubectl get`, `kubectl logs`, `kubectl exec`, `kubectl delete`, `kumactl inspect`, `curl` - everything. The only exceptions are commands already wrapped by other tracked scripts (apply-tracked-manifest.sh, capture-state.sh, preflight.sh, cluster-lifecycle.sh).
 4. Stop and triage on first unexpected failure.
 5. Never use `--validate=false` on any kubectl command. Validation errors mean the manifest or CRD is wrong - fix the root cause.
 6. Never create manifests in `/tmp`. Write all manifests to `${RUN_DIR}/manifests/` before applying.
-7. When a suite group provides inline manifest YAML, use it verbatim. Do not improvise names, namespaces, or fields unless the user explicitly requests it.
+7. When a suite group provides inline manifest YAML, use it verbatim. Do not improvise names, namespaces, or fields. If a manifest fails validation or apply, follow the manifest error handling flow in [references/validation.md](references/validation.md) - ask the user whether to fix for this run only, fix in the suite (with amendment log), or skip.
 8. After completing each test group, capture state with `capture-state.sh`, update `run-status.yaml`, and verify these files before starting the next group. This is a hard gate - do not proceed without it.
 9. Every artifact path written in the report must resolve to an existing file. Verify before closeout.
 10. **No autonomous deviations.** If a test step needs to diverge from the suite definition (different manifest values, skipped steps, changed order, extra steps, modified expected outcomes), use AskUserQuestion to get explicit approval BEFORE making the change. The only exception is when the suite definition itself explicitly marks something as agent-discretionary. Record every deviation decision in the report with: what changed, why, and whether it was user-approved or suite-allowed.
@@ -169,7 +171,15 @@ kubectl --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
   -f "${REPO_ROOT}/deployments/charts/kuma/crds/"
 ```
 
-**Gate**: `kubectl get pods -n kuma-system` shows all pods Running/Ready.
+If the suite references builtin gateways (MeshGateway, GatewayClass, HTTPRoute, Gateway), install Gateway API CRDs. Check the suite metadata `required dependencies` and group files for these resource kinds.
+
+```bash
+"${CLAUDE_SKILL_DIR}/scripts/install-gateway-api-crds.sh" \
+  --kubeconfig "${HOME}/.kube/kind-kuma-1-config" \
+  --repo-root "${REPO_ROOT}"
+```
+
+**Gate**: `kubectl get pods -n kuma-system` shows all pods Running/Ready. If Gateway API CRDs were installed, verify: `kubectl get crd gatewayclasses.gateway.networking.k8s.io`.
 
 ### Phase 3: Preflight (spawned agent)
 
@@ -202,9 +212,10 @@ Select a suite from the positional argument, or use AskUserQuestion if none was 
 For directory suites (`SUITE_DIR` is set):
 
 1. Read `${SUITE_DIR}/suite.md` for the group table, baseline table, and execution contract.
-2. Before G1, apply all baseline manifests from `${SUITE_DIR}/baseline/` using the baseline table.
-3. Before each group, read the group file from `${SUITE_DIR}/groups/` using the file path in the group table. The group file is the **authoritative source** for that group's manifests, commands, and expected outcomes. Use its inline YAML manifests verbatim - copy them to `${RUN_DIR}/manifests/` and apply from there. Do not improvise or rewrite manifests.
-4. After completing a group, the group file content can be dropped from context.
+2. **The test groups table is authoritative.** Every group listed in the table MUST be executed. Do not skip groups based on the current cluster profile. If a group requires multi-zone but the current profile is single-zone, tear down the single-zone cluster and bring up a multi-zone cluster before that group. If profile switching is impractical, use AskUserQuestion to ask the user - never silently skip a listed group.
+3. Before G1, apply all baseline manifests from `${SUITE_DIR}/baseline/` using the baseline table.
+4. Before each group, read the group file from `${SUITE_DIR}/groups/` using the file path in the group table. The group file is the **authoritative source** for that group's manifests, commands, and expected outcomes. Use its inline YAML manifests verbatim - copy them to `${RUN_DIR}/manifests/` and apply from there. Do not improvise or rewrite manifests.
+5. After completing a group, the group file content can be dropped from context.
 
 For legacy single-file suites: read the entire file as before.
 
@@ -310,6 +321,7 @@ Store raw output in `artifacts/` and reference file paths from the report.
 - `${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh` - apply with validation, copy, and logging
 - `${CLAUDE_SKILL_DIR}/scripts/capture-state.sh` - snapshot cluster state
 - `${CLAUDE_SKILL_DIR}/scripts/record-command.sh` - log ad-hoc command to command log
+- `${CLAUDE_SKILL_DIR}/scripts/install-gateway-api-crds.sh` - install Gateway API CRDs (version from go.mod)
 - `${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh` - locate locally built kumactl
 - `${CLAUDE_SKILL_DIR}/scripts/report-compactness-check.sh` - verify report size limits
 - `assets/run-metadata.template.yaml` - run metadata template

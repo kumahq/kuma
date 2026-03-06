@@ -55,7 +55,7 @@ kubectl get <policy-kind> <name> -n <namespace> -o jsonpath='{.metadata.labels.k
 
 - `targetRef.kind` must be valid for that policy and field.
 - Use `name` + `namespace` for one target.
-- Use `labels` only when you intentionally target a set.
+- Use `labels` only when intentionally targeting a set.
 - If `namespace` is omitted in `targetRef`, Kuma uses policy namespace.
 - `sectionName` can target a named section or a numeric port.
 - For system policies, use label-based targeting.

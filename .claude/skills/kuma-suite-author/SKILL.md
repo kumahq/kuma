@@ -157,6 +157,15 @@ For each group entry include: one-line description, source file path, and whethe
 - evidence: one-line description of what was found
 - strength: strong / moderate / weak
 
+**Schema details** (for manifest verification in step 6):
+
+- CRD scope: Namespaced or Cluster (from `deployments/charts/kuma/crds/`)
+- Policy scope: Mesh or Global (from `+kuma:policy:scope=` marker)
+- Spec field tree: JSON field names at each nesting level (from Go struct JSON tags)
+- Enum fields: field path and allowed values (from `+kubebuilder:validation:Enum=` markers)
+- Required fields: non-pointer fields without `omitempty`
+- targetRef valid kinds: what `kind` values are accepted in targetRef (from the `From`/`To`/`TargetRef` definitions)
+
 The agent must NOT return raw file contents, full code blocks, or golden file text. Only the structured summary above.
 
 Wait for the agent to return before proceeding to step 5.
@@ -194,6 +203,8 @@ Then add G8+ for selected variants. Variant groups number sequentially from G8. 
 
 For G6 multi-zone: if no KDS markers found and no multi-zone variant was selected in step 5, use AskUserQuestion to confirm skipping multi-zone groups.
 
+**Dependency detection**: scan all generated groups for resource kinds that need extra CRDs. If any group uses `MeshGateway`, `GatewayClass`, `Gateway`, or `HTTPRoute` (builtin gateway resources), add `gateway-api-crds` to the suite metadata `required dependencies`. The runner uses this to install Gateway API CRDs during cluster setup. See [references/suite-structure.md](references/suite-structure.md) (Builtin gateways) for details.
+
 The suite is split into three buckets:
 
 - `suite.md` - metadata, baseline table, group table, execution contract
@@ -202,7 +213,14 @@ The suite is split into three buckets:
 
 For each group (base and variant):
 
-- Generate actual YAML manifests inline in the group file.
+- Generate actual YAML manifests inline in the group file (both Kubernetes and Universal format where the suite targets Universal environments).
+- **Verify every manifest against the schema** before including it. Use the schema details from step 4 and the verification checklist in [references/code-reading-guide.md](references/code-reading-guide.md) (Schema verification sources). For each manifest:
+  1. Confirm every field name matches the JSON tag from the Go struct (camelCase, not snake_case or PascalCase).
+  2. Confirm enum values are in the allowed set from `+kubebuilder:validation:Enum` markers.
+  3. Confirm namespace placement: Namespaced CRDs need `metadata.namespace`; mesh-scoped resources need `kuma.io/mesh` label (K8s) or `mesh` field (Universal).
+  4. Confirm required fields are present (non-pointer Go fields without `omitempty`).
+  5. Confirm `targetRef.kind` is valid for the policy type.
+  6. If unsure about a field, read the CRD file (`deployments/charts/kuma/crds/kuma.io_<plural>.yaml`) to verify.
 - Include specific validation commands (kubectl, kumactl, config_dump).
 - State expected outcomes clearly.
 - List artifacts to capture.
@@ -272,7 +290,7 @@ Interactive step-by-step suite generation:
 4. Read code and collect variant signals (step 4). Read [references/code-reading-guide.md](references/code-reading-guide.md) for where to find policy specs. Read [references/variant-detection.md](references/variant-detection.md) for the variant signal catalog.
 5. Detect and confirm variants (step 5) - present each signal individually for review.
 6. Read [references/suite-structure.md](references/suite-structure.md) for the format spec. Read [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) for the worked example. Show the group structure, ask which base groups (G1-G7) to include.
-7. For each selected group: ask what to test, generate manifests, show for review.
+7. For each selected group: ask what to test, generate manifests, verify each manifest against the schema (same checks as step 6 in generate mode), show for review.
 8. User edits/approves each group before moving to next.
 9. Confirmation wizard (step 7) - same full summary review before saving.
 10. Save and report same as generate mode.

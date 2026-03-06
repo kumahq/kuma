@@ -108,10 +108,11 @@ Select a suite that matches the feature area, or copy `examples/suite-template.m
 For directory suites (`SUITE_DIR` is set):
 
 1. Read `${SUITE_DIR}/suite.md` for overview, group table, baseline table, and execution contract.
-2. Before G1, apply each baseline manifest from `${SUITE_DIR}/baseline/` using the baseline table. Copy each to `${RUN_DIR}/manifests/` and apply from there.
-3. Before each group, read the group file from `${SUITE_DIR}/groups/` using the file path in the group table. The group file is the **authoritative source** for that group's manifests, validation commands, and expected outcomes. Extract inline YAML manifests from fenced code blocks, write them to `${RUN_DIR}/manifests/`, and apply from there. Do not improvise, modify, or rewrite manifests from group files.
-4. Follow the group file's validation commands and expected outcomes exactly. If something doesn't match, report it as a finding - do not silently adjust expectations.
-5. After completing a group, the group file content can be dropped from context.
+2. **The test groups table is authoritative.** Every group listed in the table MUST be executed. Do not skip groups because they need a different cluster profile. If a group requires multi-zone but the current profile is single-zone, tear down the current cluster and bring up a multi-zone cluster before that group. If profile switching is impractical, use AskUserQuestion - never silently skip.
+3. Before G1, apply each baseline manifest from `${SUITE_DIR}/baseline/` using the baseline table. Copy each to `${RUN_DIR}/manifests/` and apply from there.
+4. Before each group, read the group file from `${SUITE_DIR}/groups/` using the file path in the group table. The group file is the **authoritative source** for that group's manifests, validation commands, and expected outcomes. Extract inline YAML manifests from fenced code blocks, write them to `${RUN_DIR}/manifests/`, and apply from there. Do not improvise, modify, or rewrite manifests from group files.
+5. Follow the group file's validation commands and expected outcomes exactly. If something doesn't match, report it as a finding - do not silently adjust expectations.
+6. After completing a group, the group file content can be dropped from context.
 
 For legacy single-file suites: read the entire suite file as before.
 
@@ -119,11 +120,11 @@ For legacy single-file suites: read the entire suite file as before.
 
 For each test step:
 
-1. Write manifest to `${RUN_DIR}/manifests/` (copy from suite baseline/groups, or write inline YAML there - never to `/tmp`). When the suite group provides inline YAML, use it verbatim. If you think a manifest needs changes, ask the user first.
+1. Write manifest to `${RUN_DIR}/manifests/` (copy from suite baseline/groups, or write inline YAML there - never to `/tmp`). When the suite group provides inline YAML, use it verbatim. If the manifest needs changes, ask the user first.
 2. Validate and apply through the tracked scripts.
-3. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.). Record **each one** via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`, saving output to `artifacts/`.
-4. Run cleanup commands (`kubectl delete`) if the suite step requires it. Record each one.
-5. Write result into the report. Every artifact path you reference must point to an existing file.
+3. Run verification commands (`kumactl inspect`, `curl`, `kubectl get`, etc.) THROUGH `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. Never run these bare - the script is the execution method, not a post-hoc logger. Save output to `artifacts/`.
+4. Run cleanup commands (`kubectl delete`) THROUGH `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. Every command that touches the cluster goes through this script.
+5. Write result into the report. Every artifact path referenced must point to an existing file.
 
 ```bash
 # Write manifest to run dir first

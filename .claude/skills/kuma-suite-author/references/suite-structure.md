@@ -7,11 +7,12 @@
 5. [Groups directory](#groups-directory)
 6. [Group file structure](#group-file-structure)
 7. [Standard group structure](#standard-group-structure)
-8. [Manifest conventions](#manifest-conventions)
-9. [Validation step patterns](#validation-step-patterns)
-10. [Artifact capture patterns](#artifact-capture-patterns)
-11. [Execution contract](#execution-contract)
-12. [Reference](#reference)
+8. [Amendments log](#amendments-log)
+9. [Manifest conventions](#manifest-conventions)
+10. [Validation step patterns](#validation-step-patterns)
+11. [Artifact capture patterns](#artifact-capture-patterns)
+12. [Execution contract](#execution-contract)
+13. [Reference](#reference)
 
 ---
 
@@ -36,6 +37,7 @@ For single-feature suites testing the full surface, use `{feature}-core`. For fo
 ```
 ${DATA_DIR}/suites/${SUITE_NAME}/
   suite.md                   # metadata, group table, execution contract (~80-130 lines)
+  amendments.md              # log of fixes applied to suite files during runs (created on first amendment)
   baseline/                  # shared manifests applied before G1
     namespace.yaml
     otel-collector.yaml
@@ -63,7 +65,7 @@ Links to each section within suite.md.
 - session_id: <session ID from kuma-suite-author, or "standalone">
 - feature scope: <what this tests>
 - target environments: single-zone / multi-zone / universal
-- required dependencies: <workloads, collectors, etc.>
+- required dependencies: <workloads, collectors, gateway-api-crds, etc.>
 - skipped groups: <group IDs not included, with reason>
 - keep_clusters: false (set true to skip cluster teardown after the run)
 ```
@@ -155,13 +157,53 @@ List of artifacts to capture for this group.
 
 Not all groups apply to every feature. Skip groups that don't make sense, but document why in the suite metadata.
 
+## Amendments log
+
+When `kuma-manual-test` discovers a manifest error during a run, the user can choose to fix it in the suite itself (not just the current run). These fixes are recorded in `amendments.md` at the suite root. The file is created on the first amendment - suites start without one.
+
+Format:
+
+```markdown
+# Suite amendments
+
+Changes applied to suite files during test runs.
+
+---
+
+**2026-03-06** | Run: `20260306-180131-manual` | G3
+
+- **File**: `groups/g03-policy-matching.md`
+- **Change**: Fixed namespace from `kuma-system` to `kong`
+- **Reason**: MeshTrafficPermission with namespace-scoped targetRef must be in the workload namespace
+
+---
+```
+
+Each entry has: date, run ID, group, file path, what changed, and why. Entries are appended chronologically with `---` separators. The runner updates both the suite file (inline YAML or baseline YAML) AND amendments.md in a single operation.
+
+Amendments are permanent fixes to the suite. Future runs use the corrected manifests. This is different from run-only deviations which are recorded only in the run report and don't change the suite.
+
 ## Manifest conventions
 
-- `apiVersion`: use the correct group/version from the CRD (e.g., `kuma.io/v1alpha1`)
-- `metadata.namespace`: `kuma-system` for mesh-scoped resources, workload namespace for namespace-scoped
-- `metadata.labels`: include `kuma.io/mesh: <mesh-name>` where required
-- `metadata.annotations`: include `kuma.io/mesh: <mesh-name>` for universal resources
+### Kubernetes format
+
+- `apiVersion`: verify against the CRD (`deployments/charts/kuma/crds/`) - use the exact group/version (e.g., `kuma.io/v1alpha1`)
+- `metadata.namespace`: determined by CRD scope (Namespaced) AND policy type. Mesh-scoped `Mesh*` policies go in `kuma-system`. Namespace-scoped policies targeting workloads go in the workload namespace.
+- `metadata.labels`: include `kuma.io/mesh: <mesh-name>` for mesh-scoped policies
+- Field names must match Go struct JSON tags exactly (camelCase). Check the API spec struct or CRD schema - do not guess.
+- Enum values must be in the allowed set from `+kubebuilder:validation:Enum` markers
+
+### Universal format
+
+- `type`: must match the registered resource kind (e.g., `MeshTrafficPermission`)
+- `mesh`: required for mesh-scoped resources (top-level field, not in metadata)
+- `name`: resource name (top-level field)
+- `spec`: same field names as Kubernetes format (from Go struct JSON tags)
+
+### General
+
 - Use realistic but minimal manifests - enough to trigger the behavior, no extras
+- Every manifest field must be verified against the CRD or Go API spec before inclusion. See `references/code-reading-guide.md` (Schema verification sources) for the full checklist.
 
 ## Domain knowledge
 
@@ -177,6 +219,15 @@ A "delegated gateway" in Kuma is a standalone gateway proxy (not managed by Kuma
 - The resulting Dataplane resource will have `networking.gateway.type: DELEGATED`
 - Policies target delegated gateways via `kind: Dataplane` with label selectors (not `kind: MeshGateway` which is for builtin gateways)
 
+### Builtin gateways
+
+Builtin gateways are managed by Kuma using MeshGateway + GatewayClass resources from the Kubernetes Gateway API. They require Gateway API CRDs to be installed in the cluster. When generating suites that include builtin gateway groups:
+
+- Add `gateway-api-crds` to the suite metadata `required dependencies`
+- The test runner will install them via `install-gateway-api-crds.sh` during Phase 2
+- Use `GatewayClass`, `Gateway`, `HTTPRoute` from `gateway.networking.k8s.io/v1` or `v1beta1`
+- Builtin gateways are NOT available on Universal - only Kubernetes
+
 ### Builtin vs delegated
 
 | Aspect | Builtin gateway | Delegated gateway (Kong) |
@@ -186,6 +237,8 @@ A "delegated gateway" in Kuma is a standalone gateway proxy (not managed by Kuma
 | Policy targeting | `kind: MeshGateway` | `kind: Dataplane` with labels |
 | Pod annotation | none (auto-created) | `kuma.io/gateway: enabled` |
 | Transparent proxy | disabled | disabled |
+| CRD requirement | Gateway API CRDs (`gateway-api-crds`) | none (standard Kuma CRDs only) |
+| Environments | Kubernetes only | Kubernetes and Universal |
 
 ## Validation step patterns
 
@@ -230,6 +283,7 @@ Every suite must include this checklist in suite.md:
 - all failures trigger immediate triage before next group
 - all pass/fail decisions include artifact pointers to existing files
 - deviations from suite definitions require user approval and are recorded in the report
+- manifest errors trigger user choice: fix for run only, fix in suite (with `amendments.md` entry), or skip
 - inline manifests in group files are authoritative - the test runner must use them verbatim
 - edge cases from `references/mesh-policies.md` included when suite tests Mesh\* policies
 

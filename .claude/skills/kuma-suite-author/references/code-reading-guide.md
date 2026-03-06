@@ -1,3 +1,14 @@
+# Contents
+
+1. [Policy-based features](#policy-based-features)
+2. [Non-policy features](#non-policy-features)
+3. [What to read for each group type](#what-to-read-for-each-group-type)
+4. [Variant detection signals](#variant-detection-signals)
+5. [Schema verification sources](#schema-verification-sources)
+6. [Tips](#tips)
+
+---
+
 # Code reading guide
 
 Where to find things in a Kuma repo for generating test suites.
@@ -57,6 +68,50 @@ While reading code for G1-G7, also scan for patterns that indicate feature varia
 | S7 Backward compat     | `deprecated.go`, old field names, version-gated logic         | Legacy path groups       |
 
 See `references/variant-detection.md` for the full methodology, signal strength classification, and a worked MOTB example.
+
+## Schema verification sources
+
+Every generated manifest (Kubernetes or Universal) must be verified against the actual schema before inclusion in the suite. Common mistakes: wrong field names, wrong namespace, wrong enum values, missing required fields.
+
+### Kubernetes manifests
+
+| Check | Source | How to verify |
+| :---- | :----- | :------------ |
+| apiVersion/kind | CRD in `deployments/charts/kuma/crds/kuma.io_<plural>.yaml` | `spec.group` + `spec.versions[].name` |
+| Scope (Namespaced/Cluster) | CRD `spec.scope` field | Namespaced = needs `metadata.namespace`; Cluster = no namespace |
+| Field names | CRD `openAPIV3Schema.properties.spec` tree OR Go struct JSON tags | YAML field = JSON tag value (e.g., `json:"targetRef"` = `targetRef:` in YAML) |
+| Required fields | CRD `required` arrays at each level | Non-pointer Go fields without `omitempty` are required |
+| Enum values | CRD `enum` arrays OR `+kubebuilder:validation:Enum=X;Y;Z` markers | Only listed values are valid |
+| Label requirements | `+kuma:policy:scope=Mesh` marker + CRD | Mesh-scoped resources need `kuma.io/mesh` label |
+
+### Universal manifests
+
+| Check | Source | How to verify |
+| :---- | :----- | :------------ |
+| Resource type | Go resource type registration | `type` field matches registered resource kind |
+| Mesh field | `+kuma:policy:scope=Mesh` marker | Mesh-scoped resources need `mesh` field at top level |
+| Spec fields | Go API spec struct JSON tags | Same field name rules as Kubernetes |
+| Enum values | `+kubebuilder:validation:Enum` markers | Same values apply in Universal format |
+
+### Common pitfalls
+
+- Go field `TargetRef *common_api.TargetRef` with tag `json:"targetRef,omitempty"` means the YAML key is `targetRef` (camelCase), not `target_ref` or `TargetRef`
+- Pointer fields (`*Type`) are optional; non-pointer fields are required
+- `omitempty` means the field can be absent; without it, the field must be present even if zero-valued
+- `kuma.io/mesh` label goes in `metadata.labels` for Kubernetes, `mesh` field at top level for Universal
+- Policy scope is NOT the same as CRD scope - a policy can be Mesh-scoped (conceptually) but Namespaced (in K8s CRD scope)
+- `targetRef.kind: Dataplane` with labels targets individual dataplanes; `targetRef.kind: MeshGateway` targets builtin gateways only
+
+### Verification workflow
+
+For each manifest generated for the suite:
+
+1. Read the CRD file (K8s) or Go API spec (Universal) for the resource kind
+2. Walk every field in the manifest and confirm it exists in the schema at that path
+3. Check enum fields against allowed values
+4. Confirm namespace/mesh placement matches the resource scope
+5. Confirm required fields are present
+6. For `targetRef` sections, verify the `kind` value is valid for the policy type
 
 ## Tips
 

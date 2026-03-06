@@ -63,9 +63,11 @@ if printf '%s' "${command}" | grep -qE '(kubectl|kumactl|curl).*(--(kubeconfig|c
     jq -nc '{
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
-        permissionDecision: "ask",
-        permissionDecisionReason: "[KMT005] Cluster command not wrapped in record-command.sh. Unrecorded commands break run reproducibility. Wrap the command or confirm you want to proceed unrecorded."
-      }
+        permissionDecision: "deny",
+        permissionDecisionReason: "[KMT005] Bare cluster command blocked. ALL kubectl, kumactl, and curl commands against the cluster MUST be executed through record-command.sh for reproducibility. No exceptions.",
+        additionalContext: "Automated kuma-manual-test hook. Wrap the command: record-command.sh --run-dir ... --phase test --label ... -- <command>"
+      },
+      systemMessage: "\nKMT005: Bare cluster command blocked\n  Fix: Execute through record-command.sh --run-dir ${RUN_DIR} --phase test --label <label> -- <command>\n"
     }'
     exit 0
   fi
