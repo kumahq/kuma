@@ -88,7 +88,7 @@ Pros:
 - Good, because different resource limits and Kubernetes security contexts can be applied per role.
 
 Cons:
-- Bad, because it requires managing two Deployments per mesh instead of one, which also increases cost and complexity.
+- Bad, because it requires managing two Deployments(K8s)/Running applications(Universal) per mesh instead of one, which also increases cost and complexity.
 
 ### Option 2: Combined Deployment (`combinedProxies`)
 
