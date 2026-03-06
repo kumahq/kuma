@@ -20,7 +20,7 @@ warnings=()
 
 # S3: baseline YAML syntax validation
 if [[ "${file_path}" == */baseline/*.yaml ]] || [[ "${file_path}" == */baseline/*.yml ]]; then
-  yaml_error="$(python3 -c "import yaml; yaml.safe_load(open('${file_path}'))" 2>&1)" || true
+  yaml_error="$(python3 -c "import sys; import yaml; yaml.safe_load(open(sys.argv[1]))" "${file_path}" 2>&1)" || true
   if [[ -n "${yaml_error}" ]] && printf '%s' "${yaml_error}" | grep -qiE 'error|exception|invalid'; then
     warnings+=("[KSA003] Generated YAML has syntax errors. Fix before saving the suite.")
   fi

@@ -14,7 +14,7 @@ _hooks_check_deps() {
     local joined
     joined="$(IFS=', '; echo "${missing[*]}")"
     # Emit warning and exit cleanly - don't block operations when deps are missing
-    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","additionalContext":"kuma-suite-author hook warning: missing required tools: %s. Hook checks are disabled until these are installed."}}\n' "${joined}" >&2
+    printf 'kuma-suite-author hook warning: missing required tools: %s. Hook checks are disabled until these are installed.\n' "${joined}" >&2
     exit 0
   fi
 }

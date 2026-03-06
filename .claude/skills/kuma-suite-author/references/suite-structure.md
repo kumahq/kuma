@@ -60,6 +60,7 @@ Links to each section within suite.md.
 ## Suite metadata
 
 - suite id: <kebab-case-name>
+- session_id: <session ID from kuma-suite-author, or "standalone">
 - feature scope: <what this tests>
 - target environments: single-zone / multi-zone / universal
 - required dependencies: <workloads, collectors, etc.>

@@ -18,6 +18,7 @@ suites/<suite-name>/
 ### Suite metadata
 
 - suite id:
+- session_id:
 - feature scope:
 - target environments: single-zone / multi-zone / universal
 - required dependencies:
@@ -43,10 +44,15 @@ suites/<suite-name>/
 
 ### Execution contract
 
-- All manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
-- All failures trigger immediate triage before next group
-- All pass/fail decisions include artifact pointers
-- Include edge cases from `references/mesh-policies.md` when suite uses Mesh\* policies
+- all manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
+- all commands (inspect, curl, delete, kubectl get, etc.) recorded via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`
+- cluster state captured after each completed group via `"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh"`
+- `run-status.yaml` updated after each group with counts and last_completed_group
+- all failures trigger immediate triage before next group
+- all pass/fail decisions include artifact pointers to existing files
+- deviations from suite definitions require user approval and are recorded in the report
+- inline manifests in group files are authoritative - the test runner must use them verbatim
+- edge cases from `references/mesh-policies.md` included when suite tests Mesh\* policies
 
 ### Failure triage
 

@@ -46,7 +46,7 @@ KUMACTL="$("${CLAUDE_SKILL_DIR}/scripts/find-local-kumactl.sh" --repo-root "${RE
 ```bash
 RUNS_DIR="${DATA_DIR}/runs"
 RUN_ID="$(date +%Y%m%d-%H%M%S)-manual"
-"${CLAUDE_SKILL_DIR}/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" "${RUN_ID}"
+"${CLAUDE_SKILL_DIR}/scripts/init-run.sh" --runs-dir "${RUNS_DIR}" --session-id "${SESSION_ID}" "${RUN_ID}"
 RUN_DIR="${RUNS_DIR}/${RUN_ID}"
 ```
 
@@ -137,7 +137,7 @@ For each test step:
 "${CLAUDE_SKILL_DIR}/scripts/record-command.sh" \
   --run-dir "${RUN_DIR}" \
   --phase "test" \
-  --output "artifacts/<artifact-file>.log" \
+  --label "<step-label>" \
   -- <command>
 ```
 

@@ -28,6 +28,7 @@ suites/motb-core/
 ## Suite metadata
 
 - suite id: motb-core
+- session_id: (auto-filled by kuma-suite-author)
 - feature scope: MeshMetric, MeshTrace, MeshAccessLog (unified observability)
 - target environments: single-zone, multi-zone
 - kuma-suite-author version: 2.0.0
@@ -53,9 +54,15 @@ suites/motb-core/
 
 ## Execution contract
 
-- All manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
-- All failures trigger immediate triage before next group
-- All pass/fail decisions include artifact pointers
+- all manifests applied through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`
+- all commands (inspect, curl, delete, kubectl get, etc.) recorded via `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`
+- cluster state captured after each completed group via `"${CLAUDE_SKILL_DIR}/scripts/capture-state.sh"`
+- `run-status.yaml` updated after each group with counts and last_completed_group
+- all failures trigger immediate triage before next group
+- all pass/fail decisions include artifact pointers to existing files
+- deviations from suite definitions require user approval and are recorded in the report
+- inline manifests in group files are authoritative - the test runner must use them verbatim
+- edge cases from `references/mesh-policies.md` included when suite tests Mesh\* policies
 ```
 
 ## Group file content (g01-crud.md)
