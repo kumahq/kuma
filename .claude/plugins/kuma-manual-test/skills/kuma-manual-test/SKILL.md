@@ -7,6 +7,7 @@ description: >-
 argument-hint: "[suite-path] [--profile single-zone|multi-zone] [--repo /path/to/kuma] [--run-id ID] [--resume RUN_ID]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Kuma manual test
@@ -38,7 +39,7 @@ Parse from `$ARGUMENTS`:
 9. Every artifact path written in the report must resolve to an existing file. Verify before closeout.
 10. **No autonomous deviations.** If a test step needs to diverge from the suite definition (different manifest values, skipped steps, changed order, extra steps, modified expected outcomes), you MUST use AskUserQuestion to get explicit approval BEFORE making the change. The only exception is when the suite definition itself explicitly marks something as agent-discretionary. Record every deviation decision in the report with: what changed, why, and whether it was user-approved or suite-allowed.
 
-Read `references/agent-contract.md` for full agent behavior rules and artifact requirements.
+Read [references/agent-contract.md](references/agent-contract.md) for full agent behavior rules and artifact requirements.
 
 ## Workflow
 
@@ -88,7 +89,7 @@ Fill `run-metadata.yaml` with profile, feature scope, and kumactl version before
 
 ### Phase 2: Bootstrap cluster
 
-Read `references/cluster-setup.md` before starting this phase.
+Read [references/cluster-setup.md](references/cluster-setup.md) before starting this phase.
 
 ```bash
 # Single-zone:
@@ -126,10 +127,10 @@ Do not start tests until preflight exits 0.
 
 ### Phase 4: Execute tests
 
-Read `references/validation.md` before applying manifests.
-Read `references/mesh-policies.md` when the suite tests any `Mesh*` policy.
+Read [references/validation.md](references/validation.md) before applying manifests.
+Read [references/mesh-policies.md](references/mesh-policies.md) when the suite tests any `Mesh*` policy.
 
-Select a suite from the positional argument, or use AskUserQuestion if none was provided. Copy `examples/suite-template.md` for new features.
+Select a suite from the positional argument, or use AskUserQuestion if none was provided. Copy [examples/suite-template.md](examples/suite-template.md) for new features.
 
 For directory suites (`SUITE_DIR` is set):
 
@@ -176,7 +177,7 @@ On first unexpected failure, go to Phase 5.
 
 ### Phase 5: Failure handling
 
-Read `references/troubleshooting.md` for known failure modes.
+Read [references/troubleshooting.md](references/troubleshooting.md) for known failure modes.
 
 1. Stop progression.
 2. Re-run the failing step once to check determinism.
@@ -229,12 +230,12 @@ Store raw output in `artifacts/` and reference file paths from the report.
 
 ## Bundled resources
 
-- `references/agent-contract.md` - agent behavior rules, failure policy, artifact requirements
-- `references/workflow.md` - detailed phase descriptions with verification gates
-- `references/cluster-setup.md` - k3d profiles, kubeconfig mapping, deploy commands
-- `references/mesh-policies.md` - Mesh\* policy authoring, targeting, and debug flow
-- `references/validation.md` - pre-apply checklist and safe apply flow
-- `references/troubleshooting.md` - 10 known failure modes with fixes
+- [references/agent-contract.md](references/agent-contract.md) - agent behavior rules, failure policy, artifact requirements
+- [references/workflow.md](references/workflow.md) - detailed phase descriptions with verification gates
+- [references/cluster-setup.md](references/cluster-setup.md) - k3d profiles, kubeconfig mapping, deploy commands
+- [references/mesh-policies.md](references/mesh-policies.md) - Mesh\* policy authoring, targeting, and debug flow
+- [references/validation.md](references/validation.md) - pre-apply checklist and safe apply flow
+- [references/troubleshooting.md](references/troubleshooting.md) - 10 known failure modes with fixes
 - `${CLAUDE_SKILL_DIR}/scripts/init-run.sh` - create run directory from templates
 - `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` - verify cluster readiness
 - `${CLAUDE_SKILL_DIR}/scripts/cluster-lifecycle.sh` - start/stop/deploy k3d clusters by profile
@@ -249,8 +250,8 @@ Store raw output in `artifacts/` and reference file paths from the report.
 - `assets/command-log.template.md` - command log template
 - `assets/manifest-index.template.md` - manifest index template
 - `assets/manual-test-report.template.md` - test report template
-- `examples/suite-template.md` - generic test suite template
-- `examples/example-motb-core-suite.md` - worked example for MOTB testing
+- [examples/suite-template.md](examples/suite-template.md) - generic test suite template
+- [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) - worked example for MOTB testing
 
 ## Example invocations
 

@@ -74,8 +74,8 @@ Handle ambiguity with AskUserQuestion:
 
 ### Step 4: Read code
 
-Read `references/code-reading-guide.md` for where to look in the Kuma repo.
-Read `references/variant-detection.md` for variant signal patterns.
+Read [references/code-reading-guide.md](references/code-reading-guide.md) for where to look in the Kuma repo.
+Read [references/variant-detection.md](references/variant-detection.md) for variant signal patterns.
 
 For each identified file, read and extract two kinds of data:
 
@@ -113,7 +113,7 @@ If no variants detected, note it and continue to step 6 with G1-G7 only.
 
 ### Step 6: Generate suite
 
-Read `references/suite-structure.md` for the format spec.
+Read [references/suite-structure.md](references/suite-structure.md) for the format spec.
 
 Build the suite with base groups (skip groups that don't apply, document why):
 
@@ -167,7 +167,7 @@ If user picks add/remove/edit: handle the change, then present the summary again
 
 ### Step 8: Save suite
 
-Derive the suite name following the `{feature}-{scope}` pattern from `references/suite-structure.md`:
+Derive the suite name following the `{feature}-{scope}` pattern from [references/suite-structure.md](references/suite-structure.md):
 
 - Single-feature full-surface suite: `{feature}-core` (e.g., `meshmetric-core`, `meshtrace-core`)
 - Focused aspect suite: `{feature}-{aspect}` (e.g., `motb-pipe-mode`, `meshtrace-otel-backends`)
@@ -206,7 +206,7 @@ Interactive step-by-step suite generation:
 3. Ask feature name, target environment, scope using AskUserQuestion.
 4. Read code and collect variant signals (step 4).
 5. Detect and confirm variants (step 5) - present each signal individually for review.
-6. Show the group structure from `references/suite-structure.md`, ask which base groups (G1-G7) to include.
+6. Show the group structure from [references/suite-structure.md](references/suite-structure.md), ask which base groups (G1-G7) to include.
 7. For each selected group: ask what to test, generate manifests, show for review.
 8. User edits/approves each group before moving to next.
 9. Confirmation wizard (step 7) - same full summary review before saving.
@@ -214,10 +214,10 @@ Interactive step-by-step suite generation:
 
 ## Bundled resources
 
-- `references/code-reading-guide.md` - where to find policy specs, xDS generators, tests in a Kuma repo
-- `references/variant-detection.md` - variant signal catalog, strength classification, group mapping
-- `references/suite-structure.md` - suite format spec, group structure, manifest conventions
-- `examples/example-motb-core-suite.md` - worked example of a complete test suite
+- [references/code-reading-guide.md](references/code-reading-guide.md) - where to find policy specs, xDS generators, tests in a Kuma repo
+- [references/variant-detection.md](references/variant-detection.md) - variant signal catalog, strength classification, group mapping
+- [references/suite-structure.md](references/suite-structure.md) - suite format spec, group structure, manifest conventions
+- [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) - worked example of a complete test suite
 
 ## Example invocations
 
