@@ -89,7 +89,7 @@ Read [references/validation.md](references/validation.md) for the pre-apply chec
 
 1. Use locally built `kumactl` from `build/` only.
 2. Apply every manifest through `"${CLAUDE_SKILL_DIR}/scripts/apply-tracked-manifest.sh"`.
-3. **NEVER run bare kubectl, kumactl, or curl commands against the cluster.** Every cluster-interacting command MUST be executed through `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. This is not optional logging - record-command.sh is the ONLY permitted way to run cluster commands. Bare commands will be blocked by hooks. This includes `kubectl get`, `kubectl logs`, `kubectl exec`, `kubectl delete`, `kumactl inspect`, `curl` - everything. The only exceptions are commands already wrapped by other tracked scripts (apply-tracked-manifest.sh, capture-state.sh, preflight.sh, cluster-lifecycle.sh).
+3. **NEVER run bare kubectl, kumactl, or curl commands against the cluster.** Every cluster-interacting command must be executed through `"${CLAUDE_SKILL_DIR}/scripts/record-command.sh"`. This is not optional logging - record-command.sh is the ONLY permitted way to run cluster commands. Bare commands will be blocked by hooks. This includes `kubectl get`, `kubectl logs`, `kubectl exec`, `kubectl delete`, `kumactl inspect`, `curl` - everything. The only exceptions are commands already wrapped by other tracked scripts (apply-tracked-manifest.sh, capture-state.sh, preflight.sh, cluster-lifecycle.sh).
 4. Stop and triage on first unexpected failure.
 5. Never use `--validate=false` on any kubectl command. Validation errors mean the manifest or CRD is wrong - fix the root cause.
 6. Never create manifests in `/tmp`. Write all manifests to `${RUN_DIR}/manifests/` before applying.
@@ -198,11 +198,13 @@ The agent must:
 
 1. Run `preflight.sh` with the kubeconfig, run-dir, and repo-root flags.
 2. Run `capture-state.sh` with kubeconfig, run-dir, and label `preflight`.
-3. Return ONLY: pass/fail result, state capture directory path, and any warnings or blockers.
+3. Return only: pass/fail result, state capture directory path, and any warnings or blockers.
 
 Poll the agent task until complete. Do not start tests until the agent reports pass.
 
 ### Phase 4: Execute tests
+
+Recall the non-negotiable rules above - especially rules 3 (all commands through record-command.sh), 7 (verbatim manifests), and 10 (no autonomous deviations).
 
 Read [references/validation.md](references/validation.md) for the pre-apply checklist and safe apply flow before applying manifests.
 Read [references/mesh-policies.md](references/mesh-policies.md) for policy authoring rules when the suite tests any `Mesh*` policy.
@@ -335,22 +337,38 @@ Store raw output in `artifacts/` and reference file paths from the report.
 
 ## Example invocations
 
+<example description="Run a suite from persistent storage using an explicit repo path">
 ```bash
-# Run suite from persistent storage (created by kuma-suite-author)
 /kuma-manual-test meshretry-basic --repo ~/Projects/kuma
+```
+</example>
 
-# Run from inside kuma repo (auto-detects repo root)
+<example description="Run a suite from inside the kuma repo (auto-detects repo root)">
+```bash
 /kuma-manual-test meshretry-basic
+```
+</example>
 
-# Explicit suite file path still works
+<example description="Run a suite by explicit file path">
+```bash
 /kuma-manual-test /path/to/my-suite.md --repo ~/Projects/kuma
+```
+</example>
 
-# Multi-zone profile
+<example description="Run a suite with multi-zone cluster profile">
+```bash
 /kuma-manual-test my-suite.md --profile multi-zone
+```
+</example>
 
-# Resume from anywhere
+<example description="Resume a partial run by its run ID">
+```bash
 /kuma-manual-test --resume 20260304-180131-manual --repo ~/Projects/kuma
+```
+</example>
 
-# Custom run ID
+<example description="Run a suite with a custom run identifier">
+```bash
 /kuma-manual-test my-suite.md --run-id motb-validation-v2
 ```
+</example>
