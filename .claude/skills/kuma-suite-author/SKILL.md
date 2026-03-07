@@ -8,6 +8,9 @@ description: >-
 argument-hint: "<feature-name> [--repo /path/to/kuma] [--mode generate|wizard] [--from-pr PR_URL] [--from-branch BRANCH] [--suite-name NAME]"
 allowed-tools: AskUserQuestion, Bash, Read, Task, Write
 user-invocable: true
+disable-model-invocation: true
+context: fork
+agent: general-purpose
 hooks:
   PreToolUse:
     - matcher: "Bash"
@@ -305,21 +308,61 @@ Interactive step-by-step suite generation:
 - [references/suite-structure.md](references/suite-structure.md) - suite format spec, group structure, manifest conventions
 - [examples/example-motb-core-suite.md](examples/example-motb-core-suite.md) - worked example of a complete test suite
 
+## Error codes
+
+Hook scripts enforce these constraints at runtime:
+
+| Code | Hook | Trigger |
+| :--- | :--- | :------ |
+| KSA001 | guard-bash | Generic suite name (use `{feature}-{scope}` pattern) |
+| KSA002 | guard-write | YAML write outside expected suite directory |
+| KSA003 | verify-write | Generated baseline YAML has syntax errors |
+| KSA004 | verify-write | suite.md missing required sections (Baseline, Groups, Execution contract, Metadata) |
+| KSA005 | verify-write | Group file missing structure (heading, steps, artifacts) |
+| KSA006 | context-code-reader | Code-reading agent context injection (not an error - instructs agent on output format) |
+| KSA007 | validate-code-reader | Agent returned raw code blocks (>20 lines) instead of structured summary |
+| KSA008 | guard-incomplete-stop | Suite generation incomplete - missing suite.md, baseline, or group files |
+| KSA009 | verify-write | Group file exceeds 100 lines - consider splitting |
+| KSA010 | verify-write | suite.md missing session_id in metadata |
+
 ## Example invocations
 
+<example>
+Generate a full test suite for the MeshRetry policy from a local repo checkout:
 ```bash
-# Generate suite for MeshRetry policy
 /kuma-suite-author meshretry --repo ~/Projects/kuma
+```
+Produces `meshretry-core/` suite with G1-G7 base groups plus variant groups for retry backends.
+</example>
 
-# Generate from a PR
+<example>
+Scope test coverage from a PR diff:
+```bash
 /kuma-suite-author meshexternalservice --from-pr https://github.com/kumahq/kuma/pull/15571
+```
+Reads the PR diff to identify changed files, then generates groups only for the affected code paths.
+</example>
 
-# Generate from a branch
+<example>
+Generate from a feature branch:
+```bash
 /kuma-suite-author motb --from-branch feat/implement-motb --repo ~/Projects/kuma
+```
+Diffs the branch against master to scope the feature, detects variant signals from the changed code.
+</example>
 
-# Interactive wizard mode
+<example>
+Interactive wizard for step-by-step review:
+```bash
 /kuma-suite-author meshtrace --mode wizard --repo ~/Projects/kuma
+```
+Walks through each group interactively - review manifests and validation steps before moving to the next.
+</example>
 
-# Custom suite name
+<example>
+Override the derived suite name:
+```bash
 /kuma-suite-author meshretry --suite-name meshretry-timeout-edge-cases
 ```
+Uses the custom name instead of deriving from feature name. Must follow `{feature}-{scope}` pattern.
+</example>
