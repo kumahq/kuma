@@ -91,7 +91,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
 	k8s.io/kubectl v0.35.2
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
-	sigs.k8s.io/controller-runtime v0.23.1
+	sigs.k8s.io/controller-runtime v0.23.3
 	sigs.k8s.io/controller-tools v0.20.1
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.4.1
