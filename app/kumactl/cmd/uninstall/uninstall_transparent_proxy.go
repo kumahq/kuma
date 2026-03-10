@@ -3,6 +3,7 @@ package uninstall
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,9 @@ func newUninstallTransparentProxy() *cobra.Command {
 		Long: "Uninstall Transparent Proxy by restoring the hosts iptables " +
 			"and /etc/resolv.conf or removing leftover ebpf objects",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			resolvConf := filepath.Clean("/etc/resolv.conf")
+			resolvConfBackup := filepath.Clean("/etc/resolv.conf.kuma-backup")
+
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
 
@@ -46,16 +50,16 @@ func newUninstallTransparentProxy() *cobra.Command {
 				return nil
 			}
 
-			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
-				content, err := os.ReadFile("/etc/resolv.conf.kuma-backup")
+			if _, err := os.Stat(resolvConfBackup); !os.IsNotExist(err) {
+				content, err := os.ReadFile(resolvConfBackup)
 				if err != nil {
-					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
+					return errors.Wrap(err, "unable to open "+resolvConfBackup)
 				}
 
 				if !cfg.DryRun {
-					err = os.WriteFile("/etc/resolv.conf", content, 0o600)
+					err = os.WriteFile(resolvConf, content, 0o600) //nolint:gosec // G703: path is fixed system config location
 					if err != nil {
-						return errors.Wrap(err, "unable to write /etc/resolv.conf")
+						return errors.Wrap(err, "unable to write "+resolvConf)
 					}
 				}
 

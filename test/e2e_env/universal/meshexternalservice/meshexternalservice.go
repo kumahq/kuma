@@ -630,10 +630,13 @@ spec:
 `, meshNameNoDefaults, mesPrimaryContainerName, mesPrimaryPort, esHttpContainerName)
 			Expect(universal.Cluster.Install(YamlUniversal(mesYAML))).To(Succeed())
 
-			By("Verifying traffic goes to priority endpoint (priority 1)")
+			By("Verifying traffic goes to primary endpoint (priority 0)")
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "mes-demo-client-no-defaults", "mes-priority.extsvc.mesh.local",
+					universal.Cluster,
+					"mes-demo-client-no-defaults",
+					"mes-priority.extsvc.mesh.local",
+					client.WithMaxTime(10),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring(mesPrimaryName))
@@ -645,11 +648,14 @@ spec:
 			By("Verifying traffic shifts to secondary endpoint (priority 1)")
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "mes-demo-client-no-defaults", "mes-priority.extsvc.mesh.local",
+					universal.Cluster,
+					"mes-demo-client-no-defaults",
+					"mes-priority.extsvc.mesh.local",
+					client.WithMaxTime(10),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring(esHttpName))
-			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	})
 

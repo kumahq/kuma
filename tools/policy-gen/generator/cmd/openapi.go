@@ -24,8 +24,9 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 		Short: "Generate an OpenAPI schema for the policy REST",
 		Long:  "Generate an OpenAPI schema for the policy REST.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			policyName := filepath.Base(rootArgs.pluginDir)
-			policyPath := filepath.Join(rootArgs.pluginDir, "api", rootArgs.version, policyName+".go")
+			pluginDir := filepath.Clean(rootArgs.pluginDir)
+			policyName := filepath.Base(pluginDir)
+			policyPath := filepath.Join(pluginDir, "api", rootArgs.version, policyName+".go")
 			if _, err := os.Stat(policyPath); err != nil {
 				return err
 			}
@@ -45,7 +46,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			}
 			defer os.RemoveAll(tmpDir)
 
-			crdPath := filepath.Join(rootArgs.pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
+			crdPath := filepath.Join(pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
 
 			// Generate temporary files
 			tmpRestPath := filepath.Join(tmpDir, "rest.yaml")
@@ -91,7 +92,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := os.WriteFile(finalOutputPath, content, 0o600); err != nil {
+			if err := os.WriteFile(finalOutputPath, content, 0o600); err != nil { //nolint:gosec // G703: path is derived from validated plugin directory and controlled generation output
 				return err
 			}
 

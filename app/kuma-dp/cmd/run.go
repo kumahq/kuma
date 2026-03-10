@@ -250,6 +250,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			gracefulCtx, ctx, usr2Recv := opts.SetupSignalHandler()
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
+			defer cancelComponents()
 			components := []component.Component{tokenComp}
 
 			opts := envoy.Opts{
