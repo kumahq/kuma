@@ -95,6 +95,11 @@ linters:
     staticcheck:
       checks:
         - all
+        - -QF1001 # Defer quick-fix refactors on release branches
+        - -QF1002 # Defer quick-fix refactors on release branches
+        - -QF1003 # Defer quick-fix refactors on release branches
+        - -QF1008 # Defer quick-fix refactors on release branches
+        - -QF1012 # Defer quick-fix refactors on release branches
         - -ST1003 # Poorly chosen identifier
         - -ST1005 # Error strings should not be capitalized
         - -ST1006 # Receiver name should not be an underscore
@@ -107,6 +112,7 @@ linters:
     presets:
       - comments
       - common-false-positives
+      - legacy
       - std-error-handling
     rules:
       - linters:
