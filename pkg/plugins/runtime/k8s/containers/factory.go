@@ -345,6 +345,15 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		}
 	}
 
+	// When the Envoy admin interface is disabled, probes target the kuma-dp
+	// readiness server which must listen on TCP instead of a unix socket.
+	if i.DefaultAdminPort == 0 {
+		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
+			Value: "true",
+		}
+	}
+
 	if i.unifiedResourceNamingEnabled {
 		envVars["KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
