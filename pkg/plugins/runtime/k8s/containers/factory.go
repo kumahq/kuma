@@ -12,6 +12,7 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
+	kumadp_config "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
@@ -120,6 +121,15 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
+	// probePort is the port used for sidecar health probes. When admin is
+	// enabled it points at the Envoy admin /ready endpoint. When admin is
+	// disabled (adminPort configured as 0 on the CP) the kuma-dp readiness
+	// server is used instead, decoupling probes from the admin interface.
+	probePort := adminPort
+	if i.DefaultAdminPort == 0 {
+		probePort = kumadp_config.DefaultConfig().Dataplane.ReadinessPort
+	}
+
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
 		return kube_core.Container{}, err
@@ -154,7 +164,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(adminPort),
+						IntVal: int32(probePort),
 					},
 				},
 			},
@@ -169,7 +179,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(adminPort),
+						IntVal: int32(probePort),
 					},
 				},
 			},
@@ -198,7 +208,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(adminPort),
+						IntVal: int32(probePort),
 					},
 				},
 			},
@@ -214,7 +224,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", adminPort)},
+					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)},
 				},
 			},
 		}
