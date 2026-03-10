@@ -332,18 +332,32 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	if parameters.AdminPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminAddress] = util_proto.MustNewValueForStruct(parameters.AdminAddress)
-		res.Admin = &envoy_bootstrap_v3.Admin{
-			Address: &envoy_core_v3.Address{
-				Address: &envoy_core_v3.Address_SocketAddress{
-					SocketAddress: &envoy_core_v3.SocketAddress{
-						Address:  parameters.AdminAddress,
-						Protocol: envoy_core_v3.SocketAddress_TCP,
-						PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{
-							PortValue: parameters.AdminPort,
+		if parameters.AdminSocketPath != "" {
+			res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminSocketPath] = util_proto.MustNewValueForStruct(parameters.AdminSocketPath)
+			res.Admin = &envoy_bootstrap_v3.Admin{
+				Address: &envoy_core_v3.Address{
+					Address: &envoy_core_v3.Address_Pipe{
+						Pipe: &envoy_core_v3.Pipe{
+							Path: parameters.AdminSocketPath,
+							Mode: 0o600,
 						},
 					},
 				},
-			},
+			}
+		} else {
+			res.Admin = &envoy_bootstrap_v3.Admin{
+				Address: &envoy_core_v3.Address{
+					Address: &envoy_core_v3.Address_SocketAddress{
+						SocketAddress: &envoy_core_v3.SocketAddress{
+							Address:  parameters.AdminAddress,
+							Protocol: envoy_core_v3.SocketAddress_TCP,
+							PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{
+								PortValue: parameters.AdminPort,
+							},
+						},
+					},
+				},
+			}
 		}
 		if parameters.AdminAccessLogPath != "" {
 			fileAccessLog := &access_loggers_file.FileAccessLog{

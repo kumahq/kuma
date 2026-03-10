@@ -140,6 +140,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 	}
 
+	if features.HasFeature(xds_types.FeatureAdminUnixSocket) && request.Workdir != "" {
+		params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
+	}
+
 	meshResource := core_mesh.NewMeshResource()
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:
