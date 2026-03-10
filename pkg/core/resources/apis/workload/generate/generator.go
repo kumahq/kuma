@@ -141,6 +141,8 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 	defer ticker.Stop()
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ctx, cancel := context.WithCancel(ctx)
+	// Always release resources on return; the stop watcher below also calls
+	// cancel, which is safe and lets in-flight context-aware work exit quickly.
 	defer cancel()
 	go func() {
 		<-stop
