@@ -31,6 +31,7 @@ var DefaultConfig = func() Config {
 			DrainTime:                     config_types.Duration{Duration: 30 * time.Second},
 			ProxyType:                     "dataplane",
 			ReadinessPort:                 9902,
+			AdminUnixSocketDisabled:       true, // opt-in: kuma-dp wait needs TCP admin until K8s integration is updated
 			ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
 			ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
 		},
@@ -145,6 +146,10 @@ type Dataplane struct {
 	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
 	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
 	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
+	// AdminUnixSocketDisabled disables binding the Envoy admin API to a Unix
+	// domain socket. When false (default), admin binds to a UDS reducing
+	// attack surface from compromised app containers sharing the pod network.
+	AdminUnixSocketDisabled bool `json:"adminUnixSocketDisabled,omitempty" envconfig:"kuma_admin_unix_socket_disabled"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
