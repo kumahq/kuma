@@ -103,7 +103,15 @@ func (i *DataplaneProxyFactory) NewContainer(
 ) (kube_core.Container, error) {
 	annotations := owner.GetAnnotations()
 
-	env, err := i.sidecarEnvVars(mesh, annotations)
+	adminPort, err := i.envoyAdminPort(annotations)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+	if adminPort == 0 {
+		adminPort = i.DefaultAdminPort
+	}
+
+	env, err := i.sidecarEnvVars(mesh, annotations, adminPort)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
@@ -113,20 +121,12 @@ func (i *DataplaneProxyFactory) NewContainer(
 		return kube_core.Container{}, err
 	}
 
-	adminPort, err := i.envoyAdminPort(annotations)
-	if err != nil {
-		return kube_core.Container{}, err
-	}
-	if adminPort == 0 {
-		adminPort = i.DefaultAdminPort
-	}
-
 	// probePort is the port used for sidecar health probes. When admin is
 	// enabled it points at the Envoy admin /ready endpoint. When admin is
-	// disabled (adminPort configured as 0 on the CP) the kuma-dp readiness
-	// server is used instead, decoupling probes from the admin interface.
+	// disabled (adminPort == 0) the kuma-dp readiness server is used
+	// instead, decoupling probes from the admin interface.
 	probePort := adminPort
-	if i.DefaultAdminPort == 0 {
+	if adminPort == 0 {
 		probePort = kumadp_config.DefaultConfig().Dataplane.ReadinessPort
 	}
 
@@ -232,7 +232,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 	return container, nil
 }
 
-func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[string]string) ([]kube_core.EnvVar, error) {
+func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[string]string, adminPort uint32) ([]kube_core.EnvVar, error) {
 	drainTime, err := i.drainTime(podAnnotations)
 	if err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 
 	// When the Envoy admin interface is disabled, probes target the kuma-dp
 	// readiness server which must listen on TCP instead of a unix socket.
-	if i.DefaultAdminPort == 0 {
+	if adminPort == 0 {
 		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
 			Value: "true",

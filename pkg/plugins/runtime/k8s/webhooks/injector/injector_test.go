@@ -21,6 +21,7 @@ import (
 	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 	inject "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks/injector"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("Injector", func() {
@@ -36,6 +37,7 @@ var _ = Describe("Injector", func() {
 		mesh      string
 		cfgFile   string
 		namespace string
+		adminPort *uint32
 	}
 
 	BeforeAll(func() {
@@ -89,10 +91,15 @@ spec:
 					goldenFile = filepath.Join("testdata", fmt.Sprintf("inject.%s.golden.yaml", given.num))
 				}
 
+				var envoyAdminPort uint32 = 9901
+				if given.adminPort != nil {
+					envoyAdminPort = *given.adminPort
+				}
+
 				var cfg conf.Injector
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, systemNamespace)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), envoyAdminPort, systemNamespace)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -875,6 +882,23 @@ spec:
                   labels:
                     kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.spire.config.yaml",
+		}),
+		Entry("44. Pod with admin port disabled", testCase{
+			num: "44",
+			mesh: `
+                apiVersion: kuma.io/v1alpha1
+                kind: Mesh
+                metadata:
+                  name: default`,
+			namespace: `
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  name: default
+                  labels:
+                    kuma.io/sidecar-injection: enabled`,
+			cfgFile:   "inject.44.config.yaml",
+			adminPort: pointer.To[uint32](0),
 		}),
 	)
 
