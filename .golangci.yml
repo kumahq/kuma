@@ -117,6 +117,7 @@ linters:
         - -ST1006 # Receiver name should not be an underscore
         - -ST1012 # Error var should have name of the form ErrFoo
         - -ST1016 # Use consistent method receiver names
+        - -ST1017 # Defer style-only Yoda condition fixes on release branches
         - -ST1019 # Package is being imported more than once
         - -SA4011 # Break statement with no effect
   exclusions:
