@@ -96,10 +96,19 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		adminAddress = "::1"
 	}
 
+	var adminEndpoint core_xds.Endpoint
+	if proxy.Metadata.HasFeature(types.FeatureAdminUnixSocket) && proxy.Metadata.GetAdminSocketPath() != "" {
+		adminEndpoint = core_xds.Endpoint{
+			UnixDomainPath: proxy.Metadata.GetAdminSocketPath(),
+		}
+	} else {
+		adminEndpoint = core_xds.Endpoint{Target: adminAddress, Port: adminPort}
+	}
+
 	envoyAdminCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, envoyAdminClusterName).
 		Configure(envoy_clusters.ProvidedEndpointCluster(
 			govalidator.IsIPv6(adminAddress),
-			core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
+			adminEndpoint)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {

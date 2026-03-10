@@ -44,3 +44,7 @@ const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 
 // FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
+
+// FeatureAdminUnixSocket indicates the Envoy admin API is bound to a Unix domain socket
+// instead of a TCP port, reducing the attack surface from compromised app containers.
+const FeatureAdminUnixSocket = "feature-admin-unix-socket"

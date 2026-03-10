@@ -222,6 +222,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
 			}
+			if !cfg.Dataplane.AdminUnixSocketDisabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureAdminUnixSocket)
+			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
@@ -262,13 +265,20 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
-			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+			adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			adminAddress := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
+			adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
+			if adminSocketPath != "" {
+				runLog.Info("received bootstrap configuration", "adminSocketPath", adminSocketPath)
+			} else {
+				runLog.Info("received bootstrap configuration", "adminPort", adminPort)
+			}
 
 			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
 			if err != nil {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
-			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			opts.AdminPort = adminPort
 
 			confFetcher := configfetcher.NewConfigFetcher(
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
@@ -341,11 +351,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, observabilityComponents...)
 
+			readinessAddr := adminAddress
+			if readinessAddr == "" {
+				readinessAddr = "127.0.0.1"
+			}
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
-				bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+				readinessAddr,
 				cfg.Dataplane.ReadinessPort)
 			components = append(components, readinessReporter)
 
@@ -501,7 +515,9 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 }
 
 func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
-	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+	adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+	adminAddr := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, adminPort)
 
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
@@ -533,8 +549,8 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		metricsServer,
 		openTelemetryProducer,
 		kumaSidecarConfiguration.Networking.Address,
-		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
-		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		adminPort,
+		adminAddr,
 		cfg.Dataplane.DrainTime.Duration,
 	)
 	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)
