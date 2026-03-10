@@ -1,0 +1,38 @@
+# policies using kind Dataplane selecting delegated gateway by labels
+type: MeshHTTPRoute
+mesh: mesh-1
+name: mhr-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: kong-gateway
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default: {}
+---
+type: MeshHTTPRoute
+mesh: mesh-1
+name: mhr-2
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: other
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default: {}
