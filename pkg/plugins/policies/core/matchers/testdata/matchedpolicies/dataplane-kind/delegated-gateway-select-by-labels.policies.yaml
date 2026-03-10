@@ -1,28 +1,38 @@
 # policies using kind Dataplane selecting delegated gateway by labels
-type: MeshTrafficPermission
+type: MeshHTTPRoute
 mesh: mesh-1
-name: mtp-1
+name: mhr-1
 spec:
   targetRef:
     kind: Dataplane
     labels:
       app: kong-gateway
-  from:
+  to:
     - targetRef:
-        kind: Mesh
-      default:
-        action: Deny
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default: {}
 ---
-type: MeshTrafficPermission
+type: MeshHTTPRoute
 mesh: mesh-1
-name: mtp-2
+name: mhr-2
 spec:
   targetRef:
     kind: Dataplane
     labels:
       app: other
-  from:
+  to:
     - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default: {}

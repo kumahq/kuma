@@ -1,23 +1,28 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
-  kri: kri_mtp_mesh-1_zone-uni__mtp-1_
+  kri: kri_mhttpr_mesh-1_zone-uni__mhr-1_
   labels:
-    kuma.io/display-name: mtp-1
+    kuma.io/display-name: mhr-1
     kuma.io/origin: zone
     kuma.io/zone: zone-uni
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: mtp-1
+  name: mhr-1
   spec:
-    from:
-    - default:
-        action: Deny
-      targetRef:
-        kind: Mesh
     targetRef:
       kind: Dataplane
       labels:
         app: kong-gateway
-  type: MeshTrafficPermission
+    to:
+    - rules:
+      - default: {}
+        matches:
+        - path:
+            type: PathPrefix
+            value: /
+      targetRef:
+        kind: MeshService
+        name: backend
+  type: MeshHTTPRoute
 next: null
 total: 0
