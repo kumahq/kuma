@@ -196,7 +196,7 @@ func DppSelectedByPolicy(
 			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
 				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
 			})
-			return inbounds, nil, false, nil
+			return inbounds, nil, dpp.Spec.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshSubset:

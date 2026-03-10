@@ -1,0 +1,14 @@
+type: Dataplane
+mesh: mesh-1
+name: kong
+labels:
+  app: kong-gateway
+networking:
+  address: 10.244.0.13
+  admin:
+    port: 9901
+  gateway:
+    tags:
+      kuma.io/service: kong_kong_svc_80
+      kuma.io/zone: default
+    type: DELEGATED
