@@ -141,6 +141,7 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 	defer ticker.Stop()
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go func() {
 		<-stop
 		cancel()

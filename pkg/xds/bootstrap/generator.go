@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -381,8 +382,9 @@ func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, err
 		origin = "request .CaCert"
 	case b.xdsCertFile != "":
 		var err error
-		cert, err = os.ReadFile(b.xdsCertFile)
-		origin = "file " + b.xdsCertFile
+		xdsCertFile := filepath.Clean(b.xdsCertFile)
+		cert, err = os.ReadFile(xdsCertFile)
+		origin = "file " + xdsCertFile
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
 		}
