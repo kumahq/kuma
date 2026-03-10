@@ -44,7 +44,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is invoked when dataplane disconnects
 	state := &watchdogState{
 		cancelFunc: cancel,
 		stopped:    make(chan struct{}),
@@ -53,6 +53,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	stoppedDone := state.stopped
 	go func() {
 		defer close(stoppedDone)
+		defer cancel()
 		// Use stream context if factory supports it to prevent race between stream closure and snapshot updates
 		if factory, ok := t.newDataplaneWatchdog.(sync.DataplaneWatchdogFactoryWithStreamCtx); ok {
 			factory.NewWithStreamCtx(dpKey, &meta, streamCtx).Start(ctx)
