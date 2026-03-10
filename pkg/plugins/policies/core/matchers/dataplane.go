@@ -191,8 +191,16 @@ func DppSelectedByPolicy(
 			return []core_rules.InboundListener{}, nil, false, nil
 		}
 		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
+<<<<<<< HEAD
 			inbounds := inboundsSelectedBySectionName(pointer.Deref(ref.SectionName), dpp)
 			return inbounds, nil, false, nil
+=======
+			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
+			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
+				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
+			})
+			return inbounds, nil, dpp.Spec.IsDelegatedGateway(), nil
+>>>>>>> 6a830f43f1 (fix(matchers): match delegated gw dpps (#15791))
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshSubset:
