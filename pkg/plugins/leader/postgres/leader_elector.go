@@ -41,6 +41,7 @@ func NewPostgresLeaderElector(lockClient *pglock.Client) component.LeaderElector
 func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 	log.Info("starting Leader Elector")
 	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
 	go func() {
 		<-stop
 		log.Info("stopping Leader Elector")
