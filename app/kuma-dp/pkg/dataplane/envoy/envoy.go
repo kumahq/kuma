@@ -168,10 +168,13 @@ func (e *Envoy) adminPost(path string) error {
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", e.opts.AdminPort)
 
 	if e.opts.AdminSocketPath != "" {
+		dialer := &net.Dialer{
+			Timeout: 5 * time.Second,
+		}
 		client = &http.Client{
 			Transport: &http.Transport{
-				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-					return net.Dial("unix", e.opts.AdminSocketPath)
+				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+					return dialer.DialContext(ctx, "unix", e.opts.AdminSocketPath)
 				},
 			},
 		}
