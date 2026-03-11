@@ -6,9 +6,9 @@ Technical Story: TBD
 
 ## Context and Problem Statement
 
-`MeshOpenTelemetryBackend` lets `MeshTrace`, `MeshAccessLog`, and `MeshMetric` point at one shared backend. On the current `backendRef` path, traces, logs, and metrics all go through the unified `/otel` dynconf route and then through `kuma-dp`. `kuma-dp` owns the local Unix socket and forwards OTLP traffic to the real collector.
+MADR 095 proposes `MeshOpenTelemetryBackend` as the shared backend for `MeshTrace`, `MeshAccessLog`, and `MeshMetric`. It also proposes the `backendRef` path and the unified `/otel` dynconf route through `kuma-dp`.
 
-That already solves endpoint duplication, but it still assumes the real collector config comes from the control plane. In many real deployments that config already exists as standard `OTEL_EXPORTER_OTLP_*` env vars. On Kubernetes this may come from the OpenTelemetry Operator or sidecar env injection. On Universal it may come from a systemd unit, container runtime, or wrapper script.
+This MADR does not repeat that design. It should be read as an enhancement to MADR 095, not as a statement that the MADR 095 model is already merged or implemented. It answers the next question: if MADR 095 is accepted, how should Kuma reuse standard `OTEL_EXPORTER_OTLP_*` env vars on top of that backend model? In many real deployments that config already exists as env vars. On Kubernetes this may come from the OpenTelemetry Operator or sidecar env injection. On Universal it may come from a systemd unit, container runtime, or wrapper script.
 
 We want Kuma to reuse those env vars without giving up the `MeshOpenTelemetryBackend` model and without sending secrets through the control plane. We also want the control plane to understand enough to make the right config decisions and show clear status.
 
@@ -66,7 +66,7 @@ We reject this option.
 
 ### Option 3: Typed bootstrap inventory, control-plane runtime plan, and dataplane final merge
 
-This option splits the job in a way that matches the current runtime model:
+This option splits the job in a way that matches the runtime model proposed in MADR 095:
 
 - `kuma-dp` reads OTEL env vars locally at startup.
 - `kuma-dp` sends a typed non-secret OTEL inventory during bootstrap.
@@ -150,7 +150,7 @@ This payload must never contain raw endpoints, headers, tokens, certificate cont
 
 ### Runtime plan on `/otel`
 
-The current `OtelPipeBackend` is too resolved for this design. The control plane should send a backend runtime plan instead of a fully resolved exporter config.
+The `OtelPipeBackend` shape proposed for the MADR 095 flow is too resolved for this design. The control plane should send a backend runtime plan instead of a fully resolved exporter config.
 
 Each backend plan should include:
 
@@ -332,7 +332,7 @@ Resolution must stay deterministic:
 - if explicit config is complete, invalid env vars should be reported but should not break the signal
 - if the backend requires env input and the env input is invalid or missing, the signal should stay not ready
 
-The local transport model stays stable:
+If we add this on top of MADR 095, the local transport model stays stable:
 
 - one backend still means one local Unix socket
 - divergence only changes outbound clients inside `kuma-dp`
@@ -352,15 +352,16 @@ There is no separate enterprise-only runtime model here. Kong Mesh should follow
 
 ## Decision
 
-We will keep the current Unix socket model and extend it into a full OTEL env-var aware runtime.
+If MADR 095 is accepted, we should keep that Unix socket model and extend it into a full OTEL env-var aware runtime.
 
-`kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves the applied observability policies, fills missing pieces from `MeshOpenTelemetryBackend`, applies backend env policy rules, and sends a typed `/otel` runtime plan back to `kuma-dp`. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
+On top of the backend model proposed in MADR 095, `kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves the applied observability policies, fills missing pieces from `MeshOpenTelemetryBackend`, applies backend env policy rules, and sends a typed `/otel` runtime plan back to `kuma-dp`. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
 
 `MeshOpenTelemetryBackend` is the place where we say whether OTEL env vars are disabled, optional, or required, whether explicit config wins or env wins, and whether signal-specific OTEL env vars are allowed. Status must show the final source, readiness, blocked reasons, and ambiguity for every backend and signal.
 
-This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to configure the dataplane and explain the result.
+This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to configure the dataplane and explain the result if the MADR 095 backend model lands.
 
 ## Notes
 
-- This MADR builds on the shared backend and unified `/otel` design from the current `MeshOpenTelemetryBackend` work.
+- This MADR builds on the shared backend and unified `/otel` design proposed in MADR 095.
+- This MADR is an enhancement to MADR 095 and only applies if that backend model is accepted.
 - Deprecated inline `endpoint` config stays outside this env-var contract. The env-var-aware path is the `backendRef` path.
