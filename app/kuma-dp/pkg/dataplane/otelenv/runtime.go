@@ -265,10 +265,8 @@ func transportOverrideForLayer(layer Layer) exporterOverride {
 	if layer.Certificate.Present {
 		override.Certificate = &layer.Certificate.Value
 	}
-	if layer.ClientCertificate.Present {
+	if layer.ClientCertificate.Present && layer.ClientKey.Present {
 		override.ClientCertificate = &layer.ClientCertificate.Value
-	}
-	if layer.ClientKey.Present {
 		override.ClientKey = &layer.ClientKey.Value
 	}
 

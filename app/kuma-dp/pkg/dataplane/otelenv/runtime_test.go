@@ -104,4 +104,33 @@ var _ = Describe("ResolveBackend", func() {
 		Expect(runtime.Traces.Transport.Endpoint).To(BeEmpty())
 		Expect(runtime.Traces.Transport.Protocol).To(BeEmpty())
 	})
+
+	It("should ignore incomplete optional mTLS env overrides", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint:          FieldValue{Present: true, Value: "https://env.example:4318"},
+				Protocol:          FieldValue{Present: true, Value: "http/protobuf"},
+				ClientCertificate: FieldValue{Present: true, Value: "/tmp/client.crt"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceEnvFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled:         true,
+				EnvInputPresent: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Protocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
+		Expect(runtime.Traces.Transport.Endpoint).To(Equal("env.example:4318"))
+		Expect(runtime.Traces.Transport.UseTLS).To(BeTrue())
+		Expect(runtime.Traces.Transport.ClientCertificate).To(BeEmpty())
+		Expect(runtime.Traces.Transport.ClientKey).To(BeEmpty())
+	})
 })
