@@ -441,10 +441,10 @@ spec:
 			Eventually(func(g Gomega) {
 				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
-				Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).ToNot(HaveOccurred())
 				// filter to test-server lines only; passthrough clusters are always healthy
 				filtered := filterLines(stdout, "test-server")
-				Expect(filtered).ToNot(ContainSubstring("health_flags::healthy"))
+				g.Expect(filtered).ToNot(ContainSubstring("health_flags::healthy"))
 			}, "30s", "500ms").Should(Succeed())
 		})
 	}, Ordered)

@@ -130,10 +130,13 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 }
 
 func createHTTPClientForUDS(unixSocketPath string) http.Client {
+	dialer := &net.Dialer{
+		Timeout: 5 * time.Second,
+	}
 	return http.Client{
 		Transport: &http.Transport{
-			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", unixSocketPath)
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "unix", unixSocketPath)
 			},
 		},
 	}
