@@ -199,7 +199,7 @@ type OpenTelemetryBackend struct {
 | --- | --- | --- |
 | `IsPolicy` | false | it's a resource, not a policy |
 | `Scope` | Mesh |  |
-| `HasStatus` | true | tracks reverse references while the backend exists; broken refs surface on the referencing policies |
+| `HasStatus` | true | the status updater sets `Referenced` or `NotReferenced` on the backend while it exists; unresolved refs surface on the referencing policies |
 | `KDSFlags` | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> | same as MeshExternalService |
 | `ShortName` | `motb` |  |
 | `IsDestination` | false |  |
@@ -373,7 +373,7 @@ spec:
 
 ##### Story 5: Dangling reference detection
 
-An operator deletes a backend that policies still reference. The CP detects the broken reference during xDS generation.
+An operator deletes a backend that policies still reference. xDS generation skips the missing backend, and the status updater reports the broken reference on the policy.
 
 ```yaml
 # The backend was deleted. The policy still references it:
@@ -401,9 +401,9 @@ CP behavior when the referenced backend is missing:
 
 - Logs at Info level: `MeshOpenTelemetryBackend "main-collector" not found, referenced by MeshMetric "all-metrics"`
 - Skips OTel backend config in xDS for that signal (no telemetry export)
-- Status condition on the referencing policy (MeshMetric, MeshTrace, or MeshAccessLog) surfaces the unresolved backendRef so the operator can detect it via `kubectl` or the REST API
+- The status updater sets an unresolved `backendRef` condition on the referencing policy (MeshMetric, MeshTrace, or MeshAccessLog), so the operator can detect it via `kubectl` or the REST API
 
-Unlike routing, where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The MeshOpenTelemetryBackend's `HasStatus: true` lets the CP track which policies reference it while it exists. When it's deleted, the referencing policies' own status conditions report the broken reference.
+Unlike routing, where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The MeshOpenTelemetryBackend's `HasStatus: true` lets the status updater track which policies reference it while it exists. When it's deleted, the referencing policies' own status conditions report the broken reference.
 
 #### Naming
 
@@ -526,7 +526,7 @@ The initial implementation should cover:
 3. Validation: exactly one of `endpoint` or `nodeEndpoint` on the resource; exactly one of `endpoint` or `backendRef` on each policy backend (mutual exclusivity enforced at admission); non-empty `path` rejected when `protocol: grpc`
 4. Resolution in each policy's Apply(): `endpoint` uses address directly; `nodeEndpoint` resolves host IP from `BootstrapDynamicMetadata["HOST_IP"]`, falls back to `127.0.0.1` on Universal
 5. Sidecar injector always injects `HOST_IP` env var (Downward API `status.hostIP`) into every kuma-dp container, unconditionally - same approach as `INSTANCE_IP`. No need for the injector to watch MOTB resources.
-6. Status conditions on the resource to surface unresolved backendRefs (user story 5)
+6. A status updater component sets `Referenced` or `NotReferenced` on MeshOpenTelemetryBackend resources and sets resolved or unresolved `backendRef` conditions on MeshMetric, MeshTrace, and MeshAccessLog (user story 5)
 7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
 8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. kuma-dp runs one receiver per backend socket and forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path.
 
