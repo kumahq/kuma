@@ -20,7 +20,7 @@ type AggregatedProducer struct {
 	kumaVersion               string
 	httpClientIPv4            http.Client
 	httpClientIPv6            http.Client
-	httpClientUDS             http.Client
+	httpClientsUDS            map[string]http.Client
 	AppToScrape               ApplicationToScrape
 	applicationsToScrape      []ApplicationToScrape
 	applicationsToScrapeMutex *sync.Mutex
@@ -29,26 +29,21 @@ type AggregatedProducer struct {
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
 func NewAggregatedMetricsProducer(applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string) *AggregatedProducer {
-	ap := &AggregatedProducer{
+	return &AggregatedProducer{
 		kumaVersion:               kumaVersion,
 		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+		httpClientsUDS:            buildUDSClients(applicationsToScrape),
 		applicationsToScrape:      applicationsToScrape,
 		applicationsToScrapeMutex: &sync.Mutex{},
 	}
-	for _, app := range applicationsToScrape {
-		if app.UnixSocketPath != "" {
-			ap.httpClientUDS = createHTTPClientForUDS(app.UnixSocketPath)
-			break
-		}
-	}
-	return ap
 }
 
 func (ap *AggregatedProducer) SetApplicationsToScrape(applicationsToScrape []ApplicationToScrape) {
 	ap.applicationsToScrapeMutex.Lock()
 	defer ap.applicationsToScrapeMutex.Unlock()
 	ap.applicationsToScrape = applicationsToScrape
+	ap.httpClientsUDS = buildUDSClients(applicationsToScrape)
 }
 
 func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMetrics, error) {
@@ -153,10 +148,20 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, app ApplicationToScrape) (*http.Response, error) {
 	req = req.WithContext(ctx)
 	if app.UnixSocketPath != "" {
-		return ap.httpClientUDS.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
+		client := ap.getOrCreateUDSClient(app.UnixSocketPath)
+		return client.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
 	}
 	if app.IsIPv6 {
 		return ap.httpClientIPv6.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
 	}
 	return ap.httpClientIPv4.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
+}
+
+func (ap *AggregatedProducer) getOrCreateUDSClient(socketPath string) http.Client {
+	if client, ok := ap.httpClientsUDS[socketPath]; ok {
+		return client
+	}
+	client := createHTTPClientForUDS(socketPath)
+	ap.httpClientsUDS[socketPath] = client
+	return client
 }
