@@ -79,6 +79,9 @@ var _ = Describe("MeshOpenTelemetryBackend", func() {
 			Entry("env defaults valid", testCase{
 				file: "env-defaults-valid",
 			}),
+			Entry("env full valid", testCase{
+				file: "env-full-valid",
+			}),
 			Entry("invalid env mode", testCase{
 				file: "env-invalid-mode",
 			}),
