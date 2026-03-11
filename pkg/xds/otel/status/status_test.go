@@ -128,6 +128,24 @@ var _ = Describe("OTEL status", func() {
 			Expect(status.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateReady))
 		})
 
+		It("should mark platform-disabled env as not allowed", func() {
+			status := otelstatus.Build([]core_xds.OtelPipeBackend{
+				{
+					Name: "main-collector",
+					EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+						Mode: motb_api.EnvModeOptional,
+					},
+					Traces: &core_xds.OtelSignalRuntimePlan{
+						Enabled:        true,
+						BlockedReasons: []string{core_xds.OtelBlockedReasonEnvDisabledByPlatform},
+					},
+				},
+			})
+
+			Expect(status.Backends[0].Traces.EnvAllowed).To(BeFalse())
+			Expect(status.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateReady))
+		})
+
 		It("should keep unknown blocked reasons blocked", func() {
 			status := otelstatus.Build([]core_xds.OtelPipeBackend{
 				{
@@ -168,7 +186,7 @@ var _ = Describe("OTEL status", func() {
 			key := core_model.ResourceKey{Mesh: "default", Name: "backend-1"}
 			cache.Set(key, &mesh_proto.DataplaneInsight_OpenTelemetry{})
 
-			cache.Delete(key)
+			cache.Set(key, nil)
 
 			Expect(cache.Get(key)).To(BeNil())
 		})

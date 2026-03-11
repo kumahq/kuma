@@ -53,7 +53,7 @@ var _ = Describe("ResolveBackend", func() {
 		Expect(runtime.Logs.Enabled).To(BeTrue())
 		Expect(runtime.Logs.Transport.Protocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
 		Expect(runtime.Logs.Transport.Endpoint).To(Equal("logs.example:4318"))
-		Expect(runtime.Logs.Transport.UseTLS).To(BeTrue())
+		Expect(runtime.Logs.Transport.UseTLS).To(HaveValue(BeTrue()))
 		Expect(runtime.Logs.HTTPPath).To(Equal("/v1/logs"))
 	})
 
@@ -129,8 +129,105 @@ var _ = Describe("ResolveBackend", func() {
 
 		Expect(runtime.Traces.Transport.Protocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
 		Expect(runtime.Traces.Transport.Endpoint).To(Equal("env.example:4318"))
-		Expect(runtime.Traces.Transport.UseTLS).To(BeTrue())
+		Expect(runtime.Traces.Transport.UseTLS).To(HaveValue(BeTrue()))
 		Expect(runtime.Traces.Transport.ClientCertificate).To(BeEmpty())
 		Expect(runtime.Traces.Transport.ClientKey).To(BeEmpty())
+	})
+
+	It("should prefer explicit endpoint+protocol over env in ExplicitFirst mode", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint: FieldValue{Present: true, Value: "https://env.example:4318"},
+				Protocol: FieldValue{Present: true, Value: "http/protobuf"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceExplicitFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled:         true,
+				EnvInputPresent: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Protocol).To(Equal(core_xds.OtelProtocolGRPC))
+		Expect(runtime.Traces.Transport.Endpoint).To(Equal("collector.example:4317"))
+	})
+
+	It("should preserve explicit TLS=false in ExplicitFirst mode when env has https", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint: FieldValue{Present: true, Value: "https://env.example:4318"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint:  "collector.example:4317",
+			UseHTTPS:  false,
+			UseHTTP:   true,
+			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceExplicitFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled:         true,
+				EnvInputPresent: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.UseTLS).To(HaveValue(BeFalse()))
+	})
+
+	It("should handle bare host:port endpoint without scheme", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint: FieldValue{Present: true, Value: "collector:4317"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "explicit.example:4317",
+			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceEnvFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled:         true,
+				EnvInputPresent: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		// bare host:port is not a valid URL, so it's used as-is for the endpoint
+		Expect(runtime.Traces.Transport.Endpoint).To(Equal("collector:4317"))
+	})
+
+	It("should accept compression=none without validation error", func() {
+		cfg := Config{
+			Shared: Layer{
+				Compression: FieldValue{Present: true, Value: "none"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceEnvFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled:         true,
+				EnvInputPresent: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Compression).To(BeEmpty())
 	})
 })

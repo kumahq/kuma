@@ -2,6 +2,7 @@ package proto
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -192,7 +193,10 @@ func MustStructToProtoStruct(in any) *structpb.Struct {
 }
 
 func MustFromMapOfAny[T any, U map[string]any | *structpb.Struct](in U) T {
-	out, _ := FromMapOfAny[T](in)
+	out, err := FromMapOfAny[T](in)
+	if err != nil {
+		panic(fmt.Sprintf("FromMapOfAny: %v", err))
+	}
 	return out
 }
 

@@ -30,13 +30,13 @@ type BackendRuntime struct {
 type ExporterTransport struct {
 	Protocol          core_xds.OtelProtocol
 	Endpoint          string
-	UseTLS            bool
+	UseTLS            *bool
 	Headers           map[string]string
 	Compression       string
 	Timeout           time.Duration
 	Certificate       string
 	ClientCertificate string
-	ClientKey         string // #nosec G117 -- file path for client key, not an embedded secret
+	ClientKey         string
 }
 
 type exporterOverride struct {
@@ -49,7 +49,7 @@ type exporterOverride struct {
 	Timeout           *time.Duration
 	Certificate       *string
 	ClientCertificate *string
-	ClientKey         *string // #nosec G117 -- file path for client key, not an embedded secret
+	ClientKey         *string
 }
 
 func (c Config) ResolveBackend(backend core_xds.OtelPipeBackend) BackendRuntime {
@@ -87,15 +87,16 @@ func (c Config) resolveSignal(
 	if sharedAllowed {
 		protocol = pickProtocol(protocol, c.Shared.Protocol, preferEnv)
 	}
+	sigLayer := layerForSignal(c, signal)
 	if signalAllowed {
-		protocol = pickProtocol(protocol, layerForSignal(c, signal).Protocol, preferEnv)
+		protocol = pickProtocol(protocol, sigLayer.Protocol, preferEnv)
 	}
 
 	runtime.Transport = ExporterTransport{
 		Protocol: protocol,
 	}
 	runtime.Transport.Endpoint = explicit.Transport.Endpoint
-	runtime.Transport.UseTLS = explicit.Transport.UseTLS
+	runtime.Transport.UseTLS = copyBoolPtr(explicit.Transport.UseTLS)
 	runtime.Transport.Headers = maps.Clone(explicit.Transport.Headers)
 	runtime.Transport.Compression = explicit.Transport.Compression
 	runtime.Transport.Timeout = explicit.Transport.Timeout
@@ -112,8 +113,8 @@ func (c Config) resolveSignal(
 		applyOverride(&runtime, transportOverrideForLayer(c.Shared), preferEnv)
 	}
 	if signalAllowed {
-		applyOverride(&runtime, endpointOverrideForLayer(layerForSignal(c, signal), signal, protocol, true), preferEnv)
-		applyOverride(&runtime, transportOverrideForLayer(layerForSignal(c, signal)), preferEnv)
+		applyOverride(&runtime, endpointOverrideForLayer(sigLayer, signal, protocol, true), preferEnv)
+		applyOverride(&runtime, transportOverrideForLayer(sigLayer), preferEnv)
 	}
 
 	return runtime
@@ -130,7 +131,7 @@ func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSig
 		Transport: ExporterTransport{
 			Protocol: protocol,
 			Endpoint: backend.Endpoint,
-			UseTLS:   backend.UseHTTPS,
+			UseTLS:   boolPtr(backend.UseHTTPS),
 		},
 	}
 	if protocol == core_xds.OtelProtocolGRPC {
@@ -159,8 +160,9 @@ func applyOverride(runtime *SignalRuntime, override exporterOverride, preferEnv 
 	if override.Endpoint != nil && (preferEnv || runtime.Transport.Endpoint == "") {
 		runtime.Transport.Endpoint = *override.Endpoint
 	}
-	if override.UseTLS != nil && (preferEnv || !runtime.Transport.UseTLS) {
-		runtime.Transport.UseTLS = *override.UseTLS
+	if override.UseTLS != nil && (preferEnv || runtime.Transport.UseTLS == nil) {
+		v := *override.UseTLS
+		runtime.Transport.UseTLS = &v
 	}
 	if override.HTTPPath != nil && (preferEnv || runtime.HTTPPath == "") {
 		runtime.HTTPPath = *override.HTTPPath
@@ -253,7 +255,7 @@ func transportOverrideForLayer(layer Layer) exporterOverride {
 		override.HeadersPresent = true
 	}
 	if layer.Compression.Present {
-		if compression := parseCompression(layer.Compression.Value); compression != "" {
+		if compression, ok := parseCompression(layer.Compression.Value); ok {
 			override.Compression = &compression
 		}
 	}
@@ -284,16 +286,21 @@ func parseProtocol(value string) (core_xds.OtelProtocol, bool) {
 	}
 }
 
-func parseCompression(value string) string {
-	if strings.EqualFold(strings.TrimSpace(value), "gzip") {
-		return "gzip"
+func parseCompression(value string) (string, bool) {
+	v := strings.ToLower(strings.TrimSpace(value))
+	switch v {
+	case "gzip":
+		return "gzip", true
+	case "none", "":
+		return "", true
+	default:
+		return "", false
 	}
-	return ""
 }
 
 func parseTimeout(value string) (time.Duration, bool) {
 	timeoutMS, err := strconv.Atoi(strings.TrimSpace(value))
-	if err != nil {
+	if err != nil || timeoutMS < 0 {
 		return 0, false
 	}
 	return time.Duration(timeoutMS) * time.Millisecond, true
@@ -368,6 +375,14 @@ func layerForSignal(cfg Config, signal core_xds.OtelSignal) Layer {
 
 func boolPtr(value bool) *bool {
 	return &value
+}
+
+func copyBoolPtr(p *bool) *bool {
+	if p == nil {
+		return nil
+	}
+	v := *p
+	return &v
 }
 
 func isValidHeaderKey(key string) bool {

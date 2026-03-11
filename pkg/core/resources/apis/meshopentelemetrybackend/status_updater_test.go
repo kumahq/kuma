@@ -597,7 +597,7 @@ var _ = Describe("StatusUpdater", func() {
 			Name: "missing-collector",
 			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
 				Enabled:        true,
-				State:          "blocked",
+				State:          "missing",
 				BlockedReasons: []string{"RequiredEnvMissing"},
 			},
 		})

@@ -3,6 +3,7 @@ package meshopentelemetrybackend
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 	meshtrace_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/v2/pkg/util/time"
+	otel_status "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
 type StatusUpdater struct {
@@ -40,10 +42,10 @@ type StatusUpdater struct {
 var _ component.Component = &StatusUpdater{}
 
 const (
-	otelSignalStateReady     = "ready"
-	otelSignalStateBlocked   = "blocked"
-	otelSignalStateMissing   = "missing"
-	otelSignalStateAmbiguous = "ambiguous"
+	otelSignalStateReady     = otel_status.SignalStateReady
+	otelSignalStateBlocked   = otel_status.SignalStateBlocked
+	otelSignalStateMissing   = otel_status.SignalStateMissing
+	otelSignalStateAmbiguous = otel_status.SignalStateAmbiguous
 )
 
 type backendRuntimeSummary struct {
@@ -610,24 +612,24 @@ func summarizeBackendRuntime(backend *mesh_proto.DataplaneInsight_OpenTelemetry_
 
 		switch signal.GetState() {
 		case otelSignalStateReady:
+			// Soft blocks produce state "ready" but should still count as blocked
+			reasons := signal.GetBlockedReasons()
+			if slices.Contains(reasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform) ||
+				slices.Contains(reasons, core_xds.OtelBlockedReasonEnvDisabledByPolicy) ||
+				slices.Contains(reasons, core_xds.OtelBlockedReasonSignalOverridesBlocked) {
+				blocked = true
+			}
 		case otelSignalStateAmbiguous:
 			ready = false
 			ambiguous = true
 		case otelSignalStateBlocked:
 			ready = false
-			if hasBlockedReason(signal.GetBlockedReasons(), core_xds.OtelBlockedReasonRequiredEnvMissing) {
-				missingRequiredEnv = true
-			}
-			if hasAnyBlockedReason(
-				signal.GetBlockedReasons(),
-				core_xds.OtelBlockedReasonEnvDisabledByPlatform,
-				core_xds.OtelBlockedReasonEnvDisabledByPolicy,
-				core_xds.OtelBlockedReasonSignalOverridesBlocked,
-			) {
-				blocked = true
-			}
+			blocked = true
 		case otelSignalStateMissing:
 			ready = false
+			if slices.Contains(signal.GetBlockedReasons(), core_xds.OtelBlockedReasonRequiredEnvMissing) {
+				missingRequiredEnv = true
+			}
 		default:
 			ready = false
 		}
@@ -742,24 +744,6 @@ func buildAmbiguousCondition(summary backendRuntimeSummary) common_api.Condition
 		Reason:  motb_api.SomeReportingDataplanesAmbiguousReason,
 		Message: fmt.Sprintf("%d reporting dataplane(s) are ambiguous", summary.ambiguousDataplanes),
 	}
-}
-
-func hasBlockedReason(reasons []string, expected string) bool {
-	for _, reason := range reasons {
-		if reason == expected {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAnyBlockedReason(reasons []string, expected ...string) bool {
-	for _, reason := range expected {
-		if hasBlockedReason(reasons, reason) {
-			return true
-		}
-	}
-	return false
 }
 
 func conditionEquals(conditions []common_api.Condition, newCondition common_api.Condition) bool {

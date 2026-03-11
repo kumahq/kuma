@@ -70,7 +70,7 @@ func (c Config) DynamicMetadataSummary() map[string]string {
 	summary := map[string]string{}
 	summary["otel.env.pipeEnabled"] = fmt.Sprintf("%t", c.Inventory.PipeEnabled)
 
-	if c.Inventory.Shared != nil && c.Inventory.Shared.HasAnyInput() {
+	if c.Inventory.Shared != nil {
 		summary["otel.env.shared.present"] = "true"
 		if c.Inventory.Shared.EffectiveProtocol != "" {
 			summary["otel.env.shared.protocol"] = string(c.Inventory.Shared.EffectiveProtocol)
@@ -155,8 +155,10 @@ func buildLayerInventory(
 	validationErrors *[]string,
 ) *core_xds.OtelSignalEnvInventory {
 	endpointParsedAsURL, endpointHasPath := endpointCharacteristics(layer.Endpoint)
-	if layer.Compression.Present && parseCompression(layer.Compression.Value) == "" {
-		*validationErrors = append(*validationErrors, fmt.Sprintf("%s.compression", name))
+	if layer.Compression.Present {
+		if _, ok := parseCompression(layer.Compression.Value); !ok {
+			*validationErrors = append(*validationErrors, fmt.Sprintf("%s.compression", name))
+		}
 	}
 	if layer.Timeout.Present {
 		if _, ok := parseTimeout(layer.Timeout.Value); !ok {
