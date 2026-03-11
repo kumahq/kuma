@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
@@ -88,7 +87,7 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 		},
 	}
 	err := resManager.Create(user.Ctx(ctx, user.ControlPlane), zone, core_store.CreateByKey(name, core_model.NoMesh))
-	if err != nil && store.IsAlreadyExists(err) {
+	if err != nil && core_store.IsAlreadyExists(err) {
 		return nil
 	}
 	if err != nil {
