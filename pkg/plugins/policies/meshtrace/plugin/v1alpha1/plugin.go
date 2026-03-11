@@ -201,7 +201,11 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		if !usePipe && resolved.Protocol == motb_api.ProtocolHTTP {
 			configurer.ResolvedOtelUseHTTP = true
 			host := net.JoinHostPort(resolved.Endpoint.Target, strconv.Itoa(int(resolved.Endpoint.Port)))
-			configurer.ResolvedOtelURI = fmt.Sprintf("http://%s%s", host, resolved.FullPath(policies_xds.OtelTracesPathSuffix))
+			scheme := "http"
+			if resolved.UseHTTPS {
+				scheme = "https"
+			}
+			configurer.ResolvedOtelURI = fmt.Sprintf("%s://%s%s", scheme, host, resolved.FullPath(policies_xds.OtelTracesPathSuffix))
 		}
 	}
 
@@ -284,7 +288,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			endpoint = &xds.Endpoint{UnixDomainPath: socketPath}
 			useHTTP2 = true // Envoy→kuma-dp leg is always gRPC
 		} else {
-			endpoint = resolved.Endpoint
+			endpoint = policies_xds.EndpointForDirectOtelExport(resolved)
 			useHTTP2 = resolved.Protocol != motb_api.ProtocolHTTP
 		}
 		provider = plugin_xds.OpenTelemetryProviderName
@@ -365,5 +369,5 @@ func addToOtelPipeBackends(ctx xds_context.Context, rules core_rules.SingleItemR
 	if resolved == nil {
 		return
 	}
-	policies_xds.AddResolvedToBackends(proxy, resolved)
+	policies_xds.AddResolvedToBackends(proxy, resolved, xds.OtelSignalTraces, policies_xds.AddResolvedBackendOptions{})
 }

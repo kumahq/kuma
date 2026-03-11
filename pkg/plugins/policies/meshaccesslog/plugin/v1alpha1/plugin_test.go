@@ -987,6 +987,8 @@ var _ = Describe("MeshAccessLog", func() {
 		Expect(backends[0].SocketPath).To(Equal(expectedSocket))
 		Expect(backends[0].Endpoint).To(Equal("collector.mesh:4317"))
 		Expect(backends[0].UseHTTP).To(BeFalse())
+		Expect(backends[0].Logs).ToNot(BeNil())
+		Expect(backends[0].Logs.Enabled).To(BeTrue())
 	})
 
 	type gatewayTestCase struct {

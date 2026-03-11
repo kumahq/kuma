@@ -530,6 +530,8 @@ var _ = Describe("MeshMetric", func() {
 			Expect(pipeBackends).To(HaveLen(1))
 			Expect(pipeBackends[0].SocketPath).To(Equal(core_xds.OpenTelemetrySocketName(workDir, backendName)))
 			Expect(pipeBackends[0].Endpoint).To(Equal("collector.mesh:4317"))
+			Expect(pipeBackends[0].Metrics).ToNot(BeNil())
+			Expect(pipeBackends[0].Metrics.RefreshInterval).To(Equal("10s"))
 
 			// No Envoy-side OTel listener/cluster for this backend
 			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
@@ -579,6 +581,7 @@ var _ = Describe("MeshMetric", func() {
 			pipeBackends := proxy.OtelPipeBackends.All()
 			Expect(pipeBackends).To(HaveLen(1))
 			Expect(pipeBackends[0].Endpoint).To(Equal("collector.mesh:4317"))
+			Expect(pipeBackends[0].Metrics).ToNot(BeNil())
 
 			// Envoy-side resources created for inline only
 			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)

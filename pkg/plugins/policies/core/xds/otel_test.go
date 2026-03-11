@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -111,6 +112,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			Expect(result).ToNot(BeNil())
 			Expect(result.Endpoint.Target).To(Equal("192.168.1.5"))
 			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
+			Expect(result.UseHTTPS).To(BeFalse())
 		})
 
 		It("should fall back to 127.0.0.1 when nodeHostIP is empty", func() {
@@ -125,6 +127,95 @@ var _ = Describe("ResolveOtelBackend", func() {
 			Expect(result).ToNot(BeNil())
 			Expect(result.Endpoint.Target).To(Equal("127.0.0.1"))
 			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
+			Expect(result.UseHTTPS).To(BeFalse())
+		})
+	})
+
+	Describe("HTTP backend transport", func() {
+		makeResources := func(backends ...*motb_api.MeshOpenTelemetryBackendResource) xds_context.Resources {
+			list := &motb_api.MeshOpenTelemetryBackendResourceList{Items: backends}
+			return xds_context.Resources{
+				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					motb_api.MeshOpenTelemetryBackendType: list,
+				},
+			}
+		}
+
+		It("should enable HTTPS for HTTP protocol on port 443", func() {
+			backend := motb_api.NewMeshOpenTelemetryBackendResource()
+			backend.SetMeta(&test_model.ResourceMeta{Name: "https-collector", Mesh: "default"})
+			backend.Spec.Endpoint = &motb_api.Endpoint{Address: "collector.example", Port: 443}
+			backend.Spec.Protocol = motb_api.ProtocolHTTP
+
+			result := policies_xds.ResolveOtelBackend(
+				&common_api.BackendResourceRef{
+					Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+					Name: "https-collector",
+				},
+				"",
+				dummyParser,
+				dummyNamer,
+				makeResources(backend),
+				"",
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.UseHTTPS).To(BeTrue())
+		})
+
+		It("should not enable HTTPS for HTTP protocol on non-443 port", func() {
+			backend := motb_api.NewMeshOpenTelemetryBackendResource()
+			backend.SetMeta(&test_model.ResourceMeta{Name: "http-collector", Mesh: "default"})
+			backend.Spec.Endpoint = &motb_api.Endpoint{Address: "collector.example", Port: 4318}
+			backend.Spec.Protocol = motb_api.ProtocolHTTP
+
+			result := policies_xds.ResolveOtelBackend(
+				&common_api.BackendResourceRef{
+					Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+					Name: "http-collector",
+				},
+				"",
+				dummyParser,
+				dummyNamer,
+				makeResources(backend),
+				"",
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.UseHTTPS).To(BeFalse())
+		})
+
+		It("should return nil for ambiguous displayName match", func() {
+			backendA := motb_api.NewMeshOpenTelemetryBackendResource()
+			backendA.SetMeta(&test_model.ResourceMeta{
+				Name: "collector-a.kuma-system",
+				Mesh: "default",
+				Labels: map[string]string{
+					mesh_proto.DisplayName: "collector",
+				},
+			})
+			backendA.Spec.Endpoint = &motb_api.Endpoint{Address: "collector-a", Port: 4317}
+
+			backendB := motb_api.NewMeshOpenTelemetryBackendResource()
+			backendB.SetMeta(&test_model.ResourceMeta{
+				Name: "collector-b.kuma-system",
+				Mesh: "default",
+				Labels: map[string]string{
+					mesh_proto.DisplayName: "collector",
+				},
+			})
+			backendB.Spec.Endpoint = &motb_api.Endpoint{Address: "collector-b", Port: 4317}
+
+			result := policies_xds.ResolveOtelBackend(
+				&common_api.BackendResourceRef{
+					Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+					Name: "collector",
+				},
+				"",
+				dummyParser,
+				dummyNamer,
+				makeResources(backendA, backendB),
+				"",
+			)
+			Expect(result).To(BeNil())
 		})
 	})
 })
@@ -154,4 +245,68 @@ var _ = Describe("ParseOtelEndpoint", func() {
 		Entry("bare ipv6", "[2001:db8::1]", "2001:db8::1", uint32(4317)),
 		Entry("bare ipv6 no brackets", "2001:db8::1", "2001:db8::1", uint32(4317)),
 	)
+})
+
+var _ = Describe("EndpointForDirectOtelExport", func() {
+	It("should enable TLS transport for HTTPS-resolved HTTP backend", func() {
+		resolved := &policies_xds.ResolvedOtelBackend{
+			Endpoint: &core_xds.Endpoint{
+				Target: "collector.example",
+				Port:   443,
+			},
+			UseHTTPS: true,
+		}
+
+		ep := policies_xds.EndpointForDirectOtelExport(resolved)
+		Expect(ep).ToNot(BeNil())
+		Expect(ep.ExternalService).ToNot(BeNil())
+		Expect(ep.ExternalService.TLSEnabled).To(BeTrue())
+		Expect(ep.ExternalService.FallbackToSystemCa).To(BeTrue())
+	})
+})
+
+var _ = Describe("BuildSignalRuntimePlan", func() {
+	It("should mark signal overrides as blocked when policy disallows them", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					EndpointPresent: true,
+				},
+				Traces: &core_xds.OtelSignalEnvInventory{
+					OverrideKinds: []string{"endpoint"},
+				},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeOptional,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: false,
+			},
+			core_xds.OtelSignalTraces,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.Enabled).To(BeTrue())
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.OverrideKinds).To(ConsistOf("endpoint"))
+		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonSignalOverridesBlocked))
+	})
+
+	It("should mark required env as missing when inventory is absent", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			nil,
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeRequired,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelSignalLogs,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.Enabled).To(BeTrue())
+		Expect(plan.EnvInputPresent).To(BeFalse())
+		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonRequiredEnvMissing))
+	})
 })

@@ -195,7 +195,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	}
 
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
-	endpoint := resolved.Endpoint
+	endpoint := policies_xds.EndpointForDirectOtelExport(resolved)
 	backendName := resolved.Name
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
@@ -392,7 +392,13 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 		if resolved == nil {
 			continue
 		}
-		policies_xds.AddResolvedToBackends(proxy, resolved)
+		refreshInterval := ""
+		if backend.RefreshInterval != nil {
+			refreshInterval = backend.RefreshInterval.Duration.String()
+		}
+		policies_xds.AddResolvedToBackends(proxy, resolved, core_xds.OtelSignalMetrics, policies_xds.AddResolvedBackendOptions{
+			RefreshInterval: refreshInterval,
+		})
 	}
 }
 
