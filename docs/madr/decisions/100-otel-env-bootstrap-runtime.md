@@ -294,10 +294,12 @@ The runtime model should be the same on both platforms.
 
 On Kubernetes, OTEL env vars may come from:
 
-- the original pod environment
+- env vars already present on the `kuma-sidecar` container from the workload spec
 - `kuma.io/sidecar-env-vars`
 - other injector-controlled sidecar env
 - OpenTelemetry Operator targeting `kuma-sidecar`
+
+Only env vars that actually end up on the `kuma-sidecar` container are visible to `kuma-dp`. Env vars that exist only on the application container do not automatically carry over to the sidecar.
 
 On Universal, OTEL env vars may come from:
 
