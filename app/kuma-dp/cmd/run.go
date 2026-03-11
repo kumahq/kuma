@@ -280,6 +280,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
 			opts.AdminPort = adminPort
+			opts.AdminSocketPath = adminSocketPath
 
 			confFetcher := configfetcher.NewConfigFetcher(
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
@@ -479,7 +480,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	return cmd
 }
 
-func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
+func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32, envoyAdminSocketPath string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
@@ -501,6 +502,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Address:           "127.0.0.1",
 		Port:              envoyAdminPort,
 		IsIPv6:            false,
+		UnixSocketPath:    envoyAdminSocketPath,
 		QueryModifier:     metrics.AddPrometheusFormat,
 		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(),
@@ -518,7 +520,8 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
 	adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 	adminAddr := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
-	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, adminPort)
+	adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, adminPort, adminSocketPath)
 
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
@@ -552,6 +555,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		kumaSidecarConfiguration.Networking.Address,
 		adminPort,
 		adminAddr,
+		adminSocketPath,
 		cfg.Dataplane.DrainTime.Duration,
 	)
 	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)
