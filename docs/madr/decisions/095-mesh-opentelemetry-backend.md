@@ -85,7 +85,7 @@ When `protocol: http`, the `path` field is a base path prefix. The CP appends th
 
 #### Policy reference
 
-Each policy's OTel backend gets an optional `backendRef` field. When set, the endpoint comes from the referenced MeshOpenTelemetryBackend. Signal-specific fields remain inline.
+Each policy's OTel backend gets an optional `backendRef` field. When set, the endpoint comes from the referenced MeshOpenTelemetryBackend. Signal-specific fields remain inline. In 3.0, `backendRef` becomes required and the inline `endpoint` is removed.
 
 ##### MeshMetric
 
@@ -169,15 +169,15 @@ None of the current policy OTel backend structs have a `backendRef` field. Today
 
 Each struct needs a new optional `backendRef` field. The inline `endpoint` remains supported but is deprecated starting in 2.14 and will be removed in 3.0. Validation enforces mutual exclusivity: either `endpoint` or `backendRef`, not both.
 
+Use `common_api.BackendResourceRef`, not `TargetRef`. This is a typed resource reference (`kind` + `name`), not policy matching.
+
 ```go
 // In each policy's OTel backend struct
 type OpenTelemetryBackend struct {
-    // Inline endpoint (existing, backward compatible)
+    // Inline endpoint (existing, deprecated in 2.14, removed in 3.0)
     Endpoint string `json:"endpoint,omitempty"`
-    // OR reference to shared backend.
-    // Uses TargetRef directly, not the routing BackendRef struct
-    // (weight/port don't apply here).
-    BackendRef *common_api.TargetRef `json:"backendRef,omitempty"`
+    // Reference to shared backend (kind + name). Weight/port don't apply here.
+    BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
     // ... signal-specific fields unchanged
 }
 ```
@@ -189,13 +189,9 @@ type OpenTelemetryBackend struct {
    - If `backendRef` is set: look up the resource by name from `ctx.Mesh.Resources.MeshLocalResources`.
    - If `spec.endpoint` is set: use its address and port directly.
    - If `spec.nodeEndpoint` is set: resolve node IP from `proxy.Metadata.DynamicMetadata["HOST_IP"]`; fall back to `127.0.0.1` on Universal/VM.
-3. Inline `endpoint` path: CP generates a standard static Envoy cluster pointing directly at the collector. MeshTrace and MeshAccessLog use Envoy's built-in OTel exporters (`envoy.tracers.opentelemetry`, `envoy.access_loggers.open_telemetry`) over gRPC. Unchanged from current behavior.
-4. `backendRef` path - kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, MeshTrace and MeshAccessLog route through kuma-dp via Unix sockets:
-   ```
-   Envoy --gRPC--> Unix socket --> kuma-dp otelreceiver --> gRPC or HTTP --> OTel Collector
-   ```
-   CP configures a `pipe`-type Envoy cluster per signal (socket paths from `OtelTraceSocketName()` / `OtelLogSocketName()`). kuma-dp runs gRPC receivers on those sockets and forwards to the collector using the protocol and address from the MOTB spec. kuma-dp reads backend config from dynconf routes (`/meshtrace`, `/meshaccesslog`), which return JSON with `socketPath`, `endpoint`, `useHTTP`, and `path`. ETag caching avoids reconnects on unchanged config.
-5. MeshMetric path: unchanged - kuma-dp reads Envoy stats via its own Unix socket and exports via OTel SDK. Not affected by `FeatureOtelViaKumaDp`.
+3. Inline `endpoint` path: inline endpoints still bypass the pipe. The CP generates direct Envoy OTel resources for them, same as today.
+4. `backendRef` path - unified kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, the policy plugins add the resolved backend to a shared `OtelPipeBackends` accumulator. During xDS generation for that proxy, the policy generator writes a single `/otel` dynconf route from the deduplicated backend list. kuma-dp watches `/otel`, starts one receiver per backend socket, and forwards traces, logs, and metrics to the collector using the protocol and address from the MOTB spec. Trace and access log still point Envoy at the local Unix socket.
+5. MeshMetric path: MeshMetric still keeps its `/meshmetric` dynconf route for the stats pipeline and `refreshInterval`. In pipe mode, `backendRef` backends also use `/otel` for the real collector target. Inline `endpoint` backends stay on the direct Envoy path and do not use `/otel`.
 
 #### Resource characteristics
 
@@ -435,9 +431,9 @@ We considered having kuma-dp read `OTEL_EXPORTER_OTLP_*` env vars and forward th
 - Getting the env vars onto the sidecar container requires explicit steps (pod annotation, ContainerPatch, or Helm). If an operator is already doing explicit configuration, creating a MeshOpenTelemetryBackend resource is simpler and works the same way across all three signals.
 - `OTEL_EXPORTER_OTLP_HEADERS` may contain bearer tokens. Forwarding them through DynamicMetadata puts them in Envoy's `node.metadata`, which shows up in config dumps and CP debug logs.
 
-MeshOpenTelemetryBackend already provides a single place to configure the collector endpoint. Env var auto-detection would add implementation complexity (DynamicMetadata wiring, priority ordering, security redaction) for a convenience feature that conflicts with how the OTel ecosystem actually works.
+MeshOpenTelemetryBackend gives us a single place to configure the collector endpoint. Env var auto-detection would add implementation complexity (DynamicMetadata wiring, priority ordering, security redaction) for a convenience feature that conflicts with how the OTel ecosystem actually works.
 
-The pipe mode for MeshTrace and MeshAccessLog (routing through kuma-dp via Unix sockets, as MeshMetric already does) was implemented as part of `backendRef` support - scope item 8. The OTLP gRPC server interfaces in `go.opentelemetry.io/proto/otlp` are already in use. However, env var detection on top of pipe mode is still deferred: the remaining issues (OTel Operator not injecting into sidecars, partial pod coverage within a policy target, override semantics) still apply.
+Scope item 8 uses a unified pipe mode for `backendRef` backends. For each proxy, the control plane writes a single `/otel` dynconf route, kuma-dp starts one receiver per backend socket, and the design reuses the OTLP gRPC server interfaces from `go.opentelemetry.io/proto/otlp`.
 
 ### Option B: Named backends on the Mesh resource (rejected)
 
@@ -514,13 +510,13 @@ It's more work upfront but it's the right abstraction. The endpoint config is sh
 
 The resource is named after its backend type (`MeshOpenTelemetryBackend`) rather than using a generic name with a type discriminator. If other backend types are needed later, they become separate resources - and `backendRef.kind` enforces type matching via webhook validation.
 
-Start with a minimal spec (`endpoint` or `nodeEndpoint`, no TLS/auth). Add TLS and auth fields as follow-up work. HTTP endpoint support will only exist in MeshOpenTelemetryBackend - the unreleased HTTP support in MeshTrace is being removed, and it won't be added to MeshMetric or MeshAccessLog.
+Start with a minimal spec (`endpoint` or `nodeEndpoint`, no TLS/auth). Add TLS and auth fields as follow-up work. HTTP endpoint support will only exist in MeshOpenTelemetryBackend - the unreleased HTTP support in MeshTrace will be removed, and it won't be added to MeshMetric or MeshAccessLog.
 
 Signal-specific config (refreshInterval, attributes, body, sampling) stays in each policy. The shared resource only handles "where is the backend and how do I connect to it."
 
 ### Scope
 
-The first implementation covers:
+The initial implementation should cover:
 
 1. MeshOpenTelemetryBackend resource with `endpoint` (address + port + path) or `nodeEndpoint` (port + path), `protocol` (grpc/http), and `HasStatus: true`
 2. `backendRef` field added to all three policy OTel backends
@@ -529,15 +525,15 @@ The first implementation covers:
 5. Sidecar injector always injects `HOST_IP` env var (Downward API `status.hostIP`) into every kuma-dp container, unconditionally - same approach as `INSTANCE_IP`. No need for the injector to watch MOTB resources.
 6. Status conditions on the resource to surface unresolved backendRefs (user story 5)
 7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
-8. kuma-dp pipe mode for MeshTrace and MeshAccessLog: when `backendRef` is set and the proxy has `FeatureOtelViaKumaDp`, CP configures a `pipe`-type Envoy cluster per signal; kuma-dp runs gRPC receivers on the corresponding Unix sockets and forwards to the collector using the MOTB protocol and address. Inline `endpoint` backends use direct Envoy clusters, bypassing pipe mode.
+8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. kuma-dp runs one receiver per backend socket and forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path.
 
 #### kuma-dp pipe mode versioning
 
-Pipe mode is on by default in 2.14.0. The CP uses it whenever `backendRef` is set and the data plane proxy advertises `FeatureOtelViaKumaDp`.
+In 2.14.0, pipe mode should be on by default. The CP should use it whenever `backendRef` is set and the data plane proxy advertises `FeatureOtelViaKumaDp`.
 
 To opt out, set `dataPlane.features.otelPipe: false` in the Helm chart. This maps to `DataplaneRuntime.OtelPipeEnabled` in kuma-dp config. When disabled, kuma-dp omits `FeatureOtelViaKumaDp` from its bootstrap feature list; the CP then generates direct static Envoy clusters for all backends, including `backendRef` ones. The behavior is identical to 2.13 and earlier.
 
-In 3.0.0 the opt-out flag is removed. Pipe mode becomes the only supported path for `backendRef` backends, and inline `endpoint` is removed along with the direct cluster path.
+In 3.0.0, the plan is to remove the opt-out flag. Pipe mode becomes the only supported path for `backendRef` backends, and inline `endpoint` is removed along with the direct cluster path.
 
 TLS and auth fields are follow-up work.
 
