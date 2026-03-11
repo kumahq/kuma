@@ -45,6 +45,32 @@ message DataplaneInsight {
   }
 
   google.protobuf.Struct metadata = 3;
+
+  // Insights about OTEL runtime resolution for this Dataplane.
+  OpenTelemetry openTelemetry = 4;
+
+  message OpenTelemetry {
+    repeated Backend backends = 1;
+
+    message Backend {
+      string name = 1;
+      string clientLayout = 2;
+      Signal traces = 3;
+      Signal logs = 4;
+      Signal metrics = 5;
+    }
+
+    message Signal {
+      bool enabled = 1;
+      bool envAllowed = 2;
+      bool envInputPresent = 3;
+      bool dedicatedClient = 4;
+      string state = 5;
+      repeated string overrideKinds = 6;
+      repeated string missingFields = 7;
+      repeated string blockedReasons = 8;
+    }
+  }
 }
 
 // DiscoverySubscription describes a single ADS subscription

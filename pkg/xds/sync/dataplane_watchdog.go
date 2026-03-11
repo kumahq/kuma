@@ -20,6 +20,7 @@ import (
 	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
 type DataplaneWatchdogDependencies struct {
@@ -32,6 +33,7 @@ type DataplaneWatchdogDependencies struct {
 	EnvoyCpCtx            *xds_context.ControlPlaneContext
 	MeshCache             *mesh.Cache
 	ResManager            core_manager.ReadOnlyResourceManager
+	OtelStatusCache       *otelstatus.Cache
 }
 
 type Status string
@@ -196,6 +198,13 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not reconcile")
+	}
+	if d.OtelStatusCache != nil {
+		if proxy.OtelPipeBackends == nil || proxy.OtelPipeBackends.Empty() {
+			d.OtelStatusCache.Set(d.key, nil)
+		} else {
+			d.OtelStatusCache.Set(d.key, otelstatus.Build(proxy.OtelPipeBackends.All()))
+		}
 	}
 	d.lastHash = meshCtx.Hash
 	d.lastIdentityHash = identityHash
