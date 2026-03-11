@@ -151,7 +151,7 @@ networking:
     - port: 9000
       serviceAddress: 192.168.0.1
       servicePort: 80
-      serviceProbe: 
+      serviceProbe:
         tcp: {}
       tags:
         kuma.io/service: backend
@@ -163,6 +163,37 @@ networking:
 							{Kind: &structpb.Value_StringValue{StringValue: types.FeatureUnifiedResourceNaming}},
 						},
 					}}},
+				},
+			},
+			hdsConfig: &dp_server.HdsConfig{
+				Interval: config_types.Duration{Duration: 8 * time.Second},
+				Enabled:  true,
+				CheckDefaults: &dp_server.HdsCheck{
+					Interval:           config_types.Duration{Duration: 1 * time.Second},
+					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
+					Timeout:            config_types.Duration{Duration: 3 * time.Second},
+					HealthyThreshold:   4,
+					UnhealthyThreshold: 5,
+				},
+			},
+		}),
+		Entry("should generate HealthCheckSpecifier with admin UDS", testCase{
+			goldenFile: "hds.5.golden.yaml",
+			dataplane: `
+networking:
+  address: 10.20.0.1
+  inbound:
+    - port: 9000
+      serviceAddress: 192.168.0.1
+      servicePort: 80
+      serviceProbe:
+        tcp: {}
+      tags:
+        kuma.io/service: backend
+`,
+			metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.FieldDataplaneAdminSocketPath: {Kind: &structpb.Value_StringValue{StringValue: "/tmp/kuma-dp-1234/kuma-envoy-admin.sock"}},
 				},
 			},
 			hdsConfig: &dp_server.HdsConfig{

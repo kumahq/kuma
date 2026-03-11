@@ -68,7 +68,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	}
 
 	healthChecks := []*envoy_service_health.ClusterHealthCheck{
-		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort), clusterName),
+		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort), md.GetAdminSocketPath(), clusterName),
 	}
 
 	for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
@@ -158,21 +158,33 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 }
 
 // envoyHealthCheck builds a HC for Envoy itself so when Envoy is in draining state HDS can report that DP is offline
-func (g *SnapshotGenerator) envoyHealthCheck(port uint32, clusterName string) *envoy_service_health.ClusterHealthCheck {
+func (g *SnapshotGenerator) envoyHealthCheck(port uint32, adminSocketPath, clusterName string) *envoy_service_health.ClusterHealthCheck {
+	var addr *envoy_core.Address
+	if adminSocketPath != "" {
+		addr = &envoy_core.Address{
+			Address: &envoy_core.Address_Pipe{
+				Pipe: &envoy_core.Pipe{
+					Path: adminSocketPath,
+				},
+			},
+		}
+	} else {
+		addr = &envoy_core.Address{
+			Address: &envoy_core.Address_SocketAddress{
+				SocketAddress: &envoy_core.SocketAddress{
+					Address: "127.0.0.1",
+					PortSpecifier: &envoy_core.SocketAddress_PortValue{
+						PortValue: port,
+					},
+				},
+			},
+		}
+	}
 	return &envoy_service_health.ClusterHealthCheck{
 		ClusterName: clusterName,
 		LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 			Endpoints: []*envoy_endpoint.Endpoint{{
-				Address: &envoy_core.Address{
-					Address: &envoy_core.Address_SocketAddress{
-						SocketAddress: &envoy_core.SocketAddress{
-							Address: "127.0.0.1",
-							PortSpecifier: &envoy_core.SocketAddress_PortValue{
-								PortValue: port,
-							},
-						},
-					},
-				},
+				Address: addr,
 			}},
 		}},
 		HealthChecks: []*envoy_core.HealthCheck{
