@@ -9,6 +9,7 @@ import (
 
 // MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes.
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:has_status=true
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -135,3 +136,18 @@ type JsonValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
+
+type MeshAccessLogStatus struct {
+	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+}
+
+// Condition types
+const (
+	BackendRefsResolvedCondition string = "BackendRefsResolved"
+)
+
+// Condition reasons
+const (
+	AllBackendRefsResolvedReason string = "AllBackendRefsResolved"
+	UnresolvedBackendRefsReason  string = "UnresolvedBackendRefs"
+)

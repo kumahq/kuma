@@ -11,6 +11,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
 )
 
+type testStatus struct {
+	Conditions []string `json:"conditions,omitempty"`
+}
+
 var _ = Describe("Rest Resource", func() {
 	var t1, t2 time.Time
 
@@ -98,6 +102,42 @@ var _ = Describe("Rest Resource", func() {
 }
 `
 				Expect(string(bytes)).To(MatchJSON(expected))
+			})
+
+			It("should omit empty status", func() {
+				res := &v1alpha1.Resource{
+					ResourceMeta: v1alpha1.ResourceMeta{
+						Type:             "MeshTrafficPermission",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
+					},
+					Spec:   samples.MeshTrafficPermission,
+					Status: &testStatus{},
+				}
+
+				bytes, err := json.Marshal(res)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).ToNot(ContainSubstring(`"status":`))
+			})
+
+			It("should include non-empty status", func() {
+				res := &v1alpha1.Resource{
+					ResourceMeta: v1alpha1.ResourceMeta{
+						Type:             "MeshTrafficPermission",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
+					},
+					Spec:   samples.MeshTrafficPermission,
+					Status: &testStatus{Conditions: []string{"resolved"}},
+				}
+
+				bytes, err := json.Marshal(res)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).To(ContainSubstring(`"status":{"conditions":["resolved"]}`))
 			})
 		})
 	})

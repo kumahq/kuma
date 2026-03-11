@@ -74,6 +74,48 @@ var _ = Describe("StatusUpdater", func() {
 		}
 	}
 
+	getMeshMetricConditions := func(name string) func() ([]common_api.Condition, error) {
+		return func() ([]common_api.Condition, error) {
+			mm := meshmetric_api.NewMeshMetricResource()
+			err := resManager.Get(context.Background(), mm, store.GetByKey(name, model.DefaultMesh))
+			if err != nil {
+				return nil, err
+			}
+			if mm.Status == nil {
+				return nil, nil
+			}
+			return mm.Status.Conditions, nil
+		}
+	}
+
+	getMeshTraceConditions := func(name string) func() ([]common_api.Condition, error) {
+		return func() ([]common_api.Condition, error) {
+			mt := meshtrace_api.NewMeshTraceResource()
+			err := resManager.Get(context.Background(), mt, store.GetByKey(name, model.DefaultMesh))
+			if err != nil {
+				return nil, err
+			}
+			if mt.Status == nil {
+				return nil, nil
+			}
+			return mt.Status.Conditions, nil
+		}
+	}
+
+	getMeshAccessLogConditions := func(name string) func() ([]common_api.Condition, error) {
+		return func() ([]common_api.Condition, error) {
+			mal := meshaccesslog_api.NewMeshAccessLogResource()
+			err := resManager.Get(context.Background(), mal, store.GetByKey(name, model.DefaultMesh))
+			if err != nil {
+				return nil, err
+			}
+			if mal.Status == nil {
+				return nil, nil
+			}
+			return mal.Status.Conditions, nil
+		}
+	}
+
 	It("should set NotReferenced condition when no policies reference the backend", func() {
 		createMOTB("main-collector")
 
@@ -307,6 +349,128 @@ var _ = Describe("StatusUpdater", func() {
 			Status:  kube_meta.ConditionFalse,
 			Reason:  motb_api.NotReferencedReason,
 			Message: "Not referenced by any observability policy",
+		}))
+	})
+
+	It("should mark MeshMetric backendRefs unresolved when MOTB is missing", func() {
+		mm := meshmetric_api.NewMeshMetricResource()
+		mm.Spec = &meshmetric_api.MeshMetric{
+			Default: meshmetric_api.Conf{
+				Backends: &[]meshmetric_api.Backend{
+					{
+						Type: meshmetric_api.OpenTelemetryBackendType,
+						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
+							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+								Name: "missing-collector",
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mm, store.CreateByKey("mm-missing", model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshMetricConditions("mm-missing"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    meshmetric_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  meshmetric_api.UnresolvedBackendRefsReason,
+			Message: "Unresolved MeshOpenTelemetryBackend references: missing-collector",
+		}))
+	})
+
+	It("should mark MeshTrace backendRefs unresolved when MOTB is missing", func() {
+		mt := meshtrace_api.NewMeshTraceResource()
+		mt.Spec = &meshtrace_api.MeshTrace{
+			Default: meshtrace_api.Conf{
+				Backends: &[]meshtrace_api.Backend{
+					{
+						Type: meshtrace_api.OpenTelemetryBackendType,
+						OpenTelemetry: &meshtrace_api.OpenTelemetryBackend{
+							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+								Name: "missing-trace-collector",
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mt, store.CreateByKey("mt-missing", model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshTraceConditions("mt-missing"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    meshtrace_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  meshtrace_api.UnresolvedBackendRefsReason,
+			Message: "Unresolved MeshOpenTelemetryBackend references: missing-trace-collector",
+		}))
+	})
+
+	It("should mark MeshAccessLog backendRefs unresolved when MOTB is missing", func() {
+		mal := meshaccesslog_api.NewMeshAccessLogResource()
+		mal.Spec = &meshaccesslog_api.MeshAccessLog{
+			To: &[]meshaccesslog_api.To{
+				{
+					TargetRef: common_api.TargetRef{Kind: "Mesh"},
+					Default: meshaccesslog_api.Conf{
+						Backends: &[]meshaccesslog_api.Backend{
+							{
+								Type: meshaccesslog_api.OtelTelemetryBackendType,
+								OpenTelemetry: &meshaccesslog_api.OtelBackend{
+									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+										Name: "missing-log-collector",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mal, store.CreateByKey("mal-missing", model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshAccessLogConditions("mal-missing"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    meshaccesslog_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  meshaccesslog_api.UnresolvedBackendRefsReason,
+			Message: "Unresolved MeshOpenTelemetryBackend references: missing-log-collector",
+		}))
+	})
+
+	It("should flip MeshMetric backendRefs condition to resolved when backend appears", func() {
+		mm := meshmetric_api.NewMeshMetricResource()
+		mm.Spec = &meshmetric_api.MeshMetric{
+			Default: meshmetric_api.Conf{
+				Backends: &[]meshmetric_api.Backend{
+					{
+						Type: meshmetric_api.OpenTelemetryBackendType,
+						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
+							BackendRef: &common_api.BackendResourceRef{
+								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+								Name: "appearing-collector",
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mm, store.CreateByKey("mm-appearing", model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshMetricConditions("mm-appearing"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    meshmetric_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  meshmetric_api.UnresolvedBackendRefsReason,
+			Message: "Unresolved MeshOpenTelemetryBackend references: appearing-collector",
+		}))
+
+		createMOTB("appearing-collector")
+
+		Eventually(getMeshMetricConditions("mm-appearing"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    meshmetric_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  meshmetric_api.AllBackendRefsResolvedReason,
+			Message: "All MeshOpenTelemetryBackend references are resolved",
 		}))
 	})
 

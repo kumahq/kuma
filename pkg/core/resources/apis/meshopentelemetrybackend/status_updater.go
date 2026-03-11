@@ -3,6 +3,8 @@ package meshopentelemetrybackend
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -89,27 +91,43 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	if err := s.roResManager.List(ctx, motbList); err != nil {
 		return errors.Wrap(err, "could not list MeshOpenTelemetryBackends")
 	}
+
+	meshMetrics := &meshmetric_api.MeshMetricResourceList{}
+	if err := s.roResManager.List(ctx, meshMetrics); err != nil {
+		return errors.Wrap(err, "could not list MeshMetrics")
+	}
+
+	meshTraces := &meshtrace_api.MeshTraceResourceList{}
+	if err := s.roResManager.List(ctx, meshTraces); err != nil {
+		return errors.Wrap(err, "could not list MeshTraces")
+	}
+
+	meshAccessLogs := &meshaccesslog_api.MeshAccessLogResourceList{}
+	if err := s.roResManager.List(ctx, meshAccessLogs); err != nil {
+		return errors.Wrap(err, "could not list MeshAccessLogs")
+	}
+
+	backendsByMesh := buildBackendNameIndex(motbList.Items)
+
+	if err := s.updateMeshMetricStatuses(ctx, meshMetrics, backendsByMesh); err != nil {
+		return err
+	}
+	if err := s.updateMeshTraceStatuses(ctx, meshTraces, backendsByMesh); err != nil {
+		return err
+	}
+	if err := s.updateMeshAccessLogStatuses(ctx, meshAccessLogs, backendsByMesh); err != nil {
+		return err
+	}
+
 	if len(motbList.Items) == 0 {
 		return nil
 	}
 
-	refCounts, err := s.countBackendRefs(ctx)
-	if err != nil {
-		return err
-	}
-
+	refCounts := countBackendRefs(meshMetrics, meshTraces, meshAccessLogs, backendsByMesh)
 	for _, motb := range motbList.Items {
-		displayName := motb.GetMeta().GetLabels()[mesh_proto.DisplayName]
 		name := motb.GetMeta().GetName()
-		mesh := motb.GetMeta().GetLabels()[mesh_proto.MeshTag]
-		// backendRef.name uses the display name (e.g. "main-collector"),
-		// but GetName() includes the K8s namespace suffix (e.g. "main-collector.kuma-system").
-		// Check both to handle all environments correctly.
-		// Keys are "<mesh>/<name>" to avoid counting refs from other meshes.
-		count := refCounts[mesh+"/"+displayName] + refCounts[mesh+"/"+name]
-		if displayName == name {
-			count = refCounts[mesh+"/"+name] // avoid double counting when they're the same
-		}
+		mesh := motb.GetMeta().GetMesh()
+		count := refCounts[mesh+"/"+name]
 		condition := buildReferencedByCondition(count)
 
 		if !conditionEquals(motb.Status.Conditions, condition) {
@@ -125,63 +143,65 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			}
 		}
 	}
+
 	return nil
 }
 
 // countBackendRefs scans all three observability policy types and counts how many
 // OTel backends reference each MeshOpenTelemetryBackend by name, keyed by "<mesh>/<name>"
 // to avoid counting refs from a different mesh.
-func (s *StatusUpdater) countBackendRefs(ctx context.Context) (map[string]int, error) {
+func countBackendRefs(
+	meshMetrics *meshmetric_api.MeshMetricResourceList,
+	meshTraces *meshtrace_api.MeshTraceResourceList,
+	meshAccessLogs *meshaccesslog_api.MeshAccessLogResourceList,
+	backendsByMesh map[string]*backendNameIndex,
+) map[string]int {
 	counts := map[string]int{}
 
-	// MeshMetric
-	meshMetrics := &meshmetric_api.MeshMetricResourceList{}
-	if err := s.roResManager.List(ctx, meshMetrics); err != nil {
-		return nil, errors.Wrap(err, "could not list MeshMetrics")
-	}
 	for _, mm := range meshMetrics.Items {
-		mesh := mm.GetMeta().GetLabels()[mesh_proto.MeshTag]
+		mesh := mm.GetMeta().GetMesh()
 		for _, backend := range pointer.Deref(mm.Spec.Default.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[mesh+"/"+backend.OpenTelemetry.BackendRef.Name]++
+				if resolved, ok := resolveBackendRef(backendsByMesh, mesh, backend.OpenTelemetry.BackendRef.Name); ok {
+					counts[mesh+"/"+resolved]++
+				}
 			}
 		}
 	}
 
-	// MeshTrace
-	meshTraces := &meshtrace_api.MeshTraceResourceList{}
-	if err := s.roResManager.List(ctx, meshTraces); err != nil {
-		return nil, errors.Wrap(err, "could not list MeshTraces")
-	}
 	for _, mt := range meshTraces.Items {
-		mesh := mt.GetMeta().GetLabels()[mesh_proto.MeshTag]
+		mesh := mt.GetMeta().GetMesh()
 		for _, backend := range pointer.Deref(mt.Spec.Default.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[mesh+"/"+backend.OpenTelemetry.BackendRef.Name]++
+				if resolved, ok := resolveBackendRef(backendsByMesh, mesh, backend.OpenTelemetry.BackendRef.Name); ok {
+					counts[mesh+"/"+resolved]++
+				}
 			}
 		}
 	}
 
-	// MeshAccessLog
-	meshAccessLogs := &meshaccesslog_api.MeshAccessLogResourceList{}
-	if err := s.roResManager.List(ctx, meshAccessLogs); err != nil {
-		return nil, errors.Wrap(err, "could not list MeshAccessLogs")
-	}
 	for _, mal := range meshAccessLogs.Items {
-		mesh := mal.GetMeta().GetLabels()[mesh_proto.MeshTag]
-		collectAccessLogBackendRefs(mesh, mal.Spec, counts)
+		mesh := mal.GetMeta().GetMesh()
+		collectAccessLogBackendRefs(mesh, mal.Spec, counts, backendsByMesh)
 	}
 
-	return counts, nil
+	return counts
 }
 
 // collectAccessLogBackendRefs extracts backendRef names from all MeshAccessLog conf locations.
 // Keys written into counts use "<mesh>/<name>" format.
-func collectAccessLogBackendRefs(mesh string, spec *meshaccesslog_api.MeshAccessLog, counts map[string]int) {
+func collectAccessLogBackendRefs(
+	mesh string,
+	spec *meshaccesslog_api.MeshAccessLog,
+	counts map[string]int,
+	backendsByMesh map[string]*backendNameIndex,
+) {
 	collectFromConf := func(conf meshaccesslog_api.Conf) {
 		for _, backend := range pointer.Deref(conf.Backends) {
 			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
-				counts[mesh+"/"+backend.OpenTelemetry.BackendRef.Name]++
+				if resolved, ok := resolveBackendRef(backendsByMesh, mesh, backend.OpenTelemetry.BackendRef.Name); ok {
+					counts[mesh+"/"+resolved]++
+				}
 			}
 		}
 	}
@@ -194,6 +214,280 @@ func collectAccessLogBackendRefs(mesh string, spec *meshaccesslog_api.MeshAccess
 	for _, rule := range pointer.Deref(spec.Rules) {
 		collectFromConf(rule.Default)
 	}
+}
+
+type backendNameIndex struct {
+	byName        map[string]struct{}
+	byDisplayName map[string][]string
+}
+
+func buildBackendNameIndex(motbs []*motb_api.MeshOpenTelemetryBackendResource) map[string]*backendNameIndex {
+	indexByMesh := map[string]*backendNameIndex{}
+	for _, motb := range motbs {
+		mesh := motb.GetMeta().GetMesh()
+		if indexByMesh[mesh] == nil {
+			indexByMesh[mesh] = &backendNameIndex{
+				byName:        map[string]struct{}{},
+				byDisplayName: map[string][]string{},
+			}
+		}
+
+		name := motb.GetMeta().GetName()
+		indexByMesh[mesh].byName[name] = struct{}{}
+
+		displayName := motb.GetMeta().GetLabels()[mesh_proto.DisplayName]
+		if displayName != "" && displayName != name {
+			indexByMesh[mesh].byDisplayName[displayName] = append(indexByMesh[mesh].byDisplayName[displayName], name)
+		}
+	}
+
+	return indexByMesh
+}
+
+func resolveBackendRef(indexByMesh map[string]*backendNameIndex, mesh string, refName string) (string, bool) {
+	idx := indexByMesh[mesh]
+	if idx == nil {
+		return "", false
+	}
+
+	if _, exists := idx.byName[refName]; exists {
+		return refName, true
+	}
+
+	matchingDisplayNames := idx.byDisplayName[refName]
+	if len(matchingDisplayNames) == 1 {
+		return matchingDisplayNames[0], true
+	}
+
+	return "", false
+}
+
+func unresolvedBackendRefs(mesh string, refs []string, indexByMesh map[string]*backendNameIndex) []string {
+	if len(refs) == 0 {
+		return nil
+	}
+
+	unresolved := map[string]struct{}{}
+	for _, ref := range refs {
+		if _, ok := resolveBackendRef(indexByMesh, mesh, ref); !ok {
+			unresolved[ref] = struct{}{}
+		}
+	}
+
+	res := make([]string, 0, len(unresolved))
+	for ref := range unresolved {
+		res = append(res, ref)
+	}
+	sort.Strings(res)
+
+	return res
+}
+
+func buildBackendRefsResolvedCondition(
+	refs []string,
+	unresolved []string,
+	conditionType string,
+	resolvedReason string,
+	unresolvedReason string,
+) common_api.Condition {
+	if len(refs) == 0 {
+		return common_api.Condition{
+			Type:    conditionType,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  resolvedReason,
+			Message: "No MeshOpenTelemetryBackend references configured",
+		}
+	}
+
+	if len(unresolved) == 0 {
+		return common_api.Condition{
+			Type:    conditionType,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  resolvedReason,
+			Message: "All MeshOpenTelemetryBackend references are resolved",
+		}
+	}
+
+	return common_api.Condition{
+		Type:    conditionType,
+		Status:  kube_meta.ConditionFalse,
+		Reason:  unresolvedReason,
+		Message: fmt.Sprintf("Unresolved MeshOpenTelemetryBackend references: %s", strings.Join(unresolved, ", ")),
+	}
+}
+
+func meshMetricBackendRefs(mm *meshmetric_api.MeshMetricResource) []string {
+	refs := map[string]struct{}{}
+	for _, backend := range pointer.Deref(mm.Spec.Default.Backends) {
+		if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
+			refs[backend.OpenTelemetry.BackendRef.Name] = struct{}{}
+		}
+	}
+
+	result := make([]string, 0, len(refs))
+	for ref := range refs {
+		result = append(result, ref)
+	}
+	sort.Strings(result)
+
+	return result
+}
+
+func meshTraceBackendRefs(mt *meshtrace_api.MeshTraceResource) []string {
+	refs := map[string]struct{}{}
+	for _, backend := range pointer.Deref(mt.Spec.Default.Backends) {
+		if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
+			refs[backend.OpenTelemetry.BackendRef.Name] = struct{}{}
+		}
+	}
+
+	result := make([]string, 0, len(refs))
+	for ref := range refs {
+		result = append(result, ref)
+	}
+	sort.Strings(result)
+
+	return result
+}
+
+func meshAccessLogBackendRefs(mal *meshaccesslog_api.MeshAccessLogResource) []string {
+	refs := map[string]struct{}{}
+	collectFromConf := func(conf meshaccesslog_api.Conf) {
+		for _, backend := range pointer.Deref(conf.Backends) {
+			if backend.OpenTelemetry != nil && backend.OpenTelemetry.BackendRef != nil {
+				refs[backend.OpenTelemetry.BackendRef.Name] = struct{}{}
+			}
+		}
+	}
+
+	for _, to := range pointer.Deref(mal.Spec.To) {
+		collectFromConf(to.Default)
+	}
+	for _, from := range pointer.Deref(mal.Spec.From) {
+		collectFromConf(from.Default)
+	}
+	for _, rule := range pointer.Deref(mal.Spec.Rules) {
+		collectFromConf(rule.Default)
+	}
+
+	result := make([]string, 0, len(refs))
+	for ref := range refs {
+		result = append(result, ref)
+	}
+	sort.Strings(result)
+
+	return result
+}
+
+func (s *StatusUpdater) updateMeshMetricStatuses(
+	ctx context.Context,
+	meshMetrics *meshmetric_api.MeshMetricResourceList,
+	indexByMesh map[string]*backendNameIndex,
+) error {
+	for _, mm := range meshMetrics.Items {
+		refs := meshMetricBackendRefs(mm)
+		unresolved := unresolvedBackendRefs(mm.GetMeta().GetMesh(), refs, indexByMesh)
+		condition := buildBackendRefsResolvedCondition(
+			refs,
+			unresolved,
+			meshmetric_api.BackendRefsResolvedCondition,
+			meshmetric_api.AllBackendRefsResolvedReason,
+			meshmetric_api.UnresolvedBackendRefsReason,
+		)
+
+		if mm.Status == nil {
+			mm.Status = &meshmetric_api.MeshMetricStatus{}
+		}
+		if conditionEquals(mm.Status.Conditions, condition) {
+			continue
+		}
+
+		mm.Status.Conditions = updateConditions(mm.Status.Conditions, condition)
+		log := s.logger.WithValues("meshmetric", mm.GetMeta().GetName(), "mesh", mm.GetMeta().GetMesh())
+		if err := s.resManager.Update(ctx, mm); err != nil {
+			if store.IsConflict(err) {
+				log.Info("couldn't update MeshMetric, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
+			} else {
+				log.Error(err, "could not update MeshMetric status")
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *StatusUpdater) updateMeshTraceStatuses(
+	ctx context.Context,
+	meshTraces *meshtrace_api.MeshTraceResourceList,
+	indexByMesh map[string]*backendNameIndex,
+) error {
+	for _, mt := range meshTraces.Items {
+		refs := meshTraceBackendRefs(mt)
+		unresolved := unresolvedBackendRefs(mt.GetMeta().GetMesh(), refs, indexByMesh)
+		condition := buildBackendRefsResolvedCondition(
+			refs,
+			unresolved,
+			meshtrace_api.BackendRefsResolvedCondition,
+			meshtrace_api.AllBackendRefsResolvedReason,
+			meshtrace_api.UnresolvedBackendRefsReason,
+		)
+
+		if mt.Status == nil {
+			mt.Status = &meshtrace_api.MeshTraceStatus{}
+		}
+		if conditionEquals(mt.Status.Conditions, condition) {
+			continue
+		}
+
+		mt.Status.Conditions = updateConditions(mt.Status.Conditions, condition)
+		log := s.logger.WithValues("meshtrace", mt.GetMeta().GetName(), "mesh", mt.GetMeta().GetMesh())
+		if err := s.resManager.Update(ctx, mt); err != nil {
+			if store.IsConflict(err) {
+				log.Info("couldn't update MeshTrace, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
+			} else {
+				log.Error(err, "could not update MeshTrace status")
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *StatusUpdater) updateMeshAccessLogStatuses(
+	ctx context.Context,
+	meshAccessLogs *meshaccesslog_api.MeshAccessLogResourceList,
+	indexByMesh map[string]*backendNameIndex,
+) error {
+	for _, mal := range meshAccessLogs.Items {
+		refs := meshAccessLogBackendRefs(mal)
+		unresolved := unresolvedBackendRefs(mal.GetMeta().GetMesh(), refs, indexByMesh)
+		condition := buildBackendRefsResolvedCondition(
+			refs,
+			unresolved,
+			meshaccesslog_api.BackendRefsResolvedCondition,
+			meshaccesslog_api.AllBackendRefsResolvedReason,
+			meshaccesslog_api.UnresolvedBackendRefsReason,
+		)
+
+		if mal.Status == nil {
+			mal.Status = &meshaccesslog_api.MeshAccessLogStatus{}
+		}
+		if conditionEquals(mal.Status.Conditions, condition) {
+			continue
+		}
+
+		mal.Status.Conditions = updateConditions(mal.Status.Conditions, condition)
+		log := s.logger.WithValues("meshaccesslog", mal.GetMeta().GetName(), "mesh", mal.GetMeta().GetMesh())
+		if err := s.resManager.Update(ctx, mal); err != nil {
+			if store.IsConflict(err) {
+				log.Info("couldn't update MeshAccessLog, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
+			} else {
+				log.Error(err, "could not update MeshAccessLog status")
+			}
+		}
+	}
+
+	return nil
 }
 
 func buildReferencedByCondition(count int) common_api.Condition {
