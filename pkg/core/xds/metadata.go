@@ -40,6 +40,7 @@ const (
 	FieldIPv6Enabled                   = "ipv6Enabled"
 	FieldSpireSocketPath               = "spireAgent.socketPath"
 	FieldDynamicHostIP                 = "HOST_IP"
+	FieldOtelEnvInventory              = "otelEnvInventory"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.

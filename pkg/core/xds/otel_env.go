@@ -8,8 +8,6 @@ const (
 	OtelSignalMetrics OtelSignal = "metrics"
 )
 
-const FieldOtelEnvInventory = "otelEnvInventory"
-
 type OtelProtocol string
 
 const (

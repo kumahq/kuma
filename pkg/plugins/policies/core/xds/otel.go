@@ -259,69 +259,74 @@ func signalSource(
 		return ""
 	}
 
-	sharedInventory := inventory.Shared
-	signalInventory := inventory.GetSignal(signal)
+	sharedInv := inventory.Shared
+	signalInv := inventory.GetSignal(signal)
 	preferEnv := backend.EnvPolicy.Precedence != motb_api.EnvPrecedenceExplicitFirst
+	sigScope := string(signal)
+
 	sharedAllowed := !slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform) &&
 		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPolicy) &&
 		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonMultipleBackends)
 	signalAllowed := sharedAllowed &&
 		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonSignalOverridesBlocked)
 
-	state := sourceState{}
-	accumulateFieldSource(&state, backend.Endpoint != "", sharedAllowed && fieldPresent(sharedInventory, "endpoint"), signalAllowed && fieldPresent(signalInventory, "endpoint"), preferEnv)
-	accumulateFieldSource(&state, true, sharedAllowed && validField(inventory, "shared", "protocol") && fieldPresent(sharedInventory, "protocol"), signalAllowed && validField(inventory, string(signal), "protocol") && fieldPresent(signalInventory, "protocol"), preferEnv)
+	sharedEnv := func(field string) bool {
+		return sharedAllowed && validField(inventory, "shared", field) && fieldPresent(sharedInv, field)
+	}
+	signalEnv := func(field string) bool {
+		return signalAllowed && validField(inventory, sigScope, field) && fieldPresent(signalInv, field)
+	}
 
 	finalProtocol := explicitProtocol(backend)
-	if sharedAllowed && validField(inventory, "shared", "protocol") && fieldPresent(sharedInventory, "protocol") && preferEnv {
-		finalProtocol = sharedInventory.EffectiveProtocol
+	if sharedEnv("protocol") && preferEnv {
+		finalProtocol = sharedInv.EffectiveProtocol
 	}
-	if signalAllowed && validField(inventory, string(signal), "protocol") && fieldPresent(signalInventory, "protocol") && preferEnv {
-		finalProtocol = signalInventory.EffectiveProtocol
+	if signalEnv("protocol") && preferEnv {
+		finalProtocol = signalInv.EffectiveProtocol
 	}
 
+	type fieldCheck struct{ explicit, shared, signal bool }
+	checks := []fieldCheck{
+		{backend.Endpoint != "", sharedEnv("endpoint"), signalEnv("endpoint")},
+		{true, sharedEnv("protocol"), signalEnv("protocol")},
+		{false, sharedEnv("insecure"), signalEnv("insecure")},
+		{false, sharedEnv("headers"), signalEnv("headers")},
+		{false, sharedEnv("compression"), signalEnv("compression")},
+		{false, sharedEnv("timeout"), signalEnv("timeout")},
+		{false, sharedEnv("certificate"), signalEnv("certificate")},
+		{false, sharedAllowed && validMTLSField(inventory, "shared", sharedInv), signalAllowed && validMTLSField(inventory, sigScope, signalInv)},
+	}
 	if finalProtocol == core_xds.OtelProtocolHTTPProtobuf {
-		accumulateFieldSource(&state, true, sharedAllowed && sharedPathFromEndpoint(sharedInventory), signalAllowed && signalPathFromEndpoint(signalInventory), preferEnv)
+		checks = append(checks, fieldCheck{
+			true,
+			sharedAllowed && sharedPathFromEndpoint(sharedInv),
+			signalAllowed && signalPathFromEndpoint(signalInv),
+		})
 	}
 
-	accumulateFieldSource(&state, false, sharedAllowed && fieldPresent(sharedInventory, "insecure"), signalAllowed && fieldPresent(signalInventory, "insecure"), preferEnv)
-	accumulateFieldSource(&state, false, sharedAllowed && fieldPresent(sharedInventory, "headers"), signalAllowed && fieldPresent(signalInventory, "headers"), preferEnv)
-	accumulateFieldSource(&state, false, sharedAllowed && validField(inventory, "shared", "compression") && fieldPresent(sharedInventory, "compression"), signalAllowed && validField(inventory, string(signal), "compression") && fieldPresent(signalInventory, "compression"), preferEnv)
-	accumulateFieldSource(&state, false, sharedAllowed && validField(inventory, "shared", "timeout") && fieldPresent(sharedInventory, "timeout"), signalAllowed && validField(inventory, string(signal), "timeout") && fieldPresent(signalInventory, "timeout"), preferEnv)
-	accumulateFieldSource(&state, false, sharedAllowed && fieldPresent(sharedInventory, "certificate"), signalAllowed && fieldPresent(signalInventory, "certificate"), preferEnv)
-	accumulateFieldSource(&state, false, sharedAllowed && validMTLSField(inventory, "shared", sharedInventory), signalAllowed && validMTLSField(inventory, string(signal), signalInventory), preferEnv)
+	var hasExplicit, hasEnv bool
+	for _, f := range checks {
+		present, fromEnv := resolveFieldSource(f.explicit, f.shared, f.signal, preferEnv)
+		if !present {
+			continue
+		}
+		if fromEnv {
+			hasEnv = true
+		} else {
+			hasExplicit = true
+		}
+	}
 
 	switch {
-	case state.explicitUsed && state.envUsed:
+	case hasExplicit && hasEnv:
 		return string(core_xds.OtelSignalSourceMixed)
-	case state.envUsed:
+	case hasEnv:
 		return string(core_xds.OtelSignalSourceEnv)
-	case state.explicitUsed:
+	case hasExplicit:
 		return string(core_xds.OtelSignalSourceExplicit)
 	default:
 		return ""
 	}
-}
-
-type sourceState struct {
-	explicitUsed bool
-	envUsed      bool
-}
-
-func accumulateFieldSource(state *sourceState, explicitPresent, sharedPresent, signalPresent, preferEnv bool) {
-	if state == nil {
-		return
-	}
-
-	present, fromEnv := resolveFieldSource(explicitPresent, sharedPresent, signalPresent, preferEnv)
-	if !present {
-		return
-	}
-	if fromEnv {
-		state.envUsed = true
-		return
-	}
-	state.explicitUsed = true
 }
 
 func resolveFieldSource(explicitPresent, sharedPresent, signalPresent, preferEnv bool) (bool, bool) {
