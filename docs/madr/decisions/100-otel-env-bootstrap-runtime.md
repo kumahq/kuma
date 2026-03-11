@@ -1,6 +1,6 @@
 # OTEL env-var bootstrap and runtime resolution
 
-* Status: accepted
+- Status: accepted
 
 Technical Story: TBD
 
@@ -38,10 +38,12 @@ The design has to answer these questions:
 In this option, `kuma-dp` reads OTEL env vars and sends the real values to the control plane. The control plane merges them with `MeshOpenTelemetryBackend` and sends the final exporter config back to `kuma-dp` and Envoy.
 
 Pros:
+
 - The control plane has the full picture.
 - Status is easy because the control plane already has the resolved values.
 
 Cons:
+
 - Bad, because secret-bearing values like OTEL headers or client keys would cross the control plane boundary.
 - Bad, because those values could end up in CP-visible metadata, logs, config dumps, or debug endpoints.
 - Bad, because it makes the control plane responsible for process-local runtime input.
@@ -53,10 +55,12 @@ We reject this option.
 In this option, the control plane only sends the socket path and backend identity. `kuma-dp` reads env vars, reads backend config, resolves everything locally, and the control plane does not try to understand the final shape.
 
 Pros:
+
 - Good, because secrets stay local.
 - Good, because the runtime owner is the process that actually uses the exporter settings.
 
 Cons:
+
 - Bad, because the control plane cannot explain what is missing or blocked.
 - Bad, because policy cannot cleanly enforce whether env vars are allowed.
 - Bad, because status becomes weak and hard to trust.
