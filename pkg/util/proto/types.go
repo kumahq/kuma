@@ -3,6 +3,7 @@ package proto
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -101,6 +102,9 @@ func StructToMapOfAny(value any) map[string]any {
 	}
 
 	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return nil
+		}
 		v = v.Elem()
 	}
 
@@ -120,28 +124,59 @@ func StructToMapOfAny(value any) map[string]any {
 		case "":
 			key = field.Name
 		default:
-			key = k
+			key, _, _ = strings.Cut(k, ",")
 		}
 
-		val := v.Field(i)
-
-		switch val.Kind() {
-		case reflect.Struct:
-			out[key] = StructToMapOfAny(val)
-		case reflect.Bool:
-			out[key] = val.Bool()
-		case reflect.String:
-			out[key] = val.String()
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			out[key] = float64(val.Uint())
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			out[key] = float64(val.Int())
-		default:
-			out[key] = val.Interface()
-		}
+		out[key] = structFieldValueToAny(v.Field(i))
 	}
 
 	return out
+}
+
+func structFieldValueToAny(value reflect.Value) any {
+	if !value.IsValid() {
+		return nil
+	}
+
+	switch value.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if value.IsNil() {
+			return nil
+		}
+		return structFieldValueToAny(value.Elem())
+	case reflect.Struct:
+		return StructToMapOfAny(value)
+	case reflect.Slice, reflect.Array:
+		out := make([]any, value.Len())
+		for i := range value.Len() {
+			out[i] = structFieldValueToAny(value.Index(i))
+		}
+		return out
+	case reflect.Map:
+		if value.IsNil() {
+			return nil
+		}
+		out := map[string]any{}
+		for _, key := range value.MapKeys() {
+			if key.Kind() != reflect.String {
+				continue
+			}
+			out[key.String()] = structFieldValueToAny(value.MapIndex(key))
+		}
+		return out
+	case reflect.Bool:
+		return value.Bool()
+	case reflect.String:
+		return value.String()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return float64(value.Uint())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(value.Int())
+	case reflect.Float32, reflect.Float64:
+		return value.Float()
+	default:
+		return value.Interface()
+	}
 }
 
 func StructToProtoStruct(in any) (*structpb.Struct, error) {

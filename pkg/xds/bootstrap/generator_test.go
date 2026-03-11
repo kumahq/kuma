@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -19,6 +20,7 @@ import (
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -860,5 +862,58 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 				Port:    999,
 			},
 		}))
+	})
+
+	It("should round-trip OTEL env inventory through node metadata", func() {
+		err := resManager.Create(context.Background(), defaultDataplane(), store.CreateByKey("name.namespace", "mesh"))
+		Expect(err).ToNot(HaveOccurred())
+
+		config := bootstrap_config.DefaultBootstrapServerConfig()
+		config.Params.XdsHost = "localhost"
+		config.Params.XdsPort = 5678
+
+		generator, err := NewDefaultBootstrapGenerator(
+			resManager,
+			config,
+			xds_config.DefaultProxyConfig(),
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			authEnabled,
+			false,
+			false,
+			0,
+			false,
+			false,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		message, _, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:           "mesh",
+			Name:           "name.namespace",
+			DataplaneToken: "token",
+			Version:        defaultVersion,
+			Workdir:        "/tmp",
+			OtelEnv: &core_xds.OtelBootstrapInventory{
+				PipeEnabled: true,
+				Shared: &core_xds.OtelSignalEnvInventory{
+					EndpointPresent:   true,
+					EffectiveProtocol: core_xds.OtelProtocolHTTPProtobuf,
+					EffectiveAuthMode: core_xds.OtelAuthModeHeaders,
+				},
+				Traces: &core_xds.OtelSignalEnvInventory{
+					OverrideKinds: []string{"endpoint"},
+				},
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		bootstrap := message.(*envoy_bootstrap_v3.Bootstrap)
+		metadata := core_xds.DataplaneMetadataFromXdsMetadata(bootstrap.GetNode().GetMetadata())
+
+		Expect(metadata.GetOtelEnvInventory()).ToNot(BeNil())
+		Expect(metadata.GetOtelEnvInventory().PipeEnabled).To(BeTrue())
+		Expect(metadata.GetOtelEnvInventory().Shared).ToNot(BeNil())
+		Expect(metadata.GetOtelEnvInventory().Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
+		Expect(metadata.GetOtelEnvInventory().Traces).ToNot(BeNil())
+		Expect(metadata.GetOtelEnvInventory().Traces.OverrideKinds).To(ConsistOf("endpoint"))
 	})
 })

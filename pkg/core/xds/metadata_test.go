@@ -93,6 +93,35 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				IPv6Enabled:     true,
 			},
 		}),
+		Entry("should parse OTEL env inventory", testCase{
+			node: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"otelEnvInventory": {
+						Kind: &structpb.Value_StructValue{
+							StructValue: util_proto.MustStructToProtoStruct(&xds.OtelBootstrapInventory{
+								PipeEnabled: true,
+								Shared: &xds.OtelSignalEnvInventory{
+									EndpointPresent:   true,
+									EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,
+								},
+							}),
+						},
+					},
+				},
+			},
+			expected: xds.DataplaneMetadata{
+				IPv6Enabled: true,
+				OtelEnvInventory: &xds.OtelBootstrapInventory{
+					PipeEnabled: true,
+					Shared: &xds.OtelSignalEnvInventory{
+						EndpointPresent:   true,
+						EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,
+						OverrideKinds:     []string{},
+					},
+					ValidationErrors: []string{},
+				},
+			},
+		}),
 	)
 
 	It("should parse version", func() { // this has to be separate test because Equal does not work on proto
