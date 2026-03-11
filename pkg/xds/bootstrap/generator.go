@@ -42,6 +42,7 @@ func NewDefaultBootstrapGenerator(
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
+	adminUnixSocket bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -62,6 +63,7 @@ func NewDefaultBootstrapGenerator(
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
 		inboundTagsDisabled:     inboundTagsDisabled,
+		adminUnixSocket:         adminUnixSocket,
 	}, nil
 }
 
@@ -77,6 +79,7 @@ type bootstrapGenerator struct {
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
 	inboundTagsDisabled     bool
+	adminUnixSocket         bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -140,7 +143,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 	}
 
-	if features.HasFeature(xds_types.FeatureAdminUnixSocket) {
+	if b.adminUnixSocket {
 		if request.Workdir != "" {
 			params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
 		} else {
