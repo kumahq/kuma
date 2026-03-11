@@ -430,6 +430,9 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		if opts.bindOutbounds {
 			opts.dpEnvs["KUMA_DATAPLANE_RUNTIME_BIND_OUTBOUNDS"] = "true"
 		}
+		if Config.KumaAdminUnixSocket {
+			opts.dpEnvs["KUMA_ADMIN_UNIX_SOCKET_ENABLED"] = "true"
+		}
 		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, opts.dpEnvs, token, builtindns, opts.concurrency, transparent, opts.dpVersion); err != nil {
 			return err
 		}
