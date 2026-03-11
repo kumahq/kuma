@@ -39,7 +39,8 @@ func adminCurlCmd(flags, path string) string {
 // AdminCurlCmd returns a shell command that curls the Envoy admin API,
 // auto-detecting UDS vs TCP. Use in Cluster.Exec calls from test code.
 func AdminCurlCmd(path string) []string {
-	return []string{"/bin/bash", "-c",
+	return []string{
+		"/bin/bash", "-c",
 		fmt.Sprintf(
 			`sock=$(find /tmp -name kuma-envoy-admin.sock 2>/dev/null | head -1); `+
 				`if [ -n "$sock" ]; then `+
