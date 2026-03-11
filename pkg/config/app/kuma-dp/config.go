@@ -145,10 +145,6 @@ type Dataplane struct {
 	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
 	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
 	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
-	// AdminUnixSocketEnabled enables binding the Envoy admin API to a Unix
-	// domain socket instead of TCP, reducing attack surface from compromised
-	// app containers sharing the pod network.
-	AdminUnixSocketEnabled bool `json:"adminUnixSocketEnabled,omitempty" envconfig:"kuma_admin_unix_socket_enabled"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components

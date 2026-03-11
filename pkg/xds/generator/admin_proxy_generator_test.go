@@ -161,7 +161,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 				xds_types.FeatureReadinessUnixSocket:   true,
-				xds_types.FeatureAdminUnixSocket:       true,
 			},
 		}),
 	)

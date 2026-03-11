@@ -97,7 +97,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	}
 
 	var adminEndpoint core_xds.Endpoint
-	if proxy.Metadata.HasFeature(types.FeatureAdminUnixSocket) && proxy.Metadata.GetAdminSocketPath() != "" {
+	if proxy.Metadata.GetAdminSocketPath() != "" {
 		adminEndpoint = core_xds.Endpoint{
 			UnixDomainPath: proxy.Metadata.GetAdminSocketPath(),
 		}
