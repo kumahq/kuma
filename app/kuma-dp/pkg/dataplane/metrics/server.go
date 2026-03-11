@@ -372,7 +372,7 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	if app.UnixSocketPath != "" {
 		targetURL = rewriteMetricsURLForUDS(app.Path, app.QueryModifier, initReq.URL)
 	}
-	req, err := http.NewRequest(http.MethodGet, targetURL, http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, targetURL, http.NoBody) // #nosec G704 -- operator-configured metrics target
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil, ""
@@ -381,18 +381,19 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	req = req.WithContext(ctx)
 	var resp *http.Response
 	logger.V(1).Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
-	if app.UnixSocketPath != "" {
-		resp, err = s.httpClientUDS.Do(req)
+	switch {
+	case app.UnixSocketPath != "":
+		resp, err = s.httpClientUDS.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
 		}
-	} else if app.IsIPv6 {
-		resp, err = s.httpClientIPv6.Do(req)
+	case app.IsIPv6:
+		resp, err = s.httpClientIPv6.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
 		}
-	} else {
-		resp, err = s.httpClientIPv4.Do(req)
+	default:
+		resp, err = s.httpClientIPv4.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
 		}
