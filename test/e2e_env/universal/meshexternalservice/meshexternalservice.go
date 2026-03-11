@@ -592,6 +592,7 @@ spec:
 		})
 	})
 
+	// https://github.com/kumahq/kuma/issues/15805
 	Context("MeshExternalService with endpoint priority", Ordered, Label("ipv6-not-supported"), func() {
 		mesPrimaryName := "mes-priority-primary"
 		mesPrimaryPort := 83
