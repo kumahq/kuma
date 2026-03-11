@@ -140,8 +140,12 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 	}
 
-	if features.HasFeature(xds_types.FeatureAdminUnixSocket) && request.Workdir != "" {
-		params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
+	if features.HasFeature(xds_types.FeatureAdminUnixSocket) {
+		if request.Workdir != "" {
+			params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
+		} else {
+			log.Info("admin UDS feature enabled but workdir is empty, falling back to TCP admin")
+		}
 	}
 
 	meshResource := core_mesh.NewMeshResource()
