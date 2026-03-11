@@ -44,4 +44,3 @@ const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 
 // FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
-

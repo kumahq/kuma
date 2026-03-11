@@ -564,6 +564,7 @@ spec:
 }
 
 func filterLines(s, substr string) string {
+	GinkgoHelper()
 	var out []string
 	for _, line := range strings.Split(s, "\n") {
 		if strings.Contains(line, substr) {

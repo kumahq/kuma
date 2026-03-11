@@ -108,7 +108,7 @@ type Hijacker struct {
 	socketPath           string
 	httpClientIPv4       http.Client
 	httpClientIPv6       http.Client
-	httpClientUDS        http.Client
+	httpClientsUDS       map[string]http.Client
 	applicationsToScrape []ApplicationToScrape
 	producer             *AggregatedProducer
 	prometheusHandler    http.Handler
@@ -142,19 +142,35 @@ func createHTTPClientForUDS(unixSocketPath string) http.Client {
 	}
 }
 
+func buildUDSClients(apps []ApplicationToScrape) map[string]http.Client {
+	clients := make(map[string]http.Client)
+	for _, app := range apps {
+		if app.UnixSocketPath != "" {
+			if _, ok := clients[app.UnixSocketPath]; !ok {
+				clients[app.UnixSocketPath] = createHTTPClientForUDS(app.UnixSocketPath)
+			}
+		}
+	}
+	return clients
+}
+
+func (s *Hijacker) getOrCreateUDSClient(socketPath string) http.Client {
+	if client, ok := s.httpClientsUDS[socketPath]; ok {
+		return client
+	}
+	client := createHTTPClientForUDS(socketPath)
+	s.httpClientsUDS[socketPath] = client
+	return client
+}
+
 func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, producer *AggregatedProducer) *Hijacker {
 	h := &Hijacker{
 		socketPath:           socketPath,
 		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+		httpClientsUDS:       buildUDSClients(applicationsToScrape),
 		applicationsToScrape: applicationsToScrape,
 		producer:             producer,
-	}
-	for _, app := range applicationsToScrape {
-		if app.UnixSocketPath != "" {
-			h.httpClientUDS = createHTTPClientForUDS(app.UnixSocketPath)
-			break
-		}
 	}
 	return h
 }
@@ -386,7 +402,8 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	logger.V(1).Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
 	switch {
 	case app.UnixSocketPath != "":
-		resp, err = s.httpClientUDS.Do(req) // #nosec G704 -- operator-configured metrics target
+		client := s.getOrCreateUDSClient(app.UnixSocketPath)
+		resp, err = client.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
 		}
