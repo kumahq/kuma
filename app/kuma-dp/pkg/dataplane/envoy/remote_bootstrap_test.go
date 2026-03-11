@@ -168,7 +168,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		// when
 		bootstrap, kumaSidecarConfiguration, err := bootstrapClient.Fetch(
 			context.Background(),
-			newOptsBuilder().token("").cpURL(server.URL).build(),
+			newOptsBuilder().token().cpURL(server.URL).build(),
 			nil,
 			nil,
 			nil,
@@ -234,7 +234,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		bootstrap, _, err := bootstrapClient.Fetch(
 			context.Background(),
-			newOptsBuilder().token("").cpURL(server.URL).build(),
+			newOptsBuilder().token().cpURL(server.URL).build(),
 			nil,
 			inventory,
 			nil,
@@ -277,7 +277,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			newOptsBuilder().
 				mesh("default").
 				name("dp-1").
-				token("").
+				token().
 				retryBackoff(10*time.Millisecond).
 				cpURL(server.URL).
 				build(),
@@ -310,7 +310,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			newOptsBuilder().
 				mesh("default").
 				name("dp-1").
-				token("").
+				token().
 				retryBackoff(10*time.Millisecond).
 				maxDuration(100*time.Millisecond).
 				cpURL(server.URL).build(),
@@ -336,8 +336,8 @@ func (b optsBuilder) name(name string) optsBuilder {
 	return b
 }
 
-func (b optsBuilder) token(token string) optsBuilder {
-	b.Config.DataplaneRuntime.Token = token
+func (b optsBuilder) token() optsBuilder {
+	b.Config.DataplaneRuntime.Token = ""
 	return b
 }
 
