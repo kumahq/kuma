@@ -486,6 +486,12 @@ dataPlane:
     # When true (default), backendRef-based OTel traffic routes through kuma-dp Unix sockets.
     # Set to false to fall back to direct Envoy clusters (2.13 behavior).
     otelPipe: true
+    # -- Enables OTEL exporter env-var support in `kuma-dp`.
+    # When set to true, it sets the environment variable
+    # KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_ENV_ENABLED=true in the control plane,
+    # which causes the sidecar injector to add
+    # KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED=true to each injected `kuma-sidecar` container.
+    otelEnv: false
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication

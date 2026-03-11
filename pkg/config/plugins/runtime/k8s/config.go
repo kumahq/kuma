@@ -98,6 +98,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			NodeLabelsToCopy:             []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 			UnifiedResourceNamingEnabled: false,
 			OtelPipeEnabled:              true,
+			OtelEnvEnabled:               false,
 			Spire: Spire{
 				Enabled:        false,
 				MountPath:      "/run/spire/sockets",
@@ -253,6 +254,9 @@ type Injector struct {
 	// When false, the injector sets KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED=false on injected
 	// containers; when true (default), no env var is injected and kuma-dp defaults to pipe mode on.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_runtime_kubernetes_injector_otel_pipe_enabled"`
+	// OtelEnvEnabled enables OTEL exporter env-var support in injected kuma-sidecar containers.
+	// When true, the injector sets KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED=true.
+	OtelEnvEnabled bool `json:"otelEnvEnabled" envconfig:"kuma_runtime_kubernetes_injector_otel_env_enabled"`
 	// Spire is used to specify spire integration configuration.
 	Spire Spire `json:"spire"`
 }

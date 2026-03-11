@@ -28,6 +28,7 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 	}
 
 	verr.AddErrorAt(path, validateProtocol(r.Spec.Protocol))
+	verr.AddErrorAt(path.Field("env"), validateEnvPolicy(r.Spec.Env))
 
 	return verr.OrNil()
 }
@@ -85,5 +86,27 @@ func validateProtocol(protocol Protocol) validators.ValidationError {
 	if protocol != "" && protocol != ProtocolGRPC && protocol != ProtocolHTTP {
 		verr.AddViolationAt(validators.RootedAt("protocol"), "must be one of: grpc, http")
 	}
+	return verr
+}
+
+func validateEnvPolicy(policy *EnvPolicy) validators.ValidationError {
+	var verr validators.ValidationError
+	if policy == nil {
+		return verr
+	}
+
+	if policy.Mode != "" &&
+		policy.Mode != EnvModeDisabled &&
+		policy.Mode != EnvModeOptional &&
+		policy.Mode != EnvModeRequired {
+		verr.AddViolationAt(validators.RootedAt("mode"), "must be one of: Disabled, Optional, Required")
+	}
+
+	if policy.Precedence != "" &&
+		policy.Precedence != EnvPrecedenceExplicitFirst &&
+		policy.Precedence != EnvPrecedenceEnvFirst {
+		verr.AddViolationAt(validators.RootedAt("precedence"), "must be one of: ExplicitFirst, EnvFirst")
+	}
+
 	return verr
 }

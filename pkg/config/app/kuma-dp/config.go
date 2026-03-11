@@ -43,6 +43,7 @@ var DefaultConfig = func() Config {
 			IPv6Enabled:               true,
 			StrictInboundPortsEnabled: true,
 			OtelPipeEnabled:           true,
+			OtelEnvEnabled:            false,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -262,6 +263,9 @@ type DataplaneRuntime struct {
 	// When false, MeshTrace and MeshAccessLog backendRefs use direct Envoy clusters instead
 	// of routing through kuma-dp Unix sockets. Default: true.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_dataplane_runtime_otel_pipe_enabled"`
+	// OtelEnvEnabled controls whether kuma-dp reads standard OTEL exporter env vars
+	// and advertises OTEL env support to the CP. Default: false.
+	OtelEnvEnabled bool `json:"otelEnvEnabled" envconfig:"kuma_dataplane_runtime_otel_env_enabled"`
 }
 
 type Spire struct {

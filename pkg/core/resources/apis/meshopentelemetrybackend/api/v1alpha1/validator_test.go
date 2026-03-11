@@ -76,6 +76,15 @@ var _ = Describe("MeshOpenTelemetryBackend", func() {
 			Entry("path with query string", testCase{
 				file: "path-with-query-invalid",
 			}),
+			Entry("env defaults valid", testCase{
+				file: "env-defaults-valid",
+			}),
+			Entry("invalid env mode", testCase{
+				file: "env-invalid-mode",
+			}),
+			Entry("invalid env precedence", testCase{
+				file: "env-invalid-precedence",
+			}),
 			Entry("nodeEndpoint valid", testCase{
 				file: "node-endpoint-valid",
 			}),
