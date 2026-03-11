@@ -5,6 +5,7 @@ import (
 	"path"
 	"slices"
 	"strconv"
+	"strings"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -182,10 +183,27 @@ func ResolveEnvPolicy(policy *motb_api.EnvPolicy) core_xds.OtelResolvedEnvPolicy
 	}
 }
 
+func OtelEnvPlanningEnabled(
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
+) bool {
+	if proxy == nil || proxy.Metadata == nil {
+		return false
+	}
+
+	enabled := proxy.Metadata.HasFeature(xds_types.FeatureOtelEnv)
+	if ctx.ControlPlane == nil {
+		return enabled
+	}
+
+	return enabled && ctx.ControlPlane.OtelEnvEnabled
+}
+
 func BuildSignalRuntimePlan(
 	inventory *core_xds.OtelBootstrapInventory,
 	envEnabled bool,
 	envPolicy core_xds.OtelResolvedEnvPolicy,
+	backend core_xds.OtelPipeBackend,
 	signal core_xds.OtelSignal,
 	options AddResolvedBackendOptions,
 ) core_xds.OtelSignalRuntimePlan {
@@ -211,6 +229,9 @@ func BuildSignalRuntimePlan(
 	if signalInventory != nil {
 		plan.OverrideKinds = slices.Clone(signalInventory.OverrideKinds)
 	}
+	if envEnabled && envPolicy.Mode == motb_api.EnvModeRequired {
+		plan.MissingFields = slices.Clone(validationMissingFields(inventory, signal))
+	}
 
 	if !envEnabled && envPolicy.Mode != motb_api.EnvModeDisabled {
 		plan.BlockedReasons = append(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform)
@@ -224,8 +245,228 @@ func BuildSignalRuntimePlan(
 	if len(plan.OverrideKinds) > 0 && !envPolicy.AllowSignalOverrides {
 		plan.BlockedReasons = append(plan.BlockedReasons, core_xds.OtelBlockedReasonSignalOverridesBlocked)
 	}
+	if len(plan.MissingFields) > 0 && !slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonRequiredEnvMissing) {
+		plan.BlockedReasons = append(plan.BlockedReasons, core_xds.OtelBlockedReasonRequiredEnvMissing)
+	}
+	plan.Source = signalSource(backend, inventory, plan, signal)
 
 	return plan
+}
+
+func signalSource(
+	backend core_xds.OtelPipeBackend,
+	inventory *core_xds.OtelBootstrapInventory,
+	plan core_xds.OtelSignalRuntimePlan,
+	signal core_xds.OtelSignal,
+) string {
+	if len(plan.MissingFields) > 0 || slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonRequiredEnvMissing) {
+		return ""
+	}
+
+	sharedInventory := inventory.Shared
+	signalInventory := inventory.GetSignal(signal)
+	preferEnv := backend.EnvPolicy.Precedence != motb_api.EnvPrecedenceExplicitFirst
+	sharedAllowed := !slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform) &&
+		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPolicy) &&
+		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonMultipleBackends)
+	signalAllowed := sharedAllowed &&
+		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonSignalOverridesBlocked)
+
+	state := sourceState{}
+	accumulateFieldSource(&state, backend.Endpoint != "", sharedAllowed && fieldPresent(sharedInventory, "endpoint"), signalAllowed && fieldPresent(signalInventory, "endpoint"), preferEnv)
+	accumulateFieldSource(&state, true, sharedAllowed && validField(inventory, "shared", "protocol") && fieldPresent(sharedInventory, "protocol"), signalAllowed && validField(inventory, string(signal), "protocol") && fieldPresent(signalInventory, "protocol"), preferEnv)
+
+	finalProtocol := explicitProtocol(backend)
+	if sharedAllowed && validField(inventory, "shared", "protocol") && fieldPresent(sharedInventory, "protocol") && preferEnv {
+		finalProtocol = sharedInventory.EffectiveProtocol
+	}
+	if signalAllowed && validField(inventory, string(signal), "protocol") && fieldPresent(signalInventory, "protocol") && preferEnv {
+		finalProtocol = signalInventory.EffectiveProtocol
+	}
+
+	if finalProtocol == core_xds.OtelProtocolHTTPProtobuf {
+		accumulateFieldSource(&state, true, sharedAllowed && sharedPathFromEndpoint(sharedInventory), signalAllowed && signalPathFromEndpoint(signalInventory), preferEnv)
+	}
+
+	accumulateFieldSource(&state, false, sharedAllowed && fieldPresent(sharedInventory, "insecure"), signalAllowed && fieldPresent(signalInventory, "insecure"), preferEnv)
+	accumulateFieldSource(&state, false, sharedAllowed && fieldPresent(sharedInventory, "headers"), signalAllowed && fieldPresent(signalInventory, "headers"), preferEnv)
+	accumulateFieldSource(&state, false, sharedAllowed && validField(inventory, "shared", "compression") && fieldPresent(sharedInventory, "compression"), signalAllowed && validField(inventory, string(signal), "compression") && fieldPresent(signalInventory, "compression"), preferEnv)
+	accumulateFieldSource(&state, false, sharedAllowed && validField(inventory, "shared", "timeout") && fieldPresent(sharedInventory, "timeout"), signalAllowed && validField(inventory, string(signal), "timeout") && fieldPresent(signalInventory, "timeout"), preferEnv)
+	accumulateFieldSource(&state, false, sharedAllowed && fieldPresent(sharedInventory, "certificate"), signalAllowed && fieldPresent(signalInventory, "certificate"), preferEnv)
+	accumulateFieldSource(&state, false, sharedAllowed && validMTLSField(inventory, "shared", sharedInventory), signalAllowed && validMTLSField(inventory, string(signal), signalInventory), preferEnv)
+
+	switch {
+	case state.explicitUsed && state.envUsed:
+		return string(core_xds.OtelSignalSourceMixed)
+	case state.envUsed:
+		return string(core_xds.OtelSignalSourceEnv)
+	case state.explicitUsed:
+		return string(core_xds.OtelSignalSourceExplicit)
+	default:
+		return ""
+	}
+}
+
+type sourceState struct {
+	explicitUsed bool
+	envUsed      bool
+}
+
+func accumulateFieldSource(state *sourceState, explicitPresent, sharedPresent, signalPresent, preferEnv bool) {
+	if state == nil {
+		return
+	}
+
+	present, fromEnv := resolveFieldSource(explicitPresent, sharedPresent, signalPresent, preferEnv)
+	if !present {
+		return
+	}
+	if fromEnv {
+		state.envUsed = true
+		return
+	}
+	state.explicitUsed = true
+}
+
+func resolveFieldSource(explicitPresent, sharedPresent, signalPresent, preferEnv bool) (bool, bool) {
+	present := explicitPresent
+	fromEnv := false
+
+	if sharedPresent && (preferEnv || !present) {
+		present = true
+		fromEnv = true
+	}
+	if signalPresent && (preferEnv || !present) {
+		present = true
+		fromEnv = true
+	}
+
+	return present, fromEnv
+}
+
+func explicitProtocol(backend core_xds.OtelPipeBackend) core_xds.OtelProtocol {
+	if backend.UseHTTP {
+		return core_xds.OtelProtocolHTTPProtobuf
+	}
+	return core_xds.OtelProtocolGRPC
+}
+
+func sharedPathFromEndpoint(inventory *core_xds.OtelSignalEnvInventory) bool {
+	return inventory != nil && inventory.EndpointPresent && inventory.EndpointParsedAsURL && inventory.EndpointHasPath
+}
+
+func signalPathFromEndpoint(inventory *core_xds.OtelSignalEnvInventory) bool {
+	return inventory != nil && inventory.EndpointPresent && inventory.EndpointParsedAsURL
+}
+
+func validMTLSField(
+	inventory *core_xds.OtelBootstrapInventory,
+	scope string,
+	signalInventory *core_xds.OtelSignalEnvInventory,
+) bool {
+	if signalInventory == nil {
+		return false
+	}
+	if !signalInventory.ClientCertificatePresent || !signalInventory.ClientKeyPresent {
+		return false
+	}
+	return validField(inventory, scope, "mtls")
+}
+
+func fieldPresent(inventory *core_xds.OtelSignalEnvInventory, field string) bool {
+	if inventory == nil {
+		return false
+	}
+
+	switch field {
+	case "endpoint":
+		return inventory.EndpointPresent
+	case "protocol":
+		return inventory.ProtocolPresent
+	case "headers":
+		return inventory.HeadersPresent
+	case "timeout":
+		return inventory.TimeoutPresent
+	case "compression":
+		return inventory.CompressionPresent
+	case "insecure":
+		return inventory.InsecurePresent
+	case "certificate":
+		return inventory.CertificatePresent
+	default:
+		return false
+	}
+}
+
+func validField(
+	inventory *core_xds.OtelBootstrapInventory,
+	scope string,
+	field string,
+) bool {
+	return !hasValidationError(inventory, scope, field)
+}
+
+func hasValidationError(
+	inventory *core_xds.OtelBootstrapInventory,
+	scope string,
+	field string,
+) bool {
+	if inventory == nil {
+		return false
+	}
+
+	target := scope + "." + field
+	return slices.Contains(inventory.ValidationErrors, target)
+}
+
+func validationMissingFields(
+	inventory *core_xds.OtelBootstrapInventory,
+	signal core_xds.OtelSignal,
+) []string {
+	if inventory == nil {
+		return nil
+	}
+
+	var missing []string
+	for _, validationError := range inventory.ValidationErrors {
+		scope, field, ok := strings.Cut(validationError, ".")
+		if !ok {
+			continue
+		}
+		if scope != "shared" && scope != string(signal) {
+			continue
+		}
+
+		switch field {
+		case "mtls":
+			missing = appendMissingField(missing, "client_certificate")
+			missing = appendMissingField(missing, "client_key")
+		default:
+			missing = appendMissingField(missing, normalizeMissingField(field))
+		}
+	}
+
+	return missing
+}
+
+func appendMissingField(fields []string, field string) []string {
+	if field == "" || slices.Contains(fields, field) {
+		return fields
+	}
+
+	return append(fields, field)
+}
+
+func normalizeMissingField(field string) string {
+	field = strings.TrimSpace(field)
+	if field == "" {
+		return ""
+	}
+
+	return strings.NewReplacer(
+		"-", "_",
+		" ", "_",
+	).Replace(field)
 }
 
 // AddResolvedToBackends adds a resolved OTel backend to the proxy accumulator.
@@ -241,6 +482,7 @@ func AddResolvedToBackends(
 		proxy.Metadata.GetOtelEnvInventory(),
 		proxy.Metadata.HasFeature(xds_types.FeatureOtelEnv),
 		base.EnvPolicy,
+		base,
 		signal,
 		options,
 	)

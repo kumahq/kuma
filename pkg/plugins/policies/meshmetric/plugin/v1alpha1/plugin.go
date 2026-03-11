@@ -87,7 +87,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
-		addOtelToAccumulator(proxy, openTelemetryBackends, ctx.Mesh.Resources)
+		addOtelToAccumulator(proxy, openTelemetryBackends, ctx)
 	}
 	// configureOpenTelemetry creates Envoy-side OTel resources (listener + cluster).
 	// In pipe mode only inline backends need this; addOtelToAccumulator already
@@ -376,7 +376,7 @@ func filterOtelBackendsForEnvoy(proxy *core_xds.Proxy, backends []*api.OpenTelem
 	return inline
 }
 
-func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, resources xds_context.Resources) {
+func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, ctx xds_context.Context) {
 	for _, backend := range openTelemetryBackends {
 		if backend == nil || backend.BackendRef == nil {
 			continue
@@ -386,7 +386,7 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 			backend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
 			policies_xds.ParseOtelEndpoint,
 			backendNameFrom,
-			resources,
+			ctx.Mesh.Resources,
 			proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 		)
 		if resolved == nil {
@@ -396,9 +396,19 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 		if backend.RefreshInterval != nil {
 			refreshInterval = backend.RefreshInterval.Duration.String()
 		}
-		policies_xds.AddResolvedToBackends(proxy, resolved, core_xds.OtelSignalMetrics, policies_xds.AddResolvedBackendOptions{
+		base := policies_xds.BuildResolvedPipeBackend(proxy.Metadata.WorkDir, resolved)
+		options := policies_xds.AddResolvedBackendOptions{
 			RefreshInterval: refreshInterval,
-		})
+		}
+		plan := policies_xds.BuildSignalRuntimePlan(
+			proxy.Metadata.GetOtelEnvInventory(),
+			policies_xds.OtelEnvPlanningEnabled(ctx, proxy),
+			base.EnvPolicy,
+			base,
+			core_xds.OtelSignalMetrics,
+			options,
+		)
+		proxy.OtelPipeBackends.AddSignal(resolved.Name, base, core_xds.OtelSignalMetrics, plan)
 	}
 }
 

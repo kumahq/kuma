@@ -113,6 +113,7 @@ func buildSignalStatus(
 		Enabled:         plan.Enabled,
 		EnvAllowed:      envAllowed(backend, plan),
 		EnvInputPresent: plan.EnvInputPresent,
+		Source:          plan.Source,
 		DedicatedClient: dedicatedClient(backend, plan),
 		State:           signalState(plan),
 		OverrideKinds:   slices.Clone(plan.OverrideKinds),
@@ -142,11 +143,26 @@ func signalState(plan *core_xds.OtelSignalRuntimePlan) string {
 	switch {
 	case slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonMultipleBackends):
 		return SignalStateAmbiguous
-	case len(plan.BlockedReasons) > 0:
-		return SignalStateBlocked
-	case len(plan.MissingFields) > 0:
+	case len(plan.MissingFields) > 0,
+		slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonRequiredEnvMissing):
 		return SignalStateMissing
+	case len(plan.BlockedReasons) > 0 && hasHardBlockedReason(plan):
+		return SignalStateBlocked
 	default:
 		return SignalStateReady
 	}
+}
+
+func hasHardBlockedReason(plan *core_xds.OtelSignalRuntimePlan) bool {
+	for _, reason := range plan.BlockedReasons {
+		switch reason {
+		case core_xds.OtelBlockedReasonEnvDisabledByPlatform,
+			core_xds.OtelBlockedReasonEnvDisabledByPolicy,
+			core_xds.OtelBlockedReasonSignalOverridesBlocked:
+			continue
+		default:
+			return true
+		}
+	}
+	return false
 }

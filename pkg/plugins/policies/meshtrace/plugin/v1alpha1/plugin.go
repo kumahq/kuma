@@ -369,5 +369,14 @@ func addToOtelPipeBackends(ctx xds_context.Context, rules core_rules.SingleItemR
 	if resolved == nil {
 		return
 	}
-	policies_xds.AddResolvedToBackends(proxy, resolved, xds.OtelSignalTraces, policies_xds.AddResolvedBackendOptions{})
+	base := policies_xds.BuildResolvedPipeBackend(proxy.Metadata.WorkDir, resolved)
+	plan := policies_xds.BuildSignalRuntimePlan(
+		proxy.Metadata.GetOtelEnvInventory(),
+		policies_xds.OtelEnvPlanningEnabled(ctx, proxy),
+		base.EnvPolicy,
+		base,
+		xds.OtelSignalTraces,
+		policies_xds.AddResolvedBackendOptions{},
+	)
+	proxy.OtelPipeBackends.AddSignal(resolved.Name, base, xds.OtelSignalTraces, plan)
 }

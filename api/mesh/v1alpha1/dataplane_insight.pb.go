@@ -784,6 +784,7 @@ type DataplaneInsight_OpenTelemetry_Signal struct {
 	OverrideKinds   []string               `protobuf:"bytes,6,rep,name=overrideKinds,proto3" json:"overrideKinds,omitempty"`
 	MissingFields   []string               `protobuf:"bytes,7,rep,name=missingFields,proto3" json:"missingFields,omitempty"`
 	BlockedReasons  []string               `protobuf:"bytes,8,rep,name=blockedReasons,proto3" json:"blockedReasons,omitempty"`
+	Source          string                 `protobuf:"bytes,9,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -874,11 +875,18 @@ func (x *DataplaneInsight_OpenTelemetry_Signal) GetBlockedReasons() []string {
 	return nil
 }
 
+func (x *DataplaneInsight_OpenTelemetry_Signal) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
 var File_api_mesh_v1alpha1_dataplane_insight_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_insight_proto_rawDesc = "" +
 	"\n" +
-	")api/mesh/v1alpha1/dataplane_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"\xba\v\n" +
+	")api/mesh/v1alpha1/dataplane_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"\xd2\v\n" +
 	"\x10DataplaneInsight\x12O\n" +
 	"\rsubscriptions\x18\x01 \x03(\v2).kuma.mesh.v1alpha1.DiscoverySubscriptionR\rsubscriptions\x12=\n" +
 	"\x04mTLS\x18\x02 \x01(\v2).kuma.mesh.v1alpha1.DataplaneInsight.MTLSR\x04mTLS\x123\n" +
@@ -889,7 +897,7 @@ const file_api_mesh_v1alpha1_dataplane_insight_proto_rawDesc = "" +
 	"\x1dlast_certificate_regeneration\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x1blastCertificateRegeneration\x12;\n" +
 	"\x19certificate_regenerations\x18\x03 \x01(\rR\x18certificateRegenerations\x12$\n" +
 	"\rissuedBackend\x18\x04 \x01(\tR\rissuedBackend\x12,\n" +
-	"\x11supportedBackends\x18\x05 \x03(\tR\x11supportedBackends\x1a\xc5\x05\n" +
+	"\x11supportedBackends\x18\x05 \x03(\tR\x11supportedBackends\x1a\xdd\x05\n" +
 	"\rOpenTelemetry\x12V\n" +
 	"\bbackends\x18\x01 \x03(\v2:.kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.BackendR\bbackends\x1a\xb8\x02\n" +
 	"\aBackend\x12\x12\n" +
@@ -897,7 +905,7 @@ const file_api_mesh_v1alpha1_dataplane_insight_proto_rawDesc = "" +
 	"\fclientLayout\x18\x02 \x01(\tR\fclientLayout\x12Q\n" +
 	"\x06traces\x18\x03 \x01(\v29.kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.SignalR\x06traces\x12M\n" +
 	"\x04logs\x18\x04 \x01(\v29.kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.SignalR\x04logs\x12S\n" +
-	"\ametrics\x18\x05 \x01(\v29.kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.SignalR\ametrics\x1a\xa0\x02\n" +
+	"\ametrics\x18\x05 \x01(\v29.kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.SignalR\ametrics\x1a\xb8\x02\n" +
 	"\x06Signal\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1e\n" +
 	"\n" +
@@ -908,7 +916,8 @@ const file_api_mesh_v1alpha1_dataplane_insight_proto_rawDesc = "" +
 	"\x05state\x18\x05 \x01(\tR\x05state\x12$\n" +
 	"\roverrideKinds\x18\x06 \x03(\tR\roverrideKinds\x12$\n" +
 	"\rmissingFields\x18\a \x03(\tR\rmissingFields\x12&\n" +
-	"\x0eblockedReasons\x18\b \x03(\tR\x0eblockedReasons:i\xaa\x8c\x89\xa6\x01c\n" +
+	"\x0eblockedReasons\x18\b \x03(\tR\x0eblockedReasons\x12\x16\n" +
+	"\x06source\x18\t \x01(\tR\x06source:i\xaa\x8c\x89\xa6\x01c\n" +
 	"\x18DataplaneInsightResource\x12\x10DataplaneInsight\"\x04mesh:\x15\n" +
 	"\x11dataplane-insight\x18\x01R\x16model.ZoneToGlobalFlagX\x01\"\xac\x03\n" +
 	"\x15DiscoverySubscription\x12\x17\n" +

@@ -27,10 +27,12 @@ var _ = Describe("DiscoverWithLookup", func() {
 		Expect(cfg.Inventory.PipeEnabled).To(BeTrue())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.EndpointPresent).To(BeTrue())
+		Expect(cfg.Inventory.Shared.EndpointParsedAsURL).To(BeTrue())
 		Expect(cfg.Inventory.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
 		Expect(cfg.Inventory.Shared.EffectiveAuthMode).To(Equal(core_xds.OtelAuthModeHeaders))
 		Expect(cfg.Inventory.Traces).ToNot(BeNil())
 		Expect(cfg.Inventory.Traces.OverrideKinds).To(ConsistOf("endpoint"))
+		Expect(cfg.Inventory.Traces.EndpointParsedAsURL).To(BeTrue())
 		Expect(cfg.Inventory.Logs).ToNot(BeNil())
 		Expect(cfg.Inventory.Logs.OverrideKinds).To(BeEmpty())
 		Expect(cfg.Inventory.Metrics).ToNot(BeNil())
@@ -45,6 +47,8 @@ var _ = Describe("DiscoverWithLookup", func() {
 	It("should report validation errors", func() {
 		env := map[string]string{
 			"OTEL_EXPORTER_OTLP_PROTOCOL":                  "binary",
+			"OTEL_EXPORTER_OTLP_TIMEOUT":                   "later",
+			"OTEL_EXPORTER_OTLP_COMPRESSION":               "brotli",
 			"OTEL_EXPORTER_OTLP_TRACES_CLIENT_CERTIFICATE": "/cert",
 		}
 
@@ -54,7 +58,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 		})
 
 		Expect(cfg.Inventory).ToNot(BeNil())
-		Expect(cfg.Inventory.ValidationErrors).To(ConsistOf("shared.protocol", "traces.mtls"))
+		Expect(cfg.Inventory.ValidationErrors).To(ConsistOf("shared.protocol", "shared.timeout", "shared.compression", "traces.mtls"))
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolUnknown))
 		Expect(cfg.Inventory.Traces).ToNot(BeNil())

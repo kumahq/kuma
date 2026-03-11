@@ -69,6 +69,7 @@ message DataplaneInsight {
       repeated string overrideKinds = 6;
       repeated string missingFields = 7;
       repeated string blockedReasons = 8;
+      string source = 9;
     }
   }
 }

@@ -2,6 +2,7 @@ package otelenv
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -153,8 +154,19 @@ func buildLayerInventory(
 	shared Layer,
 	validationErrors *[]string,
 ) *core_xds.OtelSignalEnvInventory {
+	endpointParsedAsURL, endpointHasPath := endpointCharacteristics(layer.Endpoint)
+	if layer.Compression.Present && parseCompression(layer.Compression.Value) == "" {
+		*validationErrors = append(*validationErrors, fmt.Sprintf("%s.compression", name))
+	}
+	if layer.Timeout.Present {
+		if _, ok := parseTimeout(layer.Timeout.Value); !ok {
+			*validationErrors = append(*validationErrors, fmt.Sprintf("%s.timeout", name))
+		}
+	}
 	inventory := &core_xds.OtelSignalEnvInventory{
 		EndpointPresent:          layer.Endpoint.Present,
+		EndpointParsedAsURL:      endpointParsedAsURL,
+		EndpointHasPath:          endpointHasPath,
 		ProtocolPresent:          layer.Protocol.Present,
 		HeadersPresent:           layer.Headers.Present,
 		TimeoutPresent:           layer.Timeout.Present,
@@ -169,6 +181,19 @@ func buildLayerInventory(
 	}
 
 	return inventory
+}
+
+func endpointCharacteristics(field FieldValue) (bool, bool) {
+	if !field.Present {
+		return false, false
+	}
+
+	parsedURL, err := url.Parse(strings.TrimSpace(field.Value))
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return false, false
+	}
+
+	return true, parsedURL.Path != ""
 }
 
 func effectiveProtocol(

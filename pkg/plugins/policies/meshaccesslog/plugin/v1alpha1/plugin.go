@@ -87,7 +87,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		Resources:             ctx.Mesh.Resources,
 		NodeHostIP:            proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 		OtelEnvInventory:      proxy.Metadata.GetOtelEnvInventory(),
-		OtelEnvEnabled:        proxy.Metadata.HasFeature(xds_types.FeatureOtelEnv),
+		OtelEnvEnabled:        policies_xds.OtelEnvPlanningEnabled(ctx, proxy),
 		UseKumaDpPipe:         proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp),
 		WorkDir:               proxy.Metadata.WorkDir,
 	}
@@ -145,6 +145,7 @@ func addToOtelPipeBackends(endpoints *EndpointAccumulator, proxy *core_xds.Proxy
 			endpoints.OtelEnvInventory,
 			endpoints.OtelEnvEnabled,
 			info.EnvPolicy,
+			info,
 			core_xds.OtelSignalLogs,
 			policies_xds.AddResolvedBackendOptions{},
 		)

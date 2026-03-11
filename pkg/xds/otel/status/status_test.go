@@ -25,11 +25,13 @@ var _ = Describe("OTEL status", func() {
 					Traces: &core_xds.OtelSignalRuntimePlan{
 						Enabled:         true,
 						EnvInputPresent: true,
+						Source:          string(core_xds.OtelSignalSourceEnv),
 						OverrideKinds:   []string{"endpoint"},
 					},
 					Logs: &core_xds.OtelSignalRuntimePlan{
 						Enabled:         true,
 						EnvInputPresent: true,
+						Source:          string(core_xds.OtelSignalSourceMixed),
 					},
 					Metrics: &core_xds.OtelSignalRuntimePlan{
 						Enabled:        true,
@@ -47,6 +49,7 @@ var _ = Describe("OTEL status", func() {
 					Enabled:         true,
 					EnvAllowed:      true,
 					EnvInputPresent: true,
+					Source:          string(core_xds.OtelSignalSourceEnv),
 					DedicatedClient: true,
 					State:           otelstatus.SignalStateReady,
 					OverrideKinds:   []string{"endpoint"},
@@ -55,6 +58,7 @@ var _ = Describe("OTEL status", func() {
 					Enabled:         true,
 					EnvAllowed:      true,
 					EnvInputPresent: true,
+					Source:          string(core_xds.OtelSignalSourceMixed),
 					State:           otelstatus.SignalStateReady,
 				},
 				Metrics: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
@@ -82,6 +86,59 @@ var _ = Describe("OTEL status", func() {
 			})
 
 			Expect(status.Backends[0].Traces.EnvAllowed).To(BeFalse())
+			Expect(status.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateReady))
+		})
+
+		It("should mark missing required env input as missing", func() {
+			status := otelstatus.Build([]core_xds.OtelPipeBackend{
+				{
+					Name: "main-collector",
+					EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+						Mode: motb_api.EnvModeRequired,
+					},
+					Traces: &core_xds.OtelSignalRuntimePlan{
+						Enabled:        true,
+						BlockedReasons: []string{core_xds.OtelBlockedReasonRequiredEnvMissing},
+					},
+				},
+			})
+
+			Expect(status.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateMissing))
+		})
+
+		It("should keep signal override policy blocks ready", func() {
+			status := otelstatus.Build([]core_xds.OtelPipeBackend{
+				{
+					Name:         "main-collector",
+					ClientLayout: core_xds.OtelClientLayoutPerSignal,
+					EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+						Mode:                 motb_api.EnvModeOptional,
+						AllowSignalOverrides: false,
+					},
+					Traces: &core_xds.OtelSignalRuntimePlan{
+						Enabled:         true,
+						EnvInputPresent: true,
+						OverrideKinds:   []string{"endpoint"},
+						BlockedReasons:  []string{core_xds.OtelBlockedReasonSignalOverridesBlocked},
+					},
+				},
+			})
+
+			Expect(status.Backends[0].Traces.DedicatedClient).To(BeFalse())
+			Expect(status.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateReady))
+		})
+
+		It("should keep unknown blocked reasons blocked", func() {
+			status := otelstatus.Build([]core_xds.OtelPipeBackend{
+				{
+					Name: "main-collector",
+					Traces: &core_xds.OtelSignalRuntimePlan{
+						Enabled:        true,
+						BlockedReasons: []string{"SomeFutureHardBlock"},
+					},
+				},
+			})
+
 			Expect(status.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateBlocked))
 		})
 	})

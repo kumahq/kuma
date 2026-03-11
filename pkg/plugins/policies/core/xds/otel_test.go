@@ -282,6 +282,7 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
 				AllowSignalOverrides: false,
 			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317", UseHTTP: true},
 			core_xds.OtelSignalTraces,
 			policies_xds.AddResolvedBackendOptions{},
 		)
@@ -301,6 +302,7 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
 				AllowSignalOverrides: true,
 			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
 			core_xds.OtelSignalLogs,
 			policies_xds.AddResolvedBackendOptions{},
 		)
@@ -308,5 +310,185 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		Expect(plan.Enabled).To(BeTrue())
 		Expect(plan.EnvInputPresent).To(BeFalse())
 		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonRequiredEnvMissing))
+	})
+
+	It("should mark invalid required shared env fields as missing", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					ProtocolPresent:   true,
+					EffectiveProtocol: core_xds.OtelProtocolUnknown,
+				},
+				ValidationErrors: []string{"shared.protocol"},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeRequired,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
+			core_xds.OtelSignalMetrics,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.MissingFields).To(ConsistOf("protocol"))
+		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonRequiredEnvMissing))
+	})
+
+	It("should mark invalid required timeout and compression as missing", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					TimeoutPresent:     true,
+					CompressionPresent: true,
+				},
+				ValidationErrors: []string{"shared.timeout", "shared.compression"},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeRequired,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
+			core_xds.OtelSignalMetrics,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.MissingFields).To(ConsistOf("timeout", "compression"))
+		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonRequiredEnvMissing))
+	})
+
+	It("should mark invalid required signal mTLS input as missing", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Traces: &core_xds.OtelSignalEnvInventory{
+					ClientCertificatePresent: true,
+				},
+				ValidationErrors: []string{"traces.mtls"},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeRequired,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
+			core_xds.OtelSignalTraces,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.MissingFields).To(ConsistOf("client_certificate", "client_key"))
+		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonRequiredEnvMissing))
+	})
+
+	It("should ignore invalid optional env fields in the runtime plan", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					ProtocolPresent:   true,
+					EffectiveProtocol: core_xds.OtelProtocolUnknown,
+				},
+				ValidationErrors: []string{"shared.protocol"},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeOptional,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
+			core_xds.OtelSignalLogs,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.MissingFields).To(BeEmpty())
+		Expect(plan.BlockedReasons).To(BeEmpty())
+	})
+
+	It("should mark env-first signals as env sourced when env fully wins", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					EndpointPresent:   true,
+					ProtocolPresent:   true,
+					EffectiveProtocol: core_xds.OtelProtocolGRPC,
+				},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeOptional,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
+			core_xds.OtelSignalTraces,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.Source).To(Equal(string(core_xds.OtelSignalSourceEnv)))
+	})
+
+	It("should mark explicit-first signals as mixed when env fills env-only fields", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					HeadersPresent: true,
+				},
+			},
+			true,
+			core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeOptional,
+				Precedence:           motb_api.EnvPrecedenceExplicitFirst,
+				AllowSignalOverrides: true,
+			},
+			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
+			core_xds.OtelSignalLogs,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.Source).To(Equal(string(core_xds.OtelSignalSourceMixed)))
+	})
+
+	It("should fall back to explicit source when env is blocked by ambiguity", func() {
+		backends := core_xds.OtelPipeBackends{}
+		base := core_xds.OtelPipeBackend{
+			Name:       "collector",
+			Endpoint:   "collector:4317",
+			SocketPath: "/tmp/collector.sock",
+			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeOptional,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+		}
+
+		backends.AddSignal("collector", base, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
+			Enabled:         true,
+			EnvInputPresent: true,
+			Source:          string(core_xds.OtelSignalSourceEnv),
+		})
+		backends.AddSignal("second", core_xds.OtelPipeBackend{
+			Name:       "second",
+			Endpoint:   "second:4317",
+			SocketPath: "/tmp/second.sock",
+			EnvPolicy:  base.EnvPolicy,
+		}, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
+			Enabled:         true,
+			EnvInputPresent: true,
+			Source:          string(core_xds.OtelSignalSourceEnv),
+		})
+
+		all := backends.All()
+		Expect(all).To(HaveLen(2))
+		Expect(all[0].Traces.Source).To(Equal(string(core_xds.OtelSignalSourceExplicit)))
+		Expect(all[0].Traces.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonMultipleBackends))
+		Expect(all[1].Traces.Source).To(Equal(string(core_xds.OtelSignalSourceExplicit)))
+		Expect(all[1].Traces.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonMultipleBackends))
 	})
 })

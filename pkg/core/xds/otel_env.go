@@ -38,6 +38,8 @@ type OtelBootstrapInventory struct {
 
 type OtelSignalEnvInventory struct {
 	EndpointPresent          bool         `json:"endpointPresent,omitempty"`
+	EndpointParsedAsURL      bool         `json:"endpointParsedAsURL,omitempty"`
+	EndpointHasPath          bool         `json:"endpointHasPath,omitempty"`
 	ProtocolPresent          bool         `json:"protocolPresent,omitempty"`
 	HeadersPresent           bool         `json:"headersPresent,omitempty"`
 	TimeoutPresent           bool         `json:"timeoutPresent,omitempty"`

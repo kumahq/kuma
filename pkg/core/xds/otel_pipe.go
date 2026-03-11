@@ -16,6 +16,14 @@ const (
 	OtelClientLayoutPerSignal OtelClientLayout = "per-signal"
 )
 
+type OtelSignalSource string
+
+const (
+	OtelSignalSourceExplicit OtelSignalSource = "explicit"
+	OtelSignalSourceEnv      OtelSignalSource = "env"
+	OtelSignalSourceMixed    OtelSignalSource = "mixed"
+)
+
 const (
 	OtelBlockedReasonEnvDisabledByPlatform  = "EnvDisabledByPlatform"
 	OtelBlockedReasonEnvDisabledByPolicy    = "EnvDisabledByPolicy"
@@ -33,6 +41,7 @@ type OtelResolvedEnvPolicy struct {
 type OtelSignalRuntimePlan struct {
 	Enabled         bool     `json:"enabled,omitempty"`
 	EnvInputPresent bool     `json:"envInputPresent,omitempty"`
+	Source          string   `json:"source,omitempty"`
 	OverrideKinds   []string `json:"overrideKinds,omitempty"`
 	MissingFields   []string `json:"missingFields,omitempty"`
 	BlockedReasons  []string `json:"blockedReasons,omitempty"`
@@ -146,6 +155,9 @@ func (a *OtelPipeBackends) finalizeBackend(backend *OtelPipeBackend) {
 			!slices.Contains(plan.BlockedReasons, OtelBlockedReasonEnvDisabledByPlatform) &&
 			!slices.Contains(plan.BlockedReasons, OtelBlockedReasonEnvDisabledByPolicy) {
 			plan.BlockedReasons = appendUnique(plan.BlockedReasons, OtelBlockedReasonMultipleBackends)
+			if plan.Source != "" {
+				plan.Source = string(OtelSignalSourceExplicit)
+			}
 		}
 	}
 
@@ -226,6 +238,7 @@ func cloneSignalPlan(in OtelSignalRuntimePlan) OtelSignalRuntimePlan {
 	return OtelSignalRuntimePlan{
 		Enabled:         in.Enabled,
 		EnvInputPresent: in.EnvInputPresent,
+		Source:          in.Source,
 		OverrideKinds:   slices.Clone(in.OverrideKinds),
 		MissingFields:   slices.Clone(in.MissingFields),
 		BlockedReasons:  slices.Clone(in.BlockedReasons),
