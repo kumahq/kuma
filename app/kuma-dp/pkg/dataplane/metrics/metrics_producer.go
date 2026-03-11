@@ -20,6 +20,7 @@ type AggregatedProducer struct {
 	kumaVersion               string
 	httpClientIPv4            http.Client
 	httpClientIPv6            http.Client
+	httpClientUDS             http.Client
 	AppToScrape               ApplicationToScrape
 	applicationsToScrape      []ApplicationToScrape
 	applicationsToScrapeMutex *sync.Mutex
@@ -28,13 +29,20 @@ type AggregatedProducer struct {
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
 func NewAggregatedMetricsProducer(applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, kumaVersion string) *AggregatedProducer {
-	return &AggregatedProducer{
+	ap := &AggregatedProducer{
 		kumaVersion:               kumaVersion,
 		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape:      applicationsToScrape,
 		applicationsToScrapeMutex: &sync.Mutex{},
 	}
+	for _, app := range applicationsToScrape {
+		if app.UnixSocketPath != "" {
+			ap.httpClientUDS = createHTTPClientForUDS(app.UnixSocketPath)
+			break
+		}
+	}
+	return ap
 }
 
 func (ap *AggregatedProducer) SetApplicationsToScrape(applicationsToScrape []ApplicationToScrape) {
@@ -110,12 +118,16 @@ func combineMetrics(metricsChan <-chan map[instrumentation.Scope][]metricdata.Me
 }
 
 func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) map[instrumentation.Scope][]metricdata.Metrics {
-	req, err := http.NewRequest(http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), http.NoBody)
+	targetURL := rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{})
+	if app.UnixSocketPath != "" {
+		targetURL = rewriteMetricsURLForUDS(app.Path, app.QueryModifier, &url.URL{})
+	}
+	req, err := http.NewRequest(http.MethodGet, targetURL, http.NoBody)
 	if err != nil {
 		log.Error(err, "failed to create request")
 		return nil
 	}
-	resp, err := ap.makeRequest(ctx, req, app.IsIPv6)
+	resp, err := ap.makeRequest(ctx, req, app)
 	if err != nil {
 		log.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil
@@ -138,11 +150,13 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 	return FromPrometheusMetrics(metricsFromApplication, ap.kumaVersion, app.ExtraAttributes, requestTime)
 }
 
-func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {
+func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, app ApplicationToScrape) (*http.Response, error) {
 	req = req.WithContext(ctx)
-	if isIPv6 {
-		return ap.httpClientIPv6.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
-	} else {
-		return ap.httpClientIPv4.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
+	if app.UnixSocketPath != "" {
+		return ap.httpClientUDS.Do(req)
 	}
+	if app.IsIPv6 {
+		return ap.httpClientIPv6.Do(req)
+	}
+	return ap.httpClientIPv4.Do(req)
 }

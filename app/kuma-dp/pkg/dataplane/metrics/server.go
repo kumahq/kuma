@@ -98,6 +98,7 @@ type ApplicationToScrape struct {
 	Path              string
 	Port              uint32
 	IsIPv6            bool
+	UnixSocketPath    string
 	ExtraAttributes   []attribute.KeyValue
 	QueryModifier     QueryParametersModifier
 	Mutator           MetricsMutator
@@ -108,6 +109,7 @@ type Hijacker struct {
 	socketPath           string
 	httpClientIPv4       http.Client
 	httpClientIPv6       http.Client
+	httpClientUDS        http.Client
 	applicationsToScrape []ApplicationToScrape
 	producer             *AggregatedProducer
 	prometheusHandler    http.Handler
@@ -128,14 +130,31 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 	return http.Client{}
 }
 
+func createHTTPClientForUDS(unixSocketPath string) http.Client {
+	return http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return net.Dial("unix", unixSocketPath)
+			},
+		},
+	}
+}
+
 func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, producer *AggregatedProducer) *Hijacker {
-	return &Hijacker{
+	h := &Hijacker{
 		socketPath:           socketPath,
 		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape: applicationsToScrape,
 		producer:             producer,
 	}
+	for _, app := range applicationsToScrape {
+		if app.UnixSocketPath != "" {
+			h.httpClientUDS = createHTTPClientForUDS(app.UnixSocketPath)
+			break
+		}
+	}
+	return h
 }
 
 func (s *Hijacker) Start(stop <-chan struct{}) error {
@@ -203,6 +222,16 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 	u := url.URL{
 		Scheme:   "http",
 		Host:     net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)),
+		Path:     path,
+		RawQuery: queryModifier(in.Query()).Encode(),
+	}
+	return u.String()
+}
+
+func rewriteMetricsURLForUDS(path string, queryModifier QueryParametersModifier, in *url.URL) string {
+	u := url.URL{
+		Scheme:   "http",
+		Host:     "localhost",
 		Path:     path,
 		RawQuery: queryModifier(in.Query()).Encode(),
 	}
@@ -342,7 +371,11 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 }
 
 func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, expfmt.Format) {
-	req, err := http.NewRequest(http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), http.NoBody) // #nosec G704 -- operator-configured metrics target
+	targetURL := rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL)
+	if app.UnixSocketPath != "" {
+		targetURL = rewriteMetricsURLForUDS(app.Path, app.QueryModifier, initReq.URL)
+	}
+	req, err := http.NewRequest(http.MethodGet, targetURL, http.NoBody)
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil, ""
@@ -351,13 +384,18 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	req = req.WithContext(ctx)
 	var resp *http.Response
 	logger.V(1).Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
-	if app.IsIPv6 {
-		resp, err = s.httpClientIPv6.Do(req) // #nosec G704 -- operator-configured metrics target
+	if app.UnixSocketPath != "" {
+		resp, err = s.httpClientUDS.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+	} else if app.IsIPv6 {
+		resp, err = s.httpClientIPv6.Do(req)
 		if err == nil {
 			defer resp.Body.Close()
 		}
 	} else {
-		resp, err = s.httpClientIPv4.Do(req) // #nosec G704 -- operator-configured metrics target
+		resp, err = s.httpClientIPv4.Do(req)
 		if err == nil {
 			defer resp.Body.Close()
 		}
