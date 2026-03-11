@@ -442,7 +442,9 @@ spec:
 				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(stdout).ToNot(ContainSubstring("health_flags::healthy"))
+				// filter to test-server lines only; passthrough clusters are always healthy
+				filtered := filterLines(stdout, "test-server")
+				Expect(filtered).ToNot(ContainSubstring("health_flags::healthy"))
 			}, "30s", "500ms").Should(Succeed())
 		})
 	}, Ordered)
@@ -543,7 +545,8 @@ spec:
 				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
-				count := strings.Count(stdout, "health_flags::/failed_active_hc")
+				filtered := filterLines(stdout, "test-server")
+				count := strings.Count(filtered, "health_flags::/failed_active_hc")
 				g.Expect(count).To(Equal(2))
 			}, "30s", "500ms").Should(Succeed())
 
@@ -557,4 +560,14 @@ spec:
 			}).Should(Succeed())
 		})
 	}, Ordered)
+}
+
+func filterLines(s, substr string) string {
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		if strings.Contains(line, substr) {
+			out = append(out, line)
+		}
+	}
+	return strings.Join(out, "\n")
 }
