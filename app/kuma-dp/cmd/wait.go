@@ -31,11 +31,14 @@ func newWaitCmd() *cobra.Command {
 			targetURL := args.url
 
 			if args.unixSocket != "" {
+				dialer := &net.Dialer{
+					Timeout: args.requestTimeout,
+				}
 				client = &http.Client{
 					Timeout: args.requestTimeout,
 					Transport: &http.Transport{
-						DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-							return net.DialTimeout("unix", args.unixSocket, args.requestTimeout)
+						DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+							return dialer.DialContext(ctx, "unix", args.unixSocket)
 						},
 					},
 				}
