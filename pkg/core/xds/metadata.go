@@ -74,6 +74,7 @@ type DataplaneMetadata struct {
 	TransparentProxy     *tproxy_dp.DataplaneConfig
 	IPv6Enabled          bool
 	SpireSocketPath      string
+	OtelEnvInventory     *OtelBootstrapInventory
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -189,6 +190,13 @@ func (m *DataplaneMetadata) GetIPv6Enabled() bool {
 	return m.IPv6Enabled
 }
 
+func (m *DataplaneMetadata) GetOtelEnvInventory() *OtelBootstrapInventory {
+	if m == nil {
+		return nil
+	}
+	return m.OtelEnvInventory
+}
+
 func (m *DataplaneMetadata) HasFeature(feature string) bool {
 	if m == nil || m.Features == nil {
 		return false
@@ -271,6 +279,14 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	} else {
 		// For backward compatibility as previously this was always enabled
 		metadata.IPv6Enabled = true
+	}
+	if value := xdsMetadata.Fields[FieldOtelEnvInventory]; value.GetStructValue() != nil {
+		inventory, err := util_proto.FromMapOfAny[*OtelBootstrapInventory](value.GetStructValue())
+		if err != nil {
+			metadataLog.Error(err, "invalid value in dataplane metadata", "field", FieldOtelEnvInventory, "value", value)
+		} else {
+			metadata.OtelEnvInventory = inventory
+		}
 	}
 
 	if value := xdsMetadata.Fields[FieldDynamicMetadata]; value != nil {

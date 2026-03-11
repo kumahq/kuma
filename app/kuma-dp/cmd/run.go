@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelreceiver"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
@@ -238,6 +239,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
 				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP
 			}
+			if cfg.DataplaneRuntime.OtelEnvEnabled {
+				discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
+				rootCtx.BootstrapOtelEnv = discoveredEnv.Inventory
+				for key, value := range discoveredEnv.DynamicMetadataSummary() {
+					rootCtx.BootstrapDynamicMetadata[key] = value
+				}
+			}
 
 			return nil
 		},
@@ -272,7 +280,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("fetching bootstrap configuration")
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.Features)
+			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.BootstrapOtelEnv, rootCtx.Features)
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}

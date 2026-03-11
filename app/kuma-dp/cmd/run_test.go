@@ -17,6 +17,7 @@ import (
 
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
@@ -401,7 +402,7 @@ func verifyComponentProcess(processDescription, pidfile string, cmdlinefile stri
 
 type fakeBootstrapClient struct{}
 
-func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string, _ []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string, _ *core_xds.OtelBootstrapInventory, _ []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
 	bs, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 	if err != nil {
 		return nil, nil, err
