@@ -76,10 +76,6 @@ type OtelPipeBackends struct {
 	signalBackends map[OtelSignal]map[string]struct{} // key: signal -> backend names
 }
 
-func (a *OtelPipeBackends) Add(name string, b OtelPipeBackend) {
-	a.mergeBase(name, b)
-}
-
 func (a *OtelPipeBackends) AddSignal(
 	name string,
 	b OtelPipeBackend,

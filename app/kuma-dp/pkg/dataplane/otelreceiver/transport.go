@@ -28,6 +28,7 @@ import (
 
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type grpcConnEntry struct {
@@ -79,7 +80,7 @@ func (f *senderFactory) newTraceExporter(runtime otelenv.SignalRuntime) (traceEx
 		if err != nil {
 			return nil, err
 		}
-		targetURL := otlpHTTPURL(runtime.Transport.Endpoint, runtime.HTTPPath, runtime.Transport.UseTLS)
+		targetURL := otlpHTTPURL(runtime.Transport.Endpoint, runtime.HTTPPath, pointer.Deref(runtime.Transport.UseTLS))
 		return func(ctx context.Context, req *tracepb.ExportTraceServiceRequest) (*tracepb.ExportTraceServiceResponse, error) {
 			body, err := proto.Marshal(req)
 			if err != nil {
@@ -116,7 +117,7 @@ func (f *senderFactory) newLogsExporter(runtime otelenv.SignalRuntime) (logsExpo
 		if err != nil {
 			return nil, err
 		}
-		targetURL := otlpHTTPURL(runtime.Transport.Endpoint, runtime.HTTPPath, runtime.Transport.UseTLS)
+		targetURL := otlpHTTPURL(runtime.Transport.Endpoint, runtime.HTTPPath, pointer.Deref(runtime.Transport.UseTLS))
 		return func(ctx context.Context, req *logspb.ExportLogsServiceRequest) (*logspb.ExportLogsServiceResponse, error) {
 			body, err := proto.Marshal(req)
 			if err != nil {
@@ -153,7 +154,7 @@ func (f *senderFactory) newMetricsExporter(runtime otelenv.SignalRuntime) (metri
 		if err != nil {
 			return nil, err
 		}
-		targetURL := otlpHTTPURL(runtime.Transport.Endpoint, runtime.HTTPPath, runtime.Transport.UseTLS)
+		targetURL := otlpHTTPURL(runtime.Transport.Endpoint, runtime.HTTPPath, pointer.Deref(runtime.Transport.UseTLS))
 		return func(ctx context.Context, req *metricspb.ExportMetricsServiceRequest) (*metricspb.ExportMetricsServiceResponse, error) {
 			body, err := proto.Marshal(req)
 			if err != nil {
@@ -182,7 +183,7 @@ func (f *senderFactory) newMetricsExporter(runtime otelenv.SignalRuntime) (metri
 func (f *senderFactory) grpcConn(transport otelenv.ExporterTransport) (*grpc.ClientConn, error) {
 	key := grpcConnKey{
 		endpoint:          transport.Endpoint,
-		useTLS:            transport.UseTLS,
+		useTLS:            pointer.Deref(transport.UseTLS),
 		certificate:       transport.Certificate,
 		clientCertificate: transport.ClientCertificate,
 		clientKey:         transport.ClientKey,
@@ -194,7 +195,7 @@ func (f *senderFactory) grpcConn(transport otelenv.ExporterTransport) (*grpc.Cli
 	}
 
 	dialOpts := []grpc.DialOption{}
-	if transport.UseTLS {
+	if pointer.Deref(transport.UseTLS) {
 		tlsConfig, err := newTLSConfig(transport)
 		if err != nil {
 			return nil, err
@@ -219,7 +220,7 @@ func (f *senderFactory) grpcConn(transport otelenv.ExporterTransport) (*grpc.Cli
 func (f *senderFactory) httpClient(transport otelenv.ExporterTransport) (*http.Client, error) {
 	key := httpClientKey{
 		endpoint:          transport.Endpoint,
-		useTLS:            transport.UseTLS,
+		useTLS:            pointer.Deref(transport.UseTLS),
 		certificate:       transport.Certificate,
 		clientCertificate: transport.ClientCertificate,
 		clientKey:         transport.ClientKey,
@@ -231,7 +232,7 @@ func (f *senderFactory) httpClient(transport otelenv.ExporterTransport) (*http.C
 	}
 
 	httpTransport := http.DefaultTransport.(*http.Transport).Clone()
-	if transport.UseTLS {
+	if pointer.Deref(transport.UseTLS) {
 		tlsConfig, err := newTLSConfig(transport)
 		if err != nil {
 			return nil, err

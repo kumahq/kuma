@@ -64,4 +64,20 @@ var _ = Describe("DiscoverWithLookup", func() {
 		Expect(cfg.Inventory.Traces).ToNot(BeNil())
 		Expect(cfg.Inventory.Traces.EffectiveAuthMode).To(Equal(core_xds.OtelAuthModeNone))
 	})
+
+	It("should not report validation error for compression=none", func() {
+		env := map[string]string{
+			"OTEL_EXPORTER_OTLP_COMPRESSION": "none",
+		}
+
+		cfg := discoverWithLookup(false, func(name string) (string, bool) {
+			value, ok := env[name]
+			return value, ok
+		})
+
+		Expect(cfg.Inventory).ToNot(BeNil())
+		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
+		Expect(cfg.Inventory.Shared).ToNot(BeNil())
+		Expect(cfg.Inventory.Shared.CompressionPresent).To(BeTrue())
+	})
 })

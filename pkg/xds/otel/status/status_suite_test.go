@@ -3,11 +3,9 @@ package status_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 func TestStatus(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "OTEL Status Suite")
+	test.RunSpecs(t, "OTEL Status Suite")
 }

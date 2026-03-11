@@ -67,17 +67,6 @@ func (c *Cache) Get(
 	return proto.Clone(status).(*mesh_proto.DataplaneInsight_OpenTelemetry)
 }
 
-func (c *Cache) Delete(key core_model.ResourceKey) {
-	if c == nil {
-		return
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.statuses, key)
-}
-
 func Build(backends []core_xds.OtelPipeBackend) *mesh_proto.DataplaneInsight_OpenTelemetry {
 	if len(backends) == 0 {
 		return nil

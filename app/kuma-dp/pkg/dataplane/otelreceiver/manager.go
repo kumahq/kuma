@@ -236,13 +236,20 @@ func sameSignalRuntime(a, b otelenv.SignalRuntime) bool {
 func sameTransport(a, b otelenv.ExporterTransport) bool {
 	return a.Protocol == b.Protocol &&
 		a.Endpoint == b.Endpoint &&
-		a.UseTLS == b.UseTLS &&
+		sameBoolPtr(a.UseTLS, b.UseTLS) &&
 		maps.Equal(a.Headers, b.Headers) &&
 		a.Compression == b.Compression &&
 		a.Timeout == b.Timeout &&
 		a.Certificate == b.Certificate &&
 		a.ClientCertificate == b.ClientCertificate &&
 		a.ClientKey == b.ClientKey
+}
+
+func sameBoolPtr(a, b *bool) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return *a == *b
 }
 
 func markLegacySignal(backends []core_xds.OtelPipeBackend, signal core_xds.OtelSignal) []core_xds.OtelPipeBackend {
@@ -267,6 +274,8 @@ func markLegacySignal(backends []core_xds.OtelPipeBackend, signal core_xds.OtelS
 			result[i].Traces = &plan
 		case core_xds.OtelSignalLogs:
 			result[i].Logs = &plan
+		case core_xds.OtelSignalMetrics:
+			result[i].Metrics = &plan
 		}
 	}
 	return result

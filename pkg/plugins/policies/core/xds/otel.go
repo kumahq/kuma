@@ -159,10 +159,6 @@ type AddResolvedBackendOptions struct {
 	RefreshInterval string
 }
 
-// OtelBackendConfig is an alias for the unified OtelPipeBackend type.
-// Kept for backward compatibility with per-signal dpapi packages.
-type OtelBackendConfig = core_xds.OtelPipeBackend
-
 func BuildResolvedPipeBackend(workDir string, resolved *ResolvedOtelBackend) core_xds.OtelPipeBackend {
 	return core_xds.OtelPipeBackend{
 		Name:       resolved.Name,
@@ -457,36 +453,14 @@ func appendMissingField(fields []string, field string) []string {
 	return append(fields, field)
 }
 
+var missingFieldReplacer = strings.NewReplacer("-", "_", " ", "_")
+
 func normalizeMissingField(field string) string {
 	field = strings.TrimSpace(field)
 	if field == "" {
 		return ""
 	}
-
-	return strings.NewReplacer(
-		"-", "_",
-		" ", "_",
-	).Replace(field)
-}
-
-// AddResolvedToBackends adds a resolved OTel backend to the proxy accumulator.
-// Shared by MeshTrace, MeshAccessLog, and MeshMetric plugins.
-func AddResolvedToBackends(
-	proxy *core_xds.Proxy,
-	resolved *ResolvedOtelBackend,
-	signal core_xds.OtelSignal,
-	options AddResolvedBackendOptions,
-) {
-	base := BuildResolvedPipeBackend(proxy.Metadata.WorkDir, resolved)
-	plan := BuildSignalRuntimePlan(
-		proxy.Metadata.GetOtelEnvInventory(),
-		proxy.Metadata.HasFeature(xds_types.FeatureOtelEnv),
-		base.EnvPolicy,
-		base,
-		signal,
-		options,
-	)
-	proxy.OtelPipeBackends.AddSignal(resolved.Name, base, signal, plan)
+	return missingFieldReplacer.Replace(field)
 }
 
 // EndpointForDirectOtelExport returns a copy of resolved endpoint adjusted for

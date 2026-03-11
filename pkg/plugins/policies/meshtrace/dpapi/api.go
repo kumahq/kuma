@@ -1,7 +1,7 @@
 package dpapi
 
 import (
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 const PATH = "/meshtrace"
@@ -11,4 +11,4 @@ type MeshTraceDpConfig struct {
 	Backends []OtelBackendConfig `json:"backends"`
 }
 
-type OtelBackendConfig = policies_xds.OtelBackendConfig
+type OtelBackendConfig = core_xds.OtelPipeBackend

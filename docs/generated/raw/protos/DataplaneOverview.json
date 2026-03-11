@@ -563,6 +563,9 @@
                         "type": "string"
                     },
                     "type": "array"
+                },
+                "source": {
+                    "type": "string"
                 }
             },
             "additionalProperties": true,

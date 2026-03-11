@@ -140,22 +140,13 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 		return nil
 	}
 	if otelBackend.BackendRef != nil && acc.UseKumaDpPipe {
-		socketPath := xds.OpenTelemetrySocketName(acc.WorkDir, resolved.Name)
-		realEndpoint := policies_xds.CollectorEndpointString(resolved.Endpoint)
-		path := ""
-		if resolved.Path != nil {
-			path = *resolved.Path
-		}
 		if acc.pipeBackends == nil {
 			acc.pipeBackends = map[string]OtelPipeBackendInfo{}
 		}
 		base := policies_xds.BuildResolvedPipeBackend(acc.WorkDir, resolved)
-		base.SocketPath = socketPath
-		base.Endpoint = realEndpoint
-		base.Path = path
 		acc.pipeBackends[resolved.Name] = base
 		return &LoggingEndpoint{
-			SocketPath:  socketPath,
+			SocketPath:  base.SocketPath,
 			BackendName: resolved.Name,
 			UseHTTP2:    true, // Envoy→kuma-dp leg is always gRPC
 		}
