@@ -592,7 +592,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with endpoint priority", Ordered, func() {
+	Context("MeshExternalService with endpoint priority", Ordered, Label("ipv6-not-supported"), func() {
 		mesPrimaryName := "mes-priority-primary"
 		mesPrimaryPort := 83
 		var mesPrimaryContainerName string
@@ -636,7 +636,6 @@ spec:
 					universal.Cluster,
 					"mes-demo-client-no-defaults",
 					"mes-priority.extsvc.mesh.local",
-					client.WithMaxTime(10),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring(mesPrimaryName))
@@ -651,7 +650,6 @@ spec:
 					universal.Cluster,
 					"mes-demo-client-no-defaults",
 					"mes-priority.extsvc.mesh.local",
-					client.WithMaxTime(10),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring(esHttpName))
