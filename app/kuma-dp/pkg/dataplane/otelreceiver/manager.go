@@ -5,18 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net"
-	"net/http"
 	"os"
+	"slices"
 
 	"github.com/pkg/errors"
 	logspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	mal_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/dpapi"
@@ -32,23 +34,25 @@ type Manager struct {
 	newConfig chan []core_xds.OtelPipeBackend
 	running   map[string]*runningServer // key: socketPath
 	done      chan struct{}
+	envConfig otelenv.Config
 }
 
 type runningServer struct {
 	server   *grpc.Server
 	closeFns []func()
-	backend  core_xds.OtelPipeBackend
+	runtime  otelenv.BackendRuntime
 }
 
 var _ component.GracefulComponent = &Manager{}
 
 // NewManager creates a unified Manager that registers all three OTel gRPC
 // services (traces, logs, metrics) on each backend socket.
-func NewManager() *Manager {
+func NewManager(envConfig otelenv.Config) *Manager {
 	return &Manager{
 		newConfig: make(chan []core_xds.OtelPipeBackend, 1),
 		running:   map[string]*runningServer{},
 		done:      make(chan struct{}),
+		envConfig: envConfig,
 	}
 }
 
@@ -89,7 +93,7 @@ func (m *Manager) OnTraceChange(ctx context.Context, r io.Reader) error {
 	if err := json.NewDecoder(r).Decode(&cfg); err != nil {
 		return fmt.Errorf("meshtrace dp config decode error: %w", err)
 	}
-	return m.sendConfig(ctx, cfg.Backends)
+	return m.sendConfig(ctx, markLegacySignal(cfg.Backends, core_xds.OtelSignalTraces))
 }
 
 // OnLogChange is the legacy configFetcher handler for /meshaccesslog.
@@ -99,7 +103,7 @@ func (m *Manager) OnLogChange(ctx context.Context, r io.Reader) error {
 	if err := json.NewDecoder(r).Decode(&cfg); err != nil {
 		return fmt.Errorf("meshaccesslog dp config decode error: %w", err)
 	}
-	return m.sendConfig(ctx, cfg.Backends)
+	return m.sendConfig(ctx, markLegacySignal(cfg.Backends, core_xds.OtelSignalLogs))
 }
 
 func (m *Manager) sendConfig(ctx context.Context, backends []core_xds.OtelPipeBackend) error {
@@ -127,15 +131,16 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 
 	// start new backends and restart updated backends
 	for socketPath, b := range desired {
+		runtime := m.envConfig.ResolveBackend(b)
 		if rs, ok := m.running[socketPath]; ok {
-			if sameBackendConfig(rs.backend, b) {
+			if sameBackendRuntime(rs.runtime, runtime) {
 				continue
 			}
 			stopRunningServer(rs)
 			delete(m.running, socketPath)
 		}
 
-		rs, err := m.startBackend(socketPath, b)
+		rs, err := m.startBackend(socketPath, b, runtime)
 		if err != nil {
 			return errors.Wrapf(err, "failed to start OTel receiver on %s", socketPath)
 		}
@@ -144,7 +149,11 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 	return nil
 }
 
-func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBackend) (*runningServer, error) {
+func (m *Manager) startBackend(
+	socketPath string,
+	backend core_xds.OtelPipeBackend,
+	runtime otelenv.BackendRuntime,
+) (*runningServer, error) {
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrapf(err, "removing existing socket %s", socketPath)
 	}
@@ -153,27 +162,32 @@ func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBacke
 		return nil, errors.Wrapf(err, "listening on %s", socketPath)
 	}
 
-	// One shared gRPC connection (or HTTP client) for all three signal receivers.
-	var conn *grpc.ClientConn
-	var httpClient *http.Client
-	var closeFns []func()
-	if backend.UseHTTP {
-		httpClient = &http.Client{}
-	} else {
-		conn, err = grpc.NewClient(backend.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			_ = lis.Close()
-			return nil, errors.Wrap(err, "creating gRPC client")
-		}
-		closeFns = append(closeFns, func() { _ = conn.Close() })
+	senders := &senderFactory{}
+	traceExporter, err := senders.newTraceExporter(runtime.Traces)
+	if err != nil {
+		senders.close()
+		_ = lis.Close()
+		return nil, err
+	}
+	logsExporter, err := senders.newLogsExporter(runtime.Logs)
+	if err != nil {
+		senders.close()
+		_ = lis.Close()
+		return nil, err
+	}
+	metricsExporter, err := senders.newMetricsExporter(runtime.Metrics)
+	if err != nil {
+		senders.close()
+		_ = lis.Close()
+		return nil, err
 	}
 
 	s := grpc.NewServer()
-	tracepb.RegisterTraceServiceServer(s, newTraceReceiver(conn, httpClient, backend.Endpoint, backend.Path, backend.UseHTTP))
-	logspb.RegisterLogsServiceServer(s, newLogsReceiver(conn, httpClient, backend.Endpoint, backend.Path, backend.UseHTTP))
-	metricspb.RegisterMetricsServiceServer(s, newMetricsReceiver(conn, httpClient, backend.Endpoint, backend.Path, backend.UseHTTP))
+	tracepb.RegisterTraceServiceServer(s, newTraceReceiver(traceExporter))
+	logspb.RegisterLogsServiceServer(s, newLogsReceiver(logsExporter))
+	metricspb.RegisterMetricsServiceServer(s, newMetricsReceiver(metricsExporter))
 
-	closeFns = append(closeFns, func() { _ = lis.Close() })
+	closeFns := append([]func(){func() { _ = lis.Close() }}, senders.closeFns...)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -181,8 +195,15 @@ func (m *Manager) startBackend(socketPath string, backend core_xds.OtelPipeBacke
 		}
 	}()
 
-	logger.Info("started OTel receiver", "socketPath", socketPath, "endpoint", backend.Endpoint, "useHTTP", backend.UseHTTP, "path", backend.Path)
-	return &runningServer{server: s, closeFns: closeFns, backend: backend}, nil
+	logger.Info(
+		"started OTel receiver",
+		"socketPath", socketPath,
+		"clientLayout", backend.ClientLayout,
+		"tracesEnabled", runtime.Traces.Enabled,
+		"logsEnabled", runtime.Logs.Enabled,
+		"metricsEnabled", runtime.Metrics.Enabled,
+	)
+	return &runningServer{server: s, closeFns: closeFns, runtime: runtime}, nil
 }
 
 func (m *Manager) stopAll() {
@@ -199,8 +220,54 @@ func stopRunningServer(rs *runningServer) {
 	}
 }
 
-func sameBackendConfig(a, b core_xds.OtelPipeBackend) bool {
-	return a.Endpoint == b.Endpoint &&
-		a.UseHTTP == b.UseHTTP &&
-		a.Path == b.Path
+func sameBackendRuntime(a, b otelenv.BackendRuntime) bool {
+	return sameSignalRuntime(a.Traces, b.Traces) &&
+		sameSignalRuntime(a.Logs, b.Logs) &&
+		sameSignalRuntime(a.Metrics, b.Metrics)
+}
+
+func sameSignalRuntime(a, b otelenv.SignalRuntime) bool {
+	return a.Enabled == b.Enabled &&
+		slices.Equal(a.BlockedReasons, b.BlockedReasons) &&
+		a.HTTPPath == b.HTTPPath &&
+		sameTransport(a.Transport, b.Transport)
+}
+
+func sameTransport(a, b otelenv.ExporterTransport) bool {
+	return a.Protocol == b.Protocol &&
+		a.Endpoint == b.Endpoint &&
+		a.UseTLS == b.UseTLS &&
+		maps.Equal(a.Headers, b.Headers) &&
+		a.Compression == b.Compression &&
+		a.Timeout == b.Timeout &&
+		a.Certificate == b.Certificate &&
+		a.ClientCertificate == b.ClientCertificate &&
+		a.ClientKey == b.ClientKey
+}
+
+func markLegacySignal(backends []core_xds.OtelPipeBackend, signal core_xds.OtelSignal) []core_xds.OtelPipeBackend {
+	result := make([]core_xds.OtelPipeBackend, len(backends))
+	for i, backend := range backends {
+		result[i] = backend
+		result[i].EnvPolicy = core_xds.OtelResolvedEnvPolicy{
+			Mode:                 motb_api.EnvModeDisabled,
+			Precedence:           motb_api.EnvPrecedenceExplicitFirst,
+			AllowSignalOverrides: false,
+		}
+		result[i].Traces = nil
+		result[i].Logs = nil
+		result[i].Metrics = nil
+
+		plan := core_xds.OtelSignalRuntimePlan{
+			Enabled:        true,
+			BlockedReasons: []string{core_xds.OtelBlockedReasonEnvDisabledByPlatform},
+		}
+		switch signal {
+		case core_xds.OtelSignalTraces:
+			result[i].Traces = &plan
+		case core_xds.OtelSignalLogs:
+			result[i].Logs = &plan
+		}
+	}
+	return result
 }
