@@ -49,7 +49,3 @@ const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
 // traces and access logs. When present, the CP routes the OTel cluster to a Unix
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
-
-// FeatureAdminUnixSocket indicates the Envoy admin API is bound to a Unix domain socket
-// instead of a TCP port, reducing the attack surface from compromised app containers.
-const FeatureAdminUnixSocket = "feature-admin-unix-socket"

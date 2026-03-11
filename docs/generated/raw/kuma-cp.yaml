@@ -804,6 +804,9 @@ experimental:
   sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
   deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
+  # If true, Envoy admin API binds to a Unix domain socket instead of TCP,
+  # reducing attack surface from compromised app containers in shared pod network.
+  adminUnixSocket: false # ENV: KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming

@@ -222,9 +222,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
 			}
-			if cfg.Dataplane.AdminUnixSocketEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureAdminUnixSocket)
-			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
