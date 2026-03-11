@@ -1,6 +1,6 @@
 # Shared telemetry backend resource for observability policies
 
-* Status: accepted
+- Status: accepted
 
 ## Context and problem statement
 
@@ -10,10 +10,10 @@ In practice, most deployments point all three policies at the same collector. Th
 
 Each policy also has a slightly different OTel backend struct:
 
-| Policy        | OTel backend fields              |
-|---------------|----------------------------------|
-| MeshMetric    | `endpoint`, `refreshInterval`    |
-| MeshTrace     | `endpoint`                       |
+| Policy | OTel backend fields |
+| --- | --- |
+| MeshMetric | `endpoint`, `refreshInterval` |
+| MeshTrace | `endpoint` |
 | MeshAccessLog | `endpoint`, `attributes`, `body` |
 
 The endpoint is the common denominator. Signal-specific fields (`refreshInterval`, `attributes`, `body`) are unique to each policy and don't belong in a shared resource.
@@ -51,14 +51,14 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  endpoint:             # +optional, mutually exclusive with nodeEndpoint
+  endpoint: # +optional, mutually exclusive with nodeEndpoint
     address: otel-collector.observability
     port: 4317
-    path: ""            # +optional, base path prefix for HTTP; non-empty value is rejected by validation when protocol: grpc
+    path: "" # +optional, base path prefix for HTTP; non-empty value is rejected by validation when protocol: grpc
   # nodeEndpoint:       # +optional, mutually exclusive with endpoint
   #   port: 4317        # required, 1-65535
   #   path: ""          # +optional, base path prefix for HTTP; non-empty value is rejected by validation when protocol: grpc
-  protocol: grpc        # +optional, grpc (default) or http
+  protocol: grpc # +optional, grpc (default) or http
 ```
 
 Exactly one of `endpoint` or `nodeEndpoint` must be set. The validator enforces mutual exclusion and rejects resources where both or neither is present.
@@ -102,12 +102,12 @@ spec:
     kind: Mesh
   default:
     backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector
-        refreshInterval: 30s      # signal-specific, stays inline
+      - type: OpenTelemetry
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            name: main-collector
+          refreshInterval: 30s # signal-specific, stays inline
 ```
 
 ##### MeshTrace
@@ -125,13 +125,13 @@ spec:
     kind: Mesh
   default:
     backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector
+      - type: OpenTelemetry
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            name: main-collector
     sampling:
-      overall: 80             # signal-specific, stays inline
+      overall: 80 # signal-specific, stays inline
 ```
 
 ##### MeshAccessLog
@@ -149,14 +149,14 @@ spec:
     kind: Mesh
   default:
     backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector
-        attributes:              # signal-specific, stays inline
-        - key: mesh
-          value: "%KUMA_MESH%"
+      - type: OpenTelemetry
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            name: main-collector
+          attributes: # signal-specific, stays inline
+            - key: mesh
+              value: "%KUMA_MESH%"
 ```
 
 #### Required policy changes
@@ -198,11 +198,11 @@ type OpenTelemetryBackend struct {
 | Property | Value | Details |
 | --- | --- | --- |
 | `IsPolicy` | false | it's a resource, not a policy |
-| `Scope` | Mesh | |
+| `Scope` | Mesh |  |
 | `HasStatus` | true | tracks reverse references while the backend exists; broken refs surface on the referencing policies |
 | `KDSFlags` | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> | same as MeshExternalService |
-| `ShortName` | `motb` | |
-| `IsDestination` | false | |
+| `ShortName` | `motb` |  |
+| `IsDestination` | false |  |
 
 #### Advantages
 
@@ -248,7 +248,7 @@ metadata:
     kuma.io/mesh: default
 spec:
   endpoint:
-    address: otel-collector.new-observability  # changed from otel-collector.observability
+    address: otel-collector.new-observability # changed from otel-collector.observability
     port: 4317
   protocol: grpc
 # MeshMetric, MeshTrace, and MeshAccessLog are unchanged.
@@ -270,7 +270,7 @@ spec:
   endpoint:
     address: otlp-gateway-prod-us-east-0.grafana.net
     port: 443
-    path: /otlp    # CP appends /v1/metrics, /v1/traces, /v1/logs per signal
+    path: /otlp # CP appends /v1/metrics, /v1/traces, /v1/logs per signal
   protocol: http
   # Follow-up work:
   # tls:
@@ -317,7 +317,7 @@ metadata:
     kuma.io/mesh: default
 spec:
   nodeEndpoint:
-    port: 4317    # must match the DaemonSet's hostPort
+    port: 4317 # must match the DaemonSet's hostPort
   protocol: grpc
 # Policies reference node-collector the same way as any other backend.
 # Each sidecar resolves the address to its own node IP at runtime.
@@ -360,12 +360,12 @@ spec:
       kuma.io/zone: us-east
   default:
     backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: collector-us-east
-        refreshInterval: 30s
+      - type: OpenTelemetry
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            name: collector-us-east
+          refreshInterval: 30s
 # Without MOTB, each zone's three policies would hardcode the endpoint.
 # With MOTB, changing a zone's collector means updating one resource
 # instead of three.
@@ -389,12 +389,12 @@ spec:
     kind: Mesh
   default:
     backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: main-collector    # no longer exists
-        refreshInterval: 30s
+      - type: OpenTelemetry
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            name: main-collector # no longer exists
+          refreshInterval: 30s
 ```
 
 CP behavior when the referenced backend is missing:
@@ -410,6 +410,7 @@ Unlike routing, where a dropped backend is one of many weighted destinations, a 
 `MeshOpenTelemetryBackend` names the resource after its backend type. Since the resource can only be referenced from the OTel backend section of policies, a generic name adds no value. Type matching is enforced by the admission webhook - the validator rejects `backendRef.kind` values that don't match the enclosing backend type. If Zipkin or Datadog backend types are needed later, they become separate resources (`MeshZipkinBackend`, etc.) with their own `backendRef.kind`.
 
 Rejected alternatives:
+
 - `MeshTelemetryBackend` (with `type` discriminator) - a generic name + type discriminator can't enforce type matching via the API structure. A policy's OTel backend could reference a Zipkin-typed backend, and this mismatch would only be caught by runtime validation.
 - `MeshOTelBackend` - abbreviation is less readable than the full name
 - `MeshOTelCollector` - "collector" is one deployment model, the resource is for any telemetry-receiving endpoint
