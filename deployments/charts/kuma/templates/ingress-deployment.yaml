@@ -76,6 +76,10 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
+            {{- if .Values.dataPlane.features.otelEnv }}
+            - name: KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED
+              value: "true"
+            {{- end }}
           args:
             - run
             - --log-level={{ .Values.ingress.logLevel | default "info" }}

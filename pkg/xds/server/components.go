@@ -82,6 +82,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		Zone:                rt.Config().Multizone.Zone.Name,
 		SystemNamespace:     systemNamespace,
 		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+		OtelEnvEnabled:      rt.Config().Runtime.OtelEnvEnabled,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {

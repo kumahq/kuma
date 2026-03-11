@@ -4656,6 +4656,35 @@ spec:
                 - address
                 - port
                 type: object
+              env:
+                description: |-
+                  Env controls whether standard OTEL exporter env vars participate in the
+                  final exporter config for this backend.
+                properties:
+                  allowSignalOverrides:
+                    description: |-
+                      AllowSignalOverrides controls whether signal-specific OTEL env vars such
+                      as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared config.
+                    type: boolean
+                  mode:
+                    default: Optional
+                    description: Mode controls whether OTEL env vars are ignored,
+                      allowed, or required.
+                    enum:
+                    - Disabled
+                    - Optional
+                    - Required
+                    type: string
+                  precedence:
+                    default: EnvFirst
+                    description: |-
+                      Precedence controls whether explicit backend fields or env vars win when
+                      both are present for the same field.
+                    enum:
+                    - ExplicitFirst
+                    - EnvFirst
+                    type: string
+                type: object
               nodeEndpoint:
                 description: |-
                   NodeEndpoint connects to an OTel collector running as a DaemonSet

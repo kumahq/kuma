@@ -39,6 +39,7 @@ type ControlPlaneContext struct {
 	Zone                string
 	SystemNamespace     string
 	InboundTagsDisabled bool
+	OtelEnvEnabled      bool
 }
 
 // GlobalContext holds resources that are Global
