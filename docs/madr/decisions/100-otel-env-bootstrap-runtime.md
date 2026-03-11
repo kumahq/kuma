@@ -251,7 +251,7 @@ backends:
     clientLayout: per-signal
 ```
 
-This means all three signals use the same backend and the same socket. The plan still carries the explicit backend settings from `MeshOpenTelemetryBackend`, but `kuma-dp` may still build a dedicated client for one signal if the final merged OTEL config differs after local env vars are applied.
+This means all three signals use the same backend and the same socket. The plan still carries the explicit backend settings from `MeshOpenTelemetryBackend` as fallback input, but in this running example `EnvFirst` means the final source may still be `env`. `kuma-dp` may also build a dedicated client for one signal if the final merged OTEL config differs after local env vars are applied.
 
 ### Policy-level control
 
@@ -273,7 +273,7 @@ spec:
   protocol: grpc
   env:
     mode: Optional
-    precedence: ExplicitFirst
+    precedence: EnvFirst
     allowSignalOverrides: true
 ```
 
@@ -298,9 +298,9 @@ Default behavior:
 
 `allowSignalOverrides` controls whether `OTEL_EXPORTER_OTLP_TRACES_*`, `..._LOGS_*`, and `..._METRICS_*` are allowed to change the signal-specific runtime shape. When it is `false`, those vars are detected and reported but not used.
 
-There should also be a global guard above backend policy.
+There should also be a global platform guard above backend policy.
 
-The control plane should own the authoritative guard because it is the part that resolves policy, builds the `/otel` runtime plan, and writes status. A backend should not be able to turn OTEL env reuse on if the platform owner disabled it for the whole mesh.
+The control plane should own the authoritative platform guard because it is the part that resolves policy, builds the `/otel` runtime plan, and writes status. A backend should not be able to turn OTEL env reuse on if the platform owner disabled it for the whole mesh.
 
 On Kubernetes, this should follow the same pattern that Kuma already uses for `dataPlane.features.unifiedResourceNaming`:
 
@@ -313,8 +313,8 @@ On Universal, there is no injector, so `kuma-dp` also needs a local runtime guar
 
 The effective rule should be simple:
 
-- if the global guard is off, backend `env` policy is ignored and status shows that env support was blocked globally
-- if the global guard is on, backend `env` policy decides whether env vars are disabled, optional, or required for that backend
+- if the global platform guard is off, backend `env` policy is ignored and status shows that env support was blocked globally
+- if the global platform guard is on, backend `env` policy decides whether env vars are disabled, optional, or required for that backend
 
 ### Merge rules
 
@@ -458,6 +458,8 @@ The bootstrap `dynamicMetadata` path should still carry a compact allowlisted su
 - are some dataplanes missing required OTEL env input
 - are some dataplanes ambiguous
 
+In the running example below, `source: env` means env vars win after merge. `source: mixed` would mean explicit backend fields still filled at least one missing field.
+
 Example status:
 
 ```yaml
@@ -480,7 +482,7 @@ conditions:
     status: "True"
 ```
 
-This tells the operator that shared env vars drive the default client, while traces use a signal-specific env override and therefore get a dedicated client. `mixed` is still a valid status value when explicit backend fields fill gaps that env vars do not provide.
+This tells the operator that shared env vars drive the default client, while traces use a signal-specific env override and therefore get a dedicated client.
 
 ### Kubernetes and Universal
 
@@ -550,11 +552,9 @@ There is no separate enterprise-only runtime model here. Kong Mesh should follow
 
 If MADR 095 is accepted, we should keep that Unix socket model and extend it into an OTEL env-var aware runtime.
 
-On top of the backend model proposed in MADR 095, `kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves the applied observability policies, fills missing pieces from `MeshOpenTelemetryBackend`, applies backend env policy rules, and sends a typed `/otel` runtime plan back to `kuma-dp`. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
+On top of the backend model proposed in MADR 095, `kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves the applied observability policies, applies the global platform guard and backend env policy, fills missing pieces from `MeshOpenTelemetryBackend`, and sends a typed `/otel` runtime plan back to `kuma-dp`. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
 
-The global platform guard decides whether OTEL env support is enabled at all, and `MeshOpenTelemetryBackend` says whether OTEL env vars are disabled, optional, or required for that backend, whether explicit config wins or env wins, and whether signal-specific OTEL env vars are allowed. Status must show the final source, readiness, blocked reasons, and ambiguity for every backend and signal.
-
-This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to configure the dataplane and explain the result if the MADR 095 backend model lands.
+This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to configure the dataplane and expose the final source, readiness, blocked reasons, and ambiguity for every backend and signal if the MADR 095 backend model lands.
 
 ## Notes
 
