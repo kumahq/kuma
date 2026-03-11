@@ -18,6 +18,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
@@ -41,12 +42,6 @@ type StatusUpdater struct {
 
 var _ component.Component = &StatusUpdater{}
 
-const (
-	otelSignalStateReady     = otel_status.SignalStateReady
-	otelSignalStateBlocked   = otel_status.SignalStateBlocked
-	otelSignalStateMissing   = otel_status.SignalStateMissing
-	otelSignalStateAmbiguous = otel_status.SignalStateAmbiguous
-)
 
 type backendRuntimeSummary struct {
 	reportingDataplanes          int
@@ -133,15 +128,9 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 
 	backendsByMesh := buildBackendNameIndex(motbList.Items)
 
-	if err := s.updateMeshMetricStatuses(ctx, meshMetrics, backendsByMesh); err != nil {
-		return err
-	}
-	if err := s.updateMeshTraceStatuses(ctx, meshTraces, backendsByMesh); err != nil {
-		return err
-	}
-	if err := s.updateMeshAccessLogStatuses(ctx, meshAccessLogs, backendsByMesh); err != nil {
-		return err
-	}
+	s.updateMeshMetricStatuses(ctx, meshMetrics, backendsByMesh)
+	s.updateMeshTraceStatuses(ctx, meshTraces, backendsByMesh)
+	s.updateMeshAccessLogStatuses(ctx, meshAccessLogs, backendsByMesh)
 
 	if len(motbList.Items) == 0 {
 		return nil
@@ -425,111 +414,81 @@ func (s *StatusUpdater) updateMeshMetricStatuses(
 	ctx context.Context,
 	meshMetrics *meshmetric_api.MeshMetricResourceList,
 	indexByMesh map[string]*backendNameIndex,
-) error {
+) {
 	for _, mm := range meshMetrics.Items {
 		refs := meshMetricBackendRefs(mm)
-		unresolved := unresolvedBackendRefs(mm.GetMeta().GetMesh(), refs, indexByMesh)
-		condition := buildBackendRefsResolvedCondition(
-			refs,
-			unresolved,
+		condition := buildBackendRefsResolvedCondition(refs,
+			unresolvedBackendRefs(mm.GetMeta().GetMesh(), refs, indexByMesh),
 			meshmetric_api.BackendRefsResolvedCondition,
 			meshmetric_api.AllBackendRefsResolvedReason,
 			meshmetric_api.UnresolvedBackendRefsReason,
 		)
-
 		if mm.Status == nil {
 			mm.Status = &meshmetric_api.MeshMetricStatus{}
 		}
-		if conditionEquals(mm.Status.Conditions, condition) {
-			continue
-		}
-
-		mm.Status.Conditions = updateConditions(mm.Status.Conditions, condition)
-		log := s.logger.WithValues("meshmetric", mm.GetMeta().GetName(), "mesh", mm.GetMeta().GetMesh())
-		if err := s.resManager.Update(ctx, mm); err != nil {
-			if store.IsConflict(err) {
-				log.Info("couldn't update MeshMetric, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
-			} else {
-				log.Error(err, "could not update MeshMetric status")
-			}
-		}
+		s.updateResourceCondition(ctx, mm, &mm.Status.Conditions, condition, "meshmetric", "MeshMetric")
 	}
-
-	return nil
 }
 
 func (s *StatusUpdater) updateMeshTraceStatuses(
 	ctx context.Context,
 	meshTraces *meshtrace_api.MeshTraceResourceList,
 	indexByMesh map[string]*backendNameIndex,
-) error {
+) {
 	for _, mt := range meshTraces.Items {
 		refs := meshTraceBackendRefs(mt)
-		unresolved := unresolvedBackendRefs(mt.GetMeta().GetMesh(), refs, indexByMesh)
-		condition := buildBackendRefsResolvedCondition(
-			refs,
-			unresolved,
+		condition := buildBackendRefsResolvedCondition(refs,
+			unresolvedBackendRefs(mt.GetMeta().GetMesh(), refs, indexByMesh),
 			meshtrace_api.BackendRefsResolvedCondition,
 			meshtrace_api.AllBackendRefsResolvedReason,
 			meshtrace_api.UnresolvedBackendRefsReason,
 		)
-
 		if mt.Status == nil {
 			mt.Status = &meshtrace_api.MeshTraceStatus{}
 		}
-		if conditionEquals(mt.Status.Conditions, condition) {
-			continue
-		}
-
-		mt.Status.Conditions = updateConditions(mt.Status.Conditions, condition)
-		log := s.logger.WithValues("meshtrace", mt.GetMeta().GetName(), "mesh", mt.GetMeta().GetMesh())
-		if err := s.resManager.Update(ctx, mt); err != nil {
-			if store.IsConflict(err) {
-				log.Info("couldn't update MeshTrace, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
-			} else {
-				log.Error(err, "could not update MeshTrace status")
-			}
-		}
+		s.updateResourceCondition(ctx, mt, &mt.Status.Conditions, condition, "meshtrace", "MeshTrace")
 	}
-
-	return nil
 }
 
 func (s *StatusUpdater) updateMeshAccessLogStatuses(
 	ctx context.Context,
 	meshAccessLogs *meshaccesslog_api.MeshAccessLogResourceList,
 	indexByMesh map[string]*backendNameIndex,
-) error {
+) {
 	for _, mal := range meshAccessLogs.Items {
 		refs := meshAccessLogBackendRefs(mal)
-		unresolved := unresolvedBackendRefs(mal.GetMeta().GetMesh(), refs, indexByMesh)
-		condition := buildBackendRefsResolvedCondition(
-			refs,
-			unresolved,
+		condition := buildBackendRefsResolvedCondition(refs,
+			unresolvedBackendRefs(mal.GetMeta().GetMesh(), refs, indexByMesh),
 			meshaccesslog_api.BackendRefsResolvedCondition,
 			meshaccesslog_api.AllBackendRefsResolvedReason,
 			meshaccesslog_api.UnresolvedBackendRefsReason,
 		)
-
 		if mal.Status == nil {
 			mal.Status = &meshaccesslog_api.MeshAccessLogStatus{}
 		}
-		if conditionEquals(mal.Status.Conditions, condition) {
-			continue
-		}
+		s.updateResourceCondition(ctx, mal, &mal.Status.Conditions, condition, "meshaccesslog", "MeshAccessLog")
+	}
+}
 
-		mal.Status.Conditions = updateConditions(mal.Status.Conditions, condition)
-		log := s.logger.WithValues("meshaccesslog", mal.GetMeta().GetName(), "mesh", mal.GetMeta().GetMesh())
-		if err := s.resManager.Update(ctx, mal); err != nil {
-			if store.IsConflict(err) {
-				log.Info("couldn't update MeshAccessLog, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
-			} else {
-				log.Error(err, "could not update MeshAccessLog status")
-			}
+func (s *StatusUpdater) updateResourceCondition(
+	ctx context.Context,
+	resource core_model.Resource,
+	conditions *[]common_api.Condition,
+	condition common_api.Condition,
+	logKey, typeName string,
+) {
+	if conditionEquals(*conditions, condition) {
+		return
+	}
+	*conditions = updateConditions(*conditions, condition)
+	log := s.logger.WithValues(logKey, resource.GetMeta().GetName(), "mesh", resource.GetMeta().GetMesh())
+	if err := s.resManager.Update(ctx, resource); err != nil {
+		if store.IsConflict(err) {
+			log.Info(fmt.Sprintf("couldn't update %s, will retry next interval", typeName), "interval", s.interval)
+		} else {
+			log.Error(err, fmt.Sprintf("could not update %s status", typeName))
 		}
 	}
-
-	return nil
 }
 
 func buildReferencedByCondition(count int) common_api.Condition {
@@ -611,7 +570,7 @@ func summarizeBackendRuntime(backend *mesh_proto.DataplaneInsight_OpenTelemetry_
 		reported = true
 
 		switch signal.GetState() {
-		case otelSignalStateReady:
+		case otel_status.SignalStateReady:
 			// Soft blocks produce state "ready" but should still count as blocked
 			reasons := signal.GetBlockedReasons()
 			if slices.Contains(reasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform) ||
@@ -619,13 +578,13 @@ func summarizeBackendRuntime(backend *mesh_proto.DataplaneInsight_OpenTelemetry_
 				slices.Contains(reasons, core_xds.OtelBlockedReasonSignalOverridesBlocked) {
 				blocked = true
 			}
-		case otelSignalStateAmbiguous:
+		case otel_status.SignalStateAmbiguous:
 			ready = false
 			ambiguous = true
-		case otelSignalStateBlocked:
+		case otel_status.SignalStateBlocked:
 			ready = false
 			blocked = true
-		case otelSignalStateMissing:
+		case otel_status.SignalStateMissing:
 			ready = false
 			if slices.Contains(signal.GetBlockedReasons(), core_xds.OtelBlockedReasonRequiredEnvMissing) {
 				missingRequiredEnv = true

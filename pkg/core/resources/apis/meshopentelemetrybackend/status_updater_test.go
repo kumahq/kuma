@@ -645,6 +645,37 @@ var _ = Describe("StatusUpdater", func() {
 		))
 	})
 
+	It("should aggregate multi-signal backend with mixed states", func() {
+		createMOTB("mixed-collector")
+		createDataplaneInsight("dp-mixed", &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
+			Name: "mixed-collector",
+			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
+				Enabled: true,
+				State:   "ready",
+			},
+			Metrics: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
+				Enabled:        true,
+				State:          "blocked",
+				BlockedReasons: []string{"EnvDisabledByPolicy"},
+			},
+		})
+
+		Eventually(getConditions("mixed-collector"), "10s", "100ms").Should(SatisfyAll(
+			ContainElement(common_api.Condition{
+				Type:    motb_api.ReadyCondition,
+				Status:  kube_meta.ConditionFalse,
+				Reason:  motb_api.SomeReportingDataplanesNotReadyReason,
+				Message: "0 of 1 reporting dataplane(s) are ready",
+			}),
+			ContainElement(common_api.Condition{
+				Type:    motb_api.DataplanesBlockedCondition,
+				Status:  kube_meta.ConditionTrue,
+				Reason:  motb_api.SomeReportingDataplanesBlockedReason,
+				Message: "1 reporting dataplane(s) are blocked by OTEL env policy",
+			}),
+		))
+	})
+
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_motb_status_updater")).ToNot(BeNil())
