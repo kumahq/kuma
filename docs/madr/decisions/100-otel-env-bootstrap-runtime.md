@@ -1,6 +1,6 @@
 # OTEL env-var bootstrap and runtime resolution
 
-- Status: accepted
+- Status: proposed
 
 Technical Story: TBD
 
@@ -139,7 +139,7 @@ The control flow looks like this:
 
 ```mermaid
 flowchart TD
-  A[kuma-dp startup] --> B[Read OTEL env vars from the kuma-sidecar process]
+  A[kuma-dp startup] --> B[Read OTEL env vars from the kuma-dp process environment]
   B --> C[Send typed OTEL inventory in bootstrap]
   C --> D[Control plane resolves policies and MeshOpenTelemetryBackend]
   D --> E[Control plane sends /otel runtime plan]
@@ -189,7 +189,9 @@ Example bootstrap inventory:
     "shared": {
       "endpointPresent": true,
       "protocolPresent": true,
-      "headersPresent": true
+      "headersPresent": true,
+      "effectiveProtocol": "http/protobuf",
+      "effectiveAuthMode": "headers"
     },
     "traces": {
       "overrideKinds": ["endpoint"]
@@ -204,7 +206,7 @@ Example bootstrap inventory:
 }
 ```
 
-This means `kuma-dp` has shared OTEL config in env vars, and only traces have a signal-specific override. The real values still stay local to `kuma-dp`.
+This means `kuma-dp` has shared OTEL config in env vars, the shared effective shape is OTLP HTTP with headers-based auth, and only traces have a signal-specific override. The real values still stay local to `kuma-dp`.
 
 ### Runtime plan on `/otel`
 
@@ -231,7 +233,7 @@ backends:
     socketPath: /tmp/kuma-otel-otel-main.sock
     envPolicy:
       mode: Optional
-      precedence: ExplicitFirst
+      precedence: EnvFirst
       allowSignalOverrides: true
     shared:
       endpoint: otel-collector.observability:4317
@@ -249,7 +251,7 @@ backends:
     clientLayout: per-signal
 ```
 
-This means all three signals use the same backend and the same socket, but `kuma-dp` may still build a dedicated client for one signal if the final merged OTEL config differs.
+This means all three signals use the same backend and the same socket. The plan still carries the explicit backend settings from `MeshOpenTelemetryBackend`, but `kuma-dp` may still build a dedicated client for one signal if the final merged OTEL config differs after local env vars are applied.
 
 ### Policy-level control
 
@@ -333,10 +335,10 @@ Field-level resolution is simple. For one field such as the traces endpoint, `ku
 ```text
 final traces endpoint =
   pick(
-    traces explicit endpoint,
-    shared explicit endpoint,
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
     OTEL_EXPORTER_OTLP_ENDPOINT,
+    traces explicit endpoint,
+    shared explicit endpoint,
     built-in default,
   )
 ```
@@ -462,15 +464,15 @@ Example status:
 backend: otel-main
 signals:
   traces:
-    source: mixed
+    source: env
     ready: true
     dedicatedClient: true
   logs:
-    source: explicit
+    source: env
     ready: true
     dedicatedClient: false
   metrics:
-    source: explicit
+    source: env
     ready: true
     dedicatedClient: false
 conditions:
@@ -478,7 +480,7 @@ conditions:
     status: "True"
 ```
 
-This tells the operator that traces use a mix of explicit backend config and env vars, while logs and metrics stay on the default client.
+This tells the operator that shared env vars drive the default client, while traces use a signal-specific env override and therefore get a dedicated client. `mixed` is still a valid status value when explicit backend fields fill gaps that env vars do not provide.
 
 ### Kubernetes and Universal
 
@@ -550,7 +552,7 @@ If MADR 095 is accepted, we should keep that Unix socket model and extend it int
 
 On top of the backend model proposed in MADR 095, `kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves the applied observability policies, fills missing pieces from `MeshOpenTelemetryBackend`, applies backend env policy rules, and sends a typed `/otel` runtime plan back to `kuma-dp`. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
 
-`MeshOpenTelemetryBackend` is the place where we say whether OTEL env vars are disabled, optional, or required, whether explicit config wins or env wins, and whether signal-specific OTEL env vars are allowed. Status must show the final source, readiness, blocked reasons, and ambiguity for every backend and signal.
+The global platform guard decides whether OTEL env support is enabled at all, and `MeshOpenTelemetryBackend` says whether OTEL env vars are disabled, optional, or required for that backend, whether explicit config wins or env wins, and whether signal-specific OTEL env vars are allowed. Status must show the final source, readiness, blocked reasons, and ambiguity for every backend and signal.
 
 This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to configure the dataplane and explain the result if the MADR 095 backend model lands.
 
