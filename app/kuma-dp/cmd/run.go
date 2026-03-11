@@ -241,6 +241,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			if cfg.DataplaneRuntime.OtelEnvEnabled {
 				discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
+				rootCtx.DiscoveredOtelEnv = discoveredEnv
 				rootCtx.BootstrapOtelEnv = discoveredEnv.Inventory
 				for key, value := range discoveredEnv.DynamicMetadataSummary() {
 					rootCtx.BootstrapDynamicMetadata[key] = value
@@ -357,7 +358,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				),
 			)
 
-			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
+			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher, rootCtx.DiscoveredOtelEnv)
 			if err != nil {
 				return err
 			}
@@ -522,7 +523,14 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
-func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
+func setupObservability(
+	ctx context.Context,
+	kumaSidecarConfiguration *types.KumaSidecarConfiguration,
+	bootstrap *envoy_bootstrap_v3.Bootstrap,
+	cfg *kumadp.Config,
+	fetcher *configfetcher.ConfigFetcher,
+	discoveredOtelEnv otelenv.Config,
+) ([]component.Component, error) {
 	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 	accessLogStreamer := component.NewResilientComponent(
@@ -564,7 +572,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		return nil, err
 	}
 
-	otelManager := otelreceiver.NewManager()
+	otelManager := otelreceiver.NewManager(discoveredOtelEnv)
 	if err := fetcher.AddHandler(core_xds.OtelDynconfPath, otelManager.OnOtelChange); err != nil {
 		return nil, err
 	}
