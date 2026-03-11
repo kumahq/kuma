@@ -83,6 +83,8 @@ type EndpointAccumulator struct {
 	UnifiedResourceNaming bool
 	Resources             xds_context.Resources
 	NodeHostIP            string
+	OtelEnvInventory      *xds.OtelBootstrapInventory
+	OtelEnvEnabled        bool
 	// UseKumaDpPipe enables routing OTel logs through a kuma-dp Unix socket.
 	UseKumaDpPipe bool
 	// WorkDir is the kuma-dp working directory for socket paths.
@@ -147,12 +149,11 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 		if acc.pipeBackends == nil {
 			acc.pipeBackends = map[string]OtelPipeBackendInfo{}
 		}
-		acc.pipeBackends[resolved.Name] = OtelPipeBackendInfo{
-			SocketPath: socketPath,
-			Endpoint:   realEndpoint,
-			UseHTTP:    resolved.Protocol == motb_api.ProtocolHTTP,
-			Path:       path,
-		}
+		base := policies_xds.BuildResolvedPipeBackend(acc.WorkDir, resolved)
+		base.SocketPath = socketPath
+		base.Endpoint = realEndpoint
+		base.Path = path
+		acc.pipeBackends[resolved.Name] = base
 		return &LoggingEndpoint{
 			SocketPath:  socketPath,
 			BackendName: resolved.Name,
