@@ -1,10 +1,10 @@
 # Zone Egress Address Storage for Endpoint Generation
 
-* Status: proposed
+* Status: accepted
 
 ## Context and Problem Statement
 
-With mesh-scoped zone proxies (MADR-095), a zone egress is represented as a `Dataplane` resource
+With mesh-scoped zone proxies ([MADR-095](095-mesh-scoped-zone-ingress-egress.md)), a zone egress is represented as a `Dataplane` resource
 with a `ZoneEgress` listener instead of the legacy `ZoneEgress` resource. The listener carries
 the address and port at which the egress sidecar accepts inbound mTLS traffic from other sidecars
 in the same zone.
