@@ -190,7 +190,7 @@ type OpenTelemetryBackend struct {
    - If `spec.endpoint` is set: use its address and port directly.
    - If `spec.nodeEndpoint` is set: resolve node IP from `proxy.Metadata.DynamicMetadata["HOST_IP"]`; fall back to `127.0.0.1` on Universal/VM.
 3. Inline `endpoint` path: inline endpoints still bypass the pipe. The CP generates direct Envoy OTel resources for them, same as today.
-4. `backendRef` path - unified kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, the policy plugins add the resolved backend to a shared `OtelPipeBackends` accumulator. During xDS generation for that proxy, the policy generator writes a single `/otel` dynconf route from the deduplicated backend list. kuma-dp watches `/otel` and starts one receiver per backend socket. That receiver forwards traces, logs, and metrics to the collector using the protocol and address from the MOTB spec. Trace and access log still point Envoy at the local Unix socket.
+4. `backendRef` path - unified kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, the policy plugins add the resolved backend to a shared `OtelPipeBackends` accumulator. During xDS generation for that proxy, the policy generator writes a single `/otel` dynconf route from the deduplicated backend list. kuma-dp watches `/otel` and starts one receiver per backend socket. Socket identity is per backend, not global: if a proxy resolves two different backends, kuma-dp opens two local Unix sockets. Each receiver forwards traces, logs, and metrics to the collector using the protocol and address from the MOTB spec. Trace and access log still point Envoy at the local Unix socket for that backend.
 5. MeshMetric path: MeshMetric still keeps its `/meshmetric` dynconf route for the stats pipeline and `refreshInterval`. In pipe mode, `backendRef` backends also use `/otel` for the real collector target. Inline `endpoint` backends stay on the direct Envoy path and do not use `/otel`.
 
 #### Resource characteristics
@@ -528,7 +528,7 @@ The initial implementation should cover:
 5. Sidecar injector always injects `HOST_IP` env var (Downward API `status.hostIP`) into every kuma-dp container, unconditionally - same approach as `INSTANCE_IP`. No need for the injector to watch MOTB resources.
 6. A status updater component sets `Referenced` or `NotReferenced` on MeshOpenTelemetryBackend resources and sets resolved or unresolved `backendRef` conditions on MeshMetric, MeshTrace, and MeshAccessLog (user story 5)
 7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
-8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. kuma-dp runs one receiver per backend socket and forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path.
+8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. kuma-dp runs one local Unix socket and one receiver per backend, then forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path.
 
 #### kuma-dp pipe mode versioning
 
