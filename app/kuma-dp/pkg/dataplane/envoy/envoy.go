@@ -164,7 +164,9 @@ func (e *Envoy) WaitForDone() {
 }
 
 func (e *Envoy) adminPost(path string) error {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", e.opts.AdminPort)
 
 	if e.opts.AdminSocketPath != "" {
@@ -172,6 +174,7 @@ func (e *Envoy) adminPost(path string) error {
 			Timeout: 5 * time.Second,
 		}
 		client = &http.Client{
+			Timeout: 10 * time.Second,
 			Transport: &http.Transport{
 				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 					return dialer.DialContext(ctx, "unix", e.opts.AdminSocketPath)
