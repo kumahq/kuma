@@ -26,16 +26,21 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 	"github.com/kumahq/kuma/v2/pkg/xds/server"
 	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
 type staticSnapshotReconciler struct {
-	proxy *core_xds.Proxy
+	proxy   *core_xds.Proxy
+	prepare func(*core_xds.Proxy)
 }
 
 func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Context, proxy *core_xds.Proxy) (bool, error) {
+	if s.prepare != nil {
+		s.prepare(proxy)
+	}
 	s.proxy = proxy
 	return true, nil
 }
@@ -115,8 +120,9 @@ var _ = Describe("Dataplane Watchdog", func() {
 				Zone:            zone,
 				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus),
 			},
-			MeshCache:  cache,
-			ResManager: resManager,
+			MeshCache:       cache,
+			ResManager:      resManager,
+			OtelStatusCache: otelstatus.NewCache(),
 		}
 
 		pair, err := envoy_admin_tls.GenerateCA()
@@ -191,6 +197,25 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshotReconciler.proxy).To(BeNil())
+		})
+
+		It("should cache OTEL runtime status after reconcile", func() {
+			snapshotReconciler.prepare = func(proxy *core_xds.Proxy) {
+				proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
+				proxy.OtelPipeBackends.AddSignal("main-collector", core_xds.OtelPipeBackend{
+					Name:         "main-collector",
+					ClientLayout: core_xds.OtelClientLayoutShared,
+				}, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
+					Enabled: true,
+				})
+			}
+
+			_, err := watchdog.Sync(ctx)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deps.OtelStatusCache.Get(resKey)).ToNot(BeNil())
+			Expect(deps.OtelStatusCache.Get(resKey).Backends).To(HaveLen(1))
+			Expect(deps.OtelStatusCache.Get(resKey).Backends[0].Name).To(Equal("main-collector"))
 		})
 	})
 })
