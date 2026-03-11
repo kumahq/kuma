@@ -351,6 +351,10 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED
   value: "false"
 {{- end }}
+{{- if .Values.dataPlane.features.otelEnv }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_ENV_ENABLED
+  value: "true"
+{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}

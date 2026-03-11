@@ -203,6 +203,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.OtelPipeEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
 			}
+			if cfg.DataplaneRuntime.OtelEnvEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelEnv)
+			}
 
 			if cfg.DNS.ProxyPort != 0 {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)

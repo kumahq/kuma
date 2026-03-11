@@ -38,6 +38,7 @@ type DataplaneProxyFactory struct {
 	applicationProbeProxyPort    uint32
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
+	otelEnvEnabled               bool
 	spireEnabled                 bool
 }
 
@@ -53,6 +54,7 @@ func NewDataplaneProxyFactory(
 	applicationProbeProxyPort uint32,
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
+	otelEnvEnabled bool,
 	spireEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
@@ -67,6 +69,7 @@ func NewDataplaneProxyFactory(
 		applicationProbeProxyPort:    applicationProbeProxyPort,
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
+		otelEnvEnabled:               otelEnvEnabled,
 		spireEnabled:                 spireEnabled,
 	}
 }
@@ -358,6 +361,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED",
 			Value: "false",
+		}
+	}
+	if i.otelEnvEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED",
+			Value: "true",
 		}
 	}
 

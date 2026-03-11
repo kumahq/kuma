@@ -28,6 +28,10 @@ type MeshOpenTelemetryBackend struct {
 	// +kubebuilder:default=grpc
 	// +kubebuilder:validation:Enum=grpc;http
 	Protocol Protocol `json:"protocol"`
+	// Env controls whether standard OTEL exporter env vars participate in the
+	// final exporter config for this backend.
+	// +kubebuilder:validation:Optional
+	Env *EnvPolicy `json:"env,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=grpc;http
@@ -37,6 +41,46 @@ const (
 	ProtocolGRPC Protocol = "grpc"
 	ProtocolHTTP Protocol = "http"
 )
+
+// +kubebuilder:validation:Enum=Disabled;Optional;Required
+type EnvMode string
+
+const (
+	EnvModeDisabled EnvMode = "Disabled"
+	EnvModeOptional EnvMode = "Optional"
+	EnvModeRequired EnvMode = "Required"
+)
+
+// +kubebuilder:validation:Enum=ExplicitFirst;EnvFirst
+type EnvPrecedence string
+
+const (
+	EnvPrecedenceExplicitFirst EnvPrecedence = "ExplicitFirst"
+	EnvPrecedenceEnvFirst      EnvPrecedence = "EnvFirst"
+)
+
+const (
+	DefaultEnvMode              EnvMode       = EnvModeOptional
+	DefaultEnvPrecedence        EnvPrecedence = EnvPrecedenceEnvFirst
+	DefaultAllowSignalOverrides               = true
+)
+
+type EnvPolicy struct {
+	// Mode controls whether OTEL env vars are ignored, allowed, or required.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=Optional
+	Mode EnvMode `json:"mode,omitempty"`
+	// Precedence controls whether explicit backend fields or env vars win when
+	// both are present for the same field.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=EnvFirst
+	Precedence EnvPrecedence `json:"precedence,omitempty"`
+	// AllowSignalOverrides controls whether signal-specific OTEL env vars such
+	// as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared config.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=true
+	AllowSignalOverrides *bool `json:"allowSignalOverrides,omitempty"`
+}
 
 // NodeEndpoint connects to an OTel collector running as a DaemonSet
 // (hostPort mode). The node's host IP is used as the target address.
@@ -67,6 +111,27 @@ type Endpoint struct {
 
 type MeshOpenTelemetryBackendStatus struct {
 	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+}
+
+func (e *EnvPolicy) EffectiveMode() EnvMode {
+	if e == nil || e.Mode == "" {
+		return DefaultEnvMode
+	}
+	return e.Mode
+}
+
+func (e *EnvPolicy) EffectivePrecedence() EnvPrecedence {
+	if e == nil || e.Precedence == "" {
+		return DefaultEnvPrecedence
+	}
+	return e.Precedence
+}
+
+func (e *EnvPolicy) EffectiveAllowSignalOverrides() bool {
+	if e == nil || e.AllowSignalOverrides == nil {
+		return DefaultAllowSignalOverrides
+	}
+	return *e.AllowSignalOverrides
 }
 
 // Condition types
