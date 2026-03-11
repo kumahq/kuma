@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
@@ -81,21 +82,19 @@ func NewKDSSyncServiceServer(
 var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
 
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
-	ctx = user.Ctx(ctx, user.ControlPlane)
-	if err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh)); err != nil {
-		if !core_store.IsNotFound(err) || !createZoneOnConnect {
-			return err
-		}
-		log.Info("creating Zone", "name", name)
-		zone := &system.ZoneResource{
-			Spec: &system_proto.Zone{
-				Enabled: util_proto.Bool(true),
-			},
-		}
-		if err := resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh)); err != nil {
-			return err
-		}
+	zone := &system.ZoneResource{
+		Spec: &system_proto.Zone{
+			Enabled: util_proto.Bool(true),
+		},
 	}
+	err := resManager.Create(user.Ctx(ctx, user.ControlPlane), zone, core_store.CreateByKey(name, core_model.NoMesh))
+	if err != nil && store.IsAlreadyExists(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	log.Info("zone successfully created", "zone", name)
 	return nil
 }
 
