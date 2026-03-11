@@ -1,6 +1,8 @@
 # Zone Egress Address Storage for Endpoint Generation
 
 * Status: accepted
+ 
+Technical story: https://github.com/Kong/kong-mesh/issues/9259
 
 ## Context and Problem Statement
 
