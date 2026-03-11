@@ -210,6 +210,9 @@ apiServer:
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
 # Environment-specific configuration
 runtime:
+  # otelEnvEnabled is the control-plane authoritative global guard for OTEL exporter env-var support.
+  # When false, CP plans OTEL env reuse as disabled even if a dataplane advertises the capability.
+  otelEnvEnabled: false # ENV: KUMA_RUNTIME_OTEL_ENV_ENABLED
   # Kubernetes-specific configuration
   kubernetes:
     # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.

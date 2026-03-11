@@ -488,9 +488,13 @@ dataPlane:
     otelPipe: true
     # -- Enables OTEL exporter env-var support in `kuma-dp`.
     # When set to true, it sets the environment variable
+    # KUMA_RUNTIME_OTEL_ENV_ENABLED=true in the control plane to turn on the
+    # global platform guard, and also sets
     # KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_ENV_ENABLED=true in the control plane,
     # which causes the sidecar injector to add
     # KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED=true to each injected `kuma-sidecar` container.
+    # It also adds the same KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED=true environment variable
+    # to all ZoneIngress and ZoneEgress deployments.
     otelEnv: false
 
 ingress:

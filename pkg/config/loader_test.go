@@ -107,6 +107,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 			Expect(cfg.Store.Postgres.MaxConnectionIdleTime.Duration).To(Equal(99 * time.Second))
 
+			Expect(cfg.Runtime.OtelEnvEnabled).To(BeTrue())
+
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
 			Expect(cfg.Store.Cache.Enabled).To(BeFalse())
@@ -502,6 +504,7 @@ monitoringAssignmentServer:
   tlsMaxVersion: TLSv1_3
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
 runtime:
+  otelEnvEnabled: true
   universal:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
@@ -910,6 +913,7 @@ meshService:
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION":                                        "TLSv1_3",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES":                                      "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
+				"KUMA_RUNTIME_OTEL_ENV_ENABLED":                                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_DISALLOW_MULTIPLE_MESHES_PER_NAMESPACE":                           "true",
 				"KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS":                                                    "allowed-usr-1,allowed-usr-2",
