@@ -36,7 +36,7 @@ type ExporterTransport struct {
 	Timeout           time.Duration
 	Certificate       string
 	ClientCertificate string
-	ClientKey         string
+	ClientKey         string // #nosec G117 -- file path for client key, not an embedded secret
 }
 
 type exporterOverride struct {
@@ -49,7 +49,7 @@ type exporterOverride struct {
 	Timeout           *time.Duration
 	Certificate       *string
 	ClientCertificate *string
-	ClientKey         *string
+	ClientKey         *string // #nosec G117 -- file path for client key, not an embedded secret
 }
 
 func (c Config) ResolveBackend(backend core_xds.OtelPipeBackend) BackendRuntime {

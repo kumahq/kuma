@@ -41,19 +41,19 @@ type httpClientEntry struct {
 }
 
 type grpcConnKey struct {
-	Endpoint          string
-	UseTLS            bool
-	Certificate       string
-	ClientCertificate string
-	ClientKey         string
+	endpoint          string
+	useTLS            bool
+	certificate       string
+	clientCertificate string
+	clientKey         string
 }
 
 type httpClientKey struct {
-	Endpoint          string
-	UseTLS            bool
-	Certificate       string
-	ClientCertificate string
-	ClientKey         string
+	endpoint          string
+	useTLS            bool
+	certificate       string
+	clientCertificate string
+	clientKey         string
 }
 
 type senderFactory struct {
@@ -181,11 +181,11 @@ func (f *senderFactory) newMetricsExporter(runtime otelenv.SignalRuntime) (metri
 
 func (f *senderFactory) grpcConn(transport otelenv.ExporterTransport) (*grpc.ClientConn, error) {
 	key := grpcConnKey{
-		Endpoint:          transport.Endpoint,
-		UseTLS:            transport.UseTLS,
-		Certificate:       transport.Certificate,
-		ClientCertificate: transport.ClientCertificate,
-		ClientKey:         transport.ClientKey,
+		endpoint:          transport.Endpoint,
+		useTLS:            transport.UseTLS,
+		certificate:       transport.Certificate,
+		clientCertificate: transport.ClientCertificate,
+		clientKey:         transport.ClientKey,
 	}
 	for _, entry := range f.grpcConns {
 		if entry.key == key {
@@ -218,11 +218,11 @@ func (f *senderFactory) grpcConn(transport otelenv.ExporterTransport) (*grpc.Cli
 
 func (f *senderFactory) httpClient(transport otelenv.ExporterTransport) (*http.Client, error) {
 	key := httpClientKey{
-		Endpoint:          transport.Endpoint,
-		UseTLS:            transport.UseTLS,
-		Certificate:       transport.Certificate,
-		ClientCertificate: transport.ClientCertificate,
-		ClientKey:         transport.ClientKey,
+		endpoint:          transport.Endpoint,
+		useTLS:            transport.UseTLS,
+		certificate:       transport.Certificate,
+		clientCertificate: transport.ClientCertificate,
+		clientKey:         transport.ClientKey,
 	}
 	for _, entry := range f.httpClients {
 		if entry.key == key {
