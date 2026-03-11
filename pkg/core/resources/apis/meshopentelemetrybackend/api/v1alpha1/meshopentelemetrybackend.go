@@ -69,16 +69,14 @@ type EnvPolicy struct {
 	// Mode controls whether OTEL env vars are ignored, allowed, or required.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=Optional
-	Mode EnvMode `json:"mode,omitempty"`
+	Mode EnvMode `json:"mode"`
 	// Precedence controls whether explicit backend fields or env vars win when
 	// both are present for the same field.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=EnvFirst
-	Precedence EnvPrecedence `json:"precedence,omitempty"`
+	Precedence EnvPrecedence `json:"precedence"`
 	// AllowSignalOverrides controls whether signal-specific OTEL env vars such
 	// as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared config.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=true
 	AllowSignalOverrides *bool `json:"allowSignalOverrides,omitempty"`
 }
 
