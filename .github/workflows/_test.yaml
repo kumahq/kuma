@@ -79,13 +79,15 @@ jobs:
             .test_e2e = false
             | .test_e2e_env.include = []
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
+          FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
+          SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |-
-          BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'
-          if [[ "${{ inputs.FULL_MATRIX }}" != "true" ]]; then
-            BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
+          BASE_MATRIX_ALL="$BASE_MATRIX"
+          if [[ "$FULL_MATRIX" != "true" ]]; then
+            BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq -r "$OVERRIDE_JQ_CMD")
           fi
           # Skip e2e tests if the PR has the label "ci/skip-e2e-test" or "ci/skip-test"
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}" == "true" ]]; then
+          if [[ "$SKIP_E2E_TESTS" == "true" ]]; then
             BASE_MATRIX_ALL='{}'
           fi
 
