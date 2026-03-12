@@ -79,18 +79,31 @@ func NewKDSSyncServiceServer(
 var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
 
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {
+	ctx = user.Ctx(ctx, user.ControlPlane)
+
+	err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh))
+	if err != nil && !core_store.IsNotFound(err) {
+		return err
+	}
+	if err == nil {
+		// zone already exists, nothing to do
+		return nil
+	}
+
 	zone := &system.ZoneResource{
 		Spec: &system_proto.Zone{
 			Enabled: util_proto.Bool(true),
 		},
 	}
-	err := resManager.Create(user.Ctx(ctx, user.ControlPlane), zone, core_store.CreateByKey(name, core_model.NoMesh))
+	err = resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh))
 	if err != nil && core_store.IsAlreadyExists(err) {
+		// zone already created by another concurrent stream, nothing to do
 		return nil
 	}
 	if err != nil {
 		return err
 	}
+
 	log.Info("zone successfully created", "zone", name)
 	return nil
 }
