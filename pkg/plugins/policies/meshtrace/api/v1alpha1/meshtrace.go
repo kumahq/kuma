@@ -9,6 +9,7 @@ import (
 
 // MeshTrace enables distributed tracing to track requests as they flow through multiple services in the mesh. It supports exporting trace data to backends like Zipkin, Datadog, and OpenTelemetry, with configurable sampling rates and custom tags for detailed observability and debugging of service interactions.
 // +kuma:policy:short_name=mtr
+// +kuma:policy:has_status=true
 type MeshTrace struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -58,9 +59,15 @@ type Backend struct {
 // OpenTelemetry tracing backend configuration.
 type OpenTelemetryBackend struct {
 	// Address of OpenTelemetry collector.
+	//
+	// Deprecated: use BackendRef instead.
 	// +kubebuilder:example="otel-collector:4317"
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=""
 	Endpoint string `json:"endpoint"`
+	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 }
 
 // Zipkin tracing backend configuration.
@@ -150,3 +157,18 @@ type HeaderTag struct {
 	// included.
 	Default *string `json:"default,omitempty"`
 }
+
+type MeshTraceStatus struct {
+	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+}
+
+// Condition types
+const (
+	BackendRefsResolvedCondition string = "BackendRefsResolved"
+)
+
+// Condition reasons
+const (
+	AllBackendRefsResolvedReason string = "AllBackendRefsResolved"
+	UnresolvedBackendRefsReason  string = "UnresolvedBackendRefs"
+)

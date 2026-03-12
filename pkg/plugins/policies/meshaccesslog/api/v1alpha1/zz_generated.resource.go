@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -80,13 +79,15 @@ const (
 var _ model.Resource = &MeshAccessLogResource{}
 
 type MeshAccessLogResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshAccessLog
+	Meta   model.ResourceMeta
+	Spec   *MeshAccessLog
+	Status *MeshAccessLogStatus
 }
 
 func NewMeshAccessLogResource() *MeshAccessLogResource {
 	return &MeshAccessLogResource{
-		Spec: &MeshAccessLog{},
+		Spec:   &MeshAccessLog{},
+		Status: &MeshAccessLogStatus{},
 	}
 }
 
@@ -117,11 +118,21 @@ func (t *MeshAccessLogResource) SetSpec(spec model.ResourceSpec) error {
 }
 
 func (t *MeshAccessLogResource) GetStatus() model.ResourceStatus {
-	return nil
+	return t.Status
 }
 
-func (t *MeshAccessLogResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
+func (t *MeshAccessLogResource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*MeshAccessLogStatus)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", status)
+	} else {
+		if protoType == nil {
+			t.Status = &MeshAccessLogStatus{}
+		} else {
+			t.Status = protoType
+		}
+		return nil
+	}
 }
 
 func (t *MeshAccessLogResource) Descriptor() model.ResourceTypeDescriptor {
@@ -196,7 +207,7 @@ var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,
 	HasRulesTargetRef:            true,
-	HasStatus:                    false,
+	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mal",
 	IsFromAsRules:                true,

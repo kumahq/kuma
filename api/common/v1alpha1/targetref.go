@@ -149,6 +149,24 @@ func IncludesGateways(ref TargetRef) bool {
 	return isGateway || isGatewayCompatible || isMeshHTTPRoute
 }
 
+// +kubebuilder:validation:Enum=MeshOpenTelemetryBackend
+type BackendResourceKind string
+
+const (
+	BackendResourceMeshOpenTelemetryBackend BackendResourceKind = "MeshOpenTelemetryBackend"
+)
+
+// BackendResourceRef is a reference to a backend resource by name within
+// the same mesh. Used by observability policies to point at a
+// MeshOpenTelemetryBackend.
+type BackendResourceRef struct {
+	// Kind of the backend resource.
+	Kind BackendResourceKind `json:"kind"`
+	// Name of the referenced resource.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
 // BackendRef defines where to forward traffic.
 type BackendRef struct {
 	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107

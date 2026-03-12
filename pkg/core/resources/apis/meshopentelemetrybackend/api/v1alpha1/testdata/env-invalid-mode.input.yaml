@@ -1,0 +1,6 @@
+endpoint:
+  address: otel-collector.observability
+  port: 4317
+protocol: grpc
+env:
+  mode: Sometimes

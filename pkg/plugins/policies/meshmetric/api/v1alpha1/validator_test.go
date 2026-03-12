@@ -46,6 +46,21 @@ default:
       openTelemetry:
         endpoint: otel-collector:4778
 `),
+		Entry("openTelemetry with backendRef", `
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: my-otel
+`),
 	)
 
 	DescribeErrorCases(
@@ -199,6 +214,67 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         endpoint: "http://endpoint:8023"
+`),
+		ErrorCase(
+			"openTelemetry neither endpoint nor backendRef",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry",
+				Message: "either endpoint or backendRef must be set",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry: {}
+`),
+		ErrorCase(
+			"openTelemetry both endpoint and backendRef",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry",
+				Message: "endpoint and backendRef are mutually exclusive",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: otel-collector:4778
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: my-otel
+`),
+		ErrorCase(
+			"openTelemetry backendRef empty name",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef.name",
+				Message: "must not be empty",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: ""
 `),
 		ErrorCase(
 			"undefined openTelemetry backend when type is OpenTelemetry",

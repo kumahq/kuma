@@ -172,11 +172,7 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 			break
 		}
 
-		if otelBackend.Endpoint == "" {
-			verr.AddViolationAt(otelPath.Field("endpoint"), validators.MustNotBeEmpty)
-		} else if strings.ContainsAny(otelBackend.Endpoint, "/?#") {
-			verr.AddViolationAt(otelPath.Field("endpoint"), "must be in host:port format, not a URL")
-		}
+		verr.AddErrorAt(otelPath, validateOtelBackendRef(otelBackend.Endpoint, otelBackend.BackendRef))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
@@ -196,5 +192,29 @@ func validateSampling(sampling intstr.IntOrString) validators.ValidationError {
 		verr.AddViolation("", "must be between 0 and 100")
 	}
 
+	return verr
+}
+
+func validateOtelBackendRef(endpoint string, backendRef *common_api.BackendResourceRef) validators.ValidationError {
+	var verr validators.ValidationError
+	if endpoint != "" && backendRef != nil {
+		verr.AddViolation("", "endpoint and backendRef are mutually exclusive")
+		return verr
+	}
+	if endpoint == "" && backendRef == nil {
+		verr.AddViolation("", "either endpoint or backendRef must be set")
+		return verr
+	}
+	if backendRef != nil {
+		if backendRef.Kind != common_api.BackendResourceMeshOpenTelemetryBackend {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"),
+				validators.MustBeOneOf(string(backendRef.Kind), string(common_api.BackendResourceMeshOpenTelemetryBackend)))
+		}
+		if backendRef.Name == "" {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("name"), validators.MustNotBeEmpty)
+		}
+	} else if strings.ContainsAny(endpoint, "/?#") {
+		verr.AddViolationAt(validators.RootedAt("endpoint"), "must be in host:port format, not a URL")
+	}
 	return verr
 }

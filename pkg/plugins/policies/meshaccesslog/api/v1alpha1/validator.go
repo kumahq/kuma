@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -28,7 +29,7 @@ func (r *MeshAccessLogResource) validate() error {
 	if r.Spec.From != nil {
 		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	}
-	if r.Spec.From != nil {
+	if r.Spec.Rules != nil {
 		verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	}
 	return verr.OrNil()
@@ -154,6 +155,7 @@ func validateBackend(backend Backend) validators.ValidationError {
 			verr.AddViolationAt(root, validators.MustBeDefined)
 			break
 		}
+		verr.AddErrorAt(root, validateOtelBackendRef(backend.OpenTelemetry.Endpoint, backend.OpenTelemetry.BackendRef))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
@@ -200,5 +202,29 @@ func validateFormat(format Format) validators.ValidationError {
 		panic(fmt.Sprintf("unknown backend type %v", format.Type))
 	}
 
+	return verr
+}
+
+func validateOtelBackendRef(endpoint string, backendRef *common_api.BackendResourceRef) validators.ValidationError {
+	var verr validators.ValidationError
+	if endpoint != "" && backendRef != nil {
+		verr.AddViolation("", "endpoint and backendRef are mutually exclusive")
+		return verr
+	}
+	if endpoint == "" && backendRef == nil {
+		verr.AddViolation("", "either endpoint or backendRef must be set")
+		return verr
+	}
+	if backendRef != nil {
+		if backendRef.Kind != common_api.BackendResourceMeshOpenTelemetryBackend {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"),
+				validators.MustBeOneOf(string(backendRef.Kind), string(common_api.BackendResourceMeshOpenTelemetryBackend)))
+		}
+		if backendRef.Name == "" {
+			verr.AddViolationAt(validators.RootedAt("backendRef").Field("name"), validators.MustNotBeEmpty)
+		}
+	} else if strings.ContainsAny(endpoint, "/?#") {
+		verr.AddViolationAt(validators.RootedAt("endpoint"), "must be in host:port format, not a URL")
+	}
 	return verr
 }

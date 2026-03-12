@@ -32,7 +32,9 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		statusJSON = b
+		if string(b) != "{}" && string(b) != "null" {
+			statusJSON = b
+		}
 	}
 
 	var kriStr string

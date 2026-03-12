@@ -8,17 +8,19 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{
-	"hostnamegenerators":    {InitFn: hostnamegenerator.InitPlugin, Initialized: false},
-	"meshexternalservices":  {InitFn: meshexternalservice.InitPlugin, Initialized: false},
-	"meshidentities":        {InitFn: meshidentity.InitPlugin, Initialized: false},
-	"meshmultizoneservices": {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
-	"meshservices":          {InitFn: meshservice.InitPlugin, Initialized: false},
-	"meshtrusts":            {InitFn: meshtrust.InitPlugin, Initialized: false},
-	"workloads":             {InitFn: workload.InitPlugin, Initialized: false},
+	"hostnamegenerators":        {InitFn: hostnamegenerator.InitPlugin, Initialized: false},
+	"meshexternalservices":      {InitFn: meshexternalservice.InitPlugin, Initialized: false},
+	"meshidentities":            {InitFn: meshidentity.InitPlugin, Initialized: false},
+	"meshmultizoneservices":     {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
+	"meshopentelemetrybackends": {InitFn: meshopentelemetrybackend.InitPlugin, Initialized: false},
+	"meshservices":              {InitFn: meshservice.InitPlugin, Initialized: false},
+	"meshtrusts":                {InitFn: meshtrust.InitPlugin, Initialized: false},
+	"workloads":                 {InitFn: workload.InitPlugin, Initialized: false},
 }

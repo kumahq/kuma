@@ -367,7 +367,7 @@ func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (m
 
 		pairs := strings.Split(value, ";")
 		for _, pair := range pairs {
-			kvSplit := strings.Split(pair, "=")
+			kvSplit := strings.SplitN(pair, "=", 2)
 			if len(kvSplit) != 2 {
 				return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
 			}

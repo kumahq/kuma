@@ -4,7 +4,6 @@
 package v1alpha1
 
 import (
-	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +27,9 @@ type MeshTrace struct {
 	// Spec is the specification of the Kuma MeshTrace resource.
 	// +kubebuilder:validation:Optional
 	Spec *policy.MeshTrace `json:"spec,omitempty"`
+	// Status is the current status of the Kuma MeshTrace resource.
+	// +kubebuilder:validation:Optional
+	Status *policy.MeshTraceStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -79,11 +81,21 @@ func (cb *MeshTrace) SetSpec(spec core_model.ResourceSpec) {
 }
 
 func (cb *MeshTrace) GetStatus() (core_model.ResourceStatus, error) {
-	return nil, nil
+	return cb.Status, nil
 }
 
 func (cb *MeshTrace) SetStatus(status core_model.ResourceStatus) error {
-	return errors.New("status not supported")
+	if status == nil {
+		cb.Status = nil
+		return nil
+	}
+
+	if _, ok := status.(*policy.MeshTraceStatus); !ok {
+		panic(fmt.Sprintf("unexpected message type %T", status))
+	}
+
+	cb.Status = status.(*policy.MeshTraceStatus)
+	return nil
 }
 
 func (cb *MeshTrace) Scope() model.Scope {

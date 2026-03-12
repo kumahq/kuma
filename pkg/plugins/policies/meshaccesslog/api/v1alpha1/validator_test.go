@@ -91,6 +91,21 @@ to:
           file:
             path: '/tmp/logs.txt'
 `),
+			Entry("openTelemetry with backendRef", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              name: my-otel
+`),
 		)
 
 		type testCase struct {
@@ -439,6 +454,68 @@ violations:
   message: must be defined
 - field: spec.from[0].default.backends[1].tcp.format.json
   message: must be defined`,
+			}),
+			Entry("openTelemetry neither endpoint nor backendRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: ""
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry
+    message: either endpoint or backendRef must be set`,
+			}),
+			Entry("openTelemetry both endpoint and backendRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              name: my-otel
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry
+    message: endpoint and backendRef are mutually exclusive`,
+			}),
+			Entry("openTelemetry backendRef empty name", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              name: ""
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.backendRef.name
+    message: must not be empty`,
 			}),
 			Entry("MeshGateway and invalid to kind", testCase{
 				inputYaml: `

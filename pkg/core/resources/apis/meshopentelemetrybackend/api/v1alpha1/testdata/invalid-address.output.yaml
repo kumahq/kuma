@@ -1,0 +1,3 @@
+violations:
+- field: spec.endpoint.address
+  message: address has to be a valid IP or hostname

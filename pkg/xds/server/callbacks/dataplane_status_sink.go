@@ -21,6 +21,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/events"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 )
 
@@ -41,6 +42,7 @@ type DataplaneInsightStore interface {
 		dataplaneID core_model.ResourceKey,
 		subscription *mesh_proto.DiscoverySubscription,
 		secretsInfo *secrets.Info,
+		otel *mesh_proto.DataplaneInsight_OpenTelemetry,
 	) error
 }
 
@@ -48,6 +50,7 @@ func NewDataplaneInsightSink(
 	xdsMetadata *structpb.Struct,
 	accessor SubscriptionStatusAccessor,
 	secrets secrets.Secrets,
+	otelStatusCache *otelstatus.Cache,
 	newTicker func() *time.Ticker,
 	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
@@ -80,6 +83,7 @@ func NewDataplaneInsightSink(
 		flushBackoff:     flushBackoff,
 		store:            store,
 		xdsMetadata:      xdsMetadata,
+		otelStatusCache:  otelStatusCache,
 		eventFactory:     eventFactory,
 		roResManager:     roResManager,
 	}
@@ -97,6 +101,7 @@ type dataplaneInsightSink struct {
 	store            DataplaneInsightStore
 	flushBackoff     time.Duration
 	xdsMetadata      *structpb.Struct
+	otelStatusCache  *otelstatus.Cache
 	eventFactory     events.ListenerFactory
 	roResManager     manager.ReadOnlyResourceManager
 }
@@ -110,6 +115,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
 	var lastStoredSecretsInfo *secrets.Info
+	var lastStoredOtel *mesh_proto.DataplaneInsight_OpenTelemetry
 	var lastEvent *events.WorkloadIdentityChangedEvent
 	var generation uint32
 
@@ -130,6 +136,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	flush := func(closing bool, event *events.WorkloadIdentityChangedEvent) {
 		ctx := context.TODO()
 		dataplaneID, currentState := s.accessor.GetStatus()
+		otel := s.otelStatusCache.Get(dataplaneID)
 		var secretsInfo *secrets.Info
 		switch {
 		case event != nil && event.Operation == events.Delete:
@@ -158,13 +165,15 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		}
 		currentState.Generation = generation
 
-		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
+		if proto.Equal(currentState, lastStoredState) &&
+			secretsInfo == lastStoredSecretsInfo &&
+			proto.Equal(otel, lastStoredOtel) {
 			// We compare secretsInfo and lastStoredSecretsInfo as pointers. It makes sense to short-circuit if flush() runs
 			// on tick without events and we're picking exactly the same secreetsInfo structure from the cachedCerts cache.
 			return
 		}
 
-		if err := s.store.Upsert(ctx, s.xdsMetadata, s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
+		if err := s.store.Upsert(ctx, s.xdsMetadata, s.dataplaneType, dataplaneID, currentState, secretsInfo, otel); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -187,6 +196,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneID", dataplaneID, "subscription", currentState)
 			lastStoredState = currentState
 			lastStoredSecretsInfo = secretsInfo
+			lastStoredOtel = otel
 		}
 	}
 
@@ -207,6 +217,8 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			flush(false, &workloadIdentity)
 		case <-stop:
 			flush(true, lastEvent)
+			dataplaneID, _ := s.accessor.GetStatus()
+			s.otelStatusCache.Set(dataplaneID, nil)
 			return
 		}
 	}
@@ -250,6 +262,7 @@ func (s *dataplaneInsightStore) Upsert(
 	dataplaneID core_model.ResourceKey,
 	subscription *mesh_proto.DiscoverySubscription,
 	secretsInfo *secrets.Info,
+	otel *mesh_proto.DataplaneInsight_OpenTelemetry,
 ) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
@@ -272,6 +285,7 @@ func (s *dataplaneInsightStore) Upsert(
 			}
 
 			insight.Spec.Metadata = xdsMetadata
+			insight.Spec.OpenTelemetry = otel
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil ||

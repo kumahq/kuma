@@ -160,6 +160,7 @@ rules:
       - meshexternalservices
       - meshidentities
       - meshmultizoneservices
+      - meshopentelemetrybackends
       - meshservices
       - meshtrusts
       - workloads
@@ -689,6 +690,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - workloads
@@ -753,6 +755,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - workloads
@@ -898,6 +901,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - workloads

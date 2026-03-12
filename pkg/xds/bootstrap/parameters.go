@@ -4,6 +4,7 @@ import (
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
@@ -82,6 +83,7 @@ type configParameters struct {
 	Version              *mesh_proto.Version
 	HdsEnabled           bool
 	DynamicMetadata      map[string]string
+	OtelEnvInventory     *core_xds.OtelBootstrapInventory
 	DNSPort              uint32
 	ProxyType            string
 	Features             xds_types.Features

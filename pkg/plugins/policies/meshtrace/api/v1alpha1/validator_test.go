@@ -103,6 +103,18 @@ default:
         url: http://intake.datadoghq.eu:8126
         splitService: true
 `),
+			Entry("with opentelemetry backendRef", `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: my-otel
+`),
 		)
 
 		type testCase struct {
@@ -392,7 +404,7 @@ violations:
   - field: spec.default.backends[0].openTelemetry
     message: must be defined`,
 			}),
-			Entry("openTelemetry endpoint must not be empty", testCase{
+			Entry("openTelemetry neither endpoint nor backendRef", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -405,8 +417,8 @@ default:
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must not be empty`,
+  - field: spec.default.backends[0].openTelemetry
+    message: either endpoint or backendRef must be set`,
 			}),
 			Entry("openTelemetry endpoint must not be a URL", testCase{
 				inputYaml: `
@@ -439,6 +451,43 @@ default:
 violations:
   - field: spec.default.backends[0].openTelemetry.endpoint
     message: must be in host:port format, not a URL`,
+			}),
+			Entry("openTelemetry both endpoint and backendRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: otel-collector:4317
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: my-otel
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry
+    message: endpoint and backendRef are mutually exclusive`,
+			}),
+			Entry("openTelemetry backendRef empty name", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          name: ""
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry.backendRef.name
+    message: must not be empty`,
 			}),
 			Entry("gateway listener tags not allowed", testCase{
 				inputYaml: `
