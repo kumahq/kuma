@@ -19,7 +19,7 @@ The design has to answer these questions:
 3. How do we support shared OTEL env vars and per-signal OTEL env vars in one model?
 4. How do we keep headers, client keys, and similar values local to `kuma-dp`?
 5. How do we make this work the same way on Kubernetes and Universal?
-6. How do we let policy say whether env vars are allowed, required, or ignored?
+6. How do we let policy say whether env vars are allowed or ignored?
 7. How do we show enough of the final result in status without making users inspect raw xDS?
 
 ### User stories
@@ -83,7 +83,18 @@ This is the selected option.
 
 ### Ownership split
 
-`kuma-dp` reads OTEL env vars, keeps raw values local, and builds the final outbound exporter clients. It owns all OTLP exporter fields (endpoint, protocol, headers, timeout, compression, certificates, client key) in both shared and per-signal forms. Inside the env layer, standard OTEL precedence applies: signal-specific env vars override shared ones.
+`kuma-dp` reads OTEL env vars, keeps raw values local, and builds the final outbound exporter clients. It owns all OTLP exporter fields in both shared and per-signal forms. The recognized env vars follow the [OpenTelemetry SDK specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/):
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_{SIGNAL}_ENDPOINT`
+- `OTEL_EXPORTER_OTLP_PROTOCOL` / `OTEL_EXPORTER_OTLP_{SIGNAL}_PROTOCOL`
+- `OTEL_EXPORTER_OTLP_HEADERS` / `OTEL_EXPORTER_OTLP_{SIGNAL}_HEADERS`
+- `OTEL_EXPORTER_OTLP_TIMEOUT` / `OTEL_EXPORTER_OTLP_{SIGNAL}_TIMEOUT`
+- `OTEL_EXPORTER_OTLP_COMPRESSION` / `OTEL_EXPORTER_OTLP_{SIGNAL}_COMPRESSION`
+- `OTEL_EXPORTER_OTLP_CERTIFICATE` / `OTEL_EXPORTER_OTLP_{SIGNAL}_CERTIFICATE`
+- `OTEL_EXPORTER_OTLP_CLIENT_KEY` / `OTEL_EXPORTER_OTLP_{SIGNAL}_CLIENT_KEY`
+- `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` / `OTEL_EXPORTER_OTLP_{SIGNAL}_CLIENT_CERTIFICATE`
+
+Where `{SIGNAL}` is `TRACES`, `LOGS`, or `METRICS`. Inside the env layer, standard OTEL precedence applies: signal-specific env vars override shared ones.
 
 The control plane resolves policies, reads the dataplane's OTEL inventory from bootstrap, applies env-var policy, detects blocked/missing/ambiguous cases, sends the `/otel` runtime plan, and writes status.
 
@@ -142,12 +153,15 @@ Example bootstrap inventory:
     },
     "metrics": {
       "overrideKinds": []
-    }
+    },
+    "validationErrors": []
   }
 }
 ```
 
 This means `kuma-dp` has shared OTEL config in env vars (endpoint, protocol, and headers are all present) and only traces have a signal-specific override. The control plane can derive the protocol and auth mode from these flags. The real values stay local to `kuma-dp`.
+
+When `pipeEnabled` is `false`, the control plane skips OTEL resolution for this dataplane entirely. No `/otel` runtime plan is generated and no OTEL-related status is written.
 
 ### Runtime plan on `/otel`
 
@@ -206,7 +220,9 @@ spec:
     mode: Optional
 ```
 
-The `env` block is optional. When omitted, Kuma defaults to `mode: Optional`. Values: `Disabled` (ignore env vars for this backend) or `Optional` (use env vars to fill gaps in explicit config).
+The `env` block is optional. When omitted, Kuma defaults to `mode: Optional`. The default is `Optional` because the main use case for this MADR is reusing env vars that are already present - if the default were `Disabled`, every operator who wants env-var support would have to set it explicitly, which defeats the purpose. Operators who do not want env-var behavior can set `Disabled` per backend.
+
+Values: `Disabled` (ignore env vars for this backend) or `Optional` (use env vars to fill gaps in explicit config).
 
 When `mode` is `Optional`, `kuma-dp` resolves each field by picking the first available value:
 
@@ -282,7 +298,11 @@ That is the common per-signal override case. The local socket stays the same. On
 
 ### Divergence rules
 
-If signals point to different `MeshOpenTelemetryBackend` resources, the control plane generates different backend plans and may change local Envoy wiring (different sockets). If signals diverge inside one backend (per-signal env vars or explicit config), the control plane keeps one socket and `kuma-dp` builds separate outbound clients. The central rule: the control plane only changes Envoy when the backend or socket mapping changes. Remote collector differences inside one backend are a `kuma-dp` concern.
+Three rules govern divergence:
+
+- If signals point to different `MeshOpenTelemetryBackend` resources, the control plane generates different backend plans and may change local Envoy wiring (different sockets).
+- If signals diverge inside one backend (per-signal env vars or explicit config), the control plane keeps one socket and `kuma-dp` builds separate outbound clients.
+- The control plane only changes Envoy when the backend or socket mapping changes. Remote collector differences inside one backend are a `kuma-dp` concern.
 
 ### Ambiguity rules
 
@@ -333,7 +353,7 @@ Status is not updated on env-var changes because the CP does not see those until
 - blocked reasons such as `EnvDisabledByPolicy` or `MultipleBackendsForSignal`
 - missing fields such as `endpoint`, `protocol`, `headers`, or `client_key`
 
-Example status:
+Example status - env vars fill the gaps for traces and logs, but metrics has no endpoint:
 
 ```yaml
 backend: otel-main
@@ -342,12 +362,10 @@ signals:
     envAllowed: true
     envInputPresent: true
     state: ready
-    blockedReasons: []
   logs:
     envAllowed: true
     envInputPresent: true
     state: ready
-    blockedReasons: []
   metrics:
     envAllowed: true
     envInputPresent: false
@@ -356,7 +374,37 @@ signals:
       - endpoint
 ```
 
-This tells the operator that traces and logs have usable OTEL env input, while metrics are still missing the endpoint they need.
+Example status - env vars are disabled by policy but the backend has no explicit endpoint:
+
+```yaml
+backend: otel-locked
+signals:
+  traces:
+    envAllowed: false
+    envInputPresent: true
+    state: blocked
+    blockedReasons:
+      - EnvDisabledByPolicy
+    missingFields:
+      - endpoint
+```
+
+The operator set `env.mode: Disabled` on this backend. The dataplane has OTEL env vars, but policy blocks their use. Because the backend has no explicit endpoint either, the signal is blocked.
+
+Example status - two backends compete for traces:
+
+```yaml
+backend: otel-primary
+signals:
+  traces:
+    envAllowed: true
+    envInputPresent: true
+    state: ambiguous
+    blockedReasons:
+      - MultipleBackendsForSignal
+```
+
+Two `MeshOpenTelemetryBackend` resources both claim traces for this dataplane and both allow env vars. The control plane cannot tell which backend the process-global env vars belong to, so it marks the signal as ambiguous and refuses to use them.
 
 ### Kubernetes and Universal
 
