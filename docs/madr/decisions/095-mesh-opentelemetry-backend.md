@@ -346,7 +346,6 @@ metadata:
   namespace: kuma-system
   labels:
     kuma.io/mesh: default
-spec: {}
 # Effective defaults: HOST_IP:4317 on Kubernetes, otherwise 127.0.0.1:4317, protocol grpc, empty path.
 ```
 
