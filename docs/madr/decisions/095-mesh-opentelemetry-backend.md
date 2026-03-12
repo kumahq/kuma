@@ -60,6 +60,8 @@ spec:
 
 `endpoint` is optional. If it is omitted, the backend uses the node-local collector flow. The control plane defaults `port` to `4317` and `path` to empty. `kuma-dp` resolves the missing address at runtime. On Kubernetes, it uses the injected `HOST_IP`. On other runtimes, it falls back to `127.0.0.1`.
 
+This default is still explicit. Kuma only uses it when the operator creates a MeshOpenTelemetryBackend and points a policy at it. There is no hidden mesh-wide collector. If the operator already has a stable Service or DNS name, they should set `endpoint.address` and skip the default path. The empty backend exists for the node-local collector case where a second backend shape would add complexity without adding control.
+
 No `type` discriminator - the resource name itself is the type. If other telemetry backend types are needed later (Zipkin, Datadog), they become separate resources (`MeshZipkinBackend`, etc.). In this design, `backendRef.kind` is required and must be `MeshOpenTelemetryBackend`, `backendRef.name` is required, and this MADR does not define defaulting for `kind`. The admission webhook enforces that contract and rejects any `backendRef` where `kind` does not match the enclosing OTel backend block.
 
 If `endpoint` is present, each field is still optional. `address` uses the same runtime defaulting rule. The control plane defaults `port` to `4317` and `path` to empty. This covers DaemonSet plus `hostPort` deployments, empty backends, and partially specified backends without adding a second field with different rules.
@@ -67,6 +69,8 @@ If `endpoint` is present, each field is still optional. `address` uses the same 
 The `endpoint` field stays structured instead of becoming a raw string so Kuma can validate and default each component separately. Today MeshMetric and MeshAccessLog split the endpoint string on `:`, and MeshTrace has an unreleased URL parser for HTTP endpoints that is being removed. A structured format avoids those inconsistencies.
 
 `HOST_IP` is a Kuma runtime input on Kubernetes, not a standard OpenTelemetry environment variable. In OpenTelemetry, host identity is usually modeled with resource detectors or `OTEL_RESOURCE_ATTRIBUTES`, for example `host.ip` or `host.name`. Those are resource attributes, not exporter endpoint configuration. This design does not read the default backend address from OpenTelemetry environment variables.
+
+The platform split is intentional. On Kubernetes, `HOST_IP` comes from the injector through the Downward API `status.hostIP`, which matches the common DaemonSet plus `hostPort` deployment model. On Universal and VMs, there is no equivalent injection, so the same default path falls back to `127.0.0.1`. That fallback only makes sense when the collector is local to the same host. If the collector is remote, the operator should set `endpoint.address` explicitly.
 
 The `protocol` field selects gRPC or HTTP transport. Envoy's OTel extensions use separate `grpc_service` and `http_service` fields in their protobuf config - the CP needs to know which one to generate. Port-based inference (4317 = gRPC, 4318 = HTTP) would break for non-standard setups, so an explicit field is safer. Default is `grpc` for backward compatibility with existing Kuma behavior.
 
@@ -184,7 +188,7 @@ type OpenTelemetryBackend struct {
    - If `spec.endpoint.path` is omitted: use an empty path.
 3. Inline `endpoint` path: inline endpoints still bypass the pipe. The CP generates direct Envoy OTel resources for them, same as today.
 4. `backendRef` path - unified kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, the policy plugins add the resolved backend to a shared `OtelPipeBackends` accumulator. During xDS generation for that proxy, the policy generator writes a single `/otel` dynconf route from the deduplicated backend list. kuma-dp watches `/otel` and starts one receiver per backend socket. Socket identity is per backend, not global: if a proxy resolves two different backends, kuma-dp opens two local Unix sockets. Each receiver forwards traces, logs, and metrics to either the explicit backend endpoint or the local default address that `kuma-dp` resolves. The port and path come from the `/otel` plan. Trace and access log still point Envoy at the local Unix socket for that backend through normal xDS resources.
-5. MeshMetric path: MeshMetric still keeps its `/meshmetric` dynconf route, but only for scrape-side config such as applications, sidecar stats settings, extra labels, and Prometheus state. OTEL backend runtime for metrics, including socket selection and OTEL export `refreshInterval`, comes from `/otel` together with traces and logs. Inline `endpoint` backends stay on the direct Envoy path and do not use `/otel`.
+5. MeshMetric path: MeshMetric still keeps its `/meshmetric` dynconf route, but only for scrape-side config such as applications, sidecar stats settings, extra labels, and Prometheus state. OTEL backend runtime for metrics, including socket selection and OTEL export `refreshInterval`, comes from `/otel` together with traces and logs. In short, `/meshmetric` answers "what should I scrape" and `/otel` answers "where and how should I export". Inline `endpoint` backends stay on the direct Envoy path and do not use `/otel`.
 
 #### Runtime flow for `backendRef`
 
@@ -226,7 +230,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `IsPolicy` | false | it's a resource, not a policy |
 | `Scope` | Mesh |  |
-| `HasStatus` | true | the status updater sets `Referenced` or `NotReferenced` on the backend while it exists; unresolved refs surface on the referencing policies |
+| `HasStatus` | true | the status updater sets `Referenced` or `NotReferenced` on the backend while it exists; unresolved refs surface on the referencing policies; an empty backend is still valid, so the absence of `endpoint.address` is not a warning by itself |
 | `KDSFlags` | <code>GlobalToZonesFlag &#124; ZoneToGlobalFlag</code> | same as MeshExternalService |
 | `ShortName` | `motb` |  |
 | `IsDestination` | false |  |
@@ -332,7 +336,7 @@ spec:
 # Each zone's DNS resolves the address to its local collector.
 ```
 
-When the collector runs as a DaemonSet with `hostPort` and no Service, the default backend shape is enough. An empty backend means "use the node-local collector on the default OTLP gRPC port."
+When the collector runs as a DaemonSet with `hostPort` and no Service, the default backend shape is enough. An empty backend means "use the node-local collector on the default OTLP gRPC port." If the deployment already exposes a stable Service name, use that Service in `endpoint.address` instead. The default path is for the node-local case, not a replacement for explicit Service-based routing.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -567,7 +571,7 @@ The initial implementation should cover:
 3. Validation: exactly one of `endpoint` or `backendRef` on each policy backend (mutual exclusivity enforced at admission); non-empty `path` rejected when `protocol: grpc`; `endpoint.port` must be in range when set; omitted endpoint fields use defaults
 4. Resolution in each policy's `Apply()`: use `endpoint.address` when it is set. If `endpoint.address` is omitted, leave the address empty in the `/otel` plan and let `kuma-dp` resolve the node-local default address at runtime. If `endpoint.port` is omitted, default it to `4317`. If `endpoint.path` is omitted, use an empty path.
 5. On Kubernetes, the sidecar injector always injects `HOST_IP` into every `kuma-dp` container, unconditionally, using the Downward API `status.hostIP`. `kuma-dp` uses it locally for default node-local backend resolution. On other runtimes, the same default flow falls back to `127.0.0.1`. There is no need to send `HOST_IP` through bootstrap metadata, and this default does not depend on OpenTelemetry environment variables.
-6. A status updater component sets `Referenced` or `NotReferenced` on MeshOpenTelemetryBackend resources and sets resolved or unresolved `backendRef` conditions on MeshMetric, MeshTrace, and MeshAccessLog (user story 5). An empty MeshOpenTelemetryBackend is still a valid resolved backend because the defaults are intentional.
+6. A status updater component sets `Referenced` or `NotReferenced` on MeshOpenTelemetryBackend resources and sets resolved or unresolved `backendRef` conditions on MeshMetric, MeshTrace, and MeshAccessLog (user story 5). An empty MeshOpenTelemetryBackend is still a valid resolved backend because the defaults are intentional. There should be no warning just because `endpoint.address` is omitted. To debug that path, the operator can see it directly in the resource shape and in the generated `/otel` plan, where the address stays empty while port and path are already defaulted.
 7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
 8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. This is the only OTEL backend runtime contract for traces, logs, and metrics. The metrics signal plan in `/otel` also carries OTEL export `refreshInterval`. kuma-dp runs one local Unix socket and one receiver per backend, then forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path.
 9. `/meshmetric` stays as a scrape-side contract only. It should carry applications, sidecar settings, extra labels, and Prometheus-related state, but not OTEL backend endpoint details or OTEL export `refreshInterval`.
