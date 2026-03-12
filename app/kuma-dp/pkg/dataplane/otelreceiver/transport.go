@@ -334,7 +334,7 @@ func withExportTimeout(ctx context.Context, timeout time.Duration) (context.Cont
 	if timeout <= 0 {
 		return ctx, func() {}
 	}
-	return context.WithTimeout(ctx, timeout)
+	return context.WithTimeout(ctx, timeout) //nolint:gosec // G118 cancel is returned to caller
 }
 
 func withOutgoingHeaders(ctx context.Context, headers map[string]string) context.Context {
@@ -394,7 +394,7 @@ func postOTLPHTTP(
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 
-	resp, err := client.Do(req) //nolint:gosec // URL is built from internal config, not user input
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

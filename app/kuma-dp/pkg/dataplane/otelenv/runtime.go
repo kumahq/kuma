@@ -2,7 +2,9 @@ package otelenv
 
 import (
 	"maps"
+	"net"
 	"net/url"
+	"os"
 	"path"
 	"slices"
 	"strconv"
@@ -130,7 +132,7 @@ func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSig
 		HTTPPath: path.Join("/", backend.Path, "v1", string(signal)),
 		Transport: ExporterTransport{
 			Protocol: protocol,
-			Endpoint: backend.Endpoint,
+			Endpoint: resolveEndpointAddress(backend.Endpoint),
 			UseTLS:   boolPtr(backend.UseHTTPS),
 		},
 	}
@@ -139,6 +141,21 @@ func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSig
 	}
 
 	return runtime
+}
+
+// resolveEndpointAddress fills in the host portion of the endpoint when the CP
+// sent an empty host (e.g. ":4317"). Uses HOST_IP env var, falling back to
+// 127.0.0.1.
+func resolveEndpointAddress(endpoint string) string {
+	host, port, err := net.SplitHostPort(endpoint)
+	if err != nil || host != "" {
+		return endpoint
+	}
+	hostIP := os.Getenv("HOST_IP")
+	if hostIP == "" {
+		hostIP = "127.0.0.1"
+	}
+	return net.JoinHostPort(hostIP, port)
 }
 
 func pickProtocol(current core_xds.OtelProtocol, field FieldValue, preferEnv bool) core_xds.OtelProtocol {

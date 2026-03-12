@@ -6747,8 +6747,10 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: MeshOpenTelemetryBackend defines a shared OTel collector endpoint
-          for observability policies.
+        description: |-
+          MeshOpenTelemetryBackend defines a shared OTel collector endpoint for observability policies.
+          An empty spec is valid and represents the node-local default flow
+          (kuma-dp resolves the address at runtime using HOST_IP or 127.0.0.1).
         properties:
           apiVersion:
             description: |-
@@ -6773,12 +6775,14 @@ spec:
             properties:
               endpoint:
                 description: |-
-                  Endpoint defines the OTel collector address and port.
-                  Exactly one of endpoint or nodeEndpoint must be specified.
+                  Endpoint optionally defines the OTel collector address and port.
+                  When omitted, the CP defaults port to 4317 and leaves address empty;
+                  kuma-dp resolves the address at runtime using HOST_IP or 127.0.0.1.
                 properties:
                   address:
-                    description: Address of the OTel collector (hostname or IP).
-                    minLength: 1
+                    description: |-
+                      Address of the OTel collector (hostname or IP).
+                      When omitted, kuma-dp resolves it at runtime using HOST_IP or 127.0.0.1.
                     type: string
                   path:
                     description: |-
@@ -6787,14 +6791,10 @@ spec:
                       Non-empty value is rejected by validation when protocol is grpc.
                     type: string
                   port:
-                    description: Port of the OTel collector.
+                    description: Port of the OTel collector. Defaults to 4317 when
+                      omitted.
                     format: int32
-                    maximum: 65535
-                    minimum: 1
                     type: integer
-                required:
-                - address
-                - port
                 type: object
               env:
                 description: |-
@@ -6824,28 +6824,6 @@ spec:
                     - ExplicitFirst
                     - EnvFirst
                     type: string
-                type: object
-              nodeEndpoint:
-                description: |-
-                  NodeEndpoint connects to an OTel collector running as a DaemonSet
-                  (hostPort mode) on the same node as the workload. The node's host IP
-                  is injected by the injector and used as the target address.
-                  Exactly one of endpoint or nodeEndpoint must be specified.
-                properties:
-                  path:
-                    description: |-
-                      Path is an optional base path prefix for HTTP endpoints.
-                      The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
-                      Non-empty value is rejected by validation when protocol is grpc.
-                    type: string
-                  port:
-                    description: Port of the OTel collector on the node.
-                    format: int32
-                    maximum: 65535
-                    minimum: 1
-                    type: integer
-                required:
-                - port
                 type: object
               protocol:
                 allOf:

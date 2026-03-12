@@ -55,18 +55,15 @@ func (r *ResolvedOtelBackend) FullPath(signalSuffix string) string {
 // ResolveOtelBackend resolves a backendRef to a MeshOpenTelemetryBackend resource,
 // falling back to the inline endpoint if backendRef is nil.
 // Returns nil when the backendRef is dangling (resource not found) or no config exists.
-// nodeHostIP is the host IP of the node running the workload, used when the backend
-// specifies nodeEndpoint. Falls back to 127.0.0.1 when empty (Universal mode).
 func ResolveOtelBackend(
 	backendRef *common_api.BackendResourceRef,
 	inlineEndpoint string,
 	inlineEndpointParser func(string) *core_xds.Endpoint,
 	inlineNameDeriver func(string) string,
 	resources xds_context.Resources,
-	nodeHostIP string,
 ) *ResolvedOtelBackend {
 	if backendRef != nil {
-		return resolveFromBackendRef(backendRef, resources, nodeHostIP)
+		return resolveFromBackendRef(backendRef, resources)
 	}
 	if inlineEndpoint != "" {
 		return &ResolvedOtelBackend{
@@ -78,7 +75,7 @@ func ResolveOtelBackend(
 	return nil
 }
 
-func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources, nodeHostIP string) *ResolvedOtelBackend {
+func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources) *ResolvedOtelBackend {
 	name := ref.Name
 	backend, ambiguous := resolveBackendResourceByName(resources, name)
 	if backend == nil {
@@ -91,34 +88,27 @@ func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_con
 	}
 
 	spec := backend.Spec
-	if spec.NodeEndpoint != nil {
-		addr := nodeHostIP
-		if addr == "" {
-			addr = "127.0.0.1"
+	addr := ""
+	port := uint32(4317)
+	var basePath *string
+	if spec.Endpoint != nil {
+		if spec.Endpoint.Address != nil {
+			addr = *spec.Endpoint.Address
 		}
-		port := uint32(spec.NodeEndpoint.Port)
-		return &ResolvedOtelBackend{
-			Endpoint: &core_xds.Endpoint{
-				Target: addr,
-				Port:   port,
-			},
-			Protocol:  spec.Protocol,
-			EnvPolicy: spec.Env,
-			UseHTTPS:  shouldUseHTTPS(spec.Protocol, port),
-			Path:      spec.NodeEndpoint.Path,
-			Name:      name,
+		if spec.Endpoint.Port != nil {
+			port = uint32(*spec.Endpoint.Port)
 		}
+		basePath = spec.Endpoint.Path
 	}
-	port := uint32(spec.Endpoint.Port)
 	return &ResolvedOtelBackend{
 		Endpoint: &core_xds.Endpoint{
-			Target: spec.Endpoint.Address,
+			Target: addr,
 			Port:   port,
 		},
 		Protocol:  spec.Protocol,
 		EnvPolicy: spec.Env,
 		UseHTTPS:  shouldUseHTTPS(spec.Protocol, port),
-		Path:      spec.Endpoint.Path,
+		Path:      basePath,
 		Name:      name,
 	}
 }
@@ -278,14 +268,29 @@ func normalizeMissingField(field string) string {
 	return missingFieldReplacer.Replace(field)
 }
 
+// ResolveAddressForDirectExport fills in the target address when the MOTB spec
+// left it empty (node-local default). Uses nodeHostIP from the proxy metadata,
+// falling back to 127.0.0.1 for Universal mode.
+func ResolveAddressForDirectExport(target, nodeHostIP string) string {
+	if target != "" {
+		return target
+	}
+	if nodeHostIP != "" {
+		return nodeHostIP
+	}
+	return "127.0.0.1"
+}
+
 // EndpointForDirectOtelExport returns a copy of resolved endpoint adjusted for
-// direct Envoy->collector transport.
-func EndpointForDirectOtelExport(resolved *ResolvedOtelBackend) *core_xds.Endpoint {
+// direct Envoy->collector transport. nodeHostIP fills in the address when the
+// MOTB spec left it empty.
+func EndpointForDirectOtelExport(resolved *ResolvedOtelBackend, nodeHostIP string) *core_xds.Endpoint {
 	if resolved == nil || resolved.Endpoint == nil {
 		return nil
 	}
 
 	ep := *resolved.Endpoint
+	ep.Target = ResolveAddressForDirectExport(ep.Target, nodeHostIP)
 	if resolved.UseHTTPS {
 		if ep.ExternalService == nil {
 			ep.ExternalService = &core_xds.ExternalService{}

@@ -1,5 +1,0 @@
-endpoint:
-  address: otel-collector.observability
-  port: 4317
-nodeEndpoint:
-  port: 4317
