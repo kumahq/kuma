@@ -156,10 +156,13 @@ components:
           properties:
             address:
               description: Address is the publicly reachable address of the zone ingress.
+              minLength: 1
               type: string
             port:
               description: Port is the publicly reachable port of the zone ingress.
               format: int32
+              maximum: 65535
+              minimum: 1
               type: integer
           required:
             - address
