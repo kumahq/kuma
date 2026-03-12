@@ -333,12 +333,14 @@ message Dataplane {
     // embedded in a regular Dataplane.
     message Listener {
       enum Type {
+        // This value is to define correctly Type.
+        Unspecified = 0;
         // ZoneIngress configures this listener to act as a zone ingress,
         // accepting cross-zone traffic destined for services in this zone.
-        ZoneIngress = 0;
+        ZoneIngress = 1;
         // ZoneEgress configures this listener to act as a zone egress,
         // forwarding outbound traffic to external services.
-        ZoneEgress = 1;
+        ZoneEgress = 2;
       }
 
       enum State {
@@ -356,7 +358,7 @@ message Dataplane {
       string address = 2;
 
       // Port on which the listener will be exposed.
-      uint32 port = 3 [(validate.rules).uint32 = {lte: 65535}];
+      uint32 port = 3;
 
       // Name uniquely identifies this listener within the Dataplane and is
       // used to reference it via sectionName in policies.
@@ -369,9 +371,7 @@ message Dataplane {
     }
 
     // Listeners describes zone proxy listeners embedded in this Dataplane.
-    // Listeners may coexist with inbounds; when listeners are defined without
-    // any inbound or gateway (zone-proxy-only mode), the data plane proxy acts
-    // exclusively as a zone ingress, egress, or both.
+    // Listeners may coexist with inbounds and gateways.
     repeated Listener listeners = 9;
   }
 

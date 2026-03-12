@@ -1465,7 +1465,7 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.listeners[0].port
                   message: port must be in the range [1, 65535]`,
 		}),
-		Entry("listener missing name", testCase{
+		Entry("listener with invalid address", testCase{
 			dataplane: `
                 type: Dataplane
                 name: dp-1
@@ -1479,12 +1479,13 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
-                      address: 192.168.0.1
-                      port: 10001`,
+                      address: not-valid!
+                      port: 10001
+                      name: zi-main`,
 			expected: `
                 violations:
-                - field: networking.listeners[0].name
-                  message: name can't be empty`,
+                - field: networking.listeners[0].address
+                  message: address has to be valid IP address or domain name`,
 		}),
 		Entry("listener name collides with inbound name", testCase{
 			dataplane: `

@@ -311,13 +311,8 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 	for i, l := range networking.GetListeners() {
 		indexPath := path.Index(i)
 
-		if l.GetAddress() == "" {
-			result.AddViolationAt(indexPath.Field("address"), "address can't be empty")
-		}
+		result.Add(validateAddress(indexPath, l.GetAddress()))
 		result.Add(ValidatePort(indexPath.Field("port"), l.GetPort()))
-		if l.GetName() == "" {
-			result.AddViolationAt(indexPath.Field("name"), "name can't be empty")
-		}
 
 		// name uniqueness across inbounds and listeners
 		if l.GetName() != "" {
