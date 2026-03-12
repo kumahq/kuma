@@ -6,13 +6,13 @@ Technical Story: TBD
 
 ## Context and problem statement
 
-MADR 095 proposes `MeshOpenTelemetryBackend` as the shared backend for `MeshTrace`, `MeshAccessLog`, and `MeshMetric`. It also proposes the `backendRef` path and the `/otel` route through `kuma-dp`.
+MADR 095 proposes `MeshOpenTelemetryBackend` as the shared backend for `MeshTrace`, `MeshAccessLog`, and `MeshMetric`. It also proposes the `backendRef` path, the `/otel` route through `kuma-dp`, and an optional `spec.endpoint` where omitting the address means the node-local default collector flow.
 
-This MADR does not repeat that design. Read it as an enhancement to MADR 095, not as a statement that the MADR 095 model is already merged or implemented. It answers the next question: if MADR 095 is accepted, how should Kuma reuse standard `OTEL_EXPORTER_OTLP_*` env vars on top of that backend model? In many deployments that config already exists as env vars. On Kubernetes this may come from the OpenTelemetry Operator or sidecar env injection. On Universal it may come from a systemd unit, container runtime, or wrapper script.
+This builds on MADR 095. It does not assume that the MADR 095 model is already merged or implemented. The next question is practical: if MADR 095 is accepted, how should Kuma reuse standard `OTEL_EXPORTER_OTLP_*` env vars on top of that backend model? In many deployments those settings already exist as env vars. On Kubernetes they may come from the OpenTelemetry Operator or sidecar env injection. On Universal they may come from a systemd unit, container runtime, or wrapper script.
 
 We want Kuma to reuse those env vars without giving up the `MeshOpenTelemetryBackend` model and without sending secrets through the control plane. We also want the control plane to understand enough to make the right config decisions and show useful status.
 
-The design has to answer these questions:
+This design has to answer these questions:
 
 1. How does `kuma-dp` tell the control plane what OTEL env vars it already has?
 2. How does the control plane fill the gaps from `MeshOpenTelemetryBackend`?
@@ -35,7 +35,7 @@ The design has to answer these questions:
 
 ### Option 1: Let the control plane own the final exporter config
 
-In this option, `kuma-dp` reads OTEL env vars and sends the real values to the control plane. The control plane merges them with `MeshOpenTelemetryBackend` and sends the final exporter config back to `kuma-dp` and Envoy.
+Here `kuma-dp` reads OTEL env vars and sends the real values to the control plane. The control plane merges them with `MeshOpenTelemetryBackend` and sends the final exporter config back to `kuma-dp` and Envoy.
 
 Pros:
 
@@ -44,42 +44,42 @@ Pros:
 
 Cons:
 
-- Bad, because secrets like OTEL headers or client keys would cross the control plane boundary.
-- Bad, because those values could end up in CP-visible metadata, logs, config dumps, or debug endpoints.
-- Bad, because it makes the control plane responsible for input that belongs to the local process.
+- Secrets like OTEL headers or client keys would cross the control plane boundary.
+- Those values could leak into CP-visible metadata, logs, config dumps, or debug endpoints.
+- The control plane would end up owning input that belongs to the local process.
 
 We reject this option.
 
 ### Option 2: Let `kuma-dp` own everything
 
-In this option, the control plane only sends the socket path and backend identity. `kuma-dp` reads env vars, reads backend config, resolves everything locally, and the control plane does not try to understand the final shape.
+Here the control plane only sends the socket path and backend identity. `kuma-dp` reads env vars, reads backend config, resolves everything locally, and the control plane does not try to understand the final shape.
 
 Pros:
 
-- Good, because secrets stay local.
-- Good, because the runtime owner is the process that actually uses the exporter settings.
+- Secrets stay local.
+- The runtime owner is the process that actually uses the exporter settings.
 
 Cons:
 
-- Bad, because the control plane cannot explain what is missing or blocked.
-- Bad, because policy cannot cleanly enforce whether env vars are allowed.
-- Bad, because status becomes weak and hard to trust.
-- Bad, because the control plane cannot tell when signal-level differences should change local wiring.
+- The control plane cannot explain what is missing or blocked.
+- Policy cannot cleanly enforce whether env vars are allowed.
+- Status becomes weak and hard to trust.
+- The control plane cannot tell when signal-level differences should change local wiring.
 
 We reject this option.
 
 ### Option 3: Typed bootstrap inventory, control-plane runtime plan, and dataplane final merge
 
-This option splits the job in a way that matches the runtime model proposed in MADR 095:
+This split matches the runtime model proposed in MADR 095:
 
 - `kuma-dp` reads OTEL env vars locally at startup.
 - `kuma-dp` sends a typed non-secret OTEL inventory during bootstrap.
 - The control plane resolves policies and `MeshOpenTelemetryBackend`, fills the missing pieces, and sends back a typed `/otel` runtime plan.
 - `kuma-dp` builds the final exporter clients from that plan and its local env vars.
 
-This keeps secrets local, gives the control plane enough information to plan the runtime shape, and keeps the final result easy to inspect.
+It keeps secrets local, gives the control plane enough information to plan the runtime shape, and keeps the final result easy to inspect.
 
-This is the selected option.
+We choose this option.
 
 ### Ownership split
 
@@ -116,7 +116,7 @@ The collector only sees normal OTLP traffic from `kuma-dp`. It never sees the Un
 
 ### Full control and data flow
 
-This is the full flow from bootstrap to runtime. The important detail is that `/otel` is only a config path for the OTEL receiver side in `kuma-dp`. Traces and logs reach the backend socket through normal xDS config in Envoy, and metrics reach that same socket through the separate `/meshmetric` config path. The diagram shows the main unified flow and intentionally omits the older `/meshtrace` and `/meshaccesslog` fallback handlers that exist only for backward compatibility.
+This is the full flow from bootstrap to runtime. The important detail is that `/otel` is the OTEL backend runtime contract for all three signals. `/meshmetric` still exists, but only for scrape-side config such as applications, sidecar settings, extra labels, and Prometheus-related state. The diagram keeps those two roles separate.
 
 ```mermaid
 sequenceDiagram
@@ -126,6 +126,7 @@ sequenceDiagram
   participant E as Envoy
   participant ED as Envoy dynconf listener
   participant CF as ConfigFetcher
+  participant OCN as OTEL runtime coordinator
   participant MM as meshmetrics.Manager
   participant OM as otelreceiver.Manager
   participant US as backend Unix socket
@@ -141,13 +142,15 @@ sequenceDiagram
   loop Dynamic config refresh
     CF->>ED: GET /otel over local dynconf socket
     ED-->>CF: JSON OtelDpConfig
-    CF->>OM: OnOtelChange(backends)
-    OM->>OM: Merge CP plan with local env vars
+    CF->>OCN: OnOtelChange(backends)
+    OCN->>OCN: Merge CP plan with local env vars
+    OCN->>OM: Update OTEL receiver runtime
+    OCN->>MM: Update OTEL export runtime
     OM->>US: Create or update one Unix socket per backend
     CF->>ED: GET /meshmetric over local dynconf socket
     ED-->>CF: JSON MeshMetricDpConfig
     CF->>MM: OnChange(config)
-    MM->>MM: Configure OTLP metric exporter to the backend Unix socket
+    MM->>MM: Configure scraping and Prometheus-side settings
   end
   Note over US,OM: One backend socket is owned by kuma-dp and serves traces, logs, and metrics
   E->>US: Envoy sends OTLP/gRPC traces
@@ -202,7 +205,7 @@ Example bootstrap inventory:
 }
 ```
 
-This means `kuma-dp` has shared OTEL config in env vars (endpoint, protocol, and headers are all present) and only traces have a signal-specific override. The control plane can derive the protocol and auth mode from these flags. The real values stay local to `kuma-dp`.
+This bootstrap says `kuma-dp` has shared OTEL endpoint, protocol, and headers in env vars, and only traces have a signal-specific override. The control plane can derive the protocol and auth mode from these flags. The real values stay local to `kuma-dp`.
 
 When `pipeEnabled` is `false`, the control plane skips OTEL resolution for this dataplane entirely. No `/otel` runtime plan is generated and no OTEL-related status is written.
 
@@ -220,7 +223,7 @@ Each backend plan should include:
 - per-signal missing fields
 - per-signal blocked reasons
 
-This plan tells `kuma-dp` what the backend should look like without sending secrets through the control plane.
+The `/otel` plan tells `kuma-dp` what the backend should look like without sending secrets through the control plane.
 
 Example runtime plan:
 
@@ -233,7 +236,10 @@ backends:
       precedence: ExplicitFirst
       allowSignalOverrides: true
     shared:
-      endpoint: otel-collector.observability:4317
+      endpoint:
+        address: ""
+        port: 4317
+        path: ""
       protocol: grpc
     traces:
       missingFields: []
@@ -247,7 +253,7 @@ backends:
       refreshInterval: 10s
 ```
 
-All three signals use the same backend and the same socket. The plan includes the explicit backend settings from `MeshOpenTelemetryBackend`. `kuma-dp` fills any remaining gaps from env vars and may build signal-specific outbound clients if the final config differs per signal.
+All three signals use the same backend and the same socket. In this example, MADR 095 left `endpoint.address` empty, so the runtime plan carries only the defaulted `port` and `path`. `kuma-dp` first applies env-var policy, then falls back to the node-local default address if no explicit or env-provided endpoint wins. It may still build signal-specific outbound clients if the final config differs per signal.
 
 ### Env policy and merge rules
 
@@ -257,15 +263,14 @@ Env-var policy belongs on `MeshOpenTelemetryBackend`, not on the three signal po
 
 ```yaml
 spec:
-  endpoint:
-    address: otel-collector.observability
-    port: 4317
   protocol: grpc
   env:
     mode: Optional
     precedence: ExplicitFirst
     allowSignalOverrides: true
 ```
+
+In this example, `endpoint` is omitted on purpose. That means the backend still exists, but its address comes from the MADR 095 node-local default flow unless an OTEL env var provides a more specific endpoint.
 
 The `env` block is optional. When it is omitted, Kuma defaults to `mode: Optional`, `precedence: EnvFirst`, and `allowSignalOverrides: true`. The default mode is `Optional` because the main use case for this MADR is reusing env vars that are already present. Operators who do not want env-var behavior can still set `Disabled` per backend.
 
@@ -309,7 +314,9 @@ final traces endpoint =
 
 With `EnvFirst`, the env and explicit layers swap order.
 
-Example where env vars fill gaps (backend has no explicit endpoint or protocol):
+For endpoint resolution, `built-in default` means the MADR 095 node-local fallback. On Kubernetes, `kuma-dp` uses injected `HOST_IP` as the address. On other runtimes, it falls back to `127.0.0.1`. The control plane already defaulted `port` to `4317` and `path` to empty in the `/otel` plan. This fallback is always last. If `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_{SIGNAL}_ENDPOINT` is present and allowed, it wins before the `HOST_IP` path. If an explicit backend endpoint is present and `precedence` is `ExplicitFirst`, that explicit endpoint wins before the env vars and before the `HOST_IP` path.
+
+Example where env vars fill gaps (backend has no explicit address and relies on the MADR 095 node-local default when env vars are absent):
 
 ```text
 OTEL_EXPORTER_OTLP_ENDPOINT=https://otel-gateway.observability:4318
@@ -321,8 +328,9 @@ Result:
 
 - traces use `tempo.observability:4318` (signal-specific env) with `http/protobuf` (shared env)
 - logs and metrics use `otel-gateway.observability:4318` (shared env) with `http/protobuf` (shared env)
+- the node-local `HOST_IP:4317` fallback is not used, because the env layer already provided a full endpoint
 
-Traces go to a different collector because the signal-specific env var fills the gap. If the backend had an explicit endpoint, that would win and the env vars would be ignored for that field.
+Traces go to a different collector because the signal-specific env var fills the gap. If the backend had an explicit endpoint and `precedence` was `ExplicitFirst`, that explicit endpoint would win. If neither explicit config nor env vars provided an endpoint, `kuma-dp` would fall back to `HOST_IP:4317` on Kubernetes or `127.0.0.1:4317` elsewhere.
 
 ### Runtime shape in `kuma-dp`
 
@@ -374,6 +382,8 @@ This case is ambiguous:
 - env vars are allowed for that signal
 - there is no backend-local way to tell which process-global env values belong to which backend
 
+This is not a separate routing model. It only applies after normal policy resolution, when one dataplane and one signal still end up with more than one backend entry. MADR 095 still decides the socket mapping. This rule only says that process-global OTEL env vars cannot be safely attributed across those competing backend entries.
+
 In that case the control plane must not guess. It should:
 
 - mark the signal as ambiguous
@@ -381,11 +391,13 @@ In that case the control plane must not guess. It should:
 - fall back to explicit config if explicit config is complete
 - otherwise mark the signal as not ready
 
-This behavior is part of the design, not a follow-up.
+This is part of the design, not follow-up work.
 
 ### Status
 
 Status should be built in. Users should not need to read xDS dumps to understand what happened.
+
+The status surface should stay small. It is only there to explain whether a signal can export and why. It should not mirror the full merged config, raw env input, or the runtime topology behind `kuma-dp`.
 
 A signal is ready when it has at least an `endpoint` after merge. Other fields have defaults:
 
@@ -394,7 +406,7 @@ A signal is ready when it has at least an `endpoint` after merge. Other fields h
 - `timeout` defaults to SDK default
 - `compression` defaults to none
 
-If a signal has no `endpoint` from either explicit config or env vars, it is `missing`.
+For endpoint resolution, "after merge" includes the MADR 095 node-local fallback. If explicit config and OTEL env vars do not provide an endpoint, `kuma-dp` still tries `HOST_IP:4317` on Kubernetes or `127.0.0.1:4317` elsewhere. A backend that omits `endpoint.address` is not missing by itself. It becomes `missing` only if there is still no usable endpoint after explicit config, env vars, and that built-in default are all considered.
 
 `Required` mode adds one more rule: if required env input is missing or invalid, the signal stays `missing`, `blockedReasons` includes `RequiredEnvMissing`, and `missingFields` lists the fields that validation could name.
 
@@ -404,6 +416,8 @@ The control plane writes status to `DataplaneInsight` when it computes the `/ote
 - when policies or `MeshOpenTelemetryBackend` resources change
 
 Status is not updated on env-var changes because the CP does not see those until the dataplane restarts and re-bootstraps.
+
+This is additive to MADR 095, not a replacement for it. MADR 095 keeps the backend-level `Referenced` or `NotReferenced` status on `MeshOpenTelemetryBackend` and the resolved or unresolved `backendRef` conditions on the observability policies. MADR 100 only adds per-dataplane runtime status.
 
 `DataplaneInsight` should show, per backend and per signal:
 
@@ -415,7 +429,7 @@ Status is not updated on env-var changes because the CP does not see those until
 - blocked reasons such as `EnvDisabledByPolicy`, `RequiredEnvMissing`, `SignalOverridesDisallowed`, or `MultipleBackendsForSignal`
 - missing fields such as `endpoint`, `protocol`, `headers`, or `client_key`
 
-Example status - env vars fill the gaps for traces and logs, while metrics stays on explicit backend config:
+Example status - env vars fill the gaps for traces and logs, while metrics uses the MADR 095 node-local default path:
 
 ```yaml
 backend: otel-main
@@ -433,6 +447,8 @@ signals:
     envInputPresent: false
     state: ready
 ```
+
+In this case, metrics is still ready even without env input because the backend omitted `endpoint.address` intentionally and the node-local default produced a usable endpoint.
 
 Example status - the backend requires env input and validation found it incomplete:
 
@@ -541,5 +557,5 @@ Initial scope:
 
 ## Notes
 
-- This MADR only applies if the MADR 095 backend model is accepted.
+- Applies only if the MADR 095 backend model is accepted.
 - Deprecated inline `endpoint` config stays outside this env-var contract. The env-var-aware path is the `backendRef` path.
