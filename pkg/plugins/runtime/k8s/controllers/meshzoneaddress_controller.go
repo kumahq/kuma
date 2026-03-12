@@ -13,11 +13,9 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_event "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
@@ -132,7 +130,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 // resolveCoordinates determines the public address and port for the Service.
 // Priority: externalIPs[0] → LoadBalancer (hostname > IP) → NodePort.
-// Returns ("", 0, nil) for unsupported Service types.
+// Returns ("", 0, nil) for unsupported Service types as callers emit a warning.
 func (r *MeshZoneAddressReconciler) resolveCoordinates(
 	ctx context.Context,
 	log logr.Logger,
@@ -228,10 +226,23 @@ func (r *MeshZoneAddressReconciler) deleteIfExists(ctx context.Context, key kube
 	return nil
 }
 
+const zoneProxyTypeLabelIndex = "metadata.labels.zone-proxy-type"
+
 func (r *MeshZoneAddressReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(
+		context.Background(), &kube_core.Service{}, zoneProxyTypeLabelIndex,
+		func(obj kube_client.Object) []string {
+			if v := obj.GetLabels()[metadata.KumaZoneProxyTypeLabel]; v != "" {
+				return []string{v}
+			}
+			return nil
+		},
+	); err != nil {
+		return errors.Wrap(err, "failed to index Service by zone-proxy-type label")
+	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-mesh-zone-address-controller").
-		For(&kube_core.Service{}, builder.WithPredicates(predicate.LabelChangedPredicate{})).
+		For(&kube_core.Service{}).
 		Watches(
 			&kube_discovery.EndpointSlice{},
 			kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())),
@@ -248,8 +259,8 @@ func (r *MeshZoneAddressReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 func (r *MeshZoneAddressReconciler) nodeToZoneProxyServices(c kube_client.Client) kube_handler.MapFunc {
 	return func(ctx context.Context, _ kube_client.Object) []kube_ctrl.Request {
 		svcs := &kube_core.ServiceList{}
-		if err := c.List(ctx, svcs, kube_client.MatchingLabels{
-			metadata.KumaZoneProxyTypeLabel: metadata.KumaZoneProxyTypeIngress,
+		if err := c.List(ctx, svcs, kube_client.MatchingFields{
+			zoneProxyTypeLabelIndex: metadata.KumaZoneProxyTypeIngress,
 		}); err != nil {
 			r.Log.Error(err, "failed to list zone-proxy Services on node event")
 			return nil
