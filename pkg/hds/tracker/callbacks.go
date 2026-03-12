@@ -125,10 +125,14 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 	streams.activeStreams[streamID] = true
 
 	if streams.watchdogCancel == nil { // watchdog was not started yet
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is invoked when dataplane stream closes
 		streams.watchdogCancel = cancel
 		// kick off watchdog for that Dataplane
-		go t.newWatchdog(req.Node).Start(ctx)
+		watchdog := t.newWatchdog(req.Node)
+		go func() {
+			defer cancel()
+			watchdog.Start(ctx)
+		}()
 		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams

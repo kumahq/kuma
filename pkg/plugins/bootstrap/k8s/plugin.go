@@ -215,9 +215,10 @@ const (
 
 func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	go func() {
-		defer cancel()
 		<-done
+		cancel()
 	}()
 
 	defer cm.waitForDone()

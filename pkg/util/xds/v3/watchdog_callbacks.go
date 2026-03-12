@@ -109,7 +109,7 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discover
 	defer cb.mu.Unlock()
 
 	// The request context shouldn't influence watchdogs.
-	ctx, cancel := context.WithCancel(context.WithoutCancel(watchdog.context))
+	ctx, cancel := context.WithCancel(context.WithoutCancel(watchdog.context)) //nolint:gosec // G118: cancel is invoked when stream callbacks close
 	watchdog.cancel = cancel
 	cb.streams[streamID] = watchdog
 
@@ -120,7 +120,10 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discover
 
 	if runnable != nil {
 		// kick off watchdog for that stream
-		go runnable.Start(ctx)
+		go func() {
+			defer cancel()
+			runnable.Start(ctx)
+		}()
 	}
 	return nil
 }
@@ -164,7 +167,7 @@ func (cb *watchdogCallbacks) OnStreamDeltaRequest(streamID int64, req *envoy_dis
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
 
-	ctx, cancel := context.WithCancel(context.WithoutCancel(watchdog.context))
+	ctx, cancel := context.WithCancel(context.WithoutCancel(watchdog.context)) //nolint:gosec // G118: cancel is invoked when stream callbacks close
 	watchdog.cancel = cancel
 	cb.streams[streamID] = watchdog
 
@@ -175,7 +178,10 @@ func (cb *watchdogCallbacks) OnStreamDeltaRequest(streamID int64, req *envoy_dis
 
 	if runnable != nil {
 		// kick off watchdog for that stream
-		go runnable.Start(ctx)
+		go func() {
+			defer cancel()
+			runnable.Start(ctx)
+		}()
 	}
 	return nil
 }
