@@ -38,7 +38,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 	It("should return nil when no config sources exist", func() {
 		result := policies_xds.ResolveOtelBackend(
-			nil, "", dummyParser, dummyNamer, emptyResources, "",
+			nil, "", dummyParser, dummyNamer, emptyResources,
 		)
 		Expect(result).To(BeNil())
 	})
@@ -59,7 +59,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 				},
 			}
 			result := policies_xds.ResolveOtelBackend(
-				backendRef, "inline-collector:4317", dummyParser, dummyNamer, resources, "",
+				backendRef, "inline-collector:4317", dummyParser, dummyNamer, resources,
 			)
 			// Dangling backendRef returns nil, does NOT fall through
 			Expect(result).To(BeNil())
@@ -67,7 +67,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 		It("should resolve inline endpoint when no backendRef", func() {
 			result := policies_xds.ResolveOtelBackend(
-				nil, "inline-collector:4317", dummyParser, dummyNamer, emptyResources, "",
+				nil, "inline-collector:4317", dummyParser, dummyNamer, emptyResources,
 			)
 			Expect(result).ToNot(BeNil())
 			Expect(result.Endpoint.Target).To(Equal("inline-collector:4317"))
@@ -78,7 +78,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 	Describe("inline endpoint uses ParseOtelEndpoint", func() {
 		It("should resolve via ParseOtelEndpoint when no backendRef", func() {
 			result := policies_xds.ResolveOtelBackend(
-				nil, "collector:4317", policies_xds.ParseOtelEndpoint, func(ep string) string { return ep }, emptyResources, "",
+				nil, "collector:4317", policies_xds.ParseOtelEndpoint, func(ep string) string { return ep }, emptyResources,
 			)
 			Expect(result).ToNot(BeNil())
 			Expect(result.Endpoint.Target).To(Equal("collector"))
@@ -86,7 +86,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 		})
 	})
 
-	Describe("nodeEndpoint resolution", func() {
+	Describe("optional endpoint fields", func() {
 		makeResources := func(backend *motb_api.MeshOpenTelemetryBackendResource) xds_context.Resources {
 			list := &motb_api.MeshOpenTelemetryBackendResourceList{Items: []*motb_api.MeshOpenTelemetryBackendResource{backend}}
 			return xds_context.Resources{
@@ -97,37 +97,48 @@ var _ = Describe("ResolveOtelBackend", func() {
 		}
 		backendRef := &common_api.BackendResourceRef{
 			Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-			Name: "daemonset-collector",
+			Name: "collector",
 		}
 
-		It("should use nodeHostIP when nodeEndpoint is set", func() {
+		It("should default to port 4317 and empty address when endpoint is nil", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "daemonset-collector", Mesh: "default"})
-			backend.Spec.NodeEndpoint = &motb_api.NodeEndpoint{Port: 4317}
+			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
 			backend.Spec.Protocol = motb_api.ProtocolGRPC
 
 			result := policies_xds.ResolveOtelBackend(
-				backendRef, "", dummyParser, dummyNamer, makeResources(backend), "192.168.1.5",
+				backendRef, "", dummyParser, dummyNamer, makeResources(backend),
 			)
 			Expect(result).ToNot(BeNil())
-			Expect(result.Endpoint.Target).To(Equal("192.168.1.5"))
+			Expect(result.Endpoint.Target).To(BeEmpty())
 			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
-			Expect(result.UseHTTPS).To(BeFalse())
 		})
 
-		It("should fall back to 127.0.0.1 when nodeHostIP is empty", func() {
+		It("should default to port 4317 when only address is set", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "daemonset-collector", Mesh: "default"})
-			backend.Spec.NodeEndpoint = &motb_api.NodeEndpoint{Port: 4317}
+			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
+			backend.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector.example")}
 			backend.Spec.Protocol = motb_api.ProtocolGRPC
 
 			result := policies_xds.ResolveOtelBackend(
-				backendRef, "", dummyParser, dummyNamer, makeResources(backend), "",
+				backendRef, "", dummyParser, dummyNamer, makeResources(backend),
 			)
 			Expect(result).ToNot(BeNil())
-			Expect(result.Endpoint.Target).To(Equal("127.0.0.1"))
+			Expect(result.Endpoint.Target).To(Equal("collector.example"))
 			Expect(result.Endpoint.Port).To(Equal(uint32(4317)))
-			Expect(result.UseHTTPS).To(BeFalse())
+		})
+
+		It("should use empty address when only port is set", func() {
+			backend := motb_api.NewMeshOpenTelemetryBackendResource()
+			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
+			backend.Spec.Endpoint = &motb_api.Endpoint{Port: pointer.To(int32(4318))}
+			backend.Spec.Protocol = motb_api.ProtocolGRPC
+
+			result := policies_xds.ResolveOtelBackend(
+				backendRef, "", dummyParser, dummyNamer, makeResources(backend),
+			)
+			Expect(result).ToNot(BeNil())
+			Expect(result.Endpoint.Target).To(BeEmpty())
+			Expect(result.Endpoint.Port).To(Equal(uint32(4318)))
 		})
 	})
 
@@ -144,7 +155,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 		It("should enable HTTPS for HTTP protocol on port 443", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "https-collector", Mesh: "default"})
-			backend.Spec.Endpoint = &motb_api.Endpoint{Address: "collector.example", Port: 443}
+			backend.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector.example"), Port: pointer.To(int32(443))}
 			backend.Spec.Protocol = motb_api.ProtocolHTTP
 
 			result := policies_xds.ResolveOtelBackend(
@@ -156,7 +167,6 @@ var _ = Describe("ResolveOtelBackend", func() {
 				dummyParser,
 				dummyNamer,
 				makeResources(backend),
-				"",
 			)
 			Expect(result).ToNot(BeNil())
 			Expect(result.UseHTTPS).To(BeTrue())
@@ -165,7 +175,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 		It("should not enable HTTPS for HTTP protocol on non-443 port", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "http-collector", Mesh: "default"})
-			backend.Spec.Endpoint = &motb_api.Endpoint{Address: "collector.example", Port: 4318}
+			backend.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector.example"), Port: pointer.To(int32(4318))}
 			backend.Spec.Protocol = motb_api.ProtocolHTTP
 
 			result := policies_xds.ResolveOtelBackend(
@@ -177,7 +187,6 @@ var _ = Describe("ResolveOtelBackend", func() {
 				dummyParser,
 				dummyNamer,
 				makeResources(backend),
-				"",
 			)
 			Expect(result).ToNot(BeNil())
 			Expect(result.UseHTTPS).To(BeFalse())
@@ -192,7 +201,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 					mesh_proto.DisplayName: "collector",
 				},
 			})
-			backendA.Spec.Endpoint = &motb_api.Endpoint{Address: "collector-a", Port: 4317}
+			backendA.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector-a"), Port: pointer.To(int32(4317))}
 
 			backendB := motb_api.NewMeshOpenTelemetryBackendResource()
 			backendB.SetMeta(&test_model.ResourceMeta{
@@ -202,7 +211,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 					mesh_proto.DisplayName: "collector",
 				},
 			})
-			backendB.Spec.Endpoint = &motb_api.Endpoint{Address: "collector-b", Port: 4317}
+			backendB.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector-b"), Port: pointer.To(int32(4317))}
 
 			result := policies_xds.ResolveOtelBackend(
 				&common_api.BackendResourceRef{
@@ -213,7 +222,6 @@ var _ = Describe("ResolveOtelBackend", func() {
 				dummyParser,
 				dummyNamer,
 				makeResources(backendA, backendB),
-				"",
 			)
 			Expect(result).To(BeNil())
 		})
@@ -257,11 +265,51 @@ var _ = Describe("EndpointForDirectOtelExport", func() {
 			UseHTTPS: true,
 		}
 
-		ep := policies_xds.EndpointForDirectOtelExport(resolved)
+		ep := policies_xds.EndpointForDirectOtelExport(resolved, "")
 		Expect(ep).ToNot(BeNil())
 		Expect(ep.ExternalService).ToNot(BeNil())
 		Expect(ep.ExternalService.TLSEnabled).To(BeTrue())
 		Expect(ep.ExternalService.FallbackToSystemCa).To(BeTrue())
+	})
+
+	It("should fill in nodeHostIP when target is empty", func() {
+		resolved := &policies_xds.ResolvedOtelBackend{
+			Endpoint: &core_xds.Endpoint{
+				Target: "",
+				Port:   4317,
+			},
+		}
+
+		ep := policies_xds.EndpointForDirectOtelExport(resolved, "192.168.1.5")
+		Expect(ep).ToNot(BeNil())
+		Expect(ep.Target).To(Equal("192.168.1.5"))
+		Expect(ep.Port).To(Equal(uint32(4317)))
+	})
+
+	It("should fall back to 127.0.0.1 when target and nodeHostIP are both empty", func() {
+		resolved := &policies_xds.ResolvedOtelBackend{
+			Endpoint: &core_xds.Endpoint{
+				Target: "",
+				Port:   4317,
+			},
+		}
+
+		ep := policies_xds.EndpointForDirectOtelExport(resolved, "")
+		Expect(ep).ToNot(BeNil())
+		Expect(ep.Target).To(Equal("127.0.0.1"))
+	})
+
+	It("should not override existing target", func() {
+		resolved := &policies_xds.ResolvedOtelBackend{
+			Endpoint: &core_xds.Endpoint{
+				Target: "collector.example",
+				Port:   4317,
+			},
+		}
+
+		ep := policies_xds.EndpointForDirectOtelExport(resolved, "192.168.1.5")
+		Expect(ep).ToNot(BeNil())
+		Expect(ep.Target).To(Equal("collector.example"))
 	})
 })
 

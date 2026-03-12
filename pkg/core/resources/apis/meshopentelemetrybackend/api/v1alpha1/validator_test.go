@@ -52,14 +52,11 @@ var _ = Describe("MeshOpenTelemetryBackend", func() {
 			Entry("gRPC with path is invalid", testCase{
 				file: "grpc-with-path-invalid",
 			}),
-			Entry("nodeEndpoint gRPC with path is invalid", testCase{
-				file: "node-endpoint-grpc-with-path-invalid",
+			Entry("address is optional", testCase{
+				file: "address-optional-valid",
 			}),
-			Entry("missing address", testCase{
-				file: "missing-address-invalid",
-			}),
-			Entry("missing port", testCase{
-				file: "missing-port-invalid",
+			Entry("port is optional", testCase{
+				file: "port-optional-valid",
 			}),
 			Entry("invalid address", testCase{
 				file: "invalid-address",
@@ -88,20 +85,17 @@ var _ = Describe("MeshOpenTelemetryBackend", func() {
 			Entry("invalid env precedence", testCase{
 				file: "env-invalid-precedence",
 			}),
-			Entry("nodeEndpoint valid", testCase{
-				file: "node-endpoint-valid",
+			Entry("empty spec is valid", testCase{
+				file: "empty-spec-valid",
 			}),
-			Entry("nodeEndpoint with path valid", testCase{
-				file: "node-endpoint-with-path-valid",
+			Entry("completely empty spec is valid", testCase{
+				file: "completely-empty-valid",
 			}),
-			Entry("nodeEndpoint port out of range", testCase{
-				file: "node-endpoint-port-invalid",
+			Entry("endpoint with only port is valid", testCase{
+				file: "endpoint-only-port-valid",
 			}),
-			Entry("both endpoint and nodeEndpoint set", testCase{
-				file: "both-endpoints-invalid",
-			}),
-			Entry("neither endpoint nor nodeEndpoint set", testCase{
-				file: "no-endpoint-invalid",
+			Entry("endpoint with empty address string is invalid", testCase{
+				file: "endpoint-empty-address-invalid",
 			}),
 		)
 	})

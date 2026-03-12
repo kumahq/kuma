@@ -178,7 +178,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		}
 		workloadKRI = id.String()
 	}
-	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
+	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
 
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
@@ -277,7 +277,6 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			policies_xds.ParseOtelEndpoint,
 			func(ep string) string { return ep },
 			ctx.Mesh.Resources,
-			proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP),
 		)
 		if resolved == nil {
 			return nil
@@ -288,7 +287,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			endpoint = &xds.Endpoint{UnixDomainPath: socketPath}
 			useHTTP2 = true // Envoy→kuma-dp leg is always gRPC
 		} else {
-			endpoint = policies_xds.EndpointForDirectOtelExport(resolved)
+			endpoint = policies_xds.EndpointForDirectOtelExport(resolved, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
 			useHTTP2 = resolved.Protocol != motb_api.ProtocolHTTP
 		}
 		provider = plugin_xds.OpenTelemetryProviderName
@@ -331,7 +330,7 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 	}
 }
 
-func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources, nodeHostIP string) *policies_xds.ResolvedOtelBackend {
+func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *policies_xds.ResolvedOtelBackend {
 	backends := pointer.Deref(conf.Backends)
 	if len(backends) == 0 {
 		return nil
@@ -346,7 +345,6 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources, node
 		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		resources,
-		nodeHostIP,
 	)
 }
 
@@ -365,7 +363,7 @@ func addToOtelPipeBackends(ctx xds_context.Context, rules core_rules.SingleItemR
 	if !hasOtelBackendRef(conf) {
 		return
 	}
-	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
+	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
 	if resolved == nil {
 		return
 	}

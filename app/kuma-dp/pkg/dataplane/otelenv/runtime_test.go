@@ -1,6 +1,7 @@
 package otelenv
 
 import (
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -229,5 +230,28 @@ var _ = Describe("ResolveBackend", func() {
 		runtime := cfg.ResolveBackend(backend)
 
 		Expect(runtime.Traces.Transport.Compression).To(BeEmpty())
+	})
+})
+
+var _ = Describe("resolveEndpointAddress", func() {
+	It("should resolve empty host using HOST_IP env var", func() {
+		os.Setenv("HOST_IP", "10.0.0.5")
+		defer os.Unsetenv("HOST_IP")
+
+		Expect(resolveEndpointAddress(":4317")).To(Equal("10.0.0.5:4317"))
+	})
+
+	It("should fall back to 127.0.0.1 when HOST_IP is unset", func() {
+		os.Unsetenv("HOST_IP")
+
+		Expect(resolveEndpointAddress(":4317")).To(Equal("127.0.0.1:4317"))
+	})
+
+	It("should return endpoint unchanged when host is present", func() {
+		Expect(resolveEndpointAddress("collector:4317")).To(Equal("collector:4317"))
+	})
+
+	It("should return endpoint unchanged when not in host:port format", func() {
+		Expect(resolveEndpointAddress("collector")).To(Equal("collector"))
 	})
 })

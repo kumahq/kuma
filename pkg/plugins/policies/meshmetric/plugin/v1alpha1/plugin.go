@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/url"
 	"strings"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -183,14 +184,13 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		policies_xds.ParseOtelEndpoint,
 		backendNameFrom,
 		resources,
-		proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 	)
 	if resolved == nil {
 		return nil
 	}
 
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
-	endpoint := policies_xds.EndpointForDirectOtelExport(resolved)
+	endpoint := policies_xds.EndpointForDirectOtelExport(resolved, proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP))
 	backendName := resolved.Name
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
@@ -359,7 +359,6 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 			policies_xds.ParseOtelEndpoint,
 			backendNameFrom,
 			ctx.Mesh.Resources,
-			proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 		)
 		if resolved == nil {
 			continue

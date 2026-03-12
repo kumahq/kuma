@@ -1,4 +1,0 @@
-nodeEndpoint:
-  port: 4317
-  path: /custom
-protocol: http

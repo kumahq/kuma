@@ -599,8 +599,8 @@ var _ = Describe("MeshTrace", func() {
 			Name: backendName,
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
-			Address: "collector.mesh",
-			Port:    4317,
+			Address: pointer.To("collector.mesh"),
+			Port:    pointer.To(int32(4317)),
 		}
 		motb.Spec.Protocol = motb_api.ProtocolGRPC
 

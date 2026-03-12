@@ -16,6 +16,8 @@ import (
 )
 
 // MeshOpenTelemetryBackend defines a shared OTel collector endpoint for observability policies.
+// An empty spec is valid and represents the node-local default flow
+// (kuma-dp resolves the address at runtime using HOST_IP or 127.0.0.1).
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=motb
 type MeshOpenTelemetryBackend struct {

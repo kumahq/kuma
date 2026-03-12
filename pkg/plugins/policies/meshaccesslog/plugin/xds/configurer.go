@@ -133,7 +133,6 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		acc.Resources,
-		acc.NodeHostIP,
 	)
 	if resolved == nil {
 		return nil
@@ -150,8 +149,9 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 			UseHTTP2:    true, // Envoy→kuma-dp leg is always gRPC
 		}
 	}
+	target := policies_xds.ResolveAddressForDirectExport(resolved.Endpoint.Target, acc.NodeHostIP)
 	return &LoggingEndpoint{
-		Address:  resolved.Endpoint.Target,
+		Address:  target,
 		Port:     resolved.Endpoint.Port,
 		UseHTTP2: resolved.Protocol != motb_api.ProtocolHTTP,
 	}

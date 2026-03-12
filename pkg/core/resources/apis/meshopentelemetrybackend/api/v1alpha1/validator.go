@@ -13,18 +13,8 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 
-	hasEndpoint := r.Spec.Endpoint != nil
-	hasNodeEndpoint := r.Spec.NodeEndpoint != nil
-
-	switch {
-	case hasEndpoint && hasNodeEndpoint:
-		verr.AddViolationAt(path, "exactly one of endpoint or nodeEndpoint must be set, not both")
-	case !hasEndpoint && !hasNodeEndpoint:
-		verr.AddViolationAt(path, "exactly one of endpoint or nodeEndpoint must be set")
-	case hasEndpoint:
+	if r.Spec.Endpoint != nil {
 		verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(*r.Spec.Endpoint, r.Spec.Protocol))
-	case hasNodeEndpoint:
-		verr.AddErrorAt(path.Field("nodeEndpoint"), validateNodeEndpoint(*r.Spec.NodeEndpoint, r.Spec.Protocol))
 	}
 
 	verr.AddErrorAt(path, validateProtocol(r.Spec.Protocol))
@@ -36,10 +26,12 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 func validateEndpoint(endpoint Endpoint, protocol Protocol) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if endpoint.Address == "" {
-		verr.AddViolationAt(validators.RootedAt("address"), validators.MustNotBeEmpty)
-	} else if !govalidator.IsIP(endpoint.Address) && !govalidator.IsDNSName(endpoint.Address) {
-		verr.AddViolationAt(validators.RootedAt("address"), "address has to be a valid IP or hostname")
+	if endpoint.Address != nil {
+		if *endpoint.Address == "" {
+			verr.AddViolationAt(validators.RootedAt("address"), validators.MustNotBeEmpty)
+		} else if !govalidator.IsIP(*endpoint.Address) && !govalidator.IsDNSName(*endpoint.Address) {
+			verr.AddViolationAt(validators.RootedAt("address"), "address has to be a valid IP or hostname")
+		}
 	}
 
 	verr.Add(validatePort(endpoint.Port))
@@ -48,16 +40,12 @@ func validateEndpoint(endpoint Endpoint, protocol Protocol) validators.Validatio
 	return verr
 }
 
-func validateNodeEndpoint(endpoint NodeEndpoint, protocol Protocol) validators.ValidationError {
+func validatePort(port *int32) validators.ValidationError {
 	var verr validators.ValidationError
-	verr.Add(validatePort(endpoint.Port))
-	verr.Add(validatePath(endpoint.Path, protocol))
-	return verr
-}
-
-func validatePort(port int32) validators.ValidationError {
-	var verr validators.ValidationError
-	if port == 0 || port > math.MaxUint16 {
+	if port == nil {
+		return verr
+	}
+	if *port == 0 || *port > math.MaxUint16 {
 		verr.AddViolationAt(validators.RootedAt("port"), "port must be a valid (1-65535)")
 	}
 	return verr

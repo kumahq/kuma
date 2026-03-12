@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("StatusUpdater", func() {
@@ -55,8 +56,8 @@ var _ = Describe("StatusUpdater", func() {
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
 		motb.Spec = &motb_api.MeshOpenTelemetryBackend{
 			Endpoint: &motb_api.Endpoint{
-				Address: "otel-collector.observability",
-				Port:    4317,
+				Address: pointer.To("otel-collector.observability"),
+				Port:    pointer.To(int32(4317)),
 			},
 			Protocol: motb_api.ProtocolGRPC,
 		}
