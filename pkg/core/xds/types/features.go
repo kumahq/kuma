@@ -49,7 +49,3 @@ const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
 // traces and access logs. When present, the CP routes the OTel cluster to a Unix
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
-
-// FeatureOtelEnv indicates that kuma-dp may read OTEL exporter env vars and
-// participate in OTEL env inventory and runtime planning.
-const FeatureOtelEnv = "feature-otel-env"

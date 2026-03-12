@@ -351,12 +351,6 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED
   value: "false"
 {{- end }}
-{{- if .Values.dataPlane.features.otelEnv }}
-- name: KUMA_RUNTIME_OTEL_ENV_ENABLED
-  value: "true"
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_ENV_ENABLED
-  value: "true"
-{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
@@ -394,10 +388,6 @@ env:
 {{ end }}
 - name: KUMA_MODE
   value: {{ .Values.controlPlane.mode | quote }}
-{{- if .Values.dataPlane.features.otelEnv }}
-- name: KUMA_RUNTIME_OTEL_ENV_ENABLED
-  value: "true"
-{{- end }}
 {{- if eq .Values.controlPlane.mode "zone" }}
 - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
   value: {{ .Values.controlPlane.kdsGlobalAddress }}

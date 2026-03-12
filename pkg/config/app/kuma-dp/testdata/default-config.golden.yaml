@@ -18,7 +18,6 @@ dataplaneRuntime:
   dynamicConfiguration:
     refreshInterval: 1s
   metrics: {}
-  otelEnvEnabled: false
   otelPipeEnabled: true
   resources: {}
   spire: {}
