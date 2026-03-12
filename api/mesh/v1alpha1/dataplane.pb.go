@@ -404,9 +404,9 @@ type Dataplane_Networking struct {
 	// the control plane.
 	Admin *EnvoyAdmin `protobuf:"bytes,8,opt,name=admin,proto3" json:"admin,omitempty"`
 	// Listeners describes zone proxy listeners embedded in this Dataplane.
-	// When listeners are present and no inbound or gateway is defined
-	// (zone-proxy-only mode), the data plane proxy acts exclusively as a
-	// zone ingress, egress, or both instead of a regular sidecar.
+	// Listeners may coexist with inbounds; when listeners are defined without
+	// any inbound or gateway (zone-proxy-only mode), the data plane proxy acts
+	// exclusively as a zone ingress, egress, or both.
 	Listeners     []*Dataplane_Networking_Listener `protobuf:"bytes,9,rep,name=listeners,proto3" json:"listeners,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

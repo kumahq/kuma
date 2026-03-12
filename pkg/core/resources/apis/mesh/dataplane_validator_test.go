@@ -1441,7 +1441,29 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.listeners[0].port
-                  message: port must be greater than 0`,
+                  message: port must be in the range [1, 65535]`,
+		}),
+		Entry("listener with port > 65535", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      tags:
+                        kuma.io/service: backend
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 65536
+                      name: zi-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].port
+                  message: port must be in the range [1, 65535]`,
 		}),
 		Entry("listener missing name", testCase{
 			dataplane: `
@@ -1527,6 +1549,27 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.listeners[1]
                   message: 'address:port 192.168.0.1:10001 is used by listeners of different types'`,
+		}),
+		Entry("two listeners of the same type on same address:port", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: zi-main
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: zi-secondary`,
+			expected: `
+                violations:
+                - field: networking.listeners[1]
+                  message: 'address:port 192.168.0.1:10001 is already used by another listener'`,
 		}),
 		Entry("listener address:port collides with inbound", testCase{
 			dataplane: `

@@ -314,9 +314,7 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 		if l.GetAddress() == "" {
 			result.AddViolationAt(indexPath.Field("address"), "address can't be empty")
 		}
-		if l.GetPort() == 0 {
-			result.AddViolationAt(indexPath.Field("port"), "port must be greater than 0")
-		}
+		result.Add(ValidatePort(indexPath.Field("port"), l.GetPort()))
 		if l.GetName() == "" {
 			result.AddViolationAt(indexPath.Field("name"), "name can't be empty")
 		}
@@ -329,10 +327,12 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 			nameSet[l.GetName()] = struct{}{}
 		}
 
-		// address:port must not have mixed types
+		// address:port must not be shared between listeners
 		key := fmt.Sprintf("%s:%d", l.GetAddress(), l.GetPort())
 		if existingType, exists := addrPortType[key]; exists {
-			if existingType != l.GetType() {
+			if existingType == l.GetType() {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is already used by another listener", key))
+			} else {
 				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is used by listeners of different types", key))
 			}
 		} else {
