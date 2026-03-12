@@ -36,7 +36,7 @@ type ExporterTransport struct {
 	Timeout           time.Duration
 	Certificate       string
 	ClientCertificate string
-	ClientKey         string
+	ClientKey         string // #nosec G117 -- OTLP mTLS config field, not a hardcoded key
 }
 
 type exporterOverride struct {
@@ -49,7 +49,7 @@ type exporterOverride struct {
 	Timeout           *time.Duration
 	Certificate       *string
 	ClientCertificate *string
-	ClientKey         *string
+	ClientKey         *string // #nosec G117 -- OTLP mTLS config field, not a hardcoded key
 }
 
 func (c Config) ResolveBackend(backend core_xds.OtelPipeBackend) BackendRuntime {
@@ -344,8 +344,7 @@ func sharedEnvAllowed(plan *core_xds.OtelSignalRuntimePlan) bool {
 	}
 	for _, reason := range plan.BlockedReasons {
 		switch reason {
-		case core_xds.OtelBlockedReasonEnvDisabledByPlatform,
-			core_xds.OtelBlockedReasonEnvDisabledByPolicy,
+		case core_xds.OtelBlockedReasonEnvDisabledByPolicy,
 			core_xds.OtelBlockedReasonMultipleBackends:
 			return false
 		}

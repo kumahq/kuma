@@ -372,7 +372,6 @@ func addToOtelPipeBackends(ctx xds_context.Context, rules core_rules.SingleItemR
 	base := policies_xds.BuildResolvedPipeBackend(proxy.Metadata.WorkDir, resolved)
 	plan := policies_xds.BuildSignalRuntimePlan(
 		proxy.Metadata.GetOtelEnvInventory(),
-		policies_xds.OtelEnvPlanningEnabled(ctx, proxy),
 		base.EnvPolicy,
 		base,
 		xds.OtelSignalTraces,

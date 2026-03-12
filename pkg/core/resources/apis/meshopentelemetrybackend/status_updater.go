@@ -3,7 +3,6 @@ package meshopentelemetrybackend
 import (
 	"context"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -15,21 +14,18 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshmetric_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	meshtrace_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/v2/pkg/util/time"
-	otel_status "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
 type StatusUpdater struct {
@@ -41,15 +37,6 @@ type StatusUpdater struct {
 }
 
 var _ component.Component = &StatusUpdater{}
-
-
-type backendRuntimeSummary struct {
-	reportingDataplanes          int
-	readyDataplanes              int
-	blockedDataplanes            int
-	missingRequiredEnvDataplanes int
-	ambiguousDataplanes          int
-}
 
 func NewStatusUpdater(
 	logger logr.Logger,
@@ -121,11 +108,6 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		return errors.Wrap(err, "could not list MeshAccessLogs")
 	}
 
-	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := s.roResManager.List(ctx, dpInsights); err != nil {
-		return errors.Wrap(err, "could not list DataplaneInsights")
-	}
-
 	backendsByMesh := buildBackendNameIndex(motbList.Items)
 
 	s.updateMeshMetricStatuses(ctx, meshMetrics, backendsByMesh)
@@ -137,18 +119,12 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	}
 
 	refCounts := countBackendRefs(meshMetrics, meshTraces, meshAccessLogs, backendsByMesh)
-	runtimeSummaries := buildBackendRuntimeSummaries(dpInsights.Items)
 	for _, motb := range motbList.Items {
 		name := motb.GetMeta().GetName()
 		mesh := motb.GetMeta().GetMesh()
 		count := refCounts[mesh+"/"+name]
-		summary := runtimeSummaries[mesh+"/"+name]
 		conditions := []common_api.Condition{
 			buildReferencedByCondition(count),
-			buildReadyCondition(summary),
-			buildBlockedCondition(summary),
-			buildMissingRequiredEnvCondition(summary),
-			buildAmbiguousCondition(summary),
 		}
 
 		updatedConditions := motb.Status.Conditions
@@ -164,7 +140,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		if changed {
 			log := s.logger.WithValues("meshopentelemetrybackend", name)
 			motb.Status.Conditions = updatedConditions
-			log.V(1).Info("updating OTEL backend status", "policyRefCount", count, "reportingDataplanes", summary.reportingDataplanes)
+			log.V(1).Info("updating OTEL backend status", "policyRefCount", count)
 			if err := s.resManager.Update(ctx, motb); err != nil {
 				if store.IsConflict(err) {
 					log.Info("couldn't update MeshOpenTelemetryBackend, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
@@ -505,203 +481,6 @@ func buildReferencedByCondition(count int) common_api.Condition {
 		Status:  kube_meta.ConditionTrue,
 		Reason:  motb_api.ReferencedReason,
 		Message: fmt.Sprintf("Referenced by %d policy backend(s)", count),
-	}
-}
-
-func buildBackendRuntimeSummaries(insights []*core_mesh.DataplaneInsightResource) map[string]backendRuntimeSummary {
-	summaries := map[string]backendRuntimeSummary{}
-
-	for _, insight := range insights {
-		if insight == nil || insight.Spec == nil || !insight.Spec.IsOnline() || insight.Spec.GetOpenTelemetry() == nil {
-			continue
-		}
-
-		mesh := insight.GetMeta().GetMesh()
-		for _, backend := range insight.Spec.GetOpenTelemetry().GetBackends() {
-			if backend == nil {
-				continue
-			}
-
-			reported, ready, blocked, missingRequiredEnv, ambiguous := summarizeBackendRuntime(backend)
-			if !reported {
-				continue
-			}
-
-			key := mesh + "/" + backend.GetName()
-			summary := summaries[key]
-			summary.reportingDataplanes++
-			if ready {
-				summary.readyDataplanes++
-			}
-			if blocked {
-				summary.blockedDataplanes++
-			}
-			if missingRequiredEnv {
-				summary.missingRequiredEnvDataplanes++
-			}
-			if ambiguous {
-				summary.ambiguousDataplanes++
-			}
-			summaries[key] = summary
-		}
-	}
-
-	return summaries
-}
-
-func summarizeBackendRuntime(backend *mesh_proto.DataplaneInsight_OpenTelemetry_Backend) (bool, bool, bool, bool, bool) {
-	signals := []*mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-		backend.GetTraces(),
-		backend.GetLogs(),
-		backend.GetMetrics(),
-	}
-
-	reported := false
-	ready := true
-	blocked := false
-	missingRequiredEnv := false
-	ambiguous := false
-
-	for _, signal := range signals {
-		if signal == nil || !signal.GetEnabled() {
-			continue
-		}
-
-		reported = true
-
-		switch signal.GetState() {
-		case otel_status.SignalStateReady:
-			// Soft blocks produce state "ready" but should still count as blocked
-			reasons := signal.GetBlockedReasons()
-			if slices.Contains(reasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform) ||
-				slices.Contains(reasons, core_xds.OtelBlockedReasonEnvDisabledByPolicy) ||
-				slices.Contains(reasons, core_xds.OtelBlockedReasonSignalOverridesBlocked) {
-				blocked = true
-			}
-		case otel_status.SignalStateAmbiguous:
-			ready = false
-			ambiguous = true
-		case otel_status.SignalStateBlocked:
-			ready = false
-			blocked = true
-		case otel_status.SignalStateMissing:
-			ready = false
-			if slices.Contains(signal.GetBlockedReasons(), core_xds.OtelBlockedReasonRequiredEnvMissing) {
-				missingRequiredEnv = true
-			}
-		default:
-			ready = false
-		}
-	}
-
-	return reported, ready, blocked, missingRequiredEnv, ambiguous
-}
-
-func buildReadyCondition(summary backendRuntimeSummary) common_api.Condition {
-	if summary.reportingDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.ReadyCondition,
-			Status:  kube_meta.ConditionUnknown,
-			Reason:  motb_api.NoDataplaneReportsReason,
-			Message: "No online dataplane has reported OTEL runtime status for this backend",
-		}
-	}
-
-	if summary.readyDataplanes == summary.reportingDataplanes {
-		return common_api.Condition{
-			Type:    motb_api.ReadyCondition,
-			Status:  kube_meta.ConditionTrue,
-			Reason:  motb_api.AllReportingDataplanesReadyReason,
-			Message: fmt.Sprintf("All %d reporting dataplane(s) are ready", summary.reportingDataplanes),
-		}
-	}
-
-	return common_api.Condition{
-		Type:    motb_api.ReadyCondition,
-		Status:  kube_meta.ConditionFalse,
-		Reason:  motb_api.SomeReportingDataplanesNotReadyReason,
-		Message: fmt.Sprintf("%d of %d reporting dataplane(s) are ready", summary.readyDataplanes, summary.reportingDataplanes),
-	}
-}
-
-func buildBlockedCondition(summary backendRuntimeSummary) common_api.Condition {
-	if summary.reportingDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.DataplanesBlockedCondition,
-			Status:  kube_meta.ConditionUnknown,
-			Reason:  motb_api.NoDataplaneReportsReason,
-			Message: "No online dataplane has reported OTEL runtime status for this backend",
-		}
-	}
-
-	if summary.blockedDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.DataplanesBlockedCondition,
-			Status:  kube_meta.ConditionFalse,
-			Reason:  motb_api.NoReportingDataplanesBlockedReason,
-			Message: "No reporting dataplanes are blocked by OTEL env policy",
-		}
-	}
-
-	return common_api.Condition{
-		Type:    motb_api.DataplanesBlockedCondition,
-		Status:  kube_meta.ConditionTrue,
-		Reason:  motb_api.SomeReportingDataplanesBlockedReason,
-		Message: fmt.Sprintf("%d reporting dataplane(s) are blocked by OTEL env policy", summary.blockedDataplanes),
-	}
-}
-
-func buildMissingRequiredEnvCondition(summary backendRuntimeSummary) common_api.Condition {
-	if summary.reportingDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.DataplanesMissingRequiredEnvCondition,
-			Status:  kube_meta.ConditionUnknown,
-			Reason:  motb_api.NoDataplaneReportsReason,
-			Message: "No online dataplane has reported OTEL runtime status for this backend",
-		}
-	}
-
-	if summary.missingRequiredEnvDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.DataplanesMissingRequiredEnvCondition,
-			Status:  kube_meta.ConditionFalse,
-			Reason:  motb_api.NoReportingDataplanesMissingRequiredEnvReason,
-			Message: "No reporting dataplanes are missing required OTEL env input",
-		}
-	}
-
-	return common_api.Condition{
-		Type:    motb_api.DataplanesMissingRequiredEnvCondition,
-		Status:  kube_meta.ConditionTrue,
-		Reason:  motb_api.SomeReportingDataplanesMissingRequiredEnvReason,
-		Message: fmt.Sprintf("%d reporting dataplane(s) are missing required OTEL env input", summary.missingRequiredEnvDataplanes),
-	}
-}
-
-func buildAmbiguousCondition(summary backendRuntimeSummary) common_api.Condition {
-	if summary.reportingDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.DataplanesAmbiguousCondition,
-			Status:  kube_meta.ConditionUnknown,
-			Reason:  motb_api.NoDataplaneReportsReason,
-			Message: "No online dataplane has reported OTEL runtime status for this backend",
-		}
-	}
-
-	if summary.ambiguousDataplanes == 0 {
-		return common_api.Condition{
-			Type:    motb_api.DataplanesAmbiguousCondition,
-			Status:  kube_meta.ConditionFalse,
-			Reason:  motb_api.NoReportingDataplanesAmbiguousReason,
-			Message: "No reporting dataplanes are ambiguous",
-		}
-	}
-
-	return common_api.Condition{
-		Type:    motb_api.DataplanesAmbiguousCondition,
-		Status:  kube_meta.ConditionTrue,
-		Reason:  motb_api.SomeReportingDataplanesAmbiguousReason,
-		Message: fmt.Sprintf("%d reporting dataplane(s) are ambiguous", summary.ambiguousDataplanes),
 	}
 }
 

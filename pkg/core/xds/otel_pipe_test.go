@@ -22,7 +22,7 @@ var _ = Describe("OtelPipeBackends", func() {
 		}
 	}
 
-	It("should use per-signal layout when multiple signals diverge", func() {
+	It("should keep both plans when multiple signals share one backend", func() {
 		backends := &core_xds.OtelPipeBackends{}
 		backend := baseBackend("collector")
 
@@ -38,22 +38,8 @@ var _ = Describe("OtelPipeBackends", func() {
 
 		all := backends.All()
 		Expect(all).To(HaveLen(1))
-		Expect(all[0].ClientLayout).To(Equal(core_xds.OtelClientLayoutPerSignal))
-	})
-
-	It("should keep shared layout when only one signal is enabled", func() {
-		backends := &core_xds.OtelPipeBackends{}
-		backend := baseBackend("collector")
-
-		backends.AddSignal("collector", backend, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
-			Enabled:         true,
-			EnvInputPresent: true,
-			OverrideKinds:   []string{"endpoint"},
-		})
-
-		all := backends.All()
-		Expect(all).To(HaveLen(1))
-		Expect(all[0].ClientLayout).To(Equal(core_xds.OtelClientLayoutShared))
+		Expect(all[0].Traces).ToNot(BeNil())
+		Expect(all[0].Logs).ToNot(BeNil())
 	})
 
 	It("should mark ambiguity when one signal uses env on multiple backends", func() {

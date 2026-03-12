@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe("DiscoverWithLookup", func() {
-	It("should build inventory and summary", func() {
+	It("should build inventory", func() {
 		env := map[string]string{
 			"OTEL_EXPORTER_OTLP_ENDPOINT":         "https://otel-gateway.observability:4318",
 			"OTEL_EXPORTER_OTLP_PROTOCOL":         "http/protobuf",
@@ -37,11 +37,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 		Expect(cfg.Inventory.Logs.OverrideKinds).To(BeEmpty())
 		Expect(cfg.Inventory.Metrics).ToNot(BeNil())
 		Expect(cfg.Inventory.Metrics.OverrideKinds).To(ConsistOf("protocol"))
-
-		summary := cfg.DynamicMetadataSummary()
-		Expect(summary).To(HaveKeyWithValue("otel.env.shared.present", "true"))
-		Expect(summary).To(HaveKeyWithValue("otel.env.shared.protocol", "http/protobuf"))
-		Expect(summary).To(HaveKeyWithValue("otel.env.traces.overrideKinds", "endpoint"))
 	})
 
 	It("should report validation errors", func() {

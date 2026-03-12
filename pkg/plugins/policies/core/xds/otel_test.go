@@ -9,7 +9,6 @@ import (
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
@@ -277,7 +276,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 					OverrideKinds: []string{"endpoint"},
 				},
 			},
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeOptional,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -297,7 +295,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 	It("should mark required env as missing when inventory is absent", func() {
 		plan := policies_xds.BuildSignalRuntimePlan(
 			nil,
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeRequired,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -322,7 +319,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 				},
 				ValidationErrors: []string{"shared.protocol"},
 			},
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeRequired,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -347,7 +343,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 				},
 				ValidationErrors: []string{"shared.timeout", "shared.compression"},
 			},
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeRequired,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -371,7 +366,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 				},
 				ValidationErrors: []string{"traces.mtls"},
 			},
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeRequired,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -396,7 +390,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 				},
 				ValidationErrors: []string{"shared.protocol"},
 			},
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeOptional,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -412,50 +405,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		Expect(plan.BlockedReasons).To(BeEmpty())
 	})
 
-	It("should mark env-first signals as env sourced when env fully wins", func() {
-		plan := policies_xds.BuildSignalRuntimePlan(
-			&core_xds.OtelBootstrapInventory{
-				Shared: &core_xds.OtelSignalEnvInventory{
-					EndpointPresent:   true,
-					ProtocolPresent:   true,
-					EffectiveProtocol: core_xds.OtelProtocolGRPC,
-				},
-			},
-			true,
-			core_xds.OtelResolvedEnvPolicy{
-				Mode:                 motb_api.EnvModeOptional,
-				Precedence:           motb_api.EnvPrecedenceEnvFirst,
-				AllowSignalOverrides: true,
-			},
-			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
-			core_xds.OtelSignalTraces,
-			policies_xds.AddResolvedBackendOptions{},
-		)
-
-		Expect(plan.Source).To(Equal(string(core_xds.OtelSignalSourceEnv)))
-	})
-
-	It("should mark explicit-first signals as mixed when env fills env-only fields", func() {
-		plan := policies_xds.BuildSignalRuntimePlan(
-			&core_xds.OtelBootstrapInventory{
-				Shared: &core_xds.OtelSignalEnvInventory{
-					HeadersPresent: true,
-				},
-			},
-			true,
-			core_xds.OtelResolvedEnvPolicy{
-				Mode:                 motb_api.EnvModeOptional,
-				Precedence:           motb_api.EnvPrecedenceExplicitFirst,
-				AllowSignalOverrides: true,
-			},
-			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
-			core_xds.OtelSignalLogs,
-			policies_xds.AddResolvedBackendOptions{},
-		)
-
-		Expect(plan.Source).To(Equal(string(core_xds.OtelSignalSourceMixed)))
-	})
-
 	It("should mark disabled env mode with env input as blocked by policy", func() {
 		plan := policies_xds.BuildSignalRuntimePlan(
 			&core_xds.OtelBootstrapInventory{
@@ -465,7 +414,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 					EffectiveProtocol: core_xds.OtelProtocolGRPC,
 				},
 			},
-			true,
 			core_xds.OtelResolvedEnvPolicy{
 				Mode:                 motb_api.EnvModeDisabled,
 				Precedence:           motb_api.EnvPrecedenceEnvFirst,
@@ -478,37 +426,9 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 
 		Expect(plan.EnvInputPresent).To(BeTrue())
 		Expect(plan.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonEnvDisabledByPolicy))
-		Expect(plan.Source).To(Equal(string(core_xds.OtelSignalSourceExplicit)))
 	})
 
-	It("should use explicit source in ExplicitFirst mode when both sources present", func() {
-		plan := policies_xds.BuildSignalRuntimePlan(
-			&core_xds.OtelBootstrapInventory{
-				Shared: &core_xds.OtelSignalEnvInventory{
-					EndpointPresent:   true,
-					ProtocolPresent:   true,
-					EffectiveProtocol: core_xds.OtelProtocolHTTPProtobuf,
-					HeadersPresent:    true,
-				},
-			},
-			true,
-			core_xds.OtelResolvedEnvPolicy{
-				Mode:                 motb_api.EnvModeOptional,
-				Precedence:           motb_api.EnvPrecedenceExplicitFirst,
-				AllowSignalOverrides: true,
-			},
-			core_xds.OtelPipeBackend{Endpoint: "collector:4317"},
-			core_xds.OtelSignalTraces,
-			policies_xds.AddResolvedBackendOptions{},
-		)
-
-		Expect(plan.EnvInputPresent).To(BeTrue())
-		// In ExplicitFirst mode, explicit endpoint and protocol win.
-		// Headers are env-only (explicit=false), so the result is mixed.
-		Expect(plan.Source).To(Equal(string(core_xds.OtelSignalSourceMixed)))
-	})
-
-	It("should fall back to explicit source when env is blocked by ambiguity", func() {
+	It("should flag ambiguity when multiple backends reuse env input for one signal", func() {
 		backends := core_xds.OtelPipeBackends{}
 		base := core_xds.OtelPipeBackend{
 			Name:       "collector",
@@ -524,7 +444,6 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		backends.AddSignal("collector", base, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
 			Enabled:         true,
 			EnvInputPresent: true,
-			Source:          string(core_xds.OtelSignalSourceEnv),
 		})
 		backends.AddSignal("second", core_xds.OtelPipeBackend{
 			Name:       "second",
@@ -534,14 +453,11 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		}, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
 			Enabled:         true,
 			EnvInputPresent: true,
-			Source:          string(core_xds.OtelSignalSourceEnv),
 		})
 
 		all := backends.All()
 		Expect(all).To(HaveLen(2))
-		Expect(all[0].Traces.Source).To(Equal(string(core_xds.OtelSignalSourceExplicit)))
 		Expect(all[0].Traces.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonMultipleBackends))
-		Expect(all[1].Traces.Source).To(Equal(string(core_xds.OtelSignalSourceExplicit)))
 		Expect(all[1].Traces.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonMultipleBackends))
 	})
 
@@ -561,12 +477,10 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		backends.AddSignal("collector", base, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
 			Enabled:         true,
 			EnvInputPresent: true,
-			Source:          string(core_xds.OtelSignalSourceEnv),
 		})
 		backends.AddSignal("collector", base, core_xds.OtelSignalMetrics, core_xds.OtelSignalRuntimePlan{
 			Enabled:         true,
 			EnvInputPresent: true,
-			Source:          string(core_xds.OtelSignalSourceMixed),
 		})
 
 		all := backends.All()
@@ -581,49 +495,29 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 
 var _ = Describe("OtelEnvPlanningEnabled", func() {
 	It("should return false when proxy is nil", func() {
-		ctx := xds_context.Context{
-			ControlPlane: &xds_context.ControlPlaneContext{OtelEnvEnabled: true},
-		}
+		ctx := xds_context.Context{}
 		Expect(policies_xds.OtelEnvPlanningEnabled(ctx, nil)).To(BeFalse())
 	})
 
 	It("should return false when proxy metadata is nil", func() {
-		ctx := xds_context.Context{
-			ControlPlane: &xds_context.ControlPlaneContext{OtelEnvEnabled: true},
-		}
+		ctx := xds_context.Context{}
 		proxy := &core_xds.Proxy{}
 		Expect(policies_xds.OtelEnvPlanningEnabled(ctx, proxy)).To(BeFalse())
 	})
 
-	It("should return false when CP disables otel env", func() {
-		ctx := xds_context.Context{
-			ControlPlane: &xds_context.ControlPlaneContext{OtelEnvEnabled: false},
-		}
+	It("should return false when proxy has no inventory", func() {
+		ctx := xds_context.Context{}
 		proxy := &core_xds.Proxy{
-			Metadata: &core_xds.DataplaneMetadata{
-				Features: xds_types.Features{xds_types.FeatureOtelEnv: true},
-			},
+			Metadata: &core_xds.DataplaneMetadata{},
 		}
 		Expect(policies_xds.OtelEnvPlanningEnabled(ctx, proxy)).To(BeFalse())
 	})
 
-	It("should return true when both CP and proxy enable otel env", func() {
-		ctx := xds_context.Context{
-			ControlPlane: &xds_context.ControlPlaneContext{OtelEnvEnabled: true},
-		}
-		proxy := &core_xds.Proxy{
-			Metadata: &core_xds.DataplaneMetadata{
-				Features: xds_types.Features{xds_types.FeatureOtelEnv: true},
-			},
-		}
-		Expect(policies_xds.OtelEnvPlanningEnabled(ctx, proxy)).To(BeTrue())
-	})
-
-	It("should return feature value when CP context is nil", func() {
+	It("should return true when proxy reports OTEL inventory", func() {
 		ctx := xds_context.Context{}
 		proxy := &core_xds.Proxy{
 			Metadata: &core_xds.DataplaneMetadata{
-				Features: xds_types.Features{xds_types.FeatureOtelEnv: true},
+				OtelEnvInventory: &core_xds.OtelBootstrapInventory{},
 			},
 		}
 		Expect(policies_xds.OtelEnvPlanningEnabled(ctx, proxy)).To(BeTrue())

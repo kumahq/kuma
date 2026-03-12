@@ -54,22 +54,19 @@ message DataplaneInsight {
 
     message Backend {
       string name = 1;
-      string clientLayout = 2;
-      Signal traces = 3;
-      Signal logs = 4;
-      Signal metrics = 5;
+      Signal traces = 2;
+      Signal logs = 3;
+      Signal metrics = 4;
     }
 
     message Signal {
       bool enabled = 1;
       bool envAllowed = 2;
       bool envInputPresent = 3;
-      bool dedicatedClient = 4;
-      string state = 5;
-      repeated string overrideKinds = 6;
-      repeated string missingFields = 7;
-      repeated string blockedReasons = 8;
-      string source = 9;
+      string state = 4;
+      repeated string overrideKinds = 5;
+      repeated string missingFields = 6;
+      repeated string blockedReasons = 7;
     }
   }
 }

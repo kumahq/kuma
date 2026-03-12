@@ -203,8 +203,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			snapshotReconciler.prepare = func(proxy *core_xds.Proxy) {
 				proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
 				proxy.OtelPipeBackends.AddSignal("main-collector", core_xds.OtelPipeBackend{
-					Name:         "main-collector",
-					ClientLayout: core_xds.OtelClientLayoutShared,
+					Name: "main-collector",
 				}, core_xds.OtelSignalTraces, core_xds.OtelSignalRuntimePlan{
 					Enabled: true,
 				})

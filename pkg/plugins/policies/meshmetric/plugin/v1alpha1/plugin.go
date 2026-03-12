@@ -402,7 +402,6 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 		}
 		plan := policies_xds.BuildSignalRuntimePlan(
 			proxy.Metadata.GetOtelEnvInventory(),
-			policies_xds.OtelEnvPlanningEnabled(ctx, proxy),
 			base.EnvPolicy,
 			base,
 			core_xds.OtelSignalMetrics,

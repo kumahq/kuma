@@ -84,7 +84,6 @@ type EndpointAccumulator struct {
 	Resources             xds_context.Resources
 	NodeHostIP            string
 	OtelEnvInventory      *xds.OtelBootstrapInventory
-	OtelEnvEnabled        bool
 	// UseKumaDpPipe enables routing OTel logs through a kuma-dp Unix socket.
 	UseKumaDpPipe bool
 	// WorkDir is the kuma-dp working directory for socket paths.
