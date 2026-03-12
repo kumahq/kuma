@@ -333,7 +333,9 @@ message Dataplane {
     // embedded in a regular Dataplane.
     message Listener {
       enum Type {
-        // This value is to define correctly Type.
+        // Unspecified is the default protobuf zero value. A Listener must
+        // explicitly set either ZoneIngress or ZoneEgress; resources without
+        // an explicit type will have this value omitted in JSON output.
         Unspecified = 0;
         // ZoneIngress configures this listener to act as a zone ingress,
         // accepting cross-zone traffic destined for services in this zone.

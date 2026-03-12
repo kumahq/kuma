@@ -266,9 +266,7 @@ components:
             listeners:
               description: |-
                 Listeners describes zone proxy listeners embedded in this Dataplane.
-                Listeners may coexist with inbounds; when listeners are defined without
-                any inbound or gateway (zone-proxy-only mode), the data plane proxy acts
-                exclusively as a zone ingress, egress, or both.
+                Listeners may coexist with inbounds and gateways.
               items:
                 description: Listener describes a zone proxy listener (ZoneIngress
                   or ZoneEgress) embedded in a regular Dataplane.

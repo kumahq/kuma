@@ -192,23 +192,29 @@ func (Dataplane_Networking_TransparentProxying_IpFamilyMode) EnumDescriptor() ([
 type Dataplane_Networking_Listener_Type int32
 
 const (
+	// Unspecified is the default protobuf zero value. A Listener must
+	// explicitly set either ZoneIngress or ZoneEgress; resources without
+	// an explicit type will have this value omitted in JSON output.
+	Dataplane_Networking_Listener_Unspecified Dataplane_Networking_Listener_Type = 0
 	// ZoneIngress configures this listener to act as a zone ingress,
 	// accepting cross-zone traffic destined for services in this zone.
-	Dataplane_Networking_Listener_ZoneIngress Dataplane_Networking_Listener_Type = 0
+	Dataplane_Networking_Listener_ZoneIngress Dataplane_Networking_Listener_Type = 1
 	// ZoneEgress configures this listener to act as a zone egress,
 	// forwarding outbound traffic to external services.
-	Dataplane_Networking_Listener_ZoneEgress Dataplane_Networking_Listener_Type = 1
+	Dataplane_Networking_Listener_ZoneEgress Dataplane_Networking_Listener_Type = 2
 )
 
 // Enum value maps for Dataplane_Networking_Listener_Type.
 var (
 	Dataplane_Networking_Listener_Type_name = map[int32]string{
-		0: "ZoneIngress",
-		1: "ZoneEgress",
+		0: "Unspecified",
+		1: "ZoneIngress",
+		2: "ZoneEgress",
 	}
 	Dataplane_Networking_Listener_Type_value = map[string]int32{
-		"ZoneIngress": 0,
-		"ZoneEgress":  1,
+		"Unspecified": 0,
+		"ZoneIngress": 1,
+		"ZoneEgress":  2,
 	}
 )
 
@@ -404,9 +410,7 @@ type Dataplane_Networking struct {
 	// the control plane.
 	Admin *EnvoyAdmin `protobuf:"bytes,8,opt,name=admin,proto3" json:"admin,omitempty"`
 	// Listeners describes zone proxy listeners embedded in this Dataplane.
-	// Listeners may coexist with inbounds; when listeners are defined without
-	// any inbound or gateway (zone-proxy-only mode), the data plane proxy acts
-	// exclusively as a zone ingress, egress, or both.
+	// Listeners may coexist with inbounds and gateways.
 	Listeners     []*Dataplane_Networking_Listener `protobuf:"bytes,9,rep,name=listeners,proto3" json:"listeners,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1020,7 +1024,7 @@ func (x *Dataplane_Networking_Listener) GetType() Dataplane_Networking_Listener_
 	if x != nil {
 		return x.Type
 	}
-	return Dataplane_Networking_Listener_ZoneIngress
+	return Dataplane_Networking_Listener_Unspecified
 }
 
 func (x *Dataplane_Networking_Listener) GetAddress() string {
@@ -1496,13 +1500,13 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xaa&\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xb0&\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
 	"networking\x12<\n" +
 	"\ametrics\x18\x02 \x01(\v2\".kuma.mesh.v1alpha1.MetricsBackendR\ametrics\x12<\n" +
-	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xb8\x1d\n" +
+	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xbe\x1d\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
 	"\aaddress\x18\x05 \x01(\tR\aaddress\x12,\n" +
@@ -1591,17 +1595,18 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\vUnSpecified\x10\x00\x12\r\n" +
 	"\tDualStack\x10\x01\x12\b\n" +
 	"\x04IPv4\x10\x02\x12\b\n" +
-	"\x04IPv6\x10\x03J\x04\b\x04\x10\x05R\x18redirect_port_inbound_v6\x1a\xbd\x02\n" +
+	"\x04IPv6\x10\x03J\x04\b\x04\x10\x05R\x18redirect_port_inbound_v6\x1a\xc3\x02\n" +
 	"\bListener\x12J\n" +
 	"\x04type\x18\x01 \x01(\x0e26.kuma.mesh.v1alpha1.Dataplane.Networking.Listener.TypeR\x04type\x12\x18\n" +
-	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x1d\n" +
-	"\x04port\x18\x03 \x01(\rB\t\xfaB\x06*\x04\x18\xff\xff\x03R\x04port\x12\x12\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x12\n" +
+	"\x04port\x18\x03 \x01(\rR\x04port\x12\x12\n" +
 	"\x04name\x18\x04 \x01(\tR\x04name\x12M\n" +
-	"\x05state\x18\x05 \x01(\x0e27.kuma.mesh.v1alpha1.Dataplane.Networking.Listener.StateR\x05state\"'\n" +
+	"\x05state\x18\x05 \x01(\x0e27.kuma.mesh.v1alpha1.Dataplane.Networking.Listener.StateR\x05state\"8\n" +
 	"\x04Type\x12\x0f\n" +
-	"\vZoneIngress\x10\x00\x12\x0e\n" +
+	"\vUnspecified\x10\x00\x12\x0f\n" +
+	"\vZoneIngress\x10\x01\x12\x0e\n" +
 	"\n" +
-	"ZoneEgress\x10\x01\" \n" +
+	"ZoneEgress\x10\x02\" \n" +
 	"\x05State\x12\t\n" +
 	"\x05Ready\x10\x00\x12\f\n" +
 	"\bNotReady\x10\x01J\x04\b\x06\x10\a\x1a\xcf\x01\n" +

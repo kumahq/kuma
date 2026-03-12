@@ -311,6 +311,9 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 	for i, l := range networking.GetListeners() {
 		indexPath := path.Index(i)
 
+		if l.GetType() == mesh_proto.Dataplane_Networking_Listener_Unspecified {
+			result.AddViolationAt(indexPath.Field("type"), "type must be ZoneIngress or ZoneEgress")
+		}
 		result.Add(validateAddress(indexPath, l.GetAddress()))
 		result.Add(ValidatePort(indexPath.Field("port"), l.GetPort()))
 
