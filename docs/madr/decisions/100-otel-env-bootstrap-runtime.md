@@ -230,6 +230,8 @@ backends:
     socketPath: /tmp/kuma-otel-otel-main.sock
     envPolicy:
       mode: Optional
+      precedence: ExplicitFirst
+      allowSignalOverrides: true
     shared:
       endpoint: otel-collector.observability:4317
       protocol: grpc
@@ -261,23 +263,38 @@ spec:
   protocol: grpc
   env:
     mode: Optional
+    precedence: ExplicitFirst
+    allowSignalOverrides: true
 ```
 
-The `env` block is optional. When omitted, Kuma defaults to `mode: Optional`. The default is `Optional` because the main use case for this MADR is reusing env vars that are already present - if the default were `Disabled`, every operator who wants env-var support would have to set it explicitly, which defeats the purpose. Operators who do not want env-var behavior can set `Disabled` per backend.
+The `env` block is optional. When it is omitted, Kuma defaults to `mode: Optional`, `precedence: EnvFirst`, and `allowSignalOverrides: true`. The default mode is `Optional` because the main use case for this MADR is reusing env vars that are already present. Operators who do not want env-var behavior can still set `Disabled` per backend.
 
-Values: `Disabled` (ignore env vars for this backend) or `Optional` (use env vars to fill gaps in explicit config).
+`env.mode` values:
 
-When `mode` is `Optional`, `kuma-dp` resolves each field by picking the first available value:
+- `Disabled` - ignore OTEL env vars for this backend
+- `Optional` - use OTEL env vars when present
+- `Required` - the backend depends on OTEL env input; if that input is missing or invalid, the signal becomes `missing`, `blockedReasons` includes `RequiredEnvMissing`, and `missingFields` lists any fields that validation could identify
 
-1. signal-specific explicit config from the backend
-2. shared explicit config from the backend
-3. signal-specific OTEL env var
-4. shared OTEL env var
+`env.precedence` values:
+
+- `ExplicitFirst` - explicit backend config wins and env fills the gaps
+- `EnvFirst` - env wins and explicit backend config fills the gaps
+
+`allowSignalOverrides` controls whether signal-specific OTEL env vars such as `OTEL_EXPORTER_OTLP_TRACES_*`, `OTEL_EXPORTER_OTLP_LOGS_*`, and `OTEL_EXPORTER_OTLP_METRICS_*` may change one signal without changing the others. When it is `false`, those vars are detected but not used, and status includes `SignalOverridesDisallowed`.
+
+When `mode` is `Disabled`, the env layers are skipped.
+
+When `mode` is `Optional` or `Required` and `precedence` is `EnvFirst`, `kuma-dp` resolves each field by picking the first available value:
+
+1. signal-specific OTEL env var, if policy allows it
+2. shared OTEL env var, if policy allows it
+3. signal-specific explicit config from the backend
+4. shared explicit config from the backend
 5. built-in default
 
-Explicit config always wins. Within each layer, signal-specific wins over shared. When `mode` is `Disabled`, steps 3 and 4 are skipped.
+When `precedence` is `ExplicitFirst`, the explicit and env layers swap order, but signal-specific still wins over shared inside each layer.
 
-For one field such as the traces endpoint:
+For one field such as the traces endpoint, `ExplicitFirst` looks like this:
 
 ```text
 final traces endpoint =
@@ -289,6 +306,8 @@ final traces endpoint =
     built-in default,
   )
 ```
+
+With `EnvFirst`, the env and explicit layers swap order.
 
 Example where env vars fill gaps (backend has no explicit endpoint or protocol):
 
@@ -304,8 +323,6 @@ Result:
 - logs and metrics use `otel-gateway.observability:4318` (shared env) with `http/protobuf` (shared env)
 
 Traces go to a different collector because the signal-specific env var fills the gap. If the backend had an explicit endpoint, that would win and the env vars would be ignored for that field.
-
-Future extensions if proven need exists: `Required` mode (backend not ready without env input), `precedence` field (let env win over explicit), `allowSignalOverrides: false` (block signal-specific env vars). Not part of the initial design.
 
 ### Runtime shape in `kuma-dp`
 
@@ -379,6 +396,8 @@ A signal is ready when it has at least an `endpoint` after merge. Other fields h
 
 If a signal has no `endpoint` from either explicit config or env vars, it is `missing`.
 
+`Required` mode adds one more rule: if required env input is missing or invalid, the signal stays `missing`, `blockedReasons` includes `RequiredEnvMissing`, and `missingFields` lists the fields that validation could name.
+
 The control plane writes status to `DataplaneInsight` when it computes the `/otel` runtime plan. This happens:
 
 - after bootstrap, when the CP first resolves policies for the dataplane
@@ -393,10 +412,10 @@ Status is not updated on env-var changes because the CP does not see those until
 - whether env-var use is allowed
 - whether env-var input was present
 - whether the signal is `ready`, `blocked`, `missing`, or `ambiguous`
-- blocked reasons such as `EnvDisabledByPolicy` or `MultipleBackendsForSignal`
+- blocked reasons such as `EnvDisabledByPolicy`, `RequiredEnvMissing`, `SignalOverridesDisallowed`, or `MultipleBackendsForSignal`
 - missing fields such as `endpoint`, `protocol`, `headers`, or `client_key`
 
-Example status - env vars fill the gaps for traces and logs, but metrics has no endpoint:
+Example status - env vars fill the gaps for traces and logs, while metrics stays on explicit backend config:
 
 ```yaml
 backend: otel-main
@@ -412,12 +431,27 @@ signals:
   metrics:
     envAllowed: true
     envInputPresent: false
-    state: missing
-    missingFields:
-      - endpoint
+    state: ready
 ```
 
-Example status - env vars are disabled by policy but the backend has no explicit endpoint:
+Example status - the backend requires env input and validation found it incomplete:
+
+```yaml
+backend: otel-required
+signals:
+  traces:
+    envAllowed: true
+    envInputPresent: true
+    state: missing
+    blockedReasons:
+      - RequiredEnvMissing
+    missingFields:
+      - client_key
+```
+
+The operator set `env.mode: Required` on this backend. The dataplane has OTEL env vars, but validation found incomplete mTLS input, so the signal stays missing until that field is fixed.
+
+Example status - env vars are disabled by policy, but explicit backend config is still enough:
 
 ```yaml
 backend: otel-locked
@@ -425,14 +459,12 @@ signals:
   traces:
     envAllowed: false
     envInputPresent: true
-    state: blocked
+    state: ready
     blockedReasons:
       - EnvDisabledByPolicy
-    missingFields:
-      - endpoint
 ```
 
-The operator set `env.mode: Disabled` on this backend. The dataplane has OTEL env vars, but policy blocks their use. Because the backend has no explicit endpoint either, the signal is blocked.
+The operator set `env.mode: Disabled` on this backend. The dataplane has OTEL env vars, but policy blocks their use. Because the backend already has enough explicit config, the signal stays ready.
 
 Example status - two backends compete for traces:
 
@@ -487,29 +519,25 @@ Kong Mesh docs would also need to cover:
 
 - how to inject OTEL env vars into `kuma-sidecar` on Kubernetes
 - how to provide OTEL env vars on Universal
-- how `Optional` and `Disabled` behave in mixed deployments
+- how `Disabled`, `Optional`, and `Required` behave in mixed deployments
 
 There is no separate enterprise-only runtime model here. Kong Mesh should follow the same backend contract so users do not have to learn a different observability path.
 
 ## Decision
 
-If MADR 095 is accepted, extend the Unix socket model with env-var awareness using Option 3. `kuma-dp` reports a non-secret OTEL inventory at bootstrap, the control plane sends a runtime plan with env policy, and `kuma-dp` merges explicit config (wins) with local env vars (fills gaps). Secrets stay local, status is explicit, and the model works the same on Kubernetes and Universal.
+If MADR 095 is accepted, extend the Unix socket model with env-var awareness using Option 3. `kuma-dp` reports a non-secret OTEL inventory at bootstrap, the control plane sends a runtime plan with env policy, and `kuma-dp` merges explicit config and local env vars according to `mode`, `precedence`, and `allowSignalOverrides`. Secrets stay local, status is explicit, and the model works the same on Kubernetes and Universal.
 
 ## Phasing
 
 Initial scope:
 
-- `env.mode` with `Disabled` and `Optional`
-- single merge rule: explicit config wins, env fills gaps, signal-specific wins over shared within each layer
+- `env.mode` with `Disabled`, `Optional`, and `Required`
+- `env.precedence` with `ExplicitFirst` and `EnvFirst`
+- `allowSignalOverrides` with default `true`
+- merge rules for both precedence orders, with signal-specific input winning over shared input inside each layer
 - bootstrap OTEL inventory with presence flags (no derived fields)
-- `/otel` runtime plan with env mode per backend
+- `/otel` runtime plan with full env policy per backend
 - status on `DataplaneInsight` with readiness, blocked reasons, and missing fields
-
-Follow-up (when proven need exists):
-
-- `Required` mode for backends that depend on env input
-- `precedence` field to let env vars win over explicit config
-- `allowSignalOverrides: false` to block signal-specific env vars
 
 ## Notes
 
