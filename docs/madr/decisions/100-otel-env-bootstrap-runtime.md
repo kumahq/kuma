@@ -114,6 +114,49 @@ flowchart LR
 
 The collector only sees normal OTLP traffic from `kuma-dp`. It never sees the Unix socket.
 
+### Full control and data flow
+
+This is the full flow from bootstrap to runtime. The important detail is that `/otel` is only a config path for the OTEL receiver side in `kuma-dp`. Traces and logs reach the backend socket through normal xDS config in Envoy, and metrics reach that same socket through the separate `/meshmetric` config path. The diagram shows the main unified flow and intentionally omits the older `/meshtrace` and `/meshaccesslog` fallback handlers that exist only for backward compatibility.
+
+```mermaid
+sequenceDiagram
+  participant DP as kuma-dp
+  participant CP as kuma-cp
+  participant PG as policy generator
+  participant E as Envoy
+  participant ED as Envoy dynconf listener
+  participant CF as ConfigFetcher
+  participant MM as meshmetrics.Manager
+  participant OM as otelreceiver.Manager
+  participant US as backend Unix socket
+  participant OC as OTEL collector
+
+  DP->>DP: Read local OTEL env vars
+  DP->>CP: Bootstrap request with typed OTEL inventory
+  CP->>PG: Resolve policies and MeshOpenTelemetryBackend
+  PG-->>CP: Build xDS resources and dynconf payloads
+  CP->>E: Send xDS snapshot with trace and log socket config
+  CP->>E: Send dynconf routes for `/otel` and `/meshmetric`
+  Note over E,ED: Envoy hosts the dynconf listener and serves those paths locally
+  loop Dynamic config refresh
+    CF->>ED: GET /otel over local dynconf socket
+    ED-->>CF: JSON OtelDpConfig
+    CF->>OM: OnOtelChange(backends)
+    OM->>OM: Merge CP plan with local env vars
+    OM->>US: Create or update one Unix socket per backend
+    CF->>ED: GET /meshmetric over local dynconf socket
+    ED-->>CF: JSON MeshMetricDpConfig
+    CF->>MM: OnChange(config)
+    MM->>MM: Configure OTLP metric exporter to the backend Unix socket
+  end
+  Note over US,OM: One backend socket is owned by kuma-dp and serves traces, logs, and metrics
+  E->>US: Envoy sends OTLP/gRPC traces
+  E->>US: Envoy sends OTLP/gRPC logs
+  MM->>US: OTLP/gRPC metric exporter sends metrics
+  US->>OM: Local OTLP receiver accepts all three signals
+  OM->>OC: Forward OTLP with the final runtime config
+```
+
 ### Bootstrap contract
 
 The bootstrap contract should be typed. OTEL capability data should use that typed section, not a separate metadata channel.
