@@ -1,8 +1,8 @@
 # OTEL env-var bootstrap and runtime resolution
 
-- Status: proposed
+- Status: accepted
 
-Technical Story: TBD
+Technical Story: none
 
 ## Context and problem statement
 
