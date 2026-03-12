@@ -13,18 +13,6 @@ import (
 
 var _ = Describe("DataplaneProxyFactory", func() {
 	Describe("sidecarEnvVars", func() {
-		newFactory := func(otelEnvEnabled bool) *DataplaneProxyFactory {
-			return &DataplaneProxyFactory{
-				ContainerConfig: runtime_k8s.DataplaneContainer{
-					DrainTime: config_types.Duration{Duration: 30 * time.Second},
-					EnvVars:   map[string]string{},
-				},
-				BuiltinDNS:      runtime_k8s.BuiltinDNS{},
-				otelPipeEnabled: true,
-				otelEnvEnabled:  otelEnvEnabled,
-			}
-		}
-
 		findEnvVar := func(envVars []kube_core.EnvVar, name string) (kube_core.EnvVar, bool) {
 			for _, ev := range envVars {
 				if ev.Name == name {
@@ -34,18 +22,15 @@ var _ = Describe("DataplaneProxyFactory", func() {
 			return kube_core.EnvVar{}, false
 		}
 
-		It("injects OTEL_ENV_ENABLED=true when enabled", func() {
-			factory := newFactory(true)
-			envVars, err := factory.sidecarEnvVars("default", nil)
-			Expect(err).ToNot(HaveOccurred())
-
-			ev, ok := findEnvVar(envVars, "KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED")
-			Expect(ok).To(BeTrue(), "expected KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED to be injected")
-			Expect(ev.Value).To(Equal("true"))
-		})
-
-		It("does not inject OTEL_ENV_ENABLED when disabled", func() {
-			factory := newFactory(false)
+		It("does not inject OTEL env feature flags", func() {
+			factory := &DataplaneProxyFactory{
+				ContainerConfig: runtime_k8s.DataplaneContainer{
+					DrainTime: config_types.Duration{Duration: 30 * time.Second},
+					EnvVars:   map[string]string{},
+				},
+				BuiltinDNS:      runtime_k8s.BuiltinDNS{},
+				otelPipeEnabled: true,
+			}
 			envVars, err := factory.sidecarEnvVars("default", nil)
 			Expect(err).ToNot(HaveOccurred())
 

@@ -107,8 +107,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 			Expect(cfg.Store.Postgres.MaxConnectionIdleTime.Duration).To(Equal(99 * time.Second))
 
-			Expect(cfg.Runtime.OtelEnvEnabled).To(BeTrue())
-
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
 			Expect(cfg.Store.Cache.Enabled).To(BeFalse())
@@ -229,7 +227,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
 			Expect(cfg.Runtime.Kubernetes.Injector.UnifiedResourceNamingEnabled).To(BeTrue())
-			Expect(cfg.Runtime.Kubernetes.Injector.OtelEnvEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.SocketFileName).To(Equal("my-socket"))
@@ -504,7 +501,6 @@ monitoringAssignmentServer:
   tlsMaxVersion: TLSv1_3
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
 runtime:
-  otelEnvEnabled: true
   universal:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
@@ -609,7 +605,6 @@ runtime:
       transparentProxyConfigMap: foo
       unifiedResourceNamingEnabled: true
       otelPipeEnabled: false
-      otelEnvEnabled: true
       spire:
         enabled: true
         mountPath: "/run/test"
@@ -913,7 +908,6 @@ meshService:
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION":                                        "TLSv1_3",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES":                                      "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
-				"KUMA_RUNTIME_OTEL_ENV_ENABLED":                                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_DISALLOW_MULTIPLE_MESHES_PER_NAMESPACE":                           "true",
 				"KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS":                                                    "allowed-usr-1,allowed-usr-2",
@@ -974,7 +968,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY":                          "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_ENV_ENABLED":                                        "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_SOCKET_FILE_NAME":                                  "my-socket",
