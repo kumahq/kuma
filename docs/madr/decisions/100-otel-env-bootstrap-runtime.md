@@ -6,7 +6,7 @@ Technical Story: TBD
 
 ## Context and problem statement
 
-MADR 095 proposes `MeshOpenTelemetryBackend` as the shared backend for `MeshTrace`, `MeshAccessLog`, and `MeshMetric`. It also proposes the `backendRef` path and the unified `/otel` dynconf route through `kuma-dp`.
+MADR 095 proposes `MeshOpenTelemetryBackend` as the shared backend for `MeshTrace`, `MeshAccessLog`, and `MeshMetric`. It also proposes the `backendRef` path and the `/otel` route through `kuma-dp`.
 
 This MADR does not repeat that design. Read it as an enhancement to MADR 095, not as a statement that the MADR 095 model is already merged or implemented. It answers the next question: if MADR 095 is accepted, how should Kuma reuse standard `OTEL_EXPORTER_OTLP_*` env vars on top of that backend model? In many deployments that config already exists as env vars. On Kubernetes this may come from the OpenTelemetry Operator or sidecar env injection. On Universal it may come from a systemd unit, container runtime, or wrapper script.
 
@@ -44,9 +44,9 @@ Pros:
 
 Cons:
 
-- Bad, because secret-bearing values like OTEL headers or client keys would cross the control plane boundary.
+- Bad, because secrets like OTEL headers or client keys would cross the control plane boundary.
 - Bad, because those values could end up in CP-visible metadata, logs, config dumps, or debug endpoints.
-- Bad, because it makes the control plane responsible for process-local runtime input.
+- Bad, because it makes the control plane responsible for input that belongs to the local process.
 
 We reject this option.
 
@@ -77,7 +77,7 @@ This option splits the job in a way that matches the runtime model proposed in M
 - The control plane resolves policies and `MeshOpenTelemetryBackend`, fills the missing pieces, and sends back a typed `/otel` runtime plan.
 - `kuma-dp` builds the final exporter clients from that plan and its local env vars.
 
-This keeps secrets local, gives the control plane enough information to plan the runtime shape, and keeps the final result inspectable.
+This keeps secrets local, gives the control plane enough information to plan the runtime shape, and keeps the final result easy to inspect.
 
 This is the selected option.
 
@@ -91,7 +91,7 @@ This is the selected option.
 - building the final outbound exporter clients
 - choosing whether a signal uses the default client or a signal-specific client
 
-This design should let `kuma-dp` own the OTLP exporter fields that this env-var path supports, in shared and per-signal forms. MADR 095 may defer some backend fields, so this MADR does not require every OTLP field to ship at once. The runtime model can grow without changing the contract.
+`kuma-dp` should own the OTLP exporter fields that this env-var path supports, both shared and per-signal. MADR 095 may defer some backend fields, so this MADR does not require every OTLP field to ship at once. The runtime model can grow without changing the contract.
 
 The model should be able to cover fields such as:
 
@@ -161,7 +161,7 @@ The collector only sees normal OTLP traffic from `kuma-dp`. It never sees the Un
 
 ### Bootstrap contract
 
-The bootstrap contract should be typed. OTEL capability data should use that typed section, not an auxiliary metadata channel.
+The bootstrap contract should be typed. OTEL capability data should use that typed section, not a separate metadata channel.
 
 Bootstrap happens before the control plane resolves policies. Because of that, `kuma-dp` cannot report per-backend OTEL state at bootstrap time. It can only report process-level OTEL inventory.
 
@@ -178,7 +178,7 @@ The bootstrap payload should include a typed OTEL section with:
 - derived protocol and auth mode
 - local validation errors
 
-This payload must never contain raw endpoints, headers, tokens, certificate contents, key contents, or local file paths. Those values are either secrets or sensitive deployment details. Once they cross into the control plane, they are much harder to reason about and much easier to leak through status, logs, debug output, or config inspection.
+This payload must never contain raw endpoints, headers, tokens, certificate contents, key contents, or local file paths. Those values are secrets or sensitive deployment details. Once they reach the control plane, they are harder to contain and easier to leak through status, logs, debug output, or config inspection.
 
 Example bootstrap inventory:
 
@@ -206,11 +206,11 @@ Example bootstrap inventory:
 }
 ```
 
-This means `kuma-dp` has shared OTEL config in env vars, the shared effective shape is OTLP HTTP with headers-based auth, and only traces have a signal-specific override. The real values still stay local to `kuma-dp`.
+This means `kuma-dp` has shared OTEL config in env vars, the shared config uses OTLP HTTP with header-based auth, and only traces have a signal-specific override. The real values still stay local to `kuma-dp`.
 
 ### Runtime plan on `/otel`
 
-The `OtelPipeBackend` shape proposed for the MADR 095 flow is too resolved for this design. The control plane should send a backend runtime plan instead of a fully resolved exporter config.
+MADR 095 defines `OtelPipeBackend` as a fully resolved exporter config, but this design needs the control plane to leave gaps for `kuma-dp` to fill from env vars. The control plane should send a backend runtime plan instead.
 
 Each backend plan should include:
 
@@ -222,7 +222,7 @@ Each backend plan should include:
 - per-signal missing fields
 - per-signal blocked reasons
 
-This plan tells `kuma-dp` what the backend should look like without sending secret-bearing values through the control plane.
+This plan tells `kuma-dp` what the backend should look like without sending secrets through the control plane.
 
 Example runtime plan:
 
@@ -249,7 +249,7 @@ backends:
       refreshInterval: 10s
 ```
 
-This means all three signals use the same backend and the same socket. The plan still carries the explicit backend settings from `MeshOpenTelemetryBackend` as fallback input. `kuma-dp` may still build signal-specific outbound clients locally if the final merged OTEL config differs after local env vars are applied.
+This means all three signals use the same backend and the same socket. The plan still includes the explicit backend settings from `MeshOpenTelemetryBackend` as fallback. `kuma-dp` may still build signal-specific outbound clients locally if the final merged OTEL config differs after local env vars are applied.
 
 ### Policy-level control
 
@@ -292,9 +292,9 @@ The whole `env` block is optional. When omitted, Kuma applies these defaults:
 - `ExplicitFirst` - explicit backend config wins and env fills the gaps
 - `EnvFirst` - env wins and explicit backend config fills the gaps
 
-`allowSignalOverrides` controls whether `OTEL_EXPORTER_OTLP_TRACES_*`, `..._LOGS_*`, and `..._METRICS_*` are allowed to change the signal-specific runtime shape. When it is `false`, those vars are detected and reported but not used.
+`allowSignalOverrides` controls whether `OTEL_EXPORTER_OTLP_TRACES_*`, `..._LOGS_*`, and `..._METRICS_*` can change per-signal settings. When `false`, those vars are detected and reported but not used.
 
-Backend policy is the only control surface for env-var participation in this design.
+Backend policy is the only place that controls env-var use in this design.
 
 ### Merge rules
 
@@ -414,7 +414,7 @@ This behavior is part of the design, not a follow-up.
 
 ### Status
 
-Status should be first-class. Users should not need to infer the final state from xDS dumps.
+Status should be built in. Users should not need to read xDS dumps to understand what happened.
 
 `DataplaneInsight` should show, per backend and per signal:
 
@@ -482,18 +482,18 @@ That means:
 - raw OTEL headers must never cross the control plane boundary
 - client keys and certificate contents must never cross the control plane boundary
 - local file paths for certificates and keys should also stay local because they still reveal deployment details
-- the control plane should only receive typed inventory and derived status
+- the control plane should only receive typed inventory and computed status
 
-The bootstrap OTEL inventory is informational. It helps the control plane plan runtime behavior and expose status. It must not become a new transport for secrets.
+The bootstrap OTEL inventory is informational. It helps the control plane decide what to do and show status. It must not become a way to send secrets.
 
 ## Reliability implications
 
-The design should use startup-time env discovery. If OTEL env vars change, the dataplane should re-read them on restart or re-bootstrap. We should not try to hot-reload process env.
+`kuma-dp` reads OTEL env vars once at startup. If they change, the dataplane needs a restart or re-bootstrap. We should not try to hot-reload process env.
 
-Resolution must stay deterministic:
+Resolution must be predictable:
 
 - the same explicit config and the same env input must always produce the same final runtime plan
-- invalid env-var input should not silently fall through to a different meaning
+- invalid env-var input should not silently change behavior
 - if explicit config is complete, invalid env vars should be reported but should not break the signal
 - if the backend requires env input and the env input is invalid or missing, the signal should stay not ready
 
