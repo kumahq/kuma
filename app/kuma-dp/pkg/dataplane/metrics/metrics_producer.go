@@ -50,6 +50,7 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	ap.applicationsToScrapeMutex.Lock()
 	var appsToScrape []ApplicationToScrape
 	appsToScrape = append(appsToScrape, ap.applicationsToScrape...)
+	udsClients := ap.httpClientsUDS
 	ap.applicationsToScrapeMutex.Unlock()
 
 	if len(appsToScrape) > 0 {
@@ -73,7 +74,7 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	for _, app := range appsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			content := ap.fetchStats(ctx, app)
+			content := ap.fetchStats(ctx, app, udsClients)
 			out <- content
 		}(app)
 	}
@@ -112,7 +113,7 @@ func combineMetrics(metricsChan <-chan map[instrumentation.Scope][]metricdata.Me
 	return combinedMetrics
 }
 
-func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) map[instrumentation.Scope][]metricdata.Metrics {
+func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape, udsClients map[string]http.Client) map[instrumentation.Scope][]metricdata.Metrics {
 	targetURL := rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{})
 	if app.UnixSocketPath != "" {
 		targetURL = rewriteMetricsURLForUDS(app.Path, app.QueryModifier, &url.URL{})
@@ -122,7 +123,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		log.Error(err, "failed to create request")
 		return nil
 	}
-	resp, err := ap.makeRequest(ctx, req, app)
+	resp, err := ap.makeRequest(ctx, req, app, udsClients)
 	if err != nil {
 		log.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil
@@ -145,10 +146,10 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 	return FromPrometheusMetrics(metricsFromApplication, ap.kumaVersion, app.ExtraAttributes, requestTime)
 }
 
-func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, app ApplicationToScrape) (*http.Response, error) {
+func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, app ApplicationToScrape, udsClients map[string]http.Client) (*http.Response, error) {
 	req = req.WithContext(ctx)
 	if app.UnixSocketPath != "" {
-		client := ap.getOrCreateUDSClient(app.UnixSocketPath)
+		client := getUDSClient(app.UnixSocketPath, udsClients)
 		return client.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
 	}
 	if app.IsIPv6 {
@@ -157,11 +158,9 @@ func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request
 	return ap.httpClientIPv4.Do(req) // #nosec G704 -- internal metrics scraping, operator-configured targets
 }
 
-func (ap *AggregatedProducer) getOrCreateUDSClient(socketPath string) http.Client {
-	if client, ok := ap.httpClientsUDS[socketPath]; ok {
+func getUDSClient(socketPath string, udsClients map[string]http.Client) http.Client {
+	if client, ok := udsClients[socketPath]; ok {
 		return client
 	}
-	client := createHTTPClientForUDS(socketPath)
-	ap.httpClientsUDS[socketPath] = client
-	return client
+	return createHTTPClientForUDS(socketPath)
 }
