@@ -11,7 +11,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -24,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("StatusUpdater", func() {
@@ -63,25 +61,6 @@ var _ = Describe("StatusUpdater", func() {
 			Protocol: motb_api.ProtocolGRPC,
 		}
 		Expect(resManager.Create(context.Background(), motb, store.CreateByKey(name, model.DefaultMesh))).To(Succeed())
-	}
-
-	createDataplaneInsight := func(name string, backend *mesh_proto.DataplaneInsight_OpenTelemetry_Backend) {
-		insight := core_mesh.NewDataplaneInsightResource()
-		now := time.Now()
-		insight.Spec = &mesh_proto.DataplaneInsight{
-			Subscriptions: []*mesh_proto.DiscoverySubscription{
-				{
-					Id:                     name + "-sub",
-					ControlPlaneInstanceId: "cp-1",
-					ConnectTime:            util_proto.MustTimestampProto(now),
-					Status:                 mesh_proto.NewSubscriptionStatus(now),
-				},
-			},
-			OpenTelemetry: &mesh_proto.DataplaneInsight_OpenTelemetry{
-				Backends: []*mesh_proto.DataplaneInsight_OpenTelemetry_Backend{backend},
-			},
-		}
-		Expect(resManager.Create(context.Background(), insight, store.CreateByKey(name, model.DefaultMesh))).To(Succeed())
 	}
 
 	getConditions := func(name string) func() ([]common_api.Condition, error) {
@@ -493,187 +472,6 @@ var _ = Describe("StatusUpdater", func() {
 			Reason:  meshmetric_api.AllBackendRefsResolvedReason,
 			Message: "All MeshOpenTelemetryBackend references are resolved",
 		}))
-	})
-
-	It("should expose unknown runtime status when no dataplane reported", func() {
-		createMOTB("main-collector")
-
-		Eventually(getConditions("main-collector"), "10s", "100ms").Should(SatisfyAll(
-			ContainElement(common_api.Condition{
-				Type:    motb_api.ReadyCondition,
-				Status:  kube_meta.ConditionUnknown,
-				Reason:  motb_api.NoDataplaneReportsReason,
-				Message: "No online dataplane has reported OTEL runtime status for this backend",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesBlockedCondition,
-				Status:  kube_meta.ConditionUnknown,
-				Reason:  motb_api.NoDataplaneReportsReason,
-				Message: "No online dataplane has reported OTEL runtime status for this backend",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesMissingRequiredEnvCondition,
-				Status:  kube_meta.ConditionUnknown,
-				Reason:  motb_api.NoDataplaneReportsReason,
-				Message: "No online dataplane has reported OTEL runtime status for this backend",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesAmbiguousCondition,
-				Status:  kube_meta.ConditionUnknown,
-				Reason:  motb_api.NoDataplaneReportsReason,
-				Message: "No online dataplane has reported OTEL runtime status for this backend",
-			}),
-		))
-	})
-
-	It("should mark reporting dataplanes ready when OTEL runtime is ready", func() {
-		createMOTB("ready-collector")
-		createDataplaneInsight("dp-ready", &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
-			Name: "ready-collector",
-			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-				Enabled: true,
-				State:   "ready",
-			},
-		})
-
-		Eventually(getConditions("ready-collector"), "10s", "100ms").Should(SatisfyAll(
-			ContainElement(common_api.Condition{
-				Type:    motb_api.ReadyCondition,
-				Status:  kube_meta.ConditionTrue,
-				Reason:  motb_api.AllReportingDataplanesReadyReason,
-				Message: "All 1 reporting dataplane(s) are ready",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesBlockedCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.NoReportingDataplanesBlockedReason,
-				Message: "No reporting dataplanes are blocked by OTEL env policy",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesMissingRequiredEnvCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.NoReportingDataplanesMissingRequiredEnvReason,
-				Message: "No reporting dataplanes are missing required OTEL env input",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesAmbiguousCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.NoReportingDataplanesAmbiguousReason,
-				Message: "No reporting dataplanes are ambiguous",
-			}),
-		))
-	})
-
-	It("should mark reporting dataplanes blocked by OTEL env policy", func() {
-		createMOTB("blocked-collector")
-		createDataplaneInsight("dp-blocked", &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
-			Name: "blocked-collector",
-			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-				Enabled:        true,
-				State:          "blocked",
-				BlockedReasons: []string{"EnvDisabledByPolicy"},
-			},
-		})
-
-		Eventually(getConditions("blocked-collector"), "10s", "100ms").Should(SatisfyAll(
-			ContainElement(common_api.Condition{
-				Type:    motb_api.ReadyCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.SomeReportingDataplanesNotReadyReason,
-				Message: "0 of 1 reporting dataplane(s) are ready",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesBlockedCondition,
-				Status:  kube_meta.ConditionTrue,
-				Reason:  motb_api.SomeReportingDataplanesBlockedReason,
-				Message: "1 reporting dataplane(s) are blocked by OTEL env policy",
-			}),
-		))
-	})
-
-	It("should mark reporting dataplanes missing required env input", func() {
-		createMOTB("missing-collector")
-		createDataplaneInsight("dp-missing", &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
-			Name: "missing-collector",
-			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-				Enabled:        true,
-				State:          "missing",
-				BlockedReasons: []string{"RequiredEnvMissing"},
-			},
-		})
-
-		Eventually(getConditions("missing-collector"), "10s", "100ms").Should(SatisfyAll(
-			ContainElement(common_api.Condition{
-				Type:    motb_api.ReadyCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.SomeReportingDataplanesNotReadyReason,
-				Message: "0 of 1 reporting dataplane(s) are ready",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesMissingRequiredEnvCondition,
-				Status:  kube_meta.ConditionTrue,
-				Reason:  motb_api.SomeReportingDataplanesMissingRequiredEnvReason,
-				Message: "1 reporting dataplane(s) are missing required OTEL env input",
-			}),
-		))
-	})
-
-	It("should mark reporting dataplanes ambiguous", func() {
-		createMOTB("ambiguous-collector")
-		createDataplaneInsight("dp-ambiguous", &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
-			Name: "ambiguous-collector",
-			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-				Enabled:        true,
-				State:          "ambiguous",
-				BlockedReasons: []string{"MultipleBackendsForSignal"},
-			},
-		})
-
-		Eventually(getConditions("ambiguous-collector"), "10s", "100ms").Should(SatisfyAll(
-			ContainElement(common_api.Condition{
-				Type:    motb_api.ReadyCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.SomeReportingDataplanesNotReadyReason,
-				Message: "0 of 1 reporting dataplane(s) are ready",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesAmbiguousCondition,
-				Status:  kube_meta.ConditionTrue,
-				Reason:  motb_api.SomeReportingDataplanesAmbiguousReason,
-				Message: "1 reporting dataplane(s) are ambiguous",
-			}),
-		))
-	})
-
-	It("should aggregate multi-signal backend with mixed states", func() {
-		createMOTB("mixed-collector")
-		createDataplaneInsight("dp-mixed", &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
-			Name: "mixed-collector",
-			Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-				Enabled: true,
-				State:   "ready",
-			},
-			Metrics: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
-				Enabled:        true,
-				State:          "blocked",
-				BlockedReasons: []string{"EnvDisabledByPolicy"},
-			},
-		})
-
-		Eventually(getConditions("mixed-collector"), "10s", "100ms").Should(SatisfyAll(
-			ContainElement(common_api.Condition{
-				Type:    motb_api.ReadyCondition,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  motb_api.SomeReportingDataplanesNotReadyReason,
-				Message: "0 of 1 reporting dataplane(s) are ready",
-			}),
-			ContainElement(common_api.Condition{
-				Type:    motb_api.DataplanesBlockedCondition,
-				Status:  kube_meta.ConditionTrue,
-				Reason:  motb_api.SomeReportingDataplanesBlockedReason,
-				Message: "1 reporting dataplane(s) are blocked by OTEL env policy",
-			}),
-		))
 	})
 
 	It("should emit metric", func() {

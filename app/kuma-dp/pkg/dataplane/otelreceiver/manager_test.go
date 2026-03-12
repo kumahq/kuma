@@ -244,7 +244,7 @@ var _ = Describe("markLegacySignal", func() {
 		Expect(logBackends[0].EnvPolicy.Mode).To(Equal(motb_api.EnvModeDisabled))
 		Expect(logBackends[0].Logs).ToNot(BeNil())
 		Expect(logBackends[0].Logs.Enabled).To(BeTrue())
-		Expect(logBackends[0].Logs.BlockedReasons).To(ContainElement(core_xds.OtelBlockedReasonEnvDisabledByPlatform))
+		Expect(logBackends[0].Logs.BlockedReasons).To(BeEmpty())
 		Expect(logBackends[0].Traces).To(BeNil())
 	})
 })

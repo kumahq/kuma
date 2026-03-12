@@ -140,7 +140,7 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 			delete(m.running, socketPath)
 		}
 
-		rs, err := m.startBackend(socketPath, b, runtime)
+		rs, err := m.startBackend(socketPath, runtime)
 		if err != nil {
 			return errors.Wrapf(err, "failed to start OTel receiver on %s", socketPath)
 		}
@@ -151,7 +151,6 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 
 func (m *Manager) startBackend(
 	socketPath string,
-	backend core_xds.OtelPipeBackend,
 	runtime otelenv.BackendRuntime,
 ) (*runningServer, error) {
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
@@ -198,7 +197,6 @@ func (m *Manager) startBackend(
 	logger.Info(
 		"started OTel receiver",
 		"socketPath", socketPath,
-		"clientLayout", backend.ClientLayout,
 		"tracesEnabled", runtime.Traces.Enabled,
 		"logsEnabled", runtime.Logs.Enabled,
 		"metricsEnabled", runtime.Metrics.Enabled,
@@ -265,10 +263,7 @@ func markLegacySignal(backends []core_xds.OtelPipeBackend, signal core_xds.OtelS
 		result[i].Logs = nil
 		result[i].Metrics = nil
 
-		plan := core_xds.OtelSignalRuntimePlan{
-			Enabled:        true,
-			BlockedReasons: []string{core_xds.OtelBlockedReasonEnvDisabledByPlatform},
-		}
+		plan := core_xds.OtelSignalRuntimePlan{Enabled: true}
 		switch signal {
 		case core_xds.OtelSignalTraces:
 			result[i].Traces = &plan

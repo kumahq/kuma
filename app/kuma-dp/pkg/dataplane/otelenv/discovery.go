@@ -62,39 +62,6 @@ func discoverWithLookup(
 	return cfg
 }
 
-func (c Config) DynamicMetadataSummary() map[string]string {
-	if c.Inventory == nil {
-		return nil
-	}
-
-	summary := map[string]string{}
-	summary["otel.env.pipeEnabled"] = fmt.Sprintf("%t", c.Inventory.PipeEnabled)
-
-	if c.Inventory.Shared != nil {
-		summary["otel.env.shared.present"] = "true"
-		if c.Inventory.Shared.EffectiveProtocol != "" {
-			summary["otel.env.shared.protocol"] = string(c.Inventory.Shared.EffectiveProtocol)
-		}
-		if c.Inventory.Shared.EffectiveAuthMode != "" {
-			summary["otel.env.shared.authMode"] = string(c.Inventory.Shared.EffectiveAuthMode)
-		}
-	}
-
-	for _, signal := range []core_xds.OtelSignal{core_xds.OtelSignalTraces, core_xds.OtelSignalLogs, core_xds.OtelSignalMetrics} {
-		inventory := c.Inventory.GetSignal(signal)
-		if inventory == nil || len(inventory.OverrideKinds) == 0 {
-			continue
-		}
-		summary[fmt.Sprintf("otel.env.%s.overrideKinds", signal)] = strings.Join(inventory.OverrideKinds, ",")
-	}
-
-	if len(c.Inventory.ValidationErrors) > 0 {
-		summary["otel.env.validationErrors"] = strings.Join(c.Inventory.ValidationErrors, ",")
-	}
-
-	return summary
-}
-
 func readLayer(prefix string, lookup func(string) (string, bool)) Layer {
 	return Layer{
 		Endpoint:          readField(prefix+"_ENDPOINT", lookup),

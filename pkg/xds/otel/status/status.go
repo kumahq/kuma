@@ -82,11 +82,10 @@ func Build(backends []core_xds.OtelPipeBackend) *mesh_proto.DataplaneInsight_Ope
 
 func buildBackendStatus(backend core_xds.OtelPipeBackend) *mesh_proto.DataplaneInsight_OpenTelemetry_Backend {
 	return &mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
-		Name:         backend.Name,
-		ClientLayout: string(backend.ClientLayout),
-		Traces:       buildSignalStatus(backend, backend.Traces),
-		Logs:         buildSignalStatus(backend, backend.Logs),
-		Metrics:      buildSignalStatus(backend, backend.Metrics),
+		Name:    backend.Name,
+		Traces:  buildSignalStatus(backend, backend.Traces),
+		Logs:    buildSignalStatus(backend, backend.Logs),
+		Metrics: buildSignalStatus(backend, backend.Metrics),
 	}
 }
 
@@ -102,8 +101,6 @@ func buildSignalStatus(
 		Enabled:         plan.Enabled,
 		EnvAllowed:      envAllowed(backend, plan),
 		EnvInputPresent: plan.EnvInputPresent,
-		Source:          plan.Source,
-		DedicatedClient: dedicatedClient(backend, plan),
 		State:           signalState(plan),
 		OverrideKinds:   slices.Clone(plan.OverrideKinds),
 		MissingFields:   slices.Clone(plan.MissingFields),
@@ -116,16 +113,7 @@ func envAllowed(
 	plan *core_xds.OtelSignalRuntimePlan,
 ) bool {
 	return backend.EnvPolicy.Mode != motb_api.EnvModeDisabled &&
-		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPlatform)
-}
-
-func dedicatedClient(
-	backend core_xds.OtelPipeBackend,
-	plan *core_xds.OtelSignalRuntimePlan,
-) bool {
-	return backend.ClientLayout == core_xds.OtelClientLayoutPerSignal &&
-		len(plan.OverrideKinds) > 0 &&
-		len(plan.BlockedReasons) == 0
+		!slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonEnvDisabledByPolicy)
 }
 
 func signalState(plan *core_xds.OtelSignalRuntimePlan) string {
@@ -145,8 +133,7 @@ func signalState(plan *core_xds.OtelSignalRuntimePlan) string {
 func hasHardBlockedReason(plan *core_xds.OtelSignalRuntimePlan) bool {
 	for _, reason := range plan.BlockedReasons {
 		switch reason {
-		case core_xds.OtelBlockedReasonEnvDisabledByPlatform,
-			core_xds.OtelBlockedReasonEnvDisabledByPolicy,
+		case core_xds.OtelBlockedReasonEnvDisabledByPolicy,
 			core_xds.OtelBlockedReasonSignalOverridesBlocked:
 			continue
 		default:

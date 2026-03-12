@@ -166,9 +166,9 @@ var _ = Describe("ResolveBackend", func() {
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
-			Endpoint:  "collector.example:4317",
-			UseHTTPS:  false,
-			UseHTTP:   true,
+			Endpoint: "collector.example:4317",
+			UseHTTPS: false,
+			UseHTTP:  true,
 			EnvPolicy: core_xds.OtelResolvedEnvPolicy{
 				Mode:       motb_api.EnvModeOptional,
 				Precedence: motb_api.EnvPrecedenceExplicitFirst,

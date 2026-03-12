@@ -9,23 +9,7 @@ import (
 
 const OtelDynconfPath = "/otel"
 
-type OtelClientLayout string
-
 const (
-	OtelClientLayoutShared    OtelClientLayout = "shared"
-	OtelClientLayoutPerSignal OtelClientLayout = "per-signal"
-)
-
-type OtelSignalSource string
-
-const (
-	OtelSignalSourceExplicit OtelSignalSource = "explicit"
-	OtelSignalSourceEnv      OtelSignalSource = "env"
-	OtelSignalSourceMixed    OtelSignalSource = "mixed"
-)
-
-const (
-	OtelBlockedReasonEnvDisabledByPlatform  = "EnvDisabledByPlatform"
 	OtelBlockedReasonEnvDisabledByPolicy    = "EnvDisabledByPolicy"
 	OtelBlockedReasonRequiredEnvMissing     = "RequiredEnvMissing"
 	OtelBlockedReasonSignalOverridesBlocked = "SignalOverridesDisallowed"
@@ -41,7 +25,6 @@ type OtelResolvedEnvPolicy struct {
 type OtelSignalRuntimePlan struct {
 	Enabled         bool     `json:"enabled,omitempty"`
 	EnvInputPresent bool     `json:"envInputPresent,omitempty"`
-	Source          string   `json:"source,omitempty"`
 	OverrideKinds   []string `json:"overrideKinds,omitempty"`
 	MissingFields   []string `json:"missingFields,omitempty"`
 	BlockedReasons  []string `json:"blockedReasons,omitempty"`
@@ -51,17 +34,16 @@ type OtelSignalRuntimePlan struct {
 // OtelPipeBackend represents one MOTB backend for the unified /otel dynconf route.
 // All signals sharing this backend use the same SocketPath.
 type OtelPipeBackend struct {
-	Name         string                 `json:"name,omitempty"`
-	SocketPath   string                 `json:"socketPath"`
-	Endpoint     string                 `json:"endpoint"`
-	UseHTTP      bool                   `json:"useHTTP"`
-	UseHTTPS     bool                   `json:"useHTTPS,omitempty"`
-	Path         string                 `json:"path,omitempty"`
-	EnvPolicy    OtelResolvedEnvPolicy  `json:"envPolicy,omitempty"`
-	ClientLayout OtelClientLayout       `json:"clientLayout,omitempty"`
-	Traces       *OtelSignalRuntimePlan `json:"traces,omitempty"`
-	Logs         *OtelSignalRuntimePlan `json:"logs,omitempty"`
-	Metrics      *OtelSignalRuntimePlan `json:"metrics,omitempty"`
+	Name       string                 `json:"name,omitempty"`
+	SocketPath string                 `json:"socketPath"`
+	Endpoint   string                 `json:"endpoint"`
+	UseHTTP    bool                   `json:"useHTTP"`
+	UseHTTPS   bool                   `json:"useHTTPS,omitempty"`
+	Path       string                 `json:"path,omitempty"`
+	EnvPolicy  OtelResolvedEnvPolicy  `json:"envPolicy,omitempty"`
+	Traces     *OtelSignalRuntimePlan `json:"traces,omitempty"`
+	Logs       *OtelSignalRuntimePlan `json:"logs,omitempty"`
+	Metrics    *OtelSignalRuntimePlan `json:"metrics,omitempty"`
 }
 
 // OtelDpConfig is sent from CP to DP via the /otel dynconf route.
@@ -148,33 +130,9 @@ func (a *OtelPipeBackends) finalizeBackend(backend *OtelPipeBackend) {
 		if len(a.signalBackends[signal]) > 1 &&
 			plan.EnvInputPresent &&
 			backend.EnvPolicy.Mode != motb_api.EnvModeDisabled &&
-			!slices.Contains(plan.BlockedReasons, OtelBlockedReasonEnvDisabledByPlatform) &&
 			!slices.Contains(plan.BlockedReasons, OtelBlockedReasonEnvDisabledByPolicy) {
 			plan.BlockedReasons = appendUnique(plan.BlockedReasons, OtelBlockedReasonMultipleBackends)
-			if plan.Source != "" {
-				plan.Source = string(OtelSignalSourceExplicit)
-			}
 		}
-	}
-
-	backend.ClientLayout = OtelClientLayoutShared
-	if backend.enabledSignalCount() <= 1 {
-		return
-	}
-
-	for _, signal := range []OtelSignal{OtelSignalTraces, OtelSignalLogs, OtelSignalMetrics} {
-		plan := backend.getSignalPlan(signal)
-		if plan == nil || len(plan.OverrideKinds) == 0 {
-			continue
-		}
-		if slices.Contains(plan.BlockedReasons, OtelBlockedReasonSignalOverridesBlocked) {
-			continue
-		}
-		if !backend.EnvPolicy.AllowSignalOverrides {
-			continue
-		}
-		backend.ClientLayout = OtelClientLayoutPerSignal
-		return
 	}
 }
 
@@ -202,17 +160,6 @@ func (b *OtelPipeBackend) setSignalPlan(signal OtelSignal, plan OtelSignalRuntim
 	}
 }
 
-func (b *OtelPipeBackend) enabledSignalCount() int {
-	count := 0
-	for _, signal := range []OtelSignal{OtelSignalTraces, OtelSignalLogs, OtelSignalMetrics} {
-		plan := b.getSignalPlan(signal)
-		if plan != nil && plan.Enabled {
-			count++
-		}
-	}
-	return count
-}
-
 func cloneBackend(in OtelPipeBackend) OtelPipeBackend {
 	out := in
 	if in.Traces != nil {
@@ -234,7 +181,6 @@ func cloneSignalPlan(in OtelSignalRuntimePlan) OtelSignalRuntimePlan {
 	return OtelSignalRuntimePlan{
 		Enabled:         in.Enabled,
 		EnvInputPresent: in.EnvInputPresent,
-		Source:          in.Source,
 		OverrideKinds:   slices.Clone(in.OverrideKinds),
 		MissingFields:   slices.Clone(in.MissingFields),
 		BlockedReasons:  slices.Clone(in.BlockedReasons),

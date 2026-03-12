@@ -136,14 +136,6 @@ func (e *EnvPolicy) EffectiveAllowSignalOverrides() bool {
 const (
 	// ReferencedByPoliciesCondition indicates whether any observability policies reference this backend
 	ReferencedByPoliciesCondition string = "ReferencedByPolicies"
-	// ReadyCondition indicates whether reporting dataplanes are ready to use this backend.
-	ReadyCondition string = "Ready"
-	// DataplanesBlockedCondition indicates whether any reporting dataplane is blocked by OTEL env policy.
-	DataplanesBlockedCondition string = "DataplanesBlocked"
-	// DataplanesMissingRequiredEnvCondition indicates whether any reporting dataplane is missing required OTEL env input.
-	DataplanesMissingRequiredEnvCondition string = "DataplanesMissingRequiredEnv"
-	// DataplanesAmbiguousCondition indicates whether any reporting dataplane is ambiguous.
-	DataplanesAmbiguousCondition string = "DataplanesAmbiguous"
 )
 
 // Condition reasons
@@ -152,22 +144,4 @@ const (
 	ReferencedReason string = "Referenced"
 	// NotReferencedReason indicates that no policies reference this backend
 	NotReferencedReason string = "NotReferenced"
-	// NoDataplaneReportsReason indicates that no online dataplane has reported runtime status yet.
-	NoDataplaneReportsReason string = "NoDataplaneReports"
-	// AllReportingDataplanesReadyReason indicates that all reporting dataplanes are ready.
-	AllReportingDataplanesReadyReason string = "AllReportingDataplanesReady"
-	// SomeReportingDataplanesNotReadyReason indicates that some reporting dataplanes are not ready.
-	SomeReportingDataplanesNotReadyReason string = "SomeReportingDataplanesNotReady"
-	// SomeReportingDataplanesBlockedReason indicates that some reporting dataplanes are blocked.
-	SomeReportingDataplanesBlockedReason string = "SomeReportingDataplanesBlocked"
-	// NoReportingDataplanesBlockedReason indicates that no reporting dataplanes are blocked.
-	NoReportingDataplanesBlockedReason string = "NoReportingDataplanesBlocked"
-	// SomeReportingDataplanesMissingRequiredEnvReason indicates that some reporting dataplanes are missing required env input.
-	SomeReportingDataplanesMissingRequiredEnvReason string = "SomeReportingDataplanesMissingRequiredEnv"
-	// NoReportingDataplanesMissingRequiredEnvReason indicates that no reporting dataplanes are missing required env input.
-	NoReportingDataplanesMissingRequiredEnvReason string = "NoReportingDataplanesMissingRequiredEnv"
-	// SomeReportingDataplanesAmbiguousReason indicates that some reporting dataplanes are ambiguous.
-	SomeReportingDataplanesAmbiguousReason string = "SomeReportingDataplanesAmbiguous"
-	// NoReportingDataplanesAmbiguousReason indicates that no reporting dataplanes are ambiguous.
-	NoReportingDataplanesAmbiguousReason string = "NoReportingDataplanesAmbiguous"
 )

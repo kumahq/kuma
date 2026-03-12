@@ -426,8 +426,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			cache.Set(key, &mesh_proto.DataplaneInsight_OpenTelemetry{
 				Backends: []*mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
 					{
-						Name:         "main-collector",
-						ClientLayout: "shared",
+						Name: "main-collector",
 						Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
 							Enabled: true,
 							State:   otelstatus.SignalStateReady,
@@ -464,7 +463,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 			Expect(create.OpenTelemetry).ToNot(BeNil())
 			Expect(create.OpenTelemetry.Backends).To(HaveLen(1))
 			Expect(create.OpenTelemetry.Backends[0].Name).To(Equal("main-collector"))
-			Expect(create.OpenTelemetry.Backends[0].ClientLayout).To(Equal("shared"))
 			Expect(create.OpenTelemetry.Backends[0].Traces).ToNot(BeNil())
 			Expect(create.OpenTelemetry.Backends[0].Traces.Enabled).To(BeTrue())
 			Expect(create.OpenTelemetry.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateReady))
@@ -527,8 +525,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			cache.Set(key, &mesh_proto.DataplaneInsight_OpenTelemetry{
 				Backends: []*mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
 					{
-						Name:         "main-collector",
-						ClientLayout: "per-signal",
+						Name: "main-collector",
 						Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
 							Enabled:        true,
 							State:          otelstatus.SignalStateBlocked,
@@ -545,7 +542,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 			Expect(update.Subscriptions).To(HaveLen(1))
 			Expect(update.OpenTelemetry).ToNot(BeNil())
 			Expect(update.OpenTelemetry.Backends).To(HaveLen(1))
-			Expect(update.OpenTelemetry.Backends[0].ClientLayout).To(Equal("per-signal"))
 			Expect(update.OpenTelemetry.Backends[0].Traces).ToNot(BeNil())
 			Expect(update.OpenTelemetry.Backends[0].Traces.State).To(Equal(otelstatus.SignalStateBlocked))
 			Expect(update.OpenTelemetry.Backends[0].Traces.BlockedReasons).To(ContainElement("signal-overrides-disallowed"))
