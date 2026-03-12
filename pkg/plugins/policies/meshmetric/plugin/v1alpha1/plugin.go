@@ -6,12 +6,9 @@ import (
 	"maps"
 	"net/url"
 	"strings"
-	"time"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -49,8 +46,6 @@ const (
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	WorkloadAttributeKey         = "kuma.workload"
 )
-
-var DefaultRefreshInterval = k8s.Duration{Duration: time.Minute}
 
 type plugin struct{}
 
@@ -101,7 +96,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if ctx.ControlPlane != nil {
 		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
 	}
-	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends, inboundTagsDisabled)
+	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, inboundTagsDisabled)
 	if err != nil {
 		return err
 	}
@@ -232,8 +227,8 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	return nil
 }
 
-func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend, inboundTagsDisabled bool) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources, prometheusBackends, openTelemetryBackend, inboundTagsDisabled)
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, inboundTagsDisabled bool) error {
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources, prometheusBackends, inboundTagsDisabled)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -261,7 +256,6 @@ func createDynamicConfig(
 	mesh *core_mesh.MeshResource,
 	resources xds_context.Resources,
 	prometheusBackends []*api.PrometheusBackend,
-	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
 ) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
@@ -278,28 +272,6 @@ func createDynamicConfig(
 	if len(prometheusBackends) != 0 {
 		backends = append(backends, dpapi.Backend{
 			Type: string(api.PrometheusBackendType),
-		})
-	}
-	for _, backend := range openTelemetryBackends {
-		resolved := policies_xds.ResolveOtelBackend(
-			backend.BackendRef,
-			backend.Endpoint, //nolint:staticcheck // inline endpoint still supported for backward compat
-			policies_xds.ParseOtelEndpoint,
-			backendNameFrom,
-			resources,
-			proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
-		)
-		if resolved == nil {
-			continue
-		}
-		backendName := resolved.Name
-		backends = append(backends, dpapi.Backend{
-			Type: string(api.OpenTelemetryBackendType),
-			Name: &backendName,
-			OpenTelemetry: &dpapi.OpenTelemetryBackend{
-				Endpoint:        core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
-				RefreshInterval: pointer.DerefOr(backend.RefreshInterval, DefaultRefreshInterval),
-			},
 		})
 	}
 

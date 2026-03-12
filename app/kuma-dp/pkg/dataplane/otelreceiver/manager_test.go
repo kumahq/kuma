@@ -234,18 +234,44 @@ var _ = Describe("sameBackendRuntime", func() {
 	})
 })
 
-var _ = Describe("markLegacySignal", func() {
-	It("should keep only the legacy signal enabled and disable env use", func() {
-		backend := traceBackend("socket", "collector:4317")
+var _ = Describe("SetOnReconcile callback", func() {
+	It("should call onReconcile after reconciling backends", func() {
+		var callbackBackends []core_xds.OtelPipeBackend
+		manager := NewManager(otelenv.Config{})
+		manager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
+			callbackBackends = backends
+		})
+		DeferCleanup(manager.stopAll)
 
-		logBackends := markLegacySignal([]core_xds.OtelPipeBackend{backend}, core_xds.OtelSignalLogs)
+		socketA := testSocketPath("callback-a")
+		backendA := traceBackend(socketA, "collector-a:4317")
+		backendA.Metrics = &core_xds.OtelSignalRuntimePlan{
+			Enabled:         true,
+			RefreshInterval: "1m0s",
+		}
 
-		Expect(logBackends).To(HaveLen(1))
-		Expect(logBackends[0].EnvPolicy.Mode).To(Equal(motb_api.EnvModeDisabled))
-		Expect(logBackends[0].Logs).ToNot(BeNil())
-		Expect(logBackends[0].Logs.Enabled).To(BeTrue())
-		Expect(logBackends[0].Logs.BlockedReasons).To(BeEmpty())
-		Expect(logBackends[0].Traces).To(BeNil())
+		Expect(manager.reconcile([]core_xds.OtelPipeBackend{backendA})).To(Succeed())
+		Expect(callbackBackends).To(HaveLen(1))
+		Expect(callbackBackends[0].SocketPath).To(Equal(socketA))
+		Expect(callbackBackends[0].Metrics.Enabled).To(BeTrue())
+	})
+
+	It("should pass all backends including metrics-disabled ones", func() {
+		var callbackBackends []core_xds.OtelPipeBackend
+		manager := NewManager(otelenv.Config{})
+		manager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
+			callbackBackends = backends
+		})
+		DeferCleanup(manager.stopAll)
+
+		socketA := testSocketPath("all-a")
+		socketB := testSocketPath("all-b")
+		backendA := traceBackend(socketA, "collector-a:4317")
+		backendB := traceBackend(socketB, "collector-b:4317")
+		// backendB has no metrics signal
+
+		Expect(manager.reconcile([]core_xds.OtelPipeBackend{backendA, backendB})).To(Succeed())
+		Expect(callbackBackends).To(HaveLen(2))
 	})
 })
 

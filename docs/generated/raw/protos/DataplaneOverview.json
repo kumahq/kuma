@@ -509,9 +509,6 @@
                 "name": {
                     "type": "string"
                 },
-                "clientLayout": {
-                    "type": "string"
-                },
                 "traces": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Signal",
                     "additionalProperties": true
@@ -540,9 +537,6 @@
                 "envInputPresent": {
                     "type": "boolean"
                 },
-                "dedicatedClient": {
-                    "type": "boolean"
-                },
                 "state": {
                     "type": "string"
                 },
@@ -563,9 +557,6 @@
                         "type": "string"
                     },
                     "type": "array"
-                },
-                "source": {
-                    "type": "string"
                 }
             },
             "additionalProperties": true,

@@ -1,8 +1,6 @@
 package dpapi
 
 import (
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
@@ -33,12 +31,6 @@ type Application struct {
 }
 
 type Backend struct {
-	Type          string                `json:"type"`
-	Name          *string               `json:"name"`
-	OpenTelemetry *OpenTelemetryBackend `json:"openTelemetry,omitempty"`
-}
-
-type OpenTelemetryBackend struct {
-	Endpoint        string       `json:"endpoint"`
-	RefreshInterval k8s.Duration `json:"refreshInterval"`
+	Type string  `json:"type"`
+	Name *string `json:"name"`
 }

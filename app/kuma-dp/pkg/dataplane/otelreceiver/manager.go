@@ -18,11 +18,8 @@ import (
 
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
 	"github.com/kumahq/kuma/v2/pkg/core"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	mal_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/dpapi"
-	mt_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/dpapi"
 )
 
 var logger = core.Log.WithName("otel-receiver")
@@ -31,10 +28,11 @@ var logger = core.Log.WithName("otel-receiver")
 // from Envoy and kuma-dp, and forwards them to the real collector.
 // Each backend gets one socket with all three gRPC services registered.
 type Manager struct {
-	newConfig chan []core_xds.OtelPipeBackend
-	running   map[string]*runningServer // key: socketPath
-	done      chan struct{}
-	envConfig otelenv.Config
+	newConfig   chan []core_xds.OtelPipeBackend
+	running     map[string]*runningServer // key: socketPath
+	done        chan struct{}
+	envConfig   otelenv.Config
+	onReconcile func([]core_xds.OtelPipeBackend)
 }
 
 type runningServer struct {
@@ -54,6 +52,13 @@ func NewManager(envConfig otelenv.Config) *Manager {
 		done:      make(chan struct{}),
 		envConfig: envConfig,
 	}
+}
+
+// SetOnReconcile sets a callback that fires after each reconcile with the
+// current backends list. Used by run.go to bridge OTEL metric export targets
+// to meshmetrics.Manager.
+func (m *Manager) SetOnReconcile(fn func([]core_xds.OtelPipeBackend)) {
+	m.onReconcile = fn
 }
 
 func (m *Manager) NeedLeaderElection() bool { return false }
@@ -84,26 +89,6 @@ func (m *Manager) OnOtelChange(ctx context.Context, r io.Reader) error {
 		return fmt.Errorf("otel dp config decode error: %w", err)
 	}
 	return m.sendConfig(ctx, cfg.Backends)
-}
-
-// OnTraceChange is the legacy configFetcher handler for /meshtrace.
-// Kept for backward compat with older CPs that still send per-signal dynconf.
-func (m *Manager) OnTraceChange(ctx context.Context, r io.Reader) error {
-	cfg := mt_dpapi.MeshTraceDpConfig{}
-	if err := json.NewDecoder(r).Decode(&cfg); err != nil {
-		return fmt.Errorf("meshtrace dp config decode error: %w", err)
-	}
-	return m.sendConfig(ctx, markLegacySignal(cfg.Backends, core_xds.OtelSignalTraces))
-}
-
-// OnLogChange is the legacy configFetcher handler for /meshaccesslog.
-// Kept for backward compat with older CPs that still send per-signal dynconf.
-func (m *Manager) OnLogChange(ctx context.Context, r io.Reader) error {
-	cfg := mal_dpapi.MeshAccessLogDpConfig{}
-	if err := json.NewDecoder(r).Decode(&cfg); err != nil {
-		return fmt.Errorf("meshaccesslog dp config decode error: %w", err)
-	}
-	return m.sendConfig(ctx, markLegacySignal(cfg.Backends, core_xds.OtelSignalLogs))
 }
 
 func (m *Manager) sendConfig(ctx context.Context, backends []core_xds.OtelPipeBackend) error {
@@ -145,6 +130,9 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 			return errors.Wrapf(err, "failed to start OTel receiver on %s", socketPath)
 		}
 		m.running[socketPath] = rs
+	}
+	if m.onReconcile != nil {
+		m.onReconcile(backends)
 	}
 	return nil
 }
@@ -248,30 +236,4 @@ func sameBoolPtr(a, b *bool) bool {
 		return a == nil && b == nil
 	}
 	return *a == *b
-}
-
-func markLegacySignal(backends []core_xds.OtelPipeBackend, signal core_xds.OtelSignal) []core_xds.OtelPipeBackend {
-	result := make([]core_xds.OtelPipeBackend, len(backends))
-	for i, backend := range backends {
-		result[i] = backend
-		result[i].EnvPolicy = core_xds.OtelResolvedEnvPolicy{
-			Mode:                 motb_api.EnvModeDisabled,
-			Precedence:           motb_api.EnvPrecedenceExplicitFirst,
-			AllowSignalOverrides: false,
-		}
-		result[i].Traces = nil
-		result[i].Logs = nil
-		result[i].Metrics = nil
-
-		plan := core_xds.OtelSignalRuntimePlan{Enabled: true}
-		switch signal {
-		case core_xds.OtelSignalTraces:
-			result[i].Traces = &plan
-		case core_xds.OtelSignalLogs:
-			result[i].Logs = &plan
-		case core_xds.OtelSignalMetrics:
-			result[i].Metrics = &plan
-		}
-	}
-	return result
 }

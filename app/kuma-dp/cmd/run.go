@@ -36,9 +36,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	dns_dpapi "github.com/kumahq/kuma/v2/pkg/dns/dpapi"
-	meshaccesslog_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/dpapi"
 	meshmetric_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
-	meshtrace_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/dpapi"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	kuma_net "github.com/kumahq/kuma/v2/pkg/util/net"
@@ -565,14 +563,25 @@ func setupObservability(
 	}
 
 	otelManager := otelreceiver.NewManager(discoveredOtelEnv)
+	otelManager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
+		var targets []meshmetrics.OtelExportTarget
+		for _, b := range backends {
+			if b.Metrics == nil || !b.Metrics.Enabled {
+				continue
+			}
+			ri, _ := time.ParseDuration(b.Metrics.RefreshInterval)
+			if ri == 0 {
+				ri = time.Minute
+			}
+			targets = append(targets, meshmetrics.OtelExportTarget{
+				Name:            b.Name,
+				SocketPath:      b.SocketPath,
+				RefreshInterval: ri,
+			})
+		}
+		mm.OnOtelTargetsChange(targets)
+	})
 	if err := fetcher.AddHandler(core_xds.OtelDynconfPath, otelManager.OnOtelChange); err != nil {
-		return nil, err
-	}
-	// Legacy handlers for backward compat with older CPs sending per-signal dynconf.
-	if err := fetcher.AddHandler(meshtrace_dpapi.PATH, otelManager.OnTraceChange); err != nil {
-		return nil, err
-	}
-	if err := fetcher.AddHandler(meshaccesslog_dpapi.PATH, otelManager.OnLogChange); err != nil {
 		return nil, err
 	}
 
