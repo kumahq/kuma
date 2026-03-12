@@ -103,9 +103,13 @@ jobs:
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
       - id: image_meta
+        env:
+          REGISTRY: ${{ inputs.REGISTRY }}
+          IMAGE_NAME: ${{ matrix.image }}
+          VERSION_NAME: ${{ inputs.VERSION_NAME }}
         run: |
-          echo "Extracting image meta for ${{ matrix.image }}"
-          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> "$GITHUB_OUTPUT"
+          echo "Extracting image meta for $IMAGE_NAME"
+          printf 'image=%s/%s:%s\n' "$REGISTRY" "$IMAGE_NAME" "$VERSION_NAME" >> "$GITHUB_OUTPUT"
       - run: |
           make images/${{ matrix.image }}
       - run: |

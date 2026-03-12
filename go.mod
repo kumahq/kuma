@@ -72,7 +72,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.42.0
 	golang.org/x/text v0.34.0
 	golang.org/x/tools v0.42.0
@@ -88,7 +88,7 @@ require (
 	k8s.io/apimachinery v0.35.2
 	k8s.io/client-go v0.35.2
 	k8s.io/klog/v2 v2.140.0
-	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
+	k8s.io/kube-openapi v0.0.0-20260304202019-5b3e3fdb0acf
 	k8s.io/kubectl v0.35.2
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/controller-runtime v0.23.3
