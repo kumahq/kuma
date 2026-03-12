@@ -30,9 +30,11 @@ type DataplaneProxyFactory struct {
 	ControlPlaneURL              string
 	ControlPlaneCACert           string
 	DefaultAdminPort             uint32
+	DefaultReadinessPort         uint32
 	ContainerConfig              runtime_k8s.DataplaneContainer
 	BuiltinDNS                   runtime_k8s.BuiltinDNS
 	WaitForDataplane             bool
+	adminUnixSocket              bool
 	sidecarContainersEnabled     bool
 	virtualProbesEnabled         bool
 	applicationProbeProxyPort    uint32
@@ -44,9 +46,11 @@ func NewDataplaneProxyFactory(
 	controlPlaneURL string,
 	controlPlaneCACert string,
 	defaultAdminPort uint32,
+	defaultReadinessPort uint32,
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
+	adminUnixSocket bool,
 	sidecarContainersEnabled bool,
 	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
@@ -57,9 +61,11 @@ func NewDataplaneProxyFactory(
 		ControlPlaneURL:              controlPlaneURL,
 		ControlPlaneCACert:           controlPlaneCACert,
 		DefaultAdminPort:             defaultAdminPort,
+		DefaultReadinessPort:         defaultReadinessPort,
 		ContainerConfig:              containerConfig,
 		BuiltinDNS:                   builtinDNS,
 		WaitForDataplane:             waitForDataplane,
+		adminUnixSocket:              adminUnixSocket,
 		sidecarContainersEnabled:     sidecarContainersEnabled,
 		virtualProbesEnabled:         virtualProbesEnabled,
 		applicationProbeProxyPort:    applicationProbeProxyPort,
@@ -120,6 +126,14 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
+	// When admin UDS is enabled, Envoy admin listens on a Unix socket
+	// instead of TCP. Use the dedicated readiness port for probes since
+	// K8s probes only support TCP/HTTP.
+	probePort := adminPort
+	if i.adminUnixSocket {
+		probePort = i.DefaultReadinessPort
+	}
+
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
 		return kube_core.Container{}, err
@@ -154,7 +168,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(adminPort),
+						IntVal: int32(probePort),
 					},
 				},
 			},
@@ -169,7 +183,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(adminPort),
+						IntVal: int32(probePort),
 					},
 				},
 			},
@@ -198,7 +212,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(adminPort),
+						IntVal: int32(probePort),
 					},
 				},
 			},
@@ -214,7 +228,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", adminPort)},
+					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)},
 				},
 			},
 		}
@@ -276,6 +290,14 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
 		},
+	}
+	if i.adminUnixSocket {
+		// When admin is on UDS, force readiness reporter to use TCP so
+		// K8s probes (which only support TCP/HTTP) can reach it.
+		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
+			Value: "true",
+		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{

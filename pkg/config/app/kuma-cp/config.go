@@ -554,6 +554,12 @@ func (c Config) GetEnvoyAdminPort() uint32 {
 	return c.BootstrapServer.Params.AdminPort
 }
 
+const DefaultReadinessPort = 9902
+
+func (c Config) GetEnvoyReadinessPort() uint32 {
+	return DefaultReadinessPort
+}
+
 type MeshMultiZoneServiceIPAM struct {
 	// CIDR for MeshMultiZone IPs
 	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"`

@@ -101,6 +101,8 @@ func New(
 	sidecarContainersEnabled bool,
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
+	readinessPort uint32,
+	adminUnixSocket bool,
 	systemNamespace string,
 ) (*KumaInjector, error) {
 	var caCert string
@@ -118,8 +120,10 @@ func New(
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
 		proxyFactory: containers.NewDataplaneProxyFactory(
-			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
-			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
+			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
+			cfg.SidecarContainer.DataplaneContainer,
+			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, adminUnixSocket,
+			sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
 			cfg.Spire.Enabled,
 		),
