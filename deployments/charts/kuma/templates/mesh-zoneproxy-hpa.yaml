@@ -1,0 +1,118 @@
+{{- range $meshEntry := .Values.meshes }}
+{{- $meshName := $meshEntry.name }}
+
+{{- if and $meshEntry.ingress $meshEntry.ingress.enabled $meshEntry.ingress.hpa $meshEntry.ingress.hpa.enabled }}
+{{- $role := "ingress" }}
+{{- $cfg := $meshEntry.ingress.hpa }}
+---
+{{ if $.Capabilities.APIVersions.Has "autoscaling/v2" }}
+apiVersion: autoscaling/v2
+{{ else }}
+apiVersion: autoscaling/v1
+{{ end }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  minReplicas: {{ default 2 $cfg.minReplicas }}
+  maxReplicas: {{ default 5 $cfg.maxReplicas }}
+  {{ if $.Capabilities.APIVersions.Has "autoscaling/v2" }}
+  {{- if $cfg.metrics }}
+  metrics: {{- toYaml $cfg.metrics | nindent 4 }}
+  {{- else }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ default 80 $cfg.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{ else }}
+  targetCPUUtilizationPercentage: {{ default 80 $cfg.targetCPUUtilizationPercentage }}
+  {{- end }}
+{{- end }}
+
+{{- if and $meshEntry.egress $meshEntry.egress.enabled $meshEntry.egress.hpa $meshEntry.egress.hpa.enabled }}
+{{- $role := "egress" }}
+{{- $cfg := $meshEntry.egress.hpa }}
+---
+{{ if $.Capabilities.APIVersions.Has "autoscaling/v2" }}
+apiVersion: autoscaling/v2
+{{ else }}
+apiVersion: autoscaling/v1
+{{ end }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  minReplicas: {{ default 2 $cfg.minReplicas }}
+  maxReplicas: {{ default 5 $cfg.maxReplicas }}
+  {{ if $.Capabilities.APIVersions.Has "autoscaling/v2" }}
+  {{- if $cfg.metrics }}
+  metrics: {{- toYaml $cfg.metrics | nindent 4 }}
+  {{- else }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ default 80 $cfg.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{ else }}
+  targetCPUUtilizationPercentage: {{ default 80 $cfg.targetCPUUtilizationPercentage }}
+  {{- end }}
+{{- end }}
+
+{{- if and $meshEntry.combinedProxies $meshEntry.combinedProxies.enabled $meshEntry.combinedProxies.hpa $meshEntry.combinedProxies.hpa.enabled }}
+{{- $role := "zoneproxy" }}
+{{- $cfg := $meshEntry.combinedProxies.hpa }}
+---
+{{ if $.Capabilities.APIVersions.Has "autoscaling/v2" }}
+apiVersion: autoscaling/v2
+{{ else }}
+apiVersion: autoscaling/v1
+{{ end }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  minReplicas: {{ default 2 $cfg.minReplicas }}
+  maxReplicas: {{ default 5 $cfg.maxReplicas }}
+  {{ if $.Capabilities.APIVersions.Has "autoscaling/v2" }}
+  {{- if $cfg.metrics }}
+  metrics: {{- toYaml $cfg.metrics | nindent 4 }}
+  {{- else }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ default 80 $cfg.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{ else }}
+  targetCPUUtilizationPercentage: {{ default 80 $cfg.targetCPUUtilizationPercentage }}
+  {{- end }}
+{{- end }}
+
+{{- end }}

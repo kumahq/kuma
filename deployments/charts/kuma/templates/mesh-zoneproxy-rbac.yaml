@@ -1,0 +1,67 @@
+{{- range $meshEntry := .Values.meshes }}
+{{- $meshName := $meshEntry.name }}
+
+{{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+{{- $role := "ingress" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+{{- with (and $meshEntry.ingress.serviceAccountAnnotations) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with $.Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+{{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+{{- $role := "egress" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+{{- with (and $meshEntry.egress.serviceAccountAnnotations) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with $.Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+{{- if and $meshEntry.combinedProxies $meshEntry.combinedProxies.enabled }}
+{{- $role := "zoneproxy" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+{{- with (and $meshEntry.combinedProxies.serviceAccountAnnotations) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with $.Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
