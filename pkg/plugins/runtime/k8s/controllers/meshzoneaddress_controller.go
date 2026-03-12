@@ -13,9 +13,11 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_event "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
@@ -85,7 +87,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 	if address == "" {
 		r.Eventf(svc, nil, kube_core.EventTypeWarning, NoPublicAddressForZoneProxyReason, "NoPublicAddress",
-			"unable to determine public address: Service type must be LoadBalancer, NodePort, or use spec.externalIPs")
+			"unable to determine public address for zone ingress Service; ensure it exposes a reachable external address (LoadBalancer, NodePort with suitable node addresses, or spec.externalIPs) and that the address is ready")
 		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
 	}
 
@@ -99,6 +101,15 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 
 	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, mza, func() error {
+		// If the MeshZoneAddress already exists and is not owned by this Service,
+		// skip mutation to avoid clobbering user-managed resources.
+		if mza.GetGeneration() != 0 {
+			if owners := mza.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
+				r.Eventf(svc, nil, kube_core.EventTypeWarning, NoPublicAddressForZoneProxyReason, "Conflict",
+					"MeshZoneAddress %s already exists and is not owned by this Service", req.Name)
+				return errors.Errorf("MeshZoneAddress already exists and is not owned by Service")
+			}
+		}
 		if mza.Labels == nil {
 			mza.Labels = map[string]string{}
 		}
@@ -253,6 +264,11 @@ func (r *MeshZoneAddressReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		Watches(
 			&kube_core.Node{},
 			kube_handler.EnqueueRequestsFromMapFunc(r.nodeToZoneProxyServices(mgr.GetClient())),
+		).
+		Watches(
+			&kube_core.Namespace{},
+			kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())),
+			builder.WithPredicates(predicate.LabelChangedPredicate{}),
 		).
 		Complete(r)
 }
