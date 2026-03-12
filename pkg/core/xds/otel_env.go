@@ -82,7 +82,5 @@ func (i *OtelSignalEnvInventory) HasAnyInput() bool {
 		i.CertificatePresent ||
 		i.ClientCertificatePresent ||
 		i.ClientKeyPresent ||
-		len(i.OverrideKinds) > 0 ||
-		i.EffectiveProtocol != "" ||
-		i.EffectiveAuthMode != ""
+		len(i.OverrideKinds) > 0
 }

@@ -207,6 +207,24 @@ var _ = Describe("Kubernetes Annotations", func() {
 			Expect(exists).To(BeTrue())
 		})
 
+		It("should parse value with equals in value part", func() {
+			// given
+			annotations := map[string]string{
+				"key1": "OTEL_HEADERS=authorization=Bearer token123;OTHER=val",
+			}
+
+			// when
+			m, exists, err := metadata.Annotations(annotations).GetMap("key1")
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(m).To(Equal(map[string]string{
+				"OTEL_HEADERS": "authorization=Bearer token123",
+				"OTHER":        "val",
+			}))
+			Expect(exists).To(BeTrue())
+		})
+
 		It("should return error if value has wrong format", func() {
 			// given
 			annotations := map[string]string{
