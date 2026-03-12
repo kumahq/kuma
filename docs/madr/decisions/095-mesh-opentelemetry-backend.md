@@ -74,13 +74,13 @@ The platform split is intentional. On Kubernetes, `HOST_IP` comes from the injec
 
 The `protocol` field selects gRPC or HTTP transport. Envoy's OTel extensions use separate `grpc_service` and `http_service` fields in their protobuf config - the CP needs to know which one to generate. Port-based inference (4317 = gRPC, 4318 = HTTP) would break for non-standard setups, so an explicit field is safer. Default is `grpc` for backward compatibility with existing Kuma behavior.
 
-The OTLP/HTTP spec defines two content encodings: binary protobuf (`application/x-protobuf`) and JSON (`application/json`). Envoy's built-in OTel extensions (stats sink, access logger, tracer) only support protobuf encoding over HTTP. JSON encoding is not available in Envoy without a custom filter. So `protocol: http` means OTLP/HTTP with protobuf encoding. If JSON encoding support is needed later, a separate `encoding` field can be added to the spec.
+The OTLP/HTTP spec defines two content encodings: binary protobuf (`application/x-protobuf`) and JSON (`application/json`). This MADR keeps `protocol` as a transport choice (`grpc` or `http`) because that is the only distinction Kuma needs to generate today. On the direct inline `endpoint` path, Envoy's built-in OTel extensions (stats sink, access logger, tracer) only support protobuf encoding over HTTP. The `backendRef` pipe path is different because kuma-dp receives local OTLP traffic itself, but this MADR still avoids inventing `http/json` or `grpc/json` variants before there is a concrete implementation path for them. So `protocol: http` means OTLP/HTTP with protobuf encoding in the first version. If another encoding becomes a real requirement later, add a separate `encoding` field instead of overloading `protocol`.
 
-When `protocol: http`, the `path` field is a base path prefix. The CP appends the signal-specific suffix (`/v1/traces`, `/v1/metrics`, `/v1/logs`) during xDS generation, matching how the OTel SDK handles `OTEL_EXPORTER_OTLP_ENDPOINT`. An empty path means the standard paths are used directly. For gRPC, paths are irrelevant - gRPC routes by protobuf service name.
+When `protocol: http`, the `path` field is a base path prefix. The CP appends the signal-specific suffix (`/v1/traces`, `/v1/metrics`, `/v1/logs`) during xDS generation, matching how the OTel SDK handles `OTEL_EXPORTER_OTLP_ENDPOINT`. An empty path means the standard paths are used directly. For gRPC, paths are irrelevant and validation rejects any non-empty value because gRPC routes by protobuf service name.
 
 #### Policy reference
 
-Each policy's OTel backend gets an optional `backendRef` field. When set, the endpoint comes from the referenced MeshOpenTelemetryBackend. Signal-specific fields remain inline. In 3.0, `backendRef` becomes required and the inline `endpoint` is removed.
+Each policy's OTel backend gets an optional `backendRef` field. When set, the endpoint comes from the referenced MeshOpenTelemetryBackend. The `kind` + `name` pair is just a typed reference to that mesh-scoped resource, and KDS syncs the resource itself to zones. Signal-specific fields remain inline. In 3.0, `backendRef` becomes required and the inline `endpoint` is removed.
 
 ##### MeshMetric
 
@@ -162,9 +162,9 @@ None of the current policy OTel backend structs have a `backendRef` field. Today
 - MeshTrace `OpenTelemetryBackend`: `endpoint`
 - MeshAccessLog `OtelBackend`: `endpoint` + `attributes` + `body`
 
-Each struct needs a new optional `backendRef` field. The inline `endpoint` remains supported but is deprecated starting in 2.14 and will be removed in 3.0. Validation enforces mutual exclusivity: either `endpoint` or `backendRef`, not both.
+Each struct needs a new optional `backendRef` field. The inline `endpoint` remains supported but is deprecated starting in 2.14 and will be removed in 3.0. Validation enforces mutual exclusivity: either `endpoint` or `backendRef`, not both. When inline `endpoint` is used, the implementation should also emit a deprecation warning so operators see the migration path before 3.0.
 
-Use `common_api.BackendResourceRef`, not `TargetRef`. This is a typed resource reference (`kind` + `name`), not policy matching.
+Use `common_api.BackendResourceRef`, not `TargetRef`. This is a typed resource reference (`kind` + `name`), not policy matching. `backendRef.name` is the regular mesh-scoped resource name, not a display alias, and KDS syncs the MeshOpenTelemetryBackend resource itself to zones so zone CPs resolve the same name locally after sync.
 
 ```go
 // In each policy's OTel backend struct
@@ -187,7 +187,7 @@ type OpenTelemetryBackend struct {
    - If `spec.endpoint.port` is omitted: default it to `4317`.
    - If `spec.endpoint.path` is omitted: use an empty path.
 3. Inline `endpoint` path: inline endpoints still bypass the pipe. The CP generates direct Envoy OTel resources for them, same as today.
-4. `backendRef` path - unified kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, the policy plugins add the resolved backend to a shared `OtelPipeBackends` accumulator. During xDS generation for that proxy, the policy generator writes a single `/otel` dynconf route from the deduplicated backend list. kuma-dp watches `/otel` and starts one receiver per backend socket. Socket identity is per backend, not global: if a proxy resolves two different backends, kuma-dp opens two local Unix sockets. Each receiver forwards traces, logs, and metrics to either the explicit backend endpoint or the local default address that `kuma-dp` resolves. The port and path come from the `/otel` plan. Trace and access log still point Envoy at the local Unix socket for that backend through normal xDS resources.
+4. `backendRef` path - unified kuma-dp pipe mode: when `backendRef` is set and the proxy advertises `FeatureOtelViaKumaDp`, the policy plugins add the resolved backend to a shared `OtelPipeBackends` accumulator. During xDS generation for that proxy, the policy generator writes a single `/otel` dynconf route from the deduplicated backend list. kuma-dp watches `/otel` and starts one receiver per backend socket. Socket identity is per backend, not global: if a proxy resolves two different backends, kuma-dp opens two local Unix sockets. Each receiver forwards traces, logs, and metrics to either the explicit backend endpoint or the local default address that `kuma-dp` resolves. The port and path come from the `/otel` plan. Trace and access log still point Envoy at the local Unix socket for that backend through normal xDS resources. If the proxy does not advertise `FeatureOtelViaKumaDp`, this is a compatibility fallback, not an error: the CP still resolves `backendRef`, but it keeps using the existing pre-pipe signal-specific delivery path instead of `/otel`.
 5. MeshMetric path: MeshMetric still keeps its `/meshmetric` dynconf route, but only for scrape-side config such as applications, sidecar stats settings, extra labels, and Prometheus state. OTEL backend runtime for metrics, including socket selection and OTEL export `refreshInterval`, comes from `/otel` together with traces and logs. In short, `/meshmetric` answers "what should I scrape" and `/otel` answers "where and how should I export". Inline `endpoint` backends stay on the direct Envoy path and do not use `/otel`.
 
 #### Runtime flow for `backendRef`
@@ -571,8 +571,8 @@ The initial implementation should cover:
 4. Resolution in each policy's `Apply()`: use `endpoint.address` when it is set. If `endpoint.address` is omitted, leave the address empty in the `/otel` plan and let `kuma-dp` resolve the node-local default address at runtime. If `endpoint.port` is omitted, default it to `4317`. If `endpoint.path` is omitted, use an empty path.
 5. On Kubernetes, the sidecar injector always injects `HOST_IP` into every `kuma-dp` container, unconditionally, using the Downward API `status.hostIP`. `kuma-dp` uses it locally for default node-local backend resolution. On other runtimes, the same default flow falls back to `127.0.0.1`. There is no need to send `HOST_IP` through bootstrap metadata, and this default does not depend on OpenTelemetry environment variables.
 6. A status updater component sets `Referenced` or `NotReferenced` on MeshOpenTelemetryBackend resources and sets resolved or unresolved `backendRef` conditions on MeshMetric, MeshTrace, and MeshAccessLog (user story 5). An empty MeshOpenTelemetryBackend is still a valid resolved backend because the defaults are intentional. There should be no warning just because `endpoint.address` is omitted. To debug that path, the operator can see it directly in the resource shape and in the generated `/otel` plan, where the address stays empty while port and path are already defaulted.
-7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0)
-8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. This is the only OTEL backend runtime contract for traces, logs, and metrics. The metrics signal plan in `/otel` also carries OTEL export `refreshInterval`. kuma-dp runs one local Unix socket and one receiver per backend, then forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path.
+7. Inline `endpoint` on policies remains supported but deprecated (removed in 3.0), and using it should emit a deprecation warning
+8. Unified kuma-dp pipe mode for `backendRef` backends: when the proxy has `FeatureOtelViaKumaDp`, the policy plugins accumulate deduplicated MOTB backends and the generator writes one `/otel` dynconf route. This is the only OTEL backend runtime contract for traces, logs, and metrics. The metrics signal plan in `/otel` also carries OTEL export `refreshInterval`. kuma-dp runs one local Unix socket and one receiver per backend, then forwards traces, logs, and metrics to the collector. Inline `endpoint` backends stay on the direct Envoy path. If the proxy does not advertise the feature, `backendRef` still applies through the existing pre-pipe signal-specific path instead of failing policy application.
 9. `/meshmetric` stays as a scrape-side contract only. It should carry applications, sidecar settings, extra labels, and Prometheus-related state, but not OTEL backend endpoint details or OTEL export `refreshInterval`.
 10. kuma-dp should treat `/otel` as one shared source of truth for OTEL backend runtime. One fetch and decode step should feed both the OTEL receiver side and the metrics pipeline so the three signals cannot drift apart.
 
@@ -580,11 +580,9 @@ The initial implementation should cover:
 
 In 2.14.0, pipe mode should be on by default. The CP should use it whenever `backendRef` is set and the data plane proxy advertises `FeatureOtelViaKumaDp`.
 
-Compatibility note: the unified `/otel` route is only used when the CP selects pipe mode and the data plane proxy advertises `FeatureOtelViaKumaDp`. Older data planes without that feature should keep using direct clusters. Older control planes that do not write `/otel` should keep using the existing direct-cluster path.
+Compatibility note: the unified `/otel` route is only used when the CP selects pipe mode and the data plane proxy advertises `FeatureOtelViaKumaDp`. Older data planes without that feature should keep using the existing pre-pipe signal-specific path after the CP resolves `backendRef`; policy application does not fail just because pipe mode is unavailable. Older control planes that do not write `/otel` should keep using the existing direct-cluster path.
 
-To opt out, set `dataPlane.features.otelPipe: false` in the Helm chart. This maps to `DataplaneRuntime.OtelPipeEnabled` in kuma-dp config. When disabled, kuma-dp omits `FeatureOtelViaKumaDp` from its bootstrap feature list; the CP then generates direct static Envoy clusters for all backends, including `backendRef` ones. The behavior is identical to 2.13 and earlier.
-
-In 3.0.0, the plan is to remove the opt-out flag. Pipe mode becomes the only supported path for `backendRef` backends, and inline `endpoint` is removed along with the direct cluster path.
+In 3.0.0, pipe mode becomes the only supported path for `backendRef` backends, and inline `endpoint` is removed along with the direct-cluster path.
 
 TLS and auth fields are follow-up work.
 
