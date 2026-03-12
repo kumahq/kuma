@@ -25,6 +25,9 @@ import (
 )
 
 const (
+	// KumaZoneProxyTypeIngress marks a Service as the public endpoint for a
+	// mesh-scoped zone ingress proxy.
+	KumaZoneProxyTypeIngress          = "ingress"
 	CreatedMeshZoneAddressReason      = "CreatedMeshZoneAddress"
 	UpdatedMeshZoneAddressReason      = "UpdatedMeshZoneAddress"
 	NoPublicAddressForZoneProxyReason = "NoPublicAddress"
@@ -61,7 +64,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 
 	// Only handle Services labeled as zone-proxy ingress.
-	if svc.GetLabels()[metadata.KumaZoneProxyTypeLabel] != metadata.KumaZoneProxyTypeIngress {
+	if svc.GetLabels()[metadata.KumaZoneProxyTypeLabel] != KumaZoneProxyTypeIngress {
 		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
 	}
 
@@ -260,7 +263,7 @@ func (r *MeshZoneAddressReconciler) nodeToZoneProxyServices(c kube_client.Client
 	return func(ctx context.Context, _ kube_client.Object) []kube_ctrl.Request {
 		svcs := &kube_core.ServiceList{}
 		if err := c.List(ctx, svcs, kube_client.MatchingFields{
-			zoneProxyTypeLabelIndex: metadata.KumaZoneProxyTypeIngress,
+			zoneProxyTypeLabelIndex: KumaZoneProxyTypeIngress,
 		}); err != nil {
 			r.Log.Error(err, "failed to list zone-proxy Services on node event")
 			return nil

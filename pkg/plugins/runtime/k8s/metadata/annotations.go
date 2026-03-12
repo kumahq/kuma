@@ -151,14 +151,6 @@ const (
 	// KumaZoneProxyTypeLabel identifies the role of a zone proxy Service.
 	// Valid values are ingress and egress.
 	KumaZoneProxyTypeLabel = "k8s.kuma.io/zone-proxy-type"
-
-	// KumaZoneProxyTypeIngress marks a Service as the public endpoint for a
-	// mesh-scoped zone ingress proxy.
-	KumaZoneProxyTypeIngress = "ingress"
-
-	// KumaZoneProxyTypeEgress marks a Service as the endpoint for a
-	// mesh-scoped zone egress proxy.
-	KumaZoneProxyTypeEgress = "egress"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
