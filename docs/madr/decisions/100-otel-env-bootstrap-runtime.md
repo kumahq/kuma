@@ -83,18 +83,7 @@ We choose this option.
 
 ### Ownership split
 
-`kuma-dp` reads OTEL env vars, keeps raw values local, and builds the final outbound exporter clients. It owns all OTLP exporter fields in both shared and per-signal forms. The recognized env vars follow the [OpenTelemetry SDK specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/):
-
-- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_{SIGNAL}_ENDPOINT`
-- `OTEL_EXPORTER_OTLP_PROTOCOL` / `OTEL_EXPORTER_OTLP_{SIGNAL}_PROTOCOL`
-- `OTEL_EXPORTER_OTLP_HEADERS` / `OTEL_EXPORTER_OTLP_{SIGNAL}_HEADERS`
-- `OTEL_EXPORTER_OTLP_TIMEOUT` / `OTEL_EXPORTER_OTLP_{SIGNAL}_TIMEOUT`
-- `OTEL_EXPORTER_OTLP_COMPRESSION` / `OTEL_EXPORTER_OTLP_{SIGNAL}_COMPRESSION`
-- `OTEL_EXPORTER_OTLP_CERTIFICATE` / `OTEL_EXPORTER_OTLP_{SIGNAL}_CERTIFICATE`
-- `OTEL_EXPORTER_OTLP_CLIENT_KEY` / `OTEL_EXPORTER_OTLP_{SIGNAL}_CLIENT_KEY`
-- `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` / `OTEL_EXPORTER_OTLP_{SIGNAL}_CLIENT_CERTIFICATE`
-
-Where `{SIGNAL}` is `TRACES`, `LOGS`, or `METRICS`. Inside the env layer, standard OTEL precedence applies: signal-specific env vars override shared ones.
+`kuma-dp` reads OTEL env vars, keeps raw values local, and builds the final outbound exporter clients. It owns the standard OTLP exporter env vars from the [OpenTelemetry exporter specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/), including shared and per-signal forms such as `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_INSECURE`, `OTEL_EXPORTER_OTLP_TIMEOUT`, `OTEL_EXPORTER_OTLP_COMPRESSION`, `OTEL_EXPORTER_OTLP_CERTIFICATE`, `OTEL_EXPORTER_OTLP_CLIENT_KEY`, and `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE`. Where `{SIGNAL}` is `TRACES`, `LOGS`, or `METRICS`, the signal-specific env vars override the shared ones inside the env layer.
 
 The control plane resolves policies, reads the dataplane's OTEL inventory from bootstrap, applies env-var policy, detects blocked/missing/ambiguous cases, sends the `/otel` runtime plan, and writes status.
 
@@ -173,41 +162,30 @@ The contract is:
 
 The bootstrap payload should include a typed OTEL section with:
 
-- whether the pipe is enabled
-- which shared OTEL fields are present
-- which traces, logs, and metrics override fields are present
+- non-secret OTEL env key names that are present locally
 - local validation errors
 
-This payload must never contain raw endpoints, headers, tokens, certificate contents, key contents, or local file paths. Those values are secrets or sensitive deployment details. Once they reach the control plane, they are harder to contain and easier to leak through status, logs, debug output, or config inspection.
+`presentKeys` is allowlisted to the standard OTLP exporter env family that Kuma recognizes, so bootstrap stays bounded and predictable. This payload must never contain raw endpoints, headers, tokens, certificate contents, key contents, or local file paths. Once secret values reach the control plane, they are harder to contain and easier to leak through status, logs, debug output, or config inspection.
 
 Example bootstrap inventory:
 
 ```json
 {
   "otel": {
-    "pipeEnabled": true,
-    "shared": {
-      "endpointPresent": true,
-      "protocolPresent": true,
-      "headersPresent": true
-    },
-    "traces": {
-      "overrideKinds": ["endpoint"]
-    },
-    "logs": {
-      "overrideKinds": []
-    },
-    "metrics": {
-      "overrideKinds": []
-    },
+    "presentKeys": [
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_EXPORTER_OTLP_PROTOCOL",
+      "OTEL_EXPORTER_OTLP_HEADERS",
+      "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
+    ],
     "validationErrors": []
   }
 }
 ```
 
-This bootstrap says `kuma-dp` has shared OTEL endpoint, protocol, and headers in env vars, and only traces have a signal-specific override. The control plane can derive the protocol and auth mode from these flags. The real values stay local to `kuma-dp`.
+This bootstrap says `kuma-dp` has shared OTEL endpoint, protocol, and headers in env vars, and only traces have a signal-specific endpoint override. The control plane derives shared versus signal-specific inputs from the actual key names. The real values stay local to `kuma-dp`.
 
-When `pipeEnabled` is `false`, the control plane skips OTEL resolution for this dataplane entirely. No `/otel` runtime plan is generated and no OTEL-related status is written.
+The bootstrap inventory only matters when the dataplane already advertises `FeatureOtelViaKumaDp` from MADR 095. That feature remains the only pipe-mode gate. If it is absent, the control plane follows the earlier compatibility path, does not generate `/otel`, and does not write OTEL pipe status for that dataplane.
 
 ### Runtime plan on `/otel`
 
@@ -218,12 +196,11 @@ Each backend plan should include:
 - backend identity
 - socket path
 - env-var policy
-- explicit shared backend settings from `MeshOpenTelemetryBackend`
-- optional explicit per-signal settings when needed
+- shared backend settings from `MeshOpenTelemetryBackend`
 - per-signal missing fields
 - per-signal blocked reasons
 
-The `/otel` plan tells `kuma-dp` what the backend should look like without sending secrets through the control plane.
+The `/otel` plan tells `kuma-dp` what the backend should look like without sending secrets through the control plane. It stays typed because it carries backend identity, `socketPath`, env policy, per-signal `missingFields` and `blockedReasons`, and metrics-only runtime data like `refreshInterval`. A plain env-var map would need null or sentinel values for those fields and blur the backend contract from MADR 095.
 
 Example runtime plan:
 
@@ -234,7 +211,7 @@ backends:
     envPolicy:
       mode: Optional
       precedence: ExplicitFirst
-      allowSignalOverrides: true
+      perSignalOverrides: Enabled
     shared:
       endpoint:
         address: ""
@@ -267,12 +244,12 @@ spec:
   env:
     mode: Optional
     precedence: ExplicitFirst
-    allowSignalOverrides: true
+    perSignalOverrides: Enabled
 ```
 
 In this example, `endpoint` is omitted on purpose. That means the backend still exists, but its address comes from the node-local default flow defined by the earlier MADR unless an OTEL env var provides a more specific endpoint.
 
-The `env` block is optional. When it is omitted, Kuma defaults to `mode: Optional`, `precedence: EnvFirst`, and `allowSignalOverrides: true`. The default mode is `Optional` because the main use case for this MADR is reusing env vars that are already present. Operators who do not want env-var behavior can still set `Disabled` per backend.
+The `env` block is optional. When it is omitted, Kuma defaults to `mode: Optional`, `precedence: EnvFirst`, and `perSignalOverrides: Enabled`. The default mode is `Optional` because the main use case for this MADR is reusing env vars that are already present. The default precedence is `EnvFirst` for the same reason - if the operator already has OTEL env vars in place and adds a `MeshOpenTelemetryBackend` without an explicit endpoint, the env vars should win by default so the existing setup keeps working. Operators who do not want env-var behavior can still set `Disabled` per backend.
 
 `env.mode` values:
 
@@ -285,7 +262,7 @@ The `env` block is optional. When it is omitted, Kuma defaults to `mode: Optiona
 - `ExplicitFirst` - explicit backend config wins and env fills the gaps
 - `EnvFirst` - env wins and explicit backend config fills the gaps
 
-`allowSignalOverrides` controls whether signal-specific OTEL env vars such as `OTEL_EXPORTER_OTLP_TRACES_*`, `OTEL_EXPORTER_OTLP_LOGS_*`, and `OTEL_EXPORTER_OTLP_METRICS_*` may change one signal without changing the others. When it is `false`, those vars are detected but not used, and status includes `SignalOverridesDisallowed`.
+`perSignalOverrides` controls whether signal-specific OTEL env vars such as `OTEL_EXPORTER_OTLP_TRACES_*`, `OTEL_EXPORTER_OTLP_LOGS_*`, and `OTEL_EXPORTER_OTLP_METRICS_*` may change one signal without changing the others. An operator might disable this to keep all signals going to the same collector, even if someone injects a signal-specific env var into the sidecar. When it is `Disabled`, those vars are detected but not used, and status includes `SignalOverridesDisallowed`.
 
 When `mode` is `Disabled`, the env layers are skipped.
 
@@ -293,18 +270,21 @@ When `mode` is `Optional` or `Required` and `precedence` is `EnvFirst`, `kuma-dp
 
 1. signal-specific OTEL env var, if policy allows it
 2. shared OTEL env var, if policy allows it
-3. signal-specific explicit config from the backend
-4. shared explicit config from the backend
-5. built-in default
+3. shared explicit config from the backend
+4. built-in default
 
-When `precedence` is `ExplicitFirst`, the explicit and env layers swap order, but signal-specific still wins over shared inside each layer.
+When `precedence` is `ExplicitFirst`, `kuma-dp` resolves each field by picking the first available value:
+
+1. shared explicit config from the backend
+2. signal-specific OTEL env var, if policy allows it
+3. shared OTEL env var, if policy allows it
+4. built-in default
 
 For one field such as the traces endpoint, `ExplicitFirst` looks like this:
 
 ```text
 final traces endpoint =
   pick(
-    traces explicit endpoint,
     shared explicit endpoint,
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
     OTEL_EXPORTER_OTLP_ENDPOINT,
@@ -314,7 +294,9 @@ final traces endpoint =
 
 With `EnvFirst`, the env and explicit layers swap order.
 
-For endpoint resolution, `built-in default` means the node-local fallback from the earlier MADR. On Kubernetes, `kuma-dp` uses injected `HOST_IP` as the address. On other runtimes, it falls back to `127.0.0.1`. The control plane already defaulted `port` to `4317` and `path` to empty in the `/otel` plan. This fallback is always last. If `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_{SIGNAL}_ENDPOINT` is present and allowed, it wins before the `HOST_IP` path. If an explicit backend endpoint is present and `precedence` is `ExplicitFirst`, that explicit endpoint wins before the env vars and before the `HOST_IP` path.
+`built-in default` means the node-local fallback from the earlier MADR: `HOST_IP:4317` on Kubernetes, `127.0.0.1:4317` elsewhere. The control plane already defaulted `port` to `4317` and `path` to empty in the `/otel` plan. This fallback is always last in the resolution order.
+
+In `EnvFirst`, an env-provided endpoint wins before the node-local fallback. In `ExplicitFirst`, a shared explicit backend endpoint wins before both env vars and the node-local fallback.
 
 Example where env vars fill gaps (backend has no explicit address and relies on the node-local default when env vars are absent):
 
@@ -330,7 +312,7 @@ Result:
 - logs and metrics use `otel-gateway.observability:4318` (shared env) with `http/protobuf` (shared env)
 - the node-local `HOST_IP:4317` fallback is not used, because the env layer already provided a full endpoint
 
-Traces go to a different collector because the signal-specific env var fills the gap. If the backend had an explicit endpoint and `precedence` was `ExplicitFirst`, that explicit endpoint would win. If neither explicit config nor env vars provided an endpoint, `kuma-dp` would fall back to `HOST_IP:4317` on Kubernetes or `127.0.0.1:4317` elsewhere.
+Traces go to a different collector because the signal-specific env var fills the gap. If the backend had a shared explicit endpoint and `precedence` was `ExplicitFirst`, that explicit endpoint would win. If neither explicit config nor env vars provided an endpoint, `kuma-dp` would fall back to `HOST_IP:4317` on Kubernetes or `127.0.0.1:4317` elsewhere.
 
 ### Runtime shape in `kuma-dp`
 
@@ -406,7 +388,7 @@ A signal is ready when it has at least an `endpoint` after merge. Other fields h
 - `timeout` defaults to SDK default
 - `compression` defaults to none
 
-For endpoint resolution, "after merge" includes the MADR 095 node-local fallback. If explicit config and OTEL env vars do not provide an endpoint, `kuma-dp` still tries `HOST_IP:4317` on Kubernetes or `127.0.0.1:4317` elsewhere. A backend that omits `endpoint.address` is not missing by itself. It becomes `missing` only if there is still no usable endpoint after explicit config, env vars, and that built-in default are all considered.
+"After merge" includes the node-local fallback described in the merge rules section. A backend that omits `endpoint.address` is not missing by itself. It only becomes `missing` when explicit config, env vars, and the built-in default all fail to produce a usable endpoint.
 
 `Required` mode adds one more rule: if required env input is missing or invalid, the signal stays `missing`, `blockedReasons` includes `RequiredEnvMissing`, and `missingFields` lists the fields that validation could name.
 
@@ -517,15 +499,15 @@ On Universal, OTEL env vars may come from:
 - a container runtime
 - a wrapper script
 
-The source changes, but the model does not. `kuma-dp` still reads env vars at startup, sends OTEL inventory during bootstrap, receives the same `/otel` runtime plan, and uses the same merge rules.
+The source changes but the model does not. `kuma-dp` reads env vars at startup, sends OTEL inventory during bootstrap, receives the same `/otel` runtime plan, and uses the same merge rules.
 
 ## Security implications and review
 
-Raw OTEL env-var values stay local to `kuma-dp`. Headers, client keys, certificate contents, and local file paths must never cross the control plane boundary. The control plane only receives typed inventory and computed status. The bootstrap OTEL inventory is informational - it must not become a way to send secrets.
+Raw OTEL env-var values stay local to `kuma-dp`. Headers, client keys, certificate contents, and local file paths must never cross the control plane boundary. The control plane only receives typed inventory and computed status. The bootstrap inventory is informational, not a channel for secrets.
 
 ## Reliability implications
 
-`kuma-dp` reads OTEL env vars once at startup. If they change, the dataplane needs a restart. Resolution must be predictable: the same config and env input must always produce the same runtime plan. Invalid env-var input should not silently change behavior. If explicit config is complete, invalid env vars should be reported but should not break the signal.
+`kuma-dp` reads OTEL env vars once at startup. If they change, the dataplane needs a restart. Resolution is deterministic: the same config and env input always produce the same runtime plan. Invalid env-var input should not silently change behavior. If explicit config is complete, invalid env vars are reported but do not break the signal.
 
 The local transport model stays stable on top of the `MeshOpenTelemetryBackend` MADR: one backend means one Unix socket, divergence only changes outbound clients, and most backends will use one default client.
 
@@ -543,7 +525,7 @@ There is no separate enterprise-only runtime model here. Kong Mesh should follow
 
 ## Decision
 
-If the `MeshOpenTelemetryBackend` MADR is accepted, extend that Unix socket model with env-var awareness using Option 3. `kuma-dp` reports a non-secret OTEL inventory at bootstrap, the control plane sends a runtime plan with env policy, and `kuma-dp` merges explicit config and local env vars according to `mode`, `precedence`, and `allowSignalOverrides`. Secrets stay local, status is explicit, and the model works the same on Kubernetes and Universal.
+If the `MeshOpenTelemetryBackend` MADR is accepted, extend that Unix socket model with env-var awareness using Option 3. `kuma-dp` reports a non-secret OTEL inventory at bootstrap, the control plane sends a typed runtime plan with env policy, and `kuma-dp` merges explicit config and local env vars according to `mode`, `precedence`, and `perSignalOverrides`. Secrets stay local, status is explicit, and the model works the same on Kubernetes and Universal.
 
 ## Phasing
 
@@ -551,9 +533,9 @@ Initial scope:
 
 - `env.mode` with `Disabled`, `Optional`, and `Required`
 - `env.precedence` with `ExplicitFirst` and `EnvFirst`
-- `allowSignalOverrides` with default `true`
-- merge rules for both precedence orders, with signal-specific input winning over shared input inside each layer
-- bootstrap OTEL inventory with presence flags (no derived fields)
+- `perSignalOverrides` with `Enabled` and `Disabled`
+- merge rules for both precedence orders, with signal-specific env input winning over shared env input
+- bootstrap OTEL inventory with present OTEL env key names (no values)
 - `/otel` runtime plan with full env policy per backend
 - status on `DataplaneInsight` with readiness, blocked reasons, and missing fields
 
