@@ -210,9 +210,6 @@ apiServer:
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
 # Environment-specific configuration
 runtime:
-  # otelEnvEnabled is the control-plane authoritative global guard for OTEL exporter env-var support.
-  # When false, CP plans OTEL env reuse as disabled even if a dataplane advertises the capability.
-  otelEnvEnabled: false # ENV: KUMA_RUNTIME_OTEL_ENV_ENABLED
   # Kubernetes-specific configuration
   kubernetes:
     # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.
@@ -388,9 +385,6 @@ runtime:
       # otelPipeEnabled controls whether the sidecar injector sets KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED=false
       # on injected containers. Default: true (pipe mode on).
       otelPipeEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED
-      # otelEnvEnabled controls whether the sidecar injector sets KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED=true
-      # on injected containers. Default: false.
-      otelEnvEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_ENV_ENABLED
       # Spire is used to specify spire integration configuration.
       spire:
         # If true, enables mounting of SPIRE-related resources.

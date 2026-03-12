@@ -21,6 +21,16 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
+// OtelExportTarget describes an OTEL metrics export destination received from
+// the otelreceiver post-reconcile callback. The otelreceiver.Manager owns the
+// Unix socket gRPC server; meshmetrics creates an OTLP metric SDK exporter
+// that dials it.
+type OtelExportTarget struct {
+	Name            string
+	SocketPath      string
+	RefreshInterval time.Duration
+}
+
 type Manager struct {
 	hijacker              *metrics.Hijacker
 	defaultAddress        string
@@ -33,6 +43,7 @@ type Manager struct {
 	cancel                context.CancelFunc
 	done                  chan struct{}
 	newConfig             chan dpapi.MeshMetricDpConfig
+	newOtelTargets        chan []OtelExportTarget
 }
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
@@ -52,6 +63,7 @@ func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryPr
 		runningBackends:       map[string]*runningBackend{},
 		drainTime:             drainTime,
 		newConfig:             make(chan dpapi.MeshMetricDpConfig),
+		newOtelTargets:        make(chan []OtelExportTarget, 1),
 		done:                  make(chan struct{}),
 	}
 }
@@ -62,9 +74,11 @@ func (m *Manager) Start(stop <-chan struct{}) error {
 		select {
 		case configuration := <-m.newConfig:
 			logger.Info("updating hijacker configuration", "conf", configuration)
-			err := m.Step(configuration)
-			if err != nil {
-				logger.Error(err, "failed to update hijacker configuration")
+			m.stepScraping(configuration)
+		case targets := <-m.newOtelTargets:
+			logger.Info("updating OTEL export targets", "count", len(targets))
+			if err := m.stepOtelExport(targets); err != nil {
+				logger.Error(err, "failed to update OTEL export targets")
 			}
 		case <-stop:
 			return m.Shutdown()
@@ -93,61 +107,66 @@ func (m *Manager) OnChange(ctx context.Context, reader io.Reader) error {
 	return nil
 }
 
-func (m *Manager) configurePrometheus(applicationsToScrape []metrics.ApplicationToScrape, prometheusBackends []dpapi.Backend) {
-	if len(prometheusBackends) == 0 {
-		return
+// OnOtelTargetsChange is called by the otelreceiver post-reconcile callback
+// (wired in run.go) to push OTEL metric export targets into the Manager.
+func (m *Manager) OnOtelTargetsChange(targets []OtelExportTarget) {
+	select {
+	case m.newOtelTargets <- targets:
+	default:
+		// Drop stale value, push new one.
+		select {
+		case <-m.newOtelTargets:
+		default:
+		}
+		m.newOtelTargets <- targets
 	}
-	m.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
 }
 
-func (m *Manager) configureOpenTelemetryExporter(ctx context.Context, applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends map[string]*dpapi.OpenTelemetryBackend) error {
-	err := m.reconfigureBackends(ctx, openTelemetryBackends)
-	if err != nil {
-		return err
-	}
-	err = m.shutdownBackendsRemovedFromConfig(ctx, openTelemetryBackends)
-	if err != nil {
-		return err
-	}
-	m.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
-	return nil
+func (m *Manager) stepScraping(configuration dpapi.MeshMetricDpConfig) {
+	newApplicationsToScrape := m.mapApplicationToApplicationToScrape(
+		configuration.Observability.Metrics.Applications,
+		configuration.Observability.Metrics.Sidecar,
+		configuration.Observability.Metrics.ExtraLabels,
+	)
+	m.openTelemetryProducer.SetApplicationsToScrape(newApplicationsToScrape)
 }
 
-func (m *Manager) reconfigureBackends(ctx context.Context, openTelemetryBackends map[string]*dpapi.OpenTelemetryBackend) error {
-	for backendName, backend := range openTelemetryBackends {
-		// backend already running, in the future we can reconfigure it here
-		if m.runningBackends[backendName] != nil {
-			err := m.reconfigureBackend(ctx, backendName, backend)
-			if err != nil {
-				return err
+func (m *Manager) stepOtelExport(targets []OtelExportTarget) error {
+	desired := map[string]OtelExportTarget{}
+	for _, t := range targets {
+		desired[t.Name] = t
+	}
+
+	// shutdown removed backends
+	var toRemove []string
+	for name := range m.runningBackends {
+		if _, ok := desired[name]; !ok {
+			toRemove = append(toRemove, name)
+		}
+	}
+	for _, name := range toRemove {
+		logger.Info("Shutting down OpenTelemetry exporter", "backend", name)
+		if err := m.shutdownBackend(m.ctx, name); err != nil {
+			logger.Error(err, "failed to shut down OpenTelemetry exporter", "backend", name)
+		}
+	}
+
+	// start or reconfigure backends
+	for name, target := range desired {
+		if existing, ok := m.runningBackends[name]; ok {
+			if existing.appliedConfig == target {
+				continue
 			}
-			continue
+			if err := m.shutdownBackend(m.ctx, name); err != nil {
+				logger.Error(err, "failed to shut down OpenTelemetry exporter for reconfigure", "backend", name)
+				continue
+			}
 		}
-		// start backend as it is not running yet
-		exporter, err := startExporter(ctx, backend, m.openTelemetryProducer, backendName)
+		exporter, err := startExporter(m.ctx, target, m.openTelemetryProducer)
 		if err != nil {
 			return err
 		}
-		m.runningBackends[backendName] = exporter
-	}
-	return nil
-}
-
-func (m *Manager) shutdownBackendsRemovedFromConfig(ctx context.Context, openTelemetryBackends map[string]*dpapi.OpenTelemetryBackend) error {
-	var backendsToRemove []string
-	for backendName := range m.runningBackends {
-		// backend still configured in policy
-		if openTelemetryBackends[backendName] != nil {
-			continue
-		}
-		backendsToRemove = append(backendsToRemove, backendName)
-	}
-	for _, backendName := range backendsToRemove {
-		logger.Info("Shutting down OpenTelemetry exporter", "backend", backendName)
-		err := m.shutdownBackend(ctx, backendName)
-		if err != nil {
-			return err
-		}
+		m.runningBackends[name] = exporter
 	}
 	return nil
 }
@@ -161,49 +180,31 @@ func (m *Manager) shutdownBackend(ctx context.Context, backendName string) error
 	return nil
 }
 
-func startExporter(ctx context.Context, backend *dpapi.OpenTelemetryBackend, producer *metrics.AggregatedProducer, backendName string) (*runningBackend, error) {
-	if backend == nil {
-		return nil, nil
-	}
-	logger.Info("Starting OpenTelemetry exporter", "backend", backendName)
+func startExporter(ctx context.Context, target OtelExportTarget, producer *metrics.AggregatedProducer) (*runningBackend, error) {
+	logger.Info("Starting OpenTelemetry exporter", "backend", target.Name, "socketPath", target.SocketPath)
 	exporter, err := otlpmetricgrpc.New(
 		ctx,
-		otlpmetricgrpc.WithEndpoint(fmt.Sprintf("unix://%s", backend.Endpoint)),
+		otlpmetricgrpc.WithEndpoint(fmt.Sprintf("unix://%s", target.SocketPath)),
 		otlpmetricgrpc.WithInsecure(),
 	)
 	if err != nil {
 		return nil, err
 	}
+	readerOpts := []sdkmetric.PeriodicReaderOption{
+		sdkmetric.WithInterval(target.RefreshInterval),
+	}
+	if producer != nil {
+		readerOpts = append(readerOpts, sdkmetric.WithProducer(producer))
+	}
 	return &runningBackend{
 		exporter: sdkmetric.NewMeterProvider(
 			sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
 				exporter,
-				sdkmetric.WithInterval(backend.RefreshInterval.Duration),
-				sdkmetric.WithProducer(producer),
+				readerOpts...,
 			)),
 		),
-		appliedConfig: *backend,
+		appliedConfig: target,
 	}, nil
-}
-
-func getOpenTelemetryBackends(allBackends []dpapi.Backend) map[string]*dpapi.OpenTelemetryBackend {
-	openTelemetryBackends := map[string]*dpapi.OpenTelemetryBackend{}
-	for _, backend := range allBackends {
-		if backend.Type == string(v1alpha1.OpenTelemetryBackendType) {
-			openTelemetryBackends[pointer.Deref(backend.Name)] = backend.OpenTelemetry
-		}
-	}
-	return openTelemetryBackends
-}
-
-func getPrometheusBackends(allBackends []dpapi.Backend) []dpapi.Backend {
-	var prometheusBackends []dpapi.Backend
-	for _, backend := range allBackends {
-		if backend.Type == string(v1alpha1.PrometheusBackendType) {
-			prometheusBackends = append(prometheusBackends, backend)
-		}
-	}
-	return prometheusBackends
 }
 
 func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Application, sidecar *v1alpha1.Sidecar, extraLabels map[string]string) []metrics.ApplicationToScrape {
@@ -241,25 +242,6 @@ func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Appli
 	return applicationsToScrape
 }
 
-func (m *Manager) reconfigureBackend(ctx context.Context, backendName string, backend *dpapi.OpenTelemetryBackend) error {
-	err := m.shutdownBackend(ctx, backendName)
-	if err != nil {
-		return err
-	}
-	exporter, err := startExporter(ctx, backend, m.openTelemetryProducer, backendName)
-	if err != nil {
-		return err
-	}
-	m.runningBackends[backendName] = exporter
-	return nil
-}
-
-func (m *Manager) Step(configuration dpapi.MeshMetricDpConfig) error {
-	newApplicationsToScrape := m.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
-	m.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
-	return m.configureOpenTelemetryExporter(m.ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
-}
-
 func (m *Manager) Shutdown() error {
 	m.cancel()
 	ctx, cancel := context.WithTimeout(context.Background(), m.drainTime)
@@ -288,5 +270,5 @@ func mapToAttributes(extraLabels map[string]string) []attribute.KeyValue {
 
 type runningBackend struct {
 	exporter      *sdkmetric.MeterProvider
-	appliedConfig dpapi.OpenTelemetryBackend
+	appliedConfig OtelExportTarget
 }
