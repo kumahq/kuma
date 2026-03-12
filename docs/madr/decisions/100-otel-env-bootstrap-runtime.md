@@ -28,7 +28,7 @@ The design has to answer these questions:
 2. As a mesh operator, I want to keep using `MeshOpenTelemetryBackend` as the shared backend contract, so the three observability policies still point at one mesh-scoped object.
 3. As a mesh operator, I want traces, logs, and metrics to use different OTLP settings when I set per-signal env vars, without changing the local Unix socket model.
 4. As a mesh operator, I want the control plane and status to show whether env-var use is allowed, whether env input is present, and whether a signal is ready, blocked, or still missing required fields.
-5. As a mesh operator, I want to block env-var reuse on some backends and require it on others, so this stays a policy choice instead of hidden runtime behavior.
+5. As a mesh operator, I want to block env-var reuse on some backends and allow it on others, so this stays a policy choice instead of hidden runtime behavior.
 6. As a mesh operator, I want this to work on Kubernetes and Universal with the same rules, so I do not have to learn two different designs.
 
 ## Design
@@ -175,7 +175,6 @@ The bootstrap payload should include a typed OTEL section with:
 - whether the pipe is enabled
 - which shared OTEL fields are present
 - which traces, logs, and metrics override fields are present
-- derived protocol and auth mode
 - local validation errors
 
 This payload must never contain raw endpoints, headers, tokens, certificate contents, key contents, or local file paths. Those values are secrets or sensitive deployment details. Once they reach the control plane, they are harder to contain and easier to leak through status, logs, debug output, or config inspection.
@@ -189,9 +188,7 @@ Example bootstrap inventory:
     "shared": {
       "endpointPresent": true,
       "protocolPresent": true,
-      "headersPresent": true,
-      "effectiveProtocol": "http/protobuf",
-      "effectiveAuthMode": "headers"
+      "headersPresent": true
     },
     "traces": {
       "overrideKinds": ["endpoint"]
@@ -206,7 +203,7 @@ Example bootstrap inventory:
 }
 ```
 
-This means `kuma-dp` has shared OTEL config in env vars, the shared config uses OTLP HTTP with header-based auth, and only traces have a signal-specific override. The real values still stay local to `kuma-dp`.
+This means `kuma-dp` has shared OTEL config in env vars (endpoint, protocol, and headers are all present) and only traces have a signal-specific override. The control plane can derive the protocol and auth mode from these flags. The real values stay local to `kuma-dp`.
 
 ### Runtime plan on `/otel`
 
@@ -232,8 +229,6 @@ backends:
     socketPath: /tmp/kuma-otel-otel-main.sock
     envPolicy:
       mode: Optional
-      precedence: EnvFirst
-      allowSignalOverrides: true
     shared:
       endpoint: otel-collector.observability:4317
       protocol: grpc
@@ -249,17 +244,11 @@ backends:
       refreshInterval: 10s
 ```
 
-This means all three signals use the same backend and the same socket. The plan still includes the explicit backend settings from `MeshOpenTelemetryBackend` as fallback. `kuma-dp` may still build signal-specific outbound clients locally if the final merged OTEL config differs after local env vars are applied.
+All three signals use the same backend and the same socket. The plan includes the explicit backend settings from `MeshOpenTelemetryBackend`. `kuma-dp` fills any remaining gaps from env vars and may build signal-specific outbound clients if the final config differs per signal.
 
 ### Policy-level control
 
-The cleanest place to control env-var reuse is `MeshOpenTelemetryBackend`, not the three signal policies. The signal policies should keep saying which backend they use. The backend should say whether env vars are allowed and how they participate.
-
-These three terms are used in the merge rules below:
-
-- `mode` says whether env vars are ignored, allowed, or required
-- `precedence` says whether explicit backend fields win or env vars win
-- `allowSignalOverrides` says whether `OTEL_EXPORTER_OTLP_TRACES_*`, `..._LOGS_*`, and `..._METRICS_*` may change one signal without changing the others
+Env-var policy belongs on `MeshOpenTelemetryBackend`, not on the three signal policies. Signal policies say which backend to use. The backend says whether env vars are allowed.
 
 `MeshOpenTelemetryBackend` should grow:
 
@@ -271,68 +260,60 @@ spec:
   protocol: grpc
   env:
     mode: Optional
-    precedence: EnvFirst
-    allowSignalOverrides: true
 ```
 
-The whole `env` block is optional. When omitted, Kuma applies these defaults:
-
-- `mode: Optional`
-- `precedence: EnvFirst`
-- `allowSignalOverrides: true`
+The `env` block is optional. When omitted, Kuma defaults to `mode: Optional`.
 
 `env.mode` values:
 
 - `Disabled` - ignore OTEL env vars for this backend
-- `Optional` - use OTEL env vars when present
-- `Required` - the backend is not ready unless the dataplane has the required OTEL env input
+- `Optional` - use OTEL env vars to fill gaps in explicit config
 
-`env.precedence` values:
-
-- `ExplicitFirst` - explicit backend config wins and env fills the gaps
-- `EnvFirst` - env wins and explicit backend config fills the gaps
-
-`allowSignalOverrides` controls whether `OTEL_EXPORTER_OTLP_TRACES_*`, `..._LOGS_*`, and `..._METRICS_*` can change per-signal settings. When `false`, those vars are detected and reported but not used.
+Explicit backend config always wins over env vars. Env vars only fill fields that explicit config leaves empty. See [merge rules](#merge-rules) for the full resolution order.
 
 Backend policy is the only place that controls env-var use in this design.
 
+Future extensions if proven need exists:
+
+- `Required` mode: the backend is not ready unless the dataplane has env input
+- `precedence` field: let env vars win over explicit config instead of filling gaps
+- `allowSignalOverrides: false`: block signal-specific env vars like `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`
+
+These are not part of the initial design because they add knobs without proven demand.
+
 ### Merge rules
 
-Once `mode`, `precedence`, and `allowSignalOverrides` are known for a backend, `kuma-dp` can resolve the final exporter settings for each signal.
+When `mode` is `Optional`, `kuma-dp` resolves each field by picking the first available value:
 
-In the default `EnvFirst` mode, the order is:
-
-1. signal-specific OTEL env var, if policy allows it
-2. shared OTEL env var, if policy allows it
-3. signal-specific explicit backend setting from the control plane
-4. shared explicit backend setting from the control plane
+1. signal-specific explicit config from the backend
+2. shared explicit config from the backend
+3. signal-specific OTEL env var
+4. shared OTEL env var
 5. built-in default
 
-If the backend uses `ExplicitFirst`, the explicit and env layers swap order, but signal-specific still wins over shared inside each layer.
+Explicit config always wins. Within each layer (explicit or env), signal-specific wins over shared. When `mode` is `Disabled`, steps 3 and 4 are skipped.
 
-Field-level resolution is simple. For one field such as the traces endpoint, `kuma-dp` can think about it like this:
+For one field such as the traces endpoint:
 
 ```text
 final traces endpoint =
   pick(
-    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
-    OTEL_EXPORTER_OTLP_ENDPOINT,
     traces explicit endpoint,
     shared explicit endpoint,
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+    OTEL_EXPORTER_OTLP_ENDPOINT,
     built-in default,
   )
 ```
 
-Example with actual env vars:
+Example where env vars fill gaps:
 
 ```yaml
 backend:
-  endpoint: otel-collector.observability:4317
-  protocol: grpc
+  # no endpoint configured
+  # no protocol configured
   env:
     mode: Optional
-    precedence: EnvFirst
-    allowSignalOverrides: true
 ```
 
 ```text
@@ -343,9 +324,11 @@ OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://tempo.observability:4318
 
 Result:
 
-- traces use a dedicated HTTP client to `tempo.observability`
-- logs use the default HTTP client to `otel-gateway.observability`
-- metrics use the default HTTP client to `otel-gateway.observability`
+- traces use `tempo.observability:4318` (signal-specific env) with `http/protobuf` (shared env)
+- logs use `otel-gateway.observability:4318` (shared env) with `http/protobuf` (shared env)
+- metrics use `otel-gateway.observability:4318` (shared env) with `http/protobuf` (shared env)
+
+Traces go to a different collector because the signal-specific env var fills the traces endpoint gap. If the backend had an explicit endpoint, that would win and the env vars would be ignored for that field.
 
 ### Runtime shape in `kuma-dp`
 
@@ -416,6 +399,22 @@ This behavior is part of the design, not a follow-up.
 
 Status should be built in. Users should not need to read xDS dumps to understand what happened.
 
+A signal is ready when it has at least an `endpoint` after merge. Other fields have defaults:
+
+- `protocol` defaults to `grpc`
+- `headers` defaults to none
+- `timeout` defaults to SDK default
+- `compression` defaults to none
+
+If a signal has no `endpoint` from either explicit config or env vars, it is `missing`.
+
+The control plane writes status to `DataplaneInsight` when it computes the `/otel` runtime plan. This happens:
+
+- after bootstrap, when the CP first resolves policies for the dataplane
+- when policies or `MeshOpenTelemetryBackend` resources change
+
+Status is not updated on env-var changes because the CP does not see those until the dataplane restarts and re-bootstraps.
+
 `DataplaneInsight` should show, per backend and per signal:
 
 - whether the signal is enabled
@@ -423,7 +422,7 @@ Status should be built in. Users should not need to read xDS dumps to understand
 - whether env-var use is allowed
 - whether env-var input was present
 - whether the signal is `ready`, `blocked`, `missing`, or `ambiguous`
-- blocked reasons such as `EnvDisabledByPolicy`, `SignalOverridesDisallowed`, or `MultipleBackendsForSignal`
+- blocked reasons such as `EnvDisabledByPolicy` or `MultipleBackendsForSignal`
 - missing fields such as `endpoint`, `protocol`, `headers`, or `client_key`
 
 Example status:
@@ -492,10 +491,9 @@ The bootstrap OTEL inventory is informational. It helps the control plane decide
 
 Resolution must be predictable:
 
-- the same explicit config and the same env input must always produce the same final runtime plan
+- the same explicit config and the same env input must always produce the same runtime plan
 - invalid env-var input should not silently change behavior
 - if explicit config is complete, invalid env vars should be reported but should not break the signal
-- if the backend requires env input and the env input is invalid or missing, the signal should stay not ready
 
 If we add this on top of MADR 095, the local transport model stays stable:
 
@@ -511,7 +509,7 @@ Kong Mesh docs would also need to cover:
 
 - how to inject OTEL env vars into `kuma-sidecar` on Kubernetes
 - how to provide OTEL env vars on Universal
-- how `Required`, `Optional`, and `Disabled` behave in mixed deployments
+- how `Optional` and `Disabled` behave in mixed deployments
 
 There is no separate enterprise-only runtime model here. Kong Mesh should follow the same backend contract so users do not have to learn a different observability path.
 
@@ -519,9 +517,25 @@ There is no separate enterprise-only runtime model here. Kong Mesh should follow
 
 If MADR 095 is accepted, we should keep that Unix socket model and extend it into an OTEL env-var aware runtime.
 
-On top of the backend model proposed in MADR 095, `kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves the applied observability policies, applies backend env policy, fills missing pieces from `MeshOpenTelemetryBackend`, and sends a typed `/otel` runtime plan back to `kuma-dp`. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
+On top of the backend model proposed in MADR 095, `kuma-dp` reads OTEL env vars at startup and reports a typed non-secret OTEL inventory during bootstrap. The control plane resolves policies, applies the backend's `env.mode`, fills missing pieces from `MeshOpenTelemetryBackend`, and sends a typed `/otel` runtime plan back to `kuma-dp`. Explicit config always wins; env vars fill the gaps. `kuma-dp` then builds one default exporter client plus optional per-signal clients behind the same Unix socket.
 
-This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to configure the dataplane and expose readiness, env usage, blocked reasons, and missing fields for every backend and signal if the MADR 095 backend model lands.
+This keeps secrets local, keeps the backend model explicit, works on Kubernetes and Universal, and gives the control plane enough information to show readiness, blocked reasons, and missing fields for every backend and signal.
+
+## Phasing
+
+Initial scope:
+
+- `env.mode` with `Disabled` and `Optional`
+- single merge rule: explicit config wins, env fills gaps, signal-specific wins over shared within each layer
+- bootstrap OTEL inventory with presence flags (no derived fields)
+- `/otel` runtime plan with env mode per backend
+- status on `DataplaneInsight` with readiness, blocked reasons, and missing fields
+
+Follow-up (when proven need exists):
+
+- `Required` mode for backends that depend on env input
+- `precedence` field to let env vars win over explicit config
+- `allowSignalOverrides: false` to block signal-specific env vars
 
 ## Notes
 
