@@ -328,6 +328,53 @@ message Dataplane {
     // are always protected by mTLS and only meant to be consumed internally by
     // the control plane.
     EnvoyAdmin admin = 8;
+
+    // Listener describes a zone proxy listener (ZoneIngress or ZoneEgress)
+    // embedded in a regular Dataplane.
+    message Listener {
+      enum Type {
+        // Unspecified is the default protobuf zero value. A Listener must
+        // explicitly set either ZoneIngress or ZoneEgress; resources without
+        // an explicit type will have this value omitted in JSON output.
+        Unspecified = 0;
+        // ZoneIngress configures this listener to act as a zone ingress,
+        // accepting cross-zone traffic destined for services in this zone.
+        ZoneIngress = 1;
+        // ZoneEgress configures this listener to act as a zone egress,
+        // forwarding outbound traffic to external services.
+        ZoneEgress = 2;
+      }
+
+      enum State {
+        // Listener is ready to serve traffic.
+        Ready = 0;
+        // Listener is not ready to serve traffic.
+        NotReady = 1;
+      }
+
+      // Type determines the role of this listener: ZoneIngress for inbound
+      // cross-zone traffic or ZoneEgress for outbound external traffic.
+      Type type = 1;
+
+      // Address on which the listener will be exposed.
+      string address = 2;
+
+      // Port on which the listener will be exposed.
+      uint32 port = 3;
+
+      // Name uniquely identifies this listener within the Dataplane and is
+      // used to reference it via sectionName in policies.
+      string name = 4;
+
+      // State describes the current health state of the listener.
+      // The control plane sets this based on the readiness of the underlying
+      // pod and sidecar container.
+      State state = 5;
+    }
+
+    // Listeners describes zone proxy listeners embedded in this Dataplane.
+    // Listeners may coexist with inbounds and gateways.
+    repeated Listener listeners = 9;
   }
 
   // Networking describes inbound and outbound interfaces of the data plane
