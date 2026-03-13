@@ -436,6 +436,81 @@ spec:
 		}),
 	)
 
+	It("should apply all resources from a directory", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", filepath.Join("testdata", "apply-dir"),
+		})
+		stdout := &bytes.Buffer{}
+		rootCmd.SetOut(stdout)
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout.String()).To(ContainSubstring(`resource type="Mesh" mesh="" name="sample" Created`))
+		Expect(stdout.String()).To(ContainSubstring(`resource type="Dataplane" mesh="default" name="sample" Created`))
+
+		// verify both resources were persisted
+		meshResource := mesh.NewMeshResource()
+		err = store.Get(context.Background(), meshResource, core_store.GetByKey("sample", ""))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpResource := mesh.NewDataplaneResource()
+		err = store.Get(context.Background(), dpResource, core_store.GetByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should return error for empty directory", func() {
+		// setup
+		tmpDir := GinkgoT().TempDir()
+
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", tmpDir,
+		})
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).To(MatchError("no resource(s) passed to apply"))
+	})
+
+	It("should skip subdirectories and non-resource files", func() {
+		// setup
+		tmpDir := GinkgoT().TempDir()
+		Expect(os.MkdirAll(filepath.Join(tmpDir, "subdir"), 0o755)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(tmpDir, "subdir", "mesh.yaml"), []byte("name: ignored\ntype: Mesh"), 0o600)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(tmpDir, "readme.txt"), []byte("not a resource"), 0o600)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(tmpDir, "mesh.yaml"), []byte("name: sample\ntype: Mesh"), 0o600)).To(Succeed())
+
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", tmpDir,
+		})
+		stdout := &bytes.Buffer{}
+		rootCmd.SetOut(stdout)
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout.String()).To(ContainSubstring(`resource type="Mesh" mesh="" name="sample" Created`))
+
+		// verify only the top-level mesh was created, not the one in the subdir
+		meshResource := mesh.NewMeshResource()
+		err = store.Get(context.Background(), meshResource, core_store.GetByKey("sample", ""))
+		Expect(err).ToNot(HaveOccurred())
+
+		ignoredResource := mesh.NewMeshResource()
+		err = store.Get(context.Background(), ignoredResource, core_store.GetByKey("ignored", ""))
+		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsNotFound(err)).To(BeTrue())
+	})
+
 	DescribeTable("apply test",
 		func(ctx SpecContext, inputFile string) {
 			stdout := &bytes.Buffer{}
