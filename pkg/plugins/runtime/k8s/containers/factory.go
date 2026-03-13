@@ -131,9 +131,6 @@ func (i *DataplaneProxyFactory) NewContainer(
 	var probeHost string
 	if i.adminUnixSocket {
 		probePort = i.DefaultReadinessPort
-		// Readiness reporter listens on localhost, not pod IP.
-		// Without this, kubelet probes target pod IP and fail.
-		probeHost = "localhost"
 	}
 
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
