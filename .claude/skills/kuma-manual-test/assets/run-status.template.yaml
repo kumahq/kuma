@@ -1,0 +1,9 @@
+status:
+  last_completed_group: ""
+  next_planned_group: ""
+  counts:
+    pass: 0
+    fail: 0
+    skipped: 0
+  last_updated_utc: "__CREATED_AT__"
+  notes: ""

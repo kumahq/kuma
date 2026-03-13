@@ -101,6 +101,7 @@ install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/g
 	$(MISE) install
 	$(BUF) dep update
 
+
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)
 
