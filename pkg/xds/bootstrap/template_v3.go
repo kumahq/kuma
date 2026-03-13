@@ -339,7 +339,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 					Address: &envoy_core_v3.Address_Pipe{
 						Pipe: &envoy_core_v3.Pipe{
 							Path: parameters.AdminSocketPath,
-							Mode: 0o600,
+							Mode: 0o666,
 						},
 					},
 				},
