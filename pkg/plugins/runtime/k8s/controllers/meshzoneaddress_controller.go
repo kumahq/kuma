@@ -273,7 +273,7 @@ func (r *MeshZoneAddressReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		Complete(r)
 }
 
-// nodeToZoneProxyServices re-queues all zone-proxy ingress Services when a
+// nodeToZoneProxyServices re-queues NodePort zone-proxy ingress Services when a
 // Node changes (needed for NodePort address resolution).
 func (r *MeshZoneAddressReconciler) nodeToZoneProxyServices(c kube_client.Client) kube_handler.MapFunc {
 	return func(ctx context.Context, _ kube_client.Object) []kube_ctrl.Request {
@@ -286,6 +286,9 @@ func (r *MeshZoneAddressReconciler) nodeToZoneProxyServices(c kube_client.Client
 		}
 		reqs := make([]kube_ctrl.Request, 0, len(svcs.Items))
 		for _, svc := range svcs.Items {
+			if svc.Spec.Type != kube_core.ServiceTypeNodePort {
+				continue
+			}
 			reqs = append(reqs, kube_ctrl.Request{
 				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
 			})
