@@ -133,8 +133,12 @@ func (i *DataplaneProxyFactory) NewContainer(
 	// instead of TCP. Use the dedicated readiness port for probes since
 	// K8s probes only support TCP/HTTP.
 	probePort := adminPort
+	var probeHost string
 	if i.adminUnixSocket {
 		probePort = i.DefaultReadinessPort
+		// Readiness reporter listens on localhost, not pod IP.
+		// Without this, kubelet probes target pod IP and fail.
+		probeHost = "localhost"
 	}
 
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
@@ -169,6 +173,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		LivenessProbe: &kube_core.Probe{
 			ProbeHandler: kube_core.ProbeHandler{
 				HTTPGet: &kube_core.HTTPGetAction{
+					Host: probeHost,
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
 						IntVal: int32(probePort),
@@ -184,6 +189,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		ReadinessProbe: &kube_core.Probe{
 			ProbeHandler: kube_core.ProbeHandler{
 				HTTPGet: &kube_core.HTTPGetAction{
+					Host: probeHost,
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
 						IntVal: int32(probePort),
@@ -213,6 +219,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		container.StartupProbe = &kube_core.Probe{
 			ProbeHandler: kube_core.ProbeHandler{
 				HTTPGet: &kube_core.HTTPGetAction{
+					Host: probeHost,
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
 						IntVal: int32(probePort),
