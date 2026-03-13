@@ -471,6 +471,16 @@
    "singularDisplayName": "Mesh Trust"
   },
   {
+   "includeInFederation": false,
+   "name": "MeshZoneAddress",
+   "path": "meshzoneaddresses",
+   "pluralDisplayName": "Mesh Zone Addresses",
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mza",
+   "singularDisplayName": "Mesh Zone Address"
+  },
+  {
    "includeInFederation": true,
    "name": "ProxyTemplate",
    "path": "proxytemplates",

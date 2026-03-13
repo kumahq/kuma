@@ -964,6 +964,7 @@ plugins:
     meshmultizoneservices: true
     meshservices: true
     meshtrusts: true
+    meshzoneaddresses: true
     workloads: true
   policies:
     meshaccesslogs: true
