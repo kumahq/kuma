@@ -37,7 +37,7 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Get Started 
 
-- [Installation](https://kuma.io/install)
+- [Installation](https://kuma.io/docs/2.13.x/quickstart/kubernetes-demo/)
 - [Documentation](https://kuma.io/docs)
 
 ## Get Involved
