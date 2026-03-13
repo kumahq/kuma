@@ -119,6 +119,8 @@ func New(
 		sidecarContainersEnabled: sidecarContainersEnabled,
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
+		defaultReadinessPort:     readinessPort,
+		adminUnixSocket:          adminUnixSocket,
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
 			cfg.SidecarContainer.DataplaneContainer,
@@ -138,6 +140,8 @@ type KumaInjector struct {
 	converter                k8s_common.Converter
 	proxyFactory             *containers.DataplaneProxyFactory
 	defaultAdminPort         uint32
+	defaultReadinessPort     uint32
+	adminUnixSocket          bool
 	systemNamespace          string
 }
 
@@ -201,6 +205,15 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		tpCfg, err := tproxy_k8s.ConfigForKubernetes(tpCfgBase, i.cfg, pod.Annotations, logger)
 		if err != nil {
 			return err
+		}
+
+		// When admin UDS is enabled, the readiness reporter listens on a
+		// TCP port instead of the Envoy admin port. Exclude it from
+		// inbound interception so K8s probes reach kuma-dp directly.
+		if i.adminUnixSocket && i.defaultReadinessPort != 0 {
+			if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
+				return err
+			}
 		}
 
 		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeTPBase)
@@ -891,6 +904,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		metadata.KumaTrafficExcludeInboundPorts,
 	); v != "" {
 		result[metadata.KumaTrafficExcludeInboundPorts] = v
+	}
+
+	// When admin UDS is enabled, exclude the readiness port from inbound
+	// interception so K8s probes reach kuma-dp directly.
+	if i.adminUnixSocket && i.defaultReadinessPort != 0 {
+		port := fmt.Sprintf("%d", i.defaultReadinessPort)
+		if existing := result[metadata.KumaTrafficExcludeInboundPorts]; existing != "" {
+			result[metadata.KumaTrafficExcludeInboundPorts] = existing + "," + port
+		} else {
+			result[metadata.KumaTrafficExcludeInboundPorts] = port
+		}
 	}
 
 	if v, _ := annotations.GetStringWithDefault(
